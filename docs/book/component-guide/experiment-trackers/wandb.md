@@ -36,8 +36,7 @@ You need to configure the following credentials for authentication to the Weight
 * `project_name`: The name of the project where you're sending the new run. If the project is not specified, the run is put in an "Uncategorized" project.
 * `entity`: An entity is a username or team name where you're sending runs. This entity must exist before you can send runs there, so make sure to create your account or team in the UI before starting to log runs. If you don't specify an entity, the run will be sent to your default entity, which is usually your username.
 
-{% tabs %}
-{% tab title="Basic Authentication" %}
+{% tabs %} {% tab title="Basic Authentication" %}
 This option configures the credentials for the Weights & Biases platform directly as stack component attributes.
 
 {% hint style="warning" %}
@@ -80,8 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 
 {% hint style="info" %}
 Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) in the ZenML documentation.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 {% endtabs %}
 
 For more, up-to-date information on the Weights & Biases Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb.html#zenml.integrations.wandb) .

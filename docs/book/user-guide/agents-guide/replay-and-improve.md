@@ -114,8 +114,7 @@ report.summary()      # per-metric baseline-vs-variant deltas + an "is it better
 report.regressions()  # the metrics (and decision changes) that got worse
 ```
 
-{% hint style="info" %}
-`run_cohort` and the metric callables live in the example, not in the `kitaru` package — they're a pattern built on the real `flow.replay` and `KitaruClient`. Copy or adapt them; metrics are just `metric(baseline, variant) -> MetricDelta` callables, so you bring your own.
+{% hint style="info" %} `run_cohort` and the metric callables live in the example, not in the `kitaru` package — they're a pattern built on the real `flow.replay` and `KitaruClient`. Copy or adapt them; metrics are just `metric(baseline, variant) -> MetricDelta` callables, so you bring your own.
 {% endhint %}
 
 For each run, the cohort reproduces and replays the same way, then aggregates: total cost, latency, and a quality score from an LLM judge. You get the answer to the real question — does the cheaper model hold quality across realistic traffic, or only on the one run you happened to look at?

@@ -2,17 +2,13 @@
 description: Learn how to implement a RAG pipeline in just 85 lines of code.
 ---
 
-There's a lot of theory and context to think about when it comes to RAG, but
-let's start with a quick implementation in code to motivate what follows. The
+There's a lot of theory and context to think about when it comes to RAG, but let's start with a quick implementation in code to motivate what follows. The
 following 85 lines do the following:
 
 - load some data (a fictional dataset about 'ZenML World') as our corpus
-- process that text (split it into chunks and 'tokenize' it (i.e. split into
-  words))
-- take a query as input and find the most relevant chunks of text from our
-  corpus data
-- use OpenAI's GPT-3.5 model to answer the question based on the relevant
-    chunks
+- process that text (split it into chunks and 'tokenize' it (i.e. split into words))
+- take a query as input and find the most relevant chunks of text from our corpus data
+- use OpenAI's GPT-3.5 model to answer the question based on the relevant chunks
 
 ```python
 import os
@@ -113,24 +109,17 @@ Question: What is the capital of Panglossia?
 Answer: The capital of Panglossia is not mentioned in the provided context.
 ```
 
-The implementation above is by no means sophisticated or performant, but it's
-simple enough that you can see all the moving parts. Our tokenization process
+The implementation above is by no means sophisticated or performant, but it's simple enough that you can see all the moving parts. Our tokenization process
 consists of splitting the text into individual words. 
 
-The way we check for similarity between the question / query and the chunks of
-text is extremely naive and inefficient. The similarity between the query and
-the current chunk is calculated using the [Jaccard similarity
-coefficient](https://www.statology.org/jaccard-similarity/). This coefficient
-measures the similarity between two sets and is defined as the size of the
-intersection divided by the size of the union of the two sets. So we count the
-number of words that are common between the query and the chunk and divide it by
-the total number of unique words in both the query and the chunk. There are much
-better ways of measuring the similarity between two pieces of text, such as
-using embeddings or other more sophisticated techniques, but this example is
+The way we check for similarity between the question / query and the chunks of text is extremely naive and inefficient. The similarity between the query and
+the current chunk is calculated using the [Jaccard similarity coefficient](https://www.statology.org/jaccard-similarity/). This coefficient
+measures the similarity between two sets and is defined as the size of the intersection divided by the size of the union of the two sets. So we count the
+number of words that are common between the query and the chunk and divide it by the total number of unique words in both the query and the chunk. There are much
+better ways of measuring the similarity between two pieces of text, such as using embeddings or other more sophisticated techniques, but this example is
 kept simple for illustrative purposes.
 
-The rest of this guide will showcase a more performant and scalable way of
-performing the same task using ZenML. If you ever are unsure why we're doing
+The rest of this guide will showcase a more performant and scalable way of performing the same task using ZenML. If you ever are unsure why we're doing
 something, feel free to return to this example for the high-level overview.
 
 <!-- For scarf -->

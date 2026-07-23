@@ -39,8 +39,7 @@ You need to configure the following credentials for authentication to Neptune:
 * `api_token`: API key token of your Neptune account. If left blank, Neptune will attempt to retrieve the token from your environment variables.
 * `project`: The name of the project where you're sending the new run, in the form "workspace-name/project-name". If the project is not specified, Neptune will attempt to retrieve it from your environment variables.
 
-{% tabs %}
-{% tab title="ZenML Secret (Recommended)" %}
+{% tabs %} {% tab title="ZenML Secret (Recommended)" %}
 This method requires you to [configure a ZenML secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) to store the Neptune tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
@@ -66,8 +65,7 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 
 {% hint style="info" %}
 Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) in the ZenML documentation.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Basic Authentication" %}
 This option configures the credentials for neptune.ai directly as stack component attributes.
@@ -84,8 +82,7 @@ zenml experiment-tracker register neptune_experiment_tracker --flavor=neptune \
 # Register and set a stack with the new experiment tracker
 zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune.html#zenml.integrations.neptune) .
 

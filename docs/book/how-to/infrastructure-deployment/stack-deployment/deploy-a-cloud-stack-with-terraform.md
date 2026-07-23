@@ -7,8 +7,7 @@ icon: globe
 
 ZenML maintains a collection of [Terraform modules](https://registry.terraform.io/modules/zenml-io/zenml-stack) designed to streamline the provisioning of cloud resources and seamlessly integrate them with ZenML Stacks. These modules simplify the setup process, allowing users to quickly provision cloud resources as well as configure and authorize ZenML to utilize them for running pipelines and other AI/ML operations.
 
-By leveraging these Terraform modules, users can ensure a more efficient and scalable deployment of their machine learning infrastructure, ultimately enhancing their development and operational workflows. The modules' implementation can also be used as a reference for creating custom Terraform\
-configurations tailored to specific cloud environments and requirements.
+By leveraging these Terraform modules, users can ensure a more efficient and scalable deployment of their machine learning infrastructure, ultimately enhancing their development and operational workflows. The modules' implementation can also be used as a reference for creating custom Terraform\ configurations tailored to specific cloud environments and requirements.
 
 {% hint style="info" %}
 Terraform requires you to manage your infrastructure as code yourself. Among other things, this means that you will need to have Terraform installed on your machine, and you will need to manually manage the state of your infrastructure.
@@ -139,11 +138,9 @@ zenml integration install <list-of-required-integrations>
 zenml stack set <zenml_stack_id>
 ```
 
-You can find more details specific to the cloud provider of your choice in the\
-next section:
+You can find more details specific to the cloud provider of your choice in the\ next section:
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 The [original documentation for the ZenML AWS Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/aws/latest) contains extensive information about required permissions, inputs, outputs, and provisioned resources. This is a summary of the key points from that documentation.
 
 **Authentication**
@@ -194,8 +191,7 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\
-following components:
+The Terraform module will create a ZenML stack configuration with the\ following components:
 
 1. An S3 Artifact Store linked to an S3 bucket via an AWS Service Connector configured with IAM role credentials
 2. An ECR Container Registry linked to an ECR repository via an AWS Service Connector configured with IAM role credentials
@@ -274,8 +270,7 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\
-following components:
+The Terraform module will create a ZenML stack configuration with the\ following components:
 
 1. An GCP Artifact Store linked to a GCS bucket via a GCP Service Connector configured with the GCP service account credentials
 2. An GCP Container Registry linked to a Google Artifact Registry via a GCP Service Connector configured with the GCP service account credentials
@@ -368,8 +363,7 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\
-following components:
+The Terraform module will create a ZenML stack configuration with the\ following components:
 
 1. An Azure Artifact Store linked to an Azure Storage Account and Blob Container via an Azure Service Connector configured with Azure Service Principal credentials
 2. An ACR Container Registry linked to an Azure Container Registry via an Azure Service Connector configured with Azure Service Principal credentials
@@ -392,8 +386,7 @@ zenml integration install azure
 ```shell
 zenml integration install azure skypilot_azure
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## How to clean up the Terraform stack deployments
 

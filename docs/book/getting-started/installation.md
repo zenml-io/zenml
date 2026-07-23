@@ -5,14 +5,12 @@ icon: cauldron
 
 # Installation
 
-{% stepper %}
-{% step %}
+{% stepper %} {% step %}
 #### Install ZenML
 
 ZenML currently supports **Python 3.10, 3.11, 3.12, 3.13, and 3.14**. Please make sure that you are using a supported Python version.
 
-{% tabs %}
-{% tab title="Base package" %}
+{% tabs %} {% tab title="Base package" %}
 **ZenML** is a Python package that can be installed using `pip` or other Python package managers:
 
 ```shell
@@ -24,8 +22,7 @@ Installing the base package only allows you to connect to a [deployed ZenML serv
 ```shell
 pip install 'zenml[local]'
 ```
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Local Dashboard" %}
 If you want to use the [ZenML dashboard](https://github.com/zenml-io/zenml-dashboard) locally, you need to install ZenML with the `server` extra: 
@@ -53,16 +50,14 @@ pip install 'zenml[jupyter]'
 
 {% endtab %}
 
-{% endtabs %}
-{% endstep %}
+{% endtabs %} {% endstep %}
 
 {% step %}
 #### Verifying Installations
 
 Once the installation is completed, you can check whether the installation was successful either through Bash or Python:
 
-{% tabs %}
-{% tab title="Bash" %}
+{% tabs %} {% tab title="Bash" %}
 ```bash
 zenml version
 ```
@@ -74,12 +69,10 @@ import zenml
 
 print(zenml.__version__)
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 If you would like to learn more about the current release, please visit our [PyPi package page.](https://pypi.org/project/zenml)
-{% endstep %}
-{% endstepper %}
+{% endstep %} {% endstepper %}
 
 ## Running with Docker
 

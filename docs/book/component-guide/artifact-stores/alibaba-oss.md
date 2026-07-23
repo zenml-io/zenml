@@ -43,8 +43,7 @@ To use Alibaba Cloud OSS with ZenML, you need to configure the S3 Artifact Store
 Alibaba Cloud OSS does not support ZenML Service Connectors. Use ZenML Secrets to securely store and reference your Alibaba Cloud credentials.  
 {% endhint %} 
 
-{% tabs %}
-{% tab title="Using a ZenML Secret (recommended)" %}
+{% tabs %} {% tab title="Using a ZenML Secret (recommended)" %}
 
 First, create a ZenML secret with your Alibaba Cloud credentials:
 
@@ -63,8 +62,7 @@ zenml artifact-store register alibaba_store -f s3 \
     --client_kwargs='{"endpoint_url": "https://oss-<region>.aliyuncs.com"}' \
     --config_kwargs='{"signature_version": "s3", "s3": {"addressing_style": "virtual"}}'
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Replace `<region>` with your OSS region (e.g., `eu-central-1`, `cn-hangzhou`, `ap-southeast-1`). You can find the list of available regions and their endpoints in the [Alibaba Cloud OSS documentation](https://www.alibabacloud.com/help/en/oss/user-guide/regions-and-endpoints).
 

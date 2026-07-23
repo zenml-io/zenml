@@ -225,10 +225,8 @@ settings = RunAIStepOperatorSettings(
 | `parallelism` | int | None | Run:AI training workload parallelism |
 | `completions` | int | None | Run:AI training workload completions |
 
-A useful way to think about the timeout settings is: `pending_timeout` covers
-the queuing phase before Run:AI can start the workload, while
-`workload_timeout` covers the running phase after the workload has started. If a
-workload sits in `Pending` because no quota is available, `pending_timeout` is
+A useful way to think about the timeout settings is: `pending_timeout` covers the queuing phase before Run:AI can start the workload, while
+`workload_timeout` covers the running phase after the workload has started. If a workload sits in `Pending` because no quota is available, `pending_timeout` is
 the timer that lets ZenML stop waiting instead of hanging indefinitely.
 
 Environment variables are configured through the standard ZenML `environment` settings on steps or pipelines; the Run:AI step operator does not introduce an additional environment-specific setting.

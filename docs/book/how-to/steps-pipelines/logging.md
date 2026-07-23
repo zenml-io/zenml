@@ -292,8 +292,7 @@ ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 
 ### on Steps and pipelines
 
-When running steps and pipelines, ZenML only captures logs emitted from the
-thread that executes the corresponding function. If your step code spawns additional
+When running steps and pipelines, ZenML only captures logs emitted from the thread that executes the corresponding function. If your step code spawns additional
 threads or runs async code, logs from those execution contexts may not be captured.
 
 For instance, only the log emitted directly in the step function is captured:
@@ -344,14 +343,11 @@ def async_step() -> None:
 
 ### on the Dashboard
 
-When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and
-pagination/filtering happens on the client side. To keep the response size and
-server memory usage bounded (especially when logs are stored in remote artifact
-stores), the dashboard is limited to **500 pages** (**100 log entries per
+When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and pagination/filtering happens on the client side. To keep the response size and
+server memory usage bounded (especially when logs are stored in remote artifact stores), the dashboard is limited to **500 pages** (**100 log entries per
 page**, i.e. **50,000 entries** total) by default.
 
-You can adjust this limit by setting `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` in the
-environment when you are deploying your ZenML workspace.
+You can adjust this limit by setting `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` in the environment when you are deploying your ZenML workspace.
 
 Downloading logs from the dashboard will also only include up to this limit.
 

@@ -27,8 +27,7 @@ The fix is to give the worker the request and a separate process the credential.
 
 ## Run it
 
-{% stepper %}
-{% step %}
+{% stepper %} {% step %}
 One-time setup. This builds the sandbox, proxy, and mock-services images and stores the `wiki-token` secret the proxy will inject. It's idempotent, so re-running it does no harm.
 
 ```bash
@@ -44,8 +43,7 @@ DISABLE_CACHE=1 uv run python stage_4_credential_proxy.py
 ```
 
 Three containers come up: a mock wiki answering as `wiki.local`, the proxy, and the sandbox the agent runs in. The agent reads its skill, follows the procedure, runs `curl http://wiki.local/snippets/durability`, gets a `200`, and writes a short summary to `/tmp/summary.txt` built from the fact it read. `DISABLE_CACHE=1` forces every checkpoint to re-run, so you watch the real call happen each time instead of getting a cached result, just as in the earlier stages.
-{% endstep %}
-{% endstepper %}
+{% endstep %} {% endstepper %}
 
 ## What you should see in the logs
 

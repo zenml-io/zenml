@@ -20,16 +20,14 @@ Models are first-class citizens in ZenML and as such viewing and using them is u
 
 These models can be viewed within ZenML:
 
-{% tabs %}
-{% tab title="OSS (CLI)" %}
+{% tabs %} {% tab title="OSS (CLI)" %}
 `zenml model list` can be used to list all models.
 {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing these models in the dashboard.
 
-<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 ## Configuring a model in a pipeline
@@ -87,8 +85,7 @@ Furthermore, this pipeline run and all other pipeline runs that are configured w
 
 You can see all versions of a model, and associated artifacts and run like this:
 
-{% tabs %}
-{% tab title="OSS (CLI)" %}
+{% tabs %} {% tab title="OSS (CLI)" %}
 `zenml model version list <MODEL_NAME>` can be used to list all versions of a particular model.
 
 The following commands can be used to list the various pipeline runs associated with a model:
@@ -105,8 +102,7 @@ The following commands can be used to list the various artifacts associated with
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 ## Fetching the model in a pipeline
@@ -185,8 +181,7 @@ def svc_trainer(
     )
 ```
 
-{% tabs %}
-{% tab title="Python" %}
+{% tabs %} {% tab title="Python" %}
 ```python
 from zenml.client import Client
 
@@ -201,8 +196,7 @@ model_version.run_metadata["accuracy"].value
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
-<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 Choosing [log metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.
@@ -227,8 +221,7 @@ A model's versions can exist in various stages. These are meant to signify their
 * `latest`: The latest version of the model.
 * `archived`: This is archived and no longer relevant. This stage occurs when a model moves out of any other stage.
 
-{% tabs %}
-{% tab title="Python SDK" %}
+{% tabs %} {% tab title="Python SDK" %}
 ```python
 from zenml import Model
 
@@ -270,8 +263,7 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
 ![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) guide.
 

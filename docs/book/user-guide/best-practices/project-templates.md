@@ -24,10 +24,8 @@ pip install 'zenml[templates]'
 ```
 
 {% hint style="warning" %}
-Note that these templates are not the same thing as the templates used for
-triggering a pipeline (from the dashboard or via the Python SDK). Those are
-known as 'Run Templates' and you can read more about them <a
-href="https://docs.zenml.io/how-to/trigger-pipelines">here</a>.
+Note that these templates are not the same thing as the templates used for triggering a pipeline (from the dashboard or via the Python SDK). Those are
+known as 'Run Templates' and you can read more about them <a href="https://docs.zenml.io/how-to/trigger-pipelines">here</a>.
 {% endhint %}
 
 Now, you can generate a project from one of the existing templates by using the `--template` flag with the `zenml init` command:

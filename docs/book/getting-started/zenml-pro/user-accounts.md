@@ -126,8 +126,7 @@ See the [Personal Access Tokens](personal-access-tokens.md) and [Service Account
 
 ### Creating Local Users
 
-{% tabs %}
-{% tab title="OpenAPI Interface" %}
+{% tabs %} {% tab title="OpenAPI Interface" %}
 1. Navigate to `https://<zenml-pro-url>/api/v1`
 2. Authenticate with the admin account or a super-user account
 3. Find the `POST /api/v1/users` endpoint
@@ -160,8 +159,7 @@ curl -X POST "https://<zenml-pro-url>/api/v1/users?username=newuser&password=ini
 curl -X POST "https://<zenml-pro-url>/api/v1/users?username=newsuperuser&password=initial-password&is_superuser=true" \
   -H "Authorization: Bearer <access-token>"
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 New local users are required to reset their password on first login.
@@ -169,8 +167,7 @@ New local users are required to reset their password on first login.
 
 ### Updating Local Users
 
-{% tabs %}
-{% tab title="curl" %}
+{% tabs %} {% tab title="curl" %}
 ```bash
 # Update user details
 curl -X PATCH "https://<zenml-pro-url>/api/v1/users/<user-id>" \
@@ -196,15 +193,13 @@ curl -X PATCH "https://<zenml-pro-url>/api/v1/users/<user-id>" \
     "is_superuser": false
   }'
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ### Resetting Passwords
 
 Administrators can reset a local user's password:
 
-{% tabs %}
-{% tab title="curl" %}
+{% tabs %} {% tab title="curl" %}
 ```bash
 # Reset a user's password
 curl -X PATCH "https://<zenml-pro-url>/api/v1/users/<user-id>" \
@@ -214,8 +209,7 @@ curl -X PATCH "https://<zenml-pro-url>/api/v1/users/<user-id>" \
     "password": "new-temporary-password"
   }'
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 After an administrator resets a password, the user will be prompted to change it on their next login.
@@ -223,15 +217,13 @@ After an administrator resets a password, the user will be prompted to change it
 
 ### Deleting Local Users
 
-{% tabs %}
-{% tab title="curl" %}
+{% tabs %} {% tab title="curl" %}
 ```bash
 # Delete a user
 curl -X DELETE "https://<zenml-pro-url>/api/v1/users/<user-id>" \
   -H "Authorization: Bearer <access-token>"
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="warning" %}
 Deleting a user removes their account but does not delete resources they created. Those resources remain accessible to other organization members based on their roles.

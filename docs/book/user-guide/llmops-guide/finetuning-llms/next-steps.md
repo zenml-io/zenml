@@ -20,13 +20,10 @@ You might be tempted to just continue escalating the ladder of larger and larger
 
 Some other resources for reading or learning about LLM finetuning that we'd recommend are:
 
-- [Mastering LLMs Course](https://parlance-labs.com/education/) - videos from
-  the LLM finetuning course run by Hamel Husain and Dan Becker. A great place to
+- [Mastering LLMs Course](https://parlance-labs.com/education/) - videos from the LLM finetuning course run by Hamel Husain and Dan Becker. A great place to
   start if you enjoy watching videos
-- [Phil Schmid's blog](https://www.philschmid.de/) - contains many worked
-  examples of LLM finetuning using the latest models and techniques
-- [Sam Witteveen's YouTube channel](https://www.youtube.com/@samwitteveenai) -
-  videos on a wide range of topics from finetuning to prompt engineering,
+- [Phil Schmid's blog](https://www.philschmid.de/) - contains many worked examples of LLM finetuning using the latest models and techniques
+- [Sam Witteveen's YouTube channel](https://www.youtube.com/@samwitteveenai) - videos on a wide range of topics from finetuning to prompt engineering,
   including many examples of LLM finetuning and explorations of the latest base models
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

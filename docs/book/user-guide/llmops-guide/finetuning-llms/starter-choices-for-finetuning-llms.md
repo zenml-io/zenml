@@ -4,17 +4,12 @@ description: Get started with finetuning LLMs by picking a use case and data.
 
 # Starter choices for finetuning LLMs
 
-Finetuning large language models can be a powerful way to tailor their
-capabilities to specific tasks and datasets. This guide will walk you through
-the initial steps of finetuning LLMs, including selecting a use case, gathering
-the appropriate data, choosing a base model, and evaluating the success of your
-finetuning efforts. By following these steps, you can ensure that your
-finetuning project is well-scoped, manageable, and aligned with your goals.
+Finetuning large language models can be a powerful way to tailor their capabilities to specific tasks and datasets. This guide will walk you through
+the initial steps of finetuning LLMs, including selecting a use case, gathering the appropriate data, choosing a base model, and evaluating the success of your
+finetuning efforts. By following these steps, you can ensure that your finetuning project is well-scoped, manageable, and aligned with your goals.
 
-This is a high-level overview before we dive into the code examples, but it's
-important to get these decisions right before you start coding. Your use case is
-only as good as your data, and you'll need to choose a base model that is
-appropriate for your use case.
+This is a high-level overview before we dive into the code examples, but it's important to get these decisions right before you start coding. Your use case is
+only as good as your data, and you'll need to choose a base model that is appropriate for your use case.
 
 ## 🔍 Quick Assessment Questions
 
@@ -73,10 +68,8 @@ In terms of data volume, a good rule of thumb is that for a result that will be 
 | **Complex Decision Making** | Multiple dependencies, hard to verify | Break down into smaller, measurable subtasks |
 | **Real-time Content Generation** | Consistency issues, timing constraints | Use templating or hybrid approaches |
 
-As you can see, the challenging use cases are often the ones that are more
-open-ended or creative, and so on. With LLMs and finetuning, the real skill is
-finding a way to scope down your use case to something that is both small and
-manageable, but also where you can still make meaningful progress.
+As you can see, the challenging use cases are often the ones that are more open-ended or creative, and so on. With LLMs and finetuning, the real skill is
+finding a way to scope down your use case to something that is both small and manageable, but also where you can still make meaningful progress.
 
 ### 📊 Success Indicators
 
@@ -90,21 +83,16 @@ You can get a sense of how well-scoped your use case is by considering the follo
 | **Evaluation Method** | Field-by-field accuracy metrics | "Users will tell us if it's good" |
 | **Business Impact** | "Save 10 hours of manual data entry" | "Make our AI more human-like" |
 
-You'll want to pick a use case that has a good mix of these indicators and where
-you can reasonably expect to be able to measure success in a timely manner.
+You'll want to pick a use case that has a good mix of these indicators and where you can reasonably expect to be able to measure success in a timely manner.
 
 ## Picking a base model
 
 In these early stages, picking the right model probably won't be the most significant choice you make. If you stick to some tried-and-tested base models you will usually be able to get a sense of how well the LLM is able to align itself to your particular task. That said, choosing from the Llama3.1-8B or Mistral-7B families would probably be the best option.
 
-As to whether to go with a base model or one that has been instruction-tuned,
-this depends a little on your use case. If your use case is in the area of
-structured data extraction (highly recommended to start with something
-well-scoped like this) then you're advised to use the base model as it is more
-likely to align to this kind of text generation. If you're looking for something
-that more resembles a chat-style interface, then an instruction-tuned model is
-probably more likely to give you results that suit your purposes. In the end
-you'll probably want to try both out to confirm this, but this rule of thumb
+As to whether to go with a base model or one that has been instruction-tuned, this depends a little on your use case. If your use case is in the area of
+structured data extraction (highly recommended to start with something well-scoped like this) then you're advised to use the base model as it is more
+likely to align to this kind of text generation. If you're looking for something that more resembles a chat-style interface, then an instruction-tuned model is
+probably more likely to give you results that suit your purposes. In the end you'll probably want to try both out to confirm this, but this rule of thumb
 should give you a sense of what to start with.
 
 ### 📊 Quick Model Selection Matrix
@@ -159,10 +147,8 @@ These are all covered in more detail in the [evaluation section](./evaluation-fo
 
 ## Next steps
 
-Now that you have a clear understanding of how to scope your finetuning project,
-select appropriate data, and evaluate results, you're ready to dive into the
-technical implementation. In the next section, we'll walk through [a practical example of finetuning using the Accelerate library](./finetuning-with-accelerate.md),
-showing you how to implement
+Now that you have a clear understanding of how to scope your finetuning project, select appropriate data, and evaluate results, you're ready to dive into the
+technical implementation. In the next section, we'll walk through [a practical example of finetuning using the Accelerate library](./finetuning-with-accelerate.md), showing you how to implement
 these concepts in code.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

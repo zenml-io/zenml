@@ -83,10 +83,8 @@ Walk us through how to reproduce the same error you had step-by-step, whenever p
 
 #### 4. Relevant log output
 
-As a general rule of thumb, always attach relevant log outputs and the full
-error traceback to help us understand what happened under the hood. If the full
-error traceback does not fit into a text message, attach a file or use a service
-like Pastebin or [Github's Gist](https://gist.github.com/).
+As a general rule of thumb, always attach relevant log outputs and the full error traceback to help us understand what happened under the hood. If the full
+error traceback does not fit into a text message, attach a file or use a service like Pastebin or [Github's Gist](https://gist.github.com/).
 
 Along with the error traceback, we recommend to always share the output of the following commands:
 

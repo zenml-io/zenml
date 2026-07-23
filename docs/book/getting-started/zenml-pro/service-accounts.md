@@ -21,8 +21,7 @@ Once you have created a service account and API key, you can use them to authent
 
 The API key can be used to authenticate to the ZenML Pro management REST API programmatically. There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-{% tabs %}
-{% tab title="Direct API key authentication" %}
+{% tabs %} {% tab title="Direct API key authentication" %}
 {% hint style="warning" %}
 This approach, albeit simple, is not recommended because the long-lived API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
 {% endhint %}
@@ -157,8 +156,7 @@ zenml login <your-workspace-name> --api-key
 
 Similar to the ZenML Pro API programmatic access, the API key can be used to authenticate to the ZenML Pro workspace REST API programmatically. This is no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-{% tabs %}
-{% tab title="Direct Pro API key authentication" %}
+{% tabs %} {% tab title="Direct Pro API key authentication" %}
 {% hint style="warning" %}
 This approach, albeit simple, is not recommended because the long-lived Pro API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
 {% endhint %}

@@ -11,8 +11,7 @@ There's a lot to understand about LLM fine-tuning - from choosing the right base
 - Fine-tuning the model on custom data
 - Using the fine-tuned model to generate responses
 
-This example uses the same [fictional "ZenML World" setting as our RAG
-example](../rag-with-zenml/rag-85-loc.md), but now we're teaching the model to
+This example uses the same [fictional "ZenML World" setting as our RAG example](../rag-with-zenml/rag-85-loc.md), but now we're teaching the model to
 generate content about this world rather than just retrieving information.
 You'll need to `pip install` the following packages:
 
@@ -196,8 +195,7 @@ This implementation is intentionally simplified and has several limitations:
 3. **Training Time**: We use minimal epochs and a simple learning rate to keep the example runnable.
 4. **Evaluation**: A production system would need proper evaluation metrics and validation data.
 
-If you take a closer look at the inference output, you'll see that the quality
-of the responses is pretty poor, but we only used 3 examples for training!
+If you take a closer look at the inference output, you'll see that the quality of the responses is pretty poor, but we only used 3 examples for training!
 
 ## Next Steps
 

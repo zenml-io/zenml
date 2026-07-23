@@ -4,37 +4,24 @@ description: Generate embeddings to improve retrieval performance.
 
 # Generating Embeddings for Retrieval
 
-In this section, we'll explore how to generate embeddings for your data to
-improve retrieval performance in your RAG pipeline. Embeddings are a crucial
-part of the retrieval mechanism in RAG, as they represent the data in a
-high-dimensional space where similar items are closer together. By generating
-embeddings for your data, you can enhance the retrieval capabilities of your RAG
-pipeline and provide more accurate and relevant responses to user queries.
+In this section, we'll explore how to generate embeddings for your data to improve retrieval performance in your RAG pipeline. Embeddings are a crucial
+part of the retrieval mechanism in RAG, as they represent the data in a high-dimensional space where similar items are closer together. By generating
+embeddings for your data, you can enhance the retrieval capabilities of your RAG pipeline and provide more accurate and relevant responses to user queries.
 
 ![](../../../.gitbook/assets/rag-stage-2.png)
 
-{% hint style="info" %} Embeddings are vector representations of data that capture the semantic
-meaning and context of the data in a high-dimensional space. They are generated
-using machine learning models, such as word embeddings or sentence embeddings,
-that learn to encode the data in a way that preserves its underlying structure
-and relationships. Embeddings are commonly used in natural language processing
-(NLP) tasks, such as text classification, sentiment analysis, and information
-retrieval, to represent textual data in a format that is suitable for
-computational processing. {% endhint %}
+{% hint style="info" %} Embeddings are vector representations of data that capture the semantic meaning and context of the data in a high-dimensional space. They are generated
+using machine learning models, such as word embeddings or sentence embeddings, that learn to encode the data in a way that preserves its underlying structure
+and relationships. Embeddings are commonly used in natural language processing (NLP) tasks, such as text classification, sentiment analysis, and information
+retrieval, to represent textual data in a format that is suitable for computational processing. {% endhint %}
 
-The whole purpose of the embeddings is to allow us to quickly find the small
-chunks that are most relevant to our input query at inference time. An even
-simpler way of doing this would be to just to search for some keywords in the
-query and hope that they're also represented in the chunks. However, this
-approach is not very robust and may not work well for more complex queries or
-longer documents. By using embeddings, we can capture the semantic meaning and
-context of the data and retrieve the most relevant chunks based on their
-similarity to the query.
+The whole purpose of the embeddings is to allow us to quickly find the small chunks that are most relevant to our input query at inference time. An even
+simpler way of doing this would be to just to search for some keywords in the query and hope that they're also represented in the chunks. However, this
+approach is not very robust and may not work well for more complex queries or longer documents. By using embeddings, we can capture the semantic meaning and
+context of the data and retrieve the most relevant chunks based on their similarity to the query.
 
-We're using the [`sentence-transformers`](https://www.sbert.net/) library to generate embeddings for our
-data. This library provides pre-trained models for generating sentence
-embeddings that capture the semantic meaning of the text. It's an open-source
-library that is easy to use and provides high-quality embeddings for a wide
+We're using the [`sentence-transformers`](https://www.sbert.net/) library to generate embeddings for our data. This library provides pre-trained models for generating sentence
+embeddings that capture the semantic meaning of the text. It's an open-source library that is easy to use and provides high-quality embeddings for a wide
 range of NLP tasks.
 
 ```python
@@ -73,29 +60,20 @@ def generate_embeddings(
         raise
 ```
 
-We update the `Document` Pydantic model to include an `embedding` attribute that
-stores the embedding generated for each document. This allows us to associate
-the embeddings with the corresponding documents and use them for retrieval
-purposes in the RAG pipeline.
+We update the `Document` Pydantic model to include an `embedding` attribute that stores the embedding generated for each document. This allows us to associate
+the embeddings with the corresponding documents and use them for retrieval purposes in the RAG pipeline.
 
-There are smaller embeddings models if we cared a lot about speed, and larger
-ones (with more dimensions) if we wanted to boost our ability to retrieve more
-relevant chunks. [The model we're using
-here](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2) is on the
-smaller side, but it should work well for our use case. The embeddings generated
-by this model have a dimensionality of 384, which means that each embedding is
+There are smaller embeddings models if we cared a lot about speed, and larger ones (with more dimensions) if we wanted to boost our ability to retrieve more
+relevant chunks. [The model we're using here](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2) is on the
+smaller side, but it should work well for our use case. The embeddings generated by this model have a dimensionality of 384, which means that each embedding is
 represented as a 384-dimensional vector in the high-dimensional space.
 
-We can use dimensionality reduction functionality in
-[`umap`](https://umap-learn.readthedocs.io/) and
+We can use dimensionality reduction functionality in [`umap`](https://umap-learn.readthedocs.io/) and
 [`scikit-learn`](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html#sklearn-manifold-tsne)
-to represent the 384 dimensions of our embeddings in two-dimensional space. This
-allows us to visualize the embeddings and see how similar chunks are clustered
-together based on their semantic meaning and context. We can also use this
-visualization to identify patterns and relationships in the data that can help
+to represent the 384 dimensions of our embeddings in two-dimensional space. This allows us to visualize the embeddings and see how similar chunks are clustered
+together based on their semantic meaning and context. We can also use this visualization to identify patterns and relationships in the data that can help
 us improve the retrieval performance of our RAG pipeline. It's worth trying both
-UMAP and t-SNE to see which one works best for our use case since they both have
-somewhat different representations of the data and reduction algorithms, as
+UMAP and t-SNE to see which one works best for our use case since they both have somewhat different representations of the data and reduction algorithms, as
 you'll see.
 
 ```python
@@ -181,31 +159,23 @@ def umap_visualization(embeddings, parent_sections):
 ![UMAP visualization of the ZenML documentation chunks as embeddings](../../../.gitbook/assets/umap.png)
 ![t-SNE visualization of the ZenML documentation chunks as embeddings](../../../.gitbook/assets/tsne.png)
 
-In this stage, we have utilized the 'parent directory', which we had previously
-stored in the vector store as an additional attribute, as a means to color the
-values. This approach allows us to gain some insight into the semantic space
-inherent in our data. It demonstrates that you can visualize the embeddings and
-observe how similar chunks are grouped together based on their semantic meaning
-and context.
+In this stage, we have utilized the 'parent directory', which we had previously stored in the vector store as an additional attribute, as a means to color the
+values. This approach allows us to gain some insight into the semantic space inherent in our data. It demonstrates that you can visualize the embeddings and
+observe how similar chunks are grouped together based on their semantic meaning and context.
 
-So this step iterates through all the chunks and generates embeddings
-representing each piece of text. These embeddings are then stored as an artifact
-in the ZenML artifact store as a NumPy array. We separate this generation from
-the point where we upload those embeddings to the vector database to keep the
-pipeline modular and flexible; in the future we might want to use a different
-vector database so we can just swap out the upload step without having to
+So this step iterates through all the chunks and generates embeddings representing each piece of text. These embeddings are then stored as an artifact
+in the ZenML artifact store as a NumPy array. We separate this generation from the point where we upload those embeddings to the vector database to keep the
+pipeline modular and flexible; in the future we might want to use a different vector database so we can just swap out the upload step without having to
 re-generate the embeddings.
 
-In the next section, we'll explore how to store these embeddings in a vector
-database to enable fast and efficient retrieval of relevant chunks at inference
+In the next section, we'll explore how to store these embeddings in a vector database to enable fast and efficient retrieval of relevant chunks at inference
 time.
 
 ## Code Example
 
 To explore the full code, visit the [Complete
 Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide)
-repository. The embeddings generation step can be found
-[here](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/populate_index.py).
+repository. The embeddings generation step can be found [here](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/populate_index.py).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

@@ -5,13 +5,11 @@ icon: ball-pile
 
 # Hierarchy
 
-In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML\
-framework. This document walks you through the key differences and new concepts that are only available for Pro users.
+In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML\ framework. This document walks you through the key differences and new concepts that are only available for Pro users.
 
 ![Image showing the entity hierarchy in ZenML Pro](.gitbook/assets/org_hierarchy_pro.png)
 
-{% hint style="info" %}
-s**Note**: Workspaces were previously called "Tenants" in earlier versions of ZenML Pro. We've updated the terminology to better reflect their role in organizing MLOps resources.
+{% hint style="info" %} s**Note**: Workspaces were previously called "Tenants" in earlier versions of ZenML Pro. We've updated the terminology to better reflect their role in organizing MLOps resources.
 {% endhint %}
 
 The image above shows the hierarchy of concepts in ZenML Pro.

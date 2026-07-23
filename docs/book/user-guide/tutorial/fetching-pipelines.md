@@ -58,8 +58,7 @@ Check out the [ZenML Client Documentation](https://docs.zenml.io/sdk-reference/z
 
 If you're not sure which pipeline you need to fetch, you can find a list of all registered pipelines in the ZenML dashboard, or list them programmatically either via the Client or the CLI.
 
-{% tabs %}
-{% tab title="Python" %}
+{% tabs %} {% tab title="Python" %}
 You can use the [`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method to get a list of all pipelines registered in ZenML:
 
 ```python
@@ -80,8 +79,7 @@ Alternatively, you can also list pipelines with the following CLI command:
 ```shell
 zenml pipeline list
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Step 2: Accessing Pipeline Runs
 

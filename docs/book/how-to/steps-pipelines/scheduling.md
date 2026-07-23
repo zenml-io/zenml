@@ -30,8 +30,7 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 **Native Schedule Management** means the orchestrator supports updating and deleting schedules directly through ZenML commands. When supported, commands like `zenml pipeline schedule update` and `zenml pipeline schedule delete` will automatically update/delete the schedule on the orchestrator platform (e.g., Kubernetes CronJobs). For orchestrators without this support, you'll need to manually manage schedules on the orchestrator side.
 {% endhint %}
 
-Check out [our tutorial on
-scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+Check out [our tutorial on scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 for a practical guide on how to schedule a pipeline.
 
 ### Set a schedule
@@ -120,8 +119,7 @@ archived_schedules = Client().list_schedules(is_archived=True)
 #### Archived Object Naming
 
 After archival, you may notice that the schedule name has changed. In ZenML, schedule names act as unique identifiers. 
-To prevent naming conflicts and allow reuse of the original name, archived schedules are automatically renamed by 
-appending a random hash to the original name.
+To prevent naming conflicts and allow reuse of the original name, archived schedules are automatically renamed by appending a random hash to the original name.
 
 #### Permanent Deletion (Hard Delete)
 
@@ -132,8 +130,7 @@ Archived objects can be permanently deleted using one of the following identifie
 * Name (updated/archived name only)
 
 {% hint style="warning" %}
-Deletion using the original (pre-archival) name will not work, since the object has been renamed. Deletion by name 
-prefix is not supported for schedules (and most other entities), as it is considered unsafe.
+Deletion using the original (pre-archival) name will not work, since the object has been renamed. Deletion by name prefix is not supported for schedules (and most other entities), as it is considered unsafe.
 {% endhint %}
 
 ### Kubernetes CronJob advanced configuration

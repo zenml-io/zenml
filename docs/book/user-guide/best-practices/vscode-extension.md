@@ -5,10 +5,8 @@ icon: computer-mouse
 
 # Using VS Code extension
 
-The ZenML VSCode extension is a tool that allows you to manage your ZenML server\
-from within VSCode. It provides features for stack management, pipeline\
-visualization, and project management capabilities. You can use it in any IDE\
-which allows the installation of extensions from the VSCode Marketplace, which\
+The ZenML VSCode extension is a tool that allows you to manage your ZenML server\ from within VSCode. It provides features for stack management, pipeline\
+visualization, and project management capabilities. You can use it in any IDE\ which allows the installation of extensions from the VSCode Marketplace, which\
 means that Cursor also supports this extension.
 
 ![ZenML VSCode Extension](../../.gitbook/assets/vscode-extension.gif)
@@ -90,8 +88,7 @@ If you encounter issues with the extension:
 * Verify that your authentication credentials are correct
 * Try restarting VSCode
 
-For more help, visit the [ZenML GitHub\
-repository](https://github.com/zenml-io/vscode-zenml) or send us a message on\
+For more help, visit the [ZenML GitHub\ repository](https://github.com/zenml-io/vscode-zenml) or send us a message on\
 our [Slack community](https://zenml.io/slack).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -24,8 +24,7 @@ ZenML's documentation is now made available to LLMs at the following link:
 https://docs.zenml.io/llms.txt
 ```
 
-This file contains a comprehensive summary of the ZenML documentation
-(containing links and descriptions) that LLMs can use to answer questions about
+This file contains a comprehensive summary of the ZenML documentation (containing links and descriptions) that LLMs can use to answer questions about
 ZenML's features, functionality, and usage.
 
 ## How to use the llms.txt file
@@ -82,8 +81,7 @@ The MCP server indexes the latest released documentation, not the develop branch
 
 Prefer the native GitBook MCP server above for the best experience; if you prefer working directly with llms.txt or need alternative workflows, the following tools are helpful:
 
-To use the llms.txt file in partnership with an MCP client, you can use the
-following tools:
+To use the llms.txt file in partnership with an MCP client, you can use the following tools:
 
 - [GitMCP](https://gitmcp.io/) - A way to quickly create an MCP server for a github repository (e.g. for `zenml-io/zenml`)
 - [mcp-llms](https://github.com/parlance-labs/mcp-llms.txt/) - This shows how to use an MCP server to iteratively explore the llms.txt file with your MCP client

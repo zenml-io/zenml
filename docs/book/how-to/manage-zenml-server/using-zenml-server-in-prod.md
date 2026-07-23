@@ -17,8 +17,7 @@ In production, you often have to run bigger and longer running pipelines that mi
 
 How you do it depends greatly on the environment in which you have deployed your ZenML server. Below are some common deployment options and how to set up autoscaling for them.
 
-{% tabs %}
-{% tab title="Kubernetes with Helm" %}
+{% tabs %} {% tab title="Kubernetes with Helm" %}
 If you are using the official [ZenML Helm chart](https://artifacthub.io/packages/helm/zenml/zenml), you can take advantage of the `autoscaling.enabled` flag to enable autoscaling for your ZenML server. For example:
 
 ```yaml
@@ -68,8 +67,7 @@ docker compose up --scale zenml-server=N
 ```
 
 This will scale your ZenML server to N replicas.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## High connection pool values
 
@@ -99,8 +97,7 @@ We would recommend starting out with a simple (single) database instance and the
 
 Exposing your ZenML server to the internet securely and reliably is a must for production use cases. One way to do this is to set up an ingress/load balancer.
 
-{% tabs %}
-{% tab title="Kubernetes with Helm" %}
+{% tabs %} {% tab title="Kubernetes with Helm" %}
 If you are using the official [ZenML Helm chart](https://artifacthub.io/packages/helm/zenml/zenml), you can take advantage of the `zenml.ingress.enabled` flag to enable ingress for your ZenML server. For example:
 
 ```yaml
@@ -133,15 +130,13 @@ Follow the steps in the official [GCP documentation](https://cloud.google.com/lo
 
 {% tab title="Docker Compose" %}
 If you are using Docker Compose, you can set up an NGINX server as a reverse proxy to route traffic to your ZenML server. Here's a [blog](https://www.docker.com/blog/how-to-use-the-official-nginx-docker-image/) that shows how to do it.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Monitoring
 
 Monitoring your service is crucial to ensure that it is running smoothly and to catch any issues early before they can cause problems. Depending on the deployment option you are using, you can use different tools to monitor your service.
 
-{% tabs %}
-{% tab title="Kubernetes with Helm" %}
+{% tabs %} {% tab title="Kubernetes with Helm" %}
 You can set up Prometheus and Grafana to monitor your ZenML server. We recommend using the `kube-prometheus-stack` [Helm chart from the prometheus-community](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack) to get started quickly.
 
 Once you have deployed the chart, you can find your grafana service by searching for services in the namespace you have deployed the chart in. Port-forward it to your local machine or deploy it through an ingress.
@@ -171,8 +166,7 @@ In Cloud Run, you can utilize the [Cloud Monitoring integration](https://cloud.g
 The "Metrics" tab in the Cloud Run console will show you metrics like Container CPU utilization, Container memory utilization, and more.
 
 ![Image showing metrics in Cloud Run](../../.gitbook/assets/cloudrun_metrics.png)
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Backups
 

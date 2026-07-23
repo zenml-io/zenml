@@ -38,8 +38,7 @@ You'll also need a running MinIO instance. MinIO can be deployed in various ways
 
 To use MinIO with ZenML, configure the S3 Artifact Store with your MinIO endpoint:
 
-{% tabs %}
-{% tab title="Using a ZenML Secret (recommended)" %}
+{% tabs %} {% tab title="Using a ZenML Secret (recommended)" %}
 
 First, create a ZenML secret with your MinIO credentials:
 
@@ -57,8 +56,7 @@ zenml artifact-store register minio_store -f s3 \
     --authentication_secret=minio_secret \
     --client_kwargs='{"endpoint_url": "http://minio.example.com:9000"}'
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Replace `http://minio.example.com:9000` with your actual MinIO endpoint. If you're running MinIO locally for development, this might be `http://localhost:9000`.
 

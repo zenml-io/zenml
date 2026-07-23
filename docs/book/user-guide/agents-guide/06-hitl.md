@@ -33,8 +33,7 @@ bash setup.sh
 
 Then pick how you want to answer the question. Both paths do the same thing; they differ only in where the answer comes from.
 
-{% tabs %}
-{% tab title="Interactive" %}
+{% tabs %} {% tab title="Interactive" %}
 Recommended for your first run.
 
 ```bash
@@ -55,8 +54,7 @@ uv run kitaru executions input <execution_id> --value '"Verified by ops on call"
 ```
 
 This is the shape you'd use in production: the flow runs on a server, and the operator answers through the dashboard, the CLI, or the REST API. The run resumes from the same point and finishes.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 In local runs the runtime polls for input until a 600s timeout, so the non-interactive path really does wait for the CLI command above. If you never answer, the flow times out. Deployed runs behave the same way; only the location of the wait record differs.

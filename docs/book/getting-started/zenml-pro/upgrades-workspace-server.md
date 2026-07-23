@@ -34,32 +34,26 @@ This provides a safe and reliable process to keep your workspaces up to date wit
 
 To upgrade workspace servers in a hybrid deployment:
 
-1. **Update Helm Values:**  
-   Change the Workspace Server version in your `values.yaml` file to reference the new image tag (the version you want to upgrade to).
+1. **Update Helm Values:** Change the Workspace Server version in your `values.yaml` file to reference the new image tag (the version you want to upgrade to).
 
-2. **Apply the Upgrade:**  
-   Re-apply the Helm chart to perform the upgrade:
+2. **Apply the Upgrade:** Re-apply the Helm chart to perform the upgrade:
    ```bash
    helm upgrade <your-workspace-release-name> zenml/zenml \
      --namespace <your-workspace-namespace> \
      --values values.yaml
    ```
 
-3. **Automatic Backup:**  
-   As part of the upgrade process, the system takes a database backup automatically before proceeding. This ensures you can safely roll back if anything goes wrong.
+3. **Automatic Backup:** As part of the upgrade process, the system takes a database backup automatically before proceeding. This ensures you can safely roll back if anything goes wrong.
 
-4. **Monitor the Upgrade:**  
-   Watch the logs and pod statuses to verify a healthy rollout:
+4. **Monitor the Upgrade:** Watch the logs and pod statuses to verify a healthy rollout:
    ```bash
    kubectl -n <your-workspace-namespace> get pods
    kubectl -n <your-workspace-namespace> logs <workspace-server-pod>
    ```
 
-5. **Rollback on Failure:**  
-   If the upgrade fails for any reason, the system will automatically roll back to the previous workspace server version using the backup. No manual intervention is required.
+5. **Rollback on Failure:** If the upgrade fails for any reason, the system will automatically roll back to the previous workspace server version using the backup. No manual intervention is required.
 
-6. **Zero Downtime:**  
-   Workspace upgrades are orchestrated to be highly available—users should not experience downtime during the upgrade process.
+6. **Zero Downtime:** Workspace upgrades are orchestrated to be highly available—users should not experience downtime during the upgrade process.
 
 {% hint style="info" %}
 **Workload Manager Updates:** When upgrading, check the [release notes](https://docs.zenml.io/changelog/server-sdk) for any changes to workload manager configuration. If you have configured a workload manager, you may need to update environment variables in your Helm values. See [Workspace Server Configuration](deploy-workspace-snapshots.md) for the full configuration reference.

@@ -58,8 +58,7 @@ To use the SkyPilot VM Orchestrator, you need:
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 * A [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following commands:
 
 ```shell
@@ -255,8 +254,7 @@ The Lambda Labs orchestrator does not support some of the features like `job_rec
 
 {% hint style="warning" %}
 While testing the orchestrator, we noticed that the Lambda Labs orchestrator does not support the `down` flag. This means the orchestrator will not automatically tear down the cluster after all jobs finish. We recommend manually tearing down the cluster after all jobs finish to avoid unnecessary costs.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Kubernetes" %}
 We need first to install the SkyPilot integration for Kubernetes, using the following two commands:
@@ -304,8 +302,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 {% hint style="warning" %}
 Some of the features like `job_recovery`, `disk_tier`, `image_id`, `zone`, `idle_minutes_to_autostop`, `disk_size`, `use_spot` are not supported by the Kubernetes orchestrator. It is recommended not to use these features with the Kubernetes orchestrator and not to use [step-specific settings](skypilot-vm.md#configuring-step-specific-resources).
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 {% endtabs %}
 
 #### Additional Configuration
@@ -347,8 +344,7 @@ For additional configuration of the Skypilot orchestrator, you can pass `Setting
 
 The following code snippets show how to configure the orchestrator settings for each cloud provider:
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 **Code Example:**
 
 ```python
@@ -512,8 +508,7 @@ skypilot_settings = SkypilotKubernetesOrchestratorSettings(
     }
 )
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 
 One of the key features of the SkyPilot VM Orchestrator is the ability to run each step of a pipeline on a separate VM with its own specific settings. This allows for fine-grained control over the resources allocated to each step, ensuring that each part of your pipeline has the necessary compute power while optimizing for cost and efficiency.

@@ -112,8 +112,7 @@ Read about [how snapshots work](https://docs.zenml.io/user-guides/tutorial/trigg
 {% endhint %}
 
 After building, execute all snapshots end-to-end as a smoke test.
-Ideally, your data science teams have a "smoke test" parameter in the pipeline
-to load mock data just for this scenario!
+Ideally, your data science teams have a "smoke test" parameter in the pipeline to load mock data just for this scenario!
 
 ## 🚀 Step #6: Upgrade Production and Go Live
 

@@ -22,26 +22,20 @@ The Model Deployer abstraction focused exclusively on single-model serving, but 
 While Model Deployer integrations remain available for backward compatibility, we strongly recommend migrating to Pipeline Deployments for new projects.
 {% endhint %}
 
-Model Deployment is the process of making a machine learning model available to make predictions and decisions on
-real-world data. Getting predictions from trained models can be done in different ways depending on the use case, a
-batch prediction is used to generate predictions for a large amount of data at once, while a real-time prediction is
-used to generate predictions for a single data point at a time.
+Model Deployment is the process of making a machine learning model available to make predictions and decisions on real-world data. Getting predictions from trained models can be done in different ways depending on the use case, a
+batch prediction is used to generate predictions for a large amount of data at once, while a real-time prediction is used to generate predictions for a single data point at a time.
 
 Model deployers are stack components responsible for serving models on a real-time or batch basis.
 
-Online serving is the process of hosting and loading machine-learning models as part of a managed web service and
-providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be
-triggered at any time, and you can send inference requests to the model through the web service's API and receive fast,
-low-latency responses.
+Online serving is the process of hosting and loading machine-learning models as part of a managed web service and providing access to the models through an API endpoint like HTTP or GRPC. Once deployed, model inference can be
+triggered at any time, and you can send inference requests to the model through the web service's API and receive fast, low-latency responses.
 
-Batch inference or offline inference is the process of making a machine learning model make predictions on a batch of
-observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually
+Batch inference or offline inference is the process of making a machine learning model make predictions on a batch of observations. This is useful for generating predictions for a large amount of data at once. The predictions are usually
 stored as files or in a database for end users or business applications.
 
 ### When to use it?
 
-The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a
-target environment, either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
+The model deployers are optional components in the ZenML stack. They are used to deploy machine learning models to a target environment, either a development (local) or a production (Kubernetes or cloud) environment. The model deployers are mainly used to deploy models for real-time inference use cases. With the model deployers and other stack components, you can build pipelines that are continuously trained and deployed to production.
 
 ### How model deployers slot into the stack
 
@@ -51,8 +45,7 @@ Here is an architecture diagram that shows how model deployers fit into the over
 
 #### Model Deployers Flavors
 
-ZenML comes with a `local` MLflow model deployer which is a simple model deployer that deploys models to a local MLflow
-server. Additional model deployers that can be used to deploy models on production environments are provided by
+ZenML comes with a `local` MLflow model deployer which is a simple model deployer that deploys models to a local MLflow server. Additional model deployers that can be used to deploy models on production environments are provided by
 integrations:
 
 | Model Deployer                     | Flavor    | Integration   | Notes                                                                        |
@@ -66,8 +59,7 @@ integrations:
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
-Every model deployer may have different attributes that must be configured in order to interact with the model serving
-tool, framework, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration
+Every model deployer may have different attributes that must be configured in order to interact with the model serving tool, framework, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration
 parameters). The following example shows the configuration of the MLflow and Seldon Core model deployers:
 
 ```shell
@@ -104,8 +96,7 @@ zenml model-deployer register seldon --flavor=seldon \
 
 * Lifecycle Management: Provides mechanisms for comprehensive lifecycle management of model servers, including the ability to start, stop, and delete model servers, as well as to update existing servers with new model versions, thereby optimizing resource utilization and facilitating continuous delivery of model updates. Some core methods that can be used to interact with the remote model server include:
   - `deploy_model` - Deploys a model to the serving environment and returns a Service object that represents the deployed model server.
-  - `find_model_server` - Finds and returns a list of Service objects that
-    represent model servers that have been deployed to the serving environment,
+  - `find_model_server` - Finds and returns a list of Service objects that represent model servers that have been deployed to the serving environment,
     the `services` are stored in the DB and can be used as a reference to know what and where the model is deployed.
   - `stop_model_server` - Stops a model server that is currently running in the serving environment.
   - `start_model_server` - Starts a model server that has been stopped in the serving environment.
@@ -152,8 +143,7 @@ ZenML uses the Service object to represent a model server that has been deployed
 
 #### &#x20;How to Interact with a model deployer after deployment?
 
-When a Model Deployer is part of the active ZenML Stack, it is also possible to interact with it from the CLI to list,
-start, stop, or delete the model servers that is managed:
+When a Model Deployer is part of the active ZenML Stack, it is also possible to interact with it from the CLI to list, start, stop, or delete the model servers that is managed:
 
 ```
 $ zenml model-deployer models list
@@ -197,8 +187,7 @@ $ zenml model-deployer models get-url 8cbe671b-9fce-4394-a051-68e001f92765
 $ zenml model-deployer models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
-In Python, you can alternatively discover the prediction URL of a deployed model by inspecting the metadata of the step
-that deployed the model:
+In Python, you can alternatively discover the prediction URL of a deployed model by inspecting the metadata of the step that deployed the model:
 
 ```python
 from zenml.client import Client
@@ -208,11 +197,9 @@ deployer_step = pipeline_run.steps["<NAME_OF_MODEL_DEPLOYER_STEP>"]
 deployed_model_url = deployer_step.run_metadata["deployed_model_url"].value
 ```
 
-The ZenML integrations that provide Model Deployer stack components also include standard pipeline steps that can
-directly be inserted into any pipeline to achieve a continuous model deployment workflow. These steps take care of all
+The ZenML integrations that provide Model Deployer stack components also include standard pipeline steps that can directly be inserted into any pipeline to achieve a continuous model deployment workflow. These steps take care of all
 the aspects of continuously deploying models to an external server and saving the Service configuration into the
-Artifact Store, where they can be loaded at a later time and re-create the initial conditions used to serve a particular
-model.
+Artifact Store, where they can be loaded at a later time and re-create the initial conditions used to serve a particular model.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

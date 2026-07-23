@@ -25,8 +25,7 @@ To enroll a workspace, you simply use the "New Workspace" button in the ZenML Pr
 Enrolling workspaces through the UI was not supported in ZenML Pro control plane versions 0.13.1 and earlier. If you're running an older version, you can still use the ZenML Pro OpenAPI interface or programmatically access the ZenML Pro API, as described below.
 {% endhint %}
 
-{% tabs %}
-{% tab title="OpenAPI Interface" %}
+{% tabs %} {% tab title="OpenAPI Interface" %}
 First, log in to the ZenML Pro UI as usual. Then, to access the ZenML Pro OpenAPI interface, append the `/api/v1` path to the ZenML Pro server URL in your browser. For example: https://zenml-pro.my.domain/api/v1s
 
 Using the OpenAPI interface, you can manage local user accounts by making requests to the `/api/v1/workspaces` endpoint. For example, to create a new super-user account:
@@ -42,8 +41,7 @@ First, [create a personal access token (PAT)](personal-access-tokens.md) using t
 curl -X POST "https://zenml-pro.my.domain/api/v1/workspaces?name=my-workspace&enroll=true" \
   -H "Authorization: Bearer <access-token>"
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 
 The workspace enrollment response will contain all the necessary enrollment credentials for the workspace that you will need to configure the workspace server during deployment:

@@ -267,8 +267,7 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 By default, ZenML automatically installs all packages required by your active ZenML stack. 
 
 {% hint style="warning" %}
-In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
-you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
+In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
 {% endhint %}
 
 1.  **Replicate Local Environment**:
@@ -421,8 +420,7 @@ The available package installers are:
 Full documentation for how `uv` works with PyTorch can be found on the Astral Docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
 
 {% hint style="info" %}
-If you're using `uv` and specify a custom parent image or Dockerfile that does not have an activated virtual environment, you need to pass `python_package_installer_args={"system": None}` in your DockerSettings so that
-`uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
+If you're using `uv` and specify a custom parent image or Dockerfile that does not have an activated virtual environment, you need to pass `python_package_installer_args={"system": None}` in your DockerSettings so that `uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
 {% endhint %}
 
 To speed up repeated image builds, set `python_package_installer_cache_mount` to a BuildKit `--mount` spec. ZenML emits `RUN --mount=<value> ...` on the install steps and drops the default `--no-cache-dir` flag so the mount is actually used. The value is passed through verbatim, so any valid `--mount` spec works (e.g. `type=cache` or `type=bind`). Requires BuildKit to be enabled on the builder.
@@ -442,8 +440,7 @@ docker_settings = DockerSettings(
 
 ### Using custom python executable
 
-To use a custom python executable, instead of a standard `python` you can use the `ZENML_CONTAINER_PYTHON_EXECUTABLE` environment 
-variable to control the python executable being used in the entrypoint command, for example `ZENML_CONTAINER_PYTHON_EXECUTABLE=/home/user1/custom-venv/bin/python` can be used.
+To use a custom python executable, instead of a standard `python` you can use the `ZENML_CONTAINER_PYTHON_EXECUTABLE` environment variable to control the python executable being used in the entrypoint command, for example `ZENML_CONTAINER_PYTHON_EXECUTABLE=/home/user1/custom-venv/bin/python` can be used.
 
 ## Private PyPI Repositories
 
@@ -591,8 +588,7 @@ from zenml.config import DockerSettings
 docker_settings = DockerSettings(image_tag="1.0.0")
 ```
 
-Keep in mind that this will be applied to all images built using the DockerSettings object. If there are multiple
-such images, only one of them will keep the tag while the rest will be untagged.
+Keep in mind that this will be applied to all images built using the DockerSettings object. If there are multiple such images, only one of them will keep the tag while the rest will be untagged.
 
 ### Decoupling Code from Builds
 

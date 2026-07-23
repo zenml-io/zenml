@@ -97,8 +97,7 @@ export ZENML_ENABLE_RICH_TRACEBACK=true
 
 ## Disable colorful logging
 
-Console logs use colors by default. If you wish to disable colorful logging,
-set the following environment variable:
+Console logs use colors by default. If you wish to disable colorful logging, set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
@@ -171,10 +170,8 @@ ZENML_SKIP_STACK_VALIDATION=true
 ## Ignore untracked code repository files
 
 When using [code repositories](https://docs.zenml.io/concepts/code-repositories),
-ZenML will by default require the local checkout to have no uncommitted or untracked files
-in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
-the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
-the files committed to the repository includes everything necessary to run your pipeline.
+ZenML will by default require the local checkout to have no uncommitted or untracked files in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
+the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that the files committed to the repository includes everything necessary to run your pipeline.
 
 ## ZenML global config path
 

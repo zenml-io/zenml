@@ -120,8 +120,7 @@ When any of these factors change, the cache key changes, and the step will be re
 ### Configuring cache policies
 
 You can configure cache policies at both the step and pipeline level using the `CachePolicy` class.
-Similar to enabling and disabling the cache above, you can define this cache policy
-on both pipeline and step either via the decorator or the `with_options(...)` method. Configuring
+Similar to enabling and disabling the cache above, you can define this cache policy on both pipeline and step either via the decorator or the `with_options(...)` method. Configuring
 a cache policy for a pipeline will configure it for all its steps.
 
 
@@ -189,8 +188,7 @@ cache_policy = CachePolicy(source_dependencies=["run.my_helper_function"])
 
 #### Cache expiration
 
-By default, any step that executes successfully is a caching candidate for future step runs. Any step with the same [cache key](#understanding-cache-keys) running afterwards
-can reuse the output artifacts produced by the caching candidate instead of actually executing the step code. In some cases however you might want to limit for how long a step run is a valid cache candidate for future steps. You can do that by configuring an expiration time for your step runs:
+By default, any step that executes successfully is a caching candidate for future step runs. Any step with the same [cache key](#understanding-cache-keys) running afterwards can reuse the output artifacts produced by the caching candidate instead of actually executing the step code. In some cases however you might want to limit for how long a step run is a valid cache candidate for future steps. You can do that by configuring an expiration time for your step runs:
 
 ```python
 from zenml.config import CachePolicy

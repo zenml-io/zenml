@@ -20,22 +20,16 @@ By implementing a robust evaluation strategy, you can develop more reliable, per
 
 ## Types of Evaluations
 
-It's common for finetuning projects to use generic out-of-the-box evaluation
-frameworks, but it's also useful to understand how to implement custom evals
-for your specific use case. In the end, building out a robust set of evaluations
-is a crucial part of knowing whether what you finetune is actually working. It
-also will allow you to benchmark your progress over time as well as check --
-when a new model gets released -- whether it even makes sense to continue with
-the finetuning work you've done. New open-source and open-weights models are
-released all the time, and you might find that your use case is better solved by
+It's common for finetuning projects to use generic out-of-the-box evaluation frameworks, but it's also useful to understand how to implement custom evals
+for your specific use case. In the end, building out a robust set of evaluations is a crucial part of knowing whether what you finetune is actually working. It
+also will allow you to benchmark your progress over time as well as check -- when a new model gets released -- whether it even makes sense to continue with
+the finetuning work you've done. New open-source and open-weights models are released all the time, and you might find that your use case is better solved by
 a new model. Evaluations will allow you to make this decision.
 
 ### Custom Evals
 
-The approach taken for custom evaluations is similar to that used and [showcased
-in the RAG guide](../evaluation/README.md), but it is adapted here for the
-finetuning use case. The main distinction here is that we are not looking to
-evaluate retrieval, but rather the performance of the finetuned model (i.e.
+The approach taken for custom evaluations is similar to that used and [showcased in the RAG guide](../evaluation/README.md), but it is adapted here for the
+finetuning use case. The main distinction here is that we are not looking to evaluate retrieval, but rather the performance of the finetuned model (i.e.
 [the generation part](../evaluation/generation.md)).
 
 Custom evals are tailored to your specific use case and can be categorized into two main types:
@@ -93,10 +87,8 @@ When using Generalized evals, it's important to consider their limitations and c
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
 
-It's easy to build in one of these frameworks into your ZenML pipeline. The
-implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) is a good
-example of how to do this. We used the `evaluate` library for ROUGE evaluation,
-but you could easily swap this out for another framework if you prefer. See [the previous section](finetuning-with-accelerate.md#implementation-details) for more details.
+It's easy to build in one of these frameworks into your ZenML pipeline. The implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) is a good
+example of how to do this. We used the `evaluate` library for ROUGE evaluation, but you could easily swap this out for another framework if you prefer. See [the previous section](finetuning-with-accelerate.md#implementation-details) for more details.
 
 ## Data and Tracking
 
@@ -110,13 +102,9 @@ As part of this, implementing comprehensive logging from the early stages of dev
 - [langfuse](https://langfuse.com/)
 - [braintrust](https://www.braintrust.dev/)
 
-Alongside collecting the raw data and viewing it periodically, creating simple
-dashboards that display core metrics reflecting your model's performance is an
-effective way to visualize and monitor progress. These metrics should align with
-your iteration goals and capture improvements over time, allowing you to quickly
-assess the impact of changes and identify areas that require attention. Again,
-as with everything else, don't let perfect be the enemy of the good; a simple
-dashboard using  simple technology with a few key metrics is better than no
-dashboard at all.
+Alongside collecting the raw data and viewing it periodically, creating simple dashboards that display core metrics reflecting your model's performance is an
+effective way to visualize and monitor progress. These metrics should align with your iteration goals and capture improvements over time, allowing you to quickly
+assess the impact of changes and identify areas that require attention. Again, as with everything else, don't let perfect be the enemy of the good; a simple
+dashboard using  simple technology with a few key metrics is better than no dashboard at all.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

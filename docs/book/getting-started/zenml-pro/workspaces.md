@@ -54,16 +54,13 @@ You can also access your workspace through the web dashboard, which provides a g
 
 A workspace is a crucial part of your Organization and serves as a container for your projects, which in turn hold your pipelines, experiments and models, among other things. You need to have a workspace to fully utilize the benefits that ZenML Pro brings. The following is how you can create a workspace yourself:
 
-{% stepper %}
-{% step %}
-**Go to your organization page**
-{% endstep %}
+{% stepper %} {% step %}
+**Go to your organization page** {% endstep %}
 
 {% step %}
 **Click on the "New Workspace" button**
 
-<figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure>
-{% endstep %}
+<figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure> {% endstep %}
 
 {% step %}
 **Add a name and id**
@@ -74,8 +71,7 @@ Give your workspace a name, an id, and click on the "**Create Workspace**" butto
 **Important**: The workspace ID must be globally unique across all ZenML instances and cannot be changed after creation. Choose carefully as this permanent identifier will be used in all future API calls and references.
 {% endhint %}
 
-<figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure>
-{% endstep %}
+<figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure> {% endstep %}
 
 {% step %}
 **Your workspace is ready!**
@@ -88,8 +84,7 @@ The image below shows you how the overview page looks like when you are being on
 
 {% hint style="info" %}
 You can also create a workspace through the Cloud API by navigating to https://cloudapi.zenml.io/ and using the `POST /organizations` endpoint to create a workspace.
-{% endhint %}
-{% endstep %}
+{% endhint %} {% endstep %}
 {% endstepper %}
 
 ## Organizing your workspaces

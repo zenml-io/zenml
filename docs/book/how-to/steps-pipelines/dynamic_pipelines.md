@@ -65,10 +65,8 @@ This allows you to modify step behavior based on runtime conditions or data.
 
 ### Artifact name substitutions in dynamic pipelines
 
-Dynamic pipelines support the same artifact name substitutions as regular
-pipelines. This matters when a dynamically generated step has outputs whose
-names include runtime-friendly placeholders. The substituted artifact name is
-still a real output that you can pass to downstream steps.
+Dynamic pipelines support the same artifact name substitutions as regular pipelines. This matters when a dynamically generated step has outputs whose
+names include runtime-friendly placeholders. The substituted artifact name is still a real output that you can pass to downstream steps.
 
 ```python
 from typing import Annotated
@@ -89,23 +87,18 @@ def dynamic_pipeline() -> None:
     consume(score)
 ```
 
-One caveat: when you use `child_pipeline.embed(...)`, the child pipeline's own
-configuration is not applied. That includes child-level `substitutions`; the
+One caveat: when you use `child_pipeline.embed(...)`, the child pipeline's own configuration is not applied. That includes child-level `substitutions`; the
 parent run's configuration controls the steps that execute inline.
 
 ### Step inputs as parameters
 
-Any value you pass to a step that is not the output of another step is uploaded
-to the artifact store as an external artifact, even a small `int`. Each upload
-costs a write to the artifact store and a request to the server, which adds up
-when a pipeline calls steps in a loop.
+Any value you pass to a step that is not the output of another step is uploaded to the artifact store as an external artifact, even a small `int`. Each upload
+costs a write to the artifact store and a request to the server, which adds up when a pipeline calls steps in a loop.
 
 Set the `ZENML_PARAMETER_SIZE_THRESHOLD` environment variable to pass
 JSON-serializable inputs as step parameters instead, which skips the upload.
-The variable must be set in the environment in which the pipeline executes,
-not on the client that starts the run. See
-[this page](../environment-variables/environment-variables.md) for how to
-configure environment variables for pipeline execution.
+The variable must be set in the environment in which the pipeline executes, not on the client that starts the run. See
+[this page](../environment-variables/environment-variables.md) for how to configure environment variables for pipeline execution.
 
 | Value | Behavior |
 | --- | --- |
@@ -113,8 +106,7 @@ configure environment variables for pipeline execution.
 | a positive number | JSON-serializable inputs up to that many bytes become step parameters. Larger inputs are uploaded. |
 | `-1` | Every JSON-serializable input becomes a step parameter. |
 
-Inputs that cannot be parameters are still uploaded, so raising the threshold is
-safe. Wrap an input with `ExternalArtifact` to keep uploading it.
+Inputs that cannot be parameters are still uploaded, so raising the threshold is safe. Wrap an input with `ExternalArtifact` to keep uploading it.
 
 ### Step Runtime Configuration
 
@@ -171,8 +163,7 @@ def map_reduce():
     reducer(results)               # pass list of artifacts directly
 ```
 
-For a complete agentic workflow that combines dynamic mapping, reduction, and a
-human approval gate, see the
+For a complete agentic workflow that combines dynamic mapping, reduction, and a human approval gate, see the
 [`agentic_hitl_pipeline` example](https://github.com/zenml-io/zenml/tree/main/examples/agentic_hitl_pipeline).
 
 Key points:
@@ -368,20 +359,16 @@ Using `after=server` here would deadlock, since the dependent would wait for the
 
 ### Child pipelines inside dynamic pipelines
 
-Dynamic pipelines can call other dynamic pipelines from their `@pipeline`
-body. This is useful for composing larger workflows out of reusable dynamic
+Dynamic pipelines can call other dynamic pipelines from their `@pipeline` body. This is useful for composing larger workflows out of reusable dynamic
 building blocks.
 
 Key behavior:
 
 - Only dynamic pipelines can be called as child pipelines.
 - Child pipelines run on the same stack as the parent run.
-- Child pipelines can run synchronously (`child(...)`) or concurrently
-  (`child.submit(...)`).
-- Child pipeline calls are only allowed in pipeline bodies, not inside step
-  functions.
-- Child pipelines reuse the parent run's Docker image — they don't trigger a
-  new build. The child snapshot inherits the parent's build, code reference,
+- Child pipelines can run synchronously (`child(...)`) or concurrently (`child.submit(...)`).
+- Child pipeline calls are only allowed in pipeline bodies, not inside step functions.
+- Child pipelines reuse the parent run's Docker image — they don't trigger a new build. The child snapshot inherits the parent's build, code reference,
   and code path so the child runs against the exact same image and source
   bundle as the parent.
 
@@ -426,8 +413,7 @@ def parent_pipeline_concurrent():
 
 ### Inline child pipelines with `embed(...)`
 
-Use `child_pipeline.embed(...)` if you want to reuse another
-dynamic pipeline's body without creating a child pipeline run.
+Use `child_pipeline.embed(...)` if you want to reuse another dynamic pipeline's body without creating a child pipeline run.
 
 ```python
 @pipeline(dynamic=True)
@@ -445,23 +431,16 @@ def parent_pipeline_inline():
 - It is not allowed inside `@step` functions.
 
 {% hint style="warning" %}
-**Limitations of `embed(...)`.** Unlike `child_pipeline(...)`
-and `child_pipeline.submit(...)`, the inline form does not apply the child
-pipeline's own configuration. The parent run's configuration governs every
-step that runs inline:
+**Limitations of `embed(...)`.** Unlike `child_pipeline(...)` and `child_pipeline.submit(...)`, the inline form does not apply the child
+pipeline's own configuration. The parent run's configuration governs every step that runs inline:
 
-- Child-level `settings`, `retry`, `enable_cache`, `enable_step_logs`,
-  `environment`, `secrets`, `tags`, `substitutions`, `model`, and
+- Child-level `settings`, `retry`, `enable_cache`, `enable_step_logs`, `environment`, `secrets`, `tags`, `substitutions`, `model`, and
   `on_init` / `on_success` / `on_failure` / `on_cleanup` hooks are ignored.
-- Per-step Docker overrides on the child pipeline are also ignored — the
-  parent's image is used for any inline isolated step.
-- `depends_on` config templates declared on the child pipeline are not
-  picked up.
-- There is no failure isolation: an exception inside the inline body
-  aborts the parent run.
+- Per-step Docker overrides on the child pipeline are also ignored — the parent's image is used for any inline isolated step.
+- `depends_on` config templates declared on the child pipeline are not picked up.
+- There is no failure isolation: an exception inside the inline body aborts the parent run.
 
-If any of these matter to your use case, call the child as
-`child_pipeline(...)` (sync) or `child_pipeline.submit(...)` (concurrent)
+If any of these matter to your use case, call the child as `child_pipeline(...)` (sync) or `child_pipeline.submit(...)` (concurrent)
 instead. Both create a real child run with its own configuration applied.
 {% endhint %}
 
@@ -469,52 +448,39 @@ In short, use:
 
 - `child_pipeline(...)` for a synchronous child run
 - `child_pipeline.submit(...)` for a concurrent child run
-- `child_pipeline.embed(...)` for embedded execution in the parent
-  run
+- `child_pipeline.embed(...)` for embedded execution in the parent run
 
 {% hint style="warning" %}
-**Resume idempotency depends on submit order.** Child pipeline child runs are
-identified by the order of `child_pipeline(...)` / `child_pipeline.submit(...)`
-calls in the parent body: the first call to `my_pipeline` becomes
-`pipeline:my_pipeline`, the second becomes `pipeline:my_pipeline_2`, and so on.
-On resume, ZenML reuses an existing child run only if the same call appears in
-the same position. If you reorder, insert, or remove child pipeline calls before
-existing ones, every subsequent ID shifts and previously completed children are
-re-executed. Same caveat applies to step invocation IDs.
+**Resume idempotency depends on submit order.** Child pipeline child runs are identified by the order of `child_pipeline(...)` / `child_pipeline.submit(...)`
+calls in the parent body: the first call to `my_pipeline` becomes `pipeline:my_pipeline`, the second becomes `pipeline:my_pipeline_2`, and so on.
+On resume, ZenML reuses an existing child run only if the same call appears in the same position. If you reorder, insert, or remove child pipeline calls before
+existing ones, every subsequent ID shifts and previously completed children are re-executed. Same caveat applies to step invocation IDs.
 {% endhint %}
 
 ### Build, code, and Docker settings inheritance
 
-Child runs share the parent's orchestration environment, image, and code
-bundle. This has two consequences worth knowing:
+Child runs share the parent's orchestration environment, image, and code bundle. This has two consequences worth knowing:
 
-- **No new Docker build.** The child snapshot inherits the parent's `build`,
-  `code_reference`, and `code_path`. The child runs against the exact same
+- **No new Docker build.** The child snapshot inherits the parent's `build`, `code_reference`, and `code_path`. The child runs against the exact same
   image and source bundle as the parent — there is no separate build step,
   and the child's code/dependencies must already be installed in the parent's
   image.
-- **Pipeline-level Docker settings on the child are ignored.** When a child
-  pipeline (or a child step) declares non-default `docker_settings`, those
+- **Pipeline-level Docker settings on the child are ignored.** When a child pipeline (or a child step) declares non-default `docker_settings`, those
   settings are silently overridden by the parent's. If you need a different
   image for a step inside a child pipeline, configure that step with a
   `step_operator` or use `runtime="isolated"` together with stack-level
   resource configuration on the parent.
 
-This applies to all three call modes (`child(...)`, `child.submit(...)`,
-and `child.embed(...)`).
+This applies to all three call modes (`child(...)`, `child.submit(...)`, and `child.embed(...)`).
 
 ### Permissions and authentication for nested runs
 
-Nested runs orchestrate from the parent's environment, so they share the
-parent's API token. The token must be scoped to the **root** run of the
-nesting tree — the root orchestrator can mint per-child-run tokens for any
-descendant. Child runs cannot mint tokens for their siblings; only
+Nested runs orchestrate from the parent's environment, so they share the parent's API token. The token must be scoped to the **root** run of the
+nesting tree — the root orchestrator can mint per-child-run tokens for any descendant. Child runs cannot mint tokens for their siblings; only
 descendants of the same root tree are reachable from a given parent token.
 
-This is transparent for the default flow (the root orchestrator launches
-everything in the same environment). It matters if you build automation on
-top of `ZENML_PIPELINE_RUN_ID` tokens — those tokens give you read/update
-access to the run they were minted for and any of its descendants, but not
+This is transparent for the default flow (the root orchestrator launches everything in the same environment). It matters if you build automation on
+top of `ZENML_PIPELINE_RUN_ID` tokens — those tokens give you read/update access to the run they were minted for and any of its descendants, but not
 to siblings or unrelated runs.
 
 ### Config Templates with `depends_on`

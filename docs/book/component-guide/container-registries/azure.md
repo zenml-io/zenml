@@ -62,8 +62,7 @@ You also need to set up [authentication](azure.md#authentication-methods) requir
 
 Integrating and using an Azure Container Registry in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the Azure cloud platform is through [an Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Azure Container Registry with other remote stack components also running in Azure.
 
-{% tabs %}
-{% tab title="Local Authentication" %}
+{% tabs %} {% tab title="Local Authentication" %}
 This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Container Registry. You don't need to supply credentials explicitly when you register the Azure Container Registry, as it leverages the local credentials and configuration that the Azure CLI and Docker client store on your local machine. However, you will need to install and set up the Azure CLI on your machine as a prerequisite, as covered in [the Azure CLI documentation](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli), before you register the Azure Container Registry.
 
 With the Azure CLI installed and set up with credentials, you need to login to the container registry so Docker can pull and push images:
@@ -76,8 +75,7 @@ az acr login --name=<REGISTRY_NAME>
 
 {% hint style="warning" %}
 Stacks using the Azure Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [an Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) to link your Azure Container Registry to the remote ACR registry.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Azure Service Connector (recommended)" %}
 To set up the Azure Container Registry to authenticate to Azure and access an ACR registry, it is recommended to leverage the many features provided by [the Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
@@ -179,10 +177,8 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'azure-demo' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
-{% endcode %}
-{% endhint %}
-{% endtab %}
-{% endtabs %}
+{% endcode %} {% endhint %}
+{% endtab %} {% endtabs %}
 
 For more information and a full list of configurable attributes of the Azure container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-container_registries.html#zenml.container_registries.azure_container_registry) .
 

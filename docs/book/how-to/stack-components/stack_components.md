@@ -33,12 +33,9 @@ Stacks may also include these optional components:
 * **Alerter**: Sends notifications about pipeline events
 * **Annotator**: Manages data labeling workflows
 
-Most component types appear at most once in a stack. Three component types are
-repeatable: **step operators**, **experiment trackers**, and **alerters**. If a
-stack has more than one component of one of these types, the first attached
-component is the default. You can still choose a non-default component by name
-in step or pipeline configuration, and you can change the default later with
-`zenml stack set-default`.
+Most component types appear at most once in a stack. Three component types are repeatable: **step operators**, **experiment trackers**, and **alerters**. If a
+stack has more than one component of one of these types, the first attached component is the default. You can still choose a non-default component by name
+in step or pipeline configuration, and you can change the default later with `zenml stack set-default`.
 
 ## Working with Stacks
 
@@ -87,11 +84,9 @@ zenml stack set-default training-stack --step_operator cpu-step-operator
 
 ### Discovering flavor-specific configuration
 
-Stack component flavors have different configuration fields. A local
-orchestrator needs very little information; a Kubernetes orchestrator needs
+Stack component flavors have different configuration fields. A local orchestrator needs very little information; a Kubernetes orchestrator needs
 cluster and namespace details; an S3 artifact store needs bucket information.
-Once you pass a flavor with `-f` / `--flavor`, the CLI can show the concrete
-configuration fields for that flavor:
+Once you pass a flavor with `-f` / `--flavor`, the CLI can show the concrete configuration fields for that flavor:
 
 ```bash
 zenml orchestrator register -f kubernetes --help
@@ -99,8 +94,7 @@ zenml artifact-store register -f s3 --help
 zenml step-operator update my-runai-step-operator --help
 ```
 
-The help output includes a **Flavor configuration** section. For register and
-update commands, pass those fields as `--name=value` arguments. This is often
+The help output includes a **Flavor configuration** section. For register and update commands, pass those fields as `--name=value` arguments. This is often
 the fastest way to answer, "what exactly does this flavor need from me?"
 
 Or through the Python API:

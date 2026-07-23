@@ -96,18 +96,14 @@ You can also use the `zenml annotator dataset` commands to manage your datasets:
 * `zenml annotator dataset delete <dataset_name>` - Delete a specific dataset
 * `zenml annotator dataset stats <dataset_name>` - Get statistics for a specific dataset
 
-Annotation files are saved as JSON files in the specified output directory. Each
-annotation file represents a dataset, with the filename serving as the dataset
+Annotation files are saved as JSON files in the specified output directory. Each annotation file represents a dataset, with the filename serving as the dataset
 name.
 
 ## Acknowledgements
 
-Pigeon was created by [Anastasis Germanidis](https://github.com/agermanidis) and
-released as a [Python package](https://pypi.org/project/pigeon-jupyter/) and
-[Github repository](https://github.com/agermanidis/pigeon). It is licensed under
-the Apache License. It has been updated to work with more recent `ipywidgets`
-versions and some small UI improvements were added. We are grateful to Anastasis
-for creating this tool and making it available to the community.
+Pigeon was created by [Anastasis Germanidis](https://github.com/agermanidis) and released as a [Python package](https://pypi.org/project/pigeon-jupyter/) and
+[Github repository](https://github.com/agermanidis/pigeon). It is licensed under the Apache License. It has been updated to work with more recent `ipywidgets`
+versions and some small UI improvements were added. We are grateful to Anastasis for creating this tool and making it available to the community.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
