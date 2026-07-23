@@ -48,7 +48,8 @@ To authenticate to the REST API, simply pass the API key directly in the `Author
       headers={"Authorization": f"Bearer YOUR_API_KEY"}
     )
     print(response.json())
-    ``` {% endtab %}
+    ```
+{% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of API key exposure by periodically exchanging the API key for a short-lived API token:
@@ -115,7 +116,8 @@ This will return a response like this (the short-lived API token is the `access_
        )
 
        print(response.json())
-       ``` {% endtab %}
+       ```
+{% endtab %}
 {% endtabs %}
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
@@ -182,7 +184,8 @@ Use the Pro API key directly to authenticate your API requests by including it i
     )
 
     print(response.json())
-    ``` {% endtab %}
+    ```
+{% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of Pro API key exposure by periodically exchanging the Pro API key for a short-lived workspace API token.
@@ -249,7 +252,8 @@ This will return a response like this (the workspace API token is the `access_to
        )
 
        print(response.json())
-       ``` {% endtab %}
+       ```
+{% endtab %}
 {% endtabs %}
 
 ## Service Account Operations

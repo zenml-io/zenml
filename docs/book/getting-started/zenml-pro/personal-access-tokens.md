@@ -60,7 +60,8 @@ To authenticate to the REST API, simply pass the PAT directly in the `Authorizat
       headers={"Authorization": f"Bearer YOUR_PAT"}
     )
     print(response.json())
-    ``` {% endtab %}
+    ```
+{% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of PAT exposure by periodically exchanging the PAT for a short-lived API token:
@@ -127,7 +128,8 @@ This will return a response like this (the short-lived API token is the `access_
        )
 
        print(response.json())
-       ``` {% endtab %}
+       ```
+{% endtab %}
 {% endtabs %}
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
@@ -186,7 +188,8 @@ Use the PAT directly to authenticate your API requests by including it in the `A
     )
 
     print(response.json())
-    ``` {% endtab %}
+    ```
+{% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of PAT exposure by periodically exchanging the PAT for a short-lived workspace API token.
@@ -253,7 +256,8 @@ This will return a response like this (the short-lived workspace API token is th
        )
 
        print(response.json())
-       ``` {% endtab %}
+       ```
+{% endtab %}
 {% endtabs %}
 
 ## Personal Access Token Operations

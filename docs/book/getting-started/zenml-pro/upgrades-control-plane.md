@@ -79,11 +79,13 @@ To upgrade the Control Plane in a self-hosted deployment:
 
 If the upgrade fails or causes issues:
 
-1. **Helm rollback:** ```bash
+1. **Helm rollback:**
+   ```bash
    helm rollback zenml-pro <previous-revision> --namespace <your-control-plane-namespace>
    ```
 
-2. **Verify rollback:** ```bash
+2. **Verify rollback:**
+   ```bash
    kubectl -n <your-control-plane-namespace> get pods
    ```
 

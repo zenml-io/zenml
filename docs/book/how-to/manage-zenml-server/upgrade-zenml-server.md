@@ -38,7 +38,8 @@ Optionally also perform a backup before the upgrade.
 
     ```bash
     docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
-    ``` {% endtab %}
+    ```
+{% endtab %}
 
 {% tab title="Kubernetes with Helm" %}
 To upgrade your ZenML server Helm release to a new version, follow the steps below.

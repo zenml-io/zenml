@@ -311,12 +311,14 @@ For more detailed information on deployment options, see the [pipeline deploymen
 
 Stack components have two types of configuration:
 
-1. **Registration-time configuration**: Static settings defined when registering a component ```bash
+1. **Registration-time configuration**: Static settings defined when registering a component
+   ```bash
    # Example: Setting a fixed tracking URL for MLflow
    zenml experiment-tracker register mlflow_tracker --flavor=mlflow --tracking_url=http://localhost:5000
    ```
 
-2. **Runtime settings**: Dynamic settings that can change between pipeline runs ```python
+2. **Runtime settings**: Dynamic settings that can change between pipeline runs
+   ```python
    # Example: Setting experiment name that changes for each run
    @step(settings={"experiment_tracker.mlflow": {"experiment_name": "custom_experiment"}})
    def my_step():
@@ -640,6 +642,7 @@ steps:
 </details>
 
 {% hint style="info" %}
-When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)` {% endhint %}
+When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)`
+{% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

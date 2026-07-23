@@ -63,13 +63,15 @@ To upgrade workspace servers in a hybrid deployment:
 
 If the upgrade fails or causes issues:
 
-1. **Helm rollback:** ```bash
+1. **Helm rollback:**
+   ```bash
    helm rollback zenml <previous-revision> --namespace zenml-workspace
    ```
 
 2. **Restore database** if needed from the backup taken before the upgrade.
 
-3. **Verify rollback:** ```bash
+3. **Verify rollback:**
+   ```bash
    kubectl -n zenml-workspace get pods
    ```
 
