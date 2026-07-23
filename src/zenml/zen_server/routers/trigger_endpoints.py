@@ -36,6 +36,8 @@ from zenml.models import (
     PlatformEventTriggerRequest,
     PlatformEventTriggerUpdate,
     TriggerFilter,
+    WebhookTriggerRequest,
+    WebhookTriggerUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -123,6 +125,16 @@ def create_trigger(
         verify_permissions_for_source_entity(
             source_type=trigger.source_entity.type,
             source_id=trigger.source_entity.id,
+        )
+    elif (
+        isinstance(trigger, WebhookTriggerRequest)
+        and trigger.webhook_integration_id is not None
+    ):
+        verify_permission_for_model(
+            model=zen_store().get_webhook_integration(
+                trigger.webhook_integration_id
+            ),
+            action=Action.READ,
         )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
@@ -215,6 +227,16 @@ def update_trigger(
             source_type=trigger_update.source_entity.type,
             source_id=trigger_update.source_entity.id,
         )
+    elif (
+        isinstance(trigger_update, WebhookTriggerUpdate)
+        and trigger_update.webhook_integration_id is not None
+    ):
+        verify_permission_for_model(
+            model=zen_store().get_webhook_integration(
+                trigger_update.webhook_integration_id
+            ),
+            action=Action.READ,
+        )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
 
@@ -272,15 +294,14 @@ def attach_trigger_to_snapshot(
 
     Raises:
         IllegalOperationError: If the trigger is already attached to the snapshot.
+        KeyError: If the trigger and snapshot belong to different projects.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     if trigger.project_id != snapshot.project_id:
-        raise IllegalOperationError(
-            "Trigger and snapshot must be in the same project"
-        )
+        raise KeyError(f"Snapshot {snapshot_id} not found.")
 
     if not snapshot.name:
         raise IllegalOperationError(
