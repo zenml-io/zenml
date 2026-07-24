@@ -213,11 +213,6 @@ class StepLauncher:
 
             try:
                 request_factory.populate_request(request=step_run_request)
-                if (
-                    step_run_request.status == ExecutionStatus.RUNNING
-                    and self._runs_with_dynamic_orchestrator()
-                ):
-                    step_run_request.status = ExecutionStatus.PROVISIONING
             except BaseException as e:
                 logger.exception(
                     f"Failed preparing step `{self._invocation_id}`."
@@ -340,30 +335,6 @@ class StepLauncher:
         record_step_run(step_run)
 
         return step_run
-
-    def _runs_with_dynamic_orchestrator(self) -> bool:
-        """Whether this launcher will submit a dynamic isolated step.
-
-        Returns:
-            Whether this launcher will submit a dynamic isolated step.
-        """
-        if not self._snapshot.is_dynamic or self._step.config.step_operator:
-            return False
-
-        from zenml.execution.pipeline.dynamic.compilation import (
-            get_step_runtime,
-        )
-
-        return (
-            get_step_runtime(
-                step_config=self._step.config,
-                pipeline_docker_settings=(
-                    self._snapshot.pipeline_configuration.docker_settings
-                ),
-                orchestrator=self._stack.orchestrator,
-            )
-            == StepRuntime.ISOLATED
-        )
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
@@ -637,9 +608,7 @@ class StepLauncher:
                         status=status, step_run_info=step_run_info
                     )
                 finally:
-                    self._cleanup_remote_step(
-                        step_run_info.step_run, allocated_resource_request
-                    )
+                    self._cleanup_remote_step(step_run_info.step_run)
 
         return None
 
@@ -687,9 +656,7 @@ class StepLauncher:
                     status=status, step_run_info=step_run_info
                 )
             finally:
-                self._cleanup_remote_step(
-                    step_run_info.step_run, allocated_resource_request
-                )
+                self._cleanup_remote_step(step_run_info.step_run)
 
         return None
 
@@ -731,14 +698,11 @@ class StepLauncher:
     def _cleanup_remote_step(
         self,
         step_run: StepRunResponse,
-        allocated_resource_request: Optional[ResourceRequestResponse] = None,
     ) -> None:
         """Clean up infrastructure after a remote step has finished.
 
         Args:
             step_run: The finished step run.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
         """
         try:
             if self._step.config.step_operator:
@@ -936,11 +900,7 @@ class StepLauncher:
                 )
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
-                    status=(
-                        ExecutionStatus.PROVISIONING
-                        if self._runs_with_dynamic_orchestrator()
-                        else ExecutionStatus.RUNNING
-                    ),
+                    status=ExecutionStatus.RUNNING,
                 )
                 return resource_request
             if resource_request.status == ResourceRequestStatus.REJECTED:
