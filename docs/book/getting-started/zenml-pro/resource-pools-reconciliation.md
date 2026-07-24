@@ -1,269 +1,212 @@
 ---
 description: >-
-  How resource pool reconciliation, queueing, preemption, and lease management
-  work in ZenML Pro.
+  How resource pool reconciliation, queueing, accounting, preemption, and lease
+  management work at runtime.
 ---
-# Resource Pool Reconciliation
+# Reconciliation process
 
-This page explains what happens after a resource request exists: how the
-reconciler allocates capacity, when work is preempted, and how leases keep
-allocations honest while steps and external clients run.
+This page explains what happens after a dynamic step or external caller creates
+a Resource Manager request. For definitions, see
+[Core concepts](resource-pools-core-concepts.md). For author-facing settings,
+see the [User guide](resource-pools-user-guide.md).
 
-For definitions, see [Core concepts](resource-pools-core-concepts.md). For
-author-facing settings, see [User guide](resource-pools-user-guide.md).
+Most of this page describes `authoritative` pools, where Resource Manager owns
+allocation decisions. `advisory` and `governance` modes are covered separately
+below.
 
-## Overview
+## Lifecycle
 
-ZenML separates request recording from scheduling:
-
-1. The workspace API records resource requests (from pipeline steps or external
-   clients).
-2. A background reconciler process reads pool state, orders the queue, grants
-   allocations, initiates preemption, and expires stale leases.
-3. The step launcher and step heartbeats poll request status and renew leases
-   for pipeline workloads.
-
-There is no push callback from the reconciler into running pods. Pipeline
-steps learn about preemption through the heartbeat path.
+1. **Request creation** - ZenML or an external caller sends subjects, demands,
+   reclaim tolerance, optional pool selectors, optional preemption group, and
+   lease settings.
+2. **Admission discovery** - Resource Manager finds pools whose target bindings
+   match the request and policies whose subject selectors match the request.
+3. **Planning** - For each matching policy, Resource Manager builds candidate
+   allocation plans against eligible classes and grants. Grantless policies
+   consider every matching class in the pool.
+4. **Queueing** - If a plan is eligible but capacity is not currently free, the
+   request stays `pending` in the pool queue.
+5. **Allocation** - When a plan fits capacity, limits, reservations, and
+   concurrency caps, Resource Manager marks the request `allocated` and records
+   allocation lines.
+6. **Heartbeat and renewal** - The owner renews the lease while work is active.
+7. **Release or expiry** - Completed work releases capacity. Expired leases
+   return capacity automatically.
 
 ```mermaid
 sequenceDiagram
-    participant Step as Step launcher
-    participant WS as Workspace
-    participant Rec as Reconciler
-    participant HB as Step heartbeat
+    participant W as Workspace or external caller
+    participant RM as Resource Manager
+    participant R as Reconciler
+    participant T as Runtime target
 
-    Step->>WS: Step ready; resource request created
-    Rec->>Rec: Queue / allocate / preempt
-    loop Until allocated or terminal
-        Step->>WS: Poll / renew request
-        WS-->>Step: pending or allocated
-    end
-    Step->>Step: Launch step
-    loop While running
-        HB->>WS: Heartbeat + renew lease
-        WS-->>HB: keep running or stop
-    end
-    Step->>WS: Step completes; release
-    Rec->>Rec: Free capacity
+    W->>RM: Create resource request
+    RM->>RM: Find pools, policies, classes, grants
+    RM-->>W: pending, allocated, or rejected
+    R->>RM: Reconcile pending queues
+    R->>RM: Allocate or preempt
+    RM-->>W: Allocated request with target settings
+    W->>T: Launch or continue workload
+    W->>RM: Renew lease
+    W->>RM: Release request
 ```
 
-## Runtime flow for pipeline steps
+## Admission rules
 
-1. Request creation — For eligible dynamic steps, the server builds demands from
-   `ResourceSettings`, sets `reclaim_tolerance`, and links the request to the
-   step run. The resource requester is the step operator if the step uses one,
-   otherwise the orchestrator.
-2. Queuing — If capacity is not available, status stays `pending`. The request
-   may appear in one or more pool queues until one pool can grant all demands.
-3. Client wait — The step launcher polls the request (with exponential backoff)
-   until it is `allocated`, rejected, preempted, cancelled, or expired, or
-   until `allocation_wait_timeout_seconds` elapses.
-4. Launch — On `allocated`, the launcher renews the lease for
-   `initialization_lease_seconds`, publishes the step as running, and starts
-   execution with allocation component settings merged into the stack config.
-5. Heartbeat — While the step runs, each heartbeat renews the lease and checks
-   request status. Terminal or preempting statuses stop the step.
-6. Deallocation — When the step completes, capacity is released. Crashes and
-   lease expiry are safety nets if release does not happen promptly.
+A request is statically eligible only when all of these are true:
 
-{% hint style="warning" %}
-If a component has policies on multiple pools, the same logical request may
-queue in several pools, but at most one pool owns the active allocation. ZenML
-never splits one step's demands across pools.
+* The pool scope is visible to the request.
+* The request matches a pool target binding, or the pool has no target
+  bindings.
+* A policy subject selector matches at least one request subject.
+* The request can run on the candidate class `reclaimable` value.
+* Every demand matches exactly one resource in the class bundle.
+* For grant-based policies, every demanded class resource is present in the
+  grant and the requested quantity fits the grant limit.
+* For grantless policies, every demanded resource is present in the class and
+  the requested quantity fits the class resource quantity.
+* The request's exact `class`, `resource`, kind, and selectors can all be
+  resolved.
 
-Every pool that might win must include capacity and policy grants for all
-resources the step requests. A GPU-only pool cannot satisfy a step that also
-requests CPU, memory, or a `step_run` slot.
-{% endhint %}
+Resource Manager does not split one request across pools. A plan must satisfy
+all demands in one pool, one class, one policy, and either one grant or a
+grantless policy path.
 
-## Queue ordering
+## Ordering
 
-Within each pool, the reconciler orders pending requests roughly as follows:
+Candidate plans are ordered deterministically:
 
-1. Priority-lane requests first
-2. Requests that fit entirely in unused reserved share
-3. Higher policy priority
-4. Earlier enqueue time (FIFO tie-break)
+1. Lower accounting pressure first for advisory ordering.
+2. Priority lane before normal priority.
+3. Higher policy priority.
+4. Higher pool rank.
+5. Higher class rank.
+6. Stable subject, target, policy, class, capacity, and grant identifiers.
 
-Scheduling is not real-time — expect seconds to minutes depending on
-reconciler cadence and load. Urgent work is modeled through priority and
-reserved capacity, not sub-second dispatch. When more jobs arrive than there
-are GPUs—for example ten sweeps on a four-GPU pool—the first allocations
-proceed and the rest wait in order until slots open.
+Within a pool queue, older requests win after the priority and rank ordering
+keys are equal.
 
-## Allocation rules
+## Accounting modes
 
-Allocation is all-or-nothing: every demand in the request must be satisfiable
-from the same pool, subject, and policy path in one transaction.
+| Mode | Reconciliation behavior |
+| --- | --- |
+| `authoritative` | Enforces class quantities, grant limits, reservations, pool/class/policy/grant concurrency, queueing, allocation, and preemption. |
+| `advisory` | Computes pressure and orders plans, but does not reject a plan solely because current accounting pressure is high. Use with care. |
+| `governance` | Keeps policy and target-setting decisions in ZenML while external infrastructure schedulers handle allocation and preemption. |
 
-Before granting, the reconciler checks:
+Use `authoritative` for the examples in this documentation unless a scenario
+explicitly calls out infrastructure-level scheduling.
 
-- Matching policy and grant for each demand (or grantless admission against pool capacity)
-- Exact grant `class_name` when the selected capacity class is policy-gated
-- Grant `limit` and reserved rules for `reclaim_tolerance: none`
-- Free capacity in each required `(resource, class)` bucket
-- Class rank when the request does not pin a class
+## Concurrency limits
 
-{% hint style="warning" %}
-There is no unbounded fallback for `CPU`, `memory`, or `step run`. Each demand
-must match a resource in the pool and be admitted through a grant (or through a
-grantless policy that exposes the full pool). Missing pool capacity or a grant
-that omits a demanded resource causes rejection.
+Concurrency limits cap active requests rather than resource quantities:
 
-For `reclaim_tolerance: none`, each demand must fit within the grant's
-`reserved` amount. Zero reserved for a demanded resource rejects the request
-immediately.
+| Limit location | Counts active requests in |
+| --- | --- |
+| Pool | The pool |
+| Class | The selected pool class |
+| Policy | The selected policy |
+| Grant | The selected grant |
 
-Administrators cannot over-reserve a pool class through policies. For each
-pool, resource, and class, the configured policy `reserved` totals must fit
-inside the matching pool capacity before those policies can be saved.
-{% endhint %}
+Grantless policies have no grant-level concurrency limit because no grant row
+is selected. Pool, class, and policy concurrency still apply.
 
-If raw capacity is insufficient, the reconciler may attempt preemption before
-leaving the request pending.
+Use concurrency limits when the scarce thing is "how many workloads can run at
+once" rather than a descriptor quantity. For example, a pool can enforce at
+most eight active H200 jobs even when CPU and memory are tracked as unlimited.
 
-## How preemption works
+## Reservations and limits
 
-Preemption runs only when a pending request cannot be granted and eligible
-victims exist.
+Grant-based policies use:
 
-### Who can be stopped
+* `reserved` as protected share.
+* `limit` as active usage ceiling. `null` follows the class resource quantity.
+* `missing_action` to decide what to do when a request omits a resource that is
+  listed in the grant.
 
-Only allocations whose requests have reclaim tolerance above `none` are
-candidates. Production steps with `reclaim_tolerance: none` (or legacy
-`preemptible=False`) are never chosen as victims.
+For `reclaim_tolerance: "none"`, a grant-based request in an authoritative pool
+must fit inside the grant's reserved share. This prevents non-reclaimable work
+from depending on capacity that another policy may need back.
 
-### Victim ordering
+Grantless policies have reservation 0 and limits equal to class resources.
+They are useful when the policy subject should access the whole matching pool
+instead of a reserved slice.
 
-Among eligible victims in the same pool:
+## Preemption
 
-1. Lower policy priority first
-2. Allocations borrowing reserved capacity needed by the waiter (reclaim),
-   even when priorities are equal or the victim's priority is higher
-3. Stable tie-breakers (allocation time, request id)
+Preemption happens when an authoritative pool has an eligible pending request
+that cannot currently allocate without reclaiming capacity or concurrency.
 
-`limit` on a grant caps how much a subject may hold; it does not pick victims.
+Victims must be eligible:
 
-### Priority-lane interactions
+* Lower priority than the waiting request, or same-priority borrowed usage that
+  can be reclaimed for protected reserved share.
+* Not protected by the same preemption group.
+* Not configured with `reclaim_tolerance: "none"`.
+* Currently active and holding capacity or concurrency needed by the waiter.
 
-- Normal-priority requests cannot preempt priority-lane allocations
-- Priority-lane requests may preempt lower-priority reclaimable allocations
-- Priority-lane requests do not preempt other priority-lane requests
+Priority-lane policies sit at the maximum internal priority. They can reclaim
+lower-priority eligible work, but they do not automatically preempt other
+priority-lane work at the same priority.
 
-### After preemption
+Preemption is cooperative where possible: Resource Manager marks a request
+`preempting`, the owner stops or retries, and capacity is returned. If leases
+expire or forceful termination is required, the request eventually becomes
+terminal and the ledger is cleared.
 
-1. Victim request → `preempting`, with `preemption_initiated_by_id` set
-2. Step heartbeat moves the step toward cancellation
-3. Capacity returns when the victim releases, expires, or finishes cancelling
-4. Waiter grants; victim may re-queue via step retry if configured
+## Leases and heartbeats
 
-Graceful checkpoint preemption (signal → checkpoint → resume) is not provided
-by the platform today. Authors rely on application checkpoints and step retries.
+An allocated request holds a lease. The owner renews it while the workload is
+running. ZenML step launchers do this automatically for dynamic steps.
 
-Production jobs with `reclaim_tolerance: none` are never chosen as preemption
-victims. Only workloads that accept coordinated or any reclaim can be
-displaced to make room for higher-priority work.
+Leases protect the ledger from stale allocations:
 
-## Lease management
+* If a queued request times out or is cancelled, queue entries are removed.
+* If an allocated request stops renewing, it becomes `expired`.
+* Released, cancelled, rejected, preempted, and expired requests no longer hold
+  active capacity.
 
-A lease is a time-bound claim on allocated capacity. Lease metadata lives on
-the resource request (`lease_expires_at`, `renewed_at`).
+For external workloads, renew the lease before `lease_expires_at` and release
+the request promptly when the work is done.
 
-### Why leases exist
+## Target settings merge
 
-Pools track virtual capacity. Leases ensure capacity returns when:
+When a plan wins, Resource Manager returns the target settings selected along
+the route. ZenML merges settings from broader to narrower scope:
 
-- A step crashes without a clean shutdown
-- An external client disappears
-- A network partition prevents renewal
-- A run is abandoned while still `allocated`
+1. Pool target route and pool target settings.
+2. Pool class target settings.
+3. Policy target settings.
+4. Grant target settings, when a grant was selected.
 
-Without leases, a single stuck allocation could block the pool indefinitely.
+The UI currently exposes component settings at all four levels and service
+connector settings at pool and class levels. These settings are applied to the
+selected stack component or service connector after allocation.
 
-### Pipeline steps: launcher polling
+## Troubleshooting
 
-Before the step runs, the step launcher loops:
+| Symptom | Likely cause |
+| --- | --- |
+| Request rejected with no admitting policy | No pool target matched, no policy subject matched, wrong class, missing descriptor, or grant missing a demanded resource |
+| Non-reclaimable request rejected for reserved share | Grant-based policy did not reserve enough of one demanded resource |
+| Request stays pending | Capacity, grant limit, reservation pressure, or concurrency limit is currently blocking allocation |
+| Lower-priority work was preempted | Higher-priority eligible work needed the capacity or concurrency and the lower-priority request allowed reclaim |
+| Target settings did not apply | The winning pool, class, policy, or grant did not include settings for the selected target type |
 
-- Poll request status through renew calls (which also extend the lease while
-  waiting in `pending`)
-- Respect `allocation_wait_timeout_seconds`
-- Fail fast on `rejected`, `cancelled`, `preempting`, `preempted`, `expired`
+Inspect stuck requests in the UI or with:
 
-After allocation, the launcher sets an initial lease through
-`initialization_lease_seconds` so short startup delays do not drop the grant.
-
-### Pipeline steps: heartbeat renewal
-
-While an isolated step with heartbeat enabled executes, the step heartbeat is
-the renewal and status channel:
-
-- Updates the step heartbeat timestamp
-- Renews the resource request lease (extends `lease_expires_at`, roughly three
-  times the heartbeat interval)
-- Reads request status
-- Returns stop/cancel when status is `preempting`, `preempted`, `cancelled`,
-  `rejected`, `released`, or `expired`
-
-Inline dynamic steps do not receive a running lease — effective
-`reclaim_tolerance: none`, capacity held until the step completes.
-
-Isolated steps with heartbeat disabled do not renew leases during execution.
-That is only valid with `reclaim_tolerance: none`.
-
-Preemptible isolated steps (`coordinated` or `any`) must have heartbeat
-enabled. Validation fails at run creation otherwise.
-
-### External workloads: explicit renew
-
-External clients must call `POST /api/v1/resource_requests/{id}/renew` on a
-schedule. There is no heartbeat integration for non-pipeline requests.
-
-### When leases expire
-
-If `lease_expires_at` passes without renewal:
-
-| Previous status | Becomes | Capacity |
-| --- | --- | --- |
-| `allocated` or `preempting` | `expired` | Released |
-| `pending` | `cancelled` | N/A (was not allocated) |
-
-The reconciler rebuilds queues and may grant waiting work in a later pass.
-Renewal on an already terminal request returns the terminal row unchanged —
-capacity is not silently resurrected.
-
-### What admins should communicate
-
-Tell teams that long-running steps depend on heartbeat connectivity to the
-workspace. Extended workspace outages can cause lease expiry and preemption
-even when cluster pods still appear running.
-
-## Policy scenarios (quick reference)
-
-| Pattern | Admin setup | Author setting | Runtime behavior |
-| --- | --- | --- | --- |
-| Fair share + burst | Reserved + limit on grant | Default or `coordinated` | Uses reserved first, may burst to limit |
-| Production vs experiments | Higher priority + reserved grant | `none` on production | Production never victim; experiments preemptible |
-| External reclaim | Priority-lane account policy | N/A (external API) | External request preempts pipeline borrow |
-| Queue transparency | Same pool, multiple policies | Any | UI / CLI show `status_reason` |
-
-## Terminal states and release
-
-Active allocations must not remain on terminal requests. Capacity frees on:
-
-- Normal step completion (`POST .../release` from the request owner)
-- `POST .../terminate` from operators or admins
-- Preemption completing (`preempting` → release path)
-- Lease expiry
-- Policy or pool teardown (admin configuration change)
-
-Inspect stuck pools with `zenml resource-pool requests` and the UI occupancy
-views before deleting requests manually.
+```shell
+zenml resource-request list --status pending
+zenml resource-request describe <request-id>
+```
 
 ## See also
 
-* [Core concepts](resource-pools-core-concepts.md) — reclaim tolerance, classes, statuses
-* [User guide](resource-pools-user-guide.md) — timeouts and author settings
-* [External workloads](resource-pools-external-workloads.md) — renew and terminate API
-* [Examples](resource-pools-examples.md) — preemption and queue scenarios
-* [Resource pools](resource-pools.md) — overview
+* [Core concepts](resource-pools-core-concepts.md) - descriptors, classes,
+  policies, subjects, and requests.
+* [User guide](resource-pools-user-guide.md) - author settings and request
+  inspection.
+* [External workloads](resource-pools-external-workloads.md) - direct requests
+  and priority-lane policies.
+* [Examples](resource-pools-examples.md) - complete scenarios.
+* [Resource pools](resource-pools.md) - overview.

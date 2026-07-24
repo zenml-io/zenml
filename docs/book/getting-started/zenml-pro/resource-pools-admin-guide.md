@@ -1,71 +1,57 @@
 ---
 description: >-
-  How platform admins build the resource vocabulary, define pools and policies,
-  and configure stack-component settings in ZenML Pro.
+  How platform admins configure resource descriptors, pools, classes, target
+  settings, policies, and grants in ZenML Pro.
 ---
 # Admin guide
 
-This guide is for platform admins who operate ZenML Pro: you define the
-resource language, declare pool capacity, attach policies, and wire stack
-components to infrastructure.
+This guide is for platform admins who operate ZenML Pro resource pools. Admins
+define the resource vocabulary, map that vocabulary to real infrastructure,
+and decide which users, teams, projects, pipelines, and workloads may consume
+the shared capacity.
 
-Most admin tasks are done in the ZenML Pro UI. The CLI supports a simplified
-flat pool and component-policy workflow for quick starts and automation. This
-page shows both.
+Configure resource pools in the ZenML Pro UI:
+
+* **Organization Settings > Resource Pools** for organization-scoped pools.
+* **Workspace Settings > Resource Pools** for workspace-scoped pools.
+
+The two locations use the same forms and concepts. The JSON snippets below use
+the Resource Manager REST API shape exactly, so they are suitable as automation
+references.
 
 ## Before you start
 
 You need:
 
-* A workspace with resource pools enabled (see
-  [Enable Resource Pools](deploy-workspace-resource-pools.md)).
-* Stack components (orchestrators and step operators) that will run pooled
-  workloads.
-* A clear picture of which resources are scarce (GPUs, licenses, concurrent
-  step slots) and how you want to split capacity (reserved vs burst vs spot).
+* A workspace with resource pools enabled. See
+  [Enable Resource Pools](deploy-workspace-resource-pools.md).
+* Stack components that will run pooled workloads, usually orchestrators and
+  step operators.
+* Service connectors if ZenML needs credentials to access the infrastructure.
+* A resource model that matches reality: Kubernetes node pools, cloud machine
+  types, GPU partitions, license pools, or shared storage classes.
 
 ## Step 1: Build the resource vocabulary
 
-Resource descriptors are the foundation. Every pool capacity entry, policy
-grant, and custom step request refers to a descriptor by name or kind.
+Open the Resource Pools page and use the resource descriptor section to review
+or create descriptors. Stock descriptors are available for `CPU`, `memory`,
+and `GPU`. Add custom descriptors for hardware-specific resources or platform
+constraints.
 
-### Use default descriptors
+Use descriptor `kind` carefully. The built-in kinds `cpu`, `memory`, and `gpu`
+are how Resource Manager matches the typed `ResourceSettings` fields that
+authors configure on steps:
 
-Stock descriptors ship with every organization:
+* Use `kind: "gpu"` for every GPU-like descriptor, such as `GPU`, `h200`, or
+  `a10g`, so typed `ResourceSettings(gpu_count=...)` demands can match them.
+* Use `kind: "cpu"` for every CPU-like descriptor that should match
+  `ResourceSettings(cpu_count=...)`.
+* Use `kind: "memory"` for every memory-like descriptor that should match
+  `ResourceSettings(memory=...)`.
+* Use a custom kind such as `license` when authors should request the resource
+  explicitly by name.
 
-| Name | Kind | Units |
-| --- | --- | --- |
-| `CPU` | `cpu` | `mCPU`, `CPU` |
-| `memory` | `memory` | `B`, `KiB`, `MiB`, `GiB`, … |
-| `GPU` | `gpu` | `GPU` |
-| `step run` | `step_run` | `step run` |
-
-These four kinds are the unified default language for pipeline authors.
-`ResourceSettings` typed fields (`cpu_count`, `memory`, `gpu_count`) always
-produce demands with kinds `cpu`, `memory`, and `gpu`. ZenML adds a `step_run`
-demand for isolated dynamic steps as a platform convention.
-
-Authors can use those fields without knowing descriptor names. Pool capacity
-and policy grants refer to descriptors by **name** (`GPU`, `CPU`, …). Match
-the catalog spelling (`GPU`, not `gpu`, unless you defined a custom descriptor
-with that exact name).
-
-When you add custom CPU, memory, or GPU-like resources, set the descriptor
-**kind** to `cpu`, `memory`, or `gpu` so they stay compatible with typed
-`ResourceSettings`. A custom H200 descriptor with `kind: "gpu"` is satisfied
-when an author sets `gpu_count=1`; pool capacity uses the descriptor name
-(`h200`).
-
-### Add custom descriptors
-
-When you need hardware-specific or license resources, define a descriptor in
-the UI. For GPU-like hardware, always use `kind: "gpu"` so authors can keep
-using `gpu_count` and `gpu_class`. Use `cpu` or `memory` for custom variants
-of those resources. Reserve other kinds (for example `license`) for resources
-that truly cannot map to the default set — those require
-`ResourceSettings.resources` by name; typed fields will not match them.
-
-Example — H200 as a `gpu`-kind descriptor (recommended; works with `gpu_count`):
+Example API payload for a custom H200 descriptor:
 
 ```json
 {
@@ -84,476 +70,444 @@ Example — H200 as a `gpu`-kind descriptor (recommended; works with `gpu_count`
 }
 ```
 
-Example — a license with a non-default kind (authors must use
-`ResourceSettings.resources`, not typed GPU/CPU fields):
+Example API payload for a custom license descriptor:
 
 ```json
 {
   "name": "training-license",
   "kind": "license",
   "description": "Floating training license seat",
+  "attributes": {
+    "vendor": "acme",
+    "scope": "organization"
+  },
   "units": [
     {"name": "seat", "multiplier": 1}
   ]
 }
 ```
 
-Configure resource descriptors in the ZenML Pro UI under resource management.
-See [User guide](resource-pools-user-guide.md) for how authors request custom
-resources by name.
+## Step 2: Create a resource pool
 
-### Descriptor units
+In the UI, click **Add resource pool**. Configure:
 
-The `units` field on a descriptor is optional. Define it when the same resource
-can be counted in more than one way. Each entry has a `name` and a `multiplier`
-relative to the descriptor's base unit.
+| UI area | What it controls |
+| --- | --- |
+| Name and description | Human-readable identity |
+| Rank | Which pool wins when multiple pools can satisfy the same request |
+| Accounting mode | Whether Resource Manager enforces allocation (`authoritative`), gives hints (`advisory`), or only governs routing (`governance`) |
+| Concurrency limit | Optional pool-wide cap on active requests |
+| Targets | Which runtime target subjects the pool governs |
+| Classes | Resource bundles available inside the pool |
+| Target settings | Component or service connector settings applied from the pool |
+| Attributes | Metadata used by pool selectors and operations |
 
-| Descriptor | Example units | Why multiples help |
-| --- | --- | --- |
-| `CPU` | `mCPU` (×1), `CPU` (×1000) | Fine-grained milli-CPU accounting or whole cores |
-| `memory` | `B`, `KiB`, `MiB`, `GiB`, … | Pool capacity and step requests can use the suffix the author chose |
-| `GPU`, `step run` | single unit each | One countable thing per slot |
+Use `authoritative` unless your infrastructure scheduler should remain the
+source of truth. `governance` is suitable with schedulers such as Kueue or
+Run:ai that handle allocation and preemption themselves. `advisory` is an
+advanced middle ground.
 
-When a demand, pool capacity row, or policy grant includes a `unit`, ZenML
-converts quantities using the descriptor's unit catalog. Typed `ResourceSettings`
-fields pick sensible defaults (`cpu_count` → unit `CPU`, `memory="16GiB"` → unit
-`GiB`). Custom descriptors with one unit (for example `{"name": "GPU", "multiplier": 1}`)
-can omit the catalog unless you expect multiple counting schemes.
+### Target bindings
 
-## Step 2: Define resource pools
+Targets describe how workloads enter the infrastructure. For pools, the main
+targets are stack components and service connectors:
 
-A pool declares how much capacity exists, split into classes.
+* Stack components, usually orchestrators or step operators, launch workloads.
+* Service connectors provide authentication to infrastructure resources.
 
-### CLI quick start (single default class)
-
-For a simple shared GPU bucket, the CLI accepts a flat map. Each key becomes one
-capacity class named `default` with `rank: 0` and `reclaimable: never`.
-
-```shell
-zenml resource-pool create org-gpu-pool \
-  --capacity '{"GPU": 16}' \
-  --description "Organization GPU pool"
-```
-
-Attach a component policy:
-
-```shell
-zenml resource-pool attach-policy org-gpu-pool prod-k8s-orch \
-  --component-type orchestrator \
-  --priority 100 \
-  --reserved '{"GPU": 8}' \
-  --limit '{"GPU": 16}'
-```
-
-This is enough for teams that only need one capacity bucket per resource. For
-reserved vs adhoc split, per-node pools, or reclaim risk, use the UI (below).
-
-{% hint style="warning" %}
-A GPU-only CLI capacity map is not enough for real pipeline steps. Also add
-`CPU`, `memory`, and `step run` to the pool (UI or SDK) and mirror them in
-policy grants. Otherwise steps that set `cpu_count`, `memory`, or implicit
-`step_run` demands are rejected even when GPUs are free.
-{% endhint %}
-
-### Full pool model (UI)
-
-Configure pools with multiple capacity classes in the ZenML Pro UI. The example
-below suits a team with dedicated H200 nodes plus shared burst capacity:
-production training stays on reserved capacity while experiments use adhoc
-capacity when it is available.
+The Resource Manager API uses `target_bindings` with a `target_selector`.
+Selectors must match the root-first subject chains attached to requests.
 
 ```json
 {
-  "name": "org-gpu-pool",
-  "description": "Shared H200 capacity across training clusters",
-  "capacity": [
+  "target_bindings": [
     {
-      "resource": "h200",
-      "class": "reserved",
-      "quantity": 16,
-      "rank": 100,
-      "reclaimable": "never",
-      "attributes": {
-        "tier": "tier-a-gpu",
-        "cost_profile": "already_paid"
-      }
-    },
-    {
-      "resource": "h200",
-      "class": "adhoc",
-      "quantity": 8,
-      "rank": 50,
-      "reclaimable": "never",
-      "attributes": {
-        "tier": "tier-a-gpu",
-        "cost_profile": "shared_burst"
-      }
-    },
-    {
-      "resource": "h200",
-      "class": "spot",
-      "quantity": 4,
-      "rank": 10,
-      "reclaimable": "unsafe",
-      "attributes": {
-        "tier": "tier-a-gpu",
-        "cost_profile": "spot"
+      "target_selector": {
+        "any": [
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "component",
+                "subject_id": "<step-operator-id>",
+                "attributes": {
+                  "component_type": "step_operator"
+                }
+              }
+            }
+          },
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "service_connector",
+                "subject_id": "<connector-id>",
+                "attributes": {
+                  "connector_type": "gcp"
+                }
+              }
+            }
+          }
+        ]
       }
     }
   ]
 }
 ```
 
-How to read this as an admin:
+See [Core concepts - Subject selectors](resource-pools-core-concepts.md#subject-selectors)
+for the full scope convention.
 
-- `rank` — which class the reconciler prefers when a request does not pin a
-  class (higher first). Put contract capacity (`reserved`) above burst (`adhoc`)
-  and spot.
-- `reclaimable` — how interruptible this bucket is from outside ZenML or from
-  coordinated preemption. Do not encode dollar cost here; use `attributes` for
-  display and matching only.
-- `attributes` — labels authors or selectors can target (for example
-  `tier: tier-a-gpu`).
+## Step 3: Add classes as resource bundles
 
-### One pool per Kubernetes node
+Classes are resource bundles. Model the shape your infrastructure actually
+offers instead of creating separate classes for each resource. For example,
+an H200 Kubernetes node pool should usually bundle H200 GPUs, CPU, and memory
+in the same class.
 
-When external inference runs on specific nodes and must reclaim capacity that
-pipeline jobs borrowed overnight, model each node (or node pool) as its own
-pool with selector-visible attributes:
+In the class form, configure:
+
+| UI area | What it controls |
+| --- | --- |
+| Class name | Pool-local label, such as `h200-reserved` |
+| Rank | Preference among classes; higher ranks are tried first |
+| Reclaimable | Whether capacity is safe from external reclaim: `never`, `coordinated`, or `unsafe` |
+| Concurrency limit | Optional cap on active requests in the class |
+| Resources | One or more descriptor quantities in the bundle |
+| Target settings | Component or service connector settings applied when the class wins |
+| Attributes | Metadata used by class selectors and operators |
+
+Use finite quantities for resources you want Resource Manager to limit at the
+class level. Use unlimited quantity for resources you want to track without a
+pool-class limit. Grants can still impose reservations and limits later.
+
+Example pool with two believable Kubernetes node-pool classes:
 
 ```json
 {
-  "name": "prod-eu-node-a",
+  "name": "prod-eu-gpu",
+  "description": "Production GPU capacity in the EU Kubernetes cluster",
+  "rank": 100,
+  "accounting_mode": "authoritative",
+  "concurrency_limit": 40,
+  "target_bindings": [
+    {
+      "target_selector": {
+        "any": [
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "component",
+                "subject_id": "<step-operator-id>",
+                "attributes": {
+                  "component_type": "step_operator"
+                }
+              }
+            }
+          },
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "service_connector",
+                "subject_id": "<connector-id>",
+                "attributes": {
+                  "connector_type": "gcp"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "classes": [
+    {
+      "class": "h200-reserved",
+      "rank": 100,
+      "reclaimable": "never",
+      "concurrency_limit": 8,
+      "resources": [
+        {"resource": "h200", "quantity": 8, "unit": "GPU"},
+        {"resource": "CPU", "quantity": 128, "unit": "CPU"},
+        {"resource": "memory", "quantity": 1024, "unit": "GiB"}
+      ],
+      "target_settings": [
+        {
+          "target_type": "component",
+          "settings": {
+            "pod_settings": {
+              "node_selector": {
+                "cloud.google.com/gke-nodepool": "h200-reserved"
+              },
+              "tolerations": [
+                {
+                  "key": "dedicated",
+                  "operator": "Equal",
+                  "value": "h200",
+                  "effect": "NoSchedule"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "attributes": {
+        "accelerator": "h200",
+        "purchase": "reserved"
+      }
+    },
+    {
+      "class": "a10-burst",
+      "rank": 40,
+      "reclaimable": "coordinated",
+      "concurrency_limit": 20,
+      "resources": [
+        {"resource": "GPU", "quantity": 16, "unit": "GPU"},
+        {"resource": "CPU", "quantity": null},
+        {"resource": "memory", "quantity": null}
+      ],
+      "target_settings": [
+        {
+          "target_type": "component",
+          "settings": {
+            "pod_settings": {
+              "node_selector": {
+                "cloud.google.com/gke-nodepool": "a10-burst"
+              }
+            }
+          }
+        }
+      ],
+      "attributes": {
+        "accelerator": "a10",
+        "purchase": "shared-burst"
+      }
+    }
+  ],
+  "target_settings": [
+    {
+      "target_type": "service_connector",
+      "settings": {
+        "connector_id": "<connector-id>",
+        "resource_type": "kubernetes-cluster",
+        "resource_id": "prod-eu"
+      }
+    }
+  ],
   "attributes": {
-    "kubernetes_cluster": "prod-eu",
-    "kubernetes_node": "node-a",
-    "gpu_profile": "h200"
-  },
-  "capacity": [
-    {
-      "resource": "h200",
-      "class": "reserved",
-      "quantity": 8,
-      "rank": 100,
-      "reclaimable": "never"
-    }
-  ]
+    "region": "eu-west-1",
+    "cluster": "prod-eu"
+  }
 }
 ```
 
-Repeat for `node-b`, `node-c`, and so on. External workload integrations target
-pools through these attributes (see
-[External workloads](resource-pools-external-workloads.md)).
+## Step 4: Attach policies
 
-## Step 3: Component settings on capacity classes
+Open a pool detail page and attach a policy. Policies answer "who may use this
+pool, with what priority, and under which limits?"
 
-When an allocation wins a specific class, ZenML merges component settings from
-that class onto the selected stack component. Use this for placement — for
-example Kubernetes node selectors and tolerations — not for CPU, memory, or GPU
-resource requests. The orchestrator or step operator adds those from the
-author's `ResourceSettings` on top of the merged `pod_settings`.
+In the policy form, configure:
 
-Configure `component_settings` on capacity classes in the UI. Example for a
-Kubernetes step operator on the `h200` / `reserved` class:
+| UI area | What it controls |
+| --- | --- |
+| Subjects | Who gets access. Common subjects are workspaces, projects, pipelines, accounts, service accounts, and teams |
+| Match mode | Whether any selected subject is enough or all must match |
+| Time window | Optional one-time, schedule, or cycle policy window |
+| Preemption group | Optional related-work selector that prevents self-preemption |
+| Priority or priority lane | Contention ordering |
+| Concurrency limit | Optional policy-wide active request cap |
+| Component target settings | Policy-level settings merged into the selected component |
+| Grants | Optional class-level reservations, limits, defaults, and grant concurrency limits |
+
+### Grant-based policy
+
+Use grants when you want reservations, per-team limits, defaults for omitted
+resources, or grant-level concurrency caps.
 
 ```json
 {
-  "resource": "h200",
-  "class": "reserved",
-  "component_settings": [
+  "pool": "prod-eu-gpu",
+  "subject_selector": {
+    "any": [
+      {
+        "subject_type": "organization",
+        "subject_id": "<org-id>",
+        "contains": {
+          "subject_type": "team",
+          "subject_id": "<ml-platform-team-id>"
+        }
+      }
+    ]
+  },
+  "priority": 100,
+  "priority_lane": false,
+  "concurrency_limit": 12,
+  "target_settings": [
     {
-      "component_type": "step_operator",
-      "flavor": "kubernetes",
+      "target_type": "component",
       "settings": {
         "pod_settings": {
-          "node_selectors": {
-            "accelerator": "h200",
-            "capacity": "reserved"
-          },
-          "tolerations": [
-            {
-              "key": "accelerator",
-              "operator": "Equal",
-              "value": "h200",
-              "effect": "NoSchedule"
-            }
-          ]
+          "labels": {
+            "zenml.io/resource-policy": "ml-platform-prod"
+          }
         }
       }
     }
-  ]
-}
-```
-
-Settings from the allocation override conflicting user step settings for the
-fields they set. Authors cannot weaken placement requirements enforced by the
-admin configuration.
-
-## Step 4: Define policies
-
-Policies connect a subject — a stack component or a user/service account — to a
-pool. Most policies use **grants**: one line per descriptor that caps how much
-capacity the subject may hold (`reserved`, `limit`) and which capacity classes
-apply.
-
-A **grantless** policy sets `grants: []` (no grant rows). The subject may
-consume any free capacity in the pool that matches the request's demands. There
-are no per-resource `reserved` or `limit` slices on the policy itself;
-contention is governed by pool capacity, policy priority, and the reconciler
-queue. Grantless admission still requires every demand to match a resource
-declared in the pool — it does not invent capacity the pool does not expose.
-
-Grantless policies are typical for per-node pools and external workloads where
-the integrator owns the whole machine. Pipeline step operators usually use
-explicit grants so teams get reserved slices and hard ceilings. See
-[Core concepts — Policies](resource-pools-core-concepts.md#policies-and-subjects).
-For maximum-priority admission and preemption, see
-[Priority lane policies](#priority-lane-policies) below.
-
-### Grants (grant-based policies)
-
-{% hint style="warning" %}
-These rules apply when the policy has one or more grant lines. Grantless
-policies skip per-resource grants; see above.
-
-Every grant line covers one descriptor by name. If a step requests a resource
-your grants do not include (including `CPU`, `memory`, or `step run`), the
-request is rejected — even when the pool has spare capacity.
-
-Requests with `reclaim_tolerance: none` must fit each grant's `reserved`
-amount. Zero reserved or a missing grant for a demanded resource causes
-immediate rejection.
-{% endhint %}
-
-### Component policies (pipeline workloads)
-
-For orchestrators and step operators, attach a policy in the UI or use the CLI
-for the simple `default`-class case (see CLI quick start above).
-
-Full policy shape (UI) — production training team on reserved and adhoc H200:
-
-```json
-{
-  "pool": "org-gpu-pool",
-  "component_id": "<prod-k8s-step-operator-uuid>",
-  "priority": 100,
+  ],
   "grants": [
     {
-      "resource": "h200",
-      "classes": ["reserved"],
-      "reserved": 8,
-      "limit": 8
-    },
-    {
-      "resource": "h200",
-      "classes": ["adhoc"],
-      "reserved": 0,
-      "limit": 8
+      "class": "h200-reserved",
+      "concurrency_limit": 6,
+      "resources": [
+        {
+          "resource": "h200",
+          "reserved": 4,
+          "limit": 8,
+          "unit": "GPU",
+          "missing_action": "reject"
+        },
+        {
+          "resource": "CPU",
+          "reserved": 32,
+          "limit": 128,
+          "unit": "CPU",
+          "missing_action": "default",
+          "default_value": 4
+        },
+        {
+          "resource": "memory",
+          "reserved": 256,
+          "limit": 1024,
+          "unit": "GiB",
+          "missing_action": "default",
+          "default_value": 16
+        }
+      ]
     }
   ]
 }
 ```
 
-Experimental team at lower priority, adhoc only:
+Grant resource behavior:
+
+* If a request demands a resource that is in the class but missing from the
+  grant, the grant cannot admit it.
+* `reserved` is the protected share for non-reclaimable work.
+* `limit: null` means the limit follows the class resource quantity.
+* `missing_action: "omit"` does not allocate an omitted resource.
+* `missing_action: "default"` allocates `default_value` when the request omits
+  the resource.
+* `missing_action: "reject"` requires the request to mention the resource.
+
+### Grantless policy
+
+Use `grants: []` when the subject should access every matching class resource
+in the pool without per-grant reservations or limits. The effective reservation
+is 0 and the effective limit is the class resource quantity.
 
 ```json
 {
-  "pool": "org-gpu-pool",
-  "component_id": "<sandbox-k8s-step-operator-uuid>",
-  "priority": 10,
-  "grants": [
-    {
-      "resource": "h200",
-      "classes": ["adhoc"],
-      "reserved": 0,
-      "limit": 8
-    }
-  ]
-}
-```
-
-This pattern keeps production training on a high-priority policy with reserved
-grants, while the sandbox team uses adhoc capacity at lower priority with
-coordinated reclaim tolerance on steps—so experiments do not displace
-production runs.
-
-### Account policies (users and service accounts)
-
-Account policies bind a workspace user or service account to a pool. Use them
-when workloads create direct resource requests through the workspace API rather
-than through a stack component — for example an inference autoscaler or another
-platform's jobs on shared GPU nodes. Configure in the UI (the CLI does not
-support account policies today).
-
-Set `account_id` instead of `component_id`. Otherwise the same grant rules
-apply: grant lines cap capacity per descriptor, or use `grants: []` for
-grantless admission (see Step 4 introduction). Set `priority` for normal
-contention ordering unless the subject needs the priority lane (see below).
-
-Example — service account with a capped adhoc GPU slice at medium priority:
-
-```json
-{
-  "pool": "prod-eu-node-b",
-  "account_id": "<batch-job-service-account-uuid>",
-  "priority": 50,
-  "grants": [
-    {
-      "resource": "h200",
-      "classes": ["adhoc"],
-      "reserved": 0,
-      "limit": 4
-    }
-  ]
-}
-```
-
-See [External workloads](resource-pools-external-workloads.md) for the
-integrator API flow (create, renew, terminate).
-
-### Priority lane policies
-
-The priority lane is an internal maximum priority tier for policies that must
-outrank normal pipeline contention — for example external inference reclaiming
-GPUs from overnight eval jobs, or another critical integration that cannot wait
-behind lower-priority ZenML runs.
-
-Set `priority_lane: true` on the policy. Do not set `priority`; the platform
-assigns the lane automatically. Priority-lane policies are usually grantless
-(`grants: []`) on a node-scoped pool so the subject can use all capacity the
-pool declares, but grant-based priority-lane policies are valid when you still
-need per-resource ceilings.
-
-Example — external workload bridge on a single node:
-
-```json
-{
-  "pool": "prod-eu-node-b",
-  "account_id": "<external-workload-bridge-service-account-uuid>",
+  "pool": "prod-eu-gpu",
+  "subject_selector": {
+    "any": [
+      {
+        "subject_type": "organization",
+        "subject_id": "<org-id>",
+        "contains": {
+          "subject_type": "account",
+          "subject_id": "<external-inference-service-account-id>",
+          "attributes": {
+            "is_service_account": true
+          }
+        }
+      }
+    ]
+  },
   "priority_lane": true,
+  "concurrency_limit": 20,
   "grants": []
 }
 ```
 
-At reconciliation time:
+Priority lane gives the policy the maximum Resource Manager priority. It can
+reclaim lower-priority work that opted into reclaim, but it does not bypass
+pool target bindings, class matching, or capacity checks in authoritative mode.
 
-| Interaction | Behavior |
+## Step 5: Use selectors intentionally
+
+Pool target selectors and policy subject selectors match the subjects attached
+to resource requests. The same subject can appear at different scopes, so write
+selectors root-first.
+
+Recommended main story:
+
+| Selector location | Common subject choices |
 | --- | --- |
-| Priority lane vs normal priority | Lane requests outrank normal policies and may preempt reclaimable allocations |
-| Normal vs priority lane | Normal requests cannot preempt priority-lane allocations |
-| Priority lane vs priority lane | Equal priority; neither preempts the other in the current release |
+| Pool targets | Stack components and service connectors |
+| Policies | Workspaces, projects, pipelines, user accounts, service accounts, and teams |
 
-Grantless priority-lane admission still requires every demand to match a resource
-declared in the pool. An external client that only requests GPUs needs a pool
-that declares GPU capacity; it does not bypass pool coverage.
+Avoid overly broad policies on scarce resources unless the pool is meant to be
+shared by everyone. Prefer a broad target binding, such as one step operator,
+and narrower policy subjects, such as one team or project.
 
-Priority-lane and grantless policies are UI- or SDK-only today. See
-[Reconciliation — Priority-lane interactions](resource-pools-reconciliation.md#priority-lane-interactions)
-for runtime behavior and
-[External workloads](resource-pools-external-workloads.md) for a full setup
-walkthrough.
+## Step 6: Operate pools
 
-### Multiple policies on the same pool
+Use the Resource Pools page and pool detail pages to inspect:
 
-One pool often carries several policies — for example a step-operator policy
-for pipeline workloads and a service-account policy for external reclaim on
-the same node. That is expected. What matters is what happens when one request
-matches more than one of them.
+* Pool classes and their bundled resources.
+* Policies attached to a pool.
+* Grant reservations and limits.
+* Active allocations and queued requests.
+* Which pool, class, policy, and grant admitted a request.
 
-Each resource request carries one or more subjects:
-
-| Request source | Subjects on the request |
-| --- | --- |
-| Pipeline step | Run owner (user or service account) and the stack component that launches the step (orchestrator or step operator) |
-| Direct API call | Authenticated user or service account only |
-
-A policy matches when its subject (`component_id` or `account_id`) appears on
-the request. If both a component policy and an account policy on the same pool
-match, the reconciler does not merge or combine them. It picks one policy path
-for that pool:
-
-1. Build allocation plans only for policy paths that can satisfy every demand
-   in the request (all-or-nothing per pool).
-2. Enqueue at most one queue entry per pool, bound to the eligible plan with
-   the highest `priority`. Priority-lane policies outrank numeric priorities.
-3. At equal priority, tie-break deterministically on capacity class rank, then
-   subject id, then policy id.
-
-The winning policy's grants (or grantless admission rules) govern allocation,
-preemption, and limits for that request on that pool. Lower-priority matching
-policies on the same pool are ignored for that request even though they remain
-configured.
-
-Example — production step operator at priority 100 with reserved H200 grants,
-same user's service account at priority 50 with a smaller adhoc slice on the
-same pool: pipeline steps queue through the component policy. Direct API calls
-from that service account use the account policy only (no component subject).
-
-Example — intentional override: attach a priority-lane grantless account policy
-on a node pool so external reclaim beats pipeline contention; pipeline steps
-still match the component policy, but the account path wins only when the
-request includes that account subject and the lane policy builds a complete
-plan.
-
-Avoid overlapping policies with incompatible grants on the same pool unless
-the priority ordering matches your intent. A higher-priority policy that cannot
-build a complete plan is skipped; the next eligible plan is used instead.
-
-### Multiple policies per component (different pools)
-
-{% hint style="warning" %}
-One step operator can have policies on several pools (for example primary and
-fallback regions). The same logical request may queue in each eligible pool,
-but at most one pool owns the active allocation. ZenML never splits one step
-across pools.
-
-Because any attached pool might win, every pool and policy must declare and
-grant every resource your users might request on that stack — including
-`CPU`, `memory`, `step run`, and any custom descriptors.
-{% endhint %}
-
-One step operator can have policies on several pools (for example primary and
-fallback regions). Higher policy priority is preferred when more than one pool
-could satisfy the same request. Every demand must be satisfiable from the
-winning pool alone.
-
-## Step 5: Inspect pool state
-
-Use the UI to view occupied capacity, queue length, and active requests.
-
-CLI inspection:
+The CLI can inspect resource requests:
 
 ```shell
-zenml resource-pool list
-zenml resource-pool describe org-gpu-pool
-zenml resource-pool list-policies org-gpu-pool
-zenml resource-pool requests org-gpu-pool --view all
 zenml resource-request list --status pending
+zenml resource-request list --pool-id <pool-id>
+zenml resource-request describe <request-id>
 ```
 
-## CLI and SDK limits
+Pool, descriptor, class, policy, grant, and allocation configuration is done
+through the UI or the Resource Manager API, not the ZenML CLI.
 
-| Feature | CLI | UI |
-| --- | --- | --- |
-| Flat pool capacity (`default` class) | Yes | Yes |
-| Multiple capacity classes, rank, reclaimable | No | Yes |
-| Pool attributes (for pool selectors) | No | Yes |
-| Component settings on classes | No | Yes |
-| Resource descriptors | No | Yes |
-| Component attach-policy (default class) | Yes | Yes |
-| Full grants with multiple classes | No | Yes |
-| Account / service-account policies | No | Yes |
-| Priority-lane policies | No | Yes |
-| Grantless policies | No | Yes |
+## Checklist
 
-The Python SDK (`Client().create_resource_pool`, `create_resource_policy`,
-`create_resource_descriptor`) supports the full model programmatically for
-automation; descriptors and advanced pool fields are not exposed on the CLI.
+Before handing a pool to users:
+
+* Descriptors use stable names and kinds.
+* Classes bundle resources the way infrastructure actually provides them.
+* CPU and memory are included when they matter for scheduling or traceability.
+* Unlimited class resources are intentional and documented for operators.
+* Target bindings match the stack components or service connectors that will
+  appear on runtime requests.
+* Policies use the right subjects for access control.
+* Grant-based policies include every class resource that requests may demand,
+  or use `missing_action: "default"` where a default allocation is desired.
+* Priority-lane policies are reserved for critical or external workloads that
+  genuinely need maximum priority.
+* Accounting mode is `authoritative` unless another scheduler owns allocation.
 
 ## See also
 
-* [Core concepts](resource-pools-core-concepts.md) — definitions
-* [User guide](resource-pools-user-guide.md) — what authors set on steps
-* [External workloads](resource-pools-external-workloads.md) — service accounts and priority lanes
-* [Examples](resource-pools-examples.md) — end-to-end scenarios
-* [Reconciliation process](resource-pools-reconciliation.md) — what happens at runtime
+* [Core concepts](resource-pools-core-concepts.md) - definitions and selector
+  conventions.
+* [User guide](resource-pools-user-guide.md) - what pipeline authors configure.
+* [External workloads](resource-pools-external-workloads.md) - direct Resource
+  Manager requests and priority-lane patterns.
+* [Examples](resource-pools-examples.md) - end-to-end scenarios.
+* [Reconciliation process](resource-pools-reconciliation.md) - runtime behavior.
