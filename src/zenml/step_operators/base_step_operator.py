@@ -65,12 +65,20 @@ class BaseStepOperator(StackComponent, ABC):
         """
         return StepOperatorEntrypointConfiguration
 
+    @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the step operator supports resource pool allocations.
+
+        Returns:
+            Whether the step operator supports resource pool allocations.
+        """
+        return False
+
     def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit a step run.
 
@@ -82,8 +90,6 @@ class BaseStepOperator(StackComponent, ABC):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
 
         Raises:
             NotImplementedError: If the step operator does not implement this
@@ -92,6 +98,84 @@ class BaseStepOperator(StackComponent, ABC):
         raise NotImplementedError(
             "Submitting step runs is not implemented for "
             f"the {self.__class__.__name__} step operator."
+        )
+
+    def submit_with_allocation(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
+    ) -> None:
+        """Submit a step run with an allocated resource request.
+
+        Args:
+            info: Information about the step run.
+            entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
+
+        Raises:
+            NotImplementedError: If the step operator declares resource pool
+                allocation support but does not implement this method.
+        """
+        if self.supports_resource_pool_allocation:
+            raise NotImplementedError(
+                f"The {self.__class__.__name__} step operator declares "
+                "resource pool allocation support but does not implement "
+                "`submit_with_allocation(...)`."
+            )
+
+        _ = allocated_resource_request
+        self.submit(
+            info=info,
+            entrypoint_command=entrypoint_command,
+            environment=environment,
+        )
+
+    def launch_with_allocation(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
+    ) -> None:
+        """Launch a step run with an allocated resource request.
+
+        Args:
+            info: Information about the step run.
+            entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
+
+        Raises:
+            NotImplementedError: If the step operator declares resource pool
+                allocation support but does not implement this method, or if no
+                legacy launch method exists.
+        """
+        if self.supports_resource_pool_allocation:
+            raise NotImplementedError(
+                f"The {self.__class__.__name__} step operator declares "
+                "resource pool allocation support but does not implement "
+                "`launch_with_allocation(...)`."
+            )
+
+        launch = getattr(self, "launch", None)
+        if not callable(launch):
+            raise NotImplementedError(
+                f"The {self.__class__.__name__} step operator does not "
+                "implement the legacy `launch(...)` method."
+            )
+
+        _ = allocated_resource_request
+        launch(
+            info=info,
+            entrypoint_command=entrypoint_command,
+            environment=environment,
         )
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:

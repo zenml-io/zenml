@@ -57,11 +57,7 @@ from zenml.utils.string_utils import random_str
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import (
-        PipelineSnapshotBase,
-        ResourceRequestResponse,
-        StepRunResponse,
-    )
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -215,7 +211,6 @@ class SagemakerStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submits a step run to SageMaker.
 
@@ -224,8 +219,6 @@ class SagemakerStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
         """
         if not info.config.resource_settings.empty:
             logger.warning(

@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
-        ResourceRequestResponse,
         StepRunResponse,
     )
 
@@ -519,18 +518,13 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
     def submit_isolated_step(
-        self,
-        step_run_info: "StepRunInfo",
-        environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Submit a dynamic isolated step sandbox to Modal.
 
         Args:
             step_run_info: Information about the isolated step run.
             environment: Runtime environment for the step sandbox.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
 
         Raises:
             Exception: If sandbox metadata cannot be published after the
