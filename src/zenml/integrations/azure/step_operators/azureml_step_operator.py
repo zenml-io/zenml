@@ -39,11 +39,7 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import (
-        PipelineSnapshotBase,
-        ResourceRequestResponse,
-        StepRunResponse,
-    )
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -213,7 +209,6 @@ class AzureMLStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submits a step run to AzureML.
 
@@ -222,8 +217,6 @@ class AzureMLStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
         """
         settings = cast(AzureMLStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=AZUREML_STEP_OPERATOR_DOCKER_IMAGE_KEY)

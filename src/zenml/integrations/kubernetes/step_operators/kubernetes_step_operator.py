@@ -85,6 +85,15 @@ class KubernetesStepOperator(BaseStepOperator):
         return KubernetesStepOperatorSettings
 
     @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the step operator supports resource pool allocations.
+
+        Returns:
+            Whether the step operator supports resource pool allocations.
+        """
+        return True
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -203,12 +212,12 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         return k8s_client.BatchV1Api(self.get_kube_client())
 
-    def submit(
+    def submit_with_allocation(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submits a step run to Kubernetes.
 

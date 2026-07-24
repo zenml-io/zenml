@@ -254,6 +254,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         """
         return KubernetesOrchestratorSettings
 
+    @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the orchestrator supports resource pool allocations.
+
+        Returns:
+            Whether the orchestrator supports resource pool allocations.
+        """
+        return True
+
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
 
@@ -881,11 +890,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{body.get('message', '')}"
             )
 
-    def submit_isolated_step(
+    def submit_isolated_step_with_allocation(
         self,
         step_run_info: "StepRunInfo",
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submit an isolated step.
 

@@ -558,15 +558,53 @@ class BaseOrchestrator(StackComponent, ABC):
         return (
             getattr(self.submit_isolated_step, "__func__", None)
             is not BaseOrchestrator.submit_isolated_step
+            or getattr(
+                self.submit_isolated_step_with_allocation, "__func__", None
+            )
+            is not BaseOrchestrator.submit_isolated_step_with_allocation
         )
+
+    @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the orchestrator supports resource pool allocations.
+
+        Returns:
+            Whether the orchestrator supports resource pool allocations.
+        """
+        return False
 
     def submit_isolated_step(
         self,
         step_run_info: "StepRunInfo",
         environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit an isolated step.
+
+        Implementations should use
+        `zenml.orchestrators.utils.get_step_entrypoint_command(...)` to get
+        the command and arguments to run the step.
+
+        Args:
+            step_run_info: The step run information.
+            environment: The environment variables to set in the execution
+                environment.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Submitting isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def submit_isolated_step_with_allocation(
+        self,
+        step_run_info: "StepRunInfo",
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
+    ) -> None:
+        """Submit an isolated step with an allocated resource request.
 
         Implementations should use
         `zenml.orchestrators.utils.get_step_entrypoint_command(...)` to get
@@ -580,12 +618,20 @@ class BaseOrchestrator(StackComponent, ABC):
                 step, if any.
 
         Raises:
-            NotImplementedError: If the orchestrator does not implement this
-                method.
+            NotImplementedError: If the orchestrator declares resource pool
+                allocation support but does not implement this method.
         """
-        raise NotImplementedError(
-            "Submitting isolated steps is not implemented for "
-            f"the {self.__class__.__name__} orchestrator."
+        if self.supports_resource_pool_allocation:
+            raise NotImplementedError(
+                f"The {self.__class__.__name__} orchestrator declares "
+                "resource pool allocation support but does not implement "
+                "`submit_isolated_step_with_allocation(...)`."
+            )
+
+        _ = allocated_resource_request
+        self.submit_isolated_step(
+            step_run_info=step_run_info,
+            environment=environment,
         )
 
     def get_isolated_step_status(

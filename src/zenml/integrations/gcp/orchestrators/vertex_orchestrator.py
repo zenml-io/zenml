@@ -118,7 +118,6 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
-        ResourceRequestResponse,
         ScheduleResponse,
         StepRunResponse,
     )
@@ -758,18 +757,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         )
 
     def submit_isolated_step(
-        self,
-        step_run_info: "StepRunInfo",
-        environment: Dict[str, str],
-        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Runs an isolated step on Vertex.
 
         Args:
             step_run_info: The step run information.
             environment: The environment variables to set.
-            allocated_resource_request: The allocated resource request for the
-                step, if any.
         """
         settings = cast(
             VertexOrchestratorSettings, self.get_settings(step_run_info)

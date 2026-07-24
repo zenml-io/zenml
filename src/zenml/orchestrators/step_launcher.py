@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import inspect
 import time
 from contextlib import nullcontext
 from datetime import timedelta
@@ -104,32 +103,6 @@ def _get_step_operator(
         )
 
     return step_operator
-
-
-def _call_with_optional_allocated_resource_request(
-    method: Callable[..., Any],
-    allocated_resource_request: Optional["ResourceRequestResponse"],
-    **kwargs: Any,
-) -> Any:
-    """Call a method with the allocation keyword when it is supported.
-
-    Args:
-        method: Method to call.
-        allocated_resource_request: Allocated resource request to pass when
-            supported by the method signature.
-        kwargs: Keyword arguments forwarded to the method.
-
-    Returns:
-        The return value from the method call.
-    """
-    parameters = inspect.signature(method).parameters
-    if "allocated_resource_request" in parameters or any(
-        parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters.values()
-    ):
-        kwargs["allocated_resource_request"] = allocated_resource_request
-
-    return method(**kwargs)
 
 
 class StepLauncher:
@@ -597,14 +570,16 @@ class StepLauncher:
         )
 
         try:
-            _call_with_optional_allocated_resource_request(
-                step_operator.submit,
-                allocated_resource_request=allocated_resource_request,
+            step_operator.submit_with_allocation(
                 info=step_run_info,
                 entrypoint_command=entrypoint_command,
                 environment=environment,
+                allocated_resource_request=allocated_resource_request,
             )
         except NotImplementedError:
+            if step_operator.supports_resource_pool_allocation:
+                raise
+
             if not self._wait:
                 # We're running in a dynamic pipeline and for the monitoring to
                 # work correctly, we only allow running with step operators that
@@ -629,12 +604,11 @@ class StepLauncher:
                     step_operator.name,
                 )
                 try:
-                    _call_with_optional_allocated_resource_request(
-                        step_operator.launch,
-                        allocated_resource_request=allocated_resource_request,
+                    step_operator.launch_with_allocation(
                         info=step_run_info,
                         entrypoint_command=entrypoint_command,
                         environment=environment,
+                        allocated_resource_request=allocated_resource_request,
                     )
                 finally:
                     try:
@@ -672,7 +646,7 @@ class StepLauncher:
     def _run_step_with_dynamic_orchestrator(
         self,
         step_run_info: StepRunInfo,
-        allocated_resource_request: Optional[ResourceRequestResponse],
+        allocated_resource_request: Optional[ResourceRequestResponse] = None,
     ) -> Optional[StepRunResponse]:
         """Runs the current step with a dynamic orchestrator.
 
@@ -699,11 +673,10 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        _call_with_optional_allocated_resource_request(
-            self._stack.orchestrator.submit_isolated_step,
-            allocated_resource_request=allocated_resource_request,
+        self._stack.orchestrator.submit_isolated_step_with_allocation(
             step_run_info=step_run_info,
             environment=environment,
+            allocated_resource_request=allocated_resource_request,
         )
         if self._wait:
             try:
@@ -758,7 +731,7 @@ class StepLauncher:
     def _cleanup_remote_step(
         self,
         step_run: StepRunResponse,
-        allocated_resource_request: Optional[ResourceRequestResponse],
+        allocated_resource_request: Optional[ResourceRequestResponse] = None,
     ) -> None:
         """Clean up infrastructure after a remote step has finished.
 
