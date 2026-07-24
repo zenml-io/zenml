@@ -16,244 +16,235 @@ see the [pricing page](https://www.zenml.io/pricing).
 Resource pools are only available for [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
 {% endhint %}
 
-If you run AI or ML work in a shared environment, you have probably seen the
-same problems: jobs fighting over GPUs, surprise slowdowns when another team
-launches a big run, or expensive hardware sitting idle while someone waits in a
-queue. Resource pools are ZenML Pro's answer. They are aimed at platform and
-team leaders who need clear rules, and at practitioners who want their steps to
-get the right compute without babysitting the cluster.
+Resource pools let platform teams describe shared infrastructure once and let
+ZenML decide when a dynamic pipeline step may run. A pool is a virtual ledger
+over real infrastructure: Kubernetes node pools, GPU machines, cloud machine
+types, service connector resources, or any other bounded platform resource.
 
-The feature is built around three actors:
+The current user-facing configuration flow is in the ZenML Pro UI:
+
+* Organization-level pools: **Organization Settings > Resource Pools**.
+* Workspace-level pools: **Workspace Settings > Resource Pools**.
+
+Both pages use the same concepts. Admins define descriptors, create pools,
+group resources into pool classes, attach policies, and inspect requests from
+the UI. The JSON examples in this section use the Resource Manager REST API
+shape for teams that automate the same configuration.
+
+## Who uses resource pools
 
 | Actor | Role |
 | --- | --- |
-| Platform admin | Defines the organization's resource language, pools, capacity classes, policies, and stack-component settings |
-| Pipeline author | Annotates steps with `ResourceSettings` — CPU, memory, GPUs — without knowing cluster details |
-| ZenML + reconciler | Converts step settings into resource requests, queues and allocates capacity, renews leases, and applies runtime settings to stack components |
+| Platform admin | Defines resource descriptors, pools, classes, target bindings, target settings, and policies |
+| Pipeline author | Annotates dynamic steps with `ResourceSettings` such as CPU, memory, GPU count, custom resources, and reclaim tolerance |
+| ZenML and the reconciler | Convert step settings into resource requests, match policies, queue work, allocate capacity, renew leases, and merge target settings into selected stack components |
 
-## Problems this feature addresses
+## What resource pools solve
 
-These scenarios come from real platform requirements.
+### Production jobs need dependable capacity
 
-### Production jobs must finish — no surprises
+Critical training, fine-tuning, and inference steps should not disappear
+because another team launched a sweep. Policies reserve slices of shared
+capacity, assign priority, and decide which work can be interrupted when
+contention appears.
 
-A team runs long training, fine-tuning, or inference that cannot vanish because
-someone else submitted a heavier workload. They need a clear agreement: this
-stack or team gets a dependable slice of capacity, and critical steps are not
-stopped to make room for ad hoc work. Production workloads stay on reserved
-capacity; experiments may borrow burst capacity only when they accept
-interruption.
+### Shared hardware should not sit idle
 
-### We share one pool of GPUs across many teams
+Reserved capacity can be protected for production while lower-priority work
+uses idle capacity up to a configured limit. When higher-priority work returns,
+the reconciler can reclaim capacity from work that opted into interruption.
 
-One place describes how much capacity exists, who may use it, and what happens
-when everyone wants it at once — without maintaining a separate spreadsheet or
-manual booking process for every pipeline. Teams compete through priority and
-queue order instead of opaque cluster politics.
+### Infrastructure is bundled in real life
 
-### We paid for the hardware — we should use it when it is free
+Modern infrastructure rarely gives you a GPU without CPU, memory, storage, and
+placement constraints. Resource pool classes now model those real bundles. A
+class can contain H200 GPUs, CPU, memory, and other descriptors together, with
+one class rank, one reclaimability setting, and optional target settings.
 
-When one group is quiet, other teams use spare capacity so machines do not sit
-empty. The original team gets their capacity back when they return, without a
-long negotiation or a cluster reconfiguration every time. Preemptible steps can
-use adhoc or spot classes; non-preemptible steps stay within reserved grants.
+### Authors should request intent, not cluster details
 
-### Engineers describe needs; ops maps them to reality
-
-Pipeline authors say what each step requires — GPUs, CPU, memory, optional
-GPU class. Platform ops defines descriptors, pools, capacity classes,
-and policies that tie stacks to shared capacity. The same pipeline code can run
-in different environments or stages without hard-coding cluster names, node
-pools, or taint tolerations.
-
-### I need an H200 — find the right GPU for me
-
-An engineer declares `gpu_count` and optionally `gpu_class` (for example
-`reserved` or a hardware tier). They should not have to know which Kubernetes
-cluster, node pool, or step operator currently has free H200s. Admins model
-GPUs as descriptors with `kind: "gpu"` and pool classes; ZenML resolves the
-request to a pool, class, and stack component with the right placement settings.
-
-### We need to ration more than just GPUs
-
-Alongside standard compute, an organization may need to track licenses, special
-hardware slots, or how many pipeline steps may run at once. Resource descriptors
-and pool capacity cover any countable resource the platform agrees to name.
-Parallel step runs are modeled through the `step run` descriptor so admins can
-cap concurrency alongside GPU demand.
-
-### Too many steps at once should queue, not stampede
-
-One engineer launches ten sweep variants at 6pm; the pool has four GPUs. The
-first four allocate; the rest queue automatically and roll in as slots free.
-The user walks away and expects all ten to finish overnight — without manually
-staggering submissions or watching the cluster.
-
-### Higher-priority teams should win fairly
-
-Two teams share one pool. Production training runs at high priority on reserved
-capacity. A sandbox team runs eval jobs at lower priority on adhoc capacity.
-When production needs its reserved slice, lower-priority work yields only when
-policy and reclaim tolerance allow — not through ad hoc cluster intervention.
-
-### Inference scales up and must reclaim GPUs from low-priority work
-
-A team runs inference on shared GPU nodes. When traffic ramps up at peak hours,
-external workloads (managed outside ZenML pipelines) must take priority over
-opportunistic ZenML jobs that borrowed idle capacity overnight. Capacity returns
-through preemption and lease release; eval steps re-queue when adhoc frees again.
-
-### Map shared capacity to real infrastructure
-
-Platform ops needs pools and classes to correspond to actual nodes or node
-pools — reserved H200 nodes in one region, spot burst in another. Component
-settings on capacity classes apply node selectors and tolerations when ZenML
-launches the step. The orchestrator or step operator adds CPU, memory, and GPU
-resource requests from the author's `ResourceSettings` on top of those placement
-settings. Authors still request by kind; admins own the mapping to Kubernetes.
-
-### Tell me why my run is queued
-
-A step has been pending for twenty minutes. The engineer wants to know whether
-it is making progress or stuck — waiting for reserved capacity, blocked behind
-higher-priority work, or rejected by policy rules. Run and request views should
-show status and a plain-language reason so nobody has to ask in chat for queue
-weather updates.
-
-### Critical versus best-effort should be an explicit choice
-
-Authors choose reclaim tolerance (or legacy `preemptible`) per step.
-Non-reclaimable steps opt into a smaller dependable slice: they only consume
-reserved capacity and are not evicted for pool reasons. Best-effort steps may
-access burst capacity but can be interrupted when higher-priority work needs
-GPUs — with automatic re-queue when retries are configured.
-
-None of this replaces your orchestrator or cloud provider. ZenML coordinates
-demand on top of your existing infrastructure so teams see fair queuing,
-optional sharing of idle capacity, and explicit rules for critical versus
-best-effort work.
-
-## How it works: language, intent, realization
-
-ZenML separates three concerns:
-
-1. Language — Admins define the organization's resource vocabulary and capacity
-   rules:
-   - Resource descriptors — what can be requested (`h200`, `GPU`, `CPU`, custom
-     licenses).
-   - Resource pools — how much of each descriptor exists, split into capacity
-     classes such as `reserved`, `adhoc`, or `spot`.
-   - Policies — which stack components or accounts may draw from each pool,
-     with grants (reserved, limit, priority) that govern who gets which slice.
-2. Intent — Authors express workload needs through `ResourceSettings` on
-   pipeline steps, or external clients create direct resource requests.
-3. Realization — When a step is ready to run, ZenML resolves the request to
-   a pool, class, and stack component, merges placement-related component
-   settings from the winning allocation (for example Kubernetes node selectors
-   and tolerations), and the orchestrator or step operator applies resource
-   requests from the author's `ResourceSettings`.
-
-```mermaid
-flowchart LR
-    Admin[Platform admin<br/>Descriptors, pools, policies]
-    User[Pipeline author<br/>ResourceSettings on steps]
-    ZenML[ZenML workspace<br/>Requests, leases, translation]
-    Reconciler[Reconciler<br/>Queue, allocate, preempt]
-    Infra[Stack components<br/>Orchestrator, step operator]
-
-    Admin -->|descriptors, pools, policies| ZenML
-    User -->|resource intent| ZenML
-    ZenML -->|resource requests| Reconciler
-    Reconciler -->|allocations| ZenML
-    ZenML -->|final step config| Infra
-```
-
-Stock descriptors (`CPU`, `memory`, `GPU`, `step run`) ship with every
-organization so you can bootstrap quickly. Admins extend the catalog, declare
-pool capacity, and attach policies in the ZenML Pro UI (see
-[Admin guide](resource-pools-admin-guide.md)).
-
-## A minimal walkthrough
-
-1. Admin defines a pool (CLI quick start).
-Platform ops create a workspace pool and record how much of each resource exists
-there. The CLI accepts a flat capacity map; under the hood each key becomes a
-`default` capacity class.
-
-```shell
-zenml resource-pool create datacenter-gpus \
-  --capacity '{"GPU": 8}' \
-  --description "Shared training GPUs"
-```
-
-For multiple capacity classes, per-class ranks, reclaim risk, and component
-settings, use the ZenML Pro UI (see [Admin guide](resource-pools-admin-guide.md)).
-
-{% hint style="warning" %}
-Real pipeline steps also request CPU, memory, and (for isolated dynamic steps)
-a `step run` slot. The CLI example above only models `GPU`. For production
-stacks, add `CPU`, `memory`, and `step run` to the pool and policy grants in
-the UI (or SDK). There is no unbounded fallback — missing resources reject the
-request even when GPUs are free. See [Admin guide](resource-pools-admin-guide.md).
-{% endhint %}
-
-2. Admin attaches a policy.
-
-They bind a stack component (orchestrator or step operator) to the pool with
-reserved amounts, limits, and priority.
-
-```shell
-zenml resource-pool attach-policy datacenter-gpus prod-k8s-orch \
-  --priority 100 \
-  --reserved '{"GPU": 4}' \
-  --limit '{"GPU": 8}'
-```
-
-3. Author annotates a step.  
-The data scientist declares GPUs, CPU, and memory on the step. ZenML converts
-typed fields into resource demands by kind.
+Pipeline authors request resources by kind:
 
 ```python
-from zenml import step, pipeline
+from zenml import pipeline, step
 from zenml.config import ResourceSettings
+
 
 @step(
     settings={
         "resources": ResourceSettings(
             gpu_count=2,
-            cpu_count=4,
-            memory="16GiB",
+            gpu_class="h200-reserved",
+            cpu_count=8,
+            memory="64GiB",
+            reclaim_tolerance="none",
         )
     }
 )
 def train() -> None:
     ...
 
+
 @pipeline(dynamic=True)
-def my_pipeline() -> None:
+def training_pipeline() -> None:
     train()
 ```
 
-When they launch a dynamic run on a stack whose orchestrator has a policy on
-`datacenter-gpus`, ZenML creates a resource request. If capacity is free, the
-step proceeds; if not, it waits in the queue; if the ask breaks policy rules,
-it fails fast with a clear status.
+Admins decide which pool, class, stack component, node selector, toleration,
+and service connector satisfy that intent.
+
+## How it works
+
+ZenML separates resource governance into three layers:
+
+1. **Language**: resource descriptors define names, kinds, units, and
+   attributes. Stock descriptors are `CPU`, `memory`, and `GPU`; admins can add
+   custom descriptors such as `h200` or `training-license`.
+2. **Supply**: resource pools and classes describe the resource bundles that
+   exist. A Kubernetes H200 node-pool class might include `h200`, `CPU`, and
+   `memory` together.
+3. **Access**: policies and grants decide which subjects may use a pool, at
+   which priority, with which reservations, limits, defaults, concurrency caps,
+   and target settings.
+
+```mermaid
+flowchart LR
+    Admin[Platform admin<br/>Descriptors, pools, classes, policies]
+    Author[Pipeline author<br/>ResourceSettings]
+    Workspace[ZenML workspace<br/>Resource requests]
+    RM[Resource Manager<br/>Admission and reconciliation]
+    Target[Stack component<br/>Orchestrator or step operator]
+
+    Admin --> Workspace
+    Author --> Workspace
+    Workspace --> RM
+    RM --> Workspace
+    Workspace --> Target
+```
+
+## Minimal UI walkthrough
+
+1. Open **Organization Settings > Resource Pools** or
+   **Workspace Settings > Resource Pools**.
+2. Add or review resource descriptors. Use the stock `CPU`, `memory`, and
+   `GPU` descriptors for common requests; add custom descriptors for specific
+   hardware or licenses.
+3. Create a resource pool. Choose the accounting mode, rank, optional pool
+   concurrency limit, and the target subjects that the pool governs.
+4. Add classes to the pool. Each class is a resource bundle, for example
+   `h200-reserved` with H200 GPUs, CPU, and memory. A class resource can be
+   finite or unlimited. Unlimited class resources are tracked for traceability
+   but are not limited at the pool-class level.
+5. Configure pool or class target settings. The UI exposes component settings
+   and service connector settings where they are currently supported.
+6. Open the pool detail page and attach policies. Policies select who may use
+   the pool. Grants optionally reserve and limit resources inside individual
+   classes. A policy with `grants: []` admits the subject to all matching
+   classes in the pool with reservation 0 and limits equal to the class
+   resources.
+7. Run dynamic pipelines. ZenML creates resource requests when steps are ready,
+   queues them if needed, and applies selected settings when capacity is
+   allocated.
+
+## Minimal API shape
+
+The exact Resource Manager REST API uses nested subject selectors and class
+resource bundles. This shortened example shows the important shape:
+
+```json
+{
+  "name": "prod-h200-pool",
+  "description": "Production H200 Kubernetes capacity",
+  "rank": 100,
+  "accounting_mode": "authoritative",
+  "concurrency_limit": 24,
+  "target_bindings": [
+    {
+      "target_selector": {
+        "any": [
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "component",
+                "subject_id": "<step-operator-id>",
+                "attributes": {
+                  "component_type": "step_operator"
+                }
+              }
+            }
+          },
+          {
+            "subject_type": "organization",
+            "subject_id": "<org-id>",
+            "contains": {
+              "subject_type": "workspace",
+              "subject_id": "<workspace-id>",
+              "contains": {
+                "subject_type": "service_connector",
+                "subject_id": "<connector-id>",
+                "attributes": {
+                  "connector_type": "gcp"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "classes": [
+    {
+      "class": "h200-reserved",
+      "rank": 100,
+      "reclaimable": "never",
+      "concurrency_limit": 8,
+      "resources": [
+        {"resource": "h200", "quantity": 8, "unit": "GPU"},
+        {"resource": "CPU", "quantity": 128, "unit": "CPU"},
+        {"resource": "memory", "quantity": 1024, "unit": "GiB"}
+      ]
+    }
+  ],
+  "target_settings": [
+    {
+      "target_type": "service_connector",
+      "settings": {
+        "connector_id": "<connector-id>",
+        "resource_type": "kubernetes-cluster",
+        "resource_id": "prod-eu"
+      }
+    }
+  ],
+  "attributes": {
+    "region": "eu-west-1",
+    "platform": "kubernetes"
+  }
+}
+```
+
+Continue with the [Core concepts](resource-pools-core-concepts.md) for the
+schema and selector conventions, then use the
+[Admin guide](resource-pools-admin-guide.md) for the UI workflow.
 
 ## Where to go next
 
 | Page | For whom | What you learn |
 | --- | --- | --- |
-| [Core concepts](resource-pools-core-concepts.md) | Everyone | Descriptors, pools, classes, policies, requests, leases |
-| [Admin guide](resource-pools-admin-guide.md) | Platform admins | Build vocabulary, pools, policies, component settings |
-| [User guide](resource-pools-user-guide.md) | Pipeline authors | `ResourceSettings`, reclaim tolerance, inspecting requests |
-| [External workloads](resource-pools-external-workloads.md) | Platform admins, integrators | Service accounts, direct requests, priority lanes |
-| [Reconciliation process](resource-pools-reconciliation.md) | Admins, operators | Queueing, preemption, leases, heartbeats |
-| [Examples](resource-pools-examples.md) | Everyone | End-to-end scenarios in increasing complexity |
+| [Core concepts](resource-pools-core-concepts.md) | Everyone | Descriptors, pool classes as bundles, policies, subjects, requests, leases |
+| [Admin guide](resource-pools-admin-guide.md) | Platform admins | Configure descriptors, pools, classes, target settings, policies, and grants in the UI |
+| [User guide](resource-pools-user-guide.md) | Pipeline authors | `ResourceSettings`, reclaim tolerance, and request inspection |
+| [External workloads](resource-pools-external-workloads.md) | Platform admins, integrators | Service accounts, direct requests, and priority lanes |
+| [Reconciliation process](resource-pools-reconciliation.md) | Admins, operators | Queueing, accounting modes, preemption, leases, and heartbeats |
+| [Examples](resource-pools-examples.md) | Everyone | Believable end-to-end resource pool setups |
 
 ## See also
 
-* [Workspaces](./workspaces.md) — pools are managed at workspace scope today.
-* [Teams](./teams.md) — organizational context for who owns stacks and policies.
-* [Service accounts](./service-accounts.md) — identity for external workload
+* [Workspaces](./workspaces.md) - workspace-scoped pools and settings.
+* [Teams](./teams.md) - organizational subjects for policy access.
+* [Service accounts](./service-accounts.md) - identity for external workload
   integrations.
 * ZenML OSS: [step and pipeline configuration](https://docs.zenml.io/how-to/steps-pipelines/configuration).
