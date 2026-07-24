@@ -1047,7 +1047,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 str(e),
             )
 
-        logger.info(
+        logger.debug(
             "Launched job for step `%s`.",
             step_run_info.pipeline_step_name,
         )
