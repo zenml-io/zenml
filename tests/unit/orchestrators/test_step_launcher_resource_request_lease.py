@@ -417,10 +417,12 @@ def test_dynamic_orchestrator_receives_allocated_resource_request(
         status=ResourceRequestStatus.ALLOCATED,
         lease_expires_at=datetime.now(tz=timezone.utc),
     )
-    submit_isolated_step = MagicMock()
+    submit_isolated_step_with_allocation = MagicMock()
     launcher._stack = MagicMock(
         orchestrator=MagicMock(
-            submit_isolated_step=submit_isolated_step,
+            submit_isolated_step_with_allocation=(
+                submit_isolated_step_with_allocation
+            ),
         )
     )
     launcher._wait = False
@@ -440,7 +442,9 @@ def test_dynamic_orchestrator_receives_allocated_resource_request(
     )
 
     assert (
-        submit_isolated_step.call_args.kwargs["allocated_resource_request"]
+        submit_isolated_step_with_allocation.call_args.kwargs[
+            "allocated_resource_request"
+        ]
         == allocated
     )
 
@@ -466,9 +470,10 @@ def test_step_operator_receives_allocated_resource_request(monkeypatch):
         name="step_operator",
         entrypoint_config_class=EntrypointConfiguration,
     )
-    step_operator.submit = MagicMock()
+    step_operator.submit_with_allocation = MagicMock()
     launcher._stack = MagicMock(
-        get_step_operator=MagicMock(return_value=step_operator)
+        step_operator=step_operator,
+        step_operators={},
     )
     launcher._snapshot = MagicMock(id=uuid4())
     launcher._invocation_id = "step"
@@ -494,10 +499,8 @@ def test_step_operator_receives_allocated_resource_request(monkeypatch):
     )
 
     assert (
-        step_operator.submit.call_args.kwargs["allocated_resource_request"]
+        step_operator.submit_with_allocation.call_args.kwargs[
+            "allocated_resource_request"
+        ]
         == allocated
-    )
-    launcher._stack.get_step_operator.assert_called_once_with(
-        name=None,
-        allocated_resource_request=allocated,
     )
