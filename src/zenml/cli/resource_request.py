@@ -43,7 +43,7 @@ def describe_resource_request(resource_request_id: str) -> None:
 @resource_request.command("list", help="List resource requests.")
 @list_options(
     ResourceRequestFilter,
-    default_columns=["id", "status", "component", "step_run", "created"],
+    default_columns=["id", "status", "pool_name", "step_name", "created"],
 )
 def list_resource_requests(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -65,5 +65,6 @@ def list_resource_requests(
         page,
         columns,
         output_format,
+        column_aliases={"pool_name": "pool", "step_name": "step"},
         empty_message="No resource requests found for this filter.",
     )

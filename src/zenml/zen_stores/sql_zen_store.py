@@ -11970,7 +11970,7 @@ class SqlZenStore(BaseZenStore):
                     )
                     if (
                         request.status
-                        != ResourceRequestStatus.NO_MATCHING_POLICY
+                        != ResourceRequestStatus.NO_MATCHING_POOL
                     ):
                         step_schema.resource_request_id = request.id
                         created_resource_request = request

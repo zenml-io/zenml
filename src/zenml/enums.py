@@ -670,7 +670,7 @@ class ResourceRequestStatus(StrEnum):
     REJECTED = "rejected"
     RELEASED = "released"
     EXPIRED = "expired"
-    NO_MATCHING_POLICY = "no_matching_policy"
+    NO_MATCHING_POOL = "no_matching_pool"
 
 
 class ResourceRequestRuntimeState(StrEnum):
