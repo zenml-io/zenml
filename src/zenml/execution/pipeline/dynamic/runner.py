@@ -61,7 +61,6 @@ from zenml.enums import (
     ExecutionStatus,
     GroupType,
     HookType,
-    ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -148,7 +147,6 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_pipeline_run_status_update,
-    publish_step_run_status_update,
     publish_stopped_step_run,
     publish_successful_step_run,
 )
@@ -350,6 +348,7 @@ class DynamicPipelineRunner:
         else:
             self._orchestrator = self._stack.orchestrator
 
+        self._step_operator = self._stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
         self._last_successful_sync_invocation_id: Optional[str] = None
@@ -533,23 +532,6 @@ class DynamicPipelineRunner:
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
-                    if (
-                        infra_status == ExecutionStatus.RUNNING
-                        and step_run.status == ExecutionStatus.PROVISIONING
-                    ):
-                        latest_step_run = Client().get_run_step(
-                            step_run.id, hydrate=False
-                        )
-                        if (
-                            latest_step_run.status
-                            == ExecutionStatus.PROVISIONING
-                        ):
-                            step_run = publish_step_run_status_update(
-                                step_run_id=step_run.id,
-                                status=ExecutionStatus.RUNNING,
-                            )
-                            self._steps_to_monitor[invocation_id] = step_run
-
                     # Step still running on the infra side, no need to
                     # do anything here.
                     continue
@@ -817,27 +799,8 @@ class DynamicPipelineRunner:
             The status of the step run.
         """
         if step_run.config.step_operator:
-            resource_request = step_run.resource_request
-            if (
-                resource_request
-                and resource_request.status == ResourceRequestStatus.PENDING
-            ):
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request.id
-                )
-                if resource_request.status == ResourceRequestStatus.PENDING:
-                    # The resource request is still pending, so we don't really
-                    # know which step operator is responsible for the step run
-                    # yet.
-                    return step_run.status
-            step_operator_name = None
-            if isinstance(step_run.config.step_operator, str):
-                step_operator_name = step_run.config.step_operator
-            step_operator = self._stack.get_step_operator(
-                name=step_operator_name,
-                allocated_resource_request=resource_request,
-            )
-            return step_operator.get_status(step_run)
+            assert self._step_operator
+            return self._step_operator.get_status(step_run)
         else:
             return self._orchestrator.get_isolated_step_status(step_run)
 
@@ -2071,27 +2034,8 @@ class DynamicPipelineRunner:
             step_run: The step run to stop.
         """
         if step_run.config.step_operator:
-            resource_request = step_run.resource_request
-            if (
-                resource_request
-                and resource_request.status == ResourceRequestStatus.PENDING
-            ):
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request.id
-                )
-                if resource_request.status == ResourceRequestStatus.PENDING:
-                    # The resource request is still pending, so we don't really
-                    # know which step operator is responsible for the step run
-                    # yet.
-                    return
-            step_operator_name = None
-            if isinstance(step_run.config.step_operator, str):
-                step_operator_name = step_run.config.step_operator
-            step_operator = self._stack.get_step_operator(
-                name=step_operator_name,
-                allocated_resource_request=resource_request,
-            )
-            step_operator.cancel(step_run)
+            assert self._step_operator
+            self._step_operator.cancel(step_run)
         else:
             self._orchestrator.stop_isolated_step(step_run)
 

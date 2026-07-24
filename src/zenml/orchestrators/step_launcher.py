@@ -18,6 +18,7 @@ import time
 from contextlib import nullcontext
 from datetime import timedelta
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ContextManager,
@@ -66,7 +67,43 @@ from zenml.utils.logging_utils import (
 )
 from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
+if TYPE_CHECKING:
+    from zenml.step_operators import BaseStepOperator
+
 logger = get_logger(__name__)
+
+
+def _get_step_operator(
+    stack: "Stack", step_operator_name: Optional[str]
+) -> "BaseStepOperator":
+    """Fetches the step operator from the stack.
+
+    Args:
+        stack: Stack on which the step is being run.
+        step_operator_name: Name of the step operator to get.
+
+    Returns:
+        The step operator to run a step.
+
+    Raises:
+        RuntimeError: If no active step operator is found.
+    """
+    if step_operator_name is None:
+        step_operator = stack.step_operator
+        if step_operator is None:
+            raise RuntimeError(
+                f"No step operators specified for active stack '{stack.name}'."
+            )
+        return step_operator
+
+    step_operator = stack.step_operators.get(step_operator_name)
+    if step_operator is None:
+        raise RuntimeError(
+            f"No step operator named '{step_operator_name}' found in active "
+            f"stack '{stack.name}'. Available step operators: {list(stack.step_operators)}."
+        )
+
+    return step_operator
 
 
 def _call_with_optional_allocated_resource_request(
@@ -231,16 +268,7 @@ class StepLauncher:
                     )
 
                 if not step_run.status.is_finished:
-                    if step_run.status == ExecutionStatus.PROVISIONING:
-                        logger.info(
-                            "Step `%s` is provisioning.",
-                            self._invocation_id,
-                        )
-                    else:
-                        logger.info(
-                            "Step `%s` has started.",
-                            self._invocation_id,
-                        )
+                    logger.info(f"Step `{self._invocation_id}` has started.")
 
                     signal_handler: Optional[SignalHandler] = None
                     start_time = time.time()
@@ -535,9 +563,9 @@ class StepLauncher:
         Returns:
             The terminal step run if available, None otherwise.
         """  # noqa: DOC502, DOC503
-        step_operator = self._stack.get_step_operator(
-            name=step_operator_name,
-            allocated_resource_request=allocated_resource_request,
+        step_operator = _get_step_operator(
+            stack=self._stack,
+            step_operator_name=step_operator_name,
         )
 
         command, args = orchestrator_utils.get_step_entrypoint_command(
@@ -746,9 +774,9 @@ class StepLauncher:
                     if isinstance(self._step.config.step_operator, str)
                     else None
                 )
-                step_operator = self._stack.get_step_operator(
-                    name=step_operator_name,
-                    allocated_resource_request=allocated_resource_request,
+                step_operator = _get_step_operator(
+                    stack=self._stack,
+                    step_operator_name=step_operator_name,
                 )
                 step_operator.cleanup_step_submission(step_run)
             else:
