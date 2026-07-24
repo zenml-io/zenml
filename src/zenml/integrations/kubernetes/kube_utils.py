@@ -133,6 +133,7 @@ class PodPhase(enum.Enum):
 class JobStatus(enum.Enum):
     """Status of a Kubernetes job."""
 
+    PROVISIONING = "Provisioning"
     RUNNING = "Running"
     SUCCEEDED = "Succeeded"
     FAILED = "Failed"
@@ -1284,8 +1285,13 @@ def check_job_status(
         max_retries=max_retries,
     )(name=job_name, namespace=namespace)
 
-    if job.status.conditions:
+    if job.spec and job.spec.suspend:
+        return JobStatus.PROVISIONING, None
+
+    if job.status and job.status.conditions:
         for condition in job.status.conditions:
+            if condition.type == "Suspended" and condition.status == "True":
+                return JobStatus.PROVISIONING, None
             if condition.type == "Complete" and condition.status == "True":
                 return JobStatus.SUCCEEDED, None
             if condition.type == "Failed" and condition.status == "True":
