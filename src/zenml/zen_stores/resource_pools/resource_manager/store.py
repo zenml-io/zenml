@@ -61,7 +61,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
 
 logger = get_logger(__name__)
-PageItemT = TypeVar("PageItemT", bound=BaseModel)
 UserScopedResponseT = TypeVar(
     "UserScopedResponseT", bound=UserScopedResponse[Any, Any, Any]
 )
@@ -177,10 +176,15 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         _ = hydrate
         responses = self._client.list_requests(**list_kwargs).items
-        return self._page(
-            self._responses_with_users(
-                responses, [response.to_model() for response in responses]
-            )
+        items = self._responses_with_users(
+            responses, [response.to_model() for response in responses]
+        )
+        return Page(
+            index=1,
+            max_size=max(len(items), 1),
+            total_pages=1,
+            total=len(items),
+            items=items,
         )
 
     def release_resource_request(
@@ -220,8 +224,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             lease_expires_at=renewal_request.lease_expires_at,
             runtime_state=renewal_request.runtime_state,
         )
-        logger.info(
-            f"Resource request response: {response.model_dump_json(indent=2)}"
+        logger.debug(
+            f"Renewed resource request: {response.model_dump_json(indent=2)}"
         )
         return response.to_model()
 
@@ -436,7 +440,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 f"{exc}"
             ) from exc
 
-        logger.info(
+        logger.debug(
             f"Created resource request: {response.model_dump_json(indent=2)}"
         )
         return response.to_model()
@@ -556,20 +560,3 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             return UUID(str(value))
         except ValueError:
             return None
-
-    def _page(self, items: list[PageItemT]) -> Page[PageItemT]:
-        """Build a ZenML page for a full Resource Manager result set.
-
-        Args:
-            items: Items to include in the page.
-
-        Returns:
-            ZenML page containing the full Resource Manager result set.
-        """
-        return Page(
-            index=1,
-            max_size=max(len(items), 1),
-            total_pages=1,
-            total=len(items),
-            items=items,
-        )

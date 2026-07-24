@@ -47,6 +47,7 @@ registr = "registr"
 tokenzation = "tokenzation"
 Conveyer = "Conveyer"
 froms = "froms"  # used by sqlalchemy in a method name
+queuing = "queuing"
 
 [default]
 locale = "en-us"
