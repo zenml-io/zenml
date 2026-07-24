@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for step launcher helpers."""
 
 from contextlib import ExitStack as does_not_raise
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType, StepRuntime
 from zenml.orchestrators.step_launcher import (
     StepLauncher,
     _get_step_operator,
@@ -25,10 +27,44 @@ from zenml.orchestrators.step_launcher import (
 from zenml.stack import Stack
 
 
-def test_step_operator_validation(local_stack, sample_step_operator):
-    """Tests that the step operator gets correctly extracted and validated
-    from the stack."""
+def _dynamic_launcher(step_operator=None) -> StepLauncher:
+    """Create a minimal launcher for dynamic runtime checks."""
+    launcher = object.__new__(StepLauncher)
+    launcher._snapshot = SimpleNamespace(
+        is_dynamic=True,
+        pipeline_configuration=SimpleNamespace(docker_settings=None),
+    )
+    launcher._step = SimpleNamespace(
+        config=SimpleNamespace(step_operator=step_operator)
+    )
+    launcher._stack = SimpleNamespace(orchestrator=object())
+    return launcher
 
+
+def test_dynamic_orchestrator_detection_requires_isolated_runtime(
+    monkeypatch,
+) -> None:
+    """Tests that only dynamic isolated orchestrator steps are detected."""
+    monkeypatch.setattr(
+        "zenml.execution.pipeline.dynamic.compilation.get_step_runtime",
+        lambda **_: StepRuntime.ISOLATED,
+    )
+
+    assert _dynamic_launcher()._runs_with_dynamic_orchestrator()
+    assert not _dynamic_launcher(
+        step_operator="operator"
+    )._runs_with_dynamic_orchestrator()
+
+    monkeypatch.setattr(
+        "zenml.execution.pipeline.dynamic.compilation.get_step_runtime",
+        lambda **_: StepRuntime.INLINE,
+    )
+
+    assert not _dynamic_launcher()._runs_with_dynamic_orchestrator()
+
+
+def test_step_operator_validation(local_stack, sample_step_operator):
+    """Tests that the step operator gets correctly extracted and validated."""
     with pytest.raises(RuntimeError):
         _get_step_operator(
             stack=local_stack, step_operator_name="step_operator"
@@ -53,6 +89,7 @@ def test_step_operator_validation(local_stack, sample_step_operator):
 
 
 def test_dynamic_command_step_success_publishes_status(mocker):
+    """Test that successful dynamic command steps publish a success status."""
     launcher = object.__new__(StepLauncher)
     launcher._stack = mocker.Mock()
     launcher._stack.orchestrator.wait_for_isolated_step.return_value = (
@@ -92,6 +129,7 @@ def test_dynamic_command_step_success_publishes_status(mocker):
 
 
 def test_dynamic_command_step_failure_raises(mocker):
+    """Test that failed dynamic command steps raise the remote exception."""
     launcher = object.__new__(StepLauncher)
     launcher._stack = mocker.Mock()
     launcher._stack.orchestrator.wait_for_isolated_step.return_value = (
@@ -160,6 +198,7 @@ def _make_isolated_step_launcher(mocker, status):
 
 
 def test_isolated_step_cleanup_called_on_success(mocker):
+    """Test that isolated step cleanup runs after successful remote steps."""
     launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.COMPLETED)
     step_run_info = mocker.Mock()
 
@@ -171,6 +210,7 @@ def test_isolated_step_cleanup_called_on_success(mocker):
 
 
 def test_isolated_step_cleanup_called_on_failure(mocker):
+    """Test that isolated step cleanup runs after failed remote steps."""
     launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.FAILED)
     step_run_info = mocker.Mock()
     step_run_info.pipeline_step_name = "step_name"
@@ -192,6 +232,7 @@ def test_isolated_step_cleanup_called_on_failure(mocker):
 
 
 def test_isolated_step_cleanup_skipped_when_not_waiting(mocker):
+    """Test that isolated step cleanup is skipped for asynchronous runs."""
     launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.COMPLETED)
     launcher._wait = False
     step_run_info = mocker.Mock()
@@ -203,6 +244,7 @@ def test_isolated_step_cleanup_skipped_when_not_waiting(mocker):
 
 
 def test_cleanup_remote_step_dispatches_to_step_operator(mocker):
+    """Test that remote step cleanup dispatches to the selected operator."""
     launcher = object.__new__(StepLauncher)
     launcher._stack = mocker.Mock()
     launcher._invocation_id = "step_name"
@@ -226,6 +268,7 @@ def test_cleanup_remote_step_dispatches_to_step_operator(mocker):
 
 
 def test_cleanup_remote_step_swallows_errors(mocker):
+    """Test that remote cleanup errors are logged and swallowed."""
     launcher = object.__new__(StepLauncher)
     launcher._stack = mocker.Mock()
     launcher._invocation_id = "step_name"

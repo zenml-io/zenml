@@ -1,0 +1,958 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Internal Resource Manager transport models for runtime requests."""
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Optional, Union
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from zenml.enums import (
+    ResourceRequestRuntimeState,
+    ResourceRequestStatus,
+)
+from zenml.models import (
+    ResourcePoolAllocation,
+    ResourcePoolQueueItem,
+    ResourceRequestDemand,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestRequest,
+    ResourceRequestResponse,
+    ResourceRequestResponseBody,
+    ResourceRequestResponseMetadata,
+    ResourceRequestResponseResources,
+    ResourceRequestServiceConnectorSettings,
+)
+from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.models import (
+        ComponentResponse,
+        ServiceConnectorResponse,
+        UserResponse,
+    )
+
+PRIORITY_LANE_PRIORITY = 2_147_483_647
+ORGANIZATION_SUBJECT_TYPE = "organization"
+WORKSPACE_SUBJECT_TYPE = "workspace"
+PROJECT_SUBJECT_TYPE = "project"
+PIPELINE_SUBJECT_TYPE = "pipeline"
+PIPELINE_RUN_SUBJECT_TYPE = "pipeline_run"
+STEP_RUN_SUBJECT_TYPE = "step_run"
+COMPONENT_SUBJECT_TYPE = "component"
+SERVICE_CONNECTOR_SUBJECT_TYPE = "service_connector"
+ACCOUNT_SUBJECT_TYPE = "account"
+STEP_RUN_ID_METADATA_KEY = "step_run_id"
+PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
+STEP_NAME_METADATA_KEY = "step_name"
+PIPELINE_RUN_NAME_METADATA_KEY = "pipeline_run_name"
+PROJECT_ID_METADATA_KEY = "project_id"
+
+
+def _metadata_uuid(metadata: dict[str, Any], key: str) -> Optional[UUID]:
+    """Read a UUID metadata value when present.
+
+    Args:
+        metadata: Metadata values to read from.
+        key: Metadata key to read.
+
+    Returns:
+        Metadata value converted to a UUID, or `None` if it is absent or
+        invalid.
+    """
+    value = metadata.get(key)
+    if value is None:
+        return None
+    try:
+        return UUID(str(value))
+    except ValueError:
+        return None
+
+
+class RMSubjectSelector(BaseModel):
+    """Structured selector used in Resource Manager subject settings."""
+
+    subject_type: Optional[str] = None
+    subject_id: Optional[UUID] = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    contains: Optional[
+        Union["RMSubjectSelector", "RMSubjectSelectorExpression"]
+    ] = None
+
+    @classmethod
+    def from_pipeline_run(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> "RMSubjectSelector":
+        """Build a selector for one scoped ZenML pipeline run.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_run_id: ZenML pipeline run ID.
+
+        Returns:
+            Resource Manager subject selector matching the pipeline run.
+        """
+        return cls(
+            subject_id=organization_id,
+            subject_type=ORGANIZATION_SUBJECT_TYPE,
+            contains=cls(
+                subject_id=workspace_id,
+                subject_type=WORKSPACE_SUBJECT_TYPE,
+                contains=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    contains=cls(
+                        subject_id=pipeline_run_id,
+                        subject_type=PIPELINE_RUN_SUBJECT_TYPE,
+                    ),
+                ),
+            ),
+        )
+
+
+class RMSubjectSelectorExpression(BaseModel):
+    """Boolean expression over Resource Manager subject selectors."""
+
+    all: list["RMSubjectSelectorNode"] = Field(default_factory=list)
+    any: list["RMSubjectSelectorNode"] = Field(default_factory=list)
+    not_: Optional["RMSubjectSelectorNode"] = Field(default=None, alias="not")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+RMSubjectSelectorNode = Union[RMSubjectSelector, RMSubjectSelectorExpression]
+
+
+class RMSubject(BaseModel):
+    """Subject on runtime resource request payloads."""
+
+    subject_id: UUID
+    subject_type: str
+    attributes: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    child: Optional["RMSubject"] = None
+
+    @property
+    def leaf(self) -> "RMSubject":
+        """Return the deepest subject in the root-first chain."""
+        if self.child is None:
+            return self
+        return self.child.leaf
+
+    def find(self, subject_id: UUID) -> Optional["RMSubject"]:
+        """Find a subject by ID in this chain.
+
+        Args:
+            subject_id: Subject ID to find.
+
+        Returns:
+            Matching subject, or `None` if no subject in the chain matches.
+        """
+        if self.subject_id == subject_id:
+            return self
+        if self.child is None:
+            return None
+        return self.child.find(subject_id)
+
+    @staticmethod
+    def _optional_values(**values: Any) -> dict[str, Any]:
+        """Build Resource Manager payload data without empty optional values.
+
+        Args:
+            values: Optional values to include in the payload.
+
+        Returns:
+            Payload data without `None` or empty-string values.
+        """
+        payload: dict[str, Any] = {}
+        for key, value in values.items():
+            if value is None:
+                continue
+            if isinstance(value, str) and not value:
+                continue
+            payload[key] = str(value) if isinstance(value, UUID) else value
+        return payload
+
+    @classmethod
+    def _organization(
+        cls,
+        *,
+        organization_id: UUID,
+        organization_name: Optional[str] = None,
+        child: Optional["RMSubject"] = None,
+    ) -> "RMSubject":
+        """Build an organization-rooted subject chain.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            organization_name: Optional ZenML Pro organization name.
+            child: Optional child subject node.
+
+        Returns:
+            Organization-rooted Resource Manager subject chain.
+        """
+        return cls(
+            subject_id=organization_id,
+            subject_type=ORGANIZATION_SUBJECT_TYPE,
+            attributes=cls._optional_values(name=organization_name),
+            child=child,
+        )
+
+    @classmethod
+    def _workspace(
+        cls,
+        *,
+        workspace_id: UUID,
+        workspace_name: Optional[str] = None,
+        child: Optional["RMSubject"] = None,
+    ) -> "RMSubject":
+        """Build a workspace subject chain node.
+
+        Args:
+            workspace_id: ZenML Pro workspace ID.
+            workspace_name: Optional ZenML Pro workspace name.
+            child: Optional child subject node.
+
+        Returns:
+            Workspace Resource Manager subject chain node.
+        """
+        return cls(
+            subject_id=workspace_id,
+            subject_type=WORKSPACE_SUBJECT_TYPE,
+            attributes=cls._optional_values(name=workspace_name),
+            child=child,
+        )
+
+    @classmethod
+    def from_component(
+        cls,
+        component: "ComponentResponse",
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a ZenML stack component.
+
+        Args:
+            component: ZenML stack component response.
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+
+        Returns:
+            Resource Manager subject chain for the stack component.
+        """
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=component.id,
+                    subject_type=COMPONENT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=component.name,
+                        stack_component_name=component.name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                        component_type=component.type.value,
+                        flavor=component.flavor_name,
+                    ),
+                    metadata=cls._optional_values(logo_url=component.logo_url),
+                ),
+            ),
+        )
+
+    @classmethod
+    def from_service_connector(
+        cls,
+        connector: "ServiceConnectorResponse",
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        effective_resource_type: Optional[str] = None,
+        effective_resource_id: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a workspace service connector.
+
+        Args:
+            connector: ZenML service connector response.
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            effective_resource_type: Optional service connector resource type.
+            effective_resource_id: Optional service connector resource ID.
+
+        Returns:
+            Resource Manager subject chain for the service connector.
+        """
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=connector.id,
+                    subject_type=SERVICE_CONNECTOR_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=connector.name,
+                        service_connector_name=connector.name,
+                        connector_type=connector.type,
+                        resource_types=connector.resource_types,
+                        effective_resource_type=effective_resource_type,
+                        effective_resource_id=effective_resource_id,
+                    ),
+                ),
+            ),
+        )
+
+    @classmethod
+    def from_account(
+        cls,
+        user: "UserResponse",
+        *,
+        organization_id: UUID,
+        organization_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a ZenML account identity.
+
+        Args:
+            user: ZenML user response.
+            organization_id: ZenML Pro organization ID.
+            organization_name: Optional ZenML Pro organization name.
+
+        Returns:
+            Resource Manager subject for the account identity.
+
+        Raises:
+            ValueError: If the ZenML user has no external account ID.
+        """
+        if user.external_user_id is None:
+            raise ValueError(
+                f"User '{user.id}' has no external account id configured."
+            )
+        account_subject = cls(
+            subject_id=user.external_user_id,
+            subject_type=ACCOUNT_SUBJECT_TYPE,
+            attributes=cls._optional_values(
+                name=user.full_name or user.name,
+                email=user.email,
+                username=user.name,
+                is_superuser=user.is_admin,
+                is_service_account=user.is_service_account,
+            ),
+            metadata=cls._optional_values(avatar_url=user.avatar_url),
+        )
+        if not user.is_service_account:
+            return account_subject
+
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=account_subject,
+        )
+
+    @classmethod
+    def from_pipeline(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an organization -> workspace -> project -> pipeline subject.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_id: ZenML pipeline ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            project_name: Optional ZenML project name.
+            pipeline_name: Optional ZenML pipeline name.
+
+        Returns:
+            Resource Manager subject chain for the pipeline.
+        """
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=project_name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                    ),
+                    child=cls(
+                        subject_id=pipeline_id,
+                        subject_type=PIPELINE_SUBJECT_TYPE,
+                        attributes=cls._optional_values(
+                            name=pipeline_name,
+                            project_id=project_id,
+                            project_name=project_name,
+                            workspace_id=workspace_id,
+                            workspace_name=workspace_name,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    @classmethod
+    def from_step_run(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_run_id: UUID,
+        step_run_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        pipeline_run_name: Optional[str] = None,
+        pipeline_id: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build a scoped pipeline-run -> step-run subject chain.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_run_id: ZenML pipeline run ID.
+            step_run_id: ZenML step run ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            project_name: Optional ZenML project name.
+            pipeline_run_name: Optional ZenML pipeline run name.
+            pipeline_id: Optional ZenML pipeline ID.
+            pipeline_name: Optional ZenML pipeline name.
+            step_name: Optional ZenML step name.
+
+        Returns:
+            Resource Manager subject chain for the step run.
+        """
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=project_name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                    ),
+                    child=cls(
+                        subject_id=pipeline_run_id,
+                        subject_type=PIPELINE_RUN_SUBJECT_TYPE,
+                        attributes=cls._optional_values(
+                            name=pipeline_run_name,
+                            run_name=pipeline_run_name,
+                            pipeline_id=pipeline_id,
+                            pipeline_name=pipeline_name,
+                            project_id=project_id,
+                            project_name=project_name,
+                            workspace_id=workspace_id,
+                            workspace_name=workspace_name,
+                        ),
+                        child=cls(
+                            subject_id=step_run_id,
+                            subject_type=STEP_RUN_SUBJECT_TYPE,
+                            attributes=cls._optional_values(
+                                name=step_name,
+                                step_name=step_name,
+                                pipeline_run_id=pipeline_run_id,
+                                pipeline_run_name=pipeline_run_name,
+                                pipeline_id=pipeline_id,
+                                pipeline_name=pipeline_name,
+                                project_id=project_id,
+                                project_name=project_name,
+                                workspace_id=workspace_id,
+                                workspace_name=workspace_name,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+
+class RMRequestDemand(BaseModel):
+    """Resource demand payload for the Resource Manager API."""
+
+    resource_id: Optional[UUID] = Field(default=None, exclude=True)
+    resource: UUID | str | None = None
+    kind: Optional[str] = None
+    quantity: int
+    unit: Optional[str] = None
+    class_name: Optional[str] = Field(
+        default=None,
+        alias="class",
+        serialization_alias="class",
+    )
+    resource_selector: Optional[dict[str, Any]] = None
+    class_selector: Optional[dict[str, Any]] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @classmethod
+    def from_model(cls, demand: ResourceRequestDemand) -> "RMRequestDemand":
+        """Build a demand payload from a ZenML resource demand.
+
+        Args:
+            demand: ZenML resource demand model.
+
+        Returns:
+            Resource Manager demand payload.
+        """
+        resource = (
+            demand.resource_id
+            if demand.resource_id is not None
+            else demand.resource
+        )
+        return cls(
+            resource=resource,
+            kind=demand.kind,
+            resource_selector=demand.resource_selector,
+            quantity=demand.quantity,
+            unit=demand.unit,
+            class_name=demand.class_name,
+            class_selector=demand.class_selector,
+        )
+
+    def to_model(self) -> ResourceRequestDemand:
+        """Convert this demand into a ZenML resource demand.
+
+        Returns:
+            ZenML resource demand model.
+        """
+        return ResourceRequestDemand(
+            resource_id=self.resource_id,
+            resource=self.resource,
+            kind=self.kind,
+            quantity=self.quantity,
+            unit=self.unit,
+            class_name=self.class_name,
+            resource_selector=self.resource_selector,
+            class_selector=self.class_selector,
+        )
+
+
+class RMResourceRequestCreate(BaseModel):
+    """Runtime resource request create payload for the Resource Manager API."""
+
+    subjects: list[RMSubject] = Field(min_length=1)
+    demands: list[RMRequestDemand]
+    pool: UUID | str | None = None
+    pool_selector: Optional[dict[str, Any]] = None
+    preemption_group: Optional[RMSubjectSelectorNode] = None
+    reclaim_tolerance: str = "none"
+    lease_expires_at: Optional[datetime] = None
+    allocation_wait_timeout_seconds: Optional[int] = None
+    user_id: Optional[UUID] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def from_model(
+        cls,
+        resource_request: ResourceRequestRequest,
+        *,
+        subjects: list[RMSubject],
+        preemption_group: Optional[RMSubjectSelectorNode] = None,
+        user_id: Optional[UUID] = None,
+    ) -> "RMResourceRequestCreate":
+        """Build a runtime request create payload from a ZenML request.
+
+        Args:
+            resource_request: ZenML resource request model.
+            subjects: Resource Manager subject chains attached to the request.
+            preemption_group: Optional Resource Manager preemption group
+                selector.
+            user_id: Optional ZenML Pro user ID.
+
+        Returns:
+            Resource Manager request create payload.
+
+        Raises:
+            ValueError: If component IDs are set without a step run ID.
+        """
+        if (
+            resource_request.component_ids
+            and resource_request.step_run_id is None
+        ):
+            raise ValueError(
+                "step_run_id is required when component_ids are set."
+            )
+        metadata = dict(resource_request.metadata)
+        if resource_request.component_ids and resource_request.step_run_id:
+            metadata[STEP_RUN_ID_METADATA_KEY] = str(
+                resource_request.step_run_id
+            )
+        return cls(
+            subjects=subjects,
+            demands=[
+                RMRequestDemand.from_model(demand)
+                for demand in resource_request.demands
+            ],
+            pool=(
+                resource_request.pool_id
+                if resource_request.pool_id is not None
+                else resource_request.pool
+            ),
+            pool_selector=resource_request.pool_selector,
+            preemption_group=(
+                preemption_group or resource_request.preemption_group
+            ),
+            reclaim_tolerance=(
+                resource_request.reclaim_tolerance
+                or ResourceRequestReclaimTolerance.NONE
+            ).value,
+            lease_expires_at=resource_request.lease_expires_at,
+            allocation_wait_timeout_seconds=(
+                resource_request.allocation_wait_timeout_seconds
+            ),
+            user_id=user_id,
+            metadata=metadata,
+        )
+
+
+class RMResourceRequestRenewalRequest(BaseModel):
+    """Runtime resource request renewal payload for the Resource Manager API."""
+
+    lease_expires_at: datetime
+    runtime_state: Optional[ResourceRequestRuntimeState] = None
+
+
+class RMResourceRequestResponse(BaseModel):
+    """Runtime resource request response from the Resource Manager API."""
+
+    id: UUID
+    organization_id: UUID
+    subjects: list[RMSubject] = Field(default_factory=list)
+    demands: list[RMRequestDemand] = Field(default_factory=list)
+    allocations: list["RMAllocationResponse"] = Field(default_factory=list)
+    queue_entries: list["RMQueueEntryResponse"] = Field(default_factory=list)
+    target_settings: list["RMTargetSettingsResponse"] = Field(
+        default_factory=list
+    )
+    pool_id: Optional[UUID] = None
+    pool_name: Optional[str] = None
+    pool_selector: Optional[dict[str, Any]] = None
+    preemption_group: Optional[RMSubjectSelectorNode] = None
+    status: str
+    runtime_state: str = ResourceRequestRuntimeState.UNKNOWN.value
+    reclaim_tolerance: str
+    lease_expires_at: Optional[datetime] = None
+    allocation_deadline: Optional[datetime] = None
+    renewed_at: Optional[datetime] = None
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
+    allocated_at: Optional[datetime] = None
+    released_at: Optional[datetime] = None
+    queued_at: Optional[datetime] = None
+    status_reason: Optional[str] = None
+    preemption_initiated_by_id: Optional[UUID] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def to_model(self) -> ResourceRequestResponse:
+        """Convert this runtime request response into a ZenML response.
+
+        Returns:
+            ZenML resource request response model.
+        """
+        now = utc_now()
+        created = self.created or now
+        updated = self.updated or created
+        step_name = self.metadata.get(STEP_NAME_METADATA_KEY)
+        pipeline_run_name = self.metadata.get(PIPELINE_RUN_NAME_METADATA_KEY)
+        component_settings: dict[str, Any] = {}
+        service_connector_settings: (
+            ResourceRequestServiceConnectorSettings | None
+        ) = None
+        for settings in self.target_settings:
+            if settings.target_type == "component":
+                component_settings.update(settings.settings)
+            elif (
+                settings.target_type == "service_connector"
+                and service_connector_settings is None
+            ):
+                service_connector_settings = (
+                    settings.to_service_connector_settings()
+                )
+
+        return ResourceRequestResponse(
+            id=self.id,
+            body=ResourceRequestResponseBody(
+                created=created,
+                updated=updated,
+                user_id=None,
+                component_ids=[
+                    subject.leaf.subject_id
+                    for subject in self.subjects
+                    if subject.leaf.subject_type == COMPONENT_SUBJECT_TYPE
+                ],
+                step_run_id=_metadata_uuid(
+                    self.metadata, STEP_RUN_ID_METADATA_KEY
+                ),
+                pipeline_run_id=_metadata_uuid(
+                    self.metadata, PIPELINE_RUN_ID_METADATA_KEY
+                ),
+                pool_id=self.pool_id,
+                step_name=None if step_name is None else str(step_name),
+                pipeline_run_name=(
+                    None
+                    if pipeline_run_name is None
+                    else str(pipeline_run_name)
+                ),
+                project_id=_metadata_uuid(
+                    self.metadata, PROJECT_ID_METADATA_KEY
+                ),
+                pool_name=self.pool_name,
+                pool_selector=self.pool_selector,
+                preemption_group=(
+                    self.preemption_group.model_dump(
+                        mode="json",
+                        by_alias=True,
+                        exclude_none=True,
+                        exclude_defaults=True,
+                    )
+                    if self.preemption_group is not None
+                    else None
+                ),
+                demands=[demand.to_model() for demand in self.demands],
+                status=ResourceRequestStatus(self.status),
+                runtime_state=ResourceRequestRuntimeState(self.runtime_state),
+                reclaim_tolerance=ResourceRequestReclaimTolerance(
+                    self.reclaim_tolerance
+                ),
+                lease_expires_at=self.lease_expires_at,
+                allocation_deadline=self.allocation_deadline,
+                renewed_at=self.renewed_at,
+                allocated_at=self.allocated_at,
+                released_at=self.released_at,
+                queued_at=self.queued_at,
+                status_reason=self.status_reason,
+                preemption_initiated_by_id=self.preemption_initiated_by_id,
+            ),
+            metadata=ResourceRequestResponseMetadata(),
+            resources=ResourceRequestResponseResources(
+                component_settings=component_settings,
+                service_connector_settings=service_connector_settings,
+                allocations=[
+                    allocation.to_model(request_subjects=self.subjects)
+                    for allocation in self.allocations
+                ],
+                queue_entries=[
+                    entry.to_model() for entry in self.queue_entries
+                ],
+            ),
+        )
+
+
+class RMResourceRequestListResponse(BaseModel):
+    """Runtime resource request list response from the Resource Manager API."""
+
+    items: list[RMResourceRequestResponse]
+    total: int
+
+
+class RMQueueEntryResponse(BaseModel):
+    """Pool queue entry response included in runtime request resources."""
+
+    id: UUID
+    organization_id: UUID
+    request_id: UUID
+    pool_id: UUID
+    pool_name: str
+    policy_id: UUID
+    priority: int
+    enqueued_at: datetime
+    created: Optional[datetime] = None
+
+    def to_model(self) -> ResourcePoolQueueItem:
+        """Convert this queue entry into a ZenML queue item.
+
+        Returns:
+            ZenML resource pool queue item.
+        """
+        return ResourcePoolQueueItem(
+            id=self.id,
+            request_id=self.request_id,
+            pool_id=self.pool_id,
+            pool_name=self.pool_name,
+            policy_id=self.policy_id,
+            priority=self.priority,
+            priority_lane=self.priority >= PRIORITY_LANE_PRIORITY,
+            enqueued_at=self.enqueued_at,
+            created=self.created,
+        )
+
+
+class RMTargetSettingsResponse(BaseModel):
+    """Pool target settings selected by Resource Manager for a request."""
+
+    target_type: str
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+    def to_service_connector_settings(
+        self,
+    ) -> ResourceRequestServiceConnectorSettings:
+        """Convert service connector target settings into a ZenML model.
+
+        Returns:
+            ZenML service connector settings model.
+        """
+        connector_id = self.settings.get("connector_id")
+        return ResourceRequestServiceConnectorSettings(
+            connector_id=UUID(str(connector_id)) if connector_id else None,
+            resource_type=self.settings.get("resource_type"),
+            resource_id=self.settings.get("resource_id"),
+        )
+
+
+class RMAllocationResponse(BaseModel):
+    """Allocation response included in runtime request resources."""
+
+    id: UUID
+    organization_id: UUID
+    request_id: UUID
+    demand_index: Optional[int] = Field(default=None, ge=0)
+    pool_id: UUID
+    pool_name: str
+    capacity_entry_id: Optional[UUID] = None
+    capacity_entry_name: Optional[str] = None
+    resource_id: UUID
+    resource_name: str
+    resource_kind: str
+    class_name: str = Field(alias="class", serialization_alias="class")
+    quantity: int
+    unit: Optional[str] = None
+    base_quantity: Optional[int] = None
+    admitted_by_policy_id: UUID
+    resolved_grant_id: UUID | None = None
+    allocation_priority: int
+    matched_subject_ids: tuple[UUID, ...]
+    preemption_state: str
+    preemption_reason: Optional[str] = None
+    released_at: Optional[datetime] = None
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    def _resolve_subject_ids(
+        self,
+        *,
+        request_subjects: list[RMSubject] | None = None,
+    ) -> tuple[Optional[UUID], Optional[UUID]]:
+        """Resolve matched subjects into component and account IDs.
+
+        Args:
+            request_subjects: Request subject chains used to resolve matched
+                Resource Manager subject IDs.
+
+        Returns:
+            Component and account IDs resolved from matched subjects.
+        """
+        for matched_subject_id in self.matched_subject_ids:
+            for subject in request_subjects or []:
+                matched_subject = subject.find(matched_subject_id)
+                if matched_subject is None:
+                    continue
+                if matched_subject.subject_type == ACCOUNT_SUBJECT_TYPE:
+                    return None, matched_subject_id
+                if matched_subject.subject_type == COMPONENT_SUBJECT_TYPE:
+                    return matched_subject_id, None
+        if self.matched_subject_ids:
+            return self.matched_subject_ids[0], None
+        return None, None
+
+    def to_model(
+        self,
+        *,
+        request_subjects: list[RMSubject] | None = None,
+    ) -> ResourcePoolAllocation:
+        """Convert this allocation into a ZenML allocation.
+
+        Args:
+            request_subjects: Request subject chains used to resolve component
+                and account IDs.
+
+        Returns:
+            ZenML resource pool allocation model.
+        """
+        component_id, account_id = self._resolve_subject_ids(
+            request_subjects=request_subjects
+        )
+        return ResourcePoolAllocation(
+            id=self.id,
+            request_id=self.request_id,
+            demand_index=self.demand_index,
+            pool_id=self.pool_id,
+            pool_name=self.pool_name,
+            capacity_entry_id=self.capacity_entry_id,
+            capacity_entry_name=self.capacity_entry_name,
+            resource_id=self.resource_id,
+            resource=self.resource_name,
+            resource_kind=self.resource_kind,
+            class_name=self.class_name,
+            quantity=self.quantity,
+            unit=self.unit,
+            base_quantity=self.base_quantity,
+            policy_id=self.admitted_by_policy_id,
+            grant_id=self.resolved_grant_id,
+            priority=self.allocation_priority,
+            priority_lane=self.allocation_priority >= PRIORITY_LANE_PRIORITY,
+            component_id=component_id,
+            account_id=account_id,
+            preemption_state=self.preemption_state,
+            preemption_reason=self.preemption_reason,
+            released_at=self.released_at,
+            created=self.created,
+            updated=self.updated,
+        )

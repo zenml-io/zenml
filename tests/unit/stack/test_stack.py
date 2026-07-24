@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for stack behavior."""
+
 from contextlib import ExitStack as does_not_raise
-from uuid import uuid4
+from datetime import datetime, timezone
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -21,9 +24,70 @@ from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import (
+    ResourceRequestReclaimTolerance,
+    ResourceRequestStatus,
+    StackComponentType,
+)
 from zenml.exceptions import StackValidationError
+from zenml.models import (
+    ResourceRequestResponse,
+    ResourceRequestResponseBody,
+    ResourceRequestResponseMetadata,
+    ResourceRequestResponseResources,
+    ResourceRequestServiceConnectorSettings,
+)
 from zenml.stack import Stack
+from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
+
+
+def _step_operator(
+    *,
+    name: str = "step-operator",
+    connector: UUID | None = None,
+    connector_resource_id: str | None = None,
+) -> BaseStepOperator:
+    """Create a test step operator."""
+    return BaseStepOperator(
+        name=name,
+        id=uuid4(),
+        config=BaseStepOperatorConfig(),
+        flavor="test",
+        type=StackComponentType.STEP_OPERATOR,
+        user=uuid4(),
+        created=datetime.now(tz=timezone.utc),
+        updated=datetime.now(tz=timezone.utc),
+        connector=connector,
+        connector_resource_id=connector_resource_id,
+    )
+
+
+def _allocated_resource_request(
+    *,
+    connector_id: UUID,
+    connector_resource_id: str,
+) -> ResourceRequestResponse:
+    """Create an allocated resource request with connector settings."""
+    request_id = uuid4()
+    return ResourceRequestResponse(
+        id=request_id,
+        name=str(request_id),
+        body=ResourceRequestResponseBody(
+            status=ResourceRequestStatus.ALLOCATED,
+            user=uuid4(),
+            created=datetime.now(tz=timezone.utc),
+            updated=datetime.now(tz=timezone.utc),
+            version=1,
+            reclaim_tolerance=ResourceRequestReclaimTolerance.NONE,
+        ),
+        metadata=ResourceRequestResponseMetadata(),
+        resources=ResourceRequestResponseResources(
+            service_connector_settings=ResourceRequestServiceConnectorSettings(
+                connector_id=connector_id,
+                resource_id=connector_resource_id,
+            )
+        ),
+    )
 
 
 def test_initializing_a_stack_from_components(
@@ -113,6 +177,146 @@ def test_stack_returns_all_its_components(
     )
 
 
+def test_get_stack_component_returns_original_without_connector_override(
+    local_orchestrator, local_artifact_store
+):
+    """Tests that unchanged service connector settings reuse the stack component."""
+    connector_id = uuid4()
+    step_operator = _step_operator(
+        connector=connector_id,
+        connector_resource_id="cluster-a",
+    )
+    stack = Stack(
+        id=uuid4(),
+        name="stack",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        step_operator=step_operator,
+    )
+
+    assert (
+        stack.get_stack_component(
+            StackComponentType.STEP_OPERATOR,
+        )
+        is step_operator
+    )
+    assert (
+        stack.get_stack_component(
+            StackComponentType.STEP_OPERATOR,
+            allocated_resource_request=_allocated_resource_request(
+                connector_id=connector_id,
+                connector_resource_id="cluster-a",
+            ),
+        )
+        is step_operator
+    )
+
+
+def test_get_stack_component_caches_service_connector_overrides(
+    local_orchestrator, local_artifact_store
+):
+    """Tests that service connector overrides are copied and cached."""
+    original_connector_id = uuid4()
+    override_connector_id = uuid4()
+    step_operator = _step_operator(
+        connector=original_connector_id,
+        connector_resource_id="cluster-a",
+    )
+    stack = Stack(
+        id=uuid4(),
+        name="stack",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        step_operator=step_operator,
+    )
+
+    overridden_step_operator = stack.get_stack_component(
+        StackComponentType.STEP_OPERATOR,
+        name=step_operator.name,
+        allocated_resource_request=_allocated_resource_request(
+            connector_id=override_connector_id,
+            connector_resource_id="cluster-b",
+        ),
+    )
+    cached_step_operator = stack.get_stack_component(
+        StackComponentType.STEP_OPERATOR,
+        name=step_operator.name,
+        allocated_resource_request=_allocated_resource_request(
+            connector_id=override_connector_id,
+            connector_resource_id="cluster-b",
+        ),
+    )
+
+    assert overridden_step_operator is cached_step_operator
+    assert overridden_step_operator is not step_operator
+    assert overridden_step_operator is not None
+    assert overridden_step_operator.connector == override_connector_id
+    assert overridden_step_operator.connector_resource_id == "cluster-b"
+    assert step_operator.connector == original_connector_id
+    assert step_operator.connector_resource_id == "cluster-a"
+
+
+def test_get_step_operator_uses_allocated_request_connector_overrides(
+    local_orchestrator, local_artifact_store
+):
+    """Tests that request connector settings override step operator links."""
+    original_connector_id = uuid4()
+    override_connector_id = uuid4()
+    step_operator = _step_operator(
+        name="gpu-operator",
+        connector=original_connector_id,
+        connector_resource_id="cluster-a",
+    )
+    stack = Stack(
+        id=uuid4(),
+        name="stack",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        step_operator=step_operator,
+    )
+
+    overridden_step_operator = stack.get_step_operator(
+        name="gpu-operator",
+        allocated_resource_request=_allocated_resource_request(
+            connector_id=override_connector_id,
+            connector_resource_id="cluster-b",
+        ),
+    )
+
+    assert overridden_step_operator.name == "gpu-operator"
+    assert overridden_step_operator.connector == override_connector_id
+    assert overridden_step_operator.connector_resource_id == "cluster-b"
+    assert step_operator.connector == original_connector_id
+    assert step_operator.connector_resource_id == "cluster-a"
+
+
+def test_get_step_operator_raises_for_missing_step_operator(
+    local_orchestrator, local_artifact_store
+):
+    """Tests that missing step operators raise helpful errors."""
+    stack = Stack(
+        id=uuid4(),
+        name="stack",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+
+    with pytest.raises(RuntimeError, match="No step operators specified"):
+        stack.get_step_operator()
+
+    step_operator = _step_operator(name="available")
+    stack = Stack(
+        id=uuid4(),
+        name="stack",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+        step_operator=step_operator,
+    )
+
+    with pytest.raises(RuntimeError, match="No step operator named 'missing'"):
+        stack.get_step_operator(name="missing")
+
+
 def test_stack_requirements(stack_with_mock_components):
     """Tests that the stack returns the requirements of all its components."""
     stack_with_mock_components.orchestrator.requirements = {"one_requirement"}
@@ -154,9 +358,12 @@ def test_stack_submission(
     stack_with_mock_components,
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that when a pipeline is deployed on a stack, the stack calls the
+    """Tests that stack submission delegates to the orchestrator.
+
+    When a pipeline is deployed on a stack, the stack calls the
     orchestrator to run the pipeline and calls cleanup methods on all of its
-    components."""
+    components.
+    """
     # Mock the pipeline run registering which tries (and fails) to serialize
     # our mock objects
     empty_pipeline.prepare()
@@ -208,7 +415,6 @@ def test_submission_server_validation(
     mocker, stack_with_mock_components, sample_snapshot_response_model
 ):
     """Tests that the submission validation fails when the stack requires a remote server but the store is local."""
-
     ######### Remote server #########
     mocker.patch(
         "zenml.zen_stores.base_zen_store.BaseZenStore.is_local_store",
@@ -400,8 +606,10 @@ def test_get_step_run_metadata_never_raises_errors(
 def test_docker_builds_collection(
     stack_with_mock_components, sample_snapshot_response_model
 ):
-    """Tests that the stack collects the required Docker builds from all its
-    components."""
+    """Tests that the stack collects the required Docker builds.
+
+    The stack collects builds from all its components.
+    """
     first_orchestrator_build = BuildConfiguration(
         key="orchestrator", settings=DockerSettings()
     )

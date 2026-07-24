@@ -34,6 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import functools
 import json
+import math
 import re
 import time
 from collections import defaultdict
@@ -46,6 +47,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -54,6 +56,7 @@ from typing import (
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
+from pydantic import ValidationError
 from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
@@ -74,11 +77,14 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.resource_settings import ResourceSettings
+    from zenml.models import ResourceRequestResponse
 
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+SettingsT = TypeVar("SettingsT", bound="BaseSettings")
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -1538,6 +1544,215 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+def apply_resource_request_component_settings(
+    settings: SettingsT,
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    settings_class: Type[SettingsT],
+) -> SettingsT:
+    """Apply matching request target settings to stack settings.
+
+    Args:
+        settings: The stack component settings to update.
+        allocated_resource_request: The allocated resource request, if any.
+        settings_class: The settings class used to validate the result.
+
+    Returns:
+        The updated and validated stack component settings.
+
+    Raises:
+        ValueError: If the allocated resource request is invalid.
+    """
+    if not allocated_resource_request:
+        return settings
+
+    component_settings = (
+        allocated_resource_request.get_resources().component_settings
+    )
+
+    settings_dict = settings.model_dump(exclude_unset=True)
+    settings_dict.update(component_settings)
+
+    try:
+        return settings_class.model_validate(settings_dict)
+    except (ValidationError, TypeError) as e:
+        resource_pool_name = (
+            allocated_resource_request.get_body().pool_name or "<unknown>"
+        )
+        component_settings_json = json.dumps(
+            component_settings,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        )
+        raise ValueError(
+            "Failed to apply the Resource Pool component setting overrides "
+            "from the allocated resource request "
+            f"{allocated_resource_request.id} "
+            f"to `{settings_class.__name__}` stack component settings. "
+            "The overrides were merged with the existing stack component "
+            "settings, but the merged configuration is invalid. "
+            "Component settings provided by the resource request:\n"
+            f"{component_settings_json}\n"
+            "Please check the target settings that you configured for the "
+            f"`{resource_pool_name}` resource pool and its policies."
+        ) from e
+
+
+def apply_resource_request_allocations_to_pod_settings(
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    pod_settings: Optional[KubernetesPodSettings] = None,
+) -> KubernetesPodSettings:
+    """Apply allocated CPU, memory, and GPU resources to pod settings.
+
+    Args:
+        allocated_resource_request: The allocated resource request, if any.
+        pod_settings: The pod settings to update. A new one will be created
+            if not provided.
+
+    Returns:
+        The new or updated pod settings.
+    """
+    if not pod_settings:
+        pod_settings = KubernetesPodSettings()
+    else:
+        pod_settings = pod_settings.model_copy(deep=True)
+
+    if not allocated_resource_request:
+        return pod_settings
+
+    cpu_millicores = 0
+    memory_bytes = 0
+    gpu_count = 0
+
+    for allocation in allocated_resource_request.get_resources().allocations:
+        kind = allocation.resource_kind
+        unit = allocation.unit
+
+        if kind == "cpu":
+            cpu_millicores += _cpu_allocation_to_millicores(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "memory":
+            memory_bytes += _memory_allocation_to_bytes(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "gpu":
+            gpu_count += allocation.quantity
+
+    resources = {
+        section: dict(values)
+        for section, values in (pod_settings.resources or {}).items()
+    }
+    requests = resources.setdefault("requests", {})
+    limits = resources.setdefault("limits", {})
+    resource_request_resources: Dict[str, Dict[str, str]] = {
+        "requests": {},
+        "limits": {},
+    }
+    resource_request_requests = resource_request_resources["requests"]
+    resource_request_limits = resource_request_resources["limits"]
+
+    if cpu_millicores:
+        if cpu_millicores % 1000 == 0:
+            cpu = str(cpu_millicores // 1000)
+        else:
+            cpu = f"{cpu_millicores}m"
+        requests["cpu"] = cpu
+        limits["cpu"] = cpu
+        resource_request_requests["cpu"] = cpu
+        resource_request_limits["cpu"] = cpu
+
+    if memory_bytes:
+        memory = f"{math.ceil(memory_bytes / ByteUnit.MIB.byte_value)}Mi"
+        requests["memory"] = memory
+        limits["memory"] = memory
+        resource_request_requests["memory"] = memory
+        resource_request_limits["memory"] = memory
+
+    if gpu_count:
+        gpu = str(gpu_count)
+        requests["nvidia.com/gpu"] = gpu
+        limits["nvidia.com/gpu"] = gpu
+        resource_request_requests["nvidia.com/gpu"] = gpu
+        resource_request_limits["nvidia.com/gpu"] = gpu
+
+    logger.debug(
+        "Configured Kubernetes pod resources from allocated resource request "
+        "`%s`: %s. Final Kubernetes pod resources: %s",
+        allocated_resource_request.id,
+        json.dumps(
+            resource_request_resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+        json.dumps(
+            resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+    )
+
+    return pod_settings.model_copy(update={"resources": resources})
+
+
+def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
+    """Convert a CPU allocation to Kubernetes millicores.
+
+    Args:
+        quantity: CPU allocation quantity.
+        unit: CPU allocation unit.
+
+    Returns:
+        CPU allocation expressed in Kubernetes millicores.
+    """
+    if unit is None:
+        if quantity > 50:
+            return quantity
+        return quantity * 1000
+
+    normalized_unit = unit.lower()
+    if normalized_unit == "cpu":
+        return quantity * 1000
+    if normalized_unit in {"m", "mcpu", "millicpu", "millicore", "millicores"}:
+        return quantity
+
+    logger.warning(
+        "Interpreting unsupported CPU allocation unit `%s` as full CPU cores.",
+        unit,
+    )
+    return quantity * 1000
+
+
+def _memory_allocation_to_bytes(quantity: int, unit: Optional[str]) -> int:
+    """Convert a memory allocation to bytes.
+
+    Args:
+        quantity: Memory allocation quantity.
+        unit: Memory allocation unit.
+
+    Returns:
+        Memory allocation expressed in bytes.
+    """
+    if unit is None:
+        logger.warning("Interpreting memory allocation without a unit as MiB.")
+        return quantity * ByteUnit.MIB.byte_value
+
+    try:
+        byte_unit = ByteUnit(unit)
+    except ValueError:
+        logger.warning(
+            "Ignoring memory allocation with unsupported unit `%s`.",
+            unit,
+        )
+        return 0
+
+    return quantity * byte_unit.byte_value
 
 
 # ============================================================================

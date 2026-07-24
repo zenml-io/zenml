@@ -21,6 +21,7 @@ from zenml.constants import API, RESOURCE_REQUESTS, VERSION_1
 from zenml.models import (
     Page,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -53,8 +54,8 @@ def list_resource_requests(
     """Get a list of all resource requests.
 
     Args:
-        resource_request_filter_model: Filter model used for pagination, sorting,
-            filtering.
+        resource_request_filter_model: Filter model used for pagination,
+            sorting, filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
@@ -92,18 +93,46 @@ def get_resource_request(
     )
 
 
-@router.delete(
-    "/{resource_request_id}",
+@router.post(
+    "/{resource_request_id}/renew",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @async_fastapi_endpoint_wrapper
-def delete_resource_request(
+def renew_resource_request(
     resource_request_id: UUID,
+    renewal_request: ResourceRequestRenewalRequest,
     _: AuthContext = Security(authorize),
-) -> None:
-    """Deletes a resource request.
+) -> ResourceRequestResponse:
+    """Renew a resource request lease.
 
     Args:
         resource_request_id: ID of the resource request.
+        renewal_request: Renewed lease expiration timestamp.
+
+    Returns:
+        The renewed resource request.
     """
-    zen_store().delete_resource_request(resource_request_id)
+    return zen_store().renew_resource_request(
+        resource_request_id,
+        renewal_request,
+    )
+
+
+@router.post(
+    "/{resource_request_id}/release",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def release_resource_request(
+    resource_request_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> ResourceRequestResponse:
+    """Release a resource request on behalf of its owner.
+
+    Args:
+        resource_request_id: ID of the resource request.
+
+    Returns:
+        The released resource request.
+    """
+    return zen_store().release_resource_request(resource_request_id)

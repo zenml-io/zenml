@@ -16,6 +16,7 @@
 # ------------------------------------- V2 -------------------------------------
 
 # V2 Base
+from zenml.enums import ResourceRequestReclaimTolerance
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -255,33 +256,19 @@ from zenml.models.v2.core.project import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
-from zenml.models.v2.core.resource_pool import (
-    ResourcePoolAllocation,
-    ResourcePoolFilter,
-    ResourcePoolQueueItem,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolResponseBody,
-    ResourcePoolResponseMetadata,
-    ResourcePoolResponseResources,
-    ResourcePoolUpdate,
-)
-from zenml.models.v2.core.resource_pool_subject_policy import (
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyResponseBody,
-    ResourcePoolSubjectPolicyResponseMetadata,
-    ResourcePoolSubjectPolicyResponseResources,
-    ResourcePoolSubjectPolicyUpdate,
-)
 from zenml.models.v2.core.resource_request import (
+    ResourcePoolAllocation,
+    ResourcePoolCapacityComponentSettings,
+    ResourcePoolQueueItem,
+    ResourceRequestDemand,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestServiceConnectorSettings,
 )
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
@@ -371,6 +358,7 @@ from zenml.models.v2.core.stack import (
     StackUpdate,
 )
 from zenml.models.v2.core.step_run import (
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
@@ -381,9 +369,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -615,21 +603,12 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
-ResourcePoolResponseBody.model_rebuild()
-ResourcePoolResponseMetadata.model_rebuild()
-ResourcePoolResponseResources.model_rebuild()
-ResourcePoolResponse.model_rebuild()
 ResourceRequestResponseBody.model_rebuild()
 ResourceRequestResponseMetadata.model_rebuild()
 ResourceRequestResponseResources.model_rebuild()
 ResourceRequestResponse.model_rebuild()
 ResourcePoolAllocation.model_rebuild()
 ResourcePoolQueueItem.model_rebuild()
-ResourcePoolSubjectPolicyRequest.model_rebuild()
-ResourcePoolSubjectPolicyResponseBody.model_rebuild()
-ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
-ResourcePoolSubjectPolicyResponseResources.model_rebuild()
-ResourcePoolSubjectPolicyResponse.model_rebuild()
 TriggerRequest.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -828,28 +807,19 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
-    "ResourcePoolRequest",
-    "ResourcePoolUpdate",
-    "ResourcePoolFilter",
-    "ResourcePoolResponse",
-    "ResourcePoolResponseBody",
-    "ResourcePoolResponseMetadata",
-    "ResourcePoolResponseResources",
+    "ResourcePoolCapacityComponentSettings",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
-    "ResourcePoolSubjectPolicyFilter",
-    "ResourcePoolSubjectPolicyRequest",
-    "ResourcePoolSubjectPolicyResponse",
-    "ResourcePoolSubjectPolicyResponseBody",
-    "ResourcePoolSubjectPolicyResponseMetadata",
-    "ResourcePoolSubjectPolicyResponseResources",
-    "ResourcePoolSubjectPolicyUpdate",
-    "ResourceRequestRequest",
+    "ResourceRequestDemand",
     "ResourceRequestFilter",
+    "ResourceRequestRequest",
+    "ResourceRequestRenewalRequest",
+    "ResourceRequestReclaimTolerance",
     "ResourceRequestResponse",
     "ResourceRequestResponseBody",
     "ResourceRequestResponseMetadata",
     "ResourceRequestResponseResources",
+    "ResourceRequestServiceConnectorSettings",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",
@@ -1012,6 +982,7 @@ __all__ = [
     "StepRunIdentifier",
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
+    "StepHeartbeatRequest",
     "StepHeartbeatResponse",
     "ScheduleTriggerRequest",
     "ScheduleTriggerResponse",

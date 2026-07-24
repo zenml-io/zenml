@@ -107,6 +107,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
+        ResourceRequestResponse,
         ScheduleResponse,
         StepRunResponse,
     )
@@ -252,6 +253,15 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             The settings class.
         """
         return KubernetesOrchestratorSettings
+
+    @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the orchestrator supports resource pool allocations.
+
+        Returns:
+            Whether the orchestrator supports resource pool allocations.
+        """
+        return True
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -880,8 +890,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"{body.get('message', '')}"
             )
 
-    def submit_isolated_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    def submit_isolated_step_with_allocation(
+        self,
+        step_run_info: "StepRunInfo",
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submit an isolated step.
 
@@ -889,6 +902,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_run_info: The step run information.
             environment: The environment variables to set in the execution
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
         """
         logger.info(
             "Launching job for step `%s`.",
@@ -897,6 +912,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         settings = cast(
             KubernetesOrchestratorSettings, self.get_settings(step_run_info)
+        )
+        settings = kube_utils.apply_resource_request_component_settings(
+            settings=settings,
+            allocated_resource_request=allocated_resource_request,
+            settings_class=KubernetesOrchestratorSettings,
         )
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
         command, args = orchestrator_utils.get_step_entrypoint_command(
@@ -937,6 +957,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             step_name=step_run_info.pipeline_step_name,
         )
 
+        pod_settings = (
+            kube_utils.apply_resource_request_allocations_to_pod_settings(
+                allocated_resource_request=allocated_resource_request,
+                pod_settings=settings.pod_settings,
+            )
+        )
+
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -946,7 +973,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             labels=labels,
             annotations=annotations,
             settings=settings,
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
             # In the dynamic pipeline case, we can't handle retries at the
             # orchestrator level because the entrypoint args contain a step
             # run ID.
@@ -979,6 +1006,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 step_run_info.pipeline_step_name,
                 str(e),
             )
+
+        logger.debug(
+            "Launched job for step `%s`.",
+            step_run_info.pipeline_step_name,
+        )
 
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"

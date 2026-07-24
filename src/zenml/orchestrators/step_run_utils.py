@@ -296,6 +296,17 @@ class StepRunRequestFactory:
             request.status != ExecutionStatus.CACHED
             and self.snapshot.is_dynamic
         ):
+            from zenml.execution.pipeline.dynamic.compilation import (
+                get_step_runtime,
+            )
+
+            request.resource_request_runtime = get_step_runtime(
+                step_config=step.config,
+                pipeline_docker_settings=(
+                    self.snapshot.pipeline_configuration.docker_settings
+                ),
+                orchestrator=self.stack.orchestrator,
+            )
             if step.config.step_operator:
                 assert self.stack.step_operator
                 request.resource_requester = self.stack.step_operator.id

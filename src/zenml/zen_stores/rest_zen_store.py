@@ -93,8 +93,6 @@ from zenml.constants import (
     PROJECTS,
     REPLAY,
     RESOLVE,
-    RESOURCE_POOL_SUBJECT_POLICIES,
-    RESOURCE_POOLS,
     RESOURCE_REQUESTS,
     RUN_METADATA,
     RUN_TEMPLATES,
@@ -234,15 +232,8 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
@@ -287,6 +278,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
@@ -330,6 +322,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -1328,183 +1321,6 @@ class RestZenStore(BaseZenStore):
             route=STACK_COMPONENTS,
         )
 
-    # -------------------- Resource Pools -------------
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-        return self._create_resource(
-            resource=resource_pool,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-        )
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self._get_resource(
-            resource_id=resource_pool_id,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-            filter_model=filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        return self._update_resource(
-            resource_id=resource_pool_id,
-            resource_update=update,
-            route=RESOURCE_POOLS,
-            response_model=ResourcePoolResponse,
-        )
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-        self._delete_resource(
-            resource_id=resource_pool_id,
-            route=RESOURCE_POOLS,
-        )
-
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-        return self._create_resource(
-            resource=policy,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-        )
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Flag deciding whether to hydrate the output model(s).
-
-        Returns:
-            The policy.
-        """
-        return self._get_resource(
-            resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_resource_pool_subject_policies(
-        self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s).
-
-        Returns:
-            Matching policies.
-        """
-        return self._list_paginated_resources(
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-            filter_model=filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update to be applied to the policy.
-
-        Returns:
-            The updated policy.
-        """
-        return self._update_resource(
-            resource_id=policy_id,
-            resource_update=update,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-        self._delete_resource(
-            resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-        )
-
     # -------------------- Resource Requests -------------
 
     def get_resource_request(
@@ -1548,16 +1364,46 @@ class RestZenStore(BaseZenStore):
             params={"hydrate": hydrate},
         )
 
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
 
         Args:
-            resource_request_id: The ID of the resource request to delete.
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
         """
-        self._delete_resource(
-            resource_id=resource_request_id,
-            route=RESOURCE_REQUESTS,
+        response_body = self._request(
+            "POST",
+            self.url
+            + API
+            + VERSION_1
+            + f"{RESOURCE_REQUESTS}/{resource_request_id}/release",
         )
+        return ResourceRequestResponse.model_validate(response_body)
+
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
+        """
+        response_body = self.post(
+            path=f"{RESOURCE_REQUESTS}/{resource_request_id}/renew",
+            body=renewal_request,
+        )
+        return ResourceRequestResponse.model_validate(response_body)
 
     #  ----------------------------- Flavors -----------------------------
 
@@ -3939,18 +3785,32 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: Optional[int] = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat.
 
         Args:
             step_run_id: The ID of the step to update.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             The step heartbeat response.
         """
+        request = None
+        if heartbeat_liveness_timeout_seconds is not None:
+            request = StepHeartbeatRequest(
+                heartbeat_liveness_timeout_seconds=(
+                    heartbeat_liveness_timeout_seconds
+                )
+            )
+
         response_body = self.put(
             path=f"{STEPS}/{str(step_run_id)}{HEARTBEAT}",
+            body=request,
             timeout=5,
         )
 
@@ -5549,6 +5409,42 @@ class RestZenStore(BaseZenStore):
         # The initial page of items will be of type BaseResponseModel
         page_of_items: Page[AnyResponse] = Page.model_validate(body)
         # So these items will be parsed into their correct types like here
+        page_of_items.items = [
+            response_model.model_validate(generic_item)
+            for generic_item in body["items"]
+        ]
+        return page_of_items
+
+    def _list_paginated_models(
+        self,
+        route: str,
+        response_model: Type[AnyModel],
+        filter_model: BaseFilter,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Page[AnyModel]:
+        """Retrieve a page of Pydantic models from a REST endpoint.
+
+        Args:
+            route: The resource REST API route to use.
+            response_model: Model to use to serialize the response body.
+            filter_model: The filter model to use for the list query.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            Page of retrieved models matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        params = params or {}
+        params.update(filter_model.model_dump(exclude_none=True))
+        body = self.get(route, params=params)
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+
+        page_of_items: Page[AnyModel] = Page.model_validate(body)
         page_of_items.items = [
             response_model.model_validate(generic_item)
             for generic_item in body["items"]

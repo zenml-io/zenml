@@ -39,6 +39,14 @@ if [ "$SKIP_YAMLFIX" = false ]; then
     yamlfix --check .github tests -e "dependabot.yml" -e "workflows/release_prepare.yml" -e "workflows/release_finalize.yml" -e "workflows/integration-test-fast-services.yml" -e "workflows/integration-test-slow-services.yml"
 fi
 
+# autoflake replacement: checks for unused imports and variables
+ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
+
+ruff format $SRC  --check
+
+# check type annotations
+mypy $SRC_NO_TESTS
+
 # checks for GitHub Actions security issues (SHA pinning, version mismatches, etc.)
 if [ "$SKIP_ZIZMOR" = false ] && [ -d ".github/workflows" ]; then
     # Resolve GH_TOKEN: use existing env var, or try gh CLI
@@ -54,11 +62,3 @@ if [ "$SKIP_ZIZMOR" = false ] && [ -d ".github/workflows" ]; then
         echo "   Run: GH_TOKEN=\$(gh auth token) bash scripts/lint.sh"
     fi
 fi
-
-# autoflake replacement: checks for unused imports and variables
-ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
-
-ruff format $SRC  --check
-
-# check type annotations
-mypy $SRC_NO_TESTS

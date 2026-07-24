@@ -59,20 +59,6 @@ from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.resource_pool_policy_schemas import (
-    ResourcePoolSubjectPolicyResourceSchema,
-    ResourcePoolSubjectPolicySchema,
-)
-from zenml.zen_stores.schemas.resource_pool_schemas import (
-    ResourcePoolAllocationSchema,
-    ResourcePoolQueueSchema,
-    ResourcePoolResourceSchema,
-    ResourcePoolSchema,
-)
-from zenml.zen_stores.schemas.resource_request_schemas import (
-    ResourceRequestResourceSchema,
-    ResourceRequestSchema,
-)
 from zenml.zen_stores.schemas.run_metadata_schemas import (
     RunMetadataResourceSchema,
     RunMetadataSchema,
@@ -161,14 +147,6 @@ __all__ = [
     "ProjectSchema",
     "ApiTransactionResultSchema",
     "ApiTransactionSchema",
-    "ResourcePoolQueueSchema",
-    "ResourcePoolAllocationSchema",
-    "ResourcePoolSubjectPolicySchema",
-    "ResourcePoolSubjectPolicyResourceSchema",
-    "ResourcePoolSchema",
-    "ResourcePoolResourceSchema",
-    "ResourceRequestSchema",
-    "ResourceRequestResourceSchema",
     "TriggerSchema",
     "TriggerSnapshotSchema",
     "TriggerExecutionSchema",

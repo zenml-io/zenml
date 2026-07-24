@@ -15,6 +15,7 @@
 
 import time
 from contextlib import nullcontext
+from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -34,6 +35,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ExecutionStatus,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     StepRuntime,
 )
@@ -45,6 +47,8 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
+    ResourceRequestRenewalRequest,
+    ResourceRequestResponse,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -410,8 +414,11 @@ class StepLauncher:
             skip_artifact_materialization=runtime.should_skip_artifact_materialization(),
         )
 
+        allocated_resource_request: Optional[ResourceRequestResponse] = None
         if self._snapshot.is_dynamic:
-            self._wait_until_resources_acquired(step_run_info)
+            allocated_resource_request = self._wait_until_resources_acquired(
+                step_run_info
+            )
 
         terminal_step_run = None
         try:
@@ -423,6 +430,7 @@ class StepLauncher:
                 terminal_step_run = self._run_step_with_step_operator(
                     step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
+                    allocated_resource_request=allocated_resource_request,
                 )
             elif not self._snapshot.is_dynamic:
                 terminal_step_run = self._run_step_in_current_thread(
@@ -463,10 +471,9 @@ class StepLauncher:
                         output_artifact_uris=output_artifact_uris,
                     )
                 else:
-                    terminal_step_run = (
-                        self._run_step_with_dynamic_orchestrator(
-                            step_run_info=step_run_info
-                        )
+                    terminal_step_run = self._run_step_with_dynamic_orchestrator(
+                        step_run_info=step_run_info,
+                        allocated_resource_request=allocated_resource_request,
                     )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
@@ -480,12 +487,15 @@ class StepLauncher:
         self,
         step_operator_name: Optional[str],
         step_run_info: StepRunInfo,
+        allocated_resource_request: Optional[ResourceRequestResponse],
     ) -> Optional[StepRunResponse]:
         """Runs the current step with a step operator.
 
         Args:
             step_operator_name: The name of the step operator to use.
             step_run_info: Additional information needed to run the step.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             RuntimeError: If trying to use a step operator that does not support
@@ -531,12 +541,16 @@ class StepLauncher:
         )
 
         try:
-            step_operator.submit(
+            step_operator.submit_with_allocation(
                 info=step_run_info,
                 entrypoint_command=entrypoint_command,
                 environment=environment,
+                allocated_resource_request=allocated_resource_request,
             )
         except NotImplementedError:
+            if step_operator.supports_resource_pool_allocation:
+                raise
+
             if not self._wait:
                 # We're running in a dynamic pipeline and for the monitoring to
                 # work correctly, we only allow running with step operators that
@@ -561,10 +575,11 @@ class StepLauncher:
                     step_operator.name,
                 )
                 try:
-                    step_operator.launch(
+                    step_operator.launch_with_allocation(
                         info=step_run_info,
                         entrypoint_command=entrypoint_command,
                         environment=environment,
+                        allocated_resource_request=allocated_resource_request,
                     )
                 finally:
                     try:
@@ -600,11 +615,14 @@ class StepLauncher:
     def _run_step_with_dynamic_orchestrator(
         self,
         step_run_info: StepRunInfo,
+        allocated_resource_request: Optional[ResourceRequestResponse] = None,
     ) -> Optional[StepRunResponse]:
         """Runs the current step with a dynamic orchestrator.
 
         Args:
             step_run_info: Additional information needed to run the step.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             BaseException: If the step run failed.
@@ -624,9 +642,10 @@ class StepLauncher:
                 stack=self._stack,
             )
         )
-        self._stack.orchestrator.submit_isolated_step(
+        self._stack.orchestrator.submit_isolated_step_with_allocation(
             step_run_info=step_run_info,
             environment=environment,
+            allocated_resource_request=allocated_resource_request,
         )
         if self._wait:
             try:
@@ -676,7 +695,10 @@ class StepLauncher:
 
         return None
 
-    def _cleanup_remote_step(self, step_run: StepRunResponse) -> None:
+    def _cleanup_remote_step(
+        self,
+        step_run: StepRunResponse,
+    ) -> None:
         """Clean up infrastructure after a remote step has finished.
 
         Args:
@@ -786,76 +808,136 @@ class StepLauncher:
 
     def _wait_until_resources_acquired(
         self, step_run_info: StepRunInfo
-    ) -> None:
+    ) -> Optional[ResourceRequestResponse]:
         """Waits until the resources are acquired.
 
         Args:
             step_run_info: Step run information.
 
+        Returns:
+            The allocated resource request response, if the step has one.
+
         Raises:
             RuntimeError: If the resource request was not found, or
                 was rejected, preempted, or cancelled.
         """
+        resource_request_id = step_run_info.step_run.resource_request_id
         resource_request = step_run_info.step_run.resource_request
-        if not resource_request:
-            return
+        if not resource_request_id:
+            if resource_request is None:
+                return None
+            resource_request_id = resource_request.id
+        elif (
+            resource_request is not None
+            and resource_request.id != resource_request_id
+        ):
+            resource_request = None
 
-        if resource_request.status == ResourceRequestStatus.ALLOCATED:
-            return
+        step_name = step_run_info.pipeline_step_name
+        zen_store = Client().zen_store
+        resource_settings = step_run_info.config.resource_settings
+        allocation_wait_timeout = timedelta(
+            seconds=resource_settings.allocation_wait_timeout_seconds
+        )
+        initialization_lease = timedelta(
+            seconds=resource_settings.initialization_lease_seconds
+        )
+        wait_started_at = utc_now()
+        allocation_wait_deadline = wait_started_at + allocation_wait_timeout
+        max_poll_delay_seconds = 20.0
+        poller_lease_buffer = timedelta(seconds=2 * max_poll_delay_seconds)
 
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
-            max_delay=20.0,
+            max_delay=max_poll_delay_seconds,
             factor=2.0,
             jitter="equal",
         ):
-            try:
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request.id, hydrate=False
-                )
-            except KeyError as e:
+            now = utc_now()
+            if now >= allocation_wait_deadline:
                 raise RuntimeError(
-                    f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` not found. This "
-                    "is most likely because someone deleted the resource "
-                    "request."
-                ) from e
+                    f"Timed out after {resource_settings.allocation_wait_timeout_seconds} "
+                    f"seconds waiting for resource request `{resource_request_id}` "
+                    f"for step `{step_name}` to be allocated. Increase "
+                    f"`ResourceSettings.allocation_wait_timeout_seconds` on this "
+                    "step to wait longer."
+                )
+
+            if resource_request is None:
+                try:
+                    # This lease tracks allocation-poller liveness before the
+                    # step heartbeat worker exists.
+                    lease_duration = min(
+                        timedelta(seconds=delay) + poller_lease_buffer,
+                        allocation_wait_deadline - now,
+                    )
+                    resource_request = zen_store.renew_resource_request(
+                        resource_request_id,
+                        ResourceRequestRenewalRequest(
+                            lease_expires_at=now + lease_duration,
+                            runtime_state=ResourceRequestRuntimeState.PENDING,
+                        ),
+                    )
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Resource request `{resource_request_id}` for step "
+                        f"`{step_name}` not found. This is most likely because "
+                        "someone deleted the resource request."
+                    ) from e
 
             if resource_request.status == ResourceRequestStatus.ALLOCATED:
+                resource_request = zen_store.renew_resource_request(
+                    resource_request_id,
+                    ResourceRequestRenewalRequest(
+                        lease_expires_at=utc_now() + initialization_lease,
+                        runtime_state=ResourceRequestRuntimeState.SUBMITTED,
+                    ),
+                )
                 logger.info(
                     "Resource request `%s` for step `%s` was approved.",
                     resource_request.id,
-                    step_run_info.pipeline_step_name,
+                    step_name,
                 )
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
                     status=ExecutionStatus.RUNNING,
                 )
-                return
-            elif resource_request.status == ResourceRequestStatus.REJECTED:
+                return resource_request
+            if resource_request.status == ResourceRequestStatus.REJECTED:
                 reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was rejected: "
-                    f"{reason}"
+                    f"`{step_name}` was rejected: {reason}"
                 )
-            elif resource_request.status == ResourceRequestStatus.PREEMPTED:
+            if resource_request.status in {
+                ResourceRequestStatus.PREEMPTING,
+                ResourceRequestStatus.PREEMPTED,
+                ResourceRequestStatus.RELEASED,
+                ResourceRequestStatus.EXPIRED,
+            }:
                 reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was preempted: "
-                    f"{reason}"
+                    f"`{step_name}` reached status "
+                    f"`{resource_request.status}`: {reason}"
                 )
-            elif resource_request.status == ResourceRequestStatus.CANCELLED:
+            if resource_request.status == ResourceRequestStatus.CANCELLED:
+                reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was cancelled."
+                    f"`{step_name}` was cancelled: {reason}"
                 )
 
             logger.info(
                 "Waiting for resource request `%s` of step `%s` to be "
                 "approved...",
                 resource_request.id,
-                step_run_info.pipeline_step_name,
+                step_name,
             )
             time.sleep(delay)
+            resource_request = None
+
+        raise RuntimeError(
+            f"Stopped waiting for resource request `{resource_request_id}` "
+            f"for step `{step_name}` before it was allocated."
+        )
