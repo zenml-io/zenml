@@ -1056,8 +1056,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 error_message,
             )
             return ExecutionStatus.FAILED
-        if status == kube_utils.JobStatus.PROVISIONING:
-            return ExecutionStatus.PROVISIONING
 
         return ExecutionStatus.RUNNING
 
