@@ -61,38 +61,6 @@ PIPELINE_RUN_NAME_METADATA_KEY = "pipeline_run_name"
 PROJECT_ID_METADATA_KEY = "project_id"
 
 
-def _normalize_timestamps(
-    created: Optional[datetime], updated: Optional[datetime]
-) -> tuple[datetime, datetime]:
-    """Normalize optional RM timestamps for ZenML response bodies.
-
-    Args:
-        created: Optional Resource Manager creation timestamp.
-        updated: Optional Resource Manager update timestamp.
-
-    Returns:
-        Normalized creation and update timestamps.
-    """
-    now = utc_now()
-    created_at = created or now
-    updated_at = updated or created_at
-    return created_at, updated_at
-
-
-def _metadata_string(metadata: dict[str, Any], key: str) -> Optional[str]:
-    """Read a string metadata value when present.
-
-    Args:
-        metadata: Metadata values to read from.
-        key: Metadata key to read.
-
-    Returns:
-        Metadata value converted to a string, or `None` if it is absent.
-    """
-    value = metadata.get(key)
-    return None if value is None else str(value)
-
-
 def _metadata_uuid(metadata: dict[str, Any], key: str) -> Optional[UUID]:
     """Read a UUID metadata value when present.
 
@@ -226,18 +194,6 @@ class RMSubject(BaseModel):
         return payload
 
     @classmethod
-    def _name_attributes(cls, name: Optional[str] = None) -> dict[str, Any]:
-        """Build common name attributes for hierarchy subjects.
-
-        Args:
-            name: Optional subject name.
-
-        Returns:
-            Subject attributes containing the name when present.
-        """
-        return cls._optional_values(name=name)
-
-    @classmethod
     def _organization(
         cls,
         *,
@@ -258,7 +214,7 @@ class RMSubject(BaseModel):
         return cls(
             subject_id=organization_id,
             subject_type=ORGANIZATION_SUBJECT_TYPE,
-            attributes=cls._name_attributes(organization_name),
+            attributes=cls._optional_values(name=organization_name),
             child=child,
         )
 
@@ -283,7 +239,7 @@ class RMSubject(BaseModel):
         return cls(
             subject_id=workspace_id,
             subject_type=WORKSPACE_SUBJECT_TYPE,
-            attributes=cls._name_attributes(workspace_name),
+            attributes=cls._optional_values(name=workspace_name),
             child=child,
         )
 
@@ -749,7 +705,11 @@ class RMResourceRequestResponse(BaseModel):
         Returns:
             ZenML resource request response model.
         """
-        created, updated = _normalize_timestamps(self.created, self.updated)
+        now = utc_now()
+        created = self.created or now
+        updated = self.updated or created
+        step_name = self.metadata.get(STEP_NAME_METADATA_KEY)
+        pipeline_run_name = self.metadata.get(PIPELINE_RUN_NAME_METADATA_KEY)
         component_settings: dict[str, Any] = {}
         service_connector_settings: (
             ResourceRequestServiceConnectorSettings | None
@@ -783,11 +743,11 @@ class RMResourceRequestResponse(BaseModel):
                     self.metadata, PIPELINE_RUN_ID_METADATA_KEY
                 ),
                 pool_id=self.pool_id,
-                step_name=_metadata_string(
-                    self.metadata, STEP_NAME_METADATA_KEY
-                ),
-                pipeline_run_name=_metadata_string(
-                    self.metadata, PIPELINE_RUN_NAME_METADATA_KEY
+                step_name=None if step_name is None else str(step_name),
+                pipeline_run_name=(
+                    None
+                    if pipeline_run_name is None
+                    else str(pipeline_run_name)
                 ),
                 project_id=_metadata_uuid(
                     self.metadata, PROJECT_ID_METADATA_KEY
