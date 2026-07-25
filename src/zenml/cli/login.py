@@ -416,8 +416,19 @@ def connect_to_pro_server(
 
         workspace_id: Optional[str] = None
         if token.device_metadata:
-            # TODO: is this still correct?
-            workspace_id = token.device_metadata.get("tenant_id")
+            # `workspace_id` is the current key name; `tenant_id` is kept as
+            # a fallback in case an older Pro auth server still sends the
+            # legacy key, so a mismatch does not silently drop the
+            # selection.
+            workspace_id = token.device_metadata.get(
+                "workspace_id"
+            ) or token.device_metadata.get("tenant_id")
+            if workspace_id is None:
+                logger.debug(
+                    "Could not find a workspace id in the device metadata "
+                    "returned by the login flow: %s",
+                    token.device_metadata,
+                )
 
         if workspace_id is None and pro_server is None:
             # This is not really supposed to happen, because the implementation
