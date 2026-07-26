@@ -15,6 +15,7 @@
 
 import math
 import os
+import subprocess
 import time
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
@@ -208,6 +209,19 @@ def lookup_modal_app(
         environment_name=modal_environment,
         client=modal_client,
     )
+
+
+def get_modal_app_name(step_run_id: Any, step_name: str) -> str:
+    """Generate the Modal app name for a step run.
+
+    Args:
+        step_run_id: ID of the step run.
+        step_name: Name of the pipeline step.
+
+    Returns:
+        Modal app name string truncated to 64 chars.
+    """
+    return f"zenml-{step_run_id}-{step_name}"[:64]
 
 
 def get_gpu_values(
@@ -410,15 +424,6 @@ def stop_modal_app(
 ) -> None:
     """Stop a deployed Modal app by name using the Modal CLI.
 
-    Moves the app from 'deployed' to 'stopped' in the Modal dashboard,
-    eliminating the visual clutter of idle ``Tasks: 0`` app entries.
-    Stopped apps remain visible in the 'recently stopped' section with
-    their logs intact, so debugging is not affected.
-
-    This should only be called after the associated Modal sandbox has
-    reached a terminal state, because stopping the app does not wait for
-    running sandboxes to finish.
-
     Args:
         app_name: The Modal app name to stop (e.g. ``zenml-<id>-<step>``).
         modal_environment: Modal environment name passed as ``--env``.
@@ -431,10 +436,8 @@ def stop_modal_app(
 
     Raises:
         RuntimeError: If the ``modal app stop`` command exits with a
-            non-zero status code.
+            non-zero status code or times out.
     """
-    import subprocess
-
     cmd = ["modal", "app", "stop", "--yes", app_name]
     if modal_environment:
         cmd += ["--env", modal_environment]
@@ -447,8 +450,29 @@ def stop_modal_app(
         env[MODAL_TOKEN_ID_ENV_KEY] = token_pair[0]
         env[MODAL_TOKEN_SECRET_ENV_KEY] = token_pair[1]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    if result.returncode != 0:
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, env=env, timeout=30
+        )
+        if result.returncode != 0 and "--yes" in result.stderr:
+            fallback_cmd = ["modal", "app", "stop", app_name]
+            if modal_environment:
+                fallback_cmd += ["--env", modal_environment]
+            result = subprocess.run(
+                fallback_cmd,
+                input="y\n",
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=30,
+            )
+    except subprocess.TimeoutExpired as e:
         raise RuntimeError(
-            f"Failed to stop Modal app '{app_name}': {result.stderr.strip()}"
+            f"Timed out stopping Modal app '{app_name}' after 30 seconds."
+        ) from e
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(
+            f"Failed to stop Modal app '{app_name}': {error_msg}"
         )

@@ -209,8 +209,11 @@ class ModalStepOperator(BaseStepOperator):
         )
         modal_client = self._get_modal_client()
 
+        app_name = sandbox_utils.get_modal_app_name(
+            info.step_run_id, info.pipeline_step_name
+        )
         app = sandbox_utils.lookup_modal_app(
-            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            app_name,
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
@@ -271,24 +274,26 @@ class ModalStepOperator(BaseStepOperator):
     def cleanup_step_submission(self, step_run: "StepRunResponse") -> None:
         """Stop the Modal app after a sandbox run completes.
 
-        When ``stop_app_after_run`` is enabled in the step settings, this
-        calls ``modal app stop`` on the per-step app, moving its entry from
-        'deployed' to 'stopped' in the Modal dashboard. Stopped apps remain
-        visible in the 'recently stopped' section with their full log history
-        intact, so debugging is unaffected. Failures are logged as warnings
-        and never re-raised so that cleanup cannot mask the step result.
-
         Args:
             step_run: The finished step run.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(step_run))
-        if not settings.stop_app_after_run:
+        if not settings.stop_app:
             return
 
-        app_name = f"zenml-{step_run.id}-{step_run.name}"[:64]
-        modal_environment = sandbox_utils.normalize_optional_config_value(
-            settings.modal_environment
+        app_name = sandbox_utils.get_modal_app_name(
+            step_run.id, step_run.name
         )
+        modal_environment = step_run.run_metadata.get(
+            STEP_MODAL_ENVIRONMENT_METADATA_KEY
+        )
+        if modal_environment is not None:
+            modal_environment = str(modal_environment)
+        else:
+            modal_environment = sandbox_utils.normalize_optional_config_value(
+                settings.modal_environment
+            )
+
         try:
             sandbox_utils.stop_modal_app(
                 app_name,
