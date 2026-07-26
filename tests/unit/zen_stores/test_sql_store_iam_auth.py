@@ -17,7 +17,7 @@ import builtins
 import ssl
 from pathlib import Path
 from typing import Any, Union, cast
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pymysql
 import pytest
@@ -362,3 +362,56 @@ def test_backup_engines_receive_iam_listener(
     engine = backup.create_engine(database=config.database)
 
     configure.assert_called_once_with(engine)
+
+
+@pytest.mark.parametrize("auth_mode", ["password", "aws_rds_iam"])
+def test_restore_database_replaces_existing_tables(
+    auth_mode: str, ca_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Restore replaces tables without recreating the schema in IAM mode."""
+    config = (
+        _iam_config(ca_file)
+        if auth_mode == "aws_rds_iam"
+        else SqlZenStoreConfiguration(
+            url="mysql://user:secret@db.example.com:3306/zenml"  # ggignore
+        )
+    )
+    backup = InMemoryDatabaseBackupEngine(config)
+    backup.create_database = MagicMock()  # type: ignore[method-assign]
+    connection = MagicMock()
+    transaction = MagicMock()
+    transaction.__enter__.return_value = connection
+    engine = MagicMock()
+    engine.begin.return_value = transaction
+    backup._engine = engine
+    existing_parent = MagicMock()
+    existing_child = MagicMock()
+    reflect_calls = 0
+
+    def reflect(metadata: object, *, bind: object) -> None:
+        nonlocal reflect_calls
+        del bind
+        reflect_calls += 1
+        if reflect_calls == 1:
+            metadata.sorted_tables = [  # type: ignore[attr-defined]
+                existing_parent,
+                existing_child,
+            ]
+
+    monkeypatch.setattr(
+        "zenml.zen_stores.migrations.backup.sqlalchemy.MetaData.reflect",
+        reflect,
+    )
+
+    backup.restore_database_from_storage()
+
+    if auth_mode == "password":
+        backup.create_database.assert_called_once_with(drop=True)
+        existing_parent.drop.assert_not_called()
+        existing_child.drop.assert_not_called()
+    else:
+        backup.create_database.assert_not_called()
+        assert [
+            existing_child.drop.call_args,
+            existing_parent.drop.call_args,
+        ] == [call(bind=connection), call(bind=connection)]
