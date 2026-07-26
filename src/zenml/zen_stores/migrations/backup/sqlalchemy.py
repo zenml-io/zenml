@@ -233,12 +233,17 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
             load_db_kwargs: Additional keyword arguments to pass to the
                 `load_database_data` method.
         """
-        # Drop and re-create the primary database
-        self.create_database(drop=True)
+        if self.config.auth_mode == "password":
+            self.create_database(drop=True)
 
         metadata = MetaData()
-
         with self.engine.begin() as connection:
+            if self.config.auth_mode == "aws_rds_iam":
+                existing_metadata = MetaData()
+                existing_metadata.reflect(bind=connection)
+                for table in reversed(existing_metadata.sorted_tables):
+                    table.drop(bind=connection)
+
             # read the DB information one JSON object at a time
             self_references: dict[str, bool] = {}
             for table_dump in self.load_database_data(**load_db_kwargs):
@@ -247,7 +252,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                     # execute the table creation statement
                     connection.execute(text(table_dump["create_stmt"]))
                     # Reload the database metadata after creating the table
-                    metadata.reflect(bind=self.engine)
+                    metadata.reflect(bind=connection)
                     self_references[table_name] = table_dump.get(
                         "self_references", False
                     )
@@ -256,7 +261,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                     # execute the index creation statement
                     connection.execute(text(table_dump["index_create_stmt"]))
                     # Reload the database metadata after creating the index
-                    metadata.reflect(bind=self.engine)
+                    metadata.reflect(bind=connection)
 
                 if "data" in table_dump:
                     # insert the data into the database

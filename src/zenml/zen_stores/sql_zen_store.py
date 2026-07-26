@@ -43,6 +43,7 @@ import math
 import os
 import random
 import re
+import ssl
 import sys
 import time
 import uuid
@@ -391,7 +392,7 @@ from zenml.utils.string_utils import (
     random_str,
     validate_name,
 )
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -630,6 +631,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        auth_mode: The database authentication mode.
+        aws_region: The AWS region used to generate RDS IAM authentication
+            tokens.
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
@@ -671,6 +675,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     database: Optional[str] = None
     username: Optional[PlainSerializedSecretStr] = None
     password: Optional[PlainSerializedSecretStr] = None
+    auth_mode: Literal["password", "aws_rds_iam"] = "password"  # ggignore
+    aws_region: Optional[str] = None
     ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
@@ -901,11 +907,17 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 sql_url = sql_url._replace(query=immutabledict())
 
             database = self.database
-            if not self.username or not self.password or not database:
+            password_missing = (
+                self.auth_mode == "password" and not self.password
+            )
+            if not self.username or password_missing or not database:
+                password_requirement = (
+                    ", password" if self.auth_mode == "password" else ""
+                )
                 raise ValueError(
-                    "Invalid MySQL configuration: The username, password and "
-                    "database must be set in the URL or as configuration "
-                    "attributes",
+                    f"Invalid MySQL configuration: The username"
+                    f"{password_requirement} and database must be set in the "
+                    "URL or as configuration attributes"
                 )
 
             regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
@@ -938,6 +950,180 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         self.url = str(sql_url)
         return self
+
+    @model_validator(mode="after")
+    def _validate_authentication(self) -> "SqlZenStoreConfiguration":
+        """Validate database authentication settings.
+
+        Returns:
+            The validated configuration.
+
+        Raises:
+            ValueError: If RDS IAM authentication is configured unsafely or with
+                an incompatible backup strategy.
+        """
+        if self.auth_mode != "aws_rds_iam":
+            return self
+
+        if self.driver != SQLDatabaseDriver.MYSQL:
+            raise ValueError(
+                "AWS RDS IAM authentication is supported only for MySQL."
+            )
+        if self.password is not None:
+            raise ValueError(
+                "The `password` attribute must not be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.aws_region:
+            raise ValueError(
+                "The `aws_region` attribute must be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.ssl or not self.ssl_verify_server_cert or not self.ssl_ca:
+            raise ValueError(
+                "AWS RDS IAM authentication requires `ssl=true`, "
+                "`ssl_verify_server_cert=true`, and an explicit `ssl_ca`."
+            )
+
+        self.validate_backup_strategy(self.backup_strategy)
+
+        return self
+
+    def validate_backup_strategy(
+        self, strategy: DatabaseBackupStrategy
+    ) -> None:
+        """Validate that a backup strategy is compatible with authentication.
+
+        Args:
+            strategy: Effective database backup strategy.
+
+        Raises:
+            ValueError: If the strategy requires privileges unavailable to IAM
+                workspace users.
+        """
+        incompatible_strategies = {
+            DatabaseBackupStrategy.DATABASE,
+            DatabaseBackupStrategy.MYDUMPER,
+            DatabaseBackupStrategy.CUSTOM,
+        }
+        if (
+            self.auth_mode == "aws_rds_iam"
+            and strategy in incompatible_strategies
+        ):
+            raise ValueError(
+                f"Backup strategy `{strategy.value}` is not supported with "
+                "AWS RDS IAM authentication. Use `disabled`, `in-memory`, or "
+                "`dump-file`."
+            )
+
+    def configure_engine_auth(self, engine: Engine) -> None:
+        """Configure per-connection authentication for an SQLAlchemy engine.
+
+        Args:
+            engine: The engine whose connections should use this configuration.
+
+        Raises:
+            ImportError: If AWS RDS IAM mode is enabled without the optional AWS
+                SDK dependency.
+        """
+        if self.auth_mode != "aws_rds_iam":
+            return
+
+        try:
+            import boto3
+            from botocore.exceptions import (
+                ClientError,
+                ConnectionClosedError,
+                ConnectTimeoutError,
+                EndpointConnectionError,
+                ReadTimeoutError,
+            )
+        except ImportError as error:
+            raise ImportError(
+                "AWS RDS IAM database authentication requires the optional "
+                "AWS SDK dependency. Install it with "
+                "`pip install 'zenml[aws-rds-iam]'`."
+            ) from error
+
+        assert self.aws_region is not None
+        rds_client = boto3.client("rds", region_name=self.aws_region)
+        transient_exceptions = (
+            ConnectionClosedError,
+            ConnectTimeoutError,
+            EndpointConnectionError,
+            ReadTimeoutError,
+        )
+        transient_error_codes = {
+            "InternalFailure",
+            "RequestTimeout",
+            "ServiceUnavailable",
+            "Throttling",
+            "ThrottlingException",
+        }
+
+        def _is_transient(error: Exception) -> bool:
+            if isinstance(error, transient_exceptions):
+                return True
+            if isinstance(error, ClientError):
+                code = error.response.get("Error", {}).get("Code")
+                return code in transient_error_codes
+            return False
+
+        @event.listens_for(engine.dialect, "do_connect")
+        def _set_iam_token(
+            dialect: Any,
+            connection_record: Any,
+            cargs: List[Any],
+            cparams: Dict[str, Any],
+        ) -> None:
+            del dialect, connection_record, cargs
+            host = cparams["host"]
+            port = int(cparams.get("port") or 3306)
+            username = cparams["user"]
+            delays = iter(
+                exponential_backoff_delays(
+                    attempts=2,
+                    initial_delay=0.1,
+                    max_delay=0.2,
+                    factor=2.0,
+                    jitter="none",
+                )
+            )
+            for attempt in range(3):
+                try:
+                    cparams["password"] = rds_client.generate_db_auth_token(
+                        DBHostname=host,
+                        Port=port,
+                        DBUsername=username,
+                    )
+                    return
+                except Exception as error:
+                    if not _is_transient(error) or attempt == 2:
+                        raise
+                    time.sleep(next(delays))
+
+        @event.listens_for(engine, "connect")
+        def _assert_verified_tls(
+            dbapi_connection: Any, connection_record: Any
+        ) -> None:
+            del connection_record
+            tls_socket = getattr(dbapi_connection, "_sock", None)
+            if not isinstance(tls_socket, ssl.SSLSocket):
+                raise RuntimeError(
+                    "AWS RDS IAM authentication requires a live TLS connection."
+                )
+
+            tls_context = tls_socket.context
+            if (
+                tls_context.verify_mode != ssl.CERT_REQUIRED
+                or not tls_context.check_hostname
+                or not tls_socket.server_hostname
+                or not tls_socket.getpeercert()
+            ):
+                raise RuntimeError(
+                    "AWS RDS IAM authentication requires verified TLS with "
+                    "hostname validation."
+                )
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -1001,7 +1187,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
-            assert self.password is not None
+            if self.auth_mode == "password":
+                assert self.password is not None
             assert sql_url.host is not None
 
             if not database:
@@ -1016,30 +1203,56 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
                 username=self.username.get_secret_value(),
-                password=self.password.get_secret_value(),
+                password=(
+                    self.password.get_secret_value()
+                    if self.password is not None
+                    else None
+                ),
                 database=database,
             )
 
-            sqlalchemy_ssl_args: Dict[str, Any] = {}
-
-            # Handle SSL params
             if self.ssl:
-                sqlalchemy_ssl_args["ssl"] = True
-                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                    ssl_setting = getattr(self, key)
-                    if not ssl_setting:
-                        continue
-                    if not os.path.isfile(ssl_setting.get_secret_value()):
-                        logger.warning(
-                            f"Database SSL setting `{key}` is not a file. "
-                        )
-                    sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
-                        ssl_setting.get_secret_value()
+                if self.auth_mode == "aws_rds_iam":
+                    assert self.ssl_ca is not None
+                    ssl_context = ssl.create_default_context()
+                    ssl_context.load_verify_locations(
+                        cafile=self.ssl_ca.get_secret_value()
                     )
-                sqlalchemy_ssl_args["check_hostname"] = (
-                    self.ssl_verify_server_cert
-                )
-                sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
+                    ssl_context.check_hostname = True
+                    ssl_context.verify_mode = ssl.CERT_REQUIRED
+                    # RDS CA certificates are hostname-valid and trusted but do
+                    # not satisfy OpenSSL 3's optional RFC 5280 strict profile.
+                    # Keep chain and hostname verification while matching the
+                    # compatibility behavior used by PyMySQL itself.
+                    if hasattr(ssl, "VERIFY_X509_STRICT"):
+                        ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+                    if self.ssl_cert:
+                        ssl_context.load_cert_chain(
+                            certfile=self.ssl_cert.get_secret_value(),
+                            keyfile=(
+                                self.ssl_key.get_secret_value()
+                                if self.ssl_key
+                                else None
+                            ),
+                        )
+                    sqlalchemy_connect_args["ssl"] = ssl_context
+                else:
+                    sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
+                    for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                        ssl_setting = getattr(self, key)
+                        if not ssl_setting:
+                            continue
+                        if not os.path.isfile(ssl_setting.get_secret_value()):
+                            logger.warning(
+                                f"Database SSL setting `{key}` is not a file. "
+                            )
+                        sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                            ssl_setting.get_secret_value()
+                        )
+                    sqlalchemy_ssl_args["check_hostname"] = (
+                        self.ssl_verify_server_cert
+                    )
+                    sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -1454,6 +1667,7 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+        self.config.configure_engine_auth(self._engine)
         self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
@@ -1465,9 +1679,9 @@ class SqlZenStore(BaseZenStore):
         ):
             fileio.makedirs(os.path.dirname(self.config.database))
 
-        # MySQL: We might need to create the database manually.
-        # To do so, we create a new engine that connects to the `mysql` database
-        # and then create the desired database.
+        # MySQL: We might need to create the database manually. The backup
+        # engine's master engine connects without a default database so it can
+        # create the configured database before the primary engine uses it.
         # See https://stackoverflow.com/a/8977109
         if (
             self.config.driver == SQLDatabaseDriver.MYSQL
@@ -1566,6 +1780,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the backup strategy or arguments are invalid.
         """
         strategy = strategy or self.config.backup_strategy
+        self.config.validate_backup_strategy(strategy)
 
         backup_engine_class: Type[BaseDatabaseBackupEngine]
 
