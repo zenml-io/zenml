@@ -428,7 +428,11 @@ def device_authorization(
     else:
         # Put the device into pending state and generate new codes. This
         # effectively invalidates the old codes and the device cannot be used
-        # for authentication anymore.
+        # for authentication anymore. Also clear any user association left
+        # over from a previous authorization of this device (e.g. a prior
+        # login from a different user on the same client machine/client ID)
+        # so the upcoming verification isn't rejected as belonging to
+        # another user.
         device_model = store.update_internal_authorized_device(
             device_id=device_model.id,
             update=OAuthDeviceInternalUpdate(
@@ -437,6 +441,7 @@ def device_authorization(
                 status=OAuthDeviceStatus.PENDING,
                 failed_auth_attempts=0,
                 generate_new_codes=True,
+                clear_user_id=True,
                 ip_address=ip_address,
                 city=city,
                 region=region,
