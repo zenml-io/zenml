@@ -17,3 +17,23 @@ updates:
     cooldown:
       default-days: 7
     target-branch: develop
+  # A `directory: /` entry only covers `.github/workflows` plus an `action.yml`
+  # at that directory's root, so actions used inside our own composite actions
+  # are never proposed for updates. Each composite action therefore needs its
+  # own entry pointing at the directory holding its `action.yml`.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/setup_environment
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "07:00"
+      timezone: Europe/Amsterdam
+    reviewers: [strickvl]
+    labels: [dependencies, internal, no-release-notes]
+    groups:
+      minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+    cooldown:
+      default-days: 7
+    target-branch: develop
