@@ -24,7 +24,8 @@ Teams are created at the organization level and can be assigned roles within wor
 
 To create a team:
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 **Go to the Organization Settings**
 
 Click on the **Settings** tab from your **Organization** page.
@@ -51,13 +52,15 @@ When creating a team, you'll need to provide:
 * Team name
 * Description (optional)
 * Initial team members
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 ## Adding Users to Teams
 
 To add users to an existing team:
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 Go to the **Teams** tab in **Organization** settings {% endstep %}
 
 {% step %}
@@ -70,13 +73,15 @@ Click on **Add Members** {% endstep %}
 Choose users from your organization to add to the team
 
 ![Add Team Members](.gitbook/assets/add_team_members.png)
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 ## Assigning Teams to Workspaces
 
 Teams can be assigned to workspaces just like individual users. To add a team to a workspace:
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 Go to the **Workspace Settings** page {% endstep %}
 
 {% step %}
@@ -90,7 +95,8 @@ Select **Add Team** {% endstep %}
 Choose the team and assign a role
 
 ![Assign Team to Workspace](.gitbook/assets/assign_team_to_tenant.png)
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 ## Team Roles and Permissions
 

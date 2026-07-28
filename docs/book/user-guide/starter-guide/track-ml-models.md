@@ -20,7 +20,8 @@ Models are first-class citizens in ZenML and as such viewing and using them is u
 
 These models can be viewed within ZenML:
 
-{% tabs %} {% tab title="OSS (CLI)" %}
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 `zenml model list` can be used to list all models.
 {% endtab %}
 
@@ -85,7 +86,8 @@ Furthermore, this pipeline run and all other pipeline runs that are configured w
 
 You can see all versions of a model, and associated artifacts and run like this:
 
-{% tabs %} {% tab title="OSS (CLI)" %}
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 `zenml model version list <MODEL_NAME>` can be used to list all versions of a particular model.
 
 The following commands can be used to list the various pipeline runs associated with a model:
@@ -181,7 +183,8 @@ def svc_trainer(
     )
 ```
 
-{% tabs %} {% tab title="Python" %}
+{% tabs %}
+{% tab title="Python" %}
 ```python
 from zenml.client import Client
 
@@ -221,7 +224,8 @@ A model's versions can exist in various stages. These are meant to signify their
 * `latest`: The latest version of the model.
 * `archived`: This is archived and no longer relevant. This stage occurs when a model moves out of any other stage.
 
-{% tabs %} {% tab title="Python SDK" %}
+{% tabs %}
+{% tab title="Python SDK" %}
 ```python
 from zenml import Model
 
@@ -263,7 +267,8 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
 ![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) guide.
 

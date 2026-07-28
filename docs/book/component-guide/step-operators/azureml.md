@@ -41,7 +41,8 @@ To use the AzureML step operator, we need:
 
 There are two ways you can authenticate your step operator to be able to run steps on Azure:
 
-{% tabs %} {% tab title="Authentication via Service Connector" %}
+{% tabs %}
+{% tab title="Authentication via Service Connector" %}
 The recommended way to authenticate your AzureML step operator is by registering or using an existing [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) and connecting it to your AzureML step operator. The credentials configured for the connector must have permissions to create and manage AzureML jobs. Use these specific Azure-managed roles following the principle of least privilege:
 
 - **`AzureML Data Scientist`** - Allows creating and managing machine learning experiments and jobs
@@ -81,7 +82,8 @@ zenml step-operator register <NAME> \
 
 zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 Once you added the step operator to your active stack, you can use it to execute individual steps of your pipeline by specifying it in the `@step` decorator as follows:
 

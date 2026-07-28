@@ -69,7 +69,8 @@ zenml project set <NAME> --default
 
 To create a new project:
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 #### Navigate to Projects
 
 From your workspace dashboard, click on the **Projects** tab.
@@ -93,7 +94,8 @@ After creating the project, you can configure additional settings such as:
 * Adding team members and assigning roles
 * Setting up project-specific configurations
 * Configuring integrations
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 ## Managing Project Resources
 

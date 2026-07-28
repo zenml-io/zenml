@@ -62,7 +62,8 @@ At the organization level, ZenML Pro provides the following predefined roles:
 
 To assign organization roles:
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 Navigate to the **Organization** **Settings** page {% endstep %}
 
 {% step %}
@@ -73,7 +74,8 @@ Click on the **Members** tab. Here you can update roles for existing members.
 Use the **Add members** button to add new members
 
 ![Screenshot showing the invite modal](.gitbook/assets/add_org_members.png)
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 Some points to note:
 

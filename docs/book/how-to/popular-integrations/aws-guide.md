@@ -187,7 +187,8 @@ zenml integration install aws s3 -y
 
 Create an AWS Service Connector within ZenML. The service connector will allow ZenML and other ZenML components to authenticate themselves with AWS using the IAM role.
 
-{% tabs %} {% tab title="CLI" %}
+{% tabs %}
+{% tab title="CLI" %}
 ```shell
 zenml service-connector register aws_connector \
   --type aws \
@@ -199,7 +200,8 @@ zenml service-connector register aws_connector \
 ```
 
 Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous step, `<YOUR_REGION>` with the respective value and use your AWS access key ID and secret access key that we noted down earlier.
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## 3) Create Stack Components
 
@@ -273,7 +275,8 @@ More details [here](https://docs.zenml.io/stacks/container-registries/aws).
 
 ## 4) Create stack
 
-{% tabs %} {% tab title="CLI" %}
+{% tabs %}
+{% tab title="CLI" %}
 ```shell
 export STACK_NAME=aws_stack
 
@@ -283,11 +286,13 @@ zenml stack register ${STACK_NAME} -o ${ORCHESTRATOR_NAME} \
 
 {% hint style="info" %}
 In case you want to also add any other stack components to this stack, feel free to do so.
-{% endhint %} {% endtab %}
+{% endhint %}
+{% endtab %}
 
 {% tab title="Dashboard" %}
 Combine the three stack components using the stack creation form in the ZenML dashboard. Feel free to add any other component of your choice as well.
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## 5) And you're already done!
 

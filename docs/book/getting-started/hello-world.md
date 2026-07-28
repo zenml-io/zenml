@@ -9,7 +9,8 @@ icon: hand-wave
 
 This guide will help you build and deploy your first ZenML pipeline, starting locally and then transitioning to the cloud without changing your code. The same principles you'll learn here apply whether you're building classical ML models or AI agents.
 
-{% stepper %} {% step %}
+{% stepper %}
+{% step %}
 #### Install ZenML
 
 Start by installing ZenML in a fresh Python environment:
@@ -195,6 +196,7 @@ To continue your ZenML journey, explore these key topics:
 * **Stacks & Infrastructure**: Explore the concepts behind [stacks](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
 * **Secrets Management**: Learn how to [handle sensitive information](../how-to/secrets/secrets.md) securely
 * **Snapshots**: Create [reusable snapshots](../how-to/snapshots/snapshots.md) for standardized workflows
-{% endstep %} {% endstepper %}
+{% endstep %}
+{% endstepper %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -19,7 +19,8 @@ Alternatively, if you prefer to have more control over where and how resources a
 
 The stack wizard is available to you through both our CLI and our dashboard.
 
-{% tabs %} {% tab title="Dashboard" %}
+{% tabs %}
+{% tab title="Dashboard" %}
 If you are using the dashboard, the stack wizard is available through\ the stacks page.
 
 ![The new stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
@@ -383,7 +384,8 @@ For each component, you will be asked:
 {% endcode %}
 
 Based on your selection, ZenML will create the stack component and ultimately register the stack for you.
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 There you have it! Through the wizard, you just registered a cloud stack, and you can start running your pipelines on a remote setting.
 

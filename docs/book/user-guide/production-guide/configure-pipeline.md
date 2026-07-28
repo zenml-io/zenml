@@ -69,7 +69,8 @@ model:
 
 You will see that this configuration lines up with the model created after executing these pipelines:
 
-{% tabs %} {% tab title="CLI" %}
+{% tabs %}
+{% tab title="CLI" %}
 ```shell
 # List all versions of the breast_cancer_classifier
 zenml model version list breast_cancer_classifier

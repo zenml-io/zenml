@@ -21,7 +21,8 @@ The first thing that you need in order to use this feature is a deployed instanc
 
 Once you are connected to your deployed ZenML instance, you can use the 1-click deployment tool either through the dashboard or the CLI:
 
-{% tabs %} {% tab title="Dashboard" %}
+{% tabs %}
+{% tab title="Dashboard" %}
 In order to create a remote stack over the dashboard, go to the stacks page\ on the dashboard and click "+ New Stack".
 
 ![The new stacks page](../../../.gitbook/assets/register_stack_button.png)
@@ -229,13 +230,15 @@ You can proceed with the deployment by running the `terraform init` and`terrafor
 Once the Terraform deployment is complete, you may close the Cloud Shell session and return to the ZenML CLI to view the newly created stack:
 
 ![Azure Cloud Shell Terraform Outputs](../../../.gitbook/assets/deploy_stack_azure_cloudshell_terraform_ouputs.png) ![Azure Stack CLI output](../../../.gitbook/assets/deploy_stack_azure_cli_output.png)
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## What will be deployed?
 
 Here is an overview of the infrastructure that the 1-click deployment will prepare for you based on your cloud provider:
 
-{% tabs %} {% tab title="AWS" %}
+{% tabs %}
+{% tab title="AWS" %}
 **Resources**
 
 * An S3 bucket that will be used as a ZenML Artifact Store.
@@ -346,7 +349,8 @@ The configured Azure service principal and its client secret will grant ZenML th
 * Permissions granted for the created AzureML Workspace:
   * AzureML Compute Operator
   * AzureML Data Scientist
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 There you have it! With a single click, you just deployed a cloud stack, and you can start running your pipelines in a remote setting.
 

@@ -23,7 +23,8 @@ You should use the Tekton orchestrator if:
 
 You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
-{% tabs %} {% tab title="AWS" %}
+{% tabs %}
+{% tab title="AWS" %}
 * A remote ZenML server. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
@@ -57,7 +58,8 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
     az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER_NAME
     ```
 * [Install](https://tekton.dev/docs/pipelines/install/) Tekton Pipelines onto your cluster.
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.

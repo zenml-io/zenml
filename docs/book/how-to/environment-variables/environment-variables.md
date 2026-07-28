@@ -67,7 +67,8 @@ def my_step():
 
 Configure environment variables and secrets that will be available for all pipelines executed on stacks containing this component.
 
-{% tabs %} {% tab title="CLI" %}
+{% tabs %}
+{% tab title="CLI" %}
 ```bash
 # Configure environment variables
 zenml orchestrator update <ORCHESTRATOR_NAME> --env <KEY>=<VALUE>
@@ -97,13 +98,15 @@ Client().update_stack_component(
     remove_secrets=["<SECRET_NAME_OR_ID>"]
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## Setting environment variables on stacks
 
 Configure environment variables and secrets for all pipelines executed on this stack.
 
-{% tabs %} {% tab title="CLI" %}
+{% tabs %}
+{% tab title="CLI" %}
 ```bash
 # Configure environment variables
 zenml stack update <STACK_NAME> --env <KEY>=<VALUE>
@@ -132,7 +135,8 @@ Client().update_stack(
     remove_secrets=["<SECRET_NAME_OR_ID>"]
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## Configuring environment variables on pipelines
 

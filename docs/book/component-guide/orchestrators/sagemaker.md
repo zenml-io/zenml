@@ -53,7 +53,8 @@ zenml integration install aws s3
 
 There are three ways you can authenticate your orchestrator and link it to the IAM role you have created:
 
-{% tabs %} {% tab title="Authentication via Service Connector" %}
+{% tabs %}
+{% tab title="Authentication via Service Connector" %}
 The recommended way to authenticate your SageMaker orchestrator is by registering an [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) and connecting it to your SageMaker orchestrator. If you plan to use scheduled pipelines, ensure the credentials used by the service connector have the necessary EventBridge and IAM permissions listed in the [Required IAM Permissions](sagemaker.md#required-iam-permissions) section:
 
 ```shell
@@ -92,7 +93,8 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## Required IAM Permissions
 

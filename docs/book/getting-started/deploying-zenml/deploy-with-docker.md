@@ -57,7 +57,8 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 
 > **Important:** If you are updating the configuration of your ZenML Server container to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
-{% tabs %} {% tab title="Default" %}
+{% tabs %}
+{% tab title="Default" %}
 The SQL database is used as the default secret store location. You only need to configure these options if you want to change the default behavior.
 
 It is particularly recommended to enable encryption at rest for the SQL database if you plan on using it as a secrets store backend. You'll have to configure the secret key used to encrypt the secret values. If not set, encryption will not be used and passwords will be stored unencrypted in the database.
@@ -219,7 +220,8 @@ The following configuration option is required:
 If your custom secrets store implementation requires additional configuration options, you can pass them as environment variables using the following naming convention:
 
 * `ZENML_SECRETS_STORE_<OPTION_NAME>`: The name of the option to pass to the custom secrets store class. The option name must be in uppercase and any hyphens (`-`) must be replaced with underscores (`_`). ZenML will automatically convert the environment variable name to the corresponding option name by removing the prefix and converting the remaining characters to lowercase. For example, the environment variable `ZENML_SECRETS_STORE_MY_OPTION` will be converted to the option name `my_option` and passed to the custom secrets store class configuration.
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 **ZENML\_SECRETS\_STORE\_TYPE**: Set this variable to `none`to disable the secrets store functionality altogether.

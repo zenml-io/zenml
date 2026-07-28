@@ -17,7 +17,8 @@ A replay re-executes a pipeline or step using the same input artifacts (and para
 
 Replay a pipeline either from local pipeline code (`.replay()`) or directly via the server (`Client().replay_pipeline_run(...)`).
 
-{% tabs %} {% tab title="From local code" %}
+{% tabs %}
+{% tab title="From local code" %}
 
 ZenML resolves the run to replay using the first match:
 
@@ -55,13 +56,15 @@ from zenml import Client
 # Replay a specific run by name or ID
 Client().replay_pipeline_run(name_id_or_prefix="run_name_or_id")
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ### Skipping steps
 
 You can skip steps that don't need to be re-executed. Skipped steps reuse their output artifacts from the original run.
 
-{% tabs %} {% tab title="From local code" %}
+{% tabs %}
+{% tab title="From local code" %}
 ```python
 # Skip specific steps by name
 training_pipeline.replay(skip=["load_data"])
@@ -87,7 +90,8 @@ Client().replay_pipeline_run(
     run_configuration={"skip_successful_steps": True},
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 {% hint style="info" %}
 A step can only be skipped if all of its upstream dependencies are also skipped.
@@ -95,13 +99,15 @@ A step can only be skipped if all of its upstream dependencies are also skipped.
 
 ### Overriding pipeline parameters
 
-{% tabs %} {% tab title="From local code" %}
+{% tabs %}
+{% tab title="From local code" %}
 Pass `input_overrides` to change parameters for the replayed run. Any parameters you don't override are carried over from the original run.
 
 ```python
 training_pipeline.replay(input_overrides={"learning_rate": 0.01})
 ```
-{% endtab %} {% tab title="From the server" %}
+{% endtab %}
+{% tab title="From the server" %}
 Pass `parameters` in the run configuration to override pipeline parameters.
 
 ```python
@@ -112,13 +118,15 @@ Client().replay_pipeline_run(
     run_configuration={"parameters": {"learning_rate": 0.01}},
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ### Overriding step inputs
 
 Use `step_input_overrides` to replace specific step inputs for a replayed pipeline run.
 
-{% tabs %} {% tab title="From local code" %}
+{% tabs %}
+{% tab title="From local code" %}
 `step_input_overrides` expects a mapping of `invocation_id -> input_name -> value`.
 
 ```python
@@ -131,7 +139,8 @@ training_pipeline.replay(
     },
 )
 ```
-{% endtab %} {% tab title="From the server" %}
+{% endtab %}
+{% tab title="From the server" %}
 For server-side replay, `step_input_overrides` values can be either:
 
 - **UUIDs** of existing artifact versions (no new upload), or
@@ -155,7 +164,8 @@ Client().replay_pipeline_run(
     },
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 #### Overriding an input for every invocation of a step
 
@@ -168,7 +178,8 @@ steps share a name (for example two functions named `train` in different modules
 Give such steps distinct names if you want to target only one of them.
 {% endhint %}
 
-{% tabs %} {% tab title="From local code" %}
+{% tabs %}
+{% tab title="From local code" %}
 ```python
 training_pipeline.replay(
     pipeline_run="run_name_or_id",
@@ -179,7 +190,8 @@ training_pipeline.replay(
     },
 )
 ```
-{% endtab %} {% tab title="From the server" %}
+{% endtab %}
+{% tab title="From the server" %}
 ```python
 from zenml import Client
 
@@ -194,7 +206,8 @@ Client().replay_pipeline_run(
     },
 )
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ---
 

@@ -48,7 +48,8 @@ Unspecified artifact outputs default to a naming pattern of `{pipeline_name}::{s
 
 Artifacts named `iris_dataset` can then be found swiftly using various ZenML interfaces:
 
-{% tabs %} {% tab title="OSS (CLI)" %}
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 To list artifacts: `zenml artifact list` {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
@@ -58,7 +59,8 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 
 {% hint style="info" %}
 To prevent visual clutter, make sure to assign names to your most important artifacts that you would like to explore visually.
-{% endhint %} {% endtab %}
+{% endhint %}
+{% endtab %}
 {% endtabs %}
 
 ### Versioning artifacts manually
@@ -94,7 +96,8 @@ Since custom versions cannot be duplicated, the above step can only be run once 
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 
-{% tabs %} {% tab title="OSS (CLI)" %}
+{% tabs %}
+{% tab title="OSS (CLI)" %}
 To list versions: `zenml artifact version list` {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
@@ -400,7 +403,8 @@ As an example, one can associate the results of a model training alongside a mod
 
 For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series` and `pandas.DataFrame` objects, ZenML logs the shape and size of the objects:
 
-{% tabs %} {% tab title="Python" %}
+{% tabs %}
+{% tab title="Python" %}
 ```python
 from zenml.client import Client
 

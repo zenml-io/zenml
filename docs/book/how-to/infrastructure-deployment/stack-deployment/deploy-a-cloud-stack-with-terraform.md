@@ -140,7 +140,8 @@ zenml stack set <zenml_stack_id>
 
 You can find more details specific to the cloud provider of your choice in the\ next section:
 
-{% tabs %} {% tab title="AWS" %}
+{% tabs %}
+{% tab title="AWS" %}
 The [original documentation for the ZenML AWS Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/aws/latest) contains extensive information about required permissions, inputs, outputs, and provisioned resources. This is a summary of the key points from that documentation.
 
 **Authentication**
@@ -386,7 +387,8 @@ zenml integration install azure
 ```shell
 zenml integration install azure skypilot_azure
 ```
-{% endtab %} {% endtabs %}
+{% endtab %}
+{% endtabs %}
 
 ## How to clean up the Terraform stack deployments
 

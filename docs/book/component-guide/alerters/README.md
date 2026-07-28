@@ -5,8 +5,7 @@ icon: message-exclamation
 
 # Alerters
 
-**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also
-for building human-in-the-loop ML.
+**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also for building human-in-the-loop ML.
 
 ## Alerter Flavors
 
