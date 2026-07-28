@@ -53,7 +53,8 @@ pip install 'zenml[jupyter]'
 
 {% endtab %}
 
-{% endtabs %} {% endstep %}
+{% endtabs %}
+{% endstep %}
 
 {% step %}
 #### Verifying Installations
