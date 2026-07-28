@@ -59,7 +59,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh E2E template
@@ -133,7 +133,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh NLP template
@@ -207,7 +207,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh Starter template
@@ -280,7 +280,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-llm-finetuning compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh LLM Finetuning template

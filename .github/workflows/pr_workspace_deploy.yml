@@ -74,7 +74,7 @@ jobs:
         env:
           GITHUB_EVENT_INPUTS_BRANCH: ${{ github.event.inputs.branch }}
       - name: Checkout repository with correct branch
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ steps.determine-branch.outputs.branch }}
           fetch-depth: 0
@@ -145,7 +145,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
 
@@ -173,7 +173,7 @@ jobs:
       ZENML_VERSION: ${{ needs.set-branch-info.outputs.zenml_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
       - name: Set up Python
