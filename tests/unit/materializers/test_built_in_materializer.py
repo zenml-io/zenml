@@ -19,9 +19,9 @@ from tests.unit.test_general import _test_materializer
 from zenml.client import Client
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import (
-    BuiltInContainerMaterializer,
     DEFAULT_FILENAME,
     DEFAULT_METADATA_FILENAME,
+    BuiltInContainerMaterializer,
 )
 
 

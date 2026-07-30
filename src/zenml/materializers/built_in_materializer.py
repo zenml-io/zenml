@@ -244,7 +244,7 @@ def _is_serializable(obj: Any) -> bool:
     if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
-        return all(isinstance(key, str) for key in obj) and _all_serializable(
+        return _all_serializable(obj.keys()) and _all_serializable(
             obj.values()
         )
     return False
@@ -540,7 +540,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         Returns:
             The content hash of the given data.
         """
-        if _is_serializable(data):
+        if _is_serializable(data) and all(
+            isinstance(key, str) for key in data.keys()
+        ):
             hash_ = hashlib.md5(usedforsecurity=False)
             hash_.update(self.__class__.__name__.encode())
             hash_.update(
