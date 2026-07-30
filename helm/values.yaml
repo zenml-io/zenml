@@ -112,8 +112,15 @@ server:
     organizationName:
 
     # The enrollment key to use for the ZenML Pro workspace. If not specified,
-    # an enrollment key will be auto-generated.
+    # an enrollment key will be auto-generated unless `enrollmentKeySecretRef`
+    # is configured.
     enrollmentKey:
+
+    # Reference an enrollment key stored in an existing Kubernetes Secret.
+    # This cannot be used together with `enrollmentKey`.
+    enrollmentKeySecretRef:
+      # name:
+      # key:
 
   # The URL where the ZenML server API is reachable. If not specified, the
   # clients will use the same URL used to connect them to the ZenML server.

@@ -67,7 +67,7 @@ These details will need to be passed to the workspace server container in the fo
 | `ZENML_SERVER_PRO_WORKSPACE_NAME` | The name of the workspace. |
 | `ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET` | The enrollment key for the workspace. |
 
-NOTE: in the case of Helm, these values are configurable as Helm values when deploying the workspace server:
+When deploying with Helm, store the enrollment key in a Kubernetes Secret and reference it from the chart values:
 
 ```yaml
 server:
@@ -76,11 +76,15 @@ server:
     enabled: true
     apiURL: https://zenml-pro.my.domain/api/v1
     dashboardURL: https://zenml-pro.my.domain
-    enrollmentKey: <enrollment-key>
+    enrollmentKeySecretRef:
+      name: <secret-name>
+      key: <secret-key>
     organizationID: <organization-id>
     organizationName: <organization-name>
     workspaceID: <workspace-id>
     workspaceName: <workspace-name>
 ```
+
+The existing `server.pro.enrollmentKey` value remains available for backward compatibility, but it stores the enrollment key in the Helm release state. Do not configure `enrollmentKey` and `enrollmentKeySecretRef` at the same time.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
