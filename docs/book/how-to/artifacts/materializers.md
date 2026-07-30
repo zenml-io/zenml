@@ -29,6 +29,17 @@ ZenML includes built-in materializers for many common data types:
 
 ZenML also provides a CloudpickleMaterializer that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. For production use, you should implement a custom materializer for your specific data types.
 
+{% hint style="warning" %}
+The `BuiltInContainerMaterializer` stores JSON-compatible containers as JSON.
+JSON has a smaller type system than Python, so Python-specific container
+details can be lost when nested inside JSON-serialized values. For example,
+nested tuples and sets are loaded back as lists. If your data needs strict
+structured type reconstruction, use a Pydantic model, a dataclass, or a custom
+materializer. Additionally, dicts with non-string keys are stored with 
+additional metadata so key types are preserved instead of being coerced by 
+JSON object key rules.
+{% endhint %}
+
 {% hint style="info" %}
 Pydantic artifacts created by current ZenML versions are stored in
 `data_v2.json`. ZenML can still load older Pydantic artifacts stored as

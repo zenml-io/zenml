@@ -20,6 +20,8 @@ from zenml.client import Client
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.built_in_materializer import (
     BuiltInContainerMaterializer,
+    DEFAULT_FILENAME,
+    DEFAULT_METADATA_FILENAME,
 )
 
 
@@ -85,6 +87,78 @@ def test_simple_dict_list_tuple_materialization(tmp_path):
             expected_metadata_size=2,
         )
         assert result == example
+
+
+def test_json_serializable_dict_tuple_values_materialize_as_lists():
+    """Test that nested tuples in JSON-serialized dicts load as lists."""
+
+    def _validate_single_file(artifact_uri: str) -> None:
+        files = os.listdir(artifact_uri)
+        assert files == [DEFAULT_FILENAME]
+
+    result = _test_materializer(
+        step_output_type=dict,
+        step_output={"encoder_channels": (16, 32, 32)},
+        validation_function=_validate_single_file,
+        expected_metadata_size=2,
+    )
+
+    assert result == {"encoder_channels": [16, 32, 32]}
+
+
+def test_dict_with_integer_keys_materialization():
+    """Test materialization for dicts with integer keys."""
+
+    def _validate_metadata_file(artifact_uri: str) -> None:
+        files = os.listdir(artifact_uri)
+        assert DEFAULT_METADATA_FILENAME in files
+        assert DEFAULT_FILENAME not in files
+
+    example = {1: 1, 2: 2}
+    result = _test_materializer(
+        step_output_type=dict,
+        step_output=example,
+        validation_function=_validate_metadata_file,
+        expected_metadata_size=2,
+    )
+
+    assert result == example
+    assert all(type(key) is int for key in result)
+    assert all(type(value) is int for value in result.values())
+
+
+def test_dict_with_string_and_integer_keys_materialization():
+    """Test materialization for dicts with mixed string and integer keys."""
+
+    example = {1: "integer key", "string": "string key"}
+    result = _test_materializer(
+        step_output_type=dict,
+        step_output=example,
+        expected_metadata_size=2,
+    )
+
+    assert result == example
+
+
+def test_dict_with_json_key_collision_materialization():
+    """Test materialization for dict keys that collide when JSON-encoded."""
+
+    example = {1: "integer key", "1": "string key"}
+    result = _test_materializer(
+        step_output_type=dict,
+        step_output=example,
+        expected_metadata_size=2,
+    )
+
+    assert result == example
+
+
+def test_dict_with_mixed_key_types_content_hash_does_not_fail():
+    """Test content hashing for dicts with mixed key types."""
+
+    materializer = BuiltInContainerMaterializer(uri="unused")
+
+    assert materializer.compute_content_hash({1: "one", "a": "letter"}) is None
 
 
 def test_list_of_bytes_materialization():
