@@ -26,9 +26,9 @@ Example of a simple pipeline:
 ```python
 @pipeline
 def my_pipeline():
-    data = load_data()        # Step 1: Load data
-    model = train_model(data) # Step 2: Train model using data from step 1
-    do_agentic_loop(model)    # Step 3: Use model with an agent (toy example)
+    data = load_data()  # Step 1: Load data
+    model = train_model(data)  # Step 2: Train model using data from step 1
+    do_agentic_loop(model)  # Step 3: Use model with an agent (toy example)
 ```
 
 **Key insight**: ZenML unifies batch training and real-time serving with the same primitives.
