@@ -556,7 +556,8 @@ zenml orchestrator update sagemaker-orchestrator \
 {% hint style="info" %}
 The IAM role that you are using on the client side can come from multiple sources depending on how you configured your orchestrator, such as explicit credentials, a service connector or an implicit authentication.
 
-If you are using a service connector, keep in mind, this only works with authentication methods that involve IAM roles (IAM role, Implicit authentication). LINK {% endhint %}
+If you are using a service connector, keep in mind, this only works with authentication methods that involve IAM roles (IAM role, Implicit authentication). LINK
+{% endhint %}
 
 This is particularly useful when:
 

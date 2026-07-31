@@ -130,8 +130,7 @@ zenml_stack_id = "04c65b96-b435-4a39-8484-8cc18f89b991"
 zenml_stack_name = "terraform-gcp-588339e64d06"
 ```
 
-At this point, a ZenML stack has also been created and registered with your\
-ZenML server, and you can start using it to run your pipelines:
+At this point, a ZenML stack has also been created and registered with your\ ZenML server, and you can start using it to run your pipelines:
 
 ```shell
 zenml integration install <list-of-required-integrations>
@@ -192,7 +191,8 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\ following components:
+The Terraform module will create a ZenML stack configuration with the\
+following components:
 
 1. An S3 Artifact Store linked to an S3 bucket via an AWS Service Connector configured with IAM role credentials
 2. An ECR Container Registry linked to an ECR repository via an AWS Service Connector configured with IAM role credentials
@@ -271,7 +271,8 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\ following components:
+The Terraform module will create a ZenML stack configuration with the\
+following components:
 
 1. An GCP Artifact Store linked to a GCS bucket via a GCP Service Connector configured with the GCP service account credentials
 2. An GCP Container Registry linked to a Google Artifact Registry via a GCP Service Connector configured with the GCP service account credentials
@@ -364,7 +365,8 @@ output "zenml_stack_name" {
 
 **Stack Components**
 
-The Terraform module will create a ZenML stack configuration with the\ following components:
+The Terraform module will create a ZenML stack configuration with the\
+following components:
 
 1. An Azure Artifact Store linked to an Azure Storage Account and Blob Container via an Azure Service Connector configured with Azure Service Principal credentials
 2. An ACR Container Registry linked to an Azure Container Registry via an Azure Service Connector configured with Azure Service Principal credentials

@@ -30,7 +30,8 @@ To create a team:
 
 Click on the **Settings** tab from your **Organization** page.
 
-<figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure> {% endstep %}
+<figure><img src=".gitbook/assets/image (2).png" alt=""><figcaption></figcaption></figure>
+{% endstep %}
 
 {% step %}
 **Click on the Teams tab**
@@ -61,13 +62,16 @@ To add users to an existing team:
 
 {% stepper %}
 {% step %}
-Go to the **Teams** tab in **Organization** settings {% endstep %}
+Go to the **Teams** tab in **Organization** settings
+{% endstep %}
 
 {% step %}
-Select the team you want to modify {% endstep %}
+Select the team you want to modify
+{% endstep %}
 
 {% step %}
-Click on **Add Members** {% endstep %}
+Click on **Add Members**
+{% endstep %}
 
 {% step %}
 Choose users from your organization to add to the team
@@ -82,14 +86,16 @@ Teams can be assigned to workspaces just like individual users. To add a team to
 
 {% stepper %}
 {% step %}
-Go to the **Workspace Settings** page {% endstep %}
+Go to the **Workspace Settings** page
+{% endstep %}
 
 {% step %}
 Click on **Members** tab and click on the **Teams** tab.
 {% endstep %}
 
 {% step %}
-Select **Add Team** {% endstep %}
+Select **Add Team**
+{% endstep %}
 
 {% step %}
 Choose the team and assign a role

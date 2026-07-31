@@ -70,7 +70,8 @@ If you need to modify your ZenML server configuration during the upgrade, follow
     ```
 
 {% hint style="info" %}
-It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart\ version is tested to work only with the default image tag. However, if you know what you're doing you can change\
+It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart\
+version is tested to work only with the default image tag. However, if you know what you're doing you can change\
 the `zenml.image.tag` value in your `custom-values.yaml` file to the desired ZenML version (e.g. `0.32.0`).
 {% endhint %}
 {% endtab %}

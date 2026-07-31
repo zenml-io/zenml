@@ -130,7 +130,6 @@ As the project evolves, it's important to keep shared libraries updated with the
 
 Continuous integration (CI) helps maintain the stability and reliability of shared components. By automatically running tests and checks on each code change, CI can catch potential issues early and ensure compatibility across different environments and dependencies.
 
-By leveraging these methods for sharing code and libraries, teams can\ collaborate more effectively, maintain consistency across projects, and\
-accelerate development processes within the ZenML framework.
+By leveraging these methods for sharing code and libraries, teams can\ collaborate more effectively, maintain consistency across projects, and\ accelerate development processes within the ZenML framework.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

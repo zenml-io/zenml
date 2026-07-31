@@ -16,8 +16,10 @@ You should use the AzureML step operator if:
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already, including an AzureML step operator? Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML Azure Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,
+including an AzureML step operator? Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
+or [the ZenML Azure Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -103,8 +105,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Additional configuration
 
-The ZenML AzureML step operator comes with a dedicated class called `AzureMLStepOperatorSettings` for configuring its settings and it controls
-the compute resources used for step execution in AzureML.
+The ZenML AzureML step operator comes with a dedicated class called `AzureMLStepOperatorSettings` for configuring its settings and it controls the compute resources used for step execution in AzureML.
 
 Currently, it supports three different modes of operation.
 
@@ -116,15 +117,13 @@ Currently, it supports three different modes of operation.
 - Set `mode` to `compute-instance`.
 - Requires a `compute_name`.
   - If a compute instance with the same name exists, it uses the existing compute instance and ignores other parameters.
-  - If a compute instance with the same name doesn't exist, it creates a new compute instance with the `compute_name`. For this process, you can 
-  specify `compute_size` and `idle_type_before_shutdown_minutes`.
+  - If a compute instance with the same name doesn't exist, it creates a new compute instance with the `compute_name`. For this process, you can specify `compute_size` and `idle_type_before_shutdown_minutes`.
 
 3. Compute Cluster
 - Set `mode` to `compute-cluster`.
 - Requires a `compute_name`.
   - If a compute cluster with the same name exists, it uses existing cluster, ignores other parameters.
-  - If a compute cluster with the same name doesn't exist, it creates a new compute cluster. Additional parameters can be used for configuring this 
-  process.
+  - If a compute cluster with the same name doesn't exist, it creates a new compute cluster. Additional parameters can be used for configuring this process.
 
 Here is an example how you can use the `AzureMLStepOperatorSettings` to define a compute instance:
 

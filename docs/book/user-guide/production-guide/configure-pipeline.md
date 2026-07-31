@@ -77,9 +77,11 @@ zenml model version list breast_cancer_classifier
 ```
 {% endtab %}
 
-{% tab title="Dashboard" %} [ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
+{% tab title="Dashboard" %}
+[ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure> {% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure>
+{% endtab %}
 {% endtabs %}
 
 ### Passing parameters
@@ -133,8 +135,7 @@ Here we are configuring the entire pipeline with a certain amount of memory, whi
 
 <summary>Instructions for Microsoft Azure Users</summary>
 
-As discussed [before](cloud-orchestration.md), we are using the [Kubernetes orchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes) for Azure users. In order to scale compute for the Kubernetes orchestrator, the
-YAML file needs to look like this:
+As discussed [before](cloud-orchestration.md), we are using the [Kubernetes orchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes) for Azure users. In order to scale compute for the Kubernetes orchestrator, the YAML file needs to look like this:
 
 ```yaml
 # These are the resources for the entire pipeline, i.e., each step
@@ -155,7 +156,8 @@ steps:
 </details>
 
 {% hint style="info" %}
-Read more about settings in ZenML [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) and [here](https://docs.zenml.io/user-guides/tutorial/distributed-training)
+Read more about settings in ZenML [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) and
+[here](https://docs.zenml.io/user-guides/tutorial/distributed-training)
 {% endhint %}
 
 Now let's run the pipeline again:

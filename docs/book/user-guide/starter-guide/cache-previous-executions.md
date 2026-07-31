@@ -113,15 +113,13 @@ ZenML generates a unique cache key for each step execution based on various fact
 - **Step parameters**: Configuration parameters passed to the step
 - **Input artifact values or IDs**: The content/data of input artifacts or their IDs
 - **Additional file or source dependencies**: The file content or source code of additional dependencies that you can specify in your cache policy.
-- **Custom cache function value**: The value returned by a custom cache function that you can specify in your cache policy. 
+- **Custom cache function value**: The value returned by a custom cache function that you can specify in your cache policy.
 
 When any of these factors change, the cache key changes, and the step will be re-executed.
 
 ### Configuring cache policies
 
-You can configure cache policies at both the step and pipeline level using the `CachePolicy` class.
-Similar to enabling and disabling the cache above, you can define this cache policy on both pipeline and step either via the decorator or the `with_options(...)` method. Configuring
-a cache policy for a pipeline will configure it for all its steps.
+You can configure cache policies at both the step and pipeline level using the `CachePolicy` class. Similar to enabling and disabling the cache above, you can define this cache policy on both pipeline and step either via the decorator or the `with_options(...)` method. Configuring a cache policy for a pipeline will configure it for all its steps.
 
 
 ```python
@@ -149,28 +147,24 @@ my_pipeline = my_pipeline.with_options(cache_policy=custom_cache_policy)
 ### Cache policy options
 
 Each cache policy option controls a different aspect of caching:
-* `include_step_code` (default: `True`): Controls whether changes to your step implementation invalidate the cache. 
+* `include_step_code` (default: `True`): Controls whether changes to your step implementation invalidate the cache.
 
 {% hint style="warning" %}
 Setting `include_step_code=False` can lead to unexpected behavior if you modify your step logic but expect the changes to take effect.
 {% endhint %}
 
 * `include_step_parameters` (default: `True`): Controls whether step parameter changes invalidate the cache.
-* `include_artifact_values` (default: `True`): Whether to include the artifact values in the cache key. If the materializer for an
-artifact doesn't support generating a content hash, the artifact ID will be used as a fallback if enabled.
+* `include_artifact_values` (default: `True`): Whether to include the artifact values in the cache key. If the materializer for an artifact doesn't support generating a content hash, the artifact ID will be used as a fallback if enabled.
 * `include_artifact_ids` (default: `True`): Whether to include the artifact IDs in the cache key.
 * `ignored_inputs`: Allows you to exclude specific step inputs from cache key calculation.
-* `file_dependencies`: Allows you to specify a list of files that your step depends on. The content of these files will be read and included in the cache key,
-which means changes to any of the files will lead to a new cache key and therefore not cache from previous step executions.
+* `file_dependencies`: Allows you to specify a list of files that your step depends on. The content of these files will be read and included in the cache key, which means changes to any of the files will lead to a new cache key and therefore not cache from previous step executions.
 
 {% hint style="info" %}
 Files specified in this list must be relative to your [source root](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-root)
 {% endhint %}
 
-* `source_dependencies`: Allows you to specify a list of Python objects (modules, classes, functions) that your step depends on. The source code of these objects
-will be read and included in the cache key, which means changes to any of the objects will lead to a new cache key and therefore not cache from previous step executions.
-* `cache_func`: Allows you to specify a function (without arguments) that returns a string. This function will be called as part of the cache key computation, and the
-return value will be included in the cache key.
+* `source_dependencies`: Allows you to specify a list of Python objects (modules, classes, functions) that your step depends on. The source code of these objects will be read and included in the cache key, which means changes to any of the objects will lead to a new cache key and therefore not cache from previous step executions.
+* `cache_func`: Allows you to specify a function (without arguments) that returns a string. This function will be called as part of the cache key computation, and the return value will be included in the cache key.
 
 Both source dependencies as well as the cache function can be passed directly directly in code or as a [source](https://docs.zenml.io/concepts/steps_and_pipelines/sources#source-paths) string:
 ```python

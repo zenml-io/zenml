@@ -101,7 +101,8 @@ A step can only be skipped if all of its upstream dependencies are also skipped.
 
 {% tabs %}
 {% tab title="From local code" %}
-Pass `input_overrides` to change parameters for the replayed run. Any parameters you don't override are carried over from the original run.
+Pass `input_overrides` to change parameters for the replayed run. Any
+parameters you don't override are carried over from the original run.
 
 ```python
 training_pipeline.replay(input_overrides={"learning_rate": 0.01})
@@ -127,7 +128,8 @@ Use `step_input_overrides` to replace specific step inputs for a replayed pipeli
 
 {% tabs %}
 {% tab title="From local code" %}
-`step_input_overrides` expects a mapping of `invocation_id -> input_name -> value`.
+`step_input_overrides` expects a mapping of `invocation_id -> input_name ->
+value`.
 
 ```python
 training_pipeline.replay(
@@ -144,7 +146,8 @@ training_pipeline.replay(
 For server-side replay, `step_input_overrides` values can be either:
 
 - **UUIDs** of existing artifact versions (no new upload), or
-- **inline values** (server uploads them to the active artifact store before replay starts).
+- **inline values** (server uploads them to the active artifact store before
+  replay starts).
 
 ```python
 from zenml import Client
@@ -169,12 +172,13 @@ Client().replay_pipeline_run(
 
 #### Overriding an input for every invocation of a step
 
-If you want to override inputs for **every invocation** of a step, you can use `step_default_input_overrides`. It is keyed by the step's name instead of
-the invocation ID. Per-invocation overrides in `step_input_overrides` take precedence per input key.
+If you want to override inputs for **every invocation** of a step, you can use `step_default_input_overrides`. It is keyed by the step's name instead of the invocation ID. Per-invocation overrides in `step_input_overrides` take precedence per input key.
 
 {% hint style="warning" %}
-The override applies to every invocation that shares the given name, and ZenML does not enforce that a name maps to a single step function. If two different
-steps share a name (for example two functions named `train` in different modules both default to the name `train`), the override is applied to both.
+The override applies to every invocation that shares the given name, and ZenML
+does not enforce that a name maps to a single step function. If two different
+steps share a name (for example two functions named `train` in different
+modules both default to the name `train`), the override is applied to both.
 Give such steps distinct names if you want to target only one of them.
 {% endhint %}
 
@@ -213,8 +217,7 @@ Client().replay_pipeline_run(
 
 ## Replaying a single step
 
-Call `.replay()` on any `@step`-decorated function. ZenML loads the original input artifacts, feeds them to your (potentially updated) step code,
-and runs it as a single-step pipeline on the active stack.
+Call `.replay()` on any `@step`-decorated function. ZenML loads the original input artifacts, feeds them to your (potentially updated) step code, and runs it as a single-step pipeline on the active stack.
 
 The step to replay is resolved using the first match:
 
@@ -258,8 +261,7 @@ train.replay(pipeline="training_pipeline", invocation_id="train_2")
 
 ## Debug mode
 
-Both pipeline and step replays accept `debug=True`. This runs the replay on a **local orchestrator** while keeping the rest of your active stack
-(artifact store, etc.), so you can iterate quickly without waiting for remote infrastructure.
+Both pipeline and step replays accept `debug=True`. This runs the replay on a **local orchestrator** while keeping the rest of your active stack (artifact store, etc.), so you can iterate quickly without waiting for remote infrastructure.
 
 ```python
 training_pipeline.replay(debug=True)

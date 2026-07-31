@@ -1122,7 +1122,8 @@ Credentials saved to file: [/home/stefan/.config/gcloud/application_default_cred
 
 These credentials will be used by any library that requests Application Default Credentials (ADC).
 
-Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing and quota. Note that some services may still bill the project owning the resource.
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
 ```
 ````
 {% endcode %}
@@ -1502,7 +1503,8 @@ Credentials saved to file: [/home/stefan/.config/gcloud/application_default_cred
 
 These credentials will be used by any library that requests Application Default Credentials (ADC).
 
-Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing and quota. Note that some services may still bill the project owning the resource.
+Quota project "zenml-core" was added to ADC which can be used by Google client libraries for billing
+and quota. Note that some services may still bill the project owning the resource.
 ```
 ````
 {% endcode %}

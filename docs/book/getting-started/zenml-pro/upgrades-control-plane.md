@@ -42,7 +42,7 @@ To upgrade the Control Plane in a self-hosted deployment:
 
 1. **Update Helm Values:** Change the Control Plane version in your `values.yaml` file to reference the new image tag.
 
-2. **Apply the Upgrade:**  
+2. **Apply the Upgrade:**
    
    **Option A - In-place upgrade with existing values** (if no config changes needed):
    ```bash

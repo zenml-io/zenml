@@ -124,9 +124,7 @@ E.g., you can use these labels to manually delete all pods related to a specific
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
-ZenML sanitizes these label values before sending them to Kubernetes. Invalid characters are replaced, leading/trailing punctuation is removed, and values are
-truncated to fit Kubernetes label limits. In practice, a pipeline called `My GPU Pipeline!!!` will not appear as that exact string in a label selector.
-If a selector using the raw name does not match anything, inspect one of the created pods first:
+ZenML sanitizes these label values before sending them to Kubernetes. Invalid characters are replaced, leading/trailing punctuation is removed, and values are truncated to fit Kubernetes label limits. In practice, a pipeline called `My GPU Pipeline!!!` will not appear as that exact string in a label selector. If a selector using the raw name does not match anything, inspect one of the created pods first:
 
 ```shell
 kubectl get pods -n zenml --show-labels
@@ -162,12 +160,8 @@ The following configuration options can be set either through the orchestrator c
 - **`pod_failure_max_retries`** (default: 3): The maximum number of retries to create a step pod that fails to start.
 - **`pod_failure_retry_delay`** (default: 10): The delay (in seconds) between retries to create a step pod that fails to start.
 - **`pod_failure_backoff`** (default: 1.0): The backoff factor for pod failure retries and pod startup retries.
-- **`backoff_limit_margin`** (default 0): The value to add to the backoff limit in addition to the [step retries](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries). The retry configuration defined on
-the step defines the maximum number of retries that the server will accept for a step. For this orchestrator, this controls how often the job running the step will try to start the step pod. There are some circumstances however where the job will start the pod, but the pod
-doesn't actually get to the point of running the step. That means the server will not receive the maximum amount of retry requests, which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the
-backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases the chance of the server receiving the maximum amount of retry requests.
-- **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any
-`pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
+- **`backoff_limit_margin`** (default 0): The value to add to the backoff limit in addition to the [step retries](../../how-to/steps-pipelines/advanced_features.md#automatic-step-retries). The retry configuration defined on the step defines the maximum number of retries that the server will accept for a step. For this orchestrator, this controls how often the job running the step will try to start the step pod. There are some circumstances however where the job will start the pod, but the pod doesn't actually get to the point of running the step. That means the server will not receive the maximum amount of retry requests, which in turn causes other inconsistencies like wrong step statuses. To mitigate this, this attribute allows to add a margin to the backoff limit. This means that the job will retry the pod startup for the configured amount of times plus the margin, which increases the chance of the server receiving the maximum amount of retry requests.
+- **`fail_on_container_waiting_reasons`**: List of container waiting reasons that should cause the job to fail immediately. This should be set to a list of nonrecoverable reasons, which if found in any `pod.status.containerStatuses[*].state.waiting.reason` of a job pod, should cause the job to fail immediately.
 - **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
@@ -219,8 +213,7 @@ If `pass_zenml_token_as_secret=True`, also grant:
 
 **Step pod service account (`step_pod_service_account_name`)**
 
-Step containers do not need Kubernetes API access for normal execution in this orchestrator flow. Unless your step code explicitly calls the Kubernetes API,
-you can keep this account with no additional Kubernetes RBAC grants.
+Step containers do not need Kubernetes API access for normal execution in this orchestrator flow. Unless your step code explicitly calls the Kubernetes API, you can keep this account with no additional Kubernetes RBAC grants.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -464,7 +457,8 @@ scheduled_pipeline = my_kubernetes_pipeline.with_options(
 scheduled_pipeline()
 ```
 
-{% hint style="info" %} `starting_deadline_seconds` controls how late a CronJob can start after its scheduled time (missed-schedule window), while `active_deadline_seconds` limits how long a running job can execute (runtime timeout). These are independent settings that apply at different stages of the job lifecycle.
+{% hint style="info" %}
+`starting_deadline_seconds` controls how late a CronJob can start after its scheduled time (missed-schedule window), while `active_deadline_seconds` limits how long a running job can execute (runtime timeout). These are independent settings that apply at different stages of the job lifecycle.
 {% endhint %}
 
 Cron expressions follow the standard format (`minute hour day-of-month month day-of-week`):
@@ -557,10 +551,7 @@ kubectl logs job/<job-name> -n zenml
 
 Common issues include incorrect cron expressions, insufficient permissions for the service account, or resource constraints.
 
-For a tutorial on how to work with schedules in ZenML, check out our ['Managing
-Scheduled
-Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
-docs page.
+For a tutorial on how to work with schedules in ZenML, check out our ['Managing Scheduled Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) docs page.
 
 ## Best practices for highly parallel pipelines
 

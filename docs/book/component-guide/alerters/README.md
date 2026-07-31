@@ -53,7 +53,7 @@ Afterward, you can import the alerter standard steps provided by the respective 
 All alerters provide an `ask()` method and corresponding ask steps that enable human-in-the-loop workflows. These are essential for:
 
 - Getting approval before deploying models to production
-- Confirming critical pipeline decisions  
+- Confirming critical pipeline decisions
 - Manual intervention points in automated workflows
 
 ### How Ask Steps Work
@@ -94,8 +94,7 @@ def deployment_pipeline():
 
 By default, alerters recognize these response options:
 
-**Approval:** `approve`, `LGTM`, `ok`, `yes`  
-**Disapproval:** `decline`, `disapprove`, `no`, `reject`
+**Approval:** `approve`, `LGTM`, `ok`, `yes` **Disapproval:** `decline`, `disapprove`, `no`, `reject`
 
 ### Customizing Response Keywords
 

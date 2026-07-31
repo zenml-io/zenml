@@ -23,11 +23,13 @@ Once you are connected to your deployed ZenML instance, you can use the 1-click 
 
 {% tabs %}
 {% tab title="Dashboard" %}
-In order to create a remote stack over the dashboard, go to the stacks page\ on the dashboard and click "+ New Stack".
+In order to create a remote stack over the dashboard, go to the stacks page\
+on the dashboard and click "+ New Stack".
 
 ![The new stacks page](../../../.gitbook/assets/register_stack_button.png)
 
-Since we will be deploying it from scratch, select "New Infrastructure" on the\ next page:
+Since we will be deploying it from scratch, select "New Infrastructure" on the\
+next page:
 
 ![Options for registering a stack](../../../.gitbook/assets/register_stack_page.png)
 
@@ -133,10 +135,12 @@ Once the Terraform deployment is complete, you may close the Cloud Shell session
 
 <img src="../../../.gitbook/assets/deploy_stack_azure_dashboard_output.png" alt="Azure Stack Dashboard output" data-size="original">
 
-</details> {% endtab %}
+</details>
+{% endtab %}
 
 {% tab title="CLI" %}
-In order to create a remote stack over the CLI, you can use the following\ command:
+In order to create a remote stack over the CLI, you can use the following\
+command:
 
 ```shell
 zenml stack deploy -p {aws|gcp|azure}
@@ -157,11 +161,13 @@ You will have to log in to your AWS account, have permission to deploy an AWS Cl
 ![Finalizing the new stack](../../../.gitbook/assets/deploy_stack_aws_cloudformation.png)
 
 The Cloud Formation stack will provision the necessary resources for your new\
-AWS stack and automatically register the stack with your ZenML server. You can\ monitor the progress of the stack in your AWS console:
+AWS stack and automatically register the stack with your ZenML server. You can\
+monitor the progress of the stack in your AWS console:
 
 ![AWS Cloud Formation progress](../../../.gitbook/assets/deploy_stack_aws_cf_progress.png)
 
-Once the provisioning is complete, you may close the AWS Cloud Formation page\ and return to the ZenML CLI to view the newly created stack:
+Once the provisioning is complete, you may close the AWS Cloud Formation page\
+and return to the ZenML CLI to view the newly created stack:
 
 ![AWS Stack CLI output](../../../.gitbook/assets/deploy_stack_aws_cli_output.png)
 

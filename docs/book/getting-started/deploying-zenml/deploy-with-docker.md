@@ -482,7 +482,8 @@ The following additional rules are applied concerning the creation and lifetime 
 * the persistent backup file or database is NOT cleaned up after a failed migration. This allows the user to manually inspect and/or apply the backup if the automatic recovery fails.
 
 {% hint style="warning" %}
-When running in production where database sizes are large, you should use the `mydumper` backup strategy or write your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
+When running in production where database sizes are large, you should use the `mydumper` backup strategy or write
+your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
 {% endhint %}
 
 The following example shows how to deploy the ZenML server to use a mounted host directory to persist the database backup file during a database migration:

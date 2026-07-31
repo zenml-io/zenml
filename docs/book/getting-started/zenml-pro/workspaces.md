@@ -56,12 +56,14 @@ A workspace is a crucial part of your Organization and serves as a container for
 
 {% stepper %}
 {% step %}
-**Go to your organization page** {% endstep %}
+**Go to your organization page**
+{% endstep %}
 
 {% step %}
 **Click on the "New Workspace" button**
 
-<figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure> {% endstep %}
+<figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure>
+{% endstep %}
 
 {% step %}
 **Add a name and id**
@@ -72,7 +74,8 @@ Give your workspace a name, an id, and click on the "**Create Workspace**" butto
 **Important**: The workspace ID must be globally unique across all ZenML instances and cannot be changed after creation. Choose carefully as this permanent identifier will be used in all future API calls and references.
 {% endhint %}
 
-<figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure> {% endstep %}
+<figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure>
+{% endstep %}
 
 {% step %}
 **Your workspace is ready!**

@@ -18,7 +18,8 @@ pip install "zenml[server]"
 zenml login --local  # Will launch the dashboard locally
 ```
 
-It is also highly recommended that you run [`zenml init`](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository#zen) at your project root directory when starting a new project. This will tell ZenML which files to include when running your pipelines remotely.
+It is also highly recommended that you run [`zenml init`](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository#zen) at your project root directory when starting a new project. This will tell ZenML which files to include when
+running your pipelines remotely.
 {% endhint %}
 
 ## Start with a simple ML pipeline
@@ -229,9 +230,7 @@ Running `python run.py` should look somewhat like this in the terminal:
 
 <pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `training_pipeline`.
 </strong>.
-.
-.
-Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
+. . Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
 In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.

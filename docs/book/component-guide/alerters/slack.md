@@ -12,8 +12,7 @@ The `SlackAlerter` enables you to send messages or ask questions within a dedica
 
 In order to use the `SlackAlerter`, you first need to have a Slack workspace set up with a channel that you want your pipelines to post to.
 
-Then, you need to [create a Slack App](https://api.slack.com/apps?new\_app=1) 
-with a bot in your workspace. Make sure to give it the following permissions in the `OAuth & Permissions` tab under `Scopes`:
+Then, you need to [create a Slack App](https://api.slack.com/apps?new\_app=1) with a bot in your workspace. Make sure to give it the following permissions in the `OAuth & Permissions` tab under `Scopes`:
 
 * `chat:write`,
 * `channels:read`
@@ -21,13 +20,13 @@ with a bot in your workspace. Make sure to give it the following permissions in 
 
 ![Slack OAuth Permissions](../../.gitbook/assets/slack-alerter-oauth-permissions.png)
 
-In order to be able to use the `ask()` functionality, you need to invite the app to your channel. You can either use the `/invite` command directly in the 
-desired channel or add it through the channel settings:
+In order to be able to use the `ask()` functionality, you need to invite the app to your channel. You can either use the `/invite` command directly in the desired channel or add it through the channel settings:
 
 ![Slack OAuth Permissions](../../.gitbook/assets/slack-channel-settings.png)
 
 {% hint style="warning" %}
-It might take some time for your app to register within your workspace and show up in the available list of applications.
+It might take some time for your app to register within your workspace and 
+show up in the available list of applications.
 {% endhint %}
 
 ### Registering a Slack Alerter in ZenML
@@ -56,10 +55,8 @@ Learn more about [referencing secrets in stack component attributes and settings
 
 Here is where you can find the required parameters:
 
-* `<SLACK_CHANNEL_ID>`: The channel ID can be found in the channel details.
-It starts with `C....`.
-* `<SLACK_TOKEN>`: This is the Slack token of your bot. You can find it in the 
-Slack app settings under `OAuth & Permissions`.
+* `<SLACK_CHANNEL_ID>`: The channel ID can be found in the channel details. It starts with `C....`.
+* `<SLACK_TOKEN>`: This is the Slack token of your bot. You can find it in the Slack app settings under `OAuth & Permissions`.
 
 ![Slack Token Image](../../.gitbook/assets/slack-alerter-token.png)
 
@@ -211,8 +208,7 @@ if __name__ == "__main__":
 
 ### Use the predefined steps
 
-If you want to only use it in a simple manner, you can also use the steps `slack_alerter_post_step` and `slack_alerter_ask_step`, that are built-in to 
-the Slack integration of ZenML:
+If you want to only use it in a simple manner, you can also use the steps `slack_alerter_post_step` and `slack_alerter_ask_step`, that are built-in to the Slack integration of ZenML:
 
 ```python
 from zenml import pipeline, step
@@ -245,8 +241,7 @@ if __name__ == "__main__":
 
 The `ask()` method and `slack_alerter_ask_step` recognize these keywords by default:
 
-**Approval:** `approve`, `LGTM`, `ok`, `yes`  
-**Disapproval:** `decline`, `disapprove`, `no`, `reject`
+**Approval:** `approve`, `LGTM`, `ok`, `yes` **Disapproval:** `decline`, `disapprove`, `no`, `reject`
 
 **Important Notes:**
 - The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)

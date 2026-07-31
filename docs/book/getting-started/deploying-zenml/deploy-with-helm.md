@@ -702,7 +702,8 @@ Several database backup strategies are supported, depending on where and how the
 > **NOTE:** You should also set the `podSecurityContext.fsGroup` option if you are using a persistent volume to store the dump file.
 
 {% hint style="warning" %}
-When running in production where database sizes are large, you should use the `mydumper` backup strategy or write your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
+When running in production where database sizes are large, you should use the `mydumper` backup strategy or write
+your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
 {% endhint %}
 
 The following additional rules are applied concerning the creation and lifetime of the backup:

@@ -21,7 +21,8 @@ The stack wizard is available to you through both our CLI and our dashboard.
 
 {% tabs %}
 {% tab title="Dashboard" %}
-If you are using the dashboard, the stack wizard is available through\ the stacks page.
+If you are using the dashboard, the stack wizard is available through\
+the stacks page.
 
 ![The new stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
 
@@ -41,7 +42,8 @@ Choose one of the possible authentication methods based on your provider and fil
 
 <summary>AWS: Authentication methods</summary>
 
-If you select `aws` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication method for your cloud connector.
+If you select `aws` as your cloud provider, and you haven't selected a connector\
+or declined auto-configuration, you will be prompted to select an authentication method for your cloud connector.
 
 {% code title="Available authentication methods for AWS" %}
 ```
@@ -96,7 +98,8 @@ If you select `aws` as your cloud provider, and you haven't selected a connector
 
 <summary>GCP: Authentication methods</summary>
 
-If you select `gcp` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
+If you select `gcp` as your cloud provider, and you haven't selected a connector\
+or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for GCP" %}
@@ -148,7 +151,8 @@ method for your cloud connector.
 
 <summary>Azure: Authentication methods</summary>
 
-If you select `azure` as your cloud provider, and you haven't selected a\ connector or declined auto-configuration, you will be prompted to select an\
+If you select `azure` as your cloud provider, and you haven't selected a\
+connector or declined auto-configuration, you will be prompted to select an\
 authentication method for your cloud connector.
 
 {% code title="Available authentication methods for Azure" %}
@@ -184,14 +188,18 @@ zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 To register the cloud stack, the first thing that the wizard needs is a [service connector](https://docs.zenml.io/stacks/service-connectors/auth-management). You can either use an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only), or the wizard will create one for you.
 
 {% hint style="info" %}
-Similar to the service connector, if you use the CLI, you can also use existing\ stack components. However, this is only possible if these components are already\
-configured with the same service connector that you provided through the\ parameter described above.
+Similar to the service connector, if you use the CLI, you can also use existing\
+stack components. However, this is only possible if these components are already\
+configured with the same service connector that you provided through the\
+parameter described above.
 {% endhint %}
 
 **Define Service Connector**
 
-As the very first step, the configuration wizard will check if the selected\ cloud provider credentials can be acquired automatically from the local environment.\
-If the credentials are found, you will be offered to use them or proceed to\ manual configuration.
+As the very first step, the configuration wizard will check if the selected\
+cloud provider credentials can be acquired automatically from the local environment.\
+If the credentials are found, you will be offered to use them or proceed to\
+manual configuration.
 
 {% code title="Example prompt for AWS auto-configuration" %}
 ```
@@ -208,7 +216,8 @@ If you decline auto-configuration next you might be offered the list of already 
 
 <summary>AWS: Authentication methods</summary>
 
-If you select `aws` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
+If you select `aws` as your cloud provider, and you haven't selected a connector\
+or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for AWS" %}
@@ -264,7 +273,8 @@ method for your cloud connector.
 
 <summary>GCP: Authentication methods</summary>
 
-If you select `gcp` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
+If you select `gcp` as your cloud provider, and you haven't selected a connector\
+or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for GCP" %}
@@ -316,7 +326,8 @@ method for your cloud connector.
 
 <summary>Azure: Authentication methods</summary>
 
-If you select `azure` as your cloud provider, and you haven't selected a\ connector or declined auto-configuration, you will be prompted to select an\
+If you select `azure` as your cloud provider, and you haven't selected a\
+connector or declined auto-configuration, you will be prompted to select an\
 authentication method for your cloud connector.
 
 {% code title="Available authentication methods for Azure" %}
@@ -351,7 +362,8 @@ All three are crucial for a basic cloud stack. Extra components can be added lat
 
 For each component, you will be asked:
 
-* if you would like to reuse one of the existing components connected via a defined\ service connector (if any)
+* if you would like to reuse one of the existing components connected via a defined\
+  service connector (if any)
 
 {% code title="Example Command Output for available orchestrator" %}
 ```

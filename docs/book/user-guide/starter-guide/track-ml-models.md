@@ -28,7 +28,8 @@ These models can be viewed within ZenML:
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing these models in the dashboard.
 
-<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure> {% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_list.png" alt=""><figcaption><p>ZenML Model Control Plane.</p></figcaption></figure>
+{% endtab %}
 {% endtabs %}
 
 ## Configuring a model in a pipeline
@@ -104,7 +105,8 @@ The following commands can be used to list the various artifacts associated with
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include visualizing all associated runs and artifacts for a model version:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure> {% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt="ZenML Model Versions List."><figcaption><p>ZenML Model versions List.</p></figcaption></figure>
+{% endtab %}
 {% endtabs %}
 
 ## Fetching the model in a pipeline
@@ -199,7 +201,8 @@ model_version.run_metadata["accuracy"].value
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
-<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure> {% endtab %}
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
+{% endtab %}
 {% endtabs %}
 
 Choosing [log metadata with artifacts](manage-artifacts.md#logging-metadata-for-an-artifact) or model versions depends on the scope and purpose of the information you wish to capture. Artifact metadata is best for details specific to individual outputs, while model version metadata is suitable for broader information relevant to the overall model. By utilizing ZenML's metadata logging capabilities and special types, you can enhance the traceability, reproducibility, and analysis of your ML workflows.

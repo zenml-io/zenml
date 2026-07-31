@@ -11,9 +11,7 @@ There's a lot to understand about LLM fine-tuning - from choosing the right base
 - Fine-tuning the model on custom data
 - Using the fine-tuned model to generate responses
 
-This example uses the same [fictional "ZenML World" setting as our RAG example](../rag-with-zenml/rag-85-loc.md), but now we're teaching the model to
-generate content about this world rather than just retrieving information.
-You'll need to `pip install` the following packages:
+This example uses the same [fictional "ZenML World" setting as our RAG example](../rag-with-zenml/rag-85-loc.md), but now we're teaching the model to generate content about this world rather than just retrieving information. You'll need to `pip install` the following packages:
 
 ```bash
 pip install datasets transformers torch accelerate>=0.26.0

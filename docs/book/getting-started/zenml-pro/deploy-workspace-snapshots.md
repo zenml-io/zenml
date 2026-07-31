@@ -65,7 +65,7 @@ kubectl -n zenml-workload-manager create serviceaccount zenml-workload-manager
 
 ### 2. Choose Implementation
 
-Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment: 
+Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment:
 
 **Option A: Kubernetes Implementation (Basic)**
 
@@ -97,7 +97,7 @@ server:
 
 ### 3. Configure the Runner Image Source
 
-Choose how runner images are managed. Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment: 
+Choose how runner images are managed. Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment:
 
 **Option 1: Reuse snapshot container images**
 
@@ -167,8 +167,7 @@ The Workspace Server creates, monitors, and cleans up workload manager jobs and 
 
 **Workload manager runner/builder service account**
 
-The runner/builder jobs launched by the workload manager do not need Kubernetes
-API permissions for the workload manager control loop itself. This account mainly needs:
+The runner/builder jobs launched by the workload manager do not need Kubernetes API permissions for the workload manager control loop itself. This account mainly needs:
 
 - container registry pull permissions for runner images,
 - container registry push permissions if build-on-demand is enabled,

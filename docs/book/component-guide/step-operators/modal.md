@@ -31,8 +31,7 @@ To use the Modal step operator, we need:
   zenml integration install modal
   ```
 * Docker installed and running.
-* A cloud artifact store as part of your stack. This is needed so that both your orchestration environment and Modal can read and write step artifacts. Any
-  cloud artifact store supported by ZenML will work with Modal.
+* A cloud artifact store as part of your stack. This is needed so that both your orchestration environment and Modal can read and write step artifacts. Any cloud artifact store supported by ZenML will work with Modal.
 * A cloud container registry as part of your stack. Any cloud container registry supported by ZenML will work with Modal.
 * An Image Builder in your stack. ZenML uses it to build the Docker image that runs on Modal.
 
@@ -139,14 +138,8 @@ Important:
 Note that `cpu_count` specifies a soft minimum limit - Modal will guarantee at least this many physical cores, but the actual usage could be higher. The CPU cores/hour will also determine the minimum price paid for the compute resources.
 {% endhint %}
 
-This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
-32GB of CPU memory.
+This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and 32GB of CPU memory.
 
-Check out the [Modal docs](https://modal.com/docs/guide/gpu) for the full list of supported GPU types and the [SDK
-docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
-for more details on the available settings.
+Check out the [Modal docs](https://modal.com/docs/guide/gpu) for the full list of supported GPU types and the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html) for more details on the available settings.
 
-The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup; ZenML passes it as `environment_name` to `modal.App.lookup(...)`. The sandbox then belongs to that app, while ZenML step runtime environment variables are still passed separately to the sandbox runtime with `env=...`. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
-Certain combinations of settings are not available. It is suggested to err on the side of looser settings rather than more restrictive ones to avoid
-pipeline execution failures. In the case of failures, however, Modal provides detailed error messages that can help identify what is incompatible. See more in
-the [Modal docs on region selection](https://modal.com/docs/guide/region-selection) for more details.
+The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup; ZenML passes it as `environment_name` to `modal.App.lookup(...)`. The sandbox then belongs to that app, while ZenML step runtime environment variables are still passed separately to the sandbox runtime with `env=...`. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers. Certain combinations of settings are not available. It is suggested to err on the side of looser settings rather than more restrictive ones to avoid pipeline execution failures. In the case of failures, however, Modal provides detailed error messages that can help identify what is incompatible. See more in the [Modal docs on region selection](https://modal.com/docs/guide/region-selection) for more details.

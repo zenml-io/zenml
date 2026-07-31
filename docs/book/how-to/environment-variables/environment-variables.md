@@ -29,20 +29,16 @@ Environment variables and secrets can be configured at different levels with inc
 
 ## ZenML repository directory name
 
-By default, `zenml init` creates a `.zen` directory that marks the root of a
-ZenML repository. ZenML uses that marker later when it resolves local code, for example custom stack component flavors that live in your repository.
+By default, `zenml init` creates a `.zen` directory that marks the root of a ZenML repository. ZenML uses that marker later when it resolves local code, for example custom stack component flavors that live in your repository.
 
-If your workspace cannot use `.zen` as the marker directory name, set `ZENML_REPOSITORY_DIRECTORY_NAME` before initializing or discovering the
-repository:
+If your workspace cannot use `.zen` as the marker directory name, set `ZENML_REPOSITORY_DIRECTORY_NAME` before initializing or discovering the repository:
 
 ```bash
 export ZENML_REPOSITORY_DIRECTORY_NAME=.my-zenml
 zenml init
 ```
 
-After that, ZenML looks for `.my-zenml` instead of `.zen`. Keep this setting consistent for everyone and every process that works with the repository; if one
-shell uses `.zen` and another uses `.my-zenml`, they will not agree on where the
-ZenML repository root is.
+After that, ZenML looks for `.my-zenml` instead of `.zen`. Keep this setting consistent for everyone and every process that works with the repository; if one shell uses `.zen` and another uses `.my-zenml`, they will not agree on where the ZenML repository root is.
 
 ## Automatic environment variable injection
 

@@ -5,8 +5,7 @@ icon: bolt
 
 # Quick Wins
 
-Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML project with almost no code changes. Each entry explains why it matters, the
-micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
+Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML project with almost no code changes. Each entry explains why it matters, the micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
 {% hint style="info" %}
 **Automate with AI coding agents:** If you use an agentic coding tool (Claude Code, OpenAI Codex, GitHub Copilot, OpenCode, Amp, Cursor, etc.), install the `zenml-quick-wins` skill to analyze your repo and stack, get personalized recommendations, and implement quick wins interactively.
@@ -90,7 +89,7 @@ log_metadata({
 
 **Why** -- side-by-side tables + parallel-coordinate plots of any numerical metadata help you quickly identify patterns, trends, and outliers across multiple runs. This visual analysis speeds up debugging and parameter tuning.
 
-**Setup** -- once you've logged metadata (see quick win #1) nothing else to do; open **Dashboard → Compare**.  
+**Setup** -- once you've logged metadata (see quick win #1) nothing else to do; open **Dashboard → Compare**.
 
 [![Experiment Comparison Video](../.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a)
 
@@ -110,8 +109,7 @@ log_metadata({
 
 ## 3 Drop-in Experiment Tracker Autologging
 
-**Why** -- Stream metrics, system stats, model files, and artifacts—all without modifying step code. Different experiment trackers offer varying levels of automatic tracking to simplify your MLOps workflows.
-**Setup**
+**Why** -- Stream metrics, system stats, model files, and artifacts—all without modifying step code. Different experiment trackers offer varying levels of automatic tracking to simplify your MLOps workflows. **Setup**
 
 ```bash
 # First install your preferred experiment tracker integration
@@ -159,8 +157,7 @@ def train_model(data):
 
 ## 4 Instant **alerter notifications** for successes/failures
 
-**Why** -- get immediate notifications when pipelines succeed or fail, enabling faster response times and improved collaboration. Alerter notifications ensure
-your team is always aware of critical model training status, data drift alerts, and deployment changes without constantly checking dashboards.
+**Why** -- get immediate notifications when pipelines succeed or fail, enabling faster response times and improved collaboration. Alerter notifications ensure your team is always aware of critical model training status, data drift alerts, and deployment changes without constantly checking dashboards.
 
 {% hint style="info" %}
 ZenML supports multiple alerter flavors including Slack and Discord. The example below uses Slack, but the pattern is similar for other alerters.

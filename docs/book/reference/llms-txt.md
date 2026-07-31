@@ -24,8 +24,7 @@ ZenML's documentation is now made available to LLMs at the following link:
 https://docs.zenml.io/llms.txt
 ```
 
-This file contains a comprehensive summary of the ZenML documentation (containing links and descriptions) that LLMs can use to answer questions about
-ZenML's features, functionality, and usage.
+This file contains a comprehensive summary of the ZenML documentation (containing links and descriptions) that LLMs can use to answer questions about ZenML's features, functionality, and usage.
 
 ## How to use the llms.txt file
 

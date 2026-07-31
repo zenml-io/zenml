@@ -5,11 +5,9 @@ description: Managing data in feature stores.
 
 # Feature Stores
 
-Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use
-within a team or wider organization.
+Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use within a team or wider organization.
 
-As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data will almost certainly be different from how you access that data as part of a real-time or online inference setting.
-Feast solves the problem of developing train-serve skew where those two sources of data diverge from each other.
+As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data will almost certainly be different from how you access that data as part of a real-time or online inference setting. Feast solves the problem of developing train-serve skew where those two sources of data diverge from each other.
 
 Feature stores are a relatively recent addition to commonly-used machine learning stacks.
 

@@ -64,7 +64,8 @@ To assign organization roles:
 
 {% stepper %}
 {% step %}
-Navigate to the **Organization** **Settings** page {% endstep %}
+Navigate to the **Organization** **Settings** page
+{% endstep %}
 
 {% step %}
 Click on the **Members** tab. Here you can update roles for existing members.

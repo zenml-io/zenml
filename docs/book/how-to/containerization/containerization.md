@@ -35,7 +35,7 @@ Depending on the configuration of your Docker settings, requirements will be ins
 
 1. The packages installed in your local Python environment (if enabled)
 2. The packages required by the stack (unless disabled by setting `install_stack_requirements=False`)
-3. The packages specified via the `required_integrations` 
+3. The packages specified via the `required_integrations`
 4. The packages specified via the `requirements` attribute
 
 For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.DockerSettings).
@@ -264,10 +264,11 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 
 ### Python Dependencies
 
-By default, ZenML automatically installs all packages required by your active ZenML stack. 
+By default, ZenML automatically installs all packages required by your active ZenML stack.
 
 {% hint style="warning" %}
-In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
+In future versions, if none of the `replicate_local_python_environment`, `pyproject_path` or `requirements` attributes on `DockerSettings` are specified, ZenML will try to automatically find a `requirements.txt` and `pyproject.toml` files inside your current [source root](../steps-pipelines/sources.md#source-root) and install packages from the first one it finds. You can disable this behavior by setting `disable_automatic_requirements_detection=True`. If
+you already want this automatic detection in current versions of ZenML, set `disable_automatic_requirements_detection=False`.
 {% endhint %}
 
 1.  **Replicate Local Environment**:
@@ -283,8 +284,7 @@ In future versions, if none of the `replicate_local_python_environment`, `pyproj
         ...
     ```
 
-    This will run `pip freeze` to get a list of the installed packages in your local Python environment and will install them in the Docker image. This ensures that the same
-    exact dependencies will be installed.
+    This will run `pip freeze` to get a list of the installed packages in your local Python environment and will install them in the Docker image. This ensures that the same exact dependencies will be installed.
     {% hint style="warning" %}
     This does not work when you have a local project installed. To install local projects, check out the `Install Local Projects` section below.
     {% endhint %}
@@ -301,9 +301,7 @@ In future versions, if none of the `replicate_local_python_environment`, `pyproj
         ...
     ```
 
-    By default, ZenML will try to export the dependencies specified in the `pyproject.toml` by trying to run `uv export` and `poetry export`.
-    If both of these commands do not work for your `pyproject.toml` file or you want to customize the command (for example to install certain
-    extras), you can specify a custom command using the `pyproject_export_command` attribute. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/). The command can contain a `{directory}` placeholder which will be replaced with the directory in which the `pyproject.toml` file is stored.
+    By default, ZenML will try to export the dependencies specified in the `pyproject.toml` by trying to run `uv export` and `poetry export`. If both of these commands do not work for your `pyproject.toml` file or you want to customize the command (for example to install certain extras), you can specify a custom command using the `pyproject_export_command` attribute. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/). The command can contain a `{directory}` placeholder which will be replaced with the directory in which the `pyproject.toml` file is stored.
 
     ```python
     from zenml import pipeline
@@ -344,8 +342,7 @@ In future versions, if none of the `replicate_local_python_environment`, `pyproj
 
     docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
     ```
-6.  **Control Stack Requirements**:
-    By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
+6.  **Control Stack Requirements**: By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
 
     ```python
     from zenml.config import DockerSettings
@@ -353,8 +350,7 @@ In future versions, if none of the `replicate_local_python_environment`, `pyproj
     docker_settings = DockerSettings(install_stack_requirements=False)
     ```
 
-7.  **Control Deployment Requirements**:
-    By default, if you have a Deployer stack component in your active stack, ZenML installs the requirements needed by the deployment application configured in your deployment settings. You can disable this behavior if needed:
+7.  **Control Deployment Requirements**: By default, if you have a Deployer stack component in your active stack, ZenML installs the requirements needed by the deployment application configured in your deployment settings. You can disable this behavior if needed:
 
     ```python
     from zenml.config import DockerSettings
@@ -362,9 +358,7 @@ In future versions, if none of the `replicate_local_python_environment`, `pyproj
     docker_settings = DockerSettings(install_deployment_requirements=False)
     ```
 
-8.  **Install Local Projects**:
-    If your code requires the installation of some local code files as a python package, you can specify a command
-    that installs it as follows:
+8.  **Install Local Projects**: If your code requires the installation of some local code files as a python package, you can specify a command that installs it as follows:
     ```python
     from zenml.config import DockerSettings
     
@@ -420,7 +414,8 @@ The available package installers are:
 Full documentation for how `uv` works with PyTorch can be found on the Astral Docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
 
 {% hint style="info" %}
-If you're using `uv` and specify a custom parent image or Dockerfile that does not have an activated virtual environment, you need to pass `python_package_installer_args={"system": None}` in your DockerSettings so that `uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
+If you're using `uv` and specify a custom parent image or Dockerfile that does not have an activated virtual environment, you need to pass `python_package_installer_args={"system": None}` in your DockerSettings so that
+`uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
 {% endhint %}
 
 To speed up repeated image builds, set `python_package_installer_cache_mount` to a BuildKit `--mount` spec. ZenML emits `RUN --mount=<value> ...` on the install steps and drops the default `--no-cache-dir` flag so the mount is actually used. The value is passed through verbatim, so any valid `--mount` spec works (e.g. `type=cache` or `type=bind`). Requires BuildKit to be enabled on the builder.
