@@ -379,8 +379,8 @@ that it's authorized to access using IAM role credentials:
 
     $ zenml service-connector register aws-s3-multi --description \\   
 "Multi-bucket S3 connector" --type aws --resource-type s3-bucket \\    
---auth_method iam-role --role_arn=arn:aws:iam::<account>:role/<role> \\
---aws_region=us-east-1 --aws-access-key-id=<aws-key-id> \\            
+--auth-method iam-role --role_arn=arn:aws:iam::<account>:role/<role> \\
+--aws_region=us-east-1 --aws_access_key_id=<aws-key-id> \\            
 --aws_secret_access_key=<aws-secret-key> --expiration-seconds 3600
 
 All registered service connectors are validated before being registered. To

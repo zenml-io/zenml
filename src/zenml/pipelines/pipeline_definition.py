@@ -1146,7 +1146,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                             "not run the same steps as the original run."
                         )
 
-                self.log_pipeline_snapshot_metadata(snapshot)
+                self.log_pipeline_snapshot_metadata(snapshot, stack)
 
                 run = (
                     create_placeholder_run(
@@ -1195,11 +1195,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     @staticmethod
     def log_pipeline_snapshot_metadata(
         snapshot: PipelineSnapshotResponse,
+        stack: "Stack",
     ) -> None:
         """Displays logs based on the snapshot model upon running a pipeline.
 
         Args:
             snapshot: The model for the pipeline snapshot
+            stack: The stack the pipeline runs on
         """
         try:
             # Log about the caching status
@@ -1241,14 +1243,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if snapshot.stack is not None:
                 logger.info(f"Using stack: `{snapshot.stack.name}`")
 
-                for (
-                    component_type,
-                    components,
-                ) in snapshot.stack.components.items():
-                    for component in components:
-                        logger.info(
-                            f"  {component_type.value}: `{component.name}`"
-                        )
+                for component in stack.all_components:
+                    logger.info(
+                        f"  {component.type.value}: `{component.name}`"
+                    )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 

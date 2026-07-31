@@ -1130,7 +1130,15 @@ class CrudTestConfig:
 
 
 project_crud_test_config = CrudTestConfig(
-    create_model=ProjectRequest(name=sample_name("sample_project")),
+    create_model=ProjectRequest(
+        name=sample_name("sample_project"),
+        project_metadata={
+            "kitaru": {
+                "version": 1,
+                "catalog": {"models": [{"name": "classifier"}]},
+            }
+        },
+    ),
     update_model=ProjectUpdate(name=sample_name("updated_sample_project")),
     filter_model=ProjectFilter,
     entity_name="project",

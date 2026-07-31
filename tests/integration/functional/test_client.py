@@ -873,6 +873,46 @@ def test_get_run_fails_for_non_existent_run(clean_client: Client):
         clean_client.get_pipeline_run("non_existent_run")
 
 
+def test_project_metadata_client_updates(clean_client: Client):
+    """Tests project metadata create and update semantics through the client."""
+    project_metadata = {
+        "kitaru": {
+            "version": 1,
+            "catalog": {"models": [{"name": "classifier"}]},
+        },
+        "other": {"enabled": True},
+    }
+    project = clean_client.create_project(
+        name=sample_name("project_metadata"),
+        description="Project metadata test",
+        project_metadata=project_metadata,
+    )
+
+    try:
+        assert project.project_metadata == project_metadata
+
+        project = clean_client.update_project(
+            project.id, new_description="Updated description"
+        )
+        assert project.project_metadata == project_metadata
+
+        replacement = {
+            "kitaru": {
+                "version": 2,
+                "catalog": {"models": [{"name": "regressor"}]},
+            }
+        }
+        project = clean_client.update_project(
+            project.id, project_metadata=replacement
+        )
+        assert project.project_metadata == replacement
+
+        project = clean_client.update_project(project.id, project_metadata={})
+        assert project.project_metadata == {}
+    finally:
+        clean_client.delete_project(str(project.id))
+
+
 class ClientCrudTestConfig(BaseModel):
     entity_name: str
     create_args: Dict[str, Any] = {}

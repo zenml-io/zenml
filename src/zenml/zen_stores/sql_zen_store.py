@@ -984,11 +984,19 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         engine_args = {}
         if sql_url.drivername == SQLDatabaseDriver.SQLITE:
             assert self.database is not None
-            # The following default value is needed for sqlite to avoid the
-            # Error:
-            #   sqlite3.ProgrammingError: SQLite objects created in a thread can
-            #   only be used in that same thread.
-            sqlalchemy_connect_args = {"check_same_thread": False}
+            sqlalchemy_connect_args = {
+                # Needed for sqlite to avoid the error:
+                #   sqlite3.ProgrammingError: SQLite objects created in a
+                #   thread can only be used in that same thread.
+                "check_same_thread": False,
+                # How long a connection waits for the database write lock
+                # before raising `sqlite3.OperationalError: database is
+                # locked`. The sqlite3 default of 5 seconds is routinely
+                # exceeded when concurrent steps (e.g. mapped steps of a
+                # dynamic pipeline) publish artifacts against a local store
+                # at the same time.
+                "timeout": 60,
+            }
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             # all these are guaranteed by our root validator
             assert self.database is not None

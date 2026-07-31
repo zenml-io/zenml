@@ -129,7 +129,7 @@ class StepRunner:
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
         step_run_info: StepRunInfo,
-    ) -> None:
+    ) -> "StepRunResponse":
         """Runs the step.
 
         Args:
@@ -142,6 +142,9 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
+
+        Returns:
+            The updated step run.
         """
         from zenml.deployers.server import runtime
 
@@ -391,7 +394,7 @@ class StepRunner:
                 ]
                 for output_name, artifact in output_artifacts.items()
             }
-            publish_successful_step_run(
+            return publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
             )

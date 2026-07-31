@@ -1012,6 +1012,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         description: str,
         display_name: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Create a new project.
 
@@ -1019,6 +1020,7 @@ class Client(metaclass=ClientMetaClass):
             name: Name of the project.
             description: Description of the project.
             display_name: Display name of the project.
+            project_metadata: Metadata associated with the project.
 
         Returns:
             The created project.
@@ -1028,6 +1030,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 description=description,
                 display_name=display_name or "",
+                project_metadata=project_metadata,
             )
         )
 
@@ -1110,6 +1113,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1118,6 +1122,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: New name of the project.
             new_display_name: New display name of the project.
             new_description: New description of the project.
+            project_metadata: New metadata for the project.
 
         Returns:
             The updated project.
@@ -1131,6 +1136,8 @@ class Client(metaclass=ClientMetaClass):
         )
         if new_description:
             project_update.description = new_description
+        if project_metadata is not None:
+            project_update.project_metadata = project_metadata
         return self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,

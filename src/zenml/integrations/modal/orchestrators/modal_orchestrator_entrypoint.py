@@ -36,7 +36,7 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     get_static_step_sandbox_metadata_key,
 )
 from zenml.logger import get_logger
-from zenml.models import PipelineRunUpdate, StepRunResponse
+from zenml.models import PipelineRunUpdate
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
     DagRunner,
@@ -101,7 +101,6 @@ class _StaticModalPipelineController:
         self.client = client
         self.shared_env = shared_env
         self.step_run_request_factory = step_run_request_factory
-        self.step_runs: Dict[str, StepRunResponse] = {}
 
     def build_nodes(self) -> List[Node]:
         """Build DAG runner nodes from the static pipeline snapshot.
@@ -264,9 +263,7 @@ class _StaticModalPipelineController:
 
         request = self.step_run_request_factory.create_request(step_name)
         try:
-            self.step_run_request_factory.populate_request(
-                request, step_runs=self.step_runs
-            )
+            self.step_run_request_factory.populate_request(request)
         except Exception as e:
             logger.error(
                 "Failed to populate step run request for step `%s`: %s",
@@ -279,7 +276,7 @@ class _StaticModalPipelineController:
             return False
 
         step_run = publish_cached_step_run(request, self.pipeline_run)
-        self.step_runs[step_name] = step_run
+        self.step_run_request_factory.record_step_run(step_run)
         logger.info("Using cached version of step `%s`.", step_name)
         return True
 
@@ -386,9 +383,7 @@ class _StaticModalPipelineController:
 
         request = self.step_run_request_factory.create_request(step_name)
         try:
-            self.step_run_request_factory.populate_request(
-                request, step_runs=self.step_runs
-            )
+            self.step_run_request_factory.populate_request(request)
         except Exception as e:
             logger.error(
                 "Failed to populate failed step run request for `%s`: %s",

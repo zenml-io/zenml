@@ -67,6 +67,10 @@ from zenml.enums import (
     RunWaitConditionType,
     StepRuntime,
 )
+from zenml.execution.context import (
+    record_step_run,
+    setup_execution_context,
+)
 from zenml.execution.pipeline.dynamic.compilation import (
     compile_child_pipeline,
     compile_dynamic_step_invocation,
@@ -338,13 +342,13 @@ class DynamicPipelineRunner:
         )
         self._executor = ThreadPoolExecutor(max_workers=worker_count)
 
-        stack = Stack.from_model(snapshot.stack)
+        self._stack = Stack.from_model(snapshot.stack)
         if orchestrator:
             self._orchestrator = orchestrator
         else:
-            self._orchestrator = stack.orchestrator
+            self._orchestrator = self._stack.orchestrator
 
-        self._step_operator = stack.step_operator
+        self._step_operator = self._stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
         self._last_successful_sync_invocation_id: Optional[str] = None
@@ -884,8 +888,9 @@ class DynamicPipelineRunner:
 
             with (
                 InMemoryArtifactCache(),
+                setup_execution_context(pipeline_run=self._run),
                 env_utils.temporary_runtime_environment(
-                    self._snapshot.pipeline_configuration, self._snapshot.stack
+                    self._snapshot.pipeline_configuration, self._stack
                 ),
                 DynamicPipelineRunContext(
                     pipeline=pipeline,
@@ -1271,7 +1276,7 @@ class DynamicPipelineRunner:
                     return future
                 else:
                     self._last_successful_sync_invocation_id = invocation_id
-                    return load_step_run_outputs(step_run.id)
+                    return load_step_run_outputs(step_run)
 
             if (
                 runtime == StepRuntime.INLINE
@@ -1422,7 +1427,7 @@ class DynamicPipelineRunner:
                 step=compiled_step, remaining_retries=remaining_retries
             )
             self._last_successful_sync_invocation_id = invocation_id
-            return load_step_run_outputs(step_run.id)
+            return load_step_run_outputs(step_run)
 
     def _wait_until_start_dependencies_satisfied(
         self,
@@ -2405,6 +2410,8 @@ class DynamicPipelineRunner:
             # might not be refreshed yet and therefore not have the correct
             # status.
             step_run = Client().get_run_step(step_run.id, hydrate=False)
+
+        record_step_run(step_run)
 
         logger.debug(
             "Processing terminal step `%s` with status `%s`.",

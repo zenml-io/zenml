@@ -30,6 +30,10 @@ Most server endpoints follow this order:
 Non-CRUD endpoints, such as trigger attach/detach, may need permission checks
 across multiple resource domains.
 
+When calling any `zen_store().list_*` method for a project-scoped resource,
+always set `project=...` on the filter. A list call without project scope
+queries across all projects.
+
 ## FastAPI Rules
 
 - Prefer existing service or repository classes over scattered helpers.

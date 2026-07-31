@@ -449,7 +449,7 @@ class ArtifactFuture(BaseStepFuture):
         )
 
         step_run = self._parent._wait()
-        result = load_step_run_outputs(step_run.id)
+        result = load_step_run_outputs(step_run)
 
         if isinstance(result, OutputArtifact):
             return result
@@ -574,7 +574,7 @@ class StepFuture(BaseStepFuture):
         )
 
         step_run = self._wait()
-        return load_step_run_outputs(step_run.id)
+        return load_step_run_outputs(step_run)
 
     def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.

@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for projects."""
 
-from typing import TYPE_CHECKING, Any, List
+import json
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from sqlalchemy import UniqueConstraint
-from sqlmodel import Relationship
+from sqlalchemy import Column, UniqueConstraint
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlmodel import Field, Relationship, String
 
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import VisualizationResourceTypes
 from zenml.models import (
     ProjectRequest,
@@ -26,6 +29,7 @@ from zenml.models import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
@@ -62,6 +66,15 @@ class ProjectSchema(NamedSchema, table=True):
 
     display_name: str
     description: str
+    project_metadata: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        ),
+    )
 
     pipelines: List["PipelineSchema"] = Relationship(
         back_populates="project",
@@ -147,6 +160,9 @@ class ProjectSchema(NamedSchema, table=True):
             name=project.name,
             description=project.description,
             display_name=project.display_name,
+            project_metadata=json.dumps(
+                project.project_metadata or {}, default=pydantic_encoder
+            ),
         )
 
     def update(self, project_update: ProjectUpdate) -> "ProjectSchema":
@@ -162,7 +178,13 @@ class ProjectSchema(NamedSchema, table=True):
         for field, value in project_update.model_dump(
             exclude_unset=True
         ).items():
-            setattr(self, field, value)
+            if field == "project_metadata":
+                if value is not None:
+                    self.project_metadata = json.dumps(
+                        value, default=pydantic_encoder
+                    )
+            else:
+                setattr(self, field, value)
 
         self.updated = utc_now()
         return self
@@ -188,6 +210,9 @@ class ProjectSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ProjectResponseMetadata(
                 description=self.description,
+                project_metadata=json.loads(self.project_metadata)
+                if self.project_metadata
+                else {},
             )
         return ProjectResponse(
             id=self.id,

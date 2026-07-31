@@ -39,6 +39,7 @@ from zenml.enums import (
 )
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import RunStoppedException
+from zenml.execution.context import ExecutionContext, record_step_run
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
@@ -243,11 +244,12 @@ class StepLauncher:
                             )
                             signal_handler.register()
 
-                        self._run_step(
+                        if terminal_step_run := self._run_step(
                             pipeline_run=pipeline_run,
                             step_run=step_run,
                             force_write_logs=lambda: None,
-                        )
+                        ):
+                            step_run = terminal_step_run
                     except RunStoppedException as e:
                         raise e
                     except BaseException as e:  # noqa: E722
@@ -326,6 +328,8 @@ class StepLauncher:
                         f"step `{self._invocation_id}`."
                     )
 
+        record_step_run(step_run)
+
         return step_run
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
@@ -335,6 +339,10 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
+        execution_context = ExecutionContext.get()
+        if execution_context and execution_context.pipeline_run:
+            return execution_context.pipeline_run, False
+
         start_time = utc_now()
         run_name = string_utils.format_name_template(
             name_template=self._snapshot.run_name_template,
@@ -346,7 +354,7 @@ class StepLauncher:
         logger.debug("Creating pipeline run %s", run_name)
 
         client = Client()
-        pipeline_run = PipelineRunRequest(
+        pipeline_run_request = PipelineRunRequest(
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
             project=client.active_project.id,
@@ -356,20 +364,29 @@ class StepLauncher:
             start_time=start_time,
             tags=self._snapshot.pipeline_configuration.tags,
         )
-        return client.zen_store.get_or_create_run(pipeline_run)
+        pipeline_run, run_was_created = client.zen_store.get_or_create_run(
+            pipeline_run_request
+        )
+        if execution_context:
+            execution_context.pipeline_run = pipeline_run
+
+        return pipeline_run, run_was_created
 
     def _run_step(
         self,
         pipeline_run: PipelineRunResponse,
         step_run: StepRunResponse,
         force_write_logs: Callable[..., Any],
-    ) -> None:
+    ) -> Optional[StepRunResponse]:
         """Runs the current step.
 
         Args:
             pipeline_run: The model of the current pipeline run.
             step_run: The model of the current step run.
             force_write_logs: The context for the step logs.
+
+        Returns:
+            The terminal step run if available, None otherwise.
         """  # noqa: DOC501
         from zenml.deployers.server import runtime
 
@@ -396,18 +413,19 @@ class StepLauncher:
         if self._snapshot.is_dynamic:
             self._wait_until_resources_acquired(step_run_info)
 
+        terminal_step_run = None
         try:
             if self._step.config.step_operator:
                 step_operator_name = None
                 if isinstance(self._step.config.step_operator, str):
                     step_operator_name = self._step.config.step_operator
 
-                self._run_step_with_step_operator(
+                terminal_step_run = self._run_step_with_step_operator(
                     step_operator_name=step_operator_name,
                     step_run_info=step_run_info,
                 )
             elif not self._snapshot.is_dynamic:
-                self._run_step_in_current_thread(
+                terminal_step_run = self._run_step_in_current_thread(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
                     step_run_info=step_run_info,
@@ -437,7 +455,7 @@ class StepLauncher:
                             self._invocation_id,
                         )
 
-                    self._run_step_in_current_thread(
+                    terminal_step_run = self._run_step_in_current_thread(
                         pipeline_run=pipeline_run,
                         step_run=step_run,
                         step_run_info=step_run_info,
@@ -445,8 +463,10 @@ class StepLauncher:
                         output_artifact_uris=output_artifact_uris,
                     )
                 else:
-                    self._run_step_with_dynamic_orchestrator(
-                        step_run_info=step_run_info
+                    terminal_step_run = (
+                        self._run_step_with_dynamic_orchestrator(
+                            step_run_info=step_run_info
+                        )
                     )
         except:  # noqa: E722
             output_utils.remove_artifact_dirs(
@@ -454,11 +474,13 @@ class StepLauncher:
             )
             raise
 
+        return terminal_step_run
+
     def _run_step_with_step_operator(
         self,
         step_operator_name: Optional[str],
         step_run_info: StepRunInfo,
-    ) -> None:
+    ) -> Optional[StepRunResponse]:
         """Runs the current step with a step operator.
 
         Args:
@@ -471,6 +493,9 @@ class StepLauncher:
             NotImplementedError: If the step operator does not implement the
                 `submit(...)` or `launch(...)` methods.
             BaseException: If the step run failed.
+
+        Returns:
+            The terminal step run if available, None otherwise.
         """  # noqa: DOC502, DOC503
         step_operator = _get_step_operator(
             stack=self._stack,
@@ -564,16 +589,18 @@ class StepLauncher:
                     status = step_operator.wait(
                         step_run=step_run_info.step_run,
                     )
-                    self._finalize_remote_step(
+                    return self._finalize_remote_step(
                         status=status, step_run_info=step_run_info
                     )
                 finally:
                     self._cleanup_remote_step(step_run_info.step_run)
 
+        return None
+
     def _run_step_with_dynamic_orchestrator(
         self,
         step_run_info: StepRunInfo,
-    ) -> None:
+    ) -> Optional[StepRunResponse]:
         """Runs the current step with a dynamic orchestrator.
 
         Args:
@@ -581,6 +608,9 @@ class StepLauncher:
 
         Raises:
             BaseException: If the step run failed.
+
+        Returns:
+            The terminal step run if available, None otherwise.
         """  # noqa: DOC502, DOC503
         # If we don't pass the run ID here, does it reuse the existing token?
         environment, secrets = orchestrator_utils.get_config_environment_vars(
@@ -603,15 +633,17 @@ class StepLauncher:
                 status = self._stack.orchestrator.wait_for_isolated_step(
                     step_run_info.step_run
                 )
-                self._finalize_remote_step(
+                return self._finalize_remote_step(
                     status=status, step_run_info=step_run_info
                 )
             finally:
                 self._cleanup_remote_step(step_run_info.step_run)
 
+        return None
+
     def _finalize_remote_step(
         self, status: ExecutionStatus, step_run_info: StepRunInfo
-    ) -> None:
+    ) -> Optional[StepRunResponse]:
         """Finalizes a step that was executed in a remote environment.
 
         Args:
@@ -620,6 +652,9 @@ class StepLauncher:
 
         Raises:
             BaseException: If the step run failed.
+
+        Returns:
+            The terminal step run if available, None otherwise.
         """  # noqa: DOC502, DOC503
         if not status.is_successful:
             step_run = Client().get_run_step(step_run_info.step_run_id)
@@ -634,10 +669,12 @@ class StepLauncher:
         if self._step.config.command is not None:
             # Nothing in the execution environment publishes the status for
             # a command step, so we do it here.
-            publish_utils.publish_successful_step_run(
+            return publish_utils.publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids={},
             )
+
+        return None
 
     def _cleanup_remote_step(self, step_run: StepRunResponse) -> None:
         """Clean up infrastructure after a remote step has finished.
@@ -672,7 +709,7 @@ class StepLauncher:
         step_run_info: StepRunInfo,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
         output_artifact_uris: Dict[str, str],
-    ) -> None:
+    ) -> StepRunResponse:
         """Runs the current step without a step operator.
 
         Args:
@@ -681,9 +718,12 @@ class StepLauncher:
             step_run_info: Additional information needed to run the step.
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
+
+        Returns:
+            The updated step run.
         """
         runner = StepRunner(step=self._step, stack=self._stack)
-        runner.run(
+        return runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,
             input_artifacts=input_artifacts,
