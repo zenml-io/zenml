@@ -2586,16 +2586,24 @@ def pretty_print_deployment(
     declare(f"[bold]Snapshot:[/bold] [bold cyan]{snapshot_name}[/bold cyan]")
     declare(f"[bold]Stack:[/bold] [bold cyan]{stack_name}[/bold cyan]")
 
+    
     # Connection section
     if deployment.url:
         declare("\n[bold]Connection information:[/bold]")
 
         declare(
-            f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
+            f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link] "
+            f"[dim](Base API endpoint for model predictions & invocation)[/dim]",
             soft_wrap=True,
         )
         declare(
-            f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
+            f"[bold]Swagger UI Docs:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link] "
+            f"[dim](Interactive API documentation & schema explorer)[/dim]",
+            soft_wrap=True,
+        )
+        declare(
+            f"[bold]Health Check URL:[/bold] [link]{deployment.url.rstrip('/')}/health[/link] "
+            f"[dim](Endpoint for server status & deployment health checks)[/dim]",
             soft_wrap=True,
         )
 
