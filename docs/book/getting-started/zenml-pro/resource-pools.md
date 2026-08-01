@@ -20,15 +20,25 @@ If you run AI or ML work in a shared environment, you have probably seen the sam
 
 Here are typical situations this feature is built for:
 
-**“Our production jobs must finish—no surprises.”** You have training, fine-tuning, or inference that cannot vanish because someone else submitted a heavier workload. You want a clear agreement: this stack or this team gets a dependable slice of capacity, and critical steps are not stopped to make room for ad hoc work.
+**“Our production jobs must finish—no surprises.”**
+You have training, fine-tuning, or inference that cannot vanish because someone
+else submitted a heavier workload. You want a clear agreement: this stack or this team gets a dependable slice of capacity, and critical steps are not stopped to make room for ad hoc work.
 
-**“We share one pool of GPUs across many teams.”** You need one place that describes how much capacity exists, who may use it, and what happens when everyone wants it at once—without maintaining a separate spreadsheet or manual booking process for every pipeline.
+**“We share one pool of GPUs across many teams.”**
+You need one place that describes how much capacity exists, who may use it, and
+what happens when everyone wants it at once—without maintaining a separate spreadsheet or manual booking process for every pipeline.
 
-**“We paid for the hardware—we should use it when it’s free.”** When one group is quiet, you want other teams to use spare capacity so machines do not sit empty. You also want the original team to get their capacity back when they return, without a long negotiation or a cluster reconfiguration every time.
+**“We paid for the hardware—we should use it when it’s free.”**
+When one group is quiet, you want other teams to use spare capacity so machines
+do not sit empty. You also want the original team to get their capacity back when they return, without a long negotiation or a cluster reconfiguration every time.
 
-**“Engineers describe needs; ops maps them to reality.”** Pipeline authors say what each step requires (GPUs, memory, and so on). Platform or DevOps ties those stacks to the right shared capacity. The same pipeline code can run in different environment or stages without hard-coding cluster details.
+**“Engineers describe needs; ops maps them to reality.”**
+Pipeline authors say what each step requires (GPUs, memory, and so on). Platform
+or DevOps ties those stacks to the right shared capacity. The same pipeline code can run in different environment or stages without hard-coding cluster details.
 
-**“We need to ration more than just GPUs.”** Alongside standard compute, you may need to track things like licenses, special hardware, or how many pipeline steps may run at once. Pools let you treat those as countable resources under the same workspace-level model, as long as your organization agrees on names and units.
+**“We need to ration more than just GPUs.”**
+Alongside standard compute, you may need to track things like licenses, special
+hardware, or how many pipeline steps may run at once. Pools let you treat those as countable resources under the same workspace-level model, as long as your organization agrees on names and units.
 
 None of this replaces your orchestrator or cloud provider—it coordinates demand so teams see fair queuing, optional sharing of idle capacity, and explicit rules for critical versus best-effort work. When you are ready for how ZenML models that behavior, continue with [Introduction to capacity management](#introduction-to-capacity-management) and [Core concepts](#core-concepts).
 
@@ -67,14 +77,18 @@ Together, pools plus policies plus step annotations implement a **shared, priori
 
 ### What this looks like: three surfaces
 
-**1 — Pool (supply).** Platform ops create a workspace pool, name it whatever helps the org (say **datacenter-one**), and record how much of each scarce thing exists there: **10 GPUs**, **200 CPUs** and **500 GB of memory**. That number is the shared ceiling everyone draws from.
+**1 — Pool (supply).**
+Platform ops create a workspace pool, name it whatever helps the org (say
+**datacenter-one**), and record how much of each scarce thing exists there: **10 GPUs**, **200 CPUs** and **500 GB of memory**. That number is the shared ceiling everyone draws from.
 
 ```shell
 zenml resource-pool create datacenter-one \
   --capacity '{"gpu": 10, "mcpu": 200000, "memory_mb": 5120000}'
 ```
 
-**2 — Policy (wiring a stack to a pool).** They attach a **subject policy** so a specific stack component knows which pool to use and what slice it may claim. If your pipeline runs on a stack called **prod-stack**, its orchestrator (or step operator) is the component named in the policy: “prod-stack’s orchestrator may pull from **datacenter-one**, with *this much* reserved and *this much* limit,” and a priority versus other stacks.
+**2 — Policy (wiring a stack to a pool).**
+They attach a **subject policy** so a specific stack component knows which pool
+to use and what slice it may claim. If your pipeline runs on a stack called **prod-stack**, its orchestrator (or step operator) is the component named in the policy: “prod-stack’s orchestrator may pull from **datacenter-one**, with *this much* reserved and *this much* limit,” and a priority versus other stacks.
 
 ```shell
 zenml resource-pool attach-policy datacenter-one prod-stack \
@@ -83,7 +97,9 @@ zenml resource-pool attach-policy datacenter-one prod-stack \
   --limit '{"gpu": 6, "mcpu": 16000, "memory_mb": 81920}'
 ```
 
-**3 — Step request (what the run asks for).** The data scientist opens a step and says, in effect, **“this step needs three GPUs, 1 CPU and 2 GB of memory”** and can be preempted.
+**3 — Step request (what the run asks for).**
+The data scientist opens a step and says, in effect, **“this step needs three
+GPUs, 1 CPU and 2 GB of memory”** and can be preempted.
 
 ```python
 from zenml import step, pipeline

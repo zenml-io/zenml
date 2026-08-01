@@ -94,7 +94,8 @@ def deployment_pipeline():
 
 By default, alerters recognize these response options:
 
-**Approval:** `approve`, `LGTM`, `ok`, `yes` **Disapproval:** `decline`, `disapprove`, `no`, `reject`
+**Approval:** `approve`, `LGTM`, `ok`, `yes`
+**Disapproval:** `decline`, `disapprove`, `no`, `reject`
 
 ### Customizing Response Keywords
 

@@ -241,7 +241,8 @@ if __name__ == "__main__":
 
 The `ask()` method and `slack_alerter_ask_step` recognize these keywords by default:
 
-**Approval:** `approve`, `LGTM`, `ok`, `yes` **Disapproval:** `decline`, `disapprove`, `no`, `reject`
+**Approval:** `approve`, `LGTM`, `ok`, `yes`
+**Disapproval:** `decline`, `disapprove`, `no`, `reject`
 
 **Important Notes:**
 - The ask step returns a boolean (`True` for approval, `False` for disapproval/timeout)
