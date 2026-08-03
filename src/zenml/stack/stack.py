@@ -69,6 +69,7 @@ if TYPE_CHECKING:
     from zenml.feature_stores import BaseFeatureStore
     from zenml.image_builders import BaseImageBuilder
     from zenml.log_stores import BaseLogStore
+    from zenml.metric_stores import BaseMetricStore
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
@@ -124,6 +125,7 @@ class Stack:
         model_registry: Optional["BaseModelRegistry"] = None,
         deployer: Optional["BaseDeployer"] = None,
         log_store: Optional["BaseLogStore"] = None,
+        metric_store: Optional["BaseMetricStore"] = None,
         sandbox: Optional[Union["BaseSandbox", List["BaseSandbox"]]] = None,
     ):
         """Initializes and validates a stack instance.
@@ -149,6 +151,7 @@ class Stack:
             model_registry: Model registry component of the stack.
             deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
+            metric_store: Metric store component of the stack.
             sandbox: Sandbox component(s) of the stack. Repeatable; a single
                 component or a list of components.
         """
@@ -177,6 +180,7 @@ class Stack:
             model_registry,
             deployer,
             log_store,
+            metric_store,
             sandbox,
         ]:
             components: List["StackComponent"] = list()
@@ -309,6 +313,7 @@ class Stack:
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
         from zenml.log_stores import BaseLogStore
+        from zenml.metric_stores import BaseMetricStore
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
@@ -409,6 +414,12 @@ class Stack:
         if log_store is not None and not isinstance(log_store, BaseLogStore):
             _raise_type_error(log_store, BaseLogStore)
 
+        metric_store = components.get(StackComponentType.METRIC_STORE)
+        if metric_store is not None and not isinstance(
+            metric_store, BaseMetricStore
+        ):
+            _raise_type_error(metric_store, BaseMetricStore)
+
         sandbox = components.get(StackComponentType.SANDBOX)
         if sandbox is not None and not isinstance(sandbox, BaseSandbox):
             _raise_type_error(sandbox, BaseSandbox)
@@ -432,6 +443,7 @@ class Stack:
             model_registry=model_registry,
             deployer=deployer,
             log_store=log_store,
+            metric_store=metric_store,
             sandbox=sandbox,
         )
 
@@ -475,6 +487,7 @@ class Stack:
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
         from zenml.log_stores import BaseLogStore
+        from zenml.metric_stores import BaseMetricStore
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
@@ -626,6 +639,14 @@ class Stack:
             if not isinstance(log_store[0], BaseLogStore):
                 _raise_type_error(log_store[0], BaseLogStore)
 
+        # Metric Store
+        metric_store = components.get(StackComponentType.METRIC_STORE)
+        if metric_store:
+            if len(metric_store) > 1:
+                raise TypeError("Multiple metric stores are not supported.")
+            if not isinstance(metric_store[0], BaseMetricStore):
+                _raise_type_error(metric_store[0], BaseMetricStore)
+
         # Sandbox
         sandbox = components.get(StackComponentType.SANDBOX)
         if sandbox is not None and not isinstance(sandbox, list):
@@ -690,6 +711,10 @@ class Stack:
             ),
             log_store=cast(
                 Optional["BaseLogStore"], log_store[0] if log_store else None
+            ),
+            metric_store=cast(
+                Optional["BaseMetricStore"],
+                metric_store[0] if metric_store else None,
             ),
             sandbox=cast(
                 Optional[Union["BaseSandbox", List["BaseSandbox"]]],
@@ -1043,6 +1068,23 @@ class Stack:
         return cast(
             "BaseLogStore",
             self._get_default_component(StackComponentType.LOG_STORE),
+        )
+
+    @property
+    def metric_store(self) -> Optional["BaseMetricStore"]:
+        """The metric store of the stack.
+
+        Unlike the log store, the metric store is optional and has no
+        default fallback: metrics are opt-in and export to an external
+        backend (e.g. an OTLP collector), so a stack without one simply
+        collects no metrics.
+
+        Returns:
+            The metric store of the stack, or None if not configured.
+        """
+        return cast(
+            Optional["BaseMetricStore"],
+            self._get_default_component(StackComponentType.METRIC_STORE),
         )
 
     def dict(self) -> Dict[str, str]:

@@ -59,6 +59,12 @@ class PipelineRunConfiguration(
         default=None,
         description="Whether to enable logs for all steps of the pipeline run.",
     )
+    enable_step_metrics: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable runtime metric sampling (CPU/GPU/"
+        "memory) for all steps of the pipeline run. Only takes effect "
+        "when the active stack has a metric store configured.",
+    )
     enable_pipeline_logs: Optional[bool] = Field(
         default=None,
         description="Whether to enable pipeline logs for the pipeline run.",

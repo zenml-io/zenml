@@ -350,6 +350,7 @@ module = [
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
+    "pynvml.*",
     "distro.*",
     "analytics.*",
     "absl.*",
