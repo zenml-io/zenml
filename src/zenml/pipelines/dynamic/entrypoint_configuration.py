@@ -13,15 +13,20 @@
 #  permissions and limitations under the License.
 """Entrypoint configuration to run a dynamic pipeline."""
 
+import sys
 from typing import Any, Dict, List
 from uuid import UUID
 
 from zenml.client import Client
+from zenml.constants import DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
 from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 from zenml.integrations.registry import integration_registry
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 RUN_ID_OPTION = "run_id"
 
@@ -57,7 +62,12 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
         return args
 
     def run(self) -> None:
-        """Prepares the environment and runs the configured dynamic pipeline."""
+        """Prepares the environment and runs the configured dynamic pipeline.
+
+        Raises:
+            BaseException: If the pipeline run did not reach a terminal
+                status.
+        """
         snapshot = self.snapshot
 
         # Activate all the integrations. This makes sure that all materializers
@@ -71,4 +81,14 @@ class DynamicPipelineEntrypointConfiguration(BaseEntrypointConfiguration):
             run = Client().get_pipeline_run(UUID(run_id))
 
         runner = DynamicPipelineRunner(snapshot=snapshot, run=run)
-        runner.run_pipeline()
+        try:
+            runner.run_pipeline()
+        except BaseException:
+            if runner.run.status.is_finished:
+                logger.error(
+                    "Pipeline run `%s` failed.",
+                    runner.run.id,
+                    exc_info=True,
+                )
+                sys.exit(DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE)
+            raise
