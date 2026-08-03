@@ -83,4 +83,16 @@ server:
     workspaceName: <workspace-name>
 ```
 
+Alternatively, use `enrollmentKeySecretRef` to source the enrollment key from an existing Kubernetes Secret:
+
+```yaml
+server:
+  pro:
+    enrollmentKeySecretRef:
+      name: <secret-name>
+      key: <secret-key>
+```
+
+Configure only one of `enrollmentKey` and `enrollmentKeySecretRef`.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
