@@ -12,7 +12,12 @@ from zenml import (
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.enums import ExecutionStatus, TriggerFlavor, TriggerType
+from zenml.enums import (
+    ExecutionStatus,
+    LogicalOperators,
+    TriggerFlavor,
+    TriggerType,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     PipelineRequest,
@@ -452,13 +457,66 @@ def test_sdk_utilities(clean_client):
 
     assert got.cron_expression == "* 2 * * *"
 
+    assert clean_client.get_schedule_trigger(created.name).id == created.id
+    assert (
+        clean_client.get_schedule_trigger(created.name[:10]).id == created.id
+    )
+    assert (
+        clean_client.get_schedule_trigger(str(created.id)[:8]).id == created.id
+    )
+
     listed = clean_client.list_schedule_triggers()
     assert created.id in {trigger.id for trigger in listed.items}
+
+    listed_by_name = clean_client.list_schedule_triggers(name=created.name)
+    assert listed_by_name.total == 1
+    assert listed_by_name.items[0].id == created.id
+
+    listed_by_id_prefix = clean_client.list_schedule_triggers(
+        id=f"startswith:{str(created.id)[:8]}"
+    )
+    assert created.id in {trigger.id for trigger in listed_by_id_prefix.items}
+
+    listed_by_active_status = clean_client.list_schedule_triggers(active=True)
+    assert created.id in {
+        trigger.id for trigger in listed_by_active_status.items
+    }
+
+    listed_by_missing_name = clean_client.list_schedule_triggers(
+        name="definitely-missing-trigger"
+    )
+    assert created.id not in {
+        trigger.id for trigger in listed_by_missing_name.items
+    }
+
+    inactive = clean_client.create_schedule_trigger(
+        name=sample_name("inactive-trigger-test"),
+        active=False,
+        cron_expression="* 3 * * *",
+    )
+
+    listed_by_and_filters = clean_client.list_schedule_triggers(
+        logical_operator=LogicalOperators.AND,
+        name=created.name,
+        active=True,
+    )
+    assert listed_by_and_filters.total == 1
+    assert listed_by_and_filters.items[0].id == created.id
+
+    listed_by_or_filters = clean_client.list_schedule_triggers(
+        logical_operator=LogicalOperators.OR,
+        name="definitely-missing-trigger",
+        active=True,
+    )
+    or_filter_ids = {trigger.id for trigger in listed_by_or_filters.items}
+    assert created.id in or_filter_ids
+    assert inactive.id not in or_filter_ids
 
     with pytest.raises(KeyError):
         clean_client.get_schedule_trigger("definitely-missing-trigger")
 
     clean_client.delete_trigger(created.id)
+    clean_client.delete_trigger(inactive.id)
 
     with pytest.raises(KeyError):
         got = clean_client.get_schedule_trigger(created.id)
