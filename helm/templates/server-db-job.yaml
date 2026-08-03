@@ -161,6 +161,13 @@ spec:
                   name: {{ $server.database.passwordSecretRef.name }}
                   key: {{ $server.database.passwordSecretRef.key }}
             {{- end }}
+            {{- if and $server.pro.enabled $server.pro.enrollmentKeySecretRef }}
+            - name: ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $server.pro.enrollmentKeySecretRef.name }}
+                  key: {{ $server.pro.enrollmentKeySecretRef.key }}
+            {{- end }}
             {{- range $server.environmentSecretKeyRefs }}
             - name: {{ .name }}
               valueFrom:
