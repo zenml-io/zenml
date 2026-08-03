@@ -105,10 +105,16 @@ The pipeline orchestrates three steps:
 
 ```python
 @pipeline(settings={"docker": docker_settings}, enable_cache=False)
-def doc_analyzer(content=None, url=None, path=None, filename=None, document_type="text"):
-    document = ingest_document_step(content, url, path, filename, document_type)
-    analysis = analyze_document_step(document)          # OpenAI or deterministic fallback
-    render_analysis_report_step(analysis)               # HTML report for the dashboard
+def doc_analyzer(
+    content=None, url=None, path=None, filename=None, document_type="text"
+):
+    document = ingest_document_step(
+        content, url, path, filename, document_type
+    )
+    analysis = analyze_document_step(
+        document
+    )  # OpenAI or deterministic fallback
+    render_analysis_report_step(analysis)  # HTML report for the dashboard
     return analysis
 ```
 

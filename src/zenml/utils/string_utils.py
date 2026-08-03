@@ -183,7 +183,7 @@ def format_name_template(
         KeyError: If a key in template is missing in the substitutions.
         ValueError: If the formatted name is empty.
     """
-    substitutions = substitutions or {}
+    substitutions = dict(substitutions or {})
 
     if ("date" not in substitutions and "{date}" in name_template) or (
         "time" not in substitutions and "{time}" in name_template
