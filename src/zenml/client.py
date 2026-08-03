@@ -4363,6 +4363,8 @@ class Client(metaclass=ClientMetaClass):
             functools.partial(
                 self.list_schedule_triggers,
                 is_archived=is_archived,
+                # Pass as None to avoid flavor in prefix-match OR filters.
+                flavor=None,
             ),
         )
 
@@ -4610,6 +4612,8 @@ class Client(metaclass=ClientMetaClass):
             functools.partial(
                 self.list_platform_event_triggers,
                 is_archived=is_archived,
+                # Pass as None to avoid flavor in prefix-match OR filters.
+                flavor=None,
             ),
         )
         trigger = self._get_entity_by_id_or_name_or_prefix(

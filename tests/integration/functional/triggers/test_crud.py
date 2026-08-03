@@ -143,6 +143,13 @@ def test_event_crud_happy_path(clean_client):
 
     assert updated_response.target_events == update.target_events
 
+    assert (
+        clean_client.get_platform_event_trigger(trigger_response.name).id
+        == trigger_response.id
+    )
+    with pytest.raises(KeyError):
+        clean_client.get_platform_event_trigger("unrelated-platform-trigger")
+
     store.delete_trigger(trigger_response.id, soft=True)
 
     get_response = store.get_trigger(trigger_response.id)
@@ -451,6 +458,14 @@ def test_sdk_utilities(clean_client):
     got = clean_client.get_schedule_trigger(created.id)
 
     assert got.cron_expression == "* 2 * * *"
+
+    with pytest.raises(KeyError):
+        clean_client.get_schedule_trigger("unrelated-schedule-trigger")
+    with pytest.raises(KeyError):
+        clean_client.update_schedule_trigger(
+            trigger_name_id_or_prefix="unrelated-schedule-trigger",
+            active=False,
+        )
 
     clean_client.delete_trigger(created.id)
 
