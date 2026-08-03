@@ -452,6 +452,12 @@ def test_sdk_utilities(clean_client):
 
     assert got.cron_expression == "* 2 * * *"
 
+    listed = clean_client.list_schedule_triggers()
+    assert created.id in {trigger.id for trigger in listed.items}
+
+    with pytest.raises(KeyError):
+        clean_client.get_schedule_trigger("definitely-missing-trigger")
+
     clean_client.delete_trigger(created.id)
 
     with pytest.raises(KeyError):
