@@ -37,22 +37,20 @@ annotator = FiftyOneAnnotator()
 
 # Load a dataset (with proper COCO class mapping)
 dataset = annotator.add_dataset(
-    dataset_source="coco-2017",
-    split="validation",
-    max_samples=5
+    dataset_source="coco-2017", split="validation", max_samples=5
 )
 
 # Export to YOLO format for training (fixes class mapping issue!)
 export_path = annotator.export_to_yolo_format(
     dataset_name="coco-2017-validation-5samples",
-    export_dir="./data/coco_subset"
+    export_dir="./data/coco_subset",
 )
 
 # Run model inference and add predictions
 annotator.run_inference_and_add_predictions(
     dataset_name="coco-2017-validation-5samples",
     model=trained_yolo_model,
-    confidence_threshold=0.25
+    confidence_threshold=0.25,
 )
 
 # Evaluate predictions vs ground truth
@@ -64,7 +62,7 @@ metrics = annotator.evaluate_predictions(
 # Launch interactive dashboard with custom port
 session = annotator.launch(
     dataset_name="coco-2017-validation-5samples",
-    port=8080  # Custom port support
+    port=8080,  # Custom port support
 )
 ```
 
@@ -95,7 +93,7 @@ from annotators import FiftyOneAnnotator, FiftyOneAnnotatorConfig
 
 config = FiftyOneAnnotatorConfig(
     default_port=8080,
-    auto_launch=True  # Automatically open browser
+    auto_launch=True,  # Automatically open browser
 )
 
 annotator = FiftyOneAnnotator(config)
@@ -136,15 +134,12 @@ The annotator is used throughout the computer vision example:
 # Initialize annotator and load COCO dataset
 annotator = FiftyOneAnnotator()
 dataset = annotator.add_dataset(
-    dataset_source="coco-2017",
-    split=split,
-    max_samples=max_samples
+    dataset_source="coco-2017", split=split, max_samples=max_samples
 )
 
 # Export for YOLO training with correct class mapping
 export_path = annotator.export_to_yolo_format(
-    dataset_name=dataset_name,
-    export_dir=export_dir
+    dataset_name=dataset_name, export_dir=export_dir
 )
 ```
 
@@ -169,17 +164,17 @@ results = annotator.evaluate_predictions("coco-2017-validation-5samples")
 
 # Example real output from our testing:
 {
-    'mAP_50': None,           # Overall mAP at IoU 0.5
-    'mAP_75': None,           # Overall mAP at IoU 0.75
-    'class_metrics': {
-        'person': {'mAP': None, 'precision': 1.000, 'recall': 1.000},
-        'sheep': {'mAP': None, 'precision': 1.000, 'recall': 1.000},
-        'sports ball': {'mAP': None, 'precision': 1.000, 'recall': 1.000},
-        'bowl': {'mAP': None, 'precision': 0.000, 'recall': 0.000},
+    "mAP_50": None,  # Overall mAP at IoU 0.5
+    "mAP_75": None,  # Overall mAP at IoU 0.75
+    "class_metrics": {
+        "person": {"mAP": None, "precision": 1.000, "recall": 1.000},
+        "sheep": {"mAP": None, "precision": 1.000, "recall": 1.000},
+        "sports ball": {"mAP": None, "precision": 1.000, "recall": 1.000},
+        "bowl": {"mAP": None, "precision": 0.000, "recall": 0.000},
         # ... per-class breakdown
     },
-    'total_samples': 5,
-    'eval_keys': ['eval_50', 'eval_75']
+    "total_samples": 5,
+    "eval_keys": ["eval_50", "eval_75"],
 }
 ```
 

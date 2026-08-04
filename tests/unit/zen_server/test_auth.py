@@ -185,20 +185,46 @@ def test_authenticate_api_key_allows_local_keys_for_external_auth(
     ]
 
 
-def test_authenticate_credentials_rejects_local_service_account_token_for_external_auth(
+def test_authenticate_credentials_allows_local_service_account_token_for_external_auth(
     monkeypatch,
 ):
-    """Ensure external auth rejects JWTs for local service accounts."""
+    """Ensure server-issued JWTs work for local service accounts."""
     user = _user_model(is_service_account=True)
-    decoded_token = SimpleNamespace(
-        session_id=None,
+    decoded_token = auth.JWTToken(
         user_id=user.id,
         issued_at=datetime.utcnow(),
-        api_key_id=None,
-        api_key_generation=None,
-        device_id=None,
-        schedule_id=None,
-        pipeline_run_id=None,
+    )
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+
+    auth_context = auth.authenticate_credentials(access_token="access-token")
+
+    assert auth_context.user is user
+    assert auth_context.api_key is None
+
+
+def test_authenticate_credentials_rejects_local_user_token_for_external_auth(
+    monkeypatch,
+):
+    """Ensure external auth still rejects JWTs for local user accounts."""
+    user = _user_model()
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
     )
 
     class Store:
