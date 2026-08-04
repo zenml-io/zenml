@@ -3,7 +3,16 @@ from unittest.mock import patch
 
 import pytest
 
-from zenml.utils.time_utils import exponential_backoff_delays, expires_in, iso8601_to_utc_naive, seconds_to_human_readable, to_local_tz, to_utc_timezone, utc_now, utc_now_tz_aware
+from zenml.utils.time_utils import (
+    expires_in,
+    exponential_backoff_delays,
+    iso8601_to_utc_naive,
+    seconds_to_human_readable,
+    to_local_tz,
+    to_utc_timezone,
+    utc_now,
+    utc_now_tz_aware,
+)
 
 
 def test_iso8601_to_utc_naive_expected_behaviors() -> None:
@@ -199,7 +208,11 @@ def test_exponential_backoff_no_jitter_basic_sequence() -> None:
     """With jitter='none', delays double each time up to max_delay."""
     delays = list(
         exponential_backoff_delays(
-            attempts=5, initial_delay=1.0, max_delay=30.0, factor=2.0, jitter="none"
+            attempts=5,
+            initial_delay=1.0,
+            max_delay=30.0,
+            factor=2.0,
+            jitter="none",
         )
     )
     assert delays == [1.0, 2.0, 4.0, 8.0, 16.0]
@@ -209,7 +222,11 @@ def test_exponential_backoff_respects_max_delay() -> None:
     """Delays are capped at max_delay once the exponential growth exceeds it."""
     delays = list(
         exponential_backoff_delays(
-            attempts=6, initial_delay=1.0, max_delay=10.0, factor=2.0, jitter="none"
+            attempts=6,
+            initial_delay=1.0,
+            max_delay=10.0,
+            factor=2.0,
+            jitter="none",
         )
     )
     assert delays == [1.0, 2.0, 4.0, 8.0, 10.0, 10.0]
@@ -225,7 +242,11 @@ def test_exponential_backoff_full_jitter_within_bounds() -> None:
     """jitter='full' should keep every delay between 0 and the computed max for that step."""
     delays = list(
         exponential_backoff_delays(
-            attempts=5, initial_delay=1.0, max_delay=30.0, factor=2.0, jitter="full"
+            attempts=5,
+            initial_delay=1.0,
+            max_delay=30.0,
+            factor=2.0,
+            jitter="full",
         )
     )
     expected_caps = [1.0, 2.0, 4.0, 8.0, 16.0]
@@ -237,7 +258,11 @@ def test_exponential_backoff_equal_jitter_within_bounds() -> None:
     """jitter='equal' should keep delays between half and the full computed delay."""
     delays = list(
         exponential_backoff_delays(
-            attempts=5, initial_delay=1.0, max_delay=30.0, factor=2.0, jitter="equal"
+            attempts=5,
+            initial_delay=1.0,
+            max_delay=30.0,
+            factor=2.0,
+            jitter="equal",
         )
     )
     expected_caps = [1.0, 2.0, 4.0, 8.0, 16.0]
