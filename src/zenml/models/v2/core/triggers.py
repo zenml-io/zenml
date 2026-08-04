@@ -368,6 +368,7 @@ class UnScopedTriggerFilter(BaseFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "is_archived",
+        "flavor",
         "type",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
@@ -436,6 +437,12 @@ class UnScopedTriggerFilter(BaseFilter):
                 self.type if isinstance(self.type, list) else [self.type]
             )
             query = query.where(col(TriggerSchema.type).in_(type_checks))
+
+        if self.flavor is not None:
+            flavor_checks = (
+                self.flavor if isinstance(self.flavor, list) else [self.flavor]
+            )
+            query = query.where(col(TriggerSchema.flavor).in_(flavor_checks))
 
         return query
 

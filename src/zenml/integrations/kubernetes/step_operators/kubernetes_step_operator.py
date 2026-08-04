@@ -31,6 +31,7 @@ from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorSettings,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
+    build_headless_service_manifest,
     build_job_manifest,
     build_pod_manifest,
     pod_template_manifest_from_pod,
@@ -204,10 +205,21 @@ class KubernetesStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+
+        Raises:
+            RuntimeError: If a regular step requests more than one pod.
+            Exception: If the headless service creation fails.
         """
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
         )
+        if settings.pod_count > 1 and info.config.command is None:
+            raise RuntimeError(
+                f"The step `{info.pipeline_step_name}` requests "
+                f"pod_count={settings.pod_count} but is not a command "
+                "step. Running a regular step on multiple pods would "
+                "duplicate its artifacts, outputs and logs on every pod."
+            )
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
         )
@@ -243,6 +255,26 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=settings.pod_settings,
         )
 
+        job_name = settings.job_name_prefix or ""
+        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
+        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
+        # The job name will be used as a label on the pods, so we need to make
+        # sure it doesn't exceed the label length limit
+        job_name = kube_utils.sanitize_label(job_name)
+
+        namespace = self.config.kubernetes_namespace
+        if settings.pod_count > 1:
+            job_name = kube_utils.multi_pod_job_name(
+                job_name, settings.pod_count
+            )
+            environment.update(
+                kube_utils.multi_pod_environment(
+                    job_name=job_name,
+                    namespace=namespace,
+                    pod_count=settings.pod_count,
+                )
+            )
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image_name,
@@ -255,13 +287,6 @@ class KubernetesStepOperator(BaseStepOperator):
             labels=step_labels,
         )
 
-        job_name = settings.job_name_prefix or ""
-        random_prefix = "".join(random.choices("0123456789abcdef", k=8))
-        job_name += f"-{random_prefix}-{info.pipeline_step_name}-{info.pipeline.name}-step-operator"
-        # The job name will be used as a label on the pods, so we need to make
-        # sure it doesn't exceed the label length limit
-        job_name = kube_utils.sanitize_label(job_name)
-
         job_manifest = build_job_manifest(
             job_name=job_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
@@ -272,15 +297,50 @@ class KubernetesStepOperator(BaseStepOperator):
             active_deadline_seconds=settings.active_deadline_seconds,
             labels=step_labels,
             annotations=step_annotations,
+            pod_count=settings.pod_count,
         )
 
-        kube_utils.create_job(
-            batch_api=self._k8s_batch_api,
-            namespace=self.config.kubernetes_namespace,
+        batch_api = self._k8s_batch_api
+        created_job = kube_utils.create_job(
+            batch_api=batch_api,
+            namespace=namespace,
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
             max_retries=settings.max_api_retries,
         )
+
+        if settings.pod_count > 1:
+            # The headless service gives the job's pods stable DNS for
+            # pod-to-pod communication. It is owned by the job so
+            # Kubernetes garbage collection reaps it with the job.
+            try:
+                kube_utils.create_service(
+                    core_api=self._k8s_core_api,
+                    namespace=namespace,
+                    service_manifest=build_headless_service_manifest(
+                        created_job
+                    ),
+                    api_request_timeout=settings.api_request_timeout,
+                    max_retries=settings.max_api_retries,
+                )
+            except Exception:
+                # Without the service the pods can never reach each
+                # other, so don't leave the job running.
+                try:
+                    kube_utils.delete_job(
+                        batch_api=batch_api,
+                        namespace=namespace,
+                        job_name=job_name,
+                        api_request_timeout=settings.api_request_timeout,
+                        max_retries=settings.max_api_retries,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to delete job `%s` after failing to create "
+                        "its headless service.",
+                        job_name,
+                    )
+                raise
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Gets the status of a submitted step.
@@ -350,9 +410,11 @@ class KubernetesStepOperator(BaseStepOperator):
             return
 
         job_name = job_list.items[0].metadata.name
-        self._k8s_batch_api.delete_namespaced_job(
-            name=job_name,
+        kube_utils.delete_job(
+            batch_api=self._k8s_batch_api,
             namespace=self.config.kubernetes_namespace,
-            propagation_policy="Foreground",
+            job_name=job_name,
+            api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
         )
         logger.info(f"Successfully cancelled step job: {job_name}")
