@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 
-from zenml.utils.json_utils import decimal_encoder, isoformat
+from zenml.utils.json_utils import _json_type_of, decimal_encoder, isoformat
 
 
 def test_isoformat_date() -> None:
@@ -48,3 +48,40 @@ def test_decimal_encoder_zero() -> None:
 
     assert decimal_encoder(Decimal("0")) == 0
     assert isinstance(decimal_encoder(Decimal("0")), int)
+
+
+def test_json_type_of_bool_is_boolean_not_integer() -> None:
+    """bool is a subclass of int in Python, so this must be checked
+    before int to avoid misclassifying booleans as integers."""
+    assert _json_type_of(True) == "boolean"
+    assert _json_type_of(False) == "boolean"
+
+
+def test_json_type_of_integer() -> None:
+    """A plain int should map to the integer JSON type."""
+    assert _json_type_of(42) == "integer"
+
+
+def test_json_type_of_float() -> None:
+    """A float should map to the number JSON type."""
+    assert _json_type_of(3.14) == "number"
+
+
+def test_json_type_of_string() -> None:
+    """A str should map to the string JSON type."""
+    assert _json_type_of("hello") == "string"
+
+
+def test_json_type_of_list() -> None:
+    """A list should map to the array JSON type."""
+    assert _json_type_of([1, 2, 3]) == "array"
+
+
+def test_json_type_of_dict() -> None:
+    """A dict should map to the object JSON type."""
+    assert _json_type_of({"key": "value"}) == "object"
+
+
+def test_json_type_of_none() -> None:
+    """None should map to the null JSON type."""
+    assert _json_type_of(None) == "null"
