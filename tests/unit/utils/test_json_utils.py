@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 
-from zenml.utils.json_utils import _json_type_of, decimal_encoder, isoformat
+from zenml.utils.json_utils import _json_type_of, _schema_allowed_json_types, decimal_encoder, isoformat
 
 
 def test_isoformat_date() -> None:
@@ -85,3 +85,22 @@ def test_json_type_of_dict() -> None:
 def test_json_type_of_none() -> None:
     """None should map to the null JSON type."""
     assert _json_type_of(None) == "null"
+
+
+def test_schema_allowed_json_types_single_type() -> None:
+    """A schema with a single type string should return a set with
+    that one type."""
+    assert _schema_allowed_json_types({"type": "string"}) == {"string"}
+
+
+def test_schema_allowed_json_types_list_of_types() -> None:
+    """A schema with a list of types should return all of them as
+    a set."""
+    assert _schema_allowed_json_types(
+        {"type": ["string", "null"]}
+    ) == {"string", "null"}
+
+
+def test_schema_allowed_json_types_missing_type_key() -> None:
+    """A schema with no 'type' key should return an empty set."""
+    assert _schema_allowed_json_types({}) == set()
