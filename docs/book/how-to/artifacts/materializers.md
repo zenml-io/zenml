@@ -35,8 +35,8 @@ JSON has a smaller type system than Python, so Python-specific container
 details can be lost when nested inside JSON-serialized values. For example,
 nested tuples and sets are loaded back as lists. If your data needs strict
 structured type reconstruction, use a Pydantic model, a dataclass, or a custom
-materializer. Additionally, dicts with non-string keys are stored with 
-additional metadata so key types are preserved instead of being coerced by 
+materializer. Additionally, dicts with non-string keys are stored with
+additional metadata so key types are preserved instead of being coerced by
 JSON object key rules.
 {% endhint %}
 

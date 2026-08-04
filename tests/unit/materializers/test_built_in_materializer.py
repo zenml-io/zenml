@@ -143,10 +143,16 @@ def test_dict_with_string_and_integer_keys_materialization():
 def test_dict_with_json_key_collision_materialization():
     """Test materialization for dict keys that collide when JSON-encoded."""
 
+    def _validate_metadata_file(artifact_uri: str) -> None:
+        files = os.listdir(artifact_uri)
+        assert DEFAULT_METADATA_FILENAME in files
+        assert DEFAULT_FILENAME not in files
+
     example = {1: "integer key", "1": "string key"}
     result = _test_materializer(
         step_output_type=dict,
         step_output=example,
+        validation_function=_validate_metadata_file,
         expected_metadata_size=2,
     )
 
@@ -155,7 +161,6 @@ def test_dict_with_json_key_collision_materialization():
 
 def test_dict_with_mixed_key_types_content_hash_does_not_fail():
     """Test content hashing for dicts with mixed key types."""
-
     materializer = BuiltInContainerMaterializer(uri="unused")
 
     assert materializer.compute_content_hash({1: "one", "a": "letter"}) is None
