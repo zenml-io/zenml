@@ -8,6 +8,7 @@ from zenml.utils.json_utils import (
     _schema_allowed_json_types,
     decimal_encoder,
     isoformat,
+    parse_value_for_schema,
     pydantic_encoder,
 )
 
@@ -172,3 +173,50 @@ def test_pydantic_encoder_unsupported_type_raises_type_error() -> None:
 
     with pytest.raises(TypeError):
         pydantic_encoder(Unsupported())
+
+
+def test_parse_value_for_schema_valid_json_matching_type() -> None:
+    """A raw string parsing to the schema's expected type is returned
+    as the parsed value."""
+    assert parse_value_for_schema("42", {"type": "integer"}) == 42
+
+
+def test_parse_value_for_schema_integer_accepted_as_number() -> None:
+    """An integer value should satisfy a schema expecting 'number',
+    since JSON Schema treats integers as a subset of numbers."""
+    assert parse_value_for_schema("42", {"type": "number"}) == 42
+
+
+def test_parse_value_for_schema_type_mismatch_falls_back_to_string() -> None:
+    """If the parsed type doesn't match but 'string' is an allowed
+    type, the raw string is returned unchanged."""
+    assert parse_value_for_schema("42", {"type": "string"}) == "42"
+
+
+def test_parse_value_for_schema_type_mismatch_raises_value_error() -> None:
+    """If the parsed type doesn't match and 'string' is not allowed,
+    a ValueError is raised."""
+    with pytest.raises(ValueError):
+        parse_value_for_schema("42", {"type": "array"})
+
+
+def test_parse_value_for_schema_invalid_json_falls_back_to_string() -> None:
+    """Malformed JSON input should fall back to the raw string when
+    'string' is an allowed type."""
+    assert (
+        parse_value_for_schema("not valid json", {"type": "string"})
+        == "not valid json"
+    )
+
+
+def test_parse_value_for_schema_invalid_json_no_string_raises() -> None:
+    """Malformed JSON input should raise when 'string' is not an
+    allowed type."""
+    with pytest.raises(ValueError):
+        parse_value_for_schema("not valid json", {"type": "integer"})
+
+
+def test_parse_value_for_schema_empty_schema_returns_parsed_value() -> None:
+    """With no schema constraints, the parsed JSON value is returned
+    as-is."""
+    assert parse_value_for_schema("42", {}) == 42
