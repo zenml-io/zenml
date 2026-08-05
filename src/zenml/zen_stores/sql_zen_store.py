@@ -1438,6 +1438,45 @@ class SqlZenStore(BaseZenStore):
     # Initialization and configuration
     # --------------------------------
 
+    def _enable_sqlite_wal_mode(self) -> bool:
+        """Switch the SQLite database to write-ahead logging.
+
+        In the default rollback journal mode, a write transaction blocks all
+        readers for its entire duration. WAL lets readers proceed concurrently
+        with the single writer instead, which matters for local stores where
+        concurrent steps of a dynamic pipeline write at the same time, and
+        where a long transaction such as deleting a large pipeline run would
+        otherwise make the whole store unusable while it runs.
+
+        The journal mode is persisted in the database file, so this is applied
+        once per store rather than per connection. WAL relies on shared memory,
+        which some network filesystems do not provide; if the switch does not
+        take, the store keeps working in the previous journal mode.
+
+        Returns:
+            Whether the database is in WAL mode.
+        """
+        try:
+            with self.engine.connect() as connection:
+                journal_mode = connection.exec_driver_sql(
+                    "PRAGMA journal_mode=WAL"
+                ).scalar()
+        except Exception as e:
+            logger.debug("Unable to enable SQLite WAL mode: %s", e)
+            return False
+
+        if journal_mode and journal_mode.lower() == "wal":
+            return True
+
+        logger.debug(
+            "Unable to enable SQLite WAL mode, the database is in `%s` "
+            "journal mode instead. This can happen when the database is "
+            "stored on a filesystem that does not support the shared "
+            "memory that WAL requires.",
+            journal_mode,
+        )
+        return False
+
     def _run_migrations(self) -> None:
         if self.skip_migrations or handle_bool_env_var(
             ENV_ZENML_DISABLE_DATABASE_MIGRATION
@@ -1476,6 +1515,11 @@ class SqlZenStore(BaseZenStore):
             if not self.db_backup_engine.database_exists():
                 self.db_backup_engine.create_database()
 
+        wal_mode = False
+        if self.config.driver == SQLDatabaseDriver.SQLITE:
+            # Done before the migrations, so that they run in WAL mode too.
+            wal_mode = self._enable_sqlite_wal_mode()
+
         self._alembic = Alembic(self.engine)
 
         self._run_migrations()
@@ -1487,6 +1531,12 @@ class SqlZenStore(BaseZenStore):
             def _(dbapi_connection: Any, connection_record: Any) -> None:
                 cursor = dbapi_connection.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
+                if wal_mode:
+                    # Skips the fsync on every commit, which is what makes WAL
+                    # fast. Only set when WAL is actually in use: there, a power
+                    # loss can cost the most recent commits but cannot corrupt
+                    # the database, while in rollback journal mode it can.
+                    cursor.execute("PRAGMA synchronous=NORMAL")
                 cursor.close()
 
             # Discard existing connections created without the foreign key
