@@ -35,9 +35,14 @@ INDEXED_COLUMNS = [
     ("model_versions_runs", "pipeline_run_id"),
     ("service", "pipeline_run_id"),
     ("trigger_execution", "pipeline_run_id"),
-    ("pipeline_run", "root_run_id"),
     ("pipeline_run", "original_run_id"),
 ]
+
+# `ix_pipeline_run_root_run_id` is deliberately absent: `c2f8d07a91b4` already
+# creates it, so an upgraded database has it and creating it again fails. It was
+# missing from `PipelineRunSchema.__table_args__` though, which left databases
+# created from the schema without it -- that is fixed in the schema, so both
+# paths now end up with the same index.
 
 
 def upgrade() -> None:
