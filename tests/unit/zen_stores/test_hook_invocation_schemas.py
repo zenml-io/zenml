@@ -14,11 +14,7 @@
 """Schema-level round-trip tests for the hook invocation tables."""
 
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Iterator
 from uuid import uuid4
-
-import pytest
 
 from zenml.enums import ExecutionStatus, HookType
 from zenml.models import ProjectFilter, UserFilter
@@ -32,7 +28,6 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import (
     Session,
     SqlZenStore,
-    SqlZenStoreConfiguration,
 )
 
 

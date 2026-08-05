@@ -7546,7 +7546,7 @@ class SqlZenStore(BaseZenStore):
             # tens of thousands of step runs stays a single statement.
             session.execute(
                 delete(RunMetadataResourceSchema).where(
-                    RunMetadataResourceSchema.resource_type
+                    col(RunMetadataResourceSchema.resource_type)
                     == MetadataResourceTypes.STEP_RUN.value,
                     col(RunMetadataResourceSchema.resource_id).in_(
                         select(StepRunSchema.id).where(

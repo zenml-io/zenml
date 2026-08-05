@@ -14,11 +14,8 @@
 """Tests that deleting a pipeline run leaves nothing of it behind."""
 
 from datetime import datetime
-from pathlib import Path
-from typing import Iterator, Tuple
+from typing import Tuple
 from uuid import UUID, uuid4
-
-import pytest
 
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.models import ProjectFilter, UserFilter
@@ -31,7 +28,6 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import (
     Session,
     SqlZenStore,
-    SqlZenStoreConfiguration,
     select,
 )
 

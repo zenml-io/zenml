@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """Tests for the journal mode and cascade indexes of a local SQLite store."""
 
-from pathlib import Path
-from typing import Iterator, List, Tuple
+from typing import List, Tuple
 
 import pytest
 
 from zenml.zen_stores.sql_zen_store import (
     SqlZenStore,
-    SqlZenStoreConfiguration,
 )
 
 # Foreign key child columns that a pipeline run deletion cascades along. SQLite

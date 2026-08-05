@@ -14,8 +14,6 @@
 """Tests for hook invocation CRUD in SqlZenStore."""
 
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Iterator
 from uuid import UUID, uuid4
 
 import pytest
@@ -40,7 +38,6 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import (
     Session,
     SqlZenStore,
-    SqlZenStoreConfiguration,
 )
 
 
