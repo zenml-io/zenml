@@ -29,12 +29,14 @@ from zenml.zen_server import auth
 
 
 class _ApiKey:
-    def __init__(self):
+    def __init__(self, *, external_user_id=None):
         self.id = uuid4()
         self.name = "test-key"
         self.active = True
         self.service_account = SimpleNamespace(
-            active=True, external_user_id=None, name="test-service-account"
+            active=True,
+            external_user_id=external_user_id,
+            name="test-service-account",
         )
         self.verified_keys = []
 
@@ -122,6 +124,29 @@ def test_fetch_and_verify_api_key_allows_internal_skip(monkeypatch):
 
     assert api_key.verified_keys == []
     assert store.updated_api_key_ids == [api_key.id]
+
+
+def test_fetch_and_verify_api_key_allows_adopted_service_account(monkeypatch):
+    """Ensure adopted service accounts retain their existing API keys."""
+    api_key = _ApiKey(external_user_id=uuid4())
+    store = _ZenStore(api_key)
+    warnings = []
+    monkeypatch.setattr(auth, "zen_store", lambda: store)
+    monkeypatch.setattr(
+        auth.logger, "warning", lambda message: warnings.append(message)
+    )
+
+    result = auth._fetch_and_verify_api_key(
+        api_key_id=api_key.id, key_to_verify="valid"
+    )
+
+    assert result is api_key
+    assert api_key.verified_keys == ["valid"]
+    assert store.updated_api_key_ids == [api_key.id]
+    assert warnings == [
+        "Authentication warning: using an API key associated with an external "
+        "service account to authenticate to the ZenML server"
+    ]
 
 
 def test_authenticate_api_key_keeps_pro_api_key_flow(monkeypatch):
