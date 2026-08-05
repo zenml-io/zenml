@@ -209,18 +209,22 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
-        sa_relationship_kwargs={"cascade": "delete"}
+        sa_relationship_kwargs={"cascade": "delete", "passive_deletes": True}
     )
     output_artifacts: List["StepRunOutputArtifactSchema"] = Relationship(
-        sa_relationship_kwargs={"cascade": "delete"}
+        sa_relationship_kwargs={"cascade": "delete", "passive_deletes": True}
     )
     logs: List["LogsSchema"] = Relationship(
         back_populates="step_run",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "passive_deletes": True,
+        },
     )
     parents: List["StepRunParentsSchema"] = Relationship(
         sa_relationship_kwargs={
             "cascade": "delete",
+            "passive_deletes": True,
             "primaryjoin": "StepRunParentsSchema.child_id == StepRunSchema.id",
         },
     )

@@ -7486,6 +7486,26 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # `PipelineRunSchema.step_runs` uses `passive_deletes`, so the step
+            # runs are removed by the database cascade and the ORM never gets
+            # to clean up their metadata links. `run_metadata_resource` refers
+            # to its resources polymorphically and has no foreign key on
+            # `resource_id`, so the database cannot cascade along it either:
+            # without this, deleting a run would leave the links dangling.
+            # Expressed as a subquery rather than a list of ids, so a run with
+            # tens of thousands of step runs stays a single statement.
+            session.execute(
+                delete(RunMetadataResourceSchema).where(
+                    RunMetadataResourceSchema.resource_type
+                    == MetadataResourceTypes.STEP_RUN.value,
+                    col(RunMetadataResourceSchema.resource_id).in_(
+                        select(StepRunSchema.id).where(
+                            StepRunSchema.pipeline_run_id == run_id
+                        )
+                    ),
+                )
+            )
+
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
