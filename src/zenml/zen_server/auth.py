@@ -326,10 +326,8 @@ def authenticate_credentials(
 
         if (
             config.auth_scheme == AuthScheme.EXTERNAL
-            and not (
-                decoded_token.api_key_id and user_model.is_service_account
-            )
             and not user_model.external_user_id
+            and not user_model.is_service_account
         ):
             error = (
                 f"Authentication error: local account {user_model.name} is not "
