@@ -383,7 +383,15 @@ For self-hosted ZenML Pro API servers, also set the ZenML Pro API URL:
 
 4. Run the affected workloads once to verify that they authenticate successfully with the organization-level service account.
 5. If the migration is successful and the correct username is used at step 1, the old workspace-level service account is automatically "adopted" by the new organization-level service account and will no longer be listed in the workspace settings.
-6. For workspace-level service accounts that are no longer used, deactivate them or delete them. Deactivation immediately prevents their API keys from being used. Deletion can fail if the service account already owns resources such as pipeline runs; in that case, deactivate the service account instead.
+
+{% hint style="info" %}
+**Existing API keys continue to work after adoption**
+
+Adopting a workspace-level service account does not invalidate its existing workspace-level API keys. Those keys continue to authenticate to the workspace as the adopted organization-level service account, allowing you to migrate workloads without interruption. This compatibility period also gives you time to identify workloads that still use legacy keys: inspect the **Last used** timestamp of each workspace-level API key in the UI to see whether it is still authenticating. The keys remain workspace-level credentials and do not become ZenML Pro organization API keys, so you should still replace them with an organization-level API key as part of the migration.
+{% endhint %}
+
+6. Monitor the **Last used** timestamp for each existing workspace-level API key in the UI. If a timestamp continues to update after you believe a workload has migrated, that workload is likely still using the old key. Account for infrequent jobs before concluding that a key is unused.
+7. Once you have confirmed that the workspace-level API keys are no longer used, deactivate the keys or their service account. Deactivation immediately prevents the keys from being used. You can also delete the service account, but deletion can fail if it already owns resources such as pipeline runs; in that case, deactivate it instead.
 
 ## Troubleshooting
 
