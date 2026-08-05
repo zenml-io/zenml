@@ -253,11 +253,25 @@ def add_tags(
     resource_id = None
     resource_type = None
 
-    # `infer_artifact=False` is the documented default of the public overload
-    # and means "don't infer" — same as omitting it. The dispatch below tests
-    # `infer_artifact is None`, so normalize False to None to avoid falling
-    # through to the "unsupported call" error.
-    if infer_artifact is False:
+    # `infer_artifact=False` means "do not infer", i.e. the same as omitting it.
+    # Normalize it only when no other identifier is given, so the bare
+    # `tags=..., infer_artifact=False` call dispatches like the default. Argument
+    # combinations the overloads do not allow, such as `run=...` together with
+    # `infer_artifact=False`, keep raising the unsupported-call error below.
+    if infer_artifact is False and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            snapshot,
+            deployment,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+        ]
+    ):
         infer_artifact = None
 
     if isinstance(tags, (str, Tag)):
@@ -654,11 +668,25 @@ def remove_tags(
     resource_id = None
     resource_type = None
 
-    # `infer_artifact=False` is the documented default of the public overload
-    # and means "don't infer" — same as omitting it. The dispatch below tests
-    # `infer_artifact is None`, so normalize False to None to avoid falling
-    # through to the "unsupported call" error.
-    if infer_artifact is False:
+    # `infer_artifact=False` means "do not infer", i.e. the same as omitting it.
+    # Normalize it only when no other identifier is given, so the bare
+    # `tags=..., infer_artifact=False` call dispatches like the default. Argument
+    # combinations the overloads do not allow, such as `run=...` together with
+    # `infer_artifact=False`, keep raising the unsupported-call error below.
+    if infer_artifact is False and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            snapshot,
+            deployment,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+        ]
+    ):
         infer_artifact = None
 
     if isinstance(tags, str):

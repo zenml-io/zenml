@@ -305,26 +305,49 @@ def test_tags_with_special_characters():
         client.delete_tag(tag)
 
 
+@step
+def step_infer_artifact_false() -> None:
+    """Step calls add_tags with an explicit `infer_artifact=False`."""
+    add_tags(tags=["axl_no_infer"], infer_artifact=False)
+
+
 @pipeline(enable_cache=False)
 def pipeline_for_infer_artifact_false():
-    """Minimal pipeline used to obtain a run to tag."""
+    """Pipeline exercising the bare `infer_artifact=False` call shape."""
+    step_infer_artifact_false()
+
+
+@pipeline(enable_cache=False)
+def pipeline_plain_run():
+    """Pipeline used only to obtain a run to tag from the outside."""
     step_no_output()
 
 
-def test_add_and_remove_tags_with_infer_artifact_false(clean_client):
-    """`infer_artifact=False` must dispatch like the default, not raise.
+def test_infer_artifact_false_dispatches_like_the_default(clean_client):
+    """A bare `infer_artifact=False` must behave exactly like omitting it.
 
-    The public overloads type ``infer_artifact`` as ``bool = False``, so
-    passing ``False`` explicitly is documented and valid. It means "do not
-    infer" and must dispatch on the other identifiers exactly like omitting
-    the argument, instead of raising an "unsupported call" ``ValueError``.
+    The only overload accepting ``infer_artifact`` defaults it to ``False``, so
+    passing it explicitly with no other identifier is valid and means "do not
+    infer". It has to tag the run through the step context, the same as
+    ``add_tags(tags=...)``, rather than fall through to the unsupported-call
+    ``ValueError``.
     """
     run = pipeline_for_infer_artifact_false()
 
-    add_tags(tags=["infer_false_tag"], run=run.id, infer_artifact=False)
     tags = [t.name for t in clean_client.get_pipeline_run(run.id).tags]
-    assert "infer_false_tag" in tags
+    assert "axl_no_infer" in tags
 
-    remove_tags(tags=["infer_false_tag"], run=run.id, infer_artifact=False)
-    tags = [t.name for t in clean_client.get_pipeline_run(run.id).tags]
-    assert "infer_false_tag" not in tags
+
+def test_infer_artifact_false_keeps_rejecting_manual_resources(clean_client):
+    """`infer_artifact` is not part of the manual-resource call shapes.
+
+    No overload accepts it alongside ``run``/``pipeline``/``artifact``, so those
+    combinations must keep raising instead of being silently accepted.
+    """
+    run = pipeline_plain_run()
+
+    with pytest.raises(ValueError):
+        add_tags(tags=["axl_no_infer"], run=run.id, infer_artifact=False)
+
+    with pytest.raises(ValueError):
+        remove_tags(tags=["axl_no_infer"], run=run.id, infer_artifact=False)
