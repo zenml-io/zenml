@@ -1,7 +1,15 @@
 import datetime
 from decimal import Decimal
 
-from zenml.utils.json_utils import _json_type_of, _schema_allowed_json_types, decimal_encoder, isoformat
+import pytest
+
+from zenml.utils.json_utils import (
+    _json_type_of,
+    _schema_allowed_json_types,
+    decimal_encoder,
+    isoformat,
+    pydantic_encoder,
+)
 
 
 def test_isoformat_date() -> None:
@@ -96,11 +104,71 @@ def test_schema_allowed_json_types_single_type() -> None:
 def test_schema_allowed_json_types_list_of_types() -> None:
     """A schema with a list of types should return all of them as
     a set."""
-    assert _schema_allowed_json_types(
-        {"type": ["string", "null"]}
-    ) == {"string", "null"}
+    assert _schema_allowed_json_types({"type": ["string", "null"]}) == {
+        "string",
+        "null",
+    }
 
 
 def test_schema_allowed_json_types_missing_type_key() -> None:
     """A schema with no 'type' key should return an empty set."""
     assert _schema_allowed_json_types({}) == set()
+
+
+def test_pydantic_encoder_pydantic_model() -> None:
+    """A pydantic BaseModel should be encoded via model_dump(mode='json')."""
+    from pydantic import BaseModel
+
+    class Sample(BaseModel):
+        name: str
+        value: int
+
+    result = pydantic_encoder(Sample(name="test", value=42))
+    assert result == {"name": "test", "value": 42}
+
+
+def test_pydantic_encoder_dataclass() -> None:
+    """A dataclass instance should be encoded via dataclasses.asdict."""
+    from dataclasses import dataclass
+
+    @dataclass
+    class Point:
+        x: int
+        y: int
+
+    assert pydantic_encoder(Point(1, 2)) == {"x": 1, "y": 2}
+
+
+def test_pydantic_encoder_uuid() -> None:
+    """A UUID should be encoded as its string representation."""
+    from uuid import UUID
+
+    sample_uuid = UUID("12345678-1234-5678-1234-567812345678")
+    assert pydantic_encoder(sample_uuid) == str(sample_uuid)
+
+
+def test_pydantic_encoder_path() -> None:
+    """A Path should be encoded as its string representation."""
+    from pathlib import Path
+
+    assert pydantic_encoder(Path("/tmp/example")) == "/tmp/example"
+
+
+def test_pydantic_encoder_decimal_delegates_to_decimal_encoder() -> None:
+    """A Decimal should be routed through decimal_encoder."""
+    assert pydantic_encoder(Decimal("7.5")) == 7.5
+
+
+def test_pydantic_encoder_bytes() -> None:
+    """Bytes should be decoded into a str."""
+    assert pydantic_encoder(b"hello") == "hello"
+
+
+def test_pydantic_encoder_unsupported_type_raises_type_error() -> None:
+    """An object with no registered encoder should raise TypeError."""
+
+    class Unsupported:
+        pass
+
+    with pytest.raises(TypeError):
+        pydantic_encoder(Unsupported())
