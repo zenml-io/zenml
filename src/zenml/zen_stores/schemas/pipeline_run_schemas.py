@@ -139,6 +139,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=["triggered_by", "triggered_by_type"],
         ),
+        # Self-referencing foreign keys: deleting a run has to find the runs
+        # pointing back at it, which without these scans pipeline_run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["root_run_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["original_run_id"],
+        ),
     )
 
     # Fields

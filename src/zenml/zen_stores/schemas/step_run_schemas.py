@@ -105,6 +105,17 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "id",
             ],
         ),
+        # `pipeline_run_id` leads no other index (the composite above starts
+        # with `project_id`), so the cascade from a deleted pipeline run had
+        # to scan the whole table once per run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["original_step_run_id"],
+        ),
     )
 
     # Fields
@@ -589,6 +600,15 @@ class StepRunParentsSchema(SQLModel, table=True):
     """SQL Model that defines the order of steps."""
 
     __tablename__ = "step_run_parents"
+    __table_args__ = (
+        # `child_id` is the trailing column of the composite primary key
+        # `(parent_id, child_id)`, so it leads no index of its own and the
+        # cascade from a deleted step run had to scan the whole table.
+        build_index(
+            table_name=__tablename__,
+            column_names=["child_id"],
+        ),
+    )
 
     # Foreign Keys
     parent_id: UUID = build_foreign_key_field(
@@ -615,6 +635,15 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
     __tablename__ = "step_run_input_artifact"
+    __table_args__ = (
+        # `step_id` is not the leading column of the composite primary key
+        # `(name, input_index, step_id, artifact_id)`, so deleting a step run
+        # had to scan the whole table to find its input artifacts.
+        build_index(
+            table_name=__tablename__,
+            column_names=["step_id"],
+        ),
+    )
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
