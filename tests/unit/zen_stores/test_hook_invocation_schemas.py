@@ -36,20 +36,6 @@ from zenml.zen_stores.sql_zen_store import (
 )
 
 
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[SqlZenStore]:
-    """Create a fresh SQLite-backed SqlZenStore for tests."""
-    db_dir = tmp_path / "zenml-cfg"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(db_dir))
-    db_path = db_dir / "test.db"
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{db_path}")
-    store = SqlZenStore(config=config, skip_default_registrations=False)
-    yield store
-
-
 def test_hook_invocation_schema_round_trip(sql_store: SqlZenStore) -> None:
     """Test that a hook invocation and its output link round-trip."""
     project_id = (

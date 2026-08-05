@@ -48,28 +48,6 @@ CASCADE_INDEXES: List[Tuple[str, str]] = [
 ]
 
 
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[SqlZenStore]:
-    """Create a fresh SQLite-backed SqlZenStore for tests.
-
-    Args:
-        tmp_path: Temporary directory for the database file.
-        monkeypatch: Fixture used to point the ZenML config path at it.
-
-    Yields:
-        The store.
-    """
-    db_dir = tmp_path / "zenml-cfg"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(db_dir))
-    db_path = db_dir / "test.db"
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{db_path}")
-    store = SqlZenStore(config=config, skip_default_registrations=False)
-    yield store
-
-
 def test_sqlite_store_uses_wal_journal_mode(sql_store: SqlZenStore) -> None:
     """Test that a local store is created in WAL mode.
 

@@ -61,20 +61,6 @@ from zenml.zen_stores.sql_zen_store import (
 )
 
 
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[SqlZenStore]:
-    """Create a fresh SQLite-backed SqlZenStore for tests."""
-    db_dir = tmp_path / "zenml-cfg"
-    db_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(db_dir))
-    db_path = db_dir / "test.db"
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{db_path}")
-    store = SqlZenStore(config=config, skip_default_registrations=False)
-    yield store
-
-
 def _project_id(store: SqlZenStore) -> UUID:
     return (
         store.list_projects(project_filter_model=ProjectFilter()).items[0].id
