@@ -13,7 +13,7 @@ expose ``pipeline`` so the Haystack adapter will auto-discover it.
 
 from haystack import Document, Pipeline
 from haystack.components.builders import PromptBuilder
-from haystack.components.generators import OpenAIGenerator
+from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
@@ -55,7 +55,7 @@ Answer (concise):
 
 prompt_builder = PromptBuilder(template=prompt_template)
 
-llm = OpenAIGenerator(model="gpt-5-nano")
+llm = OpenAIChatGenerator(model="gpt-5-nano")
 
 # --------------------------------------------------------------------------- #
 # 3. Assemble the pipeline                                                    #
@@ -84,4 +84,4 @@ pipeline.warm_up()
 #         },
 #         include_outputs_from={"llm"},
 #     )
-#     print(result["llm"]["replies"][0].content)
+#     print(result["llm"]["replies"][0].text)
