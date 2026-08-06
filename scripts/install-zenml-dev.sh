@@ -121,6 +121,14 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
+    # The current JAX cap has no Python 3.14 jaxlib wheels, datasets<4 uses an
+    # incompatible pickle API, and Evidently can resolve scikit-learn 1.5.2,
+    # which has no Python 3.14 wheels. Keep these integrations out of the
+    # combined CI environment until their dependency ranges are updated.
+    if [ "$python_version" = "3.14" ]; then
+        ignore_integrations="$ignore_integrations jax huggingface evidently"
+    fi
+
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
