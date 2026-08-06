@@ -63,12 +63,12 @@ from zenml.utils.package_utils import (
             ["package1!=1.5.0", "package1>1.0.0", "package2>2.0.0"],
         ),
         (
-            ["numpy<2", "numpy>1"],
-            ["numpy<2", "numpy>1"],
+            ["package1<2", "package1>1"],
+            ["package1<2", "package1>1"],
         ),
         (
-            ["numpy", "numpy<2", "numpy>1"],
-            ["numpy<2", "numpy>1"],
+            ["package1", "package1<2", "package1>1"],
+            ["package1<2", "package1>1"],
         ),
     ],
 )
