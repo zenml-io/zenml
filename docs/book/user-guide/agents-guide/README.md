@@ -9,11 +9,11 @@ This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kita
 
 **Replay is the part other tooling can't do.** An eval re-grades outputs after the fact. Kitaru re-executes the actual run against your real code with one input swapped — a different model, a different prompt — while recorded tool calls are answered from the recording, so you find out what *would have happened* if you'd shipped the change. What arrives as a failing run leaves as a regression check on the next change.
 
-By the end you'll be able to do three things:
+The whole guide happens to one agent: **`returns-resolver`**, an autonomous returns agent from Kitaru's canonical example, with ten real runs and two policy violations hiding in them. By the end you'll have done three things to it:
 
-1. **Record** an agent's runs as sessions — one wrapper, or an import of the Langfuse traces you already collect.
-2. **Replay** a real run with one thing changed and diff the result against a faithful baseline.
-3. **Improve** the agent by rolling the winning change across a cohort of recent runs and keeping the version that holds up on cost, latency, and the decisions that matter — with the frozen cohort as your regression evidence.
+1. **Recorded** its runs as sessions — imported from the Langfuse traces it already produced, with a one-wrapper native path as the alternative.
+2. **Judged** them — cheap built-in evaluators to find the outliers, a structured investigation to record the human verdict, and a policy evaluator that turns that verdict into a versioned check.
+3. **Improved** it — a stricter agent version replayed against frozen cohorts of exactly the runs that misbehaved (and the ones that mustn't regress), with the experiment's evidence doubling as a CI gate.
 
 {% hint style="info" %}
 A **session** is one recorded agent run — every model call and tool call as ordered nodes. ZenML and Kitaru split cleanly: ZenML is for ML pipelines; Kitaru is for agents, with its own lightweight server you can `docker compose up` in a minute.
@@ -25,13 +25,13 @@ The guide is in three parts. Parts 1 and 2 are the spine — they get you to rep
 
 ### Part 1 — Record
 
-Wrap a PydanticAI agent with the Kitaru adapter so every run is recorded as a session — each model call and tool call a node, with cost and tokens attached. That recording is what Part 2 replays. Already tracing to Langfuse? Import the history instead; imported sessions replay exactly like recorded ones.
+Stand up a local Kitaru server, register `returns-resolver` with its run command, and import its ten Langfuse-traced runs as tagged sessions — each model call and tool call a node. That recording is what Part 2 replays. Recording natively with the PydanticAI adapter is the one-wrapper alternative; the two paths are interchangeable.
 
 * [Record an agent](01-durable-agent.md)
 
 ### Part 2 — Replay and improve
 
-The differentiator. Take a recorded run, reproduce it faithfully as a control, then replay it again with exactly one thing changed and diff the two. Because the baseline reproduced, the difference is your change, not replay noise. Then scale that decision across a cohort of runs and read pass rates, cost, and latency for both sides. The whole loop is exposed over a CLI and an MCP server, so a coding agent can drive it and hill-climb on its own.
+The differentiator. Find the two runs that broke the refund policy, record the support lead's judgment as an investigation, encode it as the `returns-policy` evaluator, freeze a target cohort (the violations) and a control cohort (the valid refunds that must not regress), and replay a stricter agent version against both — with the same evaluator versions judging baseline and replay. The whole loop is exposed over a CLI and an MCP server, so a coding agent can drive it and hill-climb on its own.
 
 * [Replay and improve](replay-and-improve.md)
 
@@ -53,19 +53,15 @@ The platform stages are a **runnable local reference architecture**, not a turnk
 Part 3 was written against an earlier Kitaru API and is being refreshed — the platform patterns (sandboxing, skills, credential isolation, typed services, human approval) stand, but treat its code samples as illustrative until this note disappears.
 {% endhint %}
 
-## Get the code (Part 3)
+## Get the code
 
-The local tour needs Docker and one model-provider API key. The wiki and webhook services are mocked locally.
+Parts 1 and 2 are a guided read of Kitaru's canonical example — every command runs from its directory, and the traces are checked in so no model key is needed to start:
 
 ```bash
 git clone https://github.com/zenml-io/kitaru.git
-cd kitaru/examples/end_to_end/agent_harness_platform
-uv sync
-uv run kitaru init
-export OPENAI_API_KEY=sk-...
-uv run python stage_1_basic_agent.py
+cd kitaru/examples/canonical_example
 ```
 
-The full source lives in [`examples/end_to_end/agent_harness_platform/`](https://github.com/zenml-io/kitaru/tree/develop/examples/end_to_end/agent_harness_platform) on GitHub. It includes the runnable stage files, the reusable `agent_harness_platform/` library, mocks, skills, and Dockerfiles.
+The full source lives in [`examples/canonical_example/`](https://github.com/zenml-io/kitaru/tree/develop/examples/canonical_example): the returns agent, its mock commerce store, the checked-in Langfuse export, and an agent-guided walkthrough where a coding assistant drives the same loop. Part 3's harness platform lives separately in [`examples/end_to_end/agent_harness_platform/`](https://github.com/zenml-io/kitaru/tree/develop/examples/end_to_end/agent_harness_platform).
 
 If you want the shortest path — wrap, record, replay, diff — start with the [Kitaru quickstart](https://docs.zenml.io/kitaru/getting-started/quickstart). Come back here for the guided record → replay → improve loop, and then the platform shape around it.

@@ -1,127 +1,157 @@
 ---
-description: Replay a real agent run with one thing changed to see what would have happened, then scale the winning change across a cohort of recent runs.
+description: Find the runs that misbehaved, encode the rule they broke, replay the fix against them, and prove the safe cases still hold.
 icon: arrows-rotate
 ---
 
 # Replay and improve
 
-Replay is why the recording exists. Take a run that actually happened, change exactly one thing — a different model, a different prompt — re-execute it against your real code, and diff the result against the original. Because the rest of the run reproduces faithfully, the difference you see is your change, not replay noise.
+Replay is why the recording exists. Ten real runs of `returns-resolver` are sitting on your server from the [record stage](01-durable-agent.md). This page finds the ones that misbehaved, turns the support lead's judgment into an evaluator, replays an improved agent version against exactly those runs — and against the runs that must *not* change — and reads the evidence. What arrives as a failing run leaves as a regression check.
 
-This is the part that other tooling can't do. An eval re-grades outputs after the fact. Replay re-executes the actual run with one input swapped, so you find out what *would have happened* if you'd shipped the change. Then you scale that decision across a cohort of recent runs and keep the version that wins.
+This is the part other tooling can't do. An eval re-grades outputs after the fact. Replay re-executes the actual run against your real code with one thing changed, so you find out what *would have happened* if you'd shipped the change.
 
-{% hint style="info" %}
-Replay answers your agent's tool calls from the recorded session — the whole reason a run gets recorded. If you haven't recorded one yet, start with the [record stage](01-durable-agent.md), which mints the session this page replays. Two more things replay needs: a registered agent version with a run command (replay re-runs your real code, which no recording contains), and a [worker](https://docs.zenml.io/kitaru/concepts/workers) running in an environment that can execute it (`kitaru worker start`).
-{% endhint %}
+## Find useful starting points
 
-## Three runs, not two
-
-It's tempting to think of replay as two runs: the original and your changed one. It's actually three, and the middle one is what makes the result trustworthy.
-
-| Run | What it is | Role |
-|---|---|---|
-| **Observed** | The original recorded session | What actually happened |
-| **Reproduced** | Replay with no change | The control — proves replay is faithful |
-| **Forked** | Replay with exactly one thing changed | Your change |
-
-You diff **Forked** against **Reproduced**, not against **Observed**. The reproduced run is the control that isolates your variable: because it replays the same recording with nothing swapped, it should land exactly where the observed run did.
-
-**If the reproduced run doesn't match the observed baseline, stop.** A nondeterministic tool, an external state change, a time-dependent output — any of these means replay isn't faithful for this agent, and a diff built on it is untrustworthy. Don't act on it. Fix the source of nondeterminism first (answer the tool from the recording, pin the value), then replay. Everything below assumes the reproduced run checks out.
-
-## You start with a recorded session
+The built-in evaluators make no model calls — they're cheap signals for where to look:
 
 ```bash
-kitaru session list --agent investigator
+uv run kitaru session evaluate \
+  --tag returns-baseline \
+  --evaluator cost@latest \
+  --evaluator latency@latest \
+  --evaluator tool-call-patterns@latest \
+  --wait
+
+uv run kitaru evaluation list --size 100
 ```
 
-Hold onto the session id of the run you care about — the failing ticket, the expensive one. That's the anchor you replay from. You also need at least one [evaluator](https://docs.zenml.io/kitaru/concepts/evaluators) — every replay is evaluated, so define what "good" means first. The built-in `cost` and `latency` evaluators are available immediately; a domain check is a few lines of Python:
+Cost and latency show resource variation across the ten runs; tool-call patterns expose repeated lookups and diverging investigation paths. But broad evaluators describe sessions — they can't decide what *good* means for your business. That takes a human look.
+
+## Record the human judgment
+
+Ticket 004 issued a $280 refund — above the automatic approval threshold. Instead of a vibe in a meeting, record the review as an [investigation](https://docs.zenml.io/kitaru/concepts/investigations): fixed questions, the session under review, and a curated view pointing at the exact node that needs eyes. (The shell variables here — the session and node ids — are captured with `kitaru --output json session list ... | jq`; the example README shows the exact plumbing.)
 
 ```bash
-kitaru evaluator scaffold decision-check     # writes decision_check_evaluator.py
-kitaru evaluator register decision-check \
-  --script decision_check_evaluator.py --entrypoint evaluate
+uv run kitaru investigation create refund-policy-review \
+  --agent returns-resolver \
+  --description "Review whether risky refunds require human approval." \
+  --question 'outcome=Is this outcome acceptable, problematic, or uncertain, and why?' \
+  --question 'expected=What should the agent have done in this case?' \
+  --session "$TICKET_004_SESSION_ID"
 ```
 
-## Reproduce: replay with no change
-
-Before you change anything, prove that the run reproduces. Create a replay with no override — recorded tool calls are answered from the session, and `on_miss="fail"` guarantees nothing unrecorded ever executes:
-
-```python
-from kitaru.api_models.v1.replay import ReplayCreateRequest
-from kitaru.api_models.v1.replay_config import (
-    EvaluatorConfig, HistoryConfig, ToolPolicy,
-)
-from kitaru.client import KitaruAPIClient
-
-RECORDED_TOOLS = ToolPolicy(default=HistoryConfig(scope="baseline", on_miss="fail"))
-
-client = KitaruAPIClient()
-control = await client.replays.create(
-    ReplayCreateRequest(
-        baseline_session_id=SESSION_ID,          # from `kitaru session list`
-        evaluators=[EvaluatorConfig(evaluator="decision-check")],
-        tool_policy=RECORDED_TOOLS,
-        evaluate_baselines=True,                 # evaluate the original too
-    )
-)
-```
-
-The replay re-runs your agent's real code on a worker, producing a new session (`origin: replay`). This reproduced run is your **control** — it should land on the same decision the observed run did, and `evaluate_baselines=True` means both sides carry evaluations you can compare directly. If they disagree, stop (see [Three runs, not two](#three-runs-not-two) above).
-
-## Fork: change exactly one thing
-
-Now fork the same session with a single override. Same recording, same tool policy, one difference:
-
-```python
-from kitaru.api_models.v1.replay import ReplayOverride
-
-forked = await client.replays.create(
-    ReplayCreateRequest(
-        baseline_session_id=SESSION_ID,
-        override=ReplayOverride(model={"anthropic:claude-sonnet-4-5": "openai:gpt-5-nano"}),
-        evaluators=[EvaluatorConfig(evaluator="decision-check")],
-        tool_policy=RECORDED_TOOLS,
-    )
-)
-```
-
-The agent re-executes for real — but every model request that asked for the original model now gets the cheaper one, while recorded tool calls are still answered from the session. You're seeing what this run *would have done* under the change. Prompt and code changes work the same way: override the prompt, or register your working tree as a new agent version and replay against it. Change one variable at a time if you want the diff to attribute cleanly — the [override and tool-policy selectors](https://docs.zenml.io/kitaru/guides/replay-and-overrides) cover narrower targeting.
-
-## Diff: did the decision move?
-
-Each replay links its baseline and result sessions. Read the evaluations on both sides and compare:
-
-```python
-replay = await client.replays.get(forked.id)
-# replay.baseline_session_id → the original, replay.result_session_id → the fork
-```
-
-Pull each session's evaluations (`client.evaluations.list(...)` filtered by session) and its cost rollup, and the comparison is concrete: did `decision-check` still pass, and what did the run cost? Because the reproduced control matched the observed baseline, any difference between control and fork is attributable to your one change. That's the whole point: a trustworthy comparison of a single variable.
-
-## Improve: scale the decision across a cohort
-
-One replay tells you what a change did to one run. To decide whether to ship it, run the same change across a batch of recent runs and read the aggregate. That's a [cohort](https://docs.zenml.io/kitaru/concepts/cohorts) (an immutable set of sessions) plus an [experiment](https://docs.zenml.io/kitaru/concepts/experiments) (the change, named):
+The support lead's answers land as **annotations**, anchored to the refund node itself:
 
 ```bash
-# Freeze the population — selection by tag, filter, or explicit ids
-kitaru cohort create investigator-regression --agent investigator \
-  --filter '{"field": "agent_id", "op": "eq", "value": "<agent-id>"}' \
-  --display-version week-32
+uv run kitaru annotation create \
+  --investigation-session "$INVESTIGATION_SESSION_ID" \
+  --question-key outcome \
+  --selector "{\"node_id\":\"$TICKET_004_REFUND_NODE_ID\",\"part\":\"output\"}" \
+  --value '{"judgment":"problematic","reason":"The amount exceeds the automatic approval threshold."}'
+```
 
-# Name the change: the override, the tool policy, the evaluators
-kitaru experiment create cheaper-model \
-  --evaluator decision-check@latest --evaluator cost@latest \
-  --override '{"model": {"anthropic:claude-sonnet-4-5": "openai:gpt-5-nano"}}' \
-  --tool-policy '{"default": {"type": "history", "scope": "cohort_version", "on_miss": "fail"}}'
+The verdict: refunds above the approval threshold, and refunds on risk-flagged orders, must escalate to a human. Valid refunds must stay refunds. That's a rule — and a rule can be code.
 
-# Replay the whole population, both sides evaluated
-kitaru experiment run start cheaper-model \
-  --cohort-version <cohort-version-id> \
-  --agent investigator@1 \
+## Encode the rule as an evaluator
+
+An [evaluator](https://docs.zenml.io/kitaru/concepts/evaluators) is a Python function that applies the same check to every recorded or replayed session. `returns-policy` reads each session's final action and accepted tool calls and writes one Boolean result, `policy_correct`:
+
+```bash
+uv run kitaru evaluator scaffold returns-policy --path evaluator.py
+# implement the rubric — the full evaluator is in the example README
+uv run kitaru evaluator register returns-policy \
+  --script evaluator.py --entrypoint evaluate
+```
+
+Run it over the whole baseline:
+
+```bash
+uv run kitaru session evaluate \
+  --tag returns-baseline \
+  --evaluator returns-policy@1 \
+  --wait
+```
+
+**Eight passes, two failures.** Tickets 004 and 007 issued refunds where the reviewed policy requires escalation. The human judgment is now a versioned check that will apply identically to every replay — which is what makes the comparison ahead trustworthy.
+
+## Freeze the populations
+
+Two [cohorts](https://docs.zenml.io/kitaru/concepts/cohorts), each an immutable snapshot: the behavior that must change, and the nearby behavior that must not regress.
+
+```bash
+uv run kitaru cohort create unsafe-refund-baseline \
+  --agent returns-resolver \
+  --description "Baseline sessions that refunded despite an approval or risk rule requiring escalation." \
+  --session TICKET_004_SESSION_ID \
+  --session TICKET_007_SESSION_ID
+
+uv run kitaru cohort create safe-refund-control \
+  --agent returns-resolver \
+  --description "Valid refund sessions that must remain correct after the policy change." \
+  --session TICKET_001_SESSION_ID \
+  --session TICKET_009_SESSION_ID \
+  --session TICKET_010_SESSION_ID
+```
+
+Immutability is the point: version 1 of each cohort is always the same sessions, so "both risky cases became correct and no control case regressed" stays checkable forever.
+
+## Register the candidate
+
+The baseline agent assumed its action tools enforce approval limits. The candidate removes that assumption — it must inspect risk flags, thresholds, and return windows *before* calling `issue_refund`. Same entrypoint, one environment switch:
+
+```bash
+uv run kitaru agent version register \
+  returns-resolver \
+  --command "python -m examples.canonical_example.agent" \
+  --display-version strict-policy-v2 \
+  --working-dir ../.. \
+  --env RETURNS_POLICY_MODE=strict \
+  --timeout-seconds 180 \
+  --tool lookup_order --tool get_return_policy --tool check_shipping \
+  --tool issue_refund --tool create_replacement --tool escalate_to_human
+```
+
+That's `returns-resolver@2`. The imported sessions stay attached to version 1 — the change is a new version, never a rewrite of history.
+
+## Run the experiment
+
+An [experiment](https://docs.zenml.io/kitaru/concepts/experiments) names the change once — evaluators and tool policy resolved to immutable versions — and each run replays one cohort through it:
+
+```bash
+uv run kitaru experiment create improve-returns-policy \
+  --description "Replay policy-risk and valid-refund cohorts with strict refund approval rules." \
+  --tool-policy '{"default":{"type":"passthrough"},"tools":{}}' \
+  --evaluator returns-policy@1 \
+  --evaluator cost@latest --evaluator latency@latest \
+  --evaluator tool-call-patterns@latest
+
+uv run kitaru experiment run start improve-returns-policy \
+  --cohort-version "$TARGET_COHORT_VERSION_ID" \
+  --agent returns-resolver@2 \
+  --evaluate-baselines --wait --timeout 1800
+
+uv run kitaru experiment run start improve-returns-policy \
+  --cohort-version "$CONTROL_COHORT_VERSION_ID" \
+  --agent returns-resolver@2 \
   --evaluate-baselines --wait --timeout 1800
 ```
 
-Workers fan out one replay per session. When the run settles, every session in the cohort has a baseline column and a fork column: pass rates, cost, latency, both sides. Keep the change if it holds up across the cohort; reject it if quality drops more than cost does. The cohort version is immutable, so the numbers stay checkable — and the cohort that caught a failure becomes the regression gate that keeps it caught: `--wait` exits nonzero on failure, which makes the same command a CI gate.
+Two things here are load-bearing:
+
+* **`--evaluate-baselines`** applies the same resolved evaluator versions to the imported originals and the replays, so both sides of the diff were judged by identical code.
+* **The [tool policy](https://docs.zenml.io/kitaru/guides/tool-policies)** decides what a replayed tool call touches. This example sets `passthrough` explicitly because its commerce tools are mocks against a fresh in-memory store — safe to call again. For an agent with real side effects, the posture flips: `{"type": "history", "scope": "cohort_version", "on_miss": "fail"}` answers tool calls from the recordings and guarantees nothing unrecorded executes. No card gets refunded twice by a replay.
+
+## Read the evidence
+
+```bash
+uv run kitaru experiment run list --size 20
+uv run kitaru session list --agent returns-resolver --origin replay --size 20
+uv run kitaru evaluation list \
+  --filter '{"field":"name","op":"eq","value":"policy_correct"}' \
+  --size 100
+```
+
+The candidate succeeds when tickets 004 and 007 flip from policy failure to pass, tickets 001, 009, and 010 remain passes, and every replay completes. The dashboard at `http://localhost:8000` puts each imported session next to its replay — the changed tool path, policy correctness, latency, and tool-call patterns side by side. A failed replay is still evidence: inspect it, change the agent again, register version 3, and rerun the same immutable experiment and cohort versions. And because `--wait` exits nonzero when a run fails, the exact command you just ran doubles as a CI gate.
 
 ## Let an agent drive it
 
-Replay runs over both the CLI (`--output json` on every command) and an [MCP server](https://docs.zenml.io/kitaru/agent-native/mcp-server) with capability-gated tools. That means a coding agent (Claude Code, Codex, Cursor) can drive the loop itself: pull a recent session, reproduce it as a control, propose a change, fork it, compare evaluations, and decide whether to widen it to a cohort — the same steps you'd run by hand, just faster and over more runs. Give it the discipline this page describes — reproduce before you trust a diff, change one variable, keep the cohort as evidence — and it runs your experiments without inventing its own.
+Every step above is scriptable — the CLI takes `--output json` everywhere, and an [MCP server](https://docs.zenml.io/kitaru/agent-native/mcp-server) exposes the same loop as capability-gated tools. The example ships an [agent-guided path](https://github.com/zenml-io/kitaru/tree/develop/examples/canonical_example) where a coding agent inspects the traces, interviews you for the behavior rubric, proposes evidence-backed cohort membership, and authors the evaluator — the same steps this page walked, driven by Claude Code or Codex while you review. Give it the discipline you just practiced: judge with versioned evaluators, freeze cohorts before comparing, change one variable per experiment.
