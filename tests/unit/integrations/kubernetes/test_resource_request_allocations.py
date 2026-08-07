@@ -14,13 +14,11 @@ from zenml.integrations.kubernetes.flavors import (
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import (
     ResourcePoolAllocation,
-    ResourcePoolCapacityComponentSettings,
     ResourceRequestDemand,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
-    ResourceRequestServiceConnectorSettings,
 )
 
 
@@ -33,9 +31,6 @@ def _allocation(
     resource: str = "resource",
     resource_kind: str = "cpu",
     component_id: UUID | None = None,
-    component_settings: (
-        list[ResourcePoolCapacityComponentSettings] | None
-    ) = None,
 ) -> ResourcePoolAllocation:
     return ResourcePoolAllocation(
         id=uuid4(),
@@ -54,7 +49,6 @@ def _allocation(
         policy_id=uuid4(),
         priority=0,
         component_id=component_id or uuid4(),
-        component_settings=component_settings or [],
         preemption_state="active",
     )
 
@@ -64,9 +58,6 @@ def _resource_request(
     demands: list[ResourceRequestDemand],
     allocations: list[ResourcePoolAllocation],
     component_settings: dict[str, object] | None = None,
-    service_connector_settings: (
-        ResourceRequestServiceConnectorSettings | None
-    ) = None,
 ) -> ResourceRequestResponse:
     request_id = allocations[0].request_id if allocations else uuid4()
     return ResourceRequestResponse(
@@ -84,7 +75,6 @@ def _resource_request(
         metadata=ResourceRequestResponseMetadata(),
         resources=ResourceRequestResponseResources(
             component_settings=component_settings or {},
-            service_connector_settings=service_connector_settings,
             allocations=allocations,
         ),
     )
@@ -330,41 +320,3 @@ def test_matching_component_settings_override_existing_settings() -> None:
         result.pod_settings.resources["requests"]["nvidia.com/gpu"]
         == "{{ quantity }}"
     )
-
-
-def test_service_connector_settings_do_not_override_component_settings() -> (
-    None
-):
-    """Service connector settings do not affect component settings."""
-    component_id = uuid4()
-    request_id = uuid4()
-    request = _resource_request(
-        demands=[ResourceRequestDemand(kind="gpu", quantity=1)],
-        service_connector_settings=ResourceRequestServiceConnectorSettings(
-            connector_id=uuid4(),
-            resource_type="kubernetes-cluster",
-            resource_id="cluster",
-        ),
-        allocations=[
-            _allocation(
-                request_id=request_id,
-                demand_index=0,
-                quantity=1,
-                component_id=component_id,
-            ),
-        ],
-    )
-    settings = KubernetesStepOperatorSettings(
-        pod_settings=KubernetesPodSettings(
-            node_selectors={"accelerator": "old"},
-        )
-    )
-
-    result = kube_utils.apply_resource_request_component_settings(
-        settings=settings,
-        allocated_resource_request=request,
-        settings_class=KubernetesStepOperatorSettings,
-    )
-
-    assert result.pod_settings is not None
-    assert result.pod_settings.node_selectors == {"accelerator": "old"}

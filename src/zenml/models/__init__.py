@@ -258,7 +258,6 @@ from zenml.models.v2.core.project import (
 )
 from zenml.models.v2.core.resource_request import (
     ResourcePoolAllocation,
-    ResourcePoolCapacityComponentSettings,
     ResourcePoolQueueItem,
     ResourceRequestDemand,
     ResourceRequestFilter,
@@ -268,7 +267,6 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
-    ResourceRequestServiceConnectorSettings,
 )
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
@@ -807,7 +805,6 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
-    "ResourcePoolCapacityComponentSettings",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
     "ResourceRequestDemand",
@@ -819,7 +816,6 @@ __all__ = [
     "ResourceRequestResponseBody",
     "ResourceRequestResponseMetadata",
     "ResourceRequestResponseResources",
-    "ResourceRequestServiceConnectorSettings",
     "RunTemplateRequest",
     "RunTemplateUpdate",
     "RunTemplateResponse",
