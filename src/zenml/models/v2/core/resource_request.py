@@ -24,6 +24,7 @@ from pydantic import ConfigDict, Field, PositiveInt, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
+    ResourcePoolScope,
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
@@ -48,6 +49,10 @@ class ResourcePoolQueueItem(BaseZenModel):
     pool_name: Optional[str] = Field(
         default=None,
         title="The resource pool name.",
+    )
+    pool_scope: Optional[ResourcePoolScope] = Field(
+        default=None,
+        title="The ownership scope of the resource pool.",
     )
     policy_id: UUID = Field(title="The resource policy ID.")
     priority: int = Field(title="The priority snapshot for this queue item.")
@@ -79,6 +84,10 @@ class ResourcePoolAllocation(BaseZenModel):
     pool_name: Optional[str] = Field(
         default=None,
         title="The resource pool name.",
+    )
+    pool_scope: Optional[ResourcePoolScope] = Field(
+        default=None,
+        title="The ownership scope of the resource pool.",
     )
     capacity_entry_id: Optional[UUID] = Field(
         default=None,
@@ -351,6 +360,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
         default=None,
         title="The resource pool name selected for the resource request.",
     )
+    pool_scope: Optional[ResourcePoolScope] = Field(
+        default=None,
+        title="The ownership scope of the selected resource pool.",
+    )
     pool_selector: Optional[dict[str, Any]] = Field(
         default=None,
         title="Selector over pool attributes requested for the resource request.",
@@ -483,6 +496,15 @@ class ResourceRequestResponse(
             The optional resource pool selected for the request.
         """
         return self.get_body().pool_id
+
+    @property
+    def pool_scope(self) -> Optional[ResourcePoolScope]:
+        """Resource request pool scope.
+
+        Returns:
+            The optional ownership scope of the selected resource pool.
+        """
+        return self.get_body().pool_scope
 
     @property
     def demands(self) -> list[ResourceRequestDemand]:

@@ -673,6 +673,14 @@ class ResourceRequestStatus(StrEnum):
     NO_MATCHING_POOL = "no_matching_pool"
 
 
+class ResourcePoolScope(StrEnum):
+    """Ownership scopes for resource pools."""
+
+    GLOBAL = "global"
+    ORGANIZATION = "organization"
+    WORKSPACE = "workspace"
+
+
 class ResourceRequestRuntimeState(StrEnum):
     """Owner-reported runtime states for resource requests."""
 
