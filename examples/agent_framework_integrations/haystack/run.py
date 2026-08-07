@@ -5,7 +5,7 @@ for orchestration and artifact management.
 """
 
 import os
-from typing import Annotated, Any, Dict
+from typing import Annotated, Dict
 
 from haystack_agent import pipeline as haystack_pipeline
 
@@ -29,56 +29,53 @@ docker_settings = DockerSettings(
 @step
 def run_haystack_rag(
     question: str,
-) -> Annotated[Dict[str, Any], "rag_results"]:
-    """Execute the Haystack RAG pipeline and return results."""
-    try:
-        result = haystack_pipeline.run(
-            {
-                "retriever": {"query": question},
-                "prompt_builder": {"question": question},
-            },
-            include_outputs_from={"llm"},
-        )
+) -> Annotated[Dict[str, str], "rag_results"]:
+    """Execute the Haystack RAG pipeline and return its answer.
 
-        # Extract the response from the nested structure
-        if (
-            "llm" in result
-            and "replies" in result["llm"]
-            and result["llm"]["replies"]
-        ):
-            response = result["llm"]["replies"][
-                0
-            ]  # Already a string in newer Haystack versions
-        else:
-            response = "No response generated"
+    Args:
+        question: Question to answer using the in-memory documents.
 
-        return {"question": question, "answer": response, "status": "success"}
-    except Exception as e:
-        return {
-            "question": question,
-            "answer": f"RAG error: {str(e)}",
-            "status": "error",
-        }
+    Returns:
+        The original question and the generated answer.
+
+    Raises:
+        RuntimeError: If the Haystack pipeline returns no usable answer.
+    """
+    result = haystack_pipeline.run(
+        {
+            "retriever": {"query": question},
+            "prompt_builder": {"question": question},
+        },
+        include_outputs_from={"llm"},
+    )
+
+    replies = result.get("llm", {}).get("replies", [])
+    if not replies:
+        raise RuntimeError("Haystack pipeline returned no replies.")
+
+    answer = replies[0].text
+    if not answer or not answer.strip():
+        raise RuntimeError("Haystack pipeline returned an empty answer.")
+
+    return {"question": question, "answer": answer}
 
 
 @step
 def format_rag_response(
-    rag_data: Dict[str, Any],
+    rag_data: Dict[str, str],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the Haystack RAG results into a readable summary."""
+    """Format the Haystack RAG results into a readable summary.
+
+    Args:
+        rag_data: Question and generated answer to format.
+
+    Returns:
+        A readable summary of the RAG response.
+    """
     question = rag_data["question"]
     answer = rag_data["answer"]
-    status = rag_data["status"]
 
-    if status == "error":
-        formatted = f"""❌ HAYSTACK RAG ERROR
-{"=" * 40}
-
-Question: {question}
-Error: {answer}
-"""
-    else:
-        formatted = f"""🔍 HAYSTACK RAG RESPONSE
+    formatted = f"""🔍 HAYSTACK RAG RESPONSE
 {"=" * 40}
 
 Question: {question}
@@ -98,8 +95,11 @@ def agent_pipeline(
 ) -> str:
     """ZenML pipeline that orchestrates the Haystack RAG system.
 
+    Args:
+        question: Question to answer using the in-memory documents.
+
     Returns:
-        Formatted RAG response
+        Formatted RAG response.
     """
     # Run the Haystack RAG pipeline
     rag_results = run_haystack_rag(question=question)

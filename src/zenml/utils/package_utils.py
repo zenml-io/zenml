@@ -46,7 +46,8 @@ def clean_requirements(requirements: List[str]) -> List[str]:
     cleaned = {}
     for req in requirements:
         package = (
-            req.split(">=")[0]
+            req.split(">")[0]
+            .split("!=")[0]
             .split("==")[0]
             .split("<")[0]
             .split("~=")[0]
@@ -78,7 +79,7 @@ def requirement_installed(requirement: Union[str, Requirement]) -> bool:
     except PackageNotFoundError:
         return False
 
-    return requirement.specifier.contains(dist.version)
+    return requirement.specifier.contains(dist.version, prereleases=True)
 
 
 def get_dependencies(

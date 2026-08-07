@@ -58,6 +58,10 @@ from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
+    ENV_ZENML_KUBERNETES_MAIN_ADDRESS,
+    ENV_ZENML_KUBERNETES_MAIN_PORT,
+    ENV_ZENML_KUBERNETES_POD_COUNT,
+    MULTI_POD_MAIN_PORT,
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
@@ -211,6 +215,50 @@ def sanitize_label_value(label: str) -> str:
     label = re.sub(r"[^A-Za-z0-9]+$", "", label)
     label = re.sub(r"^[^A-Za-z0-9]+", "", label)
     return label
+
+
+def multi_pod_job_name(job_name: str, pod_count: int) -> str:
+    """Adjust a sanitized job name for use as a multi-pod job name.
+
+    Args:
+        job_name: The sanitized job name.
+        pod_count: The number of pods.
+
+    Returns:
+        The adjusted job name.
+    """
+    # The name doubles as the name of the headless service, which must
+    # start with a letter.
+    if not job_name[:1].isalpha():
+        job_name = f"j{job_name}"
+
+    # Kubernetes sets the hostname of indexed-job pods to
+    # `<job-name>-<index>`, and hostnames are capped at 63 characters.
+    max_length = 62 - len(str(pod_count - 1))
+    return job_name[:max_length].rstrip("-")
+
+
+def multi_pod_environment(
+    job_name: str, namespace: str, pod_count: int
+) -> Dict[str, str]:
+    """Environment for the pods of a multi-pod job.
+
+    Args:
+        job_name: The job name (also the headless service name).
+        namespace: The Kubernetes namespace.
+        pod_count: The number of pods.
+
+    Returns:
+        Environment variables shared by all pods of the job.
+    """
+    # Indexed-job pods get the hostname `<job-name>-<index>`. With the
+    # pod spec's subdomain pointing at the headless service, index 0
+    # resolves at this stable DNS name.
+    return {
+        ENV_ZENML_KUBERNETES_POD_COUNT: str(pod_count),
+        ENV_ZENML_KUBERNETES_MAIN_ADDRESS: f"{job_name}-0.{job_name}.{namespace}.svc",
+        ENV_ZENML_KUBERNETES_MAIN_PORT: str(MULTI_POD_MAIN_PORT),
+    }
 
 
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
@@ -813,7 +861,7 @@ def create_job(
     job_manifest: k8s_client.V1Job,
     api_request_timeout: Optional[int] = None,
     max_retries: int = 3,
-) -> None:
+) -> k8s_client.V1Job:
     """Create a Kubernetes job.
 
     Args:
@@ -822,14 +870,73 @@ def create_job(
         job_manifest: The manifest of the job to create.
         api_request_timeout: The request timeout in seconds.
         max_retries: The maximum number of API request retries.
+
+    Returns:
+        The created job.
     """
-    retry_on_api_exception(
+    return retry_on_api_exception(
         batch_api.create_namespaced_job,
         api_request_timeout=api_request_timeout,
         max_retries=max_retries,
     )(
         namespace=namespace,
         body=job_manifest,
+    )
+
+
+def delete_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+    api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
+) -> None:
+    """Delete a Kubernetes job and its pods.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_name: The name of the job to delete.
+        api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
+    """
+    retry_on_api_exception(
+        batch_api.delete_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
+    )(
+        name=job_name,
+        namespace=namespace,
+        propagation_policy="Foreground",
+    )
+
+
+def create_service(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    service_manifest: k8s_client.V1Service,
+    api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
+) -> k8s_client.V1Service:
+    """Create a Kubernetes service.
+
+    Args:
+        core_api: Kubernetes core api.
+        namespace: Kubernetes namespace.
+        service_manifest: The manifest of the service to create.
+        api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
+
+    Returns:
+        The created service.
+    """
+    return retry_on_api_exception(
+        core_api.create_namespaced_service,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
+    )(
+        namespace=namespace,
+        body=service_manifest,
     )
 
 
@@ -1166,14 +1273,12 @@ def wait_for_job_to_finish(
                     and waiting_state.reason
                     in fail_on_container_waiting_reasons
                 ):
-                    retry_on_api_exception(
-                        batch_api.delete_namespaced_job,
+                    delete_job(
+                        batch_api=batch_api,
+                        namespace=namespace,
+                        job_name=job_name,
                         api_request_timeout=api_request_timeout,
                         max_retries=max_retries,
-                    )(
-                        name=job_name,
-                        namespace=namespace,
-                        propagation_policy="Foreground",
                     )
                     raise RuntimeError(
                         f"Job `{namespace}:{job_name}` failed: "
@@ -1338,14 +1443,12 @@ def check_job_status(
                 and (waiting_state := container_state.waiting)
                 and waiting_state.reason in fail_on_container_waiting_reasons
             ):
-                retry_on_api_exception(
-                    batch_api.delete_namespaced_job,
+                delete_job(
+                    batch_api=batch_api,
+                    namespace=namespace,
+                    job_name=job_name,
                     api_request_timeout=api_request_timeout,
                     max_retries=max_retries,
-                )(
-                    name=job_name,
-                    namespace=namespace,
-                    propagation_policy="Foreground",
                 )
                 error_message = (
                     f"Detected container in state `{waiting_state.reason}`"

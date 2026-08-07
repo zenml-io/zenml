@@ -260,7 +260,10 @@ def delete_artifact_version(
     if delete_metadata:
         unused_versions = zen_store().list_artifact_versions(
             ArtifactVersionFilter(
-                id=artifact_version.id, only_unused=True, size=1
+                id=artifact_version.id,
+                project=artifact_version.project_id,
+                only_unused=True,
+                size=1,
             )
         )
         if not unused_versions.items:

@@ -257,6 +257,4 @@ def test_safe_aexit_propagates_unrelated_assertion_errors() -> None:
     )
 
     with pytest.raises(AssertionError, match="Something else broke"):
-        asyncio.get_event_loop().run_until_complete(
-            ZenMLS3Filesystem._safe_aexit_s3_creator(creator)
-        )
+        asyncio.run(ZenMLS3Filesystem._safe_aexit_s3_creator(creator))
