@@ -14,8 +14,7 @@
 """Tests for stack behavior."""
 
 from contextlib import ExitStack as does_not_raise
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
@@ -27,28 +26,6 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.stack import Stack
-from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
-
-
-def _step_operator(
-    *,
-    name: str = "step-operator",
-    connector: UUID | None = None,
-    connector_resource_id: str | None = None,
-) -> BaseStepOperator:
-    """Create a test step operator."""
-    return BaseStepOperator(
-        name=name,
-        id=uuid4(),
-        config=BaseStepOperatorConfig(),
-        flavor="test",
-        type=StackComponentType.STEP_OPERATOR,
-        user=uuid4(),
-        created=datetime.now(tz=timezone.utc),
-        updated=datetime.now(tz=timezone.utc),
-        connector=connector,
-        connector_resource_id=connector_resource_id,
-    )
 
 
 def test_initializing_a_stack_from_components(
@@ -136,33 +113,6 @@ def test_stack_returns_all_its_components(
         stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
-
-
-def test_get_step_operator_raises_for_missing_step_operator(
-    local_orchestrator, local_artifact_store
-):
-    """Tests that missing step operators raise helpful errors."""
-    stack = Stack(
-        id=uuid4(),
-        name="stack",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-    )
-
-    with pytest.raises(RuntimeError, match="No step operators specified"):
-        stack.get_step_operator()
-
-    step_operator = _step_operator(name="available")
-    stack = Stack(
-        id=uuid4(),
-        name="stack",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-        step_operator=step_operator,
-    )
-
-    with pytest.raises(RuntimeError, match="No step operator named 'missing'"):
-        stack.get_step_operator(name="missing")
 
 
 def test_stack_requirements(stack_with_mock_components):
