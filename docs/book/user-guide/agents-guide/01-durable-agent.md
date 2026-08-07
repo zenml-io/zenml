@@ -26,12 +26,11 @@ uv run kitaru login --local
 uv run kitaru status
 ```
 
-One small server (PostgreSQL + the Kitaru API + dashboard), one CLI connection. Seed the default plugins and confirm the built-ins are there:
+One small server (PostgreSQL + the Kitaru API + dashboard), one CLI connection. The server registers Kitaru's official importers and evaluators when it starts — confirm they're there:
 
 ```bash
-uv run python ../../scripts/seed_default_plugins.py
-uv run kitaru importer list       # langfuse
-uv run kitaru evaluator list      # cost, latency, tool-call-patterns
+uv run kitaru importer list       # kitaru/langfuse, and friends
+uv run kitaru evaluator list      # kitaru/cost, kitaru/latency, kitaru/tool-call-patterns, ...
 ```
 
 ## Register the agent
@@ -67,7 +66,7 @@ Ten real runs, exported from Langfuse as JSONL, imported under the exact agent v
 ```bash
 uv run kitaru session import \
   traces/langfuse-traces.jsonl \
-  --importer langfuse@latest \
+  --importer kitaru/langfuse@latest \
   --agent returns-resolver@1 \
   --tag returns-baseline \
   --params '{"source_instance":"canonical-returns-example"}' \

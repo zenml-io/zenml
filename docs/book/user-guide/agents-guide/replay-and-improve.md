@@ -16,9 +16,9 @@ The built-in evaluators make no model calls — they're cheap signals for where 
 ```bash
 uv run kitaru session evaluate \
   --tag returns-baseline \
-  --evaluator cost@latest \
-  --evaluator latency@latest \
-  --evaluator tool-call-patterns@latest \
+  --evaluator kitaru/cost@latest \
+  --evaluator kitaru/latency@latest \
+  --evaluator kitaru/tool-call-patterns@latest \
   --wait
 
 uv run kitaru evaluation list --size 100
@@ -124,11 +124,12 @@ An [experiment](https://docs.zenml.io/kitaru/concepts/experiments) names the cha
 
 ```bash
 uv run kitaru experiment create improve-returns-policy \
+  --agent returns-resolver \
   --description "Replay policy-risk and valid-refund cohorts with strict refund approval rules." \
   --tool-policy '{"default":{"type":"passthrough"},"tools":{}}' \
   --evaluator returns-policy@1 \
-  --evaluator cost@latest --evaluator latency@latest \
-  --evaluator tool-call-patterns@latest
+  --evaluator kitaru/cost@latest --evaluator kitaru/latency@latest \
+  --evaluator kitaru/tool-call-patterns@latest
 
 uv run kitaru experiment run start improve-returns-policy \
   --cohort-version "$TARGET_COHORT_VERSION_ID" \
