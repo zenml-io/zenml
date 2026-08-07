@@ -27,7 +27,6 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
-    StackComponentType,
 )
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
@@ -38,43 +37,6 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
-
-
-class ResourcePoolCapacityComponentSettings(BaseZenModel):
-    """Stack component settings applied when a request allocation is granted."""
-
-    component_type: StackComponentType = Field(
-        title="The stack component type to apply settings to.",
-    )
-    flavor: str = Field(
-        title="The stack component flavor to apply settings to.",
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    settings: dict[str, Any] = Field(
-        default_factory=dict,
-        title="The stack component settings to apply on allocation.",
-    )
-
-
-class ResourceRequestServiceConnectorSettings(BaseZenModel):
-    """Service connector settings selected for a resource request."""
-
-    connector_id: Optional[UUID] = Field(
-        default=None,
-        title="The service connector ID selected for the request.",
-    )
-    resource_type: Optional[str] = Field(
-        default=None,
-        title="The service connector resource type selected for the request.",
-        min_length=1,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
-    resource_id: Optional[str] = Field(
-        default=None,
-        title="The service connector resource ID selected for the request.",
-        min_length=1,
-        max_length=STR_FIELD_MAX_LENGTH,
-    )
 
 
 class ResourcePoolQueueItem(BaseZenModel):
@@ -170,10 +132,6 @@ class ResourcePoolAllocation(BaseZenModel):
     account_id: Optional[UUID] = Field(
         default=None,
         title="The external account ID selected for this allocation.",
-    )
-    component_settings: list[ResourcePoolCapacityComponentSettings] = Field(
-        default_factory=list,
-        title="Stack component settings applied for this allocation.",
     )
     preemption_state: str = Field(title="The preemption state.")
     preemption_reason: Optional[str] = Field(
@@ -459,12 +417,6 @@ class ResourceRequestResponseResources(UserScopedResponseResources):
     component_settings: dict[str, Any] = Field(
         default_factory=dict,
         title="Stack component settings selected for this request.",
-    )
-    service_connector_settings: Optional[
-        ResourceRequestServiceConnectorSettings
-    ] = Field(
-        default=None,
-        title="Service connector settings selected for this request.",
     )
     allocations: list[ResourcePoolAllocation] = Field(
         default_factory=list,

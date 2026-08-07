@@ -24,19 +24,8 @@ from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import (
-    ResourceRequestReclaimTolerance,
-    ResourceRequestStatus,
-    StackComponentType,
-)
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
-from zenml.models import (
-    ResourceRequestResponse,
-    ResourceRequestResponseBody,
-    ResourceRequestResponseMetadata,
-    ResourceRequestResponseResources,
-    ResourceRequestServiceConnectorSettings,
-)
 from zenml.stack import Stack
 from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 
@@ -59,34 +48,6 @@ def _step_operator(
         updated=datetime.now(tz=timezone.utc),
         connector=connector,
         connector_resource_id=connector_resource_id,
-    )
-
-
-def _allocated_resource_request(
-    *,
-    connector_id: UUID,
-    connector_resource_id: str,
-) -> ResourceRequestResponse:
-    """Create an allocated resource request with connector settings."""
-    request_id = uuid4()
-    return ResourceRequestResponse(
-        id=request_id,
-        name=str(request_id),
-        body=ResourceRequestResponseBody(
-            status=ResourceRequestStatus.ALLOCATED,
-            user=uuid4(),
-            created=datetime.now(tz=timezone.utc),
-            updated=datetime.now(tz=timezone.utc),
-            version=1,
-            reclaim_tolerance=ResourceRequestReclaimTolerance.NONE,
-        ),
-        metadata=ResourceRequestResponseMetadata(),
-        resources=ResourceRequestResponseResources(
-            service_connector_settings=ResourceRequestServiceConnectorSettings(
-                connector_id=connector_id,
-                resource_id=connector_resource_id,
-            )
-        ),
     )
 
 
@@ -175,119 +136,6 @@ def test_stack_returns_all_its_components(
         stack._components[component_type] == component
         for component_type, component in expected_components.items()
     )
-
-
-def test_get_stack_component_returns_original_without_connector_override(
-    local_orchestrator, local_artifact_store
-):
-    """Tests that unchanged service connector settings reuse the stack component."""
-    connector_id = uuid4()
-    step_operator = _step_operator(
-        connector=connector_id,
-        connector_resource_id="cluster-a",
-    )
-    stack = Stack(
-        id=uuid4(),
-        name="stack",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-        step_operator=step_operator,
-    )
-
-    assert (
-        stack.get_stack_component(
-            StackComponentType.STEP_OPERATOR,
-        )
-        is step_operator
-    )
-    assert (
-        stack.get_stack_component(
-            StackComponentType.STEP_OPERATOR,
-            allocated_resource_request=_allocated_resource_request(
-                connector_id=connector_id,
-                connector_resource_id="cluster-a",
-            ),
-        )
-        is step_operator
-    )
-
-
-def test_get_stack_component_caches_service_connector_overrides(
-    local_orchestrator, local_artifact_store
-):
-    """Tests that service connector overrides are copied and cached."""
-    original_connector_id = uuid4()
-    override_connector_id = uuid4()
-    step_operator = _step_operator(
-        connector=original_connector_id,
-        connector_resource_id="cluster-a",
-    )
-    stack = Stack(
-        id=uuid4(),
-        name="stack",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-        step_operator=step_operator,
-    )
-
-    overridden_step_operator = stack.get_stack_component(
-        StackComponentType.STEP_OPERATOR,
-        name=step_operator.name,
-        allocated_resource_request=_allocated_resource_request(
-            connector_id=override_connector_id,
-            connector_resource_id="cluster-b",
-        ),
-    )
-    cached_step_operator = stack.get_stack_component(
-        StackComponentType.STEP_OPERATOR,
-        name=step_operator.name,
-        allocated_resource_request=_allocated_resource_request(
-            connector_id=override_connector_id,
-            connector_resource_id="cluster-b",
-        ),
-    )
-
-    assert overridden_step_operator is cached_step_operator
-    assert overridden_step_operator is not step_operator
-    assert overridden_step_operator is not None
-    assert overridden_step_operator.connector == override_connector_id
-    assert overridden_step_operator.connector_resource_id == "cluster-b"
-    assert step_operator.connector == original_connector_id
-    assert step_operator.connector_resource_id == "cluster-a"
-
-
-def test_get_step_operator_uses_allocated_request_connector_overrides(
-    local_orchestrator, local_artifact_store
-):
-    """Tests that request connector settings override step operator links."""
-    original_connector_id = uuid4()
-    override_connector_id = uuid4()
-    step_operator = _step_operator(
-        name="gpu-operator",
-        connector=original_connector_id,
-        connector_resource_id="cluster-a",
-    )
-    stack = Stack(
-        id=uuid4(),
-        name="stack",
-        orchestrator=local_orchestrator,
-        artifact_store=local_artifact_store,
-        step_operator=step_operator,
-    )
-
-    overridden_step_operator = stack.get_step_operator(
-        name="gpu-operator",
-        allocated_resource_request=_allocated_resource_request(
-            connector_id=override_connector_id,
-            connector_resource_id="cluster-b",
-        ),
-    )
-
-    assert overridden_step_operator.name == "gpu-operator"
-    assert overridden_step_operator.connector == override_connector_id
-    assert overridden_step_operator.connector_resource_id == "cluster-b"
-    assert step_operator.connector == original_connector_id
-    assert step_operator.connector_resource_id == "cluster-a"
 
 
 def test_get_step_operator_raises_for_missing_step_operator(
