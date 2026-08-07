@@ -21,15 +21,15 @@ ZenML is an open-source framework for developing, evaluating, and deploying your
 That story has two open-source projects behind it:
 
 * **ZenML** is the MLOps framework: portable, production-ready **pipelines** for ML and LLM workloads, with versioned artifacts, caching, and infrastructure abstracted behind [stacks](https://docs.zenml.io/stacks).
-* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: traces you can run, not just read. Replay a real run against your real code with one thing changed — a cheaper model, a different prompt — diff the two, and roll the winner across recent runs. Durable checkpoints are what make the replay faithful.
+* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: traces you can run, not just read. Replay a real run against your real code with one thing changed — a cheaper model, a different prompt — diff the two, and roll the winner across recent runs. Recorded tool calls are answered from the recording, which is what makes the replay faithful.
 
-Each works on its own. You can run ZenML and never touch Kitaru, or pick up Kitaru purely to make one agent durable. If you do use both, they compose rather than coexist: a Kitaru flow is a dynamic ZenML pipeline under the hood, so your agents and pipelines run on the same stacks, persist artifacts to the same stores, and show up in the same server and dashboard.
+Each works on its own. You can run ZenML and never touch Kitaru, or pick up Kitaru purely to put one agent's runs under replay. The split is clean: ZenML is for ML pipelines; Kitaru is for agents, with its own lightweight server (one `docker compose up`) and workers that execute replays in your environment.
 
 ### What are you building?
 
 Pick the path that matches your work. Neither path requires the other, and adopting the second one later doesn't mean starting over.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>ML Pipelines → ZenML</strong></td><td>Build, version, and deploy classical ML and LLM pipelines. Start with Hello World, then the Starter guide.</td><td><a href=".gitbook/assets/how-to.png">how-to.png</a></td><td><a href="getting-started/hello-world.md">hello-world.md</a></td></tr><tr><td><strong>AI Agents → Kitaru</strong></td><td>Replay a real run against your real code with one change, keep the version that wins on cost, latency, and quality, and run durably so every run is recorded. Start with the Agents guide, or jump to the Kitaru quickstart.</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/agents-guide">Agents guide</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>ML Pipelines → ZenML</strong></td><td>Build, version, and deploy classical ML and LLM pipelines. Start with Hello World, then the Starter guide.</td><td><a href=".gitbook/assets/how-to.png">how-to.png</a></td><td><a href="getting-started/hello-world.md">hello-world.md</a></td></tr><tr><td><strong>AI Agents → Kitaru</strong></td><td>Record every run as a session, replay a real run against your real code with one change, and keep the version that wins on cost, latency, and quality. Start with the Agents guide, or jump to the Kitaru quickstart.</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/agents-guide">Agents guide</a></td></tr></tbody></table>
 
 ### How these docs are organized
 
@@ -38,7 +38,7 @@ The documentation is split into spaces — the tabs at the top of this page. Kno
 | Space | What you'll find there |
 | --- | --- |
 | **ZenML** (you are here) | The pipelines framework: installation, core concepts, deployment, and how-to guides |
-| **[Kitaru](https://docs.zenml.io/kitaru)** | The agents project: quickstart, recording and replaying executions, flows and checkpoints, framework adapters |
+| **[Kitaru](https://docs.zenml.io/kitaru)** | The agents project: quickstart, recording and replaying sessions, evaluators and experiments, framework adapters |
 | **[Learn](https://docs.zenml.io/user-guides)** | Narrative guides for both projects: Starter, Production, LLMOps, and Agents tracks, plus tutorials and best practices |
 | **[Stacks](https://docs.zenml.io/stacks)** | The infrastructure components — orchestrators, artifact stores, and more — that both pipelines and agents run on |
 | **[SDK reference](https://docs.zenml.io/sdk-reference)** / **[API reference](https://docs.zenml.io/api-reference)** | Client and REST API references, organized per project |
