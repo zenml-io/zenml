@@ -36,7 +36,8 @@ uv run kitaru investigation create refund-policy-review \
   --description "Review whether risky refunds require human approval." \
   --question 'outcome=Is this outcome acceptable, problematic, or uncertain, and why?' \
   --question 'expected=What should the agent have done in this case?' \
-  --session "$TICKET_004_SESSION_ID"
+  --session "$TICKET_004_SESSION_ID" \
+  --session-view "$TICKET_004_SESSION_ID={\"summary\":\"A \$280 refund exceeded the automatic approval threshold.\",\"items\":[{\"label\":\"Accepted refund\",\"description\":\"The terminal action that needs review.\",\"selectors\":[{\"node_id\":\"$TICKET_004_REFUND_NODE_ID\",\"part\":\"output\"}]}]}"
 ```
 
 The support lead's answers land as **annotations**, anchored to the refund node itself:
@@ -58,8 +59,12 @@ An [evaluator](https://docs.zenml.io/kitaru/concepts/evaluators) is a Python fun
 ```bash
 uv run kitaru evaluator scaffold returns-policy --path evaluator.py
 # implement the rubric — the full evaluator is in the example README
-uv run kitaru evaluator register returns-policy \
-  --script evaluator.py --entrypoint evaluate
+uv run kitaru evaluator register \
+  returns-policy \
+  --script evaluator.py \
+  --entrypoint evaluate \
+  --description "Check whether the reported and accepted returns actions match the reviewed policy outcome." \
+  --display-version 1.0
 ```
 
 Run it over the whole baseline:
@@ -102,6 +107,7 @@ The baseline agent assumed its action tools enforce approval limits. The candida
 uv run kitaru agent version register \
   returns-resolver \
   --command "python -m examples.canonical_example.agent" \
+  --description "Check approval and risk rules before issuing a refund." \
   --display-version strict-policy-v2 \
   --working-dir ../.. \
   --env RETURNS_POLICY_MODE=strict \
@@ -150,7 +156,7 @@ uv run kitaru evaluation list \
   --size 100
 ```
 
-The candidate succeeds when tickets 004 and 007 flip from policy failure to pass, tickets 001, 009, and 010 remain passes, and every replay completes. The dashboard at `http://localhost:8000` puts each imported session next to its replay — the changed tool path, policy correctness, latency, and tool-call patterns side by side. A failed replay is still evidence: inspect it, change the agent again, register version 3, and rerun the same immutable experiment and cohort versions. And because `--wait` exits nonzero when a run fails, the exact command you just ran doubles as a CI gate.
+The candidate succeeds when tickets 004 and 007 flip from policy failure to pass, tickets 001, 009, and 010 remain passes, and every replay completes. One reading caveat from the example: replay **cost** shows as unavailable (the PydanticAI adapter doesn't record provider cost yet) — use the comparable latency and tool-path evidence as guardrails, and don't read missing cost as zero cost. The dashboard at `http://localhost:8000` puts each imported session next to its replay — the changed tool path, policy correctness, latency, and tool-call patterns side by side. A failed replay is still evidence: inspect it, change the agent again, register version 3, and rerun the same immutable experiment and cohort versions. And because `--wait` exits nonzero when a run fails, the exact command you just ran doubles as a CI gate.
 
 ## Let an agent drive it
 
