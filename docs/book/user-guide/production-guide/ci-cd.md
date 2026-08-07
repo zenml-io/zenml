@@ -4,6 +4,11 @@ description: >-
   Delivery
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Set up CI/CD
 
 Until now, we have been executing ZenML pipelines locally. While this is a good mode of operating pipelines, in

@@ -14,6 +14,11 @@ layout:
     visible: false
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Welcome to ZenML
 
 ZenML is an open-source framework for developing, evaluating, and deploying your entire AI portfolio: classical ML, LLM pipelines, and AI agents alike. It brings the battle-tested engineering principles of production ML to everything you ship, so you don't maintain one toolchain for models and another for agents.

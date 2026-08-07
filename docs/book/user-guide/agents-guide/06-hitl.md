@@ -3,6 +3,11 @@ description: Pause a flow to ask a human, then resume the same run once they ans
 icon: hand
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stage 6 — Your agents need to ask humans things
 
 Some steps an agent should not take alone, no matter how well-scoped the tool is: posting to a live channel, an expensive-to-undo fork, a judgment call the model shouldn't make. Stage 6 lets the agent stop mid-task, ask a person, and resume from exactly where it paused — without holding a process open while it waits.

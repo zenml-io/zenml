@@ -2,6 +2,11 @@
 description: Exporting logs to Datadog's log management platform.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Datadog Log Store
 
 The Datadog Log Store is a log store flavor that exports logs to [Datadog's log management platform](https://www.datadoghq.com/product/log-management/). It provides full integration with Datadog, including both log export and retrieval, enabling you to view pipeline logs directly in the ZenML dashboard.

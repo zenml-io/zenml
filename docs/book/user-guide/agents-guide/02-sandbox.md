@@ -3,6 +3,11 @@ description: Run the agent's shell commands inside a Docker sandbox, so a mistak
 icon: box
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stage 2 — Your agents need a sandbox
 
 Running agents for real means giving them somewhere safe to act. Stage 1 made a crash survivable: when a turn finished, its output went to durable storage, so a retry picked up the saved work instead of paying for the same model call twice. The agent was deliberately plain — a PydanticAI agent with one tool, `exec`, that ran shell commands directly in the host process.
