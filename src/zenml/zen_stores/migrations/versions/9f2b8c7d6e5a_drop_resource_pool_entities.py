@@ -1,7 +1,7 @@
 """Drop resource pool and request entities [9f2b8c7d6e5a].
 
 Revision ID: 9f2b8c7d6e5a
-Revises: 0.96.2
+Revises: 0.96.3
 Create Date: 2026-06-20 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9f2b8c7d6e5a"
-down_revision = "0.96.2"
+down_revision = "0.96.3"
 branch_labels = None
 depends_on = None
 
