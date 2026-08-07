@@ -2,6 +2,11 @@
 description: Reference for the ZenML and Kitaru Python SDKs and CLIs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Overview
 
 ZenML ships two Python SDKs, each with its own reference site:

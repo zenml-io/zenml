@@ -2,6 +2,11 @@
 description: Generate synthetic data with distilabel to finetune embeddings.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 We already have [a dataset of technical documentation](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions_0_60_0) that was generated
 previously while we were working on the RAG pipeline. We'll use this dataset
 to generate synthetic data with `distilabel`. You can inspect the data directly

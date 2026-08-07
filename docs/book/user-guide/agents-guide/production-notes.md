@@ -3,6 +3,11 @@ description: Which pieces of the agent harness tour are teaching stand-ins, wher
 icon: shield-halved
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Production notes and upgrade paths
 
 Every stage in this tour runs on a laptop, so the example uses stand-ins: Docker for the sandbox, local markdown for procedures, a self-signed proxy and mock HTTP services for credentials and internal calls. The stand-ins are good enough to run and read, but they are not the part you would ship.

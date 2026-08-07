@@ -3,6 +3,11 @@ description: Give agents typed service tools (look up a record, file a ticket, p
 icon: diagram-project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stage 5 — Typed service boundaries
 
 By [Stage 4](04-credential-proxy.md) the agent could reach internal HTTP endpoints without ever holding a secret. But it still acted by hand-assembling `curl` calls, and a hand-assembled call is exactly where a model slips: wrong webhook, dropped field, a `500` read as success. Stage 5 replaces that for structured actions. The agent names an action and fills in typed arguments; a dispatcher you control runs the matching handler in your host process and hands back a typed result. The boundary is the point: the platform decides which actions exist and which agent may call them.

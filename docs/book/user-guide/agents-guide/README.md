@@ -3,6 +3,11 @@ description: Run agents durably, replay a real run with one thing changed, and i
 icon: robot
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Agents guide
 
 This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for running, replaying, and improving agents. By the end you'll be able to do three things:

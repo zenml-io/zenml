@@ -2,6 +2,11 @@
 description: Storing artifacts in a DigitalOcean Spaces bucket.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # DigitalOcean Spaces
 
 The DigitalOcean Spaces Artifact Store is an [Artifact Store](./) flavor provided with the DigitalOcean ZenML integration that uses [DigitalOcean Spaces](https://www.digitalocean.com/products/spaces) to store ZenML artifacts. Spaces exposes an [S3-compatible API](https://docs.digitalocean.com/products/spaces/reference/s3-compatibility/), so this flavor reuses ZenML's S3 implementation under the hood and only adds a `region` setting from which the Spaces endpoint URL is derived at runtime.

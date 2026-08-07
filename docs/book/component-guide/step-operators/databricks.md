@@ -2,6 +2,11 @@
 description: Executing individual steps on Databricks.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Databricks
 
 [Databricks](https://www.databricks.com/) is a unified data and AI platform that is often used for large-scale data processing, feature engineering, and model training. ZenML's Databricks step operator allows you to execute individual steps on Databricks while keeping the rest of the pipeline on your active orchestrator.
