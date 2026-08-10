@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Test zenml artifact CLI commands."""
 
+import importlib
+
 from pytest_mock import MockerFixture
 
 from tests.cli_runner_utils import cli_runner
@@ -42,7 +44,8 @@ def test_artifact_version_delete_forwards_deletion_options(
     mocker: MockerFixture,
 ) -> None:
     """Test forwarding artifact version deletion options to the client."""
-    client = mocker.patch("zenml.cli.artifact.Client").return_value
+    artifact_module = importlib.import_module("zenml.cli.artifact")
+    client = mocker.patch.object(artifact_module, "Client").return_value
     delete_command = (
         cli.commands["artifact"].commands["version"].commands["delete"]
     )

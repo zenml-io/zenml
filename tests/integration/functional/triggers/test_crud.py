@@ -9,20 +9,59 @@ from zenml import (
     PlatformEventTriggerResponse,
     PlatformEventTriggerUpdate,
 )
+from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.enums import ExecutionStatus, TriggerFlavor, TriggerType
+from zenml.enums import (
+    ExecutionStatus,
+    LogicalOperators,
+    TriggerFlavor,
+    TriggerType,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    PipelineBuildRequest,
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
     ScheduleTriggerRequest,
     ScheduleTriggerUpdate,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+
+def _create_runnable_snapshot(
+    client: Client, pipeline_id: uuid.UUID
+) -> PipelineSnapshotResponse:
+    project_id = client.active_project.id
+    build = client.zen_store.create_build(
+        PipelineBuildRequest(
+            project=project_id,
+            pipeline=pipeline_id,
+            stack=client.active_stack.id,
+            images={},
+            is_local=False,
+            contains_code=True,
+        )
+    )
+    return client.zen_store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("trigger-filter-snapshot"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("trigger-filter-config")
+            ),
+            pipeline=pipeline_id,
+            stack=client.active_stack.id,
+            build=build.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            is_dynamic=False,
+        )
+    )
 
 
 def test_schedule_crud_happy_path(clean_client):
@@ -265,6 +304,56 @@ def test_snapshot_associations(clean_client):
         )
 
 
+def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
+    project_id = clean_client.active_project.id
+    store = clean_client.zen_store
+
+    first_pipeline = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-filter-pipeline"),
+            project=project_id,
+        )
+    )
+    second_pipeline = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-filter-pipeline"),
+            project=project_id,
+        )
+    )
+    snapshots = [
+        _create_runnable_snapshot(clean_client, first_pipeline.id),
+        _create_runnable_snapshot(clean_client, first_pipeline.id),
+        _create_runnable_snapshot(clean_client, second_pipeline.id),
+    ]
+    triggers = [
+        clean_client.create_schedule_trigger(
+            name=sample_name("trigger-filter"),
+            cron_expression="* * * * *",
+        )
+        for _ in snapshots
+    ]
+    for trigger, snapshot in zip(triggers, snapshots):
+        store.attach_trigger_to_snapshot(
+            trigger_id=trigger.id,
+            snapshot_id=snapshot.id,
+        )
+
+    pipeline_triggers = clean_client.list_schedule_triggers(
+        pipeline_id=str(first_pipeline.id)
+    )
+    snapshot_triggers = clean_client.list_schedule_triggers(
+        snapshot_id=str(snapshots[0].id)
+    )
+
+    assert {trigger.id for trigger in pipeline_triggers.items} == {
+        triggers[0].id,
+        triggers[1].id,
+    }
+    assert {trigger.id for trigger in snapshot_triggers.items} == {
+        triggers[0].id
+    }
+
+
 def test_run_associations(clean_client):
     # TODO: update test case with a runnable mock snapshot
     pytest.skip("Temporarily skipping check due to flakiness.")
@@ -452,7 +541,66 @@ def test_sdk_utilities(clean_client):
 
     assert got.cron_expression == "* 2 * * *"
 
+    assert clean_client.get_schedule_trigger(created.name).id == created.id
+    assert (
+        clean_client.get_schedule_trigger(created.name[:10]).id == created.id
+    )
+    assert (
+        clean_client.get_schedule_trigger(str(created.id)[:8]).id == created.id
+    )
+
+    listed = clean_client.list_schedule_triggers()
+    assert created.id in {trigger.id for trigger in listed.items}
+
+    listed_by_name = clean_client.list_schedule_triggers(name=created.name)
+    assert listed_by_name.total == 1
+    assert listed_by_name.items[0].id == created.id
+
+    listed_by_id_prefix = clean_client.list_schedule_triggers(
+        id=f"startswith:{str(created.id)[:8]}"
+    )
+    assert created.id in {trigger.id for trigger in listed_by_id_prefix.items}
+
+    listed_by_active_status = clean_client.list_schedule_triggers(active=True)
+    assert created.id in {
+        trigger.id for trigger in listed_by_active_status.items
+    }
+
+    listed_by_missing_name = clean_client.list_schedule_triggers(
+        name="definitely-missing-trigger"
+    )
+    assert created.id not in {
+        trigger.id for trigger in listed_by_missing_name.items
+    }
+
+    inactive = clean_client.create_schedule_trigger(
+        name=sample_name("inactive-trigger-test"),
+        active=False,
+        cron_expression="* 3 * * *",
+    )
+
+    listed_by_and_filters = clean_client.list_schedule_triggers(
+        logical_operator=LogicalOperators.AND,
+        name=created.name,
+        active=True,
+    )
+    assert listed_by_and_filters.total == 1
+    assert listed_by_and_filters.items[0].id == created.id
+
+    listed_by_or_filters = clean_client.list_schedule_triggers(
+        logical_operator=LogicalOperators.OR,
+        name="definitely-missing-trigger",
+        active=True,
+    )
+    or_filter_ids = {trigger.id for trigger in listed_by_or_filters.items}
+    assert created.id in or_filter_ids
+    assert inactive.id not in or_filter_ids
+
+    with pytest.raises(KeyError):
+        clean_client.get_schedule_trigger("definitely-missing-trigger")
+
     clean_client.delete_trigger(created.id)
+    clean_client.delete_trigger(inactive.id)
 
     with pytest.raises(KeyError):
         got = clean_client.get_schedule_trigger(created.id)

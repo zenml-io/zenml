@@ -119,8 +119,7 @@ def _fetch_and_verify_api_key(
     Raises:
         CredentialsNotValid: If the API key could not be found, is not
             active, if it could not be verified against the supplied key value
-            or if the associated service account is not active or is an
-            external service account.
+            or if the associated service account is not active.
     """
     store = zen_store()
 
@@ -141,12 +140,11 @@ def _fetch_and_verify_api_key(
         raise CredentialsNotValid(error)
 
     if api_key.service_account.external_user_id:
-        error = (
-            "Authentication error: cannot use an API key associated with an "
+        warning = (
+            "Authentication warning: using an API key associated with an "
             "external service account to authenticate to the ZenML server"
         )
-        logger.exception(error)
-        raise CredentialsNotValid(error)
+        logger.warning(warning)
 
     if not api_key.active:
         error = (
@@ -326,10 +324,8 @@ def authenticate_credentials(
 
         if (
             config.auth_scheme == AuthScheme.EXTERNAL
-            and not (
-                decoded_token.api_key_id and user_model.is_service_account
-            )
             and not user_model.external_user_id
+            and not user_model.is_service_account
         ):
             error = (
                 f"Authentication error: local account {user_model.name} is not "
