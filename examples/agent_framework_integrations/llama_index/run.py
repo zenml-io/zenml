@@ -25,56 +25,50 @@ docker_settings = DockerSettings(
 def run_llamaindex_agent(
     query: str,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the LlamaIndex Function Agent and return results."""
+    """Execute the LlamaIndex Function Agent and return results.
 
-    async def run_agent_async():
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The query and generated response.
+    """
+
+    async def run_agent_async() -> Any:
         return await agent.run(query)
 
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        # LlamaIndex agent.run() is actually async and needs proper await
-        import asyncio
+        response = loop.run_until_complete(run_agent_async())
+    finally:
+        loop.close()
 
-        # Create and run in event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            response = loop.run_until_complete(run_agent_async())
-        finally:
-            loop.close()
+    if hasattr(response, "response"):
+        result = str(response.response)
+    else:
+        result = str(response)
 
-        # Extract the response content
-        if hasattr(response, "response"):
-            result = str(response.response)
-        else:
-            result = str(response)
-
-        return {"query": query, "response": result, "status": "success"}
-    except Exception as e:
-        return {
-            "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
-        }
+    return {"query": query, "response": result}
 
 
 @step
 def format_llamaindex_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the LlamaIndex agent results into a readable summary."""
+    """Format the LlamaIndex agent results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ LLAMAINDEX AGENT ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🦙 LLAMAINDEX FUNCTION AGENT RESPONSE
+    formatted = f"""🦙 LLAMAINDEX FUNCTION AGENT RESPONSE
 {"=" * 40}
 
 Query: {query}
