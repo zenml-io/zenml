@@ -79,6 +79,7 @@ from packaging import version
 from pydantic import (
     ConfigDict,
     Field,
+    PrivateAttr,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -94,6 +95,7 @@ from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
+    OperationalError,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -392,7 +394,7 @@ from zenml.utils.string_utils import (
     random_str,
     validate_name,
 )
-from zenml.utils.time_utils import exponential_backoff_delays, utc_now
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -483,6 +485,7 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
+    from zenml.zen_stores.rds_iam import RDSIAMAuthenticator
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -703,6 +706,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     mydumper_extra_args: Optional[List[str]] = None
     myloader_threads: Optional[int] = None
     myloader_extra_args: Optional[List[str]] = None
+
+    _rds_iam_authenticator: Optional["RDSIAMAuthenticator"] = PrivateAttr(
+        default=None
+    )
 
     @field_validator("secrets_store")
     @classmethod
@@ -946,7 +953,13 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         "w",
                     ) as f:
                         f.write(content.get_secret_value())
-                    setattr(self, key, str(file_path))
+                    # Keep the field a secret string: every reader calls
+                    # `get_secret_value()` on it, and `validate_assignment` is
+                    # off so a plain `str` here would survive validation and
+                    # only fail later, when the engine is built.
+                    setattr(
+                        self, key, PlainSerializedSecretStr(str(file_path))
+                    )
 
         self.url = str(sql_url)
         return self
@@ -1016,114 +1029,30 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "`dump-file`."
             )
 
+    @property
+    def rds_iam_authenticator(self) -> "RDSIAMAuthenticator":
+        """The RDS IAM authenticator shared by all engines of this config.
+
+        Returns:
+            The RDS IAM authenticator.
+        """
+        from zenml.zen_stores.rds_iam import RDSIAMAuthenticator
+
+        if self._rds_iam_authenticator is None:
+            assert self.aws_region is not None
+            self._rds_iam_authenticator = RDSIAMAuthenticator(self.aws_region)
+        return self._rds_iam_authenticator
+
     def configure_engine_auth(self, engine: Engine) -> None:
         """Configure per-connection authentication for an SQLAlchemy engine.
 
         Args:
             engine: The engine whose connections should use this configuration.
-
-        Raises:
-            ImportError: If AWS RDS IAM mode is enabled without the optional AWS
-                SDK dependency.
         """
         if self.auth_mode != "aws_rds_iam":
             return
 
-        try:
-            import boto3
-            from botocore.exceptions import (
-                ClientError,
-                ConnectionClosedError,
-                ConnectTimeoutError,
-                EndpointConnectionError,
-                ReadTimeoutError,
-            )
-        except ImportError as error:
-            raise ImportError(
-                "AWS RDS IAM database authentication requires the optional "
-                "AWS SDK dependency. Install it with "
-                "`pip install 'zenml[aws-rds-iam]'`."
-            ) from error
-
-        assert self.aws_region is not None
-        rds_client = boto3.client("rds", region_name=self.aws_region)
-        transient_exceptions = (
-            ConnectionClosedError,
-            ConnectTimeoutError,
-            EndpointConnectionError,
-            ReadTimeoutError,
-        )
-        transient_error_codes = {
-            "InternalFailure",
-            "RequestTimeout",
-            "ServiceUnavailable",
-            "Throttling",
-            "ThrottlingException",
-        }
-
-        def _is_transient(error: Exception) -> bool:
-            if isinstance(error, transient_exceptions):
-                return True
-            if isinstance(error, ClientError):
-                code = error.response.get("Error", {}).get("Code")
-                return code in transient_error_codes
-            return False
-
-        @event.listens_for(engine.dialect, "do_connect")
-        def _set_iam_token(
-            dialect: Any,
-            connection_record: Any,
-            cargs: List[Any],
-            cparams: Dict[str, Any],
-        ) -> None:
-            del dialect, connection_record, cargs
-            host = cparams["host"]
-            port = int(cparams.get("port") or 3306)
-            username = cparams["user"]
-            delays = iter(
-                exponential_backoff_delays(
-                    attempts=2,
-                    initial_delay=0.1,
-                    max_delay=0.2,
-                    factor=2.0,
-                    jitter="none",
-                )
-            )
-            for attempt in range(3):
-                try:
-                    cparams["password"] = rds_client.generate_db_auth_token(
-                        DBHostname=host,
-                        Port=port,
-                        DBUsername=username,
-                    )
-                    return
-                except Exception as error:
-                    if not _is_transient(error) or attempt == 2:
-                        raise
-                    time.sleep(next(delays))
-
-        @event.listens_for(engine, "connect")
-        def _assert_verified_tls(
-            dbapi_connection: Any, connection_record: Any
-        ) -> None:
-            del connection_record
-            tls_socket = getattr(dbapi_connection, "_sock", None)
-            if not isinstance(tls_socket, ssl.SSLSocket):
-                raise RuntimeError(
-                    "AWS RDS IAM authentication requires a live TLS connection."
-                )
-
-            tls_context = tls_socket.context
-            if (
-                tls_context.verify_mode != ssl.CERT_REQUIRED
-                or not tls_context.check_hostname
-                or not tls_socket.server_hostname
-                or not tls_socket.getpeercert()
-            ):
-                raise RuntimeError(
-                    "AWS RDS IAM authentication requires verified TLS with "
-                    "hostname validation."
-                )
+        self.rds_iam_authenticator.register(engine)
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -1214,8 +1143,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if self.ssl:
                 if self.auth_mode == "aws_rds_iam":
                     assert self.ssl_ca is not None
-                    ssl_context = ssl.create_default_context()
-                    ssl_context.load_verify_locations(
+                    # Passing `cafile` here is what pins trust to the RDS CA:
+                    # calling `create_default_context()` without it loads the
+                    # whole system trust store, which would let any publicly
+                    # trusted CA vouch for the database host.
+                    ssl_context = ssl.create_default_context(
                         cafile=self.ssl_ca.get_secret_value()
                     )
                     ssl_context.check_hostname = True
@@ -1224,8 +1156,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     # not satisfy OpenSSL 3's optional RFC 5280 strict profile.
                     # Keep chain and hostname verification while matching the
                     # compatibility behavior used by PyMySQL itself.
-                    if hasattr(ssl, "VERIFY_X509_STRICT"):
-                        ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+                    ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
                     if self.ssl_cert:
                         ssl_context.load_cert_chain(
                             certfile=self.ssl_cert.get_secret_value(),
@@ -1687,8 +1618,7 @@ class SqlZenStore(BaseZenStore):
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            if not self.db_backup_engine.database_exists():
-                self.db_backup_engine.create_database()
+            self._create_database_if_missing()
 
         self._alembic = Alembic(self.engine)
 
@@ -1744,6 +1674,33 @@ class SqlZenStore(BaseZenStore):
             self.config.backup_secrets_store = (
                 self._backup_secrets_store.config
             )
+
+    def _create_database_if_missing(self) -> None:
+        """Create the configured MySQL database if it does not exist yet.
+
+        Raises:
+            RuntimeError: If the database is missing and cannot be created with
+                the configured IAM credentials.
+            OperationalError: If the database could not be reached, in any other
+                authentication mode.
+        """
+        try:
+            if not self.db_backup_engine.database_exists():
+                self.db_backup_engine.create_database()
+        except OperationalError as error:
+            if self.config.auth_mode != "aws_rds_iam":
+                raise
+            # IAM workspace users are typically granted privileges on their own
+            # schema only, so both probing for and creating the database can be
+            # refused outright. The raw `Access denied` traceback gives no hint
+            # about what an operator is expected to do about it.
+            raise RuntimeError(
+                f"Failed to access or create database "
+                f"`{self.config.database}` with AWS RDS IAM authentication. "
+                "IAM workspace users are usually scoped to a single schema and "
+                "cannot create databases, so the database must be provisioned "
+                "and granted to the user before starting the server."
+            ) from error
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""

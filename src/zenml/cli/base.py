@@ -758,10 +758,15 @@ def backup_database(
             store_config, skip_default_registrations=True, skip_migrations=True
         )
         assert isinstance(store, SqlZenStore)
-        backup_engine = store.initialize_database_backup_engine(
-            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
-            location=location,
-        )
+        try:
+            backup_engine = store.initialize_database_backup_engine(
+                strategy=DatabaseBackupStrategy(strategy)
+                if strategy
+                else None,
+                location=location,
+            )
+        except ValueError as e:
+            cli_utils.error(str(e))
         backup_engine.backup_database(overwrite=overwrite)
         cli_utils.declare(
             f"Database was backed up to {backup_engine.backup_location}."
@@ -824,10 +829,15 @@ def restore_database(
             store_config, skip_default_registrations=True, skip_migrations=True
         )
         assert isinstance(store, SqlZenStore)
-        backup_engine = store.initialize_database_backup_engine(
-            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
-            location=location,
-        )
+        try:
+            backup_engine = store.initialize_database_backup_engine(
+                strategy=DatabaseBackupStrategy(strategy)
+                if strategy
+                else None,
+                location=location,
+            )
+        except ValueError as e:
+            cli_utils.error(str(e))
         backup_engine.restore_database(cleanup=cleanup)
         cli_utils.declare(
             f"Database was restored from {backup_engine.backup_location}."

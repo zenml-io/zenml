@@ -25,7 +25,7 @@ from typing import (
     TextIO,
 )
 
-from sqlalchemy import Engine, MetaData, func, text
+from sqlalchemy import Connection, Engine, MetaData, func, inspect, text
 from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlmodel import (
     select,
@@ -218,6 +218,40 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                             **store_db_kwargs,
                         )
 
+    def _drop_all_tables(self, connection: Connection) -> None:
+        """Drop every table in the connection's schema.
+
+        Used where `DROP DATABASE` is not available, which is the case for the
+        schema-scoped users that AWS RDS IAM authentication is designed for.
+
+        Table names are read from the inspector rather than by reflecting the
+        schema: restore runs after a migration failed part-way, so the schema
+        may well contain a table that SQLAlchemy cannot reflect (an incomplete
+        foreign key, an alembic batch leftover), and reflection would abort
+        before dropping anything.
+
+        Foreign key checks are disabled for the duration so tables can be
+        dropped in any order. MySQL commits DDL implicitly, so a statement that
+        fails midway cannot be rolled back - ordering the drops by dependency
+        instead would leave a half-destroyed schema behind on the first cycle
+        or unexpected constraint.
+
+        Args:
+            connection: The connection to drop the tables on.
+        """
+        table_names = inspect(connection).get_table_names()
+        if not table_names:
+            return
+
+        connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        try:
+            for table_name in table_names:
+                connection.execute(
+                    text(f"DROP TABLE IF EXISTS `{table_name}`")
+                )
+        finally:
+            connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+
     def restore_database_from_storage(
         self,
         **load_db_kwargs: Any,
@@ -239,10 +273,7 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
         metadata = MetaData()
         with self.engine.begin() as connection:
             if self.config.auth_mode == "aws_rds_iam":
-                existing_metadata = MetaData()
-                existing_metadata.reflect(bind=connection)
-                for table in reversed(existing_metadata.sorted_tables):
-                    table.drop(bind=connection)
+                self._drop_all_tables(connection)
 
             # read the DB information one JSON object at a time
             self_references: dict[str, bool] = {}
@@ -251,8 +282,9 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 if "create_stmt" in table_dump:
                     # execute the table creation statement
                     connection.execute(text(table_dump["create_stmt"]))
-                    # Reload the database metadata after creating the table
-                    metadata.reflect(bind=connection)
+                    # Reload the metadata for the table that was just created,
+                    # so its columns are available when inserting its rows
+                    metadata.reflect(bind=connection, only=[table_name])
                     self_references[table_name] = table_dump.get(
                         "self_references", False
                     )
@@ -260,45 +292,50 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                 if "index_create_stmt" in table_dump:
                     # execute the index creation statement
                     connection.execute(text(table_dump["index_create_stmt"]))
-                    # Reload the database metadata after creating the index
-                    metadata.reflect(bind=connection)
 
                 if "data" in table_dump:
                     # insert the data into the database
                     table = metadata.tables[table_name]
-                    if self_references.get(table_name, False):
-                        # If the table has self-referential foreign keys, we
-                        # need to disable the foreign key checks before inserting
-                        # the rows and re-enable them afterwards. This is because
-                        # the rows need to be inserted in the correct order to
-                        # satisfy the foreign key constraints and we don't sort
-                        # the rows by creation time in the backup.
+                    # If the table has self-referential foreign keys, we
+                    # need to disable the foreign key checks before inserting
+                    # the rows and re-enable them afterwards. This is because
+                    # the rows need to be inserted in the correct order to
+                    # satisfy the foreign key constraints and we don't sort
+                    # the rows by creation time in the backup.
+                    disable_fk_checks = self_references.get(table_name, False)
+                    if disable_fk_checks:
                         connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
 
-                    for row in table_dump["data"]:
-                        # Convert column values to the correct type
-                        for column in table.columns:
-                            # Blob columns are stored as binary strings
-                            if column.type.python_type is bytes and isinstance(
-                                row[column.name], str
-                            ):
-                                # Convert the string to bytes
-                                row[column.name] = bytes(
-                                    row[column.name], "utf-8"
+                    try:
+                        for row in table_dump["data"]:
+                            # Convert column values to the correct type
+                            for column in table.columns:
+                                # Blob columns are stored as binary strings
+                                if (
+                                    column.type.python_type is bytes
+                                    and isinstance(row[column.name], str)
+                                ):
+                                    # Convert the string to bytes
+                                    row[column.name] = bytes(
+                                        row[column.name], "utf-8"
+                                    )
+
+                        # Insert the rows into the table in batches
+                        batch_size = 100
+                        for i in range(0, len(table_dump["data"]), batch_size):
+                            connection.execute(
+                                table.insert().values(
+                                    table_dump["data"][i : i + batch_size]
                                 )
-
-                    # Insert the rows into the table in batches
-                    batch_size = 100
-                    for i in range(0, len(table_dump["data"]), batch_size):
-                        connection.execute(
-                            table.insert().values(
-                                table_dump["data"][i : i + batch_size]
                             )
-                        )
-
-                    if table_dump.get("self_references", False):
-                        # Re-enable the foreign key checks after inserting the rows
-                        connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+                    finally:
+                        # Restore the foreign key checks even if the insert
+                        # failed: the connection is reused for the remaining
+                        # tables, which must be checked normally.
+                        if disable_fk_checks:
+                            connection.execute(
+                                text("SET FOREIGN_KEY_CHECKS = 1")
+                            )
 
     @abstractmethod
     def store_database_data(self, data: dict[str, Any], **kwargs: Any) -> None:
