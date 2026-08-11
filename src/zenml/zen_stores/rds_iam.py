@@ -156,23 +156,21 @@ class RDSIAMAuthenticator:
             Exception: Whatever the AWS SDK raised, once retries are exhausted
                 or the error is not retryable.
         """
-        delays = iter(
-            exponential_backoff_delays(
-                attempts=TOKEN_ATTEMPTS - 1,
-                initial_delay=TOKEN_INITIAL_DELAY,
-                max_delay=TOKEN_MAX_DELAY,
-                factor=2.0,
-                jitter="none",
-            )
-        )
-        for _ in range(TOKEN_ATTEMPTS - 1):
+        for delay in exponential_backoff_delays(
+            attempts=TOKEN_ATTEMPTS - 1,
+            initial_delay=TOKEN_INITIAL_DELAY,
+            max_delay=TOKEN_MAX_DELAY,
+            factor=2.0,
+            jitter="none",
+        ):
             try:
                 return self._request_token(host, port, username)
             except Exception as error:
                 if not self._is_transient(error):
                     raise
-                time.sleep(next(delays))
+                time.sleep(delay)
 
+        # Final attempt, after the backoff delays are exhausted.
         return self._request_token(host, port, username)
 
     def _request_token(self, host: str, port: int, username: str) -> str:

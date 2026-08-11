@@ -1030,6 +1030,20 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             )
 
     @property
+    def can_manage_databases(self) -> bool:
+        """Whether the database user may drop and create whole databases.
+
+        IAM workspace users are typically granted privileges on a single
+        schema only, so operations like `DROP DATABASE` / `CREATE DATABASE`
+        are refused for them and callers must fall back to working within
+        the configured schema.
+
+        Returns:
+            Whether the database user may drop and create databases.
+        """
+        return self.auth_mode != "aws_rds_iam"
+
+    @property
     def rds_iam_authenticator(self) -> "RDSIAMAuthenticator":
         """The RDS IAM authenticator shared by all engines of this config.
 
@@ -1093,6 +1107,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             NotImplementedError: If the SQL driver is not supported.
+            ValueError: If the configured SSL certificates cannot be loaded.
         """
         sql_url = make_url(self.url)
         sqlalchemy_connect_args: Dict[str, Any] = {}
@@ -1143,29 +1158,44 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             if self.ssl:
                 if self.auth_mode == "aws_rds_iam":
                     assert self.ssl_ca is not None
-                    # Passing `cafile` here is what pins trust to the RDS CA:
-                    # calling `create_default_context()` without it loads the
-                    # whole system trust store, which would let any publicly
-                    # trusted CA vouch for the database host.
-                    ssl_context = ssl.create_default_context(
-                        cafile=self.ssl_ca.get_secret_value()
-                    )
-                    ssl_context.check_hostname = True
-                    ssl_context.verify_mode = ssl.CERT_REQUIRED
-                    # RDS CA certificates are hostname-valid and trusted but do
-                    # not satisfy OpenSSL 3's optional RFC 5280 strict profile.
-                    # Keep chain and hostname verification while matching the
-                    # compatibility behavior used by PyMySQL itself.
-                    ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-                    if self.ssl_cert:
-                        ssl_context.load_cert_chain(
-                            certfile=self.ssl_cert.get_secret_value(),
-                            keyfile=(
-                                self.ssl_key.get_secret_value()
-                                if self.ssl_key
-                                else None
-                            ),
+                    try:
+                        # Passing `cafile` here is what pins trust to the RDS
+                        # CA: calling `create_default_context()` without it
+                        # loads the whole system trust store, which would let
+                        # any publicly trusted CA vouch for the database host.
+                        ssl_context = ssl.create_default_context(
+                            cafile=self.ssl_ca.get_secret_value()
                         )
+                        ssl_context.check_hostname = True
+                        ssl_context.verify_mode = ssl.CERT_REQUIRED
+                        # RDS CA certificates are hostname-valid and trusted
+                        # but do not satisfy OpenSSL 3's optional RFC 5280
+                        # strict profile. Keep chain and hostname verification
+                        # while matching the compatibility behavior used by
+                        # PyMySQL itself.
+                        ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+                        if self.ssl_cert:
+                            ssl_context.load_cert_chain(
+                                certfile=self.ssl_cert.get_secret_value(),
+                                keyfile=(
+                                    self.ssl_key.get_secret_value()
+                                    if self.ssl_key
+                                    else None
+                                ),
+                            )
+                    except OSError as error:
+                        # `ssl.SSLError` is an `OSError` subclass: this covers
+                        # both an unreadable certificate path and file contents
+                        # that are not valid PEM. Unlike password mode, IAM
+                        # mode cannot fall back to connecting without the CA,
+                        # so a broken certificate is a configuration error.
+                        raise ValueError(
+                            "Failed to load the SSL certificates configured "
+                            "for AWS RDS IAM authentication (`ssl_ca`, "
+                            "`ssl_cert`, `ssl_key`): ensure that each value "
+                            "is a readable file path or a valid PEM "
+                            f"certificate: {error}"
+                        ) from error
                     sqlalchemy_connect_args["ssl"] = ssl_context
                 else:
                     sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
@@ -1679,16 +1709,24 @@ class SqlZenStore(BaseZenStore):
         """Create the configured MySQL database if it does not exist yet.
 
         Raises:
-            RuntimeError: If the database is missing and cannot be created with
-                the configured IAM credentials.
-            OperationalError: If the database could not be reached, in any other
+            RuntimeError: If accessing or creating the database is refused for
+                lack of privileges with the configured IAM credentials.
+            OperationalError: If the database could not be reached, in any
                 authentication mode.
         """
         try:
             if not self.db_backup_engine.database_exists():
                 self.db_backup_engine.create_database()
         except OperationalError as error:
-            if self.config.auth_mode != "aws_rds_iam":
+            # Only rewrite errors that MySQL reports as denied privileges:
+            # anything else (unreachable host, timeouts, ...) is unrelated to
+            # provisioning and must surface as-is.
+            if (
+                self.config.auth_mode != "aws_rds_iam"
+                or not self.db_backup_engine.is_mysql_access_denied_error(
+                    error
+                )
+            ):
                 raise
             # IAM workspace users are typically granted privileges on their own
             # schema only, so both probing for and creating the database can be

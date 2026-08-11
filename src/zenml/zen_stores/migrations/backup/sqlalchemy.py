@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 from abc import abstractmethod
+from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -218,11 +219,46 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                             **store_db_kwargs,
                         )
 
+    @contextmanager
+    def _foreign_key_checks_disabled(
+        self, connection: Connection
+    ) -> Generator[None, None, None]:
+        """Disable foreign key checks for the duration of the context.
+
+        `FOREIGN_KEY_CHECKS` is a session variable, so it has to be restored
+        on the way out: the connection may be reused for later work. The
+        re-enable is best-effort, though - if the wrapped operation failed
+        because the connection itself broke, executing another statement on it
+        would raise too and replace the original error with a secondary one,
+        hiding the statement that actually failed.
+
+        Args:
+            connection: The connection to disable foreign key checks on.
+
+        Yields:
+            None
+        """
+        connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+        try:
+            yield
+        finally:
+            try:
+                connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+            except Exception:
+                logger.warning(
+                    "Failed to re-enable foreign key checks on the database "
+                    "connection."
+                )
+
     def _drop_all_tables(self, connection: Connection) -> None:
-        """Drop every table in the connection's schema.
+        """Drop every table and view in the connection's schema.
 
         Used where `DROP DATABASE` is not available, which is the case for the
         schema-scoped users that AWS RDS IAM authentication is designed for.
+        Views are dropped alongside tables because a view referencing a
+        dropped table would otherwise survive the restore broken. Other
+        schema-level objects (stored procedures, events) are left untouched;
+        ZenML does not create any.
 
         Table names are read from the inspector rather than by reflecting the
         schema: restore runs after a migration failed part-way, so the schema
@@ -230,27 +266,22 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
         foreign key, an alembic batch leftover), and reflection would abort
         before dropping anything.
 
-        Foreign key checks are disabled for the duration so tables can be
-        dropped in any order. MySQL commits DDL implicitly, so a statement that
-        fails midway cannot be rolled back - ordering the drops by dependency
-        instead would leave a half-destroyed schema behind on the first cycle
-        or unexpected constraint.
+        Must be called with foreign key checks disabled so tables can be
+        dropped in any order. MySQL commits DDL implicitly, so a statement
+        that fails midway cannot be rolled back - ordering the drops by
+        dependency instead would leave a half-destroyed schema behind on the
+        first cycle or unexpected constraint.
 
         Args:
             connection: The connection to drop the tables on.
         """
-        table_names = inspect(connection).get_table_names()
-        if not table_names:
-            return
+        inspector = inspect(connection)
 
-        connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-        try:
-            for table_name in table_names:
-                connection.execute(
-                    text(f"DROP TABLE IF EXISTS `{table_name}`")
-                )
-        finally:
-            connection.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        for view_name in inspector.get_view_names():
+            connection.execute(text(f"DROP VIEW IF EXISTS `{view_name}`"))
+
+        for table_name in inspector.get_table_names():
+            connection.execute(text(f"DROP TABLE IF EXISTS `{table_name}`"))
 
     def restore_database_from_storage(
         self,
@@ -267,57 +298,52 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
             load_db_kwargs: Additional keyword arguments to pass to the
                 `load_database_data` method.
         """
-        if self.config.auth_mode == "password":
+        if self.config.can_manage_databases:
             self.create_database(drop=True)
 
         metadata = MetaData()
         with self.engine.begin() as connection:
-            if self.config.auth_mode == "aws_rds_iam":
-                self._drop_all_tables(connection)
+            # Foreign key checks are disabled for the entire restore: the dump
+            # orders tables topologically, but rows of self-referential tables
+            # and tables in cyclic dependencies cannot be ordered to satisfy
+            # their constraints. The dump was taken from a database that
+            # satisfied its constraints, so re-validating every row on the way
+            # back in adds failure modes without adding safety.
+            with self._foreign_key_checks_disabled(connection):
+                if not self.config.can_manage_databases:
+                    self._drop_all_tables(connection)
 
-            # read the DB information one JSON object at a time
-            self_references: dict[str, bool] = {}
-            for table_dump in self.load_database_data(**load_db_kwargs):
-                table_name = table_dump["table"]
-                if "create_stmt" in table_dump:
-                    # execute the table creation statement
-                    connection.execute(text(table_dump["create_stmt"]))
-                    # Reload the metadata for the table that was just created,
-                    # so its columns are available when inserting its rows
-                    metadata.reflect(bind=connection, only=[table_name])
-                    self_references[table_name] = table_dump.get(
-                        "self_references", False
-                    )
+                # read the DB information one JSON object at a time
+                for table_dump in self.load_database_data(**load_db_kwargs):
+                    table_name = table_dump["table"]
+                    if "create_stmt" in table_dump:
+                        # execute the table creation statement
+                        connection.execute(text(table_dump["create_stmt"]))
+                        # Reload the metadata for the table that was just
+                        # created, so its columns are available when inserting
+                        # its rows
+                        metadata.reflect(bind=connection, only=[table_name])
 
-                if "index_create_stmt" in table_dump:
-                    # execute the index creation statement
-                    connection.execute(text(table_dump["index_create_stmt"]))
+                    if "index_create_stmt" in table_dump:
+                        # execute the index creation statement
+                        connection.execute(
+                            text(table_dump["index_create_stmt"])
+                        )
 
-                if "data" in table_dump:
-                    # insert the data into the database
-                    table = metadata.tables[table_name]
-                    # If the table has self-referential foreign keys, we
-                    # need to disable the foreign key checks before inserting
-                    # the rows and re-enable them afterwards. This is because
-                    # the rows need to be inserted in the correct order to
-                    # satisfy the foreign key constraints and we don't sort
-                    # the rows by creation time in the backup.
-                    disable_fk_checks = self_references.get(table_name, False)
-                    if disable_fk_checks:
-                        connection.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-
-                    try:
+                    if "data" in table_dump:
+                        # insert the data into the database
+                        table = metadata.tables[table_name]
+                        # Blob columns are stored as strings in the dump
+                        bytes_columns = [
+                            column.name
+                            for column in table.columns
+                            if column.type.python_type is bytes
+                        ]
                         for row in table_dump["data"]:
-                            # Convert column values to the correct type
-                            for column in table.columns:
-                                # Blob columns are stored as binary strings
-                                if (
-                                    column.type.python_type is bytes
-                                    and isinstance(row[column.name], str)
-                                ):
-                                    # Convert the string to bytes
-                                    row[column.name] = bytes(
-                                        row[column.name], "utf-8"
+                            for column_name in bytes_columns:
+                                if isinstance(row[column_name], str):
+                                    row[column_name] = bytes(
+                                        row[column_name], "utf-8"
                                     )
 
                         # Insert the rows into the table in batches
@@ -327,14 +353,6 @@ class SQLAlchemyDatabaseBackupEngine(BaseDatabaseBackupEngine):
                                 table.insert().values(
                                     table_dump["data"][i : i + batch_size]
                                 )
-                            )
-                    finally:
-                        # Restore the foreign key checks even if the insert
-                        # failed: the connection is reused for the remaining
-                        # tables, which must be checked normally.
-                        if disable_fk_checks:
-                            connection.execute(
-                                text("SET FOREIGN_KEY_CHECKS = 1")
                             )
 
     @abstractmethod

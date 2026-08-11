@@ -249,6 +249,41 @@ def test_iam_ssl_ca_contents_are_accepted(ca_file: Path) -> None:
     assert isinstance(connect_args["ssl"], ssl.SSLContext)
 
 
+def test_iam_missing_ca_file_is_a_configuration_error(
+    ca_file: Path, tmp_path: Path
+) -> None:
+    """A CA path that vanished after validation raises a config error.
+
+    A configuration validated on one machine can reference a certificate path
+    that does not exist where it is later used; that must surface as an
+    actionable configuration error, not a raw `FileNotFoundError`.
+    """
+    ca_path = tmp_path / "rds-ca.pem"
+    ca_path.write_text(ca_file.read_text())
+    config = _iam_config(ca_path)
+    ca_path.unlink()
+
+    with pytest.raises(ValueError, match="ssl_ca"):
+        config.get_sqlalchemy_config()
+
+
+def test_iam_garbage_ca_contents_are_a_configuration_error(
+    tmp_path: Path,
+) -> None:
+    """A CA value that is not valid PEM raises a config error.
+
+    An `ssl_ca` value that is neither an existing file nor a certificate is
+    written to disk verbatim by the URL validator; loading it must surface as
+    an actionable configuration error, not a raw `ssl.SSLError`.
+    """
+    ca_path = tmp_path / "rds-ca.pem"
+    ca_path.write_text("not a certificate")
+    config = _iam_config(ca_path)
+
+    with pytest.raises(ValueError, match="ssl_ca"):
+        config.get_sqlalchemy_config()
+
+
 def test_iam_missing_sdk_has_actionable_error(
     ca_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -457,9 +492,14 @@ def test_iam_mode_explains_missing_schema_privileges(
     """
     config = _iam_config(ca_file)
     backup_engine = MagicMock()
+    backup_engine.is_mysql_access_denied_error = (
+        InMemoryDatabaseBackupEngine.is_mysql_access_denied_error
+    )
     backup_engine.database_exists.return_value = False
     denied = OperationalError(
-        "SELECT 1", {}, Exception("Access denied for user")
+        "SELECT 1",
+        {},
+        pymysql.err.OperationalError(1044, "Access denied for user"),
     )
     getattr(backup_engine, denied_on).side_effect = denied
     _patch_store_initialization(monkeypatch, backup_engine)
@@ -468,6 +508,34 @@ def test_iam_mode_explains_missing_schema_privileges(
         SqlZenStore(config=config)
 
     assert exc_info.value.__cause__ is denied
+
+
+def test_iam_mode_propagates_unrelated_database_errors(
+    ca_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """IAM mode does not misdiagnose connectivity failures as privileges.
+
+    Only `Access denied` answers mean the schema needs provisioning; an
+    unreachable host must surface as the original connection error instead of
+    a misleading instruction to re-provision an existing database.
+    """
+    config = _iam_config(ca_file)
+    backup_engine = MagicMock()
+    backup_engine.is_mysql_access_denied_error = (
+        InMemoryDatabaseBackupEngine.is_mysql_access_denied_error
+    )
+    unreachable = OperationalError(
+        "SELECT 1",
+        {},
+        pymysql.err.OperationalError(
+            2003, "Can't connect to MySQL server on 'db.example.com'"
+        ),
+    )
+    backup_engine.database_exists.side_effect = unreachable
+    _patch_store_initialization(monkeypatch, backup_engine)
+
+    with pytest.raises(OperationalError, match="Can't connect"):
+        SqlZenStore(config=config)
 
 
 def test_password_mode_propagates_database_errors(
@@ -564,13 +632,14 @@ def _executed_statements(connection: MagicMock) -> list[str]:
     ]
 
 
-def test_restore_drops_existing_tables_in_iam_mode(
+def test_restore_drops_existing_tables_and_views_in_iam_mode(
     ca_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """IAM restore clears the schema in place instead of recreating it."""
     backup, connection = _restore_backup_engine(_iam_config(ca_file))
     inspector = MagicMock()
     inspector.get_table_names.return_value = ["parent", "child"]
+    inspector.get_view_names.return_value = ["run_summary"]
     monkeypatch.setattr(
         "zenml.zen_stores.migrations.backup.sqlalchemy.inspect",
         MagicMock(return_value=inspector),
@@ -581,6 +650,7 @@ def test_restore_drops_existing_tables_in_iam_mode(
     backup.create_database.assert_not_called()
     assert _executed_statements(connection) == [
         "SET FOREIGN_KEY_CHECKS = 0",
+        "DROP VIEW IF EXISTS `run_summary`",
         "DROP TABLE IF EXISTS `parent`",
         "DROP TABLE IF EXISTS `child`",
         "SET FOREIGN_KEY_CHECKS = 1",
@@ -594,6 +664,7 @@ def test_restore_restores_foreign_key_checks_after_a_failed_drop(
     backup, connection = _restore_backup_engine(_iam_config(ca_file))
     inspector = MagicMock()
     inspector.get_table_names.return_value = ["parent"]
+    inspector.get_view_names.return_value = []
     monkeypatch.setattr(
         "zenml.zen_stores.migrations.backup.sqlalchemy.inspect",
         MagicMock(return_value=inspector),
@@ -608,6 +679,33 @@ def test_restore_restores_foreign_key_checks_after_a_failed_drop(
         backup.restore_database_from_storage()
 
     assert _executed_statements(connection)[-1] == "SET FOREIGN_KEY_CHECKS = 1"
+
+
+def test_restore_failure_survives_a_broken_connection(
+    ca_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Re-enabling foreign key checks never masks the original error.
+
+    When the connection died mid-restore, the follow-up
+    `SET FOREIGN_KEY_CHECKS = 1` fails too; the original failure must still
+    be the one that propagates.
+    """
+    backup, connection = _restore_backup_engine(_iam_config(ca_file))
+    inspector = MagicMock()
+    inspector.get_table_names.return_value = ["parent"]
+    inspector.get_view_names.return_value = []
+    monkeypatch.setattr(
+        "zenml.zen_stores.migrations.backup.sqlalchemy.inspect",
+        MagicMock(return_value=inspector),
+    )
+    connection.execute.side_effect = [
+        None,
+        Exception("server has gone away"),
+        Exception("connection is closed"),
+    ]
+
+    with pytest.raises(Exception, match="server has gone away"):
+        backup.restore_database_from_storage()
 
 
 def test_restore_recreates_the_database_in_password_mode(
@@ -627,4 +725,7 @@ def test_restore_recreates_the_database_in_password_mode(
 
     backup.create_database.assert_called_once_with(drop=True)
     inspect_mock.assert_not_called()
-    assert _executed_statements(connection) == []
+    assert _executed_statements(connection) == [
+        "SET FOREIGN_KEY_CHECKS = 0",
+        "SET FOREIGN_KEY_CHECKS = 1",
+    ]
