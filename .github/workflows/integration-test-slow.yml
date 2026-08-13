@@ -175,7 +175,7 @@ jobs:
         if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Restore uv cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
@@ -213,8 +213,11 @@ jobs:
           # docker-compose is deprecated and doesn't work with newer versions of docker
           uv pip install --system "pyyaml==5.3.1" "requests<2.32.0" "docker==6.1.3" docker-compose
       - name: Install MacOS System Dependencies
+        id: install_libomp
         if: runner.os=='macOS'
-        run: brew install libomp
+        run: |
+          brew install libomp
+          echo "library_path=$(brew --prefix libomp)/lib/libomp.dylib" >> "$GITHUB_OUTPUT"
       - name: Install kubectl on Linux
         run: |
           curl -LO "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
@@ -259,6 +262,9 @@ jobs:
           bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT}
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          # PyTorch bundles a libomp that crashes XGBoost if it is loaded first.
+          # Preload Homebrew's libomp so all native integrations use it instead.
+          PYTEST_DYLD_INSERT_LIBRARIES: ${{ steps.install_libomp.outputs.library_path }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24

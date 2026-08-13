@@ -46,7 +46,8 @@ def clean_requirements(requirements: List[str]) -> List[str]:
     cleaned = {}
     for req in requirements:
         package = (
-            req.split(">=")[0]
+            req.split(">")[0]
+            .split("!=")[0]
             .split("==")[0]
             .split("<")[0]
             .split("~=")[0]

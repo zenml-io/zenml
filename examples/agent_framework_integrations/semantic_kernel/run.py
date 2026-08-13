@@ -26,73 +26,63 @@ docker_settings = DockerSettings(
 def run_semantic_kernel_agent(
     query: str,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the Semantic Kernel agent and return results."""
+    """Execute the Semantic Kernel agent and return results.
+
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The query and generated response.
+    """
+
+    async def run_kernel_async() -> Any:
+        from semantic_kernel.connectors.ai.function_choice_behavior import (
+            FunctionChoiceBehavior,
+        )
+        from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.open_ai_prompt_execution_settings import (
+            OpenAIChatPromptExecutionSettings,
+        )
+        from semantic_kernel.contents.chat_history import ChatHistory
+
+        chat_service = kernel.get_service("openai-chat")
+        history = ChatHistory()
+        history.add_user_message(query)
+
+        settings = OpenAIChatPromptExecutionSettings()
+        settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+
+        response = await chat_service.get_chat_message_content(
+            chat_history=history,
+            settings=settings,
+            kernel=kernel,
+        )
+        return response.content
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
+        response = loop.run_until_complete(run_kernel_async())
+    finally:
+        loop.close()
 
-        async def run_kernel_async():
-            from semantic_kernel.connectors.ai.function_choice_behavior import (
-                FunctionChoiceBehavior,
-            )
-            from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.open_ai_prompt_execution_settings import (
-                OpenAIChatPromptExecutionSettings,
-            )
-            from semantic_kernel.contents.chat_history import ChatHistory
-
-            # Get the chat service
-            chat_service = kernel.get_service("openai-chat")
-
-            # Create chat history with user message
-            history = ChatHistory()
-            history.add_user_message(query)
-
-            # Configure settings to enable function calling
-            settings = OpenAIChatPromptExecutionSettings()
-            settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
-
-            # Execute the chat with the kernel
-            response = await chat_service.get_chat_message_content(
-                chat_history=history,
-                settings=settings,
-                kernel=kernel,
-            )
-
-            return response.content
-
-        # Run the async function
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            response = loop.run_until_complete(run_kernel_async())
-        finally:
-            loop.close()
-
-        return {"query": query, "response": response, "status": "success"}
-    except Exception as e:
-        return {
-            "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
-        }
+    return {"query": query, "response": response}
 
 
 @step
 def format_semantic_kernel_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the Semantic Kernel results into a readable summary."""
+    """Format the Semantic Kernel results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ SEMANTIC KERNEL AGENT ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🧠 SEMANTIC KERNEL RESPONSE
+    formatted = f"""🧠 SEMANTIC KERNEL RESPONSE
 {"=" * 40}
 
 Query: {query}

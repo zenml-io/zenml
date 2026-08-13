@@ -368,6 +368,7 @@ class UnScopedTriggerFilter(BaseFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "is_archived",
+        "flavor",
         "type",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
@@ -437,6 +438,12 @@ class UnScopedTriggerFilter(BaseFilter):
             )
             query = query.where(col(TriggerSchema.type).in_(type_checks))
 
+        if self.flavor is not None:
+            flavor_checks = (
+                self.flavor if isinstance(self.flavor, list) else [self.flavor]
+            )
+            query = query.where(col(TriggerSchema.flavor).in_(flavor_checks))
+
         return query
 
 
@@ -493,6 +500,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         """
         from sqlmodel import col
 
+        from zenml.utils import uuid_utils
         from zenml.zen_stores.schemas import (
             PipelineSnapshotSchema,
             TriggerSchema,
@@ -516,8 +524,14 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
                     if isinstance(self.pipeline_id, list)
                     else [self.pipeline_id]
                 )
+                normalized_pipeline_ids = [
+                    uuid_utils.to_uuid(pipeline_id)
+                    for pipeline_id in pipeline_ids
+                ]
                 query = query.where(
-                    col(PipelineSnapshotSchema.pipeline_id).in_(pipeline_ids)
+                    col(PipelineSnapshotSchema.pipeline_id).in_(
+                        normalized_pipeline_ids
+                    )
                 )
 
             if self.snapshot_id is not None:
@@ -526,8 +540,14 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
                     if isinstance(self.snapshot_id, list)
                     else [self.snapshot_id]
                 )
+                normalized_snapshot_ids = [
+                    uuid_utils.to_uuid(snapshot_id)
+                    for snapshot_id in snapshot_ids
+                ]
                 query = query.where(
-                    col(TriggerSnapshotSchema.snapshot_id).in_(snapshot_ids)
+                    col(TriggerSnapshotSchema.snapshot_id).in_(
+                        normalized_snapshot_ids
+                    )
                 )
 
         return query

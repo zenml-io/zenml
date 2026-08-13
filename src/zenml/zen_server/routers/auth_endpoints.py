@@ -548,6 +548,9 @@ def api_token(
 
         return generate_access_token(
             user_id=token.user_id,
+            # Keep the original API key and device token scopes.
+            api_key=auth_context.api_key,
+            device=auth_context.device,
             expires_in=expires_in,
             # Don't include the access token as a cookie in the response
             response=None,

@@ -55,6 +55,13 @@ from zenml.utils.package_utils import (
             ["package1==1.2.0"],
         ),
         (["package1", "package1~=1.0.0"], ["package1~=1.0.0"]),
+        (["package1", "package1>1.5.0"], ["package1>1.5.0"]),
+        (["package1", "package1!=1.5.0"], ["package1!=1.5.0"]),
+        (["package1", "package1<=2.0.0"], ["package1<=2.0.0"]),
+        (
+            ["package1>1.0.0", "package1!=1.5.0", "package2>2.0.0"],
+            ["package1!=1.5.0", "package2>2.0.0"],
+        ),
     ],
 )
 def test_clean_requirements(input_reqs, expected_output):
