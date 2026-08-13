@@ -245,6 +245,47 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
+#### Multi-pod command steps (distributed training)
+
+Command steps that own their own distributed launch (`torchrun`,
+prime-rl's entrypoints, Ray) can run across multiple pods by setting
+`pod_count`:
+
+```python
+from zenml import CommandStep
+from zenml.integrations.kubernetes.flavors import KubernetesStepOperatorSettings
+
+train = CommandStep(
+    command=[
+        "bash", "-lc",
+        "torchrun --nnodes=$ZENML_KUBERNETES_POD_COUNT "
+        "--node-rank=$JOB_COMPLETION_INDEX "
+        "--rdzv-backend=c10d "
+        "--rdzv-endpoint=$ZENML_KUBERNETES_MAIN_ADDRESS:$ZENML_KUBERNETES_MAIN_PORT "
+        "train.py",
+    ],
+    name="train",
+    step_operator="k8s",
+    settings={"step_operator": KubernetesStepOperatorSettings(pod_count=4)},
+)
+```
+
+The step becomes an indexed Kubernetes Job (`completions = parallelism
+= pod_count`) plus a headless service for stable pod-to-pod DNS.
+Every pod runs the step command with `ZENML_KUBERNETES_POD_COUNT`,
+`ZENML_KUBERNETES_MAIN_ADDRESS` (the DNS name of the pod with rank 0) and
+`ZENML_KUBERNETES_MAIN_PORT` set, and Kubernetes injects each pod's rank as
+`JOB_COMPLETION_INDEX`. All pods must exit 0 for the step to succeed.
+The service is owned by the Job, so cancellation, TTL cleanup, or
+deletion reap everything without depending on step code running.
+
+Set `pod_count` in the step settings, not the pipeline settings.
+Regular (non-command) steps are refused at `pod_count > 1`: they would
+duplicate their artifacts, outputs, and logs on every pod. The pods of
+a multi-pod job can start before the headless service exists, so the
+launcher must retry its rendezvous rather than resolve
+`ZENML_KUBERNETES_MAIN_ADDRESS` exactly once at startup (`torchrun` does).
+
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.

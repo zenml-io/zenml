@@ -17,6 +17,15 @@ ruff check $TESTS_EXAMPLES --extend-ignore D --extend-exclude "*.ipynb"
 
 pydoclint $SRC_NO_TESTS
 
+# autoflake replacement: checks for unused imports and variables
+ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
+
+ruff format $SRC  --check
+
+# check type annotations
+mypy $SRC_NO_TESTS
+
+
 # Flag checks for skipping optional linters
 SKIP_YAMLFIX=false
 SKIP_ZIZMOR=false
@@ -54,11 +63,3 @@ if [ "$SKIP_ZIZMOR" = false ] && [ -d ".github/workflows" ]; then
         echo "   Run: GH_TOKEN=\$(gh auth token) bash scripts/lint.sh"
     fi
 fi
-
-# autoflake replacement: checks for unused imports and variables
-ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
-
-ruff format $SRC  --check
-
-# check type annotations
-mypy $SRC_NO_TESTS

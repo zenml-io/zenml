@@ -8628,10 +8628,14 @@ class Client(metaclass=ClientMetaClass):
             # or fallback to the latest if not given
             return exact_name_matches.items[0]
 
-        partial_id_matches = list_method(
-            id=f"startswith:{name_id_or_prefix}",
-            hydrate=hydrate,
-        )
+        partial_id_list_kwargs: Dict[str, Any] = {
+            "id": f"startswith:{name_id_or_prefix}",
+            "hydrate": hydrate,
+        }
+        if project:
+            partial_id_list_kwargs["project"] = project
+
+        partial_id_matches = list_method(**partial_id_list_kwargs)
         if partial_id_matches.total == 1:
             if version:
                 logger.warning(
@@ -8687,23 +8691,36 @@ class Client(metaclass=ClientMetaClass):
                 or name.
         """
         list_method_args: Dict[str, Any] = {
-            "logical_operator": LogicalOperators.OR,
             "id": f"startswith:{partial_id_or_name}",
             "hydrate": hydrate,
             **kwargs,
         }
-        if allow_name_prefix_match:
-            list_method_args["name"] = f"startswith:{partial_id_or_name}"
-        scope = ""
+
         if project:
-            scope = f"in project {project} "
             list_method_args["project"] = project
 
-        entity = list_method(**list_method_args)
+        matching_entities: Dict[UUID, AnyResponse] = {}
 
-        # If only a single entity is found, return it.
-        if entity.total == 1:
-            return entity.items[0]
+        id_prefix_matches = list_method(**list_method_args)
+        for item in id_prefix_matches.items:
+            matching_entities[item.id] = item
+
+        if allow_name_prefix_match:
+            name_method_args: Dict[str, Any] = {
+                "name": f"startswith:{partial_id_or_name}",
+                "hydrate": hydrate,
+                **kwargs,
+            }
+            if project:
+                name_method_args["project"] = project
+
+            name_prefix_matches = list_method(**name_method_args)
+
+            for item in name_prefix_matches.items:
+                matching_entities[item.id] = item
+
+        if len(matching_entities) == 1:
+            return next(iter(matching_entities.values()))
 
         irregular_plurals = {"code_repository": "code_repositories"}
         entity_label = irregular_plurals.get(
@@ -8714,24 +8731,30 @@ class Client(metaclass=ClientMetaClass):
         prefix_description = (
             "a name/ID prefix" if allow_name_prefix_match else "an ID prefix"
         )
+
+        scope = ""
+        if project:
+            scope = f"in project {project} "
+
         # If no entity is found, raise an error.
-        if entity.total == 0:
+        if len(matching_entities) == 0:
             raise KeyError(
-                f"No {entity_label} have been found{scope} that have "
+                f"No {entity_label} have been found {scope} that have "
                 f"{prefix_description} that matches the provided string "
                 f"'{partial_id_or_name}'."
             )
 
         # If more than one entity is found, raise an error.
         ambiguous_entities: List[str] = []
-        for model in entity.items:
+        for model in matching_entities.values():
             model_name = getattr(model, "name", None)
             if model_name:
                 ambiguous_entities.append(f"{model_name}: {model.id}")
             else:
                 ambiguous_entities.append(str(model.id))
+
         raise ZenKeyError(
-            f"{entity.total} {entity_label} have been found{scope} that have "
+            f"{len(matching_entities)} {entity_label} have been found {scope} that have "
             f"{prefix_description} that matches the provided "
             f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
