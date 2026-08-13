@@ -8,14 +8,14 @@ Common patterns with the Kitaru Python SDK. For the complete reference, see [sdk
 
 ## Record an agent's runs
 
-Wrap an existing PydanticAI agent and every run is recorded as a session — each model call and tool call a node:
+Wrap an existing PydanticAI agent and every run is recorded as a session — each model call and tool call a node. Each adapter ships as its own distribution, installed alongside `kitaru` — here, `uv add kitaru-pydantic-ai`:
 
 ```python
 import os
 import uuid
 
 from pydantic_ai import Agent
-from kitaru.adapters.pydantic_ai import KitaruAgent
+from kitaru_pydantic_ai import KitaruAgent
 
 base_agent = Agent("openai:gpt-5.4", system_prompt="You resolve support tickets.")
 

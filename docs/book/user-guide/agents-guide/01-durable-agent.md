@@ -85,10 +85,10 @@ Each node is one model request or tool call with its inputs, outputs, and timing
 
 ## Recording natively instead
 
-If you'd rather record at the source than import, wrap the agent once and every run streams to Kitaru live as it happens:
+If you'd rather record at the source than import, wrap the agent once and every run streams to Kitaru live as it happens. The adapter ships as its own package (`uv add kitaru-pydantic-ai`):
 
 ```python
-from kitaru.adapters.pydantic_ai import KitaruAgent
+from kitaru_pydantic_ai import KitaruAgent
 
 agent = KitaruAgent(base_agent, agent_id=AGENT_ID)   # base_agent: your plain PydanticAI Agent
 ```
