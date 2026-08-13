@@ -93,15 +93,13 @@ Use `.with_options(parameters={...})` when you want to **explicitly mark** a val
 
 ```python
 # Explicitly mark 'query' as a parameter (not an artifact dependency)
-traverse_node_step = traverse_node.with_options(
-    parameters={"query": query}
-)
+traverse_node_step = traverse_node.with_options(parameters={"query": query})
 
 # Now call the step - doc_id creates a DAG edge, query is a parameter
 traverse_node_step(
     doc_id=seed_nodes.chunk(index=idx),  # Artifact chunk → DAG edge
-    budget=budget,                        # Plain value
-    visited=visited,                      # Plain value
+    budget=budget,  # Plain value
+    visited=visited,  # Plain value
 )
 ```
 

@@ -82,6 +82,7 @@ Open the run on the dashboard URL printed to stdout, or load the final answer pr
 
 ```python
 from zenml.client import Client
+
 run = Client().get_pipeline_run("<run-id-from-stdout>")
 print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 ```
