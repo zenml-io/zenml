@@ -81,38 +81,33 @@ crew = Crew(
 
 @step
 def run_crewai_agents(city: str) -> Annotated[Dict[str, Any], "crew_results"]:
-    """Execute the CrewAI crew and return results."""
-    try:
-        # Execute the crew with the city parameter
-        result = crew.kickoff(inputs={"city": city})
+    """Execute the CrewAI crew and return results.
 
-        # Convert result to dict for ZenML artifact storage
-        return {"city": city, "result": str(result), "status": "success"}
-    except Exception as e:
-        return {
-            "city": city,
-            "result": f"Crew execution error: {str(e)}",
-            "status": "error",
-        }
+    Args:
+        city: City for the travel plan.
+
+    Returns:
+        The city and generated travel plan.
+    """
+    result = crew.kickoff(inputs={"city": city})
+    return {"city": city, "result": str(result)}
 
 
 @step
 def format_travel_results(
     crew_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_results"]:
-    """Format the CrewAI results into a readable summary."""
+    """Format the CrewAI results into a readable summary.
+
+    Args:
+        crew_data: City and generated travel plan.
+
+    Returns:
+        The formatted travel plan.
+    """
     city = crew_data["city"]
     result = crew_data["result"]
-    status = crew_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ TRAVEL PLANNING ERROR FOR {city.upper()}
-{"=" * 50}
-
-{result}
-"""
-    else:
-        formatted = f"""✈️ TRAVEL PLANNING FOR {city.upper()}
+    formatted = f"""✈️ TRAVEL PLANNING FOR {city.upper()}
 {"=" * 50}
 
 {result}
