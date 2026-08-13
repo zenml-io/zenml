@@ -9,6 +9,7 @@ from zenml import (
     PlatformEventTriggerResponse,
     PlatformEventTriggerUpdate,
 )
+from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
@@ -20,14 +21,47 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    PipelineBuildRequest,
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
     ScheduleTriggerRequest,
     ScheduleTriggerUpdate,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+
+def _create_runnable_snapshot(
+    client: Client, pipeline_id: uuid.UUID
+) -> PipelineSnapshotResponse:
+    project_id = client.active_project.id
+    build = client.zen_store.create_build(
+        PipelineBuildRequest(
+            project=project_id,
+            pipeline=pipeline_id,
+            stack=client.active_stack.id,
+            images={},
+            is_local=False,
+            contains_code=True,
+        )
+    )
+    return client.zen_store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("trigger-filter-snapshot"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("trigger-filter-config")
+            ),
+            pipeline=pipeline_id,
+            stack=client.active_stack.id,
+            build=build.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            is_dynamic=False,
+        )
+    )
 
 
 def test_schedule_crud_happy_path(clean_client):
@@ -268,6 +302,56 @@ def test_snapshot_associations(clean_client):
             trigger_id=trigger_response.id,
             snapshot_id=snapshot.id,
         )
+
+
+def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
+    project_id = clean_client.active_project.id
+    store = clean_client.zen_store
+
+    first_pipeline = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-filter-pipeline"),
+            project=project_id,
+        )
+    )
+    second_pipeline = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-filter-pipeline"),
+            project=project_id,
+        )
+    )
+    snapshots = [
+        _create_runnable_snapshot(clean_client, first_pipeline.id),
+        _create_runnable_snapshot(clean_client, first_pipeline.id),
+        _create_runnable_snapshot(clean_client, second_pipeline.id),
+    ]
+    triggers = [
+        clean_client.create_schedule_trigger(
+            name=sample_name("trigger-filter"),
+            cron_expression="* * * * *",
+        )
+        for _ in snapshots
+    ]
+    for trigger, snapshot in zip(triggers, snapshots):
+        store.attach_trigger_to_snapshot(
+            trigger_id=trigger.id,
+            snapshot_id=snapshot.id,
+        )
+
+    pipeline_triggers = clean_client.list_schedule_triggers(
+        pipeline_id=str(first_pipeline.id)
+    )
+    snapshot_triggers = clean_client.list_schedule_triggers(
+        snapshot_id=str(snapshots[0].id)
+    )
+
+    assert {trigger.id for trigger in pipeline_triggers.items} == {
+        triggers[0].id,
+        triggers[1].id,
+    }
+    assert {trigger.id for trigger in snapshot_triggers.items} == {
+        triggers[0].id
+    }
 
 
 def test_run_associations(clean_client):
