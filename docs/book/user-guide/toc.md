@@ -45,15 +45,6 @@
     * [Evaluation for finetuning](llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
-* [Agents guide](agents-guide/README.md)
-  * [Record a durable agent](agents-guide/01-durable-agent.md)
-  * [Replay and improve](agents-guide/replay-and-improve.md)
-  * [Sandboxed commands](agents-guide/02-sandbox.md)
-  * [Skills](agents-guide/03-skills.md)
-  * [Credential proxy](agents-guide/04-credential-proxy.md)
-  * [Typed services](agents-guide/05-typed-services.md)
-  * [Human in the loop](agents-guide/06-hitl.md)
-  * [Production notes](agents-guide/production-notes.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 
