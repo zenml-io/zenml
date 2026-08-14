@@ -29,12 +29,14 @@ from zenml.zen_server import auth
 
 
 class _ApiKey:
-    def __init__(self):
+    def __init__(self, *, external_user_id=None):
         self.id = uuid4()
         self.name = "test-key"
         self.active = True
         self.service_account = SimpleNamespace(
-            active=True, external_user_id=None, name="test-service-account"
+            active=True,
+            external_user_id=external_user_id,
+            name="test-service-account",
         )
         self.verified_keys = []
 
@@ -124,6 +126,29 @@ def test_fetch_and_verify_api_key_allows_internal_skip(monkeypatch):
     assert store.updated_api_key_ids == [api_key.id]
 
 
+def test_fetch_and_verify_api_key_allows_adopted_service_account(monkeypatch):
+    """Ensure adopted service accounts retain their existing API keys."""
+    api_key = _ApiKey(external_user_id=uuid4())
+    store = _ZenStore(api_key)
+    warnings = []
+    monkeypatch.setattr(auth, "zen_store", lambda: store)
+    monkeypatch.setattr(
+        auth.logger, "warning", lambda message: warnings.append(message)
+    )
+
+    result = auth._fetch_and_verify_api_key(
+        api_key_id=api_key.id, key_to_verify="valid"
+    )
+
+    assert result is api_key
+    assert api_key.verified_keys == ["valid"]
+    assert store.updated_api_key_ids == [api_key.id]
+    assert warnings == [
+        "Authentication warning: using an API key associated with an external "
+        "service account to authenticate to the ZenML server"
+    ]
+
+
 def test_authenticate_api_key_keeps_pro_api_key_flow(monkeypatch):
     """Ensure ZenML Pro API keys continue through external authentication."""
     user = _user_model()
@@ -185,20 +210,46 @@ def test_authenticate_api_key_allows_local_keys_for_external_auth(
     ]
 
 
-def test_authenticate_credentials_rejects_local_service_account_token_for_external_auth(
+def test_authenticate_credentials_allows_local_service_account_token_for_external_auth(
     monkeypatch,
 ):
-    """Ensure external auth rejects JWTs for local service accounts."""
+    """Ensure server-issued JWTs work for local service accounts."""
     user = _user_model(is_service_account=True)
-    decoded_token = SimpleNamespace(
-        session_id=None,
+    decoded_token = auth.JWTToken(
         user_id=user.id,
         issued_at=datetime.utcnow(),
-        api_key_id=None,
-        api_key_generation=None,
-        device_id=None,
-        schedule_id=None,
-        pipeline_run_id=None,
+    )
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+
+    auth_context = auth.authenticate_credentials(access_token="access-token")
+
+    assert auth_context.user is user
+    assert auth_context.api_key is None
+
+
+def test_authenticate_credentials_rejects_local_user_token_for_external_auth(
+    monkeypatch,
+):
+    """Ensure external auth still rejects JWTs for local user accounts."""
+    user = _user_model()
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
     )
 
     class Store:
