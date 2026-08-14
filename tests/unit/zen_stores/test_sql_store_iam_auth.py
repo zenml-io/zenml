@@ -50,17 +50,20 @@ requires_aws_sdk = pytest.mark.skipif(
 )
 
 
-def _iam_config(ca_file: Path, **kwargs: object) -> SqlZenStoreConfiguration:
+def _iam_config(
+    ca_file: Path | None = None, **kwargs: object
+) -> SqlZenStoreConfiguration:
     values = {
         "url": "mysql://db.example.com:3306/zenml0123456789abcdef0123456789abcdef",
         "username": "ws_abcdefghijklmnopqrstuvwxyz",
         "auth_mode": "aws_rds_iam",
         "aws_region": "eu-central-1",
         "ssl": True,
-        "ssl_ca": str(ca_file),
         "ssl_verify_server_cert": True,
         "backup_strategy": DatabaseBackupStrategy.IN_MEMORY,
     }
+    if ca_file:
+        values["ssl_ca"] = str(ca_file)
     values.update(kwargs)
     return SqlZenStoreConfiguration(**values)
 
@@ -81,7 +84,6 @@ def ca_file() -> Path:
         ({"password": "secret"}, "password"),
         ({"ssl": False}, "ssl=true"),
         ({"ssl_verify_server_cert": False}, "ssl_verify_server_cert=true"),
-        ({"ssl_ca": None}, "explicit `ssl_ca`"),
     ],
 )
 def test_iam_configuration_rejects_unsafe_settings(
@@ -188,9 +190,9 @@ def test_password_ssl_with_ca_requires_certificate(ca_file: Path) -> None:
     assert not context.verify_flags & ssl.VERIFY_X509_STRICT
 
 
-def test_iam_connect_args_use_verified_ssl_context(ca_file: Path) -> None:
-    """MySQL connect args use a pre-built, verified SSLContext."""
-    config = _iam_config(ca_file)
+def test_iam_connect_args_use_verified_system_ssl_context() -> None:
+    """IAM connections use verified system trust when no CA is configured."""
+    config = _iam_config()
 
     _, connect_args, _ = config.get_sqlalchemy_config()
 

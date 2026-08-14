@@ -649,9 +649,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         username: The database username.
         password: The database password.
         ssl: Whether to use SSL.
-        ssl_ca: certificate authority certificate. Required for SSL
-            enabled authentication if the CA certificate is not part of the
-            certificates shipped by the operating system.
+        ssl_ca: Optional certificate authority certificate. The operating
+            system trust store is used when this is not set.
         ssl_cert: client certificate. Required for SSL enabled
             authentication if client certificates are used.
         ssl_key: client certificate private key. Required for SSL
@@ -992,10 +991,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "The `aws_region` attribute must be set when `auth_mode` is "
                 "`aws_rds_iam`."
             )
-        if not self.ssl or not self.ssl_verify_server_cert or not self.ssl_ca:
+        if not self.ssl or not self.ssl_verify_server_cert:
             raise ValueError(
                 "AWS RDS IAM authentication requires `ssl=true`, "
-                "`ssl_verify_server_cert=true`, and an explicit `ssl_ca`."
+                "and `ssl_verify_server_cert=true`."
             )
 
         self.validate_backup_strategy(self.backup_strategy)
@@ -1157,14 +1156,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
             if self.ssl:
                 if self.auth_mode == "aws_rds_iam":
-                    assert self.ssl_ca is not None
                     try:
-                        # Passing `cafile` here is what pins trust to the RDS
-                        # CA: calling `create_default_context()` without it
-                        # loads the whole system trust store, which would let
-                        # any publicly trusted CA vouch for the database host.
+                        ca_file = (
+                            self.ssl_ca.get_secret_value()
+                            if self.ssl_ca
+                            else None
+                        )
                         ssl_context = ssl.create_default_context(
-                            cafile=self.ssl_ca.get_secret_value()
+                            cafile=ca_file
                         )
                         ssl_context.check_hostname = True
                         ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -1185,16 +1184,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                             )
                     except OSError as error:
                         # `ssl.SSLError` is an `OSError` subclass: this covers
-                        # both an unreadable certificate path and file contents
-                        # that are not valid PEM. Unlike password mode, IAM
-                        # mode cannot fall back to connecting without the CA,
-                        # so a broken certificate is a configuration error.
+                        # both an unavailable system trust store and explicit
+                        # certificate values that cannot be loaded.
                         raise ValueError(
-                            "Failed to load the SSL certificates configured "
-                            "for AWS RDS IAM authentication (`ssl_ca`, "
-                            "`ssl_cert`, `ssl_key`): ensure that each value "
-                            "is a readable file path or a valid PEM "
-                            f"certificate: {error}"
+                            "Failed to initialize TLS for AWS RDS IAM "
+                            "authentication: ensure the system trust store "
+                            "is available and any configured `ssl_ca`, "
+                            "`ssl_cert`, and `ssl_key` values are readable "
+                            f"and valid: {error}"
                         ) from error
                     sqlalchemy_connect_args["ssl"] = ssl_context
                 else:
