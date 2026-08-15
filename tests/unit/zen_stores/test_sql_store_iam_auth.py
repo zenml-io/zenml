@@ -16,7 +16,6 @@
 import builtins
 import ssl
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, call
 
@@ -58,6 +57,7 @@ def _iam_config(**kwargs: object) -> SqlZenStoreConfiguration:
         ({"password": "secret"}, "password"),
         ({"ssl": False}, "ssl=true"),
         ({"ssl_verify_server_cert": False}, "ssl_verify_server_cert=true"),
+        ({"ssl_ca": "unused"}, "operating system trust store"),
     ],
 )
 def test_iam_configuration_rejects_unsafe_settings(
@@ -86,18 +86,6 @@ def test_iam_connections_use_verified_system_trust() -> None:
     assert isinstance(context, ssl.SSLContext)
     assert context.verify_mode == ssl.CERT_REQUIRED
     assert context.check_hostname is True
-
-
-def test_inline_ca_is_materialized_and_loaded() -> None:
-    """An inline CA bundle remains usable after configuration validation."""
-    ca_file = ssl.get_default_verify_paths().cafile
-    if ca_file is None:
-        pytest.skip("The test environment has no default CA bundle.")
-
-    config = _iam_config(ssl_ca=Path(ca_file).read_text())
-    _, connect_args, _ = config.get_sqlalchemy_config()
-
-    assert isinstance(connect_args["ssl"], ssl.SSLContext)
 
 
 def test_missing_aws_sdk_has_an_actionable_error(

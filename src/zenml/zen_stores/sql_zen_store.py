@@ -641,8 +641,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         username: The database username.
         password: The database password.
         ssl: Whether to use SSL.
-        ssl_ca: Optional certificate authority certificate. IAM authentication
-            uses the operating system trust store when this is not set.
+        ssl_ca: Optional certificate authority certificate.
         ssl_cert: client certificate. Required for SSL enabled
             authentication if client certificates are used.
         ssl_key: client certificate private key. Required for SSL
@@ -923,6 +922,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     f"rules ({regexp}): {database}"
                 )
 
+            if self.auth_mode == "aws_rds_iam" and (
+                self.ssl_ca or self.ssl_cert or self.ssl_key
+            ):
+                raise ValueError(
+                    "AWS RDS IAM authentication uses the operating system "
+                    "trust store and does not accept `ssl_ca`, `ssl_cert`, "
+                    "or `ssl_key`."
+                )
+
             # Save the certificates in a secure location on disk
             secret_folder = Path(
                 GlobalConfiguration().local_stores_path,
@@ -983,7 +991,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "AWS RDS IAM authentication requires `ssl=true`, "
                 "and `ssl_verify_server_cert=true`."
             )
-
         return self
 
     def configure_engine_auth(self, engine: Engine) -> None:
@@ -1096,23 +1103,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     )
 
                     sqlalchemy_connect_args["ssl"] = (
-                        create_verified_ssl_context(
-                            ca_file=(
-                                self.ssl_ca.get_secret_value()
-                                if self.ssl_ca
-                                else None
-                            ),
-                            cert_file=(
-                                self.ssl_cert.get_secret_value()
-                                if self.ssl_cert
-                                else None
-                            ),
-                            key_file=(
-                                self.ssl_key.get_secret_value()
-                                if self.ssl_key
-                                else None
-                            ),
-                        )
+                        create_verified_ssl_context()
                     )
                 else:
                     sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}

@@ -42,17 +42,8 @@ class TLSRequiredMySQLConnection(pymysql.Connection):
         return super()._request_authentication()  # type: ignore[misc]
 
 
-def create_verified_ssl_context(
-    ca_file: str | None = None,
-    cert_file: str | None = None,
-    key_file: str | None = None,
-) -> ssl.SSLContext:
+def create_verified_ssl_context() -> ssl.SSLContext:
     """Create the verified TLS context used for RDS IAM authentication.
-
-    Args:
-        ca_file: Optional custom CA bundle. System trust is used by default.
-        cert_file: Optional client certificate.
-        key_file: Optional client certificate key.
 
     Returns:
         A TLS context that verifies the certificate and hostname.
@@ -61,19 +52,11 @@ def create_verified_ssl_context(
         ValueError: If the TLS context cannot be initialized.
     """
     try:
-        context = ssl.create_default_context(cafile=ca_file)
-        context.check_hostname = True
-        context.verify_mode = ssl.CERT_REQUIRED
-        # Match PyMySQL's compatibility behavior for RDS CA certificates while
-        # preserving certificate-chain and hostname verification.
-        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-        if cert_file:
-            context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+        return ssl.create_default_context()
     except OSError as error:
         raise ValueError(
             f"Failed to initialize TLS for AWS RDS IAM authentication: {error}"
         ) from error
-    return context
 
 
 def configure_rds_iam_authentication(engine: Engine, region: str) -> None:
