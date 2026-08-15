@@ -121,27 +121,6 @@ class BaseDatabaseBackupEngine(ABC):
         error_code = cast(int, error.orig.args[0])
         return error_code == BAD_DB_ERROR
 
-    @classmethod
-    def is_mysql_access_denied_error(cls, error: OperationalError) -> bool:
-        """Checks if the given error is due to denied MySQL privileges.
-
-        Args:
-            error: The error to check.
-
-        Returns:
-            If the error is a MySQL access-denied error.
-        """
-        from pymysql.constants.ER import (
-            ACCESS_DENIED_ERROR,
-            DBACCESS_DENIED_ERROR,
-        )
-
-        if not isinstance(error.orig, pymysql.err.OperationalError):
-            return False
-
-        error_code = cast(int, error.orig.args[0])
-        return error_code in (ACCESS_DENIED_ERROR, DBACCESS_DENIED_ERROR)
-
     def database_exists(
         self,
         database: str | None = None,

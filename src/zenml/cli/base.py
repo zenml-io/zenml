@@ -17,7 +17,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
 import click
 from packaging import version
@@ -52,11 +52,6 @@ from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.package_utils import get_package_information
 from zenml.utils.server_utils import get_local_server
 from zenml.utils.yaml_utils import write_yaml
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.migrations.backup.base import (
-        BaseDatabaseBackupEngine,
-    )
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -713,44 +708,6 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         )
 
 
-def _initialize_backup_engine(
-    strategy: Optional[str],
-    location: Optional[str],
-) -> "BaseDatabaseBackupEngine":
-    """Create the SQL store and its database backup engine.
-
-    Store creation connects to the database and the backup engine validates
-    the backup strategy, so configuration and connectivity failures from
-    either step are surfaced as styled CLI errors instead of raw tracebacks.
-
-    Args:
-        strategy: Custom backup strategy to use. If not set, the strategy
-            configured in the store config is used.
-        location: Custom backup location. If not set, the location configured
-            in the store config is used.
-
-    Returns:
-        The initialized database backup engine.
-    """
-    from sqlalchemy.exc import OperationalError
-
-    from zenml.zen_stores.base_zen_store import BaseZenStore
-    from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-    store_config = GlobalConfiguration().store_configuration
-    try:
-        store = BaseZenStore.create_store(
-            store_config, skip_default_registrations=True, skip_migrations=True
-        )
-        assert isinstance(store, SqlZenStore)
-        return store.initialize_database_backup_engine(
-            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
-            location=location,
-        )
-    except (ValueError, RuntimeError, OperationalError) as e:
-        cli_utils.error(str(e))
-
-
 @cli.command("backup-database", help="Create a database backup.", hidden=True)
 @click.option(
     "--strategy",
@@ -792,9 +749,19 @@ def backup_database(
             be a local path or a database name.
         overwrite: Whether to overwrite the existing backup.
     """
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
     store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
-        backup_engine = _initialize_backup_engine(strategy, location)
+        store = BaseZenStore.create_store(
+            store_config, skip_default_registrations=True, skip_migrations=True
+        )
+        assert isinstance(store, SqlZenStore)
+        backup_engine = store.initialize_database_backup_engine(
+            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
+            location=location,
+        )
         backup_engine.backup_database(overwrite=overwrite)
         cli_utils.declare(
             f"Database was backed up to {backup_engine.backup_location}."
@@ -848,9 +815,19 @@ def restore_database(
             strategy, this can be a local path or a database name.
         cleanup: Whether to cleanup the backup after restoring.
     """
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
     store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
-        backup_engine = _initialize_backup_engine(strategy, location)
+        store = BaseZenStore.create_store(
+            store_config, skip_default_registrations=True, skip_migrations=True
+        )
+        assert isinstance(store, SqlZenStore)
+        backup_engine = store.initialize_database_backup_engine(
+            strategy=DatabaseBackupStrategy(strategy) if strategy else None,
+            location=location,
+        )
         backup_engine.restore_database(cleanup=cleanup)
         cli_utils.declare(
             f"Database was restored from {backup_engine.backup_location}."

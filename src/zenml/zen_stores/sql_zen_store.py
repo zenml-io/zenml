@@ -43,7 +43,6 @@ import math
 import os
 import random
 import re
-import ssl
 import sys
 import time
 import uuid
@@ -79,7 +78,6 @@ from packaging import version
 from pydantic import (
     ConfigDict,
     Field,
-    PrivateAttr,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -92,11 +90,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import (
-    ArgumentError,
-    IntegrityError,
-    OperationalError,
-)
+from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import (
     Mapped,
     load_only,
@@ -485,8 +479,6 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
-    from zenml.zen_stores.rds_iam import RDSIAMAuthenticator
-
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -649,8 +641,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         username: The database username.
         password: The database password.
         ssl: Whether to use SSL.
-        ssl_ca: Optional certificate authority certificate. The operating
-            system trust store is used when this is not set.
+        ssl_ca: Optional certificate authority certificate. IAM authentication
+            uses the operating system trust store when this is not set.
         ssl_cert: client certificate. Required for SSL enabled
             authentication if client certificates are used.
         ssl_key: client certificate private key. Required for SSL
@@ -705,10 +697,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     mydumper_extra_args: Optional[List[str]] = None
     myloader_threads: Optional[int] = None
     myloader_extra_args: Optional[List[str]] = None
-
-    _rds_iam_authenticator: Optional["RDSIAMAuthenticator"] = PrivateAttr(
-        default=None
-    )
 
     @field_validator("secrets_store")
     @classmethod
@@ -971,8 +959,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             The validated configuration.
 
         Raises:
-            ValueError: If RDS IAM authentication is configured unsafely or with
-                an incompatible backup strategy.
+            ValueError: If RDS IAM authentication is configured unsafely.
         """
         if self.auth_mode != "aws_rds_iam":
             return self
@@ -997,64 +984,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "and `ssl_verify_server_cert=true`."
             )
 
-        self.validate_backup_strategy(self.backup_strategy)
-
         return self
-
-    def validate_backup_strategy(
-        self, strategy: DatabaseBackupStrategy
-    ) -> None:
-        """Validate that a backup strategy is compatible with authentication.
-
-        Args:
-            strategy: Effective database backup strategy.
-
-        Raises:
-            ValueError: If the strategy requires privileges unavailable to IAM
-                workspace users.
-        """
-        incompatible_strategies = {
-            DatabaseBackupStrategy.DATABASE,
-            DatabaseBackupStrategy.MYDUMPER,
-            DatabaseBackupStrategy.CUSTOM,
-        }
-        if (
-            self.auth_mode == "aws_rds_iam"
-            and strategy in incompatible_strategies
-        ):
-            raise ValueError(
-                f"Backup strategy `{strategy.value}` is not supported with "
-                "AWS RDS IAM authentication. Use `disabled`, `in-memory`, or "
-                "`dump-file`."
-            )
-
-    @property
-    def can_manage_databases(self) -> bool:
-        """Whether the database user may drop and create whole databases.
-
-        IAM workspace users are typically granted privileges on a single
-        schema only, so operations like `DROP DATABASE` / `CREATE DATABASE`
-        are refused for them and callers must fall back to working within
-        the configured schema.
-
-        Returns:
-            Whether the database user may drop and create databases.
-        """
-        return self.auth_mode != "aws_rds_iam"
-
-    @property
-    def rds_iam_authenticator(self) -> "RDSIAMAuthenticator":
-        """The RDS IAM authenticator shared by all engines of this config.
-
-        Returns:
-            The RDS IAM authenticator.
-        """
-        from zenml.zen_stores.rds_iam import RDSIAMAuthenticator
-
-        if self._rds_iam_authenticator is None:
-            assert self.aws_region is not None
-            self._rds_iam_authenticator = RDSIAMAuthenticator(self.aws_region)
-        return self._rds_iam_authenticator
 
     def configure_engine_auth(self, engine: Engine) -> None:
         """Configure per-connection authentication for an SQLAlchemy engine.
@@ -1065,7 +995,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         if self.auth_mode != "aws_rds_iam":
             return
 
-        self.rds_iam_authenticator.register(engine)
+        from zenml.zen_stores.rds_iam import (
+            configure_rds_iam_authentication,
+        )
+
+        assert self.aws_region is not None
+        configure_rds_iam_authentication(engine, self.aws_region)
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -1156,44 +1091,29 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
             if self.ssl:
                 if self.auth_mode == "aws_rds_iam":
-                    try:
-                        ca_file = (
-                            self.ssl_ca.get_secret_value()
-                            if self.ssl_ca
-                            else None
+                    from zenml.zen_stores.rds_iam import (
+                        create_verified_ssl_context,
+                    )
+
+                    sqlalchemy_connect_args["ssl"] = (
+                        create_verified_ssl_context(
+                            ca_file=(
+                                self.ssl_ca.get_secret_value()
+                                if self.ssl_ca
+                                else None
+                            ),
+                            cert_file=(
+                                self.ssl_cert.get_secret_value()
+                                if self.ssl_cert
+                                else None
+                            ),
+                            key_file=(
+                                self.ssl_key.get_secret_value()
+                                if self.ssl_key
+                                else None
+                            ),
                         )
-                        ssl_context = ssl.create_default_context(
-                            cafile=ca_file
-                        )
-                        ssl_context.check_hostname = True
-                        ssl_context.verify_mode = ssl.CERT_REQUIRED
-                        # RDS CA certificates are hostname-valid and trusted
-                        # but do not satisfy OpenSSL 3's optional RFC 5280
-                        # strict profile. Keep chain and hostname verification
-                        # while matching the compatibility behavior used by
-                        # PyMySQL itself.
-                        ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-                        if self.ssl_cert:
-                            ssl_context.load_cert_chain(
-                                certfile=self.ssl_cert.get_secret_value(),
-                                keyfile=(
-                                    self.ssl_key.get_secret_value()
-                                    if self.ssl_key
-                                    else None
-                                ),
-                            )
-                    except OSError as error:
-                        # `ssl.SSLError` is an `OSError` subclass: this covers
-                        # both an unavailable system trust store and explicit
-                        # certificate values that cannot be loaded.
-                        raise ValueError(
-                            "Failed to initialize TLS for AWS RDS IAM "
-                            "authentication: ensure the system trust store "
-                            "is available and any configured `ssl_ca`, "
-                            "`ssl_cert`, and `ssl_key` values are readable "
-                            f"and valid: {error}"
-                        ) from error
-                    sqlalchemy_connect_args["ssl"] = ssl_context
+                    )
                 else:
                     sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
                     for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
@@ -1637,15 +1557,16 @@ class SqlZenStore(BaseZenStore):
         ):
             fileio.makedirs(os.path.dirname(self.config.database))
 
-        # MySQL: We might need to create the database manually. The backup
-        # engine's master engine connects without a default database so it can
-        # create the configured database before the primary engine uses it.
+        # MySQL: We might need to create the database manually.
+        # To do so, we create a new engine that connects to the `mysql` database
+        # and then create the desired database.
         # See https://stackoverflow.com/a/8977109
         if (
             self.config.driver == SQLDatabaseDriver.MYSQL
             and self.config.database
         ):
-            self._create_database_if_missing()
+            if not self.db_backup_engine.database_exists():
+                self.db_backup_engine.create_database()
 
         self._alembic = Alembic(self.engine)
 
@@ -1702,41 +1623,6 @@ class SqlZenStore(BaseZenStore):
                 self._backup_secrets_store.config
             )
 
-    def _create_database_if_missing(self) -> None:
-        """Create the configured MySQL database if it does not exist yet.
-
-        Raises:
-            RuntimeError: If accessing or creating the database is refused for
-                lack of privileges with the configured IAM credentials.
-            OperationalError: If the database could not be reached, in any
-                authentication mode.
-        """
-        try:
-            if not self.db_backup_engine.database_exists():
-                self.db_backup_engine.create_database()
-        except OperationalError as error:
-            # Only rewrite errors that MySQL reports as denied privileges:
-            # anything else (unreachable host, timeouts, ...) is unrelated to
-            # provisioning and must surface as-is.
-            if (
-                self.config.auth_mode != "aws_rds_iam"
-                or not self.db_backup_engine.is_mysql_access_denied_error(
-                    error
-                )
-            ):
-                raise
-            # IAM workspace users are typically granted privileges on their own
-            # schema only, so both probing for and creating the database can be
-            # refused outright. The raw `Access denied` traceback gives no hint
-            # about what an operator is expected to do about it.
-            raise RuntimeError(
-                f"Failed to access or create database "
-                f"`{self.config.database}` with AWS RDS IAM authentication. "
-                "IAM workspace users are usually scoped to a single schema and "
-                "cannot create databases, so the database must be provisioned "
-                "and granted to the user before starting the server."
-            ) from error
-
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
         if self._default_project_enabled:
@@ -1772,7 +1658,14 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the backup strategy or arguments are invalid.
         """
         strategy = strategy or self.config.backup_strategy
-        self.config.validate_backup_strategy(strategy)
+        if self.config.auth_mode == "aws_rds_iam" and strategy in {
+            DatabaseBackupStrategy.DATABASE,
+            DatabaseBackupStrategy.MYDUMPER,
+        }:
+            raise ValueError(
+                f"Backup strategy `{strategy.value}` is not supported with "
+                "AWS RDS IAM authentication."
+            )
 
         backup_engine_class: Type[BaseDatabaseBackupEngine]
 
