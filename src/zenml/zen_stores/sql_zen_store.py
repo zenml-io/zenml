@@ -1048,7 +1048,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
         Raises:
             NotImplementedError: If the SQL driver is not supported.
-            ValueError: If the configured SSL certificates cannot be loaded.
         """
         sql_url = make_url(self.url)
         sqlalchemy_connect_args: Dict[str, Any] = {}
