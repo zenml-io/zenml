@@ -629,6 +629,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         auth_mode: The database authentication mode.
         aws_region: The AWS region used to generate RDS IAM authentication
             tokens.
+        aws_rds_iam_role_arn: Optional web-identity role used only for RDS IAM
+            authentication.
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
@@ -670,6 +672,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     password: Optional[PlainSerializedSecretStr] = None
     auth_mode: Literal["password", "aws_rds_iam"] = "password"  # ggignore
     aws_region: Optional[str] = None
+    aws_rds_iam_role_arn: Optional[str] = None
     ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
@@ -1007,7 +1010,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         )
 
         assert self.aws_region is not None
-        configure_rds_iam_authentication(engine, self.aws_region)
+        configure_rds_iam_authentication(
+            engine,
+            self.aws_region,
+            role_arn=self.aws_rds_iam_role_arn,
+        )
 
     @staticmethod
     def get_local_url(path: str) -> str:

@@ -13,6 +13,7 @@
 # permissions and limitations under the License.
 """AWS RDS IAM authentication for MySQL database connections."""
 
+import os
 import ssl
 from typing import Any
 
@@ -59,15 +60,19 @@ def create_verified_ssl_context() -> ssl.SSLContext:
         ) from error
 
 
-def configure_rds_iam_authentication(engine: Engine, region: str) -> None:
-    """Generate a fresh IAM token for every physical engine connection.
+def _create_rds_client(region: str, role_arn: str | None) -> Any:
+    """Create an RDS client with automatically refreshed credentials.
 
     Args:
-        engine: SQLAlchemy engine to configure.
         region: AWS region of the database.
+        role_arn: Optional role assumed directly with the pod's web identity.
+
+    Returns:
+        A boto3 RDS client.
 
     Raises:
         ImportError: If the optional AWS SDK dependency is not installed.
+        ValueError: If a role is configured without a projected identity token.
     """
     try:
         import boto3
@@ -78,7 +83,60 @@ def configure_rds_iam_authentication(engine: Engine, region: str) -> None:
             "`pip install 'zenml[aws-rds-iam]'`."
         ) from error
 
-    client = boto3.client("rds", region_name=region)
+    if not role_arn:
+        return boto3.client("rds", region_name=region)
+
+    token_file = os.getenv("AWS_WEB_IDENTITY_TOKEN_FILE")
+    if not token_file:
+        raise ValueError(
+            "AWS RDS IAM role authentication requires the projected web "
+            "identity token path in `AWS_WEB_IDENTITY_TOKEN_FILE`."
+        )
+
+    from botocore.credentials import (
+        AssumeRoleWithWebIdentityProvider,
+        CredentialResolver,
+    )
+    from botocore.session import Session as BotocoreSession
+
+    profile_name = "zenml-rds-iam"
+    botocore_session = BotocoreSession()
+    provider = AssumeRoleWithWebIdentityProvider(
+        load_config=lambda: {
+            "profiles": {
+                profile_name: {
+                    "role_arn": role_arn,
+                    "role_session_name": "zenml-rds-iam",
+                    "web_identity_token_file": token_file,
+                }
+            }
+        },
+        client_creator=botocore_session.create_client,
+        profile_name=profile_name,
+        disable_env_vars=True,
+    )
+    botocore_session.register_component(
+        "credential_provider", CredentialResolver([provider])
+    )
+    return boto3.Session(
+        botocore_session=botocore_session,
+        region_name=region,
+    ).client("rds")
+
+
+def configure_rds_iam_authentication(
+    engine: Engine,
+    region: str,
+    role_arn: str | None = None,
+) -> None:
+    """Generate a fresh IAM token for every physical engine connection.
+
+    Args:
+        engine: SQLAlchemy engine to configure.
+        region: AWS region of the database.
+        role_arn: Optional role assumed directly with the pod's web identity.
+    """
+    client = _create_rds_client(region, role_arn)
 
     @event.listens_for(engine.dialect, "do_connect")
     def _connect_with_iam_token(

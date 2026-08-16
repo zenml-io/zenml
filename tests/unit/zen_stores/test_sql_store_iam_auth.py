@@ -146,6 +146,26 @@ def test_each_connection_gets_a_fresh_token_for_its_target(
     assert connect.call_count == 2
 
 
+def test_dedicated_database_role_is_used_for_iam_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """IAM token generation uses the configured database-only role."""
+    client = MagicMock()
+    create_client = MagicMock(return_value=client)
+    monkeypatch.setattr(
+        "zenml.zen_stores.rds_iam._create_rds_client", create_client
+    )
+    engine = create_engine("mysql+pymysql://user@db.example.com/db")
+
+    _iam_config(
+        aws_rds_iam_role_arn="arn:aws:iam::123456789012:role/workspace-db"
+    ).configure_engine_auth(engine)
+
+    create_client.assert_called_once_with(
+        "eu-central-1", "arn:aws:iam::123456789012:role/workspace-db"
+    )
+
+
 def test_connection_refuses_to_authenticate_without_tls() -> None:
     """The IAM token is not sent when the server does not negotiate TLS."""
     connection = MagicMock(spec=TLSRequiredMySQLConnection)
