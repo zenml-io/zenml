@@ -29,6 +29,7 @@
 #  permissions and limitations under the License.
 """Implementation of the VertexAI orchestrator."""
 
+import hashlib
 import os
 import re
 import types
@@ -111,6 +112,7 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
 from zenml.utils.io_utils import get_global_config_directory
+from zenml.utils.string_utils import append_random_suffix
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -126,6 +128,23 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
 STEP_JOB_NAME_METADATA_KEY = "job_name"
+
+
+def sanitize_vertex_job_name(job_name: str) -> str:
+    """Sanitizes the Vertex AI job name to comply with GCP requirements."""
+    job_name = job_name.lower()
+    job_name = job_name.replace("_", "-").replace(" ", "-")
+    job_name = re.sub(r"[^a-z0-9\-]", "", job_name)
+    
+    if not job_name or not job_name[0].isalpha():
+        job_name = f"j-{job_name}"
+
+    return append_random_suffix(
+        original_string=job_name,
+        suffix_length=5,
+        max_length=64,
+        separator="-"
+    )
 
 
 def _clean_pipeline_name(pipeline_name: str) -> str:
@@ -529,7 +548,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 step_name_to_dynamic_component[step_name] = component
 
             @dsl.pipeline(  # type: ignore[misc]
-                display_name=orchestrator_run_name,
+                display_name=sanitize_vertex_job_name(orchestrator_run_name),
             )
             def dynamic_pipeline() -> None:
                 """Dynamic pipeline."""
@@ -880,7 +899,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
-            display_name=pipeline_name,
+            display_name=sanitize_vertex_job_name(pipeline_name),
             template_path=pipeline_file_path,
             job_id=job_id,
             pipeline_root=self._pipeline_root,
