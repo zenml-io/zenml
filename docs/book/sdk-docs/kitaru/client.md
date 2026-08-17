@@ -4,46 +4,51 @@ icon: plug
 
 # Client
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for running, replaying, and improving AI agents. `KitaruClient` is the programmatic interface to a Kitaru server — inspect and control flow executions, browse artifacts, invoke deployments, and manage authentication from Python.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for recording, replaying, and improving AI agents — the runs that happen in production become sessions you can replay against your real code. `KitaruAPIClient` is the async programmatic interface to a Kitaru server.
 
 This page groups the client into thematic areas. For the complete, auto-generated API (every method and signature), see the [full Kitaru SDK reference](https://sdkdocs.kitaru.ai/reference/python/client/).
 
 ```python
-import kitaru
+from kitaru.client import KitaruAPIClient
 
-client = kitaru.KitaruClient()
+client = KitaruAPIClient()   # server and credential resolve from the environment
 ```
 
 The client exposes its functionality through sub-APIs accessed as attributes.
 
-## Executions
+## Sessions
 
-[`client.executions`](https://sdkdocs.kitaru.ai/reference/python/client/) inspects and controls flow executions:
+`client.sessions` reads and writes the recordings:
 
-* [`get`](https://sdkdocs.kitaru.ai/reference/python/client/) — fetch a single execution by ID
-* [`list`](https://sdkdocs.kitaru.ai/reference/python/client/) — list executions
-* [`latest`](https://sdkdocs.kitaru.ai/reference/python/client/) — the most recent execution
-* [`logs`](https://sdkdocs.kitaru.ai/reference/python/client/) — retrieve runtime logs for an execution
-* [`input`](https://sdkdocs.kitaru.ai/reference/python/client/) — provide input to an execution waiting on `kitaru.wait()`
-* [`resume`](https://sdkdocs.kitaru.ai/reference/python/client/) — resume a waiting execution after input lands
-* [`retry`](https://sdkdocs.kitaru.ai/reference/python/client/) — retry a failed execution
-* [`cancel`](https://sdkdocs.kitaru.ai/reference/python/client/) — cancel a running execution
-* [`replay`](https://sdkdocs.kitaru.ai/reference/python/client/) — replay from a checkpoint, optionally overriding cached outputs
+* `list` / `iter` / `get` — find sessions, with filters for agent, tag, origin, and time
+* `list_nodes` — the recorded model and tool calls, with payloads
+* `create` / `ingest_nodes` — the raw recording API adapters are built on
+* `merge_evaluations` — write evaluations (including human verdicts) onto a session
 
-## Artifacts
+## Replays and evaluations
 
-[`client.artifacts`](https://sdkdocs.kitaru.ai/reference/python/client/) browses and reads checkpoint outputs and saved artifacts.
+* `client.replays` — create and inspect single-session replays: baseline session, optional override, tool policy, evaluators
+* `client.evaluations` — batch-evaluate stored sessions and read evaluation rows back
 
-## Deployments
+## Cohorts and experiments
 
-[`client.deployments`](https://sdkdocs.kitaru.ai/reference/python/client/) invokes and inspects deployed flows:
+* `client.cohorts` / `client.cohort_versions` — freeze immutable populations of sessions
+* `client.experiments` — name a change (override, tool policy, evaluators) and `start_run` it against a cohort version
 
-* [`invoke`](https://sdkdocs.kitaru.ai/reference/python/client/) — start a new execution from a deployed flow (by name + tag/version)
-* [`list`](https://sdkdocs.kitaru.ai/reference/python/client/) / [`get`](https://sdkdocs.kitaru.ai/reference/python/client/) — inspect available deployment routes
+## Registry
 
-## Authentication
+* `client.agents` / `client.agent_versions` — the agents sessions belong to, and the run commands replay executes
+* `client.evaluators` / `client.importers` — versioned plugins, registered from a script or package
+* `client.imports` — bring Langfuse exports in as sessions
 
-[`client.auth`](https://sdkdocs.kitaru.ai/reference/python/client/) manages service accounts and API keys for server access.
+## Review
+
+* `client.investigations` / `client.annotations` — structured human review: questions over a set of sessions, answers pinned to exact trace locations
+
+## Operations
+
+* `client.workers` / `client.jobs` — the execution fleet and the work it claims
+* `client.api_keys` / `client.accounts` — authentication for processes and people
 
 ***
 
