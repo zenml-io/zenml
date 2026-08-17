@@ -14,8 +14,7 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 from opentelemetry._logs import Logger
 from opentelemetry.instrumentation.logging.handler import LoggingHandler
@@ -35,7 +34,7 @@ from zenml.models import LogsResponse
 if TYPE_CHECKING:
     from opentelemetry.sdk._logs.export import LogRecordExporter
 
-    from zenml.utils.logging_utils import LogEntry
+    from zenml.models import LogsEntriesFilter, LogsEntriesResponse
 
 logger = get_logger(__name__)
 
@@ -309,28 +308,29 @@ class OtelLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the OpenTelemetry backend.
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional["LogsEntriesFilter"] = None,
+    ) -> "LogsEntriesResponse":
+        """Fetch the entries of a log stream from the OpenTelemetry backend.
 
-        This method should be overridden by subclasses to implement
-        backend-specific log retrieval. The base implementation returns
-        an empty list.
+        OTLP is a write-only protocol: it defines how to ship logs to a
+        collector, not how to read them back. Subclasses that know the query API
+        of a concrete backend override this.
 
         Args:
             logs_model: The logs model containing run and step metadata.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            before: Cursor pointing at entries older than a previous page.
+            after: Cursor pointing at entries newer than a previous page.
+            filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            A list of log entries.
+            Never returns.
 
         Raises:
-            NotImplementedError: Log fetching is not supported by the OTEL log
-                store.
+            NotImplementedError: Always, as OTLP has no read path.
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."

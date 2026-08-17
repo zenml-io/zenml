@@ -63,21 +63,44 @@ You can view logs through several methods:
 
 ```python
 from zenml.client import Client
+from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
 
-# Get the run you want logs for
+# Get the run you want logs for. A run collects several log streams, one per
+# source: "orchestrator" for the run itself, "step" for each of its steps.
 run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
+logs = search_logs_by_source(run.log_collection, "orchestrator")
 
 # Note: The log store must match the one that captured the logs
 log_store = client.active_stack.log_store
-log_entries = log_store.fetch(logs_model=run.logs, limit=1000)
+page = log_store.fetch(logs_model=logs, limit=1000)
 
-for entry in log_entries:
+for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-3. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+A fetch returns the newest entries of a log stream, oldest first, along with the cursors that read the pages around it. Pass `page.before` back in to walk further into the history of the stream, and `page.after` to pick up entries written since. A cursor comes back as `None` when there is nothing more to read in that direction, and log stores that cannot page at all, such as the [artifact log store](artifact.md), return `None` for both and serve the whole stream in one response.
+
+Filters are pushed down into the backend's own query, so they cost nothing to apply:
+
+```python
+from zenml.models import LogsEntriesFilter
+
+page = log_store.fetch(
+    logs_model=logs,
+    filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
+)
+
+while page.before:
+    page = log_store.fetch(logs_model=logs, before=page.before)
+```
+
+A log store with no query language behind it ignores these filters rather than scanning its whole log stream for them. The [artifact log store](artifact.md) is the one in that position, so filtering logs kept in an artifact store is the caller's job, done on the entries it hands back.
+
+3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. This is what the dashboard uses.
+
+4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
 
 ### Log Store Flavors
 

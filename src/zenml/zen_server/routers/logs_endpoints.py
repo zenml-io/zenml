@@ -13,17 +13,26 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    ENTRIES,
     LOGS,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError
-from zenml.models import LogsRequest, LogsResponse, LogsUpdate
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsRequest,
+    LogsResponse,
+    LogsUpdate,
+)
+from zenml.utils.logging_utils import fetch_logs
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -38,6 +47,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    make_dependable,
     zen_store,
 )
 
@@ -46,6 +56,43 @@ router = APIRouter(
     tags=["logs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+def verify_read_permission(logs: LogsResponse) -> None:
+    """Verify that the authenticated user may read a log stream.
+
+    A log stream has no permissions of its own: it is readable exactly when the
+    pipeline run it was collected for is.
+
+    Args:
+        logs: The log stream to authorize.
+
+    Raises:
+        IllegalOperationError: If the log stream is not attached to anything
+            that could authorize it.
+    """
+    store = zen_store()
+
+    if logs.pipeline_run_id:
+        run_id = logs.pipeline_run_id
+    elif logs.step_run_id:
+        run_id = store.get_run_step(
+            step_run_id=logs.step_run_id, hydrate=False
+        ).pipeline_run_id
+    elif logs.hook_invocation_id:
+        run_id = store.get_hook_invocation(
+            hook_invocation_id=logs.hook_invocation_id, hydrate=False
+        ).pipeline_run_id
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run, step run or hook "
+            "invocation before fetching."
+        )
+
+    verify_permission_for_model(
+        model=store.get_run(run_id=run_id, hydrate=False),
+        action=Action.READ,
+    )
 
 
 @router.post(
@@ -125,40 +172,72 @@ def get_logs(
 
     Returns:
         The requested log model.
-
-    Raises:
-        IllegalOperationError: If the logs are not associated
-            with a pipeline run or step run before fetching.
     """
     logs = zen_store().get_logs(logs_id, hydrate=True)
-
-    if logs.pipeline_run_id:
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=logs.pipeline_run_id, hydrate=False
-            ),
-            action=Action.READ,
-        )
-    elif logs.step_run_id:
-        step = zen_store().get_run_step(
-            step_run_id=logs.step_run_id, hydrate=False
-        )
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=step.pipeline_run_id, hydrate=False
-            ),
-            action=Action.READ,
-        )
-    else:
-        raise IllegalOperationError(
-            "Logs must be associated with a pipeline run or step run "
-            "before fetching."
-        )
+    verify_read_permission(logs)
 
     if hydrate is False:
         logs.metadata = None
 
     return dehydrate_response_model(logs)
+
+
+@router.get(
+    "/{logs_id}" + ENTRIES,
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def get_logs_entries(
+    logs_id: UUID,
+    limit: Optional[int] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    filter_: LogsEntriesFilter = Depends(make_dependable(LogsEntriesFilter)),
+    _: AuthContext = Security(authorize),
+) -> LogsEntriesResponse:
+    """Returns a page of the entries of a log stream.
+
+    Args:
+        logs_id: ID of the log stream to read.
+        limit: Maximum number of entries to return. Defaults to a page size
+            chosen by the log store holding the entries.
+        before: Cursor from a previous response, to fetch older entries.
+        after: Cursor from a previous response, to fetch newer entries.
+        filter_: Filters to apply while retrieving the entries. Log stores
+            without a queryable index, such as the artifact log store, ignore
+            them and leave the filtering to the caller.
+
+    Returns:
+        A page of log entries, oldest first, with cursors for the adjacent
+        pages. Both cursors are null for log stores that cannot paginate, in
+        which case the response holds the whole log stream up to the limit.
+
+    Raises:
+        ValueError: If both `before` and `after` are given.
+    """
+    if before and after:
+        raise ValueError(
+            "Only one of `before` and `after` may be set: a page is fetched "
+            "in one direction at a time."
+        )
+
+    store = zen_store()
+    logs = store.get_logs(logs_id, hydrate=False)
+    verify_read_permission(logs)
+
+    return fetch_logs(
+        logs=logs,
+        zen_store=store,
+        limit=limit,
+        before=before,
+        after=after,
+        filter_=filter_,
+    )
 
 
 @router.put(

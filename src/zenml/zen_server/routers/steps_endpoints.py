@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     HEARTBEAT,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
@@ -30,6 +29,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.models import (
+    LogEntry,
     Page,
     StepRunFilter,
     StepRunRequest,
@@ -38,7 +38,6 @@ from zenml.models import (
 )
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_id,
     search_logs_by_source,
@@ -294,7 +293,7 @@ def get_step_logs(
     logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
-    """Get log entries for a step.
+    """Get the log entries of a step run.
 
     Args:
         step_id: ID of the step for which to get the logs.
@@ -328,11 +327,7 @@ def get_step_logs(
     if step.log_collection:
         if source:
             if logs := search_logs_by_source(step.log_collection, source):
-                return fetch_logs(
-                    logs=logs,
-                    zen_store=store,
-                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-                )
+                return fetch_logs(logs=logs, zen_store=store).items
             else:
                 raise KeyError(
                     f"No logs found for source '{source}' in step {step_id}"
@@ -340,11 +335,7 @@ def get_step_logs(
 
         elif logs_id:
             if logs := search_logs_by_id(step.log_collection, logs_id):
-                return fetch_logs(
-                    logs=logs,
-                    zen_store=store,
-                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-                )
+                return fetch_logs(logs=logs, zen_store=store).items
             else:
                 raise KeyError(
                     f"No logs found for ID '{logs_id}' in step {step_id}"
