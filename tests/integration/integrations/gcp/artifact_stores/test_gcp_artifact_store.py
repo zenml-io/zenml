@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+"""Tests for the GCP artifact store."""
 
 from datetime import datetime
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
@@ -52,3 +54,22 @@ def test_must_be_gcs_path():
 
     artifact_store = _get_gcp_artifact_store(path="gs://mybucket")
     assert artifact_store.path == "gs://mybucket"
+
+
+def test_listdir_refreshes_cached_filesystem_listing():
+    """GCS directory listings bypass the filesystem cache."""
+    artifact_store = _get_gcp_artifact_store(path="gs://mybucket")
+    filesystem = MagicMock()
+    filesystem.listdir.return_value = [
+        {"name": "mybucket/logs/1.log"},
+        {"name": "mybucket/logs/2.log"},
+    ]
+    artifact_store._filesystem = filesystem
+
+    assert artifact_store.listdir("gs://mybucket/logs") == [
+        "1.log",
+        "2.log",
+    ]
+    filesystem.listdir.assert_called_once_with(
+        path="gs://mybucket/logs", refresh=True
+    )

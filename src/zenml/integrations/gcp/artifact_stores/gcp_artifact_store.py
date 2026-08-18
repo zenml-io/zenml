@@ -173,6 +173,8 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A list of paths that match the given glob pattern.
         """
+        # The server reuses artifact store instances while remote workloads
+        # continue adding files, so a cached listing can hide new log batches.
         return [
             f"{GCP_PATH_PREFIX}{path}"
             for path in self.filesystem.glob(path=pattern)
@@ -217,7 +219,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
         return [
             _extract_basename(dict_)
-            for dict_ in self.filesystem.listdir(path=path)
+            for dict_ in self.filesystem.listdir(path=path, refresh=True)
             # gcsfs.listdir also returns the root directory, so we filter
             # it out here
             if _extract_basename(dict_)
