@@ -756,7 +756,7 @@ class BaseOrchestrator(StackComponent, ABC):
         init_hook_source = snapshot.pipeline_configuration.init_hook_source
         init_hook_kwargs = snapshot.pipeline_configuration.init_hook_kwargs
 
-        # We only run the init hook once, if the (thread-local) run context
+        # We only run the init hook once, if the (process-wide) run context
         # associated with the current run has not been initialized yet. This
         # allows us to run the init hook only once per run per execution
         # environment (process, container, etc.).
