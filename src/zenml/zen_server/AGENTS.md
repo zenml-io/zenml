@@ -36,6 +36,7 @@ from zenml.zen_server.utils import server_config
 
 # ✅ Good - use the Client abstraction instead
 from zenml.client import Client
+
 client = Client()
 # The client handles all communication with the server
 ```

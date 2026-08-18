@@ -36,20 +36,21 @@ if TYPE_CHECKING:
 
 class SagemakerOrchestratorConfig(BaseOrchestratorConfig):
     """Config for the Sagemaker orchestrator."""
+
     execution_role: str = Field(...)
     # ... other fields using only stdlib/zenml types
 
 
 class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):
-    
     @property
     def config_class(self) -> Type[SagemakerOrchestratorConfig]:
         return SagemakerOrchestratorConfig
-    
+
     @property
     def implementation_class(self) -> Type["SagemakerOrchestrator"]:
         # Import INSIDE the method—only executed when actually needed
         from zenml.integrations.aws.orchestrators import SagemakerOrchestrator
+
         return SagemakerOrchestrator
 ```
 
@@ -63,7 +64,9 @@ import sagemaker  # ← This breaks ZenML if sagemaker isn't installed!
 from sagemaker.processing import Processor  # ← Also bad
 
 # BAD: Even indirect imports that pull in the integration library
-from zenml.integrations.aws.orchestrators import SagemakerOrchestrator  # ← Bad at top level
+from zenml.integrations.aws.orchestrators import (
+    SagemakerOrchestrator,
+)  # ← Bad at top level
 
 
 class SagemakerOrchestratorConfig(BaseOrchestratorConfig):
@@ -190,6 +193,7 @@ from zenml.zen_stores.schemas import ArtifactSchema
 
 # ✅ Good - use the Client
 from zenml.client import Client
+
 client = Client()
 artifacts = client.list_artifacts()
 

@@ -270,7 +270,9 @@ When adding or modifying client methods in `src/zenml/client.py`, follow existin
 
 ### Get Methods
 ```python
-def get_pipeline(self, name_id_or_prefix: Union[str, UUID]) -> PipelineResponse:
+def get_pipeline(
+    self, name_id_or_prefix: Union[str, UUID]
+) -> PipelineResponse:
     """Get a pipeline by name, ID, or prefix."""
     # If it looks like a UUID, fetch directly
     # If it's a name, list + filter to find it

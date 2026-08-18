@@ -212,8 +212,8 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     )
 
 
-def test_create_pipeline_build_prunes_supplied_prepared_build(mocker):
-    """Tests that creation prunes a full prepared build after the snapshot."""
+def test_create_pipeline_build_reconciles_supplied_prepared_build(mocker):
+    """Tests that creation retains only configurations still required."""
     required_config = BuildConfiguration(
         key="required", settings=DockerSettings()
     )
@@ -255,7 +255,10 @@ def test_create_pipeline_build_prunes_supplied_prepared_build(mocker):
     )
 
     assert set(build.images) == {"required"}
-    assert build.checksum == prepared_build.prune({"required"}).checksum
+    assert (
+        build.checksum
+        == PreparedPipelineBuild(items=[prepared_build.items[0]]).checksum
+    )
     assert [item.key for item in prepared_build.items] == [
         "required",
         "skipped",
@@ -509,30 +512,58 @@ def test_prepared_build_checksum_reflects_current_items():
     )
 
 
-def test_prune_prepared_build():
-    """Tests that pruning returns a new build with only required items."""
-    first_item = PreparedBuildItem(
-        configuration=BuildConfiguration(
-            key="first", settings=DockerSettings()
-        ),
-        key="first",
-        settings_checksum="first_checksum",
+def test_prepare_pipeline_build_reuses_reference_items(mocker):
+    """Tests reuse, replacement, and addition of reference build items."""
+    unchanged_config = BuildConfiguration(
+        key="unchanged", settings=DockerSettings()
     )
-    second_item = PreparedBuildItem(
-        configuration=BuildConfiguration(
-            key="second", settings=DockerSettings()
-        ),
-        key="second",
-        settings_checksum="second_checksum",
+    original_changed_config = BuildConfiguration(
+        key="changed", settings=DockerSettings()
     )
-    prepared_build = PreparedPipelineBuild(items=[first_item, second_item])
+    changed_config = BuildConfiguration(
+        key="changed",
+        settings=DockerSettings(requirements=["new-requirement"]),
+    )
+    new_config = BuildConfiguration(key="new", settings=DockerSettings())
+    unchanged_item = PreparedBuildItem(
+        configuration=unchanged_config,
+        key="unchanged",
+        settings_checksum="unchanged_checksum",
+    )
+    prepared_build = PreparedPipelineBuild(
+        items=[
+            unchanged_item,
+            PreparedBuildItem(
+                configuration=original_changed_config,
+                key="changed",
+                settings_checksum="original_checksum",
+            ),
+        ]
+    )
+    mock_compute_settings_checksum = mocker.patch.object(
+        BuildConfiguration,
+        "compute_settings_checksum",
+        side_effect=["changed_checksum", "new_checksum"],
+    )
 
-    pruned_build = prepared_build.prune(required_keys={"first"})
+    reconciled_build = build_utils.prepare_pipeline_build(
+        items=[unchanged_config, changed_config, new_config],
+        stack=Client().active_stack,
+        reference_build=prepared_build,
+    )
 
-    assert pruned_build is not prepared_build
-    assert pruned_build.items == [first_item]
-    assert prepared_build.items == [first_item, second_item]
-    assert pruned_build.checksum != prepared_build.checksum
+    assert reconciled_build.items[0] is unchanged_item
+    assert [item.configuration for item in reconciled_build.items] == [
+        unchanged_config,
+        changed_config,
+        new_config,
+    ]
+    assert [item.settings_checksum for item in reconciled_build.items] == [
+        "unchanged_checksum",
+        "changed_checksum",
+        "new_checksum",
+    ]
+    assert mock_compute_settings_checksum.call_count == 2
 
 
 def test_reuse_or_create_prepares_build_once(mocker):

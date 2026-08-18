@@ -79,6 +79,7 @@ Never import integration libraries at module level in CLI files. Integrations ma
 # Bad - breaks CLI if sklearn not installed
 from sklearn import metrics
 
+
 # Good - import inside function when needed
 def some_command():
     from sklearn import metrics
@@ -101,5 +102,6 @@ from zenml.zen_stores.schemas import PipelineSchema
 
 # Good
 from zenml.client import Client
+
 client = Client()
 ```

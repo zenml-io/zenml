@@ -377,21 +377,12 @@ def create_pipeline_build(
 
     required_builds = stack.get_docker_builds(snapshot=pruned_snapshot)
 
-    if prepared_build is None:
-        prepared_build = prepare_pipeline_build(
-            items=required_builds,
-            stack=stack,
-            code_repository=code_repository,
-        )
-    else:
-        required_keys = {
-            PipelineBuildBase.get_image_key(
-                component_key=build_config.key,
-                step=build_config.step_name,
-            )
-            for build_config in required_builds
-        }
-        prepared_build = prepared_build.prune(required_keys=required_keys)
+    prepared_build = prepare_pipeline_build(
+        items=required_builds,
+        stack=stack,
+        code_repository=code_repository,
+        reference_build=prepared_build,
+    )
 
     if not prepared_build.items:
         logger.debug("No docker builds required.")
@@ -510,6 +501,7 @@ def prepare_pipeline_build(
     items: List["BuildConfiguration"],
     stack: "Stack",
     code_repository: Optional["BaseCodeRepository"] = None,
+    reference_build: Optional[PreparedPipelineBuild] = None,
 ) -> PreparedPipelineBuild:
     """Prepare build configurations for reuse and build creation.
 
@@ -517,6 +509,8 @@ def prepare_pipeline_build(
         items: Build configurations to prepare.
         stack: The stack for which the images will be built.
         code_repository: Optional code repository used by the build.
+        reference_build: Optional prepared build from which unchanged items
+            will be reused.
 
     Returns:
         The prepared build configurations and their aggregate checksum.
@@ -527,6 +521,18 @@ def prepare_pipeline_build(
         key = PipelineBuildBase.get_image_key(
             component_key=item.key, step=item.step_name
         )
+        matching_item = (
+            reference_build.get_matching_item(
+                key=key,
+                configuration=item,
+            )
+            if reference_build
+            else None
+        )
+        if matching_item:
+            prepared_items.append(matching_item)
+            continue
+
         settings_checksum = item.compute_settings_checksum(
             stack=stack,
             code_repository=code_repository,

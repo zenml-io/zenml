@@ -35,6 +35,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 # ✅ Good - use the Client
 from zenml.client import Client
+
 client = Client()
 runs = client.list_pipeline_runs()
 
@@ -93,8 +94,10 @@ from typing import Optional, List
 from uuid import UUID
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
+
 class ExampleSchema(NamedSchema, table=True):
     """SQLModel table for examples."""
+
     __tablename__ = "example"
 
     # attributes mirror domain model fields
@@ -109,18 +112,20 @@ from typing import Optional
 from uuid import UUID
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
+
 class ChildSchema(NamedSchema, table=True):
     __tablename__ = "child"
 
     parent_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target="parent",          # or ParentSchema.__tablename__
+        target="parent",  # or ParentSchema.__tablename__
         source_column="parent_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
     parent: Optional["ParentSchema"] = Relationship(back_populates="children")
+
 
 class ParentSchema(NamedSchema, table=True):
     __tablename__ = "parent"
@@ -133,22 +138,35 @@ class ParentSchema(NamedSchema, table=True):
 ```python
 class ExampleLinkSchema(SQLModel, table=True):
     """Join table between left and right."""
+
     __tablename__ = "example_link"
 
     left_id: UUID = build_foreign_key_field(
-        source=__tablename__, target="left", source_column="left_id",
-        target_column="id", ondelete="CASCADE", nullable=False, primary_key=True
+        source=__tablename__,
+        target="left",
+        source_column="left_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
     right_id: UUID = build_foreign_key_field(
-        source=__tablename__, target="right", source_column="right_id",
-        target_column="id", ondelete="CASCADE", nullable=False, primary_key=True
+        source=__tablename__,
+        target="right",
+        source_column="right_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
     )
+
 
 class LeftSchema(NamedSchema, table=True):
     __tablename__ = "left"
     rights: List["RightSchema"] = Relationship(
         back_populates="lefts", link_model=ExampleLinkSchema
     )
+
 
 class RightSchema(NamedSchema, table=True):
     __tablename__ = "right"
@@ -164,6 +182,7 @@ class RightSchema(NamedSchema, table=True):
 - Minimal example using SQLModel Field indexing:
 ```python
 from sqlmodel import Field
+
 
 class ExampleIndexSchema(NamedSchema, table=True):
     __tablename__ = "example_index"
@@ -190,13 +209,17 @@ from datetime import datetime
 from typing import Any, Optional
 import base64, json
 
+
 class SecretSchema(NamedSchema, table=True):
     __tablename__ = "secret"
 
     user_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__, target="user",
-        source_column="user_id", target_column="id",
-        ondelete="SET NULL", nullable=True
+        source=__tablename__,
+        target="user",
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
     )
     user: Optional["UserSchema"] = Relationship(back_populates="secrets")
     configuration: bytes
@@ -213,11 +236,15 @@ class SecretSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = SecretResponseMetadata(project=self.project.to_model())
         body = SecretResponseBody(
-            user=self.user.to_model() if include_resources and self.user else None,
+            user=self.user.to_model()
+            if include_resources and self.user
+            else None,
             created=self.created,
             updated=self.updated,
         )
-        return SecretResponse(id=self.id, name=self.name, body=body, metadata=metadata)
+        return SecretResponse(
+            id=self.id, name=self.name, body=body, metadata=metadata
+        )
 
     @classmethod
     def from_request(cls, request: "SecretRequest") -> "SecretSchema":
@@ -225,19 +252,29 @@ class SecretSchema(NamedSchema, table=True):
         return cls(
             name=request.name,
             user_id=request.user,
-            configuration=base64.b64encode(json.dumps(request.configuration).encode("utf-8")),
-            labels=(base64.b64encode(json.dumps(request.labels).encode("utf-8"))
-                    if request.labels is not None else None),
+            configuration=base64.b64encode(
+                json.dumps(request.configuration).encode("utf-8")
+            ),
+            labels=(
+                base64.b64encode(json.dumps(request.labels).encode("utf-8"))
+                if request.labels is not None
+                else None
+            ),
         )
 
     def update(self, update_obj: "SecretUpdate") -> "SecretSchema":
         """Apply only provided fields; handle structured fields; refresh updated."""
         for field, value in update_obj.model_dump(exclude_unset=True).items():
             if field == "configuration" and value is not None:
-                self.configuration = base64.b64encode(json.dumps(value).encode("utf-8"))
+                self.configuration = base64.b64encode(
+                    json.dumps(value).encode("utf-8")
+                )
             elif field == "labels":
-                self.labels = (base64.b64encode(json.dumps(value).encode("utf-8"))
-                               if value is not None else None)
+                self.labels = (
+                    base64.b64encode(json.dumps(value).encode("utf-8"))
+                    if value is not None
+                    else None
+                )
             else:
                 setattr(self, field, value)
         self.updated = datetime.utcnow()

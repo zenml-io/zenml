@@ -14,7 +14,7 @@
 """Model definition for pipeline build item."""
 
 import hashlib
-from typing import List, Optional, Set
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -95,15 +95,25 @@ class PreparedPipelineBuild(BaseModel):
 
         return hash_.hexdigest()
 
-    def prune(self, required_keys: Set[str]) -> "PreparedPipelineBuild":
-        """Create a prepared build containing only required build items.
+    def get_matching_item(
+        self,
+        key: str,
+        configuration: BuildConfiguration,
+    ) -> Optional[PreparedBuildItem]:
+        """Get an item with the same key and build configuration.
 
         Args:
-            required_keys: Keys of build items that should be retained.
+            key: The pipeline build image key.
+            configuration: The required build configuration.
 
         Returns:
-            A new prepared pipeline build containing the required items.
+            A matching prepared build item, if one exists.
         """
-        return PreparedPipelineBuild(
-            items=[item for item in self.items if item.key in required_keys]
+        return next(
+            (
+                item
+                for item in self.items
+                if item.key == key and item.configuration == configuration
+            ),
+            None,
         )
