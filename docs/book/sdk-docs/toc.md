@@ -10,6 +10,7 @@
 
 ## Kitaru
 
-* [Client](kitaru/client.md)
-* [Example usages](kitaru/example-usages.md)
-* [Full SDK & CLI reference](https://sdkdocs.kitaru.ai)
+* [Python client](kitaru/client.md)
+* [Python examples](kitaru/example-usages.md)
+* [Python & TypeScript SDK guide](https://docs.zenml.io/kitaru/get-help/sdks)
+* [Python SDK & CLI reference](https://sdkdocs.kitaru.ai)
