@@ -221,13 +221,7 @@ def reuse_or_create_pipeline_build(
         The build response.
     """
     if not build:
-        stack = Client().active_stack
-        required_builds = stack.get_docker_builds(snapshot=snapshot)
-        prepared_build = prepare_pipeline_build(
-            items=required_builds,
-            stack=stack,
-            code_repository=code_repository,
-        )
+        prepared_build = None
 
         if (
             allow_build_reuse
@@ -235,30 +229,37 @@ def reuse_or_create_pipeline_build(
             and not requires_included_code(
                 snapshot=snapshot, code_repository=code_repository
             )
-            and prepared_build.items
         ):
-            existing_build = find_existing_build(
-                snapshot=snapshot,
+            stack = Client().active_stack
+            required_builds = stack.get_docker_builds(snapshot=snapshot)
+            prepared_build = prepare_pipeline_build(
+                items=required_builds,
+                stack=stack,
                 code_repository=code_repository,
-                prepared_build=prepared_build,
             )
-
-            if existing_build:
-                logger.info(
-                    "Reusing existing build `%s` for stack `%s`.",
-                    existing_build.id,
-                    Client().active_stack.name,
+            if prepared_build.items:
+                existing_build = find_existing_build(
+                    snapshot=snapshot,
+                    code_repository=code_repository,
+                    prepared_build=prepared_build,
                 )
-                return existing_build
-            else:
+
+                if existing_build:
+                    logger.info(
+                        "Reusing existing build `%s` for stack `%s`.",
+                        existing_build.id,
+                        Client().active_stack.name,
+                    )
+                    return existing_build
+
                 logger.info(
-                    "Unable to find a build to reuse. A previous build can be "
-                    "reused when the following conditions are met:\n"
+                    "Unable to find a build to reuse. A previous build can "
+                    "be reused when the following conditions are met:\n"
                     "  * The existing build was created for the same stack, "
                     "ZenML version and Python version\n"
                     "  * The stack contains a container registry\n"
-                    "  * The Docker settings of the pipeline and all its steps "
-                    "are the same as for the existing build."
+                    "  * The Docker settings of the pipeline and all its "
+                    "steps are the same as for the existing build."
                 )
 
         return create_pipeline_build(

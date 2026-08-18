@@ -655,6 +655,79 @@ def test_reuse_or_create_passes_full_prepared_build_to_creation(mocker):
     )
 
 
+def test_reuse_or_create_does_not_prepare_full_build_when_reuse_disabled(
+    mocker,
+):
+    """Tests that disabled reuse leaves preparation to the creation path."""
+    mock_get_docker_builds = mocker.patch.object(Stack, "get_docker_builds")
+    mock_prepare_pipeline_build = mocker.patch.object(
+        build_utils, "prepare_pipeline_build"
+    )
+    mock_create_pipeline_build = mocker.patch.object(
+        build_utils,
+        "create_pipeline_build",
+        return_value=mocker.sentinel.build,
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+
+    build_utils.reuse_or_create_pipeline_build(
+        snapshot=snapshot,
+        allow_build_reuse=False,
+    )
+
+    mock_get_docker_builds.assert_not_called()
+    mock_prepare_pipeline_build.assert_not_called()
+    assert (
+        mock_create_pipeline_build.call_args.kwargs["prepared_build"] is None
+    )
+
+
+def test_reuse_or_create_does_not_prepare_full_build_when_reuse_prevented(
+    mocker,
+):
+    """Tests that prevented reuse leaves preparation to the creation path."""
+    mocker.patch.object(
+        build_utils, "should_prevent_build_reuse", return_value=True
+    )
+    mock_requires_included_code = mocker.patch.object(
+        build_utils, "requires_included_code"
+    )
+    mock_get_docker_builds = mocker.patch.object(Stack, "get_docker_builds")
+    mock_prepare_pipeline_build = mocker.patch.object(
+        build_utils, "prepare_pipeline_build"
+    )
+    mock_create_pipeline_build = mocker.patch.object(
+        build_utils,
+        "create_pipeline_build",
+        return_value=mocker.sentinel.build,
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+
+    build_utils.reuse_or_create_pipeline_build(
+        snapshot=snapshot,
+        allow_build_reuse=True,
+    )
+
+    mock_requires_included_code.assert_not_called()
+    mock_get_docker_builds.assert_not_called()
+    mock_prepare_pipeline_build.assert_not_called()
+    assert (
+        mock_create_pipeline_build.call_args.kwargs["prepared_build"] is None
+    )
+
+
 def test_skip_build_checksum_does_not_resolve_parent_image_digest(
     mocker, remote_container_registry
 ):
