@@ -298,7 +298,8 @@ def find_existing_build(
 
     Args:
         snapshot: The snapshot for which to find an existing build.
-        prepared_build: Precomputed build configurations and checksum.
+        prepared_build: Build configurations with their precomputed settings
+            checksums.
         code_repository: The code repository that will be used to download
             files in the images.
 
@@ -361,7 +362,8 @@ def create_pipeline_build(
         pipeline_id: The ID of the pipeline.
         code_repository: If provided, this code repository will be used to
             download inside the build images.
-        prepared_build: Optional precomputed build configurations and checksum.
+        prepared_build: Optional build configurations with their precomputed
+            settings checksums.
 
     Returns:
         The build output.
@@ -514,7 +516,7 @@ def prepare_pipeline_build(
             will be reused.
 
     Returns:
-        The prepared build configurations and their aggregate checksum.
+        The prepared build configurations with their settings checksums.
     """
     prepared_items: List[PreparedBuildItem] = []
 
