@@ -253,6 +253,27 @@ def add_tags(
     resource_id = None
     resource_type = None
 
+    # `infer_artifact=False` means "do not infer", i.e. the same as omitting it.
+    # Normalize it only when no other identifier is given, so the bare
+    # `tags=..., infer_artifact=False` call dispatches like the default. Argument
+    # combinations the overloads do not allow, such as `run=...` together with
+    # `infer_artifact=False`, keep raising the unsupported-call error below.
+    if infer_artifact is False and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            snapshot,
+            deployment,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+        ]
+    ):
+        infer_artifact = None
+
     if isinstance(tags, (str, Tag)):
         tags = [tags]
 
@@ -646,6 +667,27 @@ def remove_tags(
     client = Client()
     resource_id = None
     resource_type = None
+
+    # `infer_artifact=False` means "do not infer", i.e. the same as omitting it.
+    # Normalize it only when no other identifier is given, so the bare
+    # `tags=..., infer_artifact=False` call dispatches like the default. Argument
+    # combinations the overloads do not allow, such as `run=...` together with
+    # `infer_artifact=False`, keep raising the unsupported-call error below.
+    if infer_artifact is False and all(
+        v is None
+        for v in [
+            pipeline,
+            run,
+            run_template,
+            snapshot,
+            deployment,
+            artifact,
+            artifact_version_id,
+            artifact_name,
+            artifact_version,
+        ]
+    ):
+        infer_artifact = None
 
     if isinstance(tags, str):
         tags = [tags]
