@@ -110,6 +110,9 @@ class BuildConfiguration(BaseModel):
             with open(self.settings.dockerfile, "rb") as f:
                 hash_.update(f.read())
 
+        # Skipped builds use the configured image reference directly. The
+        # orchestrator resolves mutable tags according to its image pull policy,
+        # so resolving a digest here would only invalidate ZenML build records.
         if (
             self.settings.parent_image
             and stack.container_registry

@@ -212,6 +212,8 @@ When `skip_build` is enabled, the `parent_image` will be used directly to run th
 - No inclusion of source files in the container
 - No setting of environment variables
 
+ZenML uses the configured `parent_image` reference directly and does not resolve its registry digest for build reuse. If the reference uses a mutable tag such as `latest`, re-pushing that tag does not change ZenML's build checksum. Whether the runtime pulls the updated image depends on the image pull policy of your orchestrator or infrastructure.
+
 {% hint style="warning" %}
 This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your image contains everything necessary to run your pipeline:
 
