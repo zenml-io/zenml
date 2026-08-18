@@ -80,7 +80,7 @@
 * [Deploying ML Models](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)
 * [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
-* [Durable agent platform (Kitaru)](https://github.com/zenml-io/kitaru-template)
+* [Replay-based agent evals (Kitaru)](https://github.com/zenml-io/kitaru-template)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)
