@@ -17,10 +17,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, Column, UniqueConstraint, exists
 from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, asc, col, desc, select
+from sqlalchemy.sql.elements import ColumnElement
+from sqlmodel import Field, Relationship, and_, asc, col, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -380,6 +381,44 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    @classmethod
+    def unused_filter(cls) -> ColumnElement[bool]:
+        """Build the authoritative filter for unused artifact versions.
+
+        An artifact version is unused only if no supported product resource
+        references it. Keeping this predicate in one place prevents listing
+        and destructive pruning from applying different liveness rules.
+
+        Returns:
+            A SQL expression matching unused artifact versions.
+        """
+        from zenml.zen_stores.schemas.hook_invocation_schemas import (
+            HookInvocationOutputArtifactSchema,
+        )
+        from zenml.zen_stores.schemas.model_schemas import (
+            ModelVersionArtifactSchema,
+        )
+        from zenml.zen_stores.schemas.pipeline_run_schemas import (
+            PipelineRunOutputSchema,
+        )
+        from zenml.zen_stores.schemas.step_run_schemas import (
+            StepRunInputArtifactSchema,
+            StepRunOutputArtifactSchema,
+        )
+
+        return and_(
+            ~exists().where(StepRunOutputArtifactSchema.artifact_id == cls.id),
+            ~exists().where(StepRunInputArtifactSchema.artifact_id == cls.id),
+            ~exists().where(PipelineRunOutputSchema.artifact_id == cls.id),
+            ~exists().where(
+                HookInvocationOutputArtifactSchema.artifact_version_id
+                == cls.id
+            ),
+            ~exists().where(
+                ModelVersionArtifactSchema.artifact_version_id == cls.id
+            ),
+        )
 
     @classmethod
     def get_query_options(

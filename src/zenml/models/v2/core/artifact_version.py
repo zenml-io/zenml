@@ -795,8 +795,6 @@ class ArtifactVersionFilter(
             ModelSchema,
             ModelVersionArtifactSchema,
             ModelVersionSchema,
-            StepRunInputArtifactSchema,
-            StepRunOutputArtifactSchema,
         )
 
         if self.artifact:
@@ -817,15 +815,7 @@ class ArtifactVersionFilter(
                 )
 
         if self.only_unused:
-            unused_filter = and_(
-                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                    select(StepRunOutputArtifactSchema.artifact_id)
-                ),
-                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                    select(StepRunInputArtifactSchema.artifact_id)
-                ),
-            )
-            custom_filters.append(unused_filter)
+            custom_filters.append(ArtifactVersionSchema.unused_filter())
 
         if self.model_version_id:
             model_version_filters = (
