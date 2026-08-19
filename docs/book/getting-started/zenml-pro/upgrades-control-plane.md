@@ -40,10 +40,10 @@ For air-gapped environments:
 
 To upgrade the Control Plane in a self-hosted deployment:
 
-1. **Update Helm Values:**  
+1. **Update Helm Values:**
    Change the Control Plane version in your `values.yaml` file to reference the new image tag.
 
-2. **Apply the Upgrade:**  
+2. **Apply the Upgrade:**
    
    **Option A - In-place upgrade with existing values** (if no config changes needed):
    ```bash
@@ -63,7 +63,7 @@ To upgrade the Control Plane in a self-hosted deployment:
      --values current-values.yaml
    ```
 
-3. **Monitor the Upgrade:**  
+3. **Monitor the Upgrade:**
    Watch the logs and pod statuses to verify a healthy rollout:
    ```bash
    kubectl -n <your-control-plane-namespace> get pods

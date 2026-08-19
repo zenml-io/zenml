@@ -10,10 +10,7 @@ version, please follow the
 database migration failures.
 {% endhint %}
 
-The ZenML 0.30.0 release removed the `ml-pipelines-sdk` dependency in favor of
-natively storing pipeline runs and artifacts in the ZenML database. The
-corresponding database migration will happen automatically as soon as you run
-any `zenml ...` CLI command after installing the new ZenML version, e.g.:
+The ZenML 0.30.0 release removed the `ml-pipelines-sdk` dependency in favor of natively storing pipeline runs and artifacts in the ZenML database. The corresponding database migration will happen automatically as soon as you run any `zenml ...` CLI command after installing the new ZenML version, e.g.:
 
 ```bash
 pip install zenml==0.30.0

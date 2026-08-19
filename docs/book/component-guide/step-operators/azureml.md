@@ -105,9 +105,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Additional configuration
 
-The ZenML AzureML step operator comes with a dedicated class called 
-`AzureMLStepOperatorSettings` for configuring its settings and it controls
-the compute resources used for step execution in AzureML.
+The ZenML AzureML step operator comes with a dedicated class called `AzureMLStepOperatorSettings` for configuring its settings and it controls the compute resources used for step execution in AzureML.
 
 Currently, it supports three different modes of operation.
 
@@ -118,23 +116,16 @@ Currently, it supports three different modes of operation.
 2. Compute Instance
 - Set `mode` to `compute-instance`.
 - Requires a `compute_name`.
-  - If a compute instance with the same name exists, it uses the existing 
-  compute instance and ignores other parameters.
-  - If a compute instance with the same name doesn't exist, it creates a 
-  new compute instance with the `compute_name`. For this process, you can 
-  specify `compute_size` and `idle_type_before_shutdown_minutes`.
+  - If a compute instance with the same name exists, it uses the existing compute instance and ignores other parameters.
+  - If a compute instance with the same name doesn't exist, it creates a new compute instance with the `compute_name`. For this process, you can specify `compute_size` and `idle_type_before_shutdown_minutes`.
 
 3. Compute Cluster
 - Set `mode` to `compute-cluster`.
 - Requires a `compute_name`.
-  - If a compute cluster with the same name exists, it uses existing cluster, 
-  ignores other parameters.
-  - If a compute cluster with the same name doesn't exist, it creates a new 
-  compute cluster. Additional parameters can be used for configuring this 
-  process.
+  - If a compute cluster with the same name exists, it uses existing cluster, ignores other parameters.
+  - If a compute cluster with the same name doesn't exist, it creates a new compute cluster. Additional parameters can be used for configuring this process.
 
-Here is an example how you can use the `AzureMLStepOperatorSettings` to define 
-a compute instance:
+Here is an example how you can use the `AzureMLStepOperatorSettings` to define a compute instance:
 
 ```python
 from zenml import step

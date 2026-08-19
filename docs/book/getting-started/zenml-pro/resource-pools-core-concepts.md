@@ -9,9 +9,7 @@ This page defines **pools**, **policies**, and **requests** for ZenML Pro.
 
 ## Pools
 
-A **resource pool** is a named shared bucket. For each resource key (for
-example `gpu`), you set how many units exist in the pool. Policies on that
-pool further split that capacity among orchestrators and step operators.
+A **resource pool** is a named shared bucket. For each resource key (for example `gpu`), you set how many units exist in the pool. Policies on that pool further split that capacity among orchestrators and step operators.
 
 Steps and pools use the same keys and integer amounts. Typical keys are:
 
@@ -47,29 +45,13 @@ zenml resource-pool delete training-gpus --yes
 
 ## Policies
 
-A **policy** connects one stack component—the orchestrator or step operator that
-acts as the *resource requester* for a step—to one pool. Think of three knobs
-per resource key:
+A **policy** connects one stack component—the orchestrator or step operator that acts as the *resource requester* for a step—to one pool. Think of three knobs per resource key:
 
-* **Reserved** — How much of the pool you *label* as belonging to this component
-for accounting. Usage up to that amount counts as *in share*; anything above it
-(while the pool still has free units) is *borrowed* idle capacity. Reserved is
-not a separate pile of hardware: it is the share used to decide who is “in
-their rights” versus who is on spare capacity. Across all policies on the same
-pool, reserved totals per key cannot exceed the pool capacity. Reserved must
-also be ≤ that policy’s limit for the same key.
+* **Reserved** — How much of the pool you *label* as belonging to this component for accounting. Usage up to that amount counts as *in share*; anything above it (while the pool still has free units) is *borrowed* idle capacity. Reserved is not a separate pile of hardware: it is the share used to decide who is “in their rights” versus who is on spare capacity. Across all policies on the same pool, reserved totals per key cannot exceed the pool capacity. Reserved must also be ≤ that policy’s limit for the same key.
 
-* **Limit** — The hard ceiling on how much this component may hold from the pool
-at once for that key. Grants never go above the limit, even if the pool is
-empty. For **preemptible** workloads, the space between reserved and limit is
-where borrowing can happen (subject to pool free capacity). Non-preemptible
-work does not use that band: each requested amount per key must be **≤
-reserved**, and a higher **limit** does not raise that ceiling (limit still caps
-preemptible burst and total use).
+* **Limit** — The hard ceiling on how much this component may hold from the pool at once for that key. Grants never go above the limit, even if the pool is empty. For **preemptible** workloads, the space between reserved and limit is where borrowing can happen (subject to pool free capacity). Non-preemptible work does not use that band: each requested amount per key must be **≤ reserved**, and a higher **limit** does not raise that ceiling (limit still caps preemptible burst and total use).
 
-* **Priority** — A number; higher means that component’s requests are preferred in
-the queue. When the reconciler must **preempt** someone, it looks at **lower**
-priority preemptible runs first as victims (see below).
+* **Priority** — A number; higher means that component’s requests are preferred in the queue. When the reconciler must **preempt** someone, it looks at **lower** priority preemptible runs first as victims (see below).
 
 {% hint style="warning" %}
 A single orchestrator or step operator may have **several policies** attached,
@@ -111,9 +93,7 @@ zenml resource-pool detach-policy training-gpus my-k8s-orch
 
 ## Resource requests
 
-For eligible runs, the server builds a **resource request** from the step’s
-`ResourceSettings`, records whether the step is preemptible, and tracks status:
-queued, allocated, rejected, preempted, or cancelled.
+For eligible runs, the server builds a **resource request** from the step’s `ResourceSettings`, records whether the step is preemptible, and tracks status: queued, allocated, rejected, preempted, or cancelled.
 
 {% hint style="info" %}
 Only dynamic pipelines participate in resource queuing and allocation
@@ -122,15 +102,7 @@ allocation when the snapshot is dynamic. Static pipelines do not use this
 path today.
 {% endhint %}
 
-What users set in `ResourceSettings` becomes a server-side resource request (for
-example `gpu_count` → `gpu`, `cpu_count` → `mcpu`, `memory` → `memory_mb`, plus
-an implicit concurrent `step_run` slot). The pool must define capacity for each
-key requested by the step, except for three built-in types: if the pool has no
-row for `mcpu`, `memory_mb`, or the implicit `step_run` key, ZenML Pro treats that
-dimension as **effectively unbounded** at the pool layer, so missing rows there
-do not by themselves cause rejection. For every other key (including
-`gpu` and custom keys from `pool_resources`), a missing pool row means zero
-capacity: a positive request is rejected and the step run fails to start.
+What users set in `ResourceSettings` becomes a server-side resource request (for example `gpu_count` → `gpu`, `cpu_count` → `mcpu`, `memory` → `memory_mb`, plus an implicit concurrent `step_run` slot). The pool must define capacity for each key requested by the step, except for three built-in types: if the pool has no row for `mcpu`, `memory_mb`, or the implicit `step_run` key, ZenML Pro treats that dimension as **effectively unbounded** at the pool layer, so missing rows there do not by themselves cause rejection. For every other key (including `gpu` and custom keys from `pool_resources`), a missing pool row means zero capacity: a positive request is rejected and the step run fails to start.
 
 {% hint style="warning" %}
 If the pool does define a key but the subject policy omits that key,
@@ -141,8 +113,7 @@ positive request for a key not defined in the policy is rejected.
 
 ### Step decorators: `ResourceSettings`
 
-Declare demand on the step; the server turns it into the resource request when
-the pipeline is **dynamic** and pooling applies to the stack.
+Declare demand on the step; the server turns it into the resource request when the pipeline is **dynamic** and pooling applies to the stack.
 
 **Typical GPU / CPU / memory (preemptible by default):**
 
@@ -200,8 +171,7 @@ in the OSS docs for the full `ResourceSettings` model.
 
 ### CLI: resource requests
 
-Requests are created when dynamic steps run; you **inspect** or **clean them up**
-from the CLI (IDs come from list output or the dashboard).
+Requests are created when dynamic steps run; you **inspect** or **clean them up** from the CLI (IDs come from list output or the dashboard).
 
 ```bash
 # All resource requests visible to your user (see --help for filters)

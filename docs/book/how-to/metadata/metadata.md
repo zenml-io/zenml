@@ -234,8 +234,7 @@ bulk_log_metadata(
 
 ~~~
 
-Note that the `bulk_log_metadata` function has a slightly different signature compared to `log_metadata`.
-You can use the Identifier class objects to specify any parameter combination that uniquely identifies an object:
+Note that the `bulk_log_metadata` function has a slightly different signature compared to `log_metadata`. You can use the Identifier class objects to specify any parameter combination that uniquely identifies an object:
 
 * VersionedIdentifiers
   * ArtifactVersionIdentifier & ModelVersionIdentifier
@@ -264,9 +263,7 @@ def get_train_test_datasets():
     return train_dataset, test_dataset
 ```
 
-Keep in mind that when using the `infer_artifacts` option, the `bulk_log_metadata` function logs metadata to all output artifacts of the step.
-When logging metadata, you may need the option to use `infer` options in combination with identifier references. For instance, you may want
-to log metadata to a step's outputs but also to its inputs. The `bulk_log_metadata` function enables you to use both options in one go:
+Keep in mind that when using the `infer_artifacts` option, the `bulk_log_metadata` function logs metadata to all output artifacts of the step. When logging metadata, you may need the option to use `infer` options in combination with identifier references. For instance, you may want to log metadata to a step's outputs but also to its inputs. The `bulk_log_metadata` function enables you to use both options in one go:
 
 ```python
 from zenml import bulk_log_metadata, get_step_context, step
@@ -300,8 +297,7 @@ def model_evaluation(test_dataset, model):
 
 ### Performance improvements hints
 
-Both `log_metadata` and `bulk_log_metadata` internally use parameters such as name and version to resolve the actual IDs of entities.
-For example, when you provide an artifact's name and version, the function performs an additional lookup to resolve the artifact version ID.
+Both `log_metadata` and `bulk_log_metadata` internally use parameters such as name and version to resolve the actual IDs of entities. For example, when you provide an artifact's name and version, the function performs an additional lookup to resolve the artifact version ID.
 
 To improve performance, prefer using the entity's ID directly instead of its name, version, or other identifiers whenever possible.
 
@@ -401,8 +397,7 @@ The Experiment Comparison tool offers two complementary views for analyzing your
 
 ![Parallel Coordinates](../../../book/.gitbook/assets/coordinates-view.png)
 
-The tool lets you compare up to 20 pipeline runs simultaneously and supports any
-numerical metadata (`float` or `int`) that you've logged in your pipelines.
+The tool lets you compare up to 20 pipeline runs simultaneously and supports any numerical metadata (`float` or `int`) that you've logged in your pipelines.
 
 ## Fetching Metadata
 

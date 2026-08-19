@@ -231,7 +231,7 @@ A typical synchronization workflow involves:
 
 1. **Fetch users from IdP**: Query your identity provider for users, their groups, and roles
 2. **Map to ZenML Pro concepts**: Define how IdP groups/roles map to ZenML Pro organizations, teams, and roles
-3. **Synchronize via API**: 
+3. **Synchronize via API**:
    - For users who have logged in: update their user accounts directly
    - For users who haven't logged in yet: create invitations and assign permissions to them
 4. **Run periodically**: Execute the synchronization on a schedule (e.g., via cron, Kubernetes CronJob, or CI/CD pipeline)

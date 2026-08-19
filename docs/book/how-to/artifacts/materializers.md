@@ -38,8 +38,7 @@ upgrade.
 
 ### Dataclass artifacts
 
-The `DataclassMaterializer` handles JSON-serializable Python dataclasses
-without requiring you to write a custom materializer.
+The `DataclassMaterializer` handles JSON-serializable Python dataclasses without requiring you to write a custom materializer.
 
 ```python
 from dataclasses import dataclass
@@ -56,10 +55,7 @@ def make_config() -> TrainingConfig:
     return TrainingConfig(learning_rate=0.01, epochs=10)
 ```
 
-This works for dataclasses that Pydantic can serialize to JSON. If your
-dataclass contains objects such as open file handles, live model objects,
-database connections, or other arbitrary Python objects, use a custom
-materializer instead.
+This works for dataclasses that Pydantic can serialize to JSON. If your dataclass contains objects such as open file handles, live model objects, database connections, or other arbitrary Python objects, use a custom materializer instead.
 
 ### Passing Files and Directories Between Steps
 
@@ -448,6 +444,6 @@ When working with materializers:
 
 ## Conclusion
 
-Materializers are a powerful part of ZenML's artifact system, enabling proper storage and handling of any data type. By creating custom materializers for your specific data structures, you ensure that your ML pipelines are robust, efficient, and can handle any data type required by your workflows. 
+Materializers are a powerful part of ZenML's artifact system, enabling proper storage and handling of any data type. By creating custom materializers for your specific data structures, you ensure that your ML pipelines are robust, efficient, and can handle any data type required by your workflows.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

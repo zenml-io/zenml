@@ -9,23 +9,15 @@ icon: server
 Triggers are part of ZenML's paid features. For details on availability and supported plans, visit the [pricing page](https://www.zenml.io/pricing)
 {% endhint %}
 
-In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots and execute them on demand via 
-the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in 
-response to an event.
+In the [snapshots](./snapshots.md) section, you learned how to prepare snapshots and execute them on demand via the dashboard, CLI, or SDK. In many cases, however, pipelines need to run automatically - either on a schedule or in response to an event.
 
-Triggers enable this behavior. A trigger is a configuration that defines one or more conditions under 
-which a pipeline is automatically started.
+Triggers enable this behavior. A trigger is a configuration that defines one or more conditions under which a pipeline is automatically started.
 
 ## Schedule Triggers
 
-*Schedule Triggers* allow pipelines to run automatically based on time-based rules, such as fixed intervals
-or cron expressions. They are ideal for recurring workflows, on a predictable timeline, like daily retraining, 
-batch processing, or periodic data ingestion.
+*Schedule Triggers* allow pipelines to run automatically based on time-based rules, such as fixed intervals or cron expressions. They are ideal for recurring workflows, on a predictable timeline, like daily retraining, batch processing, or periodic data ingestion.
 
-When defining a scheduled trigger, you can configure both when and how your pipeline runs. Choose between 
-one-off executions, interval-based schedules, or cron expressions for fine-grained timing control. 
-Additional options, such as time boundaries, concurrency limits, and activation settings, let you 
-tailor the trigger to your workflow requirements.
+When defining a scheduled trigger, you can configure both when and how your pipeline runs. Choose between one-off executions, interval-based schedules, or cron expressions for fine-grained timing control. Additional options, such as time boundaries, concurrency limits, and activation settings, let you tailor the trigger to your workflow requirements.
 
 | Attribute           | Description                                                             | Notes                        |
 |---------------------|-------------------------------------------------------------------------|------------------------------|
@@ -67,11 +59,9 @@ zenml trigger schedule create daily-schedule-6-am --cron-expression "0 6 * * *"
 
 ### Attach/Detach schedules and snapshots
 
-So far we have instructed our system with *when* to execute but not *what*. To do so,
-we need to *attach* a schedule to a snapshot.
+So far we have instructed our system with *when* to execute but not *what*. To do so, we need to *attach* a schedule to a snapshot.
 
-For the CLI, commands that take a trigger or snapshot accept its name or ID
-(exact match, not a prefix). Positional order is always trigger first, then snapshot.
+For the CLI, commands that take a trigger or snapshot accept its name or ID (exact match, not a prefix). Positional order is always trigger first, then snapshot.
 
 Via the SDK:
 
@@ -92,8 +82,7 @@ Via the CLI:
 zenml trigger schedule attach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>"
 ~~~
 
-Users can provide a configuration object to define the parameters of pipeline runs
-triggered from this attachment.
+Users can provide a configuration object to define the parameters of pipeline runs triggered from this attachment.
 
 Via the SDK:
 
@@ -120,8 +109,7 @@ zenml trigger schedule attach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>" \
   --config=<path-to-your-config>.yml
 ~~~
 
-To stop a trigger from launching runs for a specific snapshot, you can *detach* the
-trigger from that snapshot.
+To stop a trigger from launching runs for a specific snapshot, you can *detach* the trigger from that snapshot.
 
 Via the SDK:
 
@@ -142,9 +130,7 @@ Via the CLI:
 zenml trigger schedule detach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>"
 ~~~
 
-The ability to detach and attach snapshots is particularly useful as pipelines evolve. When a new pipeline 
-version becomes available, you can update the schedule to use it by detaching the previous 
-snapshot and attaching the new one.
+The ability to detach and attach snapshots is particularly useful as pipelines evolve. When a new pipeline version becomes available, you can update the schedule to use it by detaching the previous snapshot and attaching the new one.
 
 {% hint style="warning" %}
 As with on-demand execution, scheduling requires snapshots with a **remote stack** with at least:
@@ -179,8 +165,7 @@ zenml trigger schedule update "daily-schedule-6-am" --active=false \
 
 ### View Schedules
 
-Triggers are a first-level citizen of the ZenML platform. You can view detailed information in the
-dashboard as well as via the SDK and CLI.
+Triggers are a first-level citizen of the ZenML platform. You can view detailed information in the dashboard as well as via the SDK and CLI.
 
 Via the dashboard:
 
@@ -198,28 +183,15 @@ Or its attached snapshots and executed pipeline runs:
 
 ![Image Showing Schedule Runs](../../.gitbook/assets/schedule_runs_dash.png)
 
-For each trigger–snapshot attachment, ZenML can persist the **dispatch state**.
-This is the small status record that answers, "what happened the last time this
-trigger tried to launch this snapshot?" The status can be:
+For each trigger–snapshot attachment, ZenML can persist the **dispatch state**. This is the small status record that answers, "what happened the last time this trigger tried to launch this snapshot?" The status can be:
 
 - `SUCCESS`: a run was launched successfully.
-- `SKIPPED_CONCURRENCY`: a run was skipped because the trigger's concurrency
-  rule said not to start another one yet.
-- `SKIPPED_MAX_RUNS`: a run was skipped because the configured run limit for
-  this trigger-snapshot attachment has already been reached.
-- `SKIPPED_TRIGGER_CYCLE`: a platform event trigger dispatch was skipped
-  because it would revisit a pipeline already present in the trigger chain.
+- `SKIPPED_CONCURRENCY`: a run was skipped because the trigger's concurrency rule said not to start another one yet.
+- `SKIPPED_MAX_RUNS`: a run was skipped because the configured run limit for this trigger-snapshot attachment has already been reached.
+- `SKIPPED_TRIGGER_CYCLE`: a platform event trigger dispatch was skipped because it would revisit a pipeline already present in the trigger chain.
 - `ERROR`: ZenML tried to dispatch the run, but something failed.
 
-When the last status is `ERROR`, the dispatch state can also include the last
-error message, error type, severity, stack trace, first/last error timestamps,
-and an error count. After you fix the underlying problem, you can acknowledge
-the error and clear the stored dispatch state (see the next section). In the
-normal failure case, clearing errors removes the `ERROR` status record for that
-trigger-snapshot attachment, so the next dispatch can start from a clean state.
-Use `get_schedule_trigger` with `trigger_name_id_or_prefix` to load a schedule
-by name, full ID, or ID prefix; set `allow_name_prefix_match=False` if you need
-an exact name match.
+When the last status is `ERROR`, the dispatch state can also include the last error message, error type, severity, stack trace, first/last error timestamps, and an error count. After you fix the underlying problem, you can acknowledge the error and clear the stored dispatch state (see the next section). In the normal failure case, clearing errors removes the `ERROR` status record for that trigger-snapshot attachment, so the next dispatch can start from a clean state. Use `get_schedule_trigger` with `trigger_name_id_or_prefix` to load a schedule by name, full ID, or ID prefix; set `allow_name_prefix_match=False` if you need an exact name match.
 
 Via the SDK:
 
@@ -248,13 +220,11 @@ zenml trigger schedule list --active=true
 
 ### Stopping Criteria
 
-You can control when a schedule stops by limiting it in time or by number of runs. This helps avoid unintended 
-long-running schedules and gives you tighter control over resource usage.
+You can control when a schedule stops by limiting it in time or by number of runs. This helps avoid unintended long-running schedules and gives you tighter control over resource usage.
 
 #### `end_time`
 
-Defines the point in time after which the schedule will no longer trigger runs. 
-The schedule remains visible but inactive for future executions.
+Defines the point in time after which the schedule will no longer trigger runs. The schedule remains visible but inactive for future executions.
 
 ~~~python
 from datetime import datetime, timedelta
@@ -271,14 +241,9 @@ client.create_schedule_trigger(
 
 #### `max_runs`
 
-Limits how many times a schedule can trigger a pipeline. Once the limit is
-reached for a trigger-snapshot attachment, no further runs are scheduled for
-that attachment. Later dispatch attempts can show up as `SKIPPED_MAX_RUNS` in
-the dispatch state. This is not an error that needs to be cleared; it is ZenML
-saying, "the run limit you configured has been reached."
+Limits how many times a schedule can trigger a pipeline. Once the limit is reached for a trigger-snapshot attachment, no further runs are scheduled for that attachment. Later dispatch attempts can show up as `SKIPPED_MAX_RUNS` in the dispatch state. This is not an error that needs to be cleared; it is ZenML saying, "the run limit you configured has been reached."
 
-Note that this limit applies per attached snapshot, for example, with a limit of
-2 and two attached snapshots, you will see a total of 4 runs.
+Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
 
 ~~~python
 from zenml.client import Client
@@ -298,8 +263,7 @@ If both are set, the schedule stops when the first condition is reached (time or
 
 #### Clear dispatch errors
 
-To clear stored dispatch error details after the issue is resolved, use the SDK
-or the `clear-errors` command under `zenml trigger schedule`. With no snapshot argument, errors are cleared for **all** snapshots attached to that trigger.
+To clear stored dispatch error details after the issue is resolved, use the SDK or the `clear-errors` command under `zenml trigger schedule`. With no snapshot argument, errors are cleared for **all** snapshots attached to that trigger.
 
 Via the SDK:
 
@@ -319,8 +283,7 @@ client.clear_trigger_dispatch_error(
 )
 ~~~
 
-To clear the error only for one attached snapshot, pass that snapshot’s UUID
-(in addition to the `client` and `trigger` values from the example above):
+To clear the error only for one attached snapshot, pass that snapshot’s UUID (in addition to the `client` and `trigger` values from the example above):
 
 ~~~python
 from uuid import UUID
@@ -340,18 +303,15 @@ zenml trigger schedule clear-errors "my-schedule" "my-snapshot"
 
 ### Delete schedules
 
-Triggers in ZenML are archivable objects. When a Trigger is archived (soft-deleted), it is deactivated and can no 
-longer be used, but it remains in the system to preserve references for visibility and debugging.
+Triggers in ZenML are archivable objects. When a Trigger is archived (soft-deleted), it is deactivated and can no longer be used, but it remains in the system to preserve references for visibility and debugging.
 
-Archiving (soft deletion) is the default deletion mode. Triggers can also be permanently deleted. Neither 
-operation can be reversed.
+Archiving (soft deletion) is the default deletion mode. Triggers can also be permanently deleted. Neither operation can be reversed.
 
 Via the dashboard:
 
 ![Image Showing Schedule Deletion](../../.gitbook/assets/delete_schedule_soft.png)
 
-You can view archived schedules by setting the `Display archived` filter, where
-you can also hard delete them.
+You can view archived schedules by setting the `Display archived` filter, where you can also hard delete them.
 
 ![Image Showing Schedule Hard Deletion](../../.gitbook/assets/delete_schedule_hard.png)
 
@@ -370,10 +330,7 @@ client.delete_trigger(
 
 Via the CLI:
 
-Default behavior is **soft** deletion (the trigger is archived). Pass
-`--hard` to remove the trigger and its associated references permanently. To
-operate on an **archived** trigger, add `--archived` (for example, to hard
-delete a trigger that is already archived).
+Default behavior is **soft** deletion (the trigger is archived). Pass `--hard` to remove the trigger and its associated references permanently. To operate on an **archived** trigger, add `--archived` (for example, to hard delete a trigger that is already archived).
 
 ~~~bash
 zenml trigger schedule delete "my-schedule"
@@ -383,9 +340,7 @@ zenml trigger schedule delete "my-old-schedule" --archived --hard
 
 ## Triggers vs OSS schedules
 
-ZenML provides [scheduling](../../how-to/steps-pipelines/scheduling.md) as an open-source feature. This section 
-outlines the differences between open-source schedules and schedule-based Triggers, and explains why Triggers are 
-better suited for production workloads:
+ZenML provides [scheduling](../../how-to/steps-pipelines/scheduling.md) as an open-source feature. This section outlines the differences between open-source schedules and schedule-based Triggers, and explains why Triggers are better suited for production workloads:
 
 * Lifecycle management
   * Triggers: You can update or delete a schedule at any time, and changes are automatically applied across the system.
@@ -405,17 +360,9 @@ better suited for production workloads:
 
 ## Platform Event Triggers
 
-*Platform Event Triggers* extend ZenML’s trigger system by enabling pipelines to run automatically in response
-to events occurring within the ZenML platform itself. Instead of relying on time-based schedules, these
-triggers allow users to define downstream pipeline executions that react to lifecycle events, such as
-the completion of another pipeline. This makes it easy to build event-driven workflows where pipelines are 
-seamlessly chained based on platform activity.
+*Platform Event Triggers* extend ZenML’s trigger system by enabling pipelines to run automatically in response to events occurring within the ZenML platform itself. Instead of relying on time-based schedules, these triggers allow users to define downstream pipeline executions that react to lifecycle events, such as the completion of another pipeline. This makes it easy to build event-driven workflows where pipelines are seamlessly chained based on platform activity.
 
-When defining a platform event trigger, you configure what resource to listen to and which events should 
-initiate a pipeline run. The source_type and source_id identify the ZenML entity you want to react 
-to (e.g., a specific pipeline), while target_events define the events of interest (e.g., completed or failed). 
-Additional options, such as activation state and concurrency behavior, allow you to control how the 
-trigger operates within your workflow.
+When defining a platform event trigger, you configure what resource to listen to and which events should initiate a pipeline run. The source_type and source_id identify the ZenML entity you want to react to (e.g., a specific pipeline), while target_events define the events of interest (e.g., completed or failed). Additional options, such as activation state and concurrency behavior, allow you to control how the trigger operates within your workflow.
 
 | Attribute     | Description                                               | Notes                              |
 |---------------|-----------------------------------------------------------|------------------------------------|
@@ -426,9 +373,7 @@ trigger operates within your workflow.
 | active        | Status of the trigger (active/inactive)                   | -                                  |
 | concurrency   | Option to control how concurrent runs should be handled   | Skip is the default option         |
 
-You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete, clear-errors)
-as for schedule triggers. While some parameters and responses differ slightly, additional utilities are 
-available to help you work more effectively with this trigger type.
+You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete, clear-errors) as for schedule triggers. While some parameters and responses differ slightly, additional utilities are available to help you work more effectively with this trigger type.
 
 Supported target events depend on the source type:
 
@@ -438,17 +383,12 @@ Supported target events depend on the source type:
 | `pipeline_run` | React to one specific pipeline run | `completed`, `failed` |
 | `pipeline_snapshot` | React to runs of a pipeline snapshot | `run_completed`, `run_failed` |
 
-That distinction is easy to miss. If the source is a pipeline, the event name
-includes the word `run` because the pipeline itself is not what completes; one
-of its runs does. Pipeline snapshot events follow the same naming pattern. If
-the source is already a pipeline run, the event is simply `completed` or
-`failed`.
+That distinction is easy to miss. If the source is a pipeline, the event name includes the word `run` because the pipeline itself is not what completes; one of its runs does. Pipeline snapshot events follow the same naming pattern. If the source is already a pipeline run, the event is simply `completed` or `failed`.
 
 
 ### Create Platform Event Trigger
 
-Let's start by creating a Platform Event Trigger. In this example, we want to react to the successful 
-completion of a specific pipeline.
+Let's start by creating a Platform Event Trigger. In this example, we want to react to the successful completion of a specific pipeline.
 
 Via the SDK:
 
@@ -468,9 +408,7 @@ trigger = create_platform_event_trigger(
 
 Via the CLI:
 
-The SDK provides helpful overloads that guide you toward valid configurations by suggesting the supported target 
-events for a given source type as you type. To improve discoverability in the CLI, an additional helper 
-command is available:
+The SDK provides helpful overloads that guide you toward valid configurations by suggesting the supported target events for a given source type as you type. To improve discoverability in the CLI, an additional helper command is available:
 
 ```bash
 zenml trigger platform-event list-supported-events pipeline
@@ -484,8 +422,7 @@ zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPEL
 
 ### Update Platform Event Triggers
 
-Let's continue by updating our existing trigger. In this example, we want to add multiple target events. 
-The trigger initially reacted to successful completion, and we will now extend it to react to failures as well.
+Let's continue by updating our existing trigger. In this example, we want to add multiple target events. The trigger initially reacted to successful completion, and we will now extend it to react to failures as well.
 
 Via the SDK:
 
@@ -508,9 +445,7 @@ zenml trigger platform-event update "on-hello-pipeline-complete" \
 
 ### Remaining Platform Event Trigger operations
 
-The remaining operations (list, attach, detach, delete, and clear-errors) match schedule triggers.
-In the CLI, they are grouped under a different command namespace, but the syntax remains the same. 
-You can explore the available platform event trigger commands with:
+The remaining operations (list, attach, detach, delete, and clear-errors) match schedule triggers. In the CLI, they are grouped under a different command namespace, but the syntax remains the same. You can explore the available platform event trigger commands with:
 
 ```bash
 zenml trigger platform-event
@@ -531,8 +466,7 @@ trigger = Client().get_platform_event_trigger(
 triggers = Client().list_platform_event_triggers()
 ```
 
-To attach, detach, and delete triggers via the SDK, the methods are shared across
-all trigger types (IDs are UUIDs):
+To attach, detach, and delete triggers via the SDK, the methods are shared across all trigger types (IDs are UUIDs):
 
 ```python
 from uuid import UUID
@@ -552,8 +486,7 @@ c.delete_trigger(trigger_id=UUID("<trigger_uuid>"), soft=True)
 
 ### Upstream information
 
-When a downstream pipeline is executed, it can be useful to access information about the upstream run 
-that triggered it. The following example shows how to retrieve this information within a running pipeline step:
+When a downstream pipeline is executed, it can be useful to access information about the upstream run that triggered it. The following example shows how to retrieve this information within a running pipeline step:
 
 
 ```python
@@ -569,10 +502,7 @@ def my_step():
 
 ### Chaining pipelines with triggers
 
-Platform Event Triggers can be used to build simple multi-pipeline workflows by chaining pipelines together. 
-For example, you can configure a trigger so that when Pipeline A completes, it starts Pipeline B, which in 
-turn can trigger Pipeline C. This enables lightweight orchestration patterns directly within ZenML, allowing you 
-to break down complex workflows into smaller, reusable pipeline components that execute in sequence based on platform events.
+Platform Event Triggers can be used to build simple multi-pipeline workflows by chaining pipelines together. For example, you can configure a trigger so that when Pipeline A completes, it starts Pipeline B, which in turn can trigger Pipeline C. This enables lightweight orchestration patterns directly within ZenML, allowing you to break down complex workflows into smaller, reusable pipeline components that execute in sequence based on platform events.
 
 {% hint style="warning" %}
 ZenML detects trigger loops at the **pipeline level** while dispatching platform
@@ -587,9 +517,7 @@ continue to dispatch normally. This protection does not disable or modify the
 trigger configuration, and it does not cancel runs that have already started.
 {% endhint %}
 
-Dispatch states are stored per attached snapshot, and
-`cycle_pipeline_ids` contains the ordered closed cycle (the first and last IDs
-are the pipeline that closes the loop):
+Dispatch states are stored per attached snapshot, and `cycle_pipeline_ids` contains the ordered closed cycle (the first and last IDs are the pipeline that closes the loop):
 
 ```python
 from zenml.client import Client

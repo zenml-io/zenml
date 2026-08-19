@@ -65,7 +65,7 @@ kubectl -n zenml-workload-manager create serviceaccount zenml-workload-manager
 
 ### 2. Choose Implementation
 
-Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment: 
+Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment:
 
 **Option A: Kubernetes Implementation (Basic)**
 
@@ -97,7 +97,7 @@ server:
 
 ### 3. Configure the Runner Image Source
 
-Choose how runner images are managed. Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment: 
+Choose how runner images are managed. Your choice of implementation will determine the additional environment variables you need to configure in the ZenML Workspace Server Helm deployment:
 
 **Option 1: Reuse snapshot container images**
 
@@ -155,13 +155,11 @@ Granting these permissions can be achieved in several ways:
 Use separate identities for:
 
 1. the service account running the Workspace Server pod,
-2. the service account configured in
-   `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` for runner/builder jobs.
+2. the service account configured in `ZENML_KUBERNETES_WORKLOAD_MANAGER_SERVICE_ACCOUNT` for runner/builder jobs.
 
 **Workspace Server service account RBAC (in workload manager namespace)**
 
-The Workspace Server creates, monitors, and cleans up workload manager jobs and
-fetches pod logs. Grant:
+The Workspace Server creates, monitors, and cleans up workload manager jobs and fetches pod logs. Grant:
 
 - `batch/jobs`: `create`, `get`, `deletecollection`
 - `core/pods`: `list`
@@ -169,14 +167,11 @@ fetches pod logs. Grant:
 
 **Workload manager runner/builder service account**
 
-The runner/builder jobs launched by the workload manager do not need Kubernetes
-API permissions for the workload manager control loop itself. This account
-mainly needs:
+The runner/builder jobs launched by the workload manager do not need Kubernetes API permissions for the workload manager control loop itself. This account mainly needs:
 
 - container registry pull permissions for runner images,
 - container registry push permissions if build-on-demand is enabled,
-- optional cloud permissions required by your workload implementation (for
-  example S3 write access when AWS external logs are enabled).
+- optional cloud permissions required by your workload implementation (for example S3 write access when AWS external logs are enabled).
 
 ### 4. Environment Variable Reference
 

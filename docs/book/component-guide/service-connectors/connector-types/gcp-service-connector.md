@@ -140,8 +140,7 @@ If set, the resource name must identify a GAR or GCR registry using one of the f
 * Google Artifact Registry name: `projects/<project-id>/locations/<location>/repositories/<repository-id>`
 * (legacy) GCR repository URI: `[https://][us.|eu.|asia.]gcr.io/<project-id>[/<repository-name>]`
 
-The connector can only be used to access GAR and GCR registries in the GCP\
-project that it is configured to use.
+The connector can only be used to access GAR and GCR registries in the GCP\ project that it is configured to use.
 
 ## Authentication Methods
 

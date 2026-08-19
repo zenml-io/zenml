@@ -5,8 +5,7 @@ icon: cloud
 
 # Register a cloud stack
 
-In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your\
-infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
+In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your\ infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
 
 Especially in a remote setting, this process can be challenging and time-consuming, and it may create multi-faceted problems. This is why we implemented a feature called the stack wizard, which allows you to **browse through your existing infrastructure and use it to register a ZenML cloud stack**.
 
