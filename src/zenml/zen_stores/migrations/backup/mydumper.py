@@ -189,6 +189,16 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--outputdir", self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
+        if self.config.auth_mode == "aws_rds_iam":
+            cmd.extend(
+                [
+                    "--trx-tables",
+                    "--sync-thread-lock-mode",
+                    "LOCK_ALL",
+                    "--skip-ddl-locks",
+                ]
+            )
+
         if self.config.mydumper_threads:
             cmd.extend(["--threads", str(self.config.mydumper_threads)])
 
