@@ -153,6 +153,19 @@ from zenml.orchestrators.publish_utils import (
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
+from zenml.status_sources import (
+    DYNAMIC_RUNNER_CHILD_RUN_FAILED,
+    DYNAMIC_RUNNER_INFRA_DIED,
+    DYNAMIC_RUNNER_RUN_COMPLETED,
+    DYNAMIC_RUNNER_RUN_FAILED,
+    DYNAMIC_RUNNER_RUN_PAUSED,
+    DYNAMIC_RUNNER_RUN_RESUMED,
+    DYNAMIC_RUNNER_RUN_STARTED,
+    DYNAMIC_RUNNER_STEP_CANCELLED,
+    DYNAMIC_RUNNER_STEP_COMPLETED,
+    DYNAMIC_RUNNER_STEP_STOPPED,
+    DYNAMIC_RUNNER_STUCK_STEP_FAILED,
+)
 from zenml.steps import BaseStep
 from zenml.utils import (
     env_utils,
@@ -558,11 +571,17 @@ class DynamicPipelineRunner:
                     # The step runner sets the status to STOPPING when receiving
                     # a heartbeat response that the pipeline should be stopped.
                     # We now update this status to STOPPED.
-                    step_run = publish_stopped_step_run(step_run.id)
+                    step_run = publish_stopped_step_run(
+                        step_run.id,
+                        status_source=DYNAMIC_RUNNER_STEP_STOPPED,
+                    )
                 elif db_status == ExecutionStatus.CANCELLING:
                     # Resource preemption sets the status to CANCELLING. We now
                     # update the status to CANCELLED.
-                    step_run = publish_cancelled_step_run(step_run.id)
+                    step_run = publish_cancelled_step_run(
+                        step_run.id,
+                        status_source=DYNAMIC_RUNNER_STEP_CANCELLED,
+                    )
                 elif infra_status in [
                     ExecutionStatus.FAILED,
                     ExecutionStatus.STOPPED,
@@ -572,7 +591,10 @@ class DynamicPipelineRunner:
                 ]:
                     # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
-                    step_run = publish_failed_step_run(step_run.id)
+                    step_run = publish_failed_step_run(
+                        step_run.id,
+                        status_source=DYNAMIC_RUNNER_INFRA_DIED,
+                    )
                 elif (
                     infra_status == ExecutionStatus.COMPLETED
                     and db_status == ExecutionStatus.RUNNING
@@ -585,6 +607,7 @@ class DynamicPipelineRunner:
                         step_run = publish_successful_step_run(
                             step_run_id=step_run.id,
                             output_artifact_ids={},
+                            status_source=DYNAMIC_RUNNER_STEP_COMPLETED,
                         )
                     else:
                         # This should never happen, handle it just in case. If
@@ -858,6 +881,7 @@ class DynamicPipelineRunner:
                     run_id=self._run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
+                        status_source=DYNAMIC_RUNNER_RUN_RESUMED,
                     ),
                 )
                 logger.info("Resuming run `%s`.", str(self._run.id))
@@ -874,6 +898,7 @@ class DynamicPipelineRunner:
                     run_id=self._run.id,
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
+                        status_source=DYNAMIC_RUNNER_RUN_STARTED,
                     ),
                 )
                 run_start_hook = True
@@ -1288,7 +1313,10 @@ class DynamicPipelineRunner:
                 # way that they're actually still running if we're in a new
                 # orchestration environment, so we mark them as failed and
                 # potentially restart them depending on the retry config.
-                step_run = publish_failed_step_run(step_run.id)
+                step_run = publish_failed_step_run(
+                    step_run.id,
+                    status_source=DYNAMIC_RUNNER_STUCK_STEP_FAILED,
+                )
                 # Store the updated step run so we can compute the remaining
                 # retries in the async submission flow.
                 self._existing_step_runs[invocation_id] = step_run
@@ -2079,14 +2107,19 @@ class DynamicPipelineRunner:
                 user_func=pipeline_func,
             )
             self._run = publish_failed_pipeline_run(
-                self._run.id, exception_info=exception_info
+                self._run.id,
+                status_source=DYNAMIC_RUNNER_RUN_FAILED,
+                exception_info=exception_info,
             )
             return
 
         if self._is_paused:
             self._run = Client().zen_store.update_run(
                 run_id=self._run.id,
-                run_update=PipelineRunUpdate(status=ExecutionStatus.PAUSED),
+                run_update=PipelineRunUpdate(
+                    status=ExecutionStatus.PAUSED,
+                    status_source=DYNAMIC_RUNNER_RUN_PAUSED,
+                ),
             )
             logger.info("Pausing pipeline run `%s`.", self._run.id)
             return
@@ -2098,7 +2131,9 @@ class DynamicPipelineRunner:
         self._run = Client().zen_store.update_run(
             run_id=self._run.id,
             run_update=PipelineRunUpdate(
-                status=ExecutionStatus.COMPLETED, outputs=outputs
+                status=ExecutionStatus.COMPLETED,
+                status_source=DYNAMIC_RUNNER_RUN_COMPLETED,
+                outputs=outputs,
             ),
         )
         logger.info(
@@ -2992,6 +3027,7 @@ class DynamicPipelineRunner:
             publish_pipeline_run_status_update(
                 pipeline_run_id=child_run.id,
                 status=ExecutionStatus.FAILED,
+                status_source=DYNAMIC_RUNNER_CHILD_RUN_FAILED,
                 status_reason=reason,
             )
         except Exception:

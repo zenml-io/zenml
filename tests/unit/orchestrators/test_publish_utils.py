@@ -16,6 +16,11 @@ from uuid import uuid4
 
 from zenml.enums import ExecutionStatus
 from zenml.orchestrators import publish_utils
+from zenml.status_sources import (
+    DYNAMIC_RUNNER_RUN_FAILED,
+    STEP_RUNNER_SUCCESS,
+    STEP_RUNNER_USER_CODE_FAILED,
+)
 
 
 def test_publishing_a_successful_step_run(mocker):
@@ -32,7 +37,9 @@ def test_publishing_a_successful_step_run(mocker):
     }
 
     publish_utils.publish_successful_step_run(
-        step_run_id=step_run_id, output_artifact_ids=output_artifact_ids
+        step_run_id=step_run_id,
+        output_artifact_ids=output_artifact_ids,
+        status_source=STEP_RUNNER_SUCCESS,
     )
     _, call_kwargs = mock_update_run_step.call_args
     assert call_kwargs["step_run_id"] == step_run_id
@@ -48,7 +55,9 @@ def test_publishing_a_failed_step_run(mocker):
 
     step_run_id = uuid4()
 
-    publish_utils.publish_failed_step_run(step_run_id=step_run_id)
+    publish_utils.publish_failed_step_run(
+        step_run_id=step_run_id, status_source=STEP_RUNNER_USER_CODE_FAILED
+    )
     _, call_kwargs = mock_update_run_step.call_args
     assert call_kwargs["step_run_id"] == step_run_id
     assert call_kwargs["step_run_update"].status == ExecutionStatus.FAILED
@@ -62,7 +71,10 @@ def test_publishing_a_failed_pipeline_run(mocker):
 
     pipeline_run_id = uuid4()
 
-    publish_utils.publish_failed_pipeline_run(pipeline_run_id=pipeline_run_id)
+    publish_utils.publish_failed_pipeline_run(
+        pipeline_run_id=pipeline_run_id,
+        status_source=DYNAMIC_RUNNER_RUN_FAILED,
+    )
     _, call_kwargs = mock_update_run.call_args
     assert call_kwargs["run_id"] == pipeline_run_id
     assert call_kwargs["run_update"].status == ExecutionStatus.FAILED
