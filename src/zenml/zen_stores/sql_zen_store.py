@@ -3376,20 +3376,7 @@ class SqlZenStore(BaseZenStore):
                 for a in session.execute(
                     select(ArtifactVersionSchema.id).where(
                         and_(
-                            col(ArtifactVersionSchema.id).notin_(
-                                select(StepRunOutputArtifactSchema.artifact_id)
-                            ),
-                            col(ArtifactVersionSchema.id).notin_(
-                                select(StepRunInputArtifactSchema.artifact_id)
-                            ),
-                            col(ArtifactVersionSchema.id).notin_(
-                                select(PipelineRunOutputSchema.artifact_id)
-                            ),
-                            col(ArtifactVersionSchema.id).notin_(
-                                select(
-                                    HookInvocationOutputArtifactSchema.artifact_version_id
-                                )
-                            ),
+                            ArtifactVersionSchema.unused_filter(),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
                         )
@@ -3408,8 +3395,11 @@ class SqlZenStore(BaseZenStore):
                     a[0]
                     for a in session.execute(
                         select(ArtifactSchema.id).where(
-                            col(ArtifactSchema.id).notin_(
-                                select(ArtifactVersionSchema.artifact_id)
+                            and_(
+                                col(ArtifactSchema.id).notin_(
+                                    select(ArtifactVersionSchema.artifact_id)
+                                ),
+                                col(ArtifactSchema.project_id) == project_id,
                             )
                         )
                     ).fetchall()
