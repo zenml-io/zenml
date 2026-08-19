@@ -41,6 +41,24 @@ from zenml.log_stores.datadog.datadog_log_store import (
     DatadogLogStore,
 )
 
+# Elasticsearch log store
+from zenml.log_stores.elasticsearch.elasticsearch_flavor import (
+    ElasticsearchLogStoreConfig,
+    ElasticsearchLogStoreFlavor,
+)
+from zenml.log_stores.elasticsearch.elasticsearch_log_store import (
+    ElasticsearchLogStore,
+)
+
+# Grafana Loki log store
+from zenml.log_stores.loki.loki_flavor import (
+    LokiLogStoreConfig,
+    LokiLogStoreFlavor,
+)
+from zenml.log_stores.loki.loki_log_store import (
+    LokiLogStore,
+)
+
 __all__ = [
     "ArtifactLogStore",
     "BaseLogStore",
@@ -49,6 +67,12 @@ __all__ = [
     "DatadogLogStore",
     "DatadogLogStoreConfig",
     "DatadogLogStoreFlavor",
+    "ElasticsearchLogStore",
+    "ElasticsearchLogStoreConfig",
+    "ElasticsearchLogStoreFlavor",
+    "LokiLogStore",
+    "LokiLogStoreConfig",
+    "LokiLogStoreFlavor",
     "OtelLogStore",
     "OtelLogStoreConfig",
     "OtelLogStoreFlavor",

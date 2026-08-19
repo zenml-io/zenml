@@ -51,6 +51,8 @@
 * [Log Stores](log-stores/README.md)
   * [Artifact Log Store](log-stores/artifact.md)
   * [OpenTelemetry Log Store](log-stores/otel.md)
+  * [Grafana Loki Log Store](log-stores/loki.md)
+  * [Elasticsearch Log Store](log-stores/elasticsearch.md)
   * [Datadog Log Store](log-stores/datadog.md)
   * [Develop a Custom Log Store](log-stores/custom.md)
 * [Sandboxes](sandboxes/README.md)

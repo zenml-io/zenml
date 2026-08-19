@@ -14,7 +14,16 @@
 """OpenTelemetry log store implementation."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    cast,
+)
 
 from opentelemetry._logs import Logger
 from opentelemetry.instrumentation.logging.handler import LoggingHandler
@@ -22,6 +31,7 @@ from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
+from zenml.enums import LoggingLevels
 from zenml.log_stores.base_log_store import (
     BaseLogStore,
     BaseLogStoreOrigin,
@@ -37,6 +47,19 @@ if TYPE_CHECKING:
     from zenml.models import LogsEntriesFilter, LogsEntriesResponse
 
 logger = get_logger(__name__)
+
+# ZenML log levels paired with the lowest OTEL severity number that represents
+# them. OTEL groups severities into ranges of four per level, so the lowest
+# number of a range doubles as the threshold that admits that level and every
+# level above it.
+# https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
+OTEL_SEVERITY_NUMBERS_BY_LEVEL: Sequence[Tuple[LoggingLevels, int]] = (
+    (LoggingLevels.DEBUG, 5),
+    (LoggingLevels.INFO, 9),
+    (LoggingLevels.WARNING, 13),
+    (LoggingLevels.ERROR, 17),
+    (LoggingLevels.CRITICAL, 21),
+)
 
 
 class OtelBatchLogRecordProcessor(BatchLogRecordProcessor):
@@ -160,6 +183,39 @@ class OtelLogStore(BaseLogStore):
         if not self._provider:
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
+
+    @staticmethod
+    def get_severity_number_threshold(level: LoggingLevels) -> int:
+        """Get the lowest OTEL severity number that satisfies a log level.
+
+        Args:
+            level: The minimum ZenML log level to admit.
+
+        Returns:
+            The severity number, or 0 for a level that admits everything.
+        """
+        return dict(OTEL_SEVERITY_NUMBERS_BY_LEVEL).get(level, 0)
+
+    @staticmethod
+    def get_level_for_severity_number(number: Optional[int]) -> LoggingLevels:
+        """Get the ZenML log level an OTEL severity number belongs to.
+
+        Args:
+            number: The severity number of a log record, if it has one.
+
+        Returns:
+            The log level.
+        """
+        if not number:
+            return LoggingLevels.INFO
+
+        for level, threshold in reversed(OTEL_SEVERITY_NUMBERS_BY_LEVEL):
+            if number >= threshold:
+                return level
+
+        # Anything below the debug range is one of OTEL's trace severities,
+        # which ZenML has no level of its own for.
+        return LoggingLevels.DEBUG
 
     def get_exporter(self) -> "LogRecordExporter":
         """Get the Datadog log exporter.
