@@ -400,7 +400,9 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        if any(parameter is not None for parameter in [before, after, filter_]):
+        if any(
+            parameter is not None for parameter in [before, after, filter_]
+        ):
             logger.warning(
                 "ArtifactLogStore.fetch() ignores pagination cursors and "
                 "filters. The corresponding parameters will be ignored."

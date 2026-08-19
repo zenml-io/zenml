@@ -330,6 +330,22 @@ class OTLPLogExporter(LogRecordExporter):
 
         return dict(resource_logs=json_resource_logs)
 
+    def _serialize(self, encoded_logs: Any) -> bytes:
+        """Serialize encoded log records into the body of an export request.
+
+        Subclasses whose backend expects something other than a JSON document,
+        such as the newline-delimited JSON of a bulk API, override this.
+
+        Args:
+            encoded_logs: The encoded log records to serialize.
+
+        Returns:
+            The request body.
+        """
+        return json.dumps(encoded_logs, default=pydantic_encoder).encode(
+            "utf-8"
+        )
+
     def export(
         self, batch: Sequence[ReadableLogRecord]
     ) -> LogRecordExportResult:
@@ -344,12 +360,8 @@ class OTLPLogExporter(LogRecordExporter):
         if self._shutdown:
             logger.warning("Exporter already shutdown, ignoring batch")
             return LogRecordExportResult.FAILURE
-        encoded_logs = self._encode_logs(batch)
 
-        serialized_data = json.dumps(
-            encoded_logs,
-            default=pydantic_encoder,
-        ).encode("utf-8")
+        serialized_data = self._serialize(self._encode_logs(batch))
 
         try:
             resp = self._export(serialized_data, self._timeout)
