@@ -441,7 +441,11 @@ from zenml.models.v2.misc.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
-from zenml.models.v2.misc.build_item import BuildItem
+from zenml.models.v2.misc.build_item import (
+    BuildItem,
+    PreparedBuildItem,
+    PreparedPipelineBuild,
+)
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.info_models import (
@@ -968,6 +972,8 @@ __all__ = [
     "UserAuthModel",
     "ExternalUserModel",
     "BuildItem",
+    "PreparedBuildItem",
+    "PreparedPipelineBuild",
     "LoadedVisualization",
     "ServerLoadInfo",
     "ServerModel",

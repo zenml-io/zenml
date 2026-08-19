@@ -37,6 +37,8 @@ from zenml.models import (
     PipelineBuildResponseMetadata,
     PipelineSnapshotBase,
     PipelineSnapshotResponse,
+    PreparedBuildItem,
+    PreparedPipelineBuild,
 )
 from zenml.pipelines import build_utils
 from zenml.stack import Stack
@@ -208,6 +210,56 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
     assert image.settings_checksum == build_config.compute_settings_checksum(
         stack=Client().active_stack
     )
+
+
+def test_create_pipeline_build_prunes_supplied_prepared_build(mocker):
+    """Tests that creation prunes a full prepared build after the snapshot."""
+    required_config = BuildConfiguration(
+        key="required", settings=DockerSettings()
+    )
+    skipped_config = BuildConfiguration(
+        key="skipped", settings=DockerSettings()
+    )
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[required_config]
+    )
+    mocker.patch.object(
+        PipelineDockerImageBuilder,
+        "build_docker_image",
+        return_value=("image_name", "", ""),
+    )
+    prepared_build = PreparedPipelineBuild(
+        items=[
+            PreparedBuildItem(
+                configuration=required_config,
+                key="required",
+                settings_checksum="required_checksum",
+            ),
+            PreparedBuildItem(
+                configuration=skipped_config,
+                key="skipped",
+                settings_checksum="skipped_checksum",
+            ),
+        ]
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+
+    build = build_utils.create_pipeline_build(
+        snapshot=snapshot, prepared_build=prepared_build
+    )
+
+    assert set(build.images) == {"required"}
+    assert build.checksum == prepared_build.prune({"required"}).checksum
+    assert [item.key for item in prepared_build.items] == [
+        "required",
+        "skipped",
+    ]
 
 
 def test_building_with_identical_keys_and_settings(mocker):
@@ -396,7 +448,7 @@ def test_custom_build_verification(
         )
 
 
-def test_build_checksum_computation(mocker):
+def test_prepared_build_checksum_computation(mocker):
     mocker.patch.object(
         BuildConfiguration,
         "compute_settings_checksum",
@@ -404,17 +456,17 @@ def test_build_checksum_computation(mocker):
     )
 
     build_config = BuildConfiguration(key="key", settings=DockerSettings())
-    checksum = build_utils.compute_build_checksum(
+    checksum = build_utils.prepare_pipeline_build(
         items=[build_config], stack=Client().active_stack
-    )
+    ).checksum
 
     # different key
     new_build_config = BuildConfiguration(
         key="different_key", settings=DockerSettings()
     )
-    new_checksum = build_utils.compute_build_checksum(
+    new_checksum = build_utils.prepare_pipeline_build(
         items=[new_build_config], stack=Client().active_stack
-    )
+    ).checksum
     assert checksum != new_checksum
 
     # different settings checksum
@@ -423,10 +475,205 @@ def test_build_checksum_computation(mocker):
         "compute_settings_checksum",
         return_value="different_settings_checksum",
     )
-    new_checksum = build_utils.compute_build_checksum(
+    new_checksum = build_utils.prepare_pipeline_build(
         items=[build_config], stack=Client().active_stack
-    )
+    ).checksum
     assert checksum != new_checksum
+
+
+def test_prepared_build_checksum_reflects_current_items():
+    """Tests that the checksum is computed from the current items."""
+    first_item = PreparedBuildItem(
+        configuration=BuildConfiguration(
+            key="first", settings=DockerSettings()
+        ),
+        key="first",
+        settings_checksum="first_checksum",
+    )
+    second_item = PreparedBuildItem(
+        configuration=BuildConfiguration(
+            key="second", settings=DockerSettings()
+        ),
+        key="second",
+        settings_checksum="second_checksum",
+    )
+    prepared_build = PreparedPipelineBuild(items=[first_item, second_item])
+
+    full_checksum = prepared_build.checksum
+    prepared_build.items.pop()
+
+    assert prepared_build.checksum != full_checksum
+    assert (
+        prepared_build.checksum
+        == PreparedPipelineBuild(items=[first_item]).checksum
+    )
+
+
+def test_prune_prepared_build():
+    """Tests that pruning returns a new build with only required items."""
+    first_item = PreparedBuildItem(
+        configuration=BuildConfiguration(
+            key="first", settings=DockerSettings()
+        ),
+        key="first",
+        settings_checksum="first_checksum",
+    )
+    second_item = PreparedBuildItem(
+        configuration=BuildConfiguration(
+            key="second", settings=DockerSettings()
+        ),
+        key="second",
+        settings_checksum="second_checksum",
+    )
+    prepared_build = PreparedPipelineBuild(items=[first_item, second_item])
+
+    pruned_build = prepared_build.prune(required_keys={"first"})
+
+    assert pruned_build is not prepared_build
+    assert pruned_build.items == [first_item]
+    assert prepared_build.items == [first_item, second_item]
+    assert pruned_build.checksum != prepared_build.checksum
+
+
+def test_reuse_or_create_prepares_build_once(mocker):
+    """Tests that build preparation is shared by reuse and creation."""
+    build_config = BuildConfiguration(
+        key="key",
+        settings=DockerSettings(
+            parent_image="registry.example.com/image:tag",
+            skip_build=True,
+        ),
+    )
+    mock_get_docker_builds = mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mock_compute_settings_checksum = mocker.patch.object(
+        BuildConfiguration,
+        "compute_settings_checksum",
+        return_value="settings_checksum",
+    )
+    mock_find_existing_build = mocker.patch.object(
+        build_utils, "find_existing_build", return_value=None
+    )
+    expected_build = mocker.sentinel.build
+    mock_create_pipeline_build = mocker.patch.object(
+        build_utils, "create_pipeline_build", return_value=expected_build
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+
+    build = build_utils.reuse_or_create_pipeline_build(
+        snapshot=snapshot,
+        allow_build_reuse=True,
+    )
+
+    assert build is expected_build
+    mock_get_docker_builds.assert_called_once()
+    mock_compute_settings_checksum.assert_called_once()
+    prepared_build = mock_find_existing_build.call_args.kwargs[
+        "prepared_build"
+    ]
+    assert (
+        mock_create_pipeline_build.call_args.kwargs["prepared_build"]
+        is prepared_build
+    )
+
+
+def test_reuse_or_create_passes_full_prepared_build_to_creation(mocker):
+    """Tests that creation receives the build prepared for reuse lookup."""
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    mocker.patch.object(
+        Stack, "get_docker_builds", return_value=[build_config]
+    )
+    mocker.patch.object(
+        BuildConfiguration,
+        "compute_settings_checksum",
+        return_value="settings_checksum",
+    )
+    mock_find_existing_build = mocker.patch.object(
+        build_utils, "find_existing_build", return_value=None
+    )
+    mock_create_pipeline_build = mocker.patch.object(
+        build_utils,
+        "create_pipeline_build",
+        return_value=mocker.sentinel.build,
+    )
+    snapshot = PipelineSnapshotBase(
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        step_configurations={},
+        client_version="0.12.3",
+        server_version="0.12.3",
+    )
+    build_utils.reuse_or_create_pipeline_build(
+        snapshot=snapshot,
+        allow_build_reuse=True,
+    )
+
+    prepared_build = mock_find_existing_build.call_args.kwargs[
+        "prepared_build"
+    ]
+    assert (
+        mock_create_pipeline_build.call_args.kwargs["prepared_build"]
+        is prepared_build
+    )
+
+
+def test_skip_build_checksum_does_not_resolve_parent_image_digest(
+    mocker, remote_container_registry
+):
+    """Tests that skipped builds do not query the parent image digest."""
+    stack = mocker.Mock()
+    stack.container_registry = remote_container_registry
+    stack.requirements.return_value = set()
+    build_config = BuildConfiguration(
+        key="key",
+        settings=DockerSettings(
+            parent_image="registry.example.com/image:tag",
+            skip_build=True,
+        ),
+    )
+    mock_get_container_engine = mocker.patch(
+        "zenml.config.build_configuration.get_container_engine"
+    )
+
+    build_config.compute_settings_checksum(stack=stack)
+
+    mock_get_container_engine.assert_not_called()
+
+
+def test_build_checksum_resolves_parent_image_digest(
+    mocker, remote_container_registry
+):
+    """Tests that regular builds query the parent image digest."""
+    stack = mocker.Mock()
+    stack.container_registry = remote_container_registry
+    stack.requirements.return_value = set()
+    build_config = BuildConfiguration(
+        key="key",
+        settings=DockerSettings(
+            parent_image="registry.example.com/image:tag",
+            install_stack_requirements=False,
+        ),
+    )
+    container_engine = mocker.Mock()
+    container_engine.get_image_repo_digest.return_value = "digest"
+    mocker.patch(
+        "zenml.config.build_configuration.get_container_engine",
+        return_value=container_engine,
+    )
+
+    build_config.compute_settings_checksum(stack=stack)
+
+    container_engine.get_image_repo_digest.assert_called_once_with(
+        image_name="registry.example.com/image:tag",
+        container_registry=remote_container_registry,
+    )
 
 
 def test_local_repo_verification(
@@ -542,14 +789,12 @@ def test_finding_existing_build(
             items=[],
         ),
     )
-    mocker.patch(
-        "zenml.pipelines.build_utils.compute_build_checksum",
-        return_value="checksum",
-    )
     mocker.patch.object(Stack, "get_docker_builds", return_value=[])
+    empty_prepared_build = PreparedPipelineBuild(items=[])
 
     build_utils.find_existing_build(
         snapshot=sample_snapshot_response_model,
+        prepared_build=empty_prepared_build,
         code_repository=StubCodeRepository(),
     )
     # No required builds -> no need to look for build to reuse
@@ -565,6 +810,7 @@ def test_finding_existing_build(
 
     build_utils.find_existing_build(
         snapshot=sample_snapshot_response_model,
+        prepared_build=empty_prepared_build,
         code_repository=StubCodeRepository(),
     )
     # No container registry -> no non-local build to pull
@@ -577,9 +823,20 @@ def test_finding_existing_build(
         return_value=remote_container_registry,
     )
 
+    build_config = BuildConfiguration(key="key", settings=DockerSettings())
+    prepared_build = PreparedPipelineBuild(
+        items=[
+            PreparedBuildItem(
+                configuration=build_config,
+                key="key",
+                settings_checksum="settings_checksum",
+            )
+        ]
+    )
     build = build_utils.find_existing_build(
         snapshot=sample_snapshot_response_model,
         code_repository=StubCodeRepository(),
+        prepared_build=prepared_build,
     )
 
     mock_list_builds.assert_called_once_with(
@@ -591,7 +848,7 @@ def test_finding_existing_build(
         contains_code=False,
         zenml_version=zenml.__version__,
         python_version=f"startswith:{sys.version_info.major}.{sys.version_info.minor}",
-        checksum="checksum",
+        checksum=prepared_build.checksum,
     )
 
     assert not build
