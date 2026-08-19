@@ -451,6 +451,11 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
 )
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.log_models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.models.v2.misc.param_groups import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
@@ -969,6 +974,9 @@ __all__ = [
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
+    "LogEntry",
+    "LogsEntriesFilter",
+    "LogsEntriesResponse",
     "ServerLoadInfo",
     "ServerModel",
     "ServerDatabaseType",

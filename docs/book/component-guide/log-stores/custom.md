@@ -20,28 +20,32 @@ The log store is responsible for collecting, storing, and retrieving logs during
    - `emit()`: Process and export a log record for a given origin
    - `_release_origin()`: Called when logging for an origin is complete (cleanup resources)
    - `flush()`: Ensure all pending logs are exported
-   - `fetch()`: Retrieve stored logs for display
+   - `fetch()`: Retrieve one page of stored log entries
 
-3. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
+3. **Pagination helpers**: `fetch()` returns a page rather than a whole log stream, so the base class provides `resolve_limit()` to apply the page size and its upper bound, `default_query_size` to say how large a page is when the caller asks for no limit, and `encode_cursor()` / `decode_cursor()` to turn whatever your backend needs to resume a scan into the opaque token that travels back and forth with the caller.
+
+4. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
 
 Here's a simplified view of the base implementation:
 
 ```python
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 import logging
 import threading
 
+from zenml.constants import LOGS_DEFAULT_QUERY_SIZE
 from zenml.enums import StackComponentType
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
-    pass
 
 
 class BaseLogStoreOrigin:
@@ -128,15 +132,32 @@ class BaseLogStore(StackComponent, ABC):
     def flush(self, blocking: bool = True) -> None:
         """Flush all pending logs."""
 
+    @property
+    def default_query_size(self) -> int:
+        """Number of entries a fetch returns when the caller sets no limit."""
+        return LOGS_DEFAULT_QUERY_SIZE
+
+    def resolve_limit(self, limit: Optional[int]) -> int:
+        """Determine how many entries a single fetch may return."""
+
+    @staticmethod
+    def encode_cursor(**payload: Any) -> str:
+        """Encode a pagination cursor into an opaque token."""
+
+    @staticmethod
+    def decode_cursor(token: str) -> Dict[str, Any]:
+        """Decode an opaque pagination token."""
+
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: int = 20000,
-    ) -> List[LogEntry]:
-        """Fetch stored logs."""
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries."""
 
 
 class BaseLogStoreFlavor(Flavor):
@@ -174,15 +195,17 @@ To create a custom OTEL-based log store, you only need to implement:
 2. `fetch()`: Retrieve logs from your backend (optional, raise `NotImplementedError` if not supported)
 
 ```python
-from typing import List, Optional, Type
-from datetime import datetime
+from typing import Optional, Type
 
 from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig, OtelLogStoreFlavor
-from zenml.models import LogsResponse
-from zenml.utils.logging_utils import LogEntry
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 
 
 class MyLogStoreConfig(OtelLogStoreConfig):
@@ -209,13 +232,12 @@ class MyLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: int = 20000,
-    ) -> List[LogEntry]:
-        """Fetch logs from your backend."""
-        # Implement log retrieval from your backend
-        # Return a list of LogEntry objects
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries from your backend."""
         raise NotImplementedError(
             "Log fetching is not supported by this log store."
         )
@@ -295,42 +317,68 @@ class MyCustomLogExporter(LogRecordExporter):
 
 ### Implementing Log Fetching
 
-If your backend supports log retrieval, implement the `fetch()` method to enable log viewing in the ZenML dashboard:
+If your backend supports log retrieval, implement the `fetch()` method to enable log viewing in the ZenML dashboard.
+
+A fetch returns one page of a log stream, ordered from oldest to newest, together with the cursors that fetch the pages on either side of it. The caller passes exactly one of `before` (older entries) or `after` (newer entries) back to you, or neither to ask for the newest page of the stream. Within that page the order is still oldest to newest; "newest page" only says which slice of the stream you start from. A cursor that comes back as `None` means there is nothing more to read in that direction.
+
+Cursors are opaque to everyone but the log store that issued them, so use `encode_cursor()` to carry whatever your backend needs to resume a scan. Backends that hand out their own continuation tokens can put that token straight into the cursor. Backends that don't can carry a timestamp watermark instead, and, because timestamps rarely have enough resolution to identify a single entry, the IDs already seen at that timestamp so that the next page can skip them.
+
+Push the filters down into your backend's query rather than fetching everything and discarding entries here, since the whole point of paging is to not move a log stream through the server. If your backend cannot express a filter at all, ignore it and let the caller apply it to what you return. Don't filter by reading until enough entries match: a selective filter matches too rarely for the page limit to end that read early, so it turns every request into a scan of the whole log stream. Ignoring a filter is always better than failing the request.
 
 ```python
 def fetch(
     self,
     logs_model: LogsResponse,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    limit: int = 20000,
-) -> List[LogEntry]:
-    """Fetch logs from the backend."""
-    # Query your backend using logs_model.id to filter
+    limit: Optional[int] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    filter_: Optional[LogsEntriesFilter] = None,
+) -> LogsEntriesResponse:
+    """Fetch a page of log entries from the backend."""
+    filter_ = filter_ or LogsEntriesFilter()
+    cursor = self.decode_cursor(before or after) if before or after else {}
+
     response = requests.get(
         f"{self.config.endpoint}/logs",
         params={
             "log_id": str(logs_model.id),
-            "start_time": start_time.isoformat() if start_time else None,
-            "end_time": end_time.isoformat() if end_time else None,
-            "limit": limit,
+            "limit": self.resolve_limit(limit),
+            "order": "desc" if after is None else "asc",
+            "page_token": cursor.get("token"),
+            "contains": filter_.search,
+            "min_severity": filter_.level.name if filter_.level else None,
+            "start_time": (filter_.since or logs_model.created).isoformat(),
+            "end_time": filter_.until.isoformat() if filter_.until else None,
         },
         headers={"Authorization": f"Bearer {self.config.api_key}"},
     )
-    
-    log_entries = []
-    for log in response.json()["logs"]:
-        log_entries.append(LogEntry(
+    payload = response.json()
+
+    entries = [
+        LogEntry(
             message=log["message"],
             level=LoggingLevels[log["severity"].upper()],
             timestamp=datetime.fromisoformat(log["timestamp"]),
             name=log.get("logger_name"),
             filename=log.get("filename"),
             lineno=log.get("line_number"),
-        ))
-    
-    return log_entries
+        )
+        for log in payload["logs"]
+    ]
+    if after is None:
+        entries.reverse()
+
+    next_token = payload.get("next_page_token")
+    return LogsEntriesResponse(
+        items=entries,
+        before=self.encode_cursor(token=next_token) if next_token else None,
+        after=self.encode_cursor(timestamp=entries[-1].timestamp.isoformat())
+        if entries
+        else after,
+    )
 ```
+
+If your backend cannot page at all, return one response up to the limit and leave both cursors unset. That is what the [artifact log store](artifact.md) does: its log files have no index, so every page would re-read the file from one of its ends, and a browsing session would turn into a long series of expensive reads. It reads from the beginning of the file, so a truncated stream keeps the oldest entries and loses the newest. It ignores the filters too, for the reason above, and leaves both filtering and paging to whoever displays the entries.
 
 ### Build Your Own Custom Log Store
 
@@ -403,5 +451,7 @@ This separation allows you to register flavors even when their dependencies aren
 6. **Document configuration**: Clearly document all configuration options and their defaults.
 
 7. **Keep fetch() simple**: Remember that `fetch()` runs on the server with limited dependencies. Use only built-in Python libraries and HTTP APIs.
+
+8. **Spend one backend request per fetch**: Someone scrolling through a log stream produces a steady stream of fetches, and a `fetch()` that loops internally to fill a page multiplies each of them into several calls against a rate-limited API. Return a short page with a cursor instead. If your backend serves a different number of entries per request than the ZenML default, override the `default_query_size` property so that the default page and the default request line up. Only add a config field for it if the page size is something a user of your log store would need to tune, such as a page size that counts against a per-account quota.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

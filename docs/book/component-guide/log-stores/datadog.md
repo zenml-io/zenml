@@ -153,6 +153,8 @@ Datadog has a maximum batch size limit of 1000 logs per request. The `max_export
 
 Logs are automatically fetched from Datadog when viewing step details in the ZenML dashboard. The dashboard uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
 
+Each fetch reads one page and hands back a cursor for the pages on either side of it, so scrolling through a long step costs one Datadog search per page rather than one large search. Pages are read newest first, since that is where a failure usually is, and a page holds at most 1000 entries, which is Datadog's own limit for a single search. Searching and filtering by level or time is done by Datadog rather than by the ZenML server, which means a search term follows Datadog's full-text matching: it matches whole tokens of a message, not a fragment in the middle of a word.
+
 #### In Datadog
 
 Navigate to **Logs** in your Datadog dashboard and use these filters:
@@ -184,10 +186,12 @@ service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME> @zenml.step.run.name:my_t
 
 #### Rate limiting
 
-If you're hitting Datadog's rate limits:
+If you're hitting Datadog's rate limits while writing logs:
 - Increase `schedule_delay_millis` to reduce export frequency
 - Decrease `max_export_batch_size` for more frequent, smaller batches
 - Consider log sampling for high-volume pipelines
+
+The Logs Search API used for reading has its own, separate rate limit. A page holds up to 1000 entries, so covering a long log stream costs one search per 1000 entries. Lowering `ZENML_LOGS_DEFAULT_QUERY_SIZE` on the server shrinks each page, which spends more searches over the same stretch of logs but asks less of Datadog per search.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.datadog.datadog_log_store).
 

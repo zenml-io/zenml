@@ -249,6 +249,7 @@ ENV_ZENML_CAPTURE_PRINTS = "ZENML_CAPTURE_PRINTS"
 ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE = "ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE"
 ENV_ZENML_LOGS_STORAGE_QUEUE_TIMEOUT = "ZENML_LOGS_STORAGE_QUEUE_TIMEOUT"
 ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST = "ZENML_LOGS_MAX_ENTRIES_PER_REQUEST"
+ENV_ZENML_LOGS_DEFAULT_QUERY_SIZE = "ZENML_LOGS_DEFAULT_QUERY_SIZE"
 ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS = "ZENML_LOGS_WRITE_INTERVAL_SECONDS"
 ENV_ZENML_LOGS_MERGE_INTERVAL_SECONDS = "ZENML_LOGS_MERGE_INTERVAL_SECONDS"
 ENV_ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS = "ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS"
@@ -490,6 +491,7 @@ DEVICE_VERIFY = "/verify"
 DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
+ENTRIES = "/entries"
 EVENT_FLAVORS = "/event-flavors"
 FLAVORS = "/flavors"
 HEALTH = "/health"
@@ -642,8 +644,17 @@ LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
 
+# Hard ceiling on the number of entries a single log fetch may return, and the
+# page size used by log stores that cannot paginate at all.
 LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
     ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
+)
+
+# Page size used by log stores that paginate. Kept far below
+# LOGS_MAX_ENTRIES_PER_REQUEST because every page is a request to a third-party
+# API with its own rate limits.
+LOGS_DEFAULT_QUERY_SIZE = handle_int_env_var(
+    ENV_ZENML_LOGS_DEFAULT_QUERY_SIZE, default=1000
 )
 
 # Queue timeout controls log dropping vs application blocking:

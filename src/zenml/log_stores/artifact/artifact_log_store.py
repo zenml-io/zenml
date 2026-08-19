@@ -15,7 +15,6 @@
 
 import os
 import re
-from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -30,6 +29,7 @@ from uuid import UUID
 from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
@@ -40,9 +40,13 @@ from zenml.log_stores.otel.otel_log_store import (
     OtelLogStoreOrigin,
 )
 from zenml.logger import get_logger
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.utils.io_utils import sanitize_remote_path
-from zenml.utils.logging_utils import LogEntry
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -296,6 +300,19 @@ class ArtifactLogStore(OtelLogStore):
         """
         return cast(ArtifactLogStoreConfig, self._config)
 
+    @property
+    def default_query_size(self) -> int:
+        """Number of entries a fetch returns when the caller sets no limit.
+
+        The artifact log store cannot paginate, so it serves a whole log stream
+        in one response and its default page is the hard ceiling on a single
+        fetch.
+
+        Returns:
+            The default number of entries per page.
+        """
+        return LOGS_MAX_ENTRIES_PER_REQUEST
+
     def get_exporter(self) -> "LogRecordExporter":
         """Get the artifact log exporter for this log store.
 
@@ -326,23 +343,45 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the artifact store.
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch the entries of a log stream from the artifact store.
+
+        The artifact store holds plain log files with no index, so there is no
+        cheap way to resume a read from a boundary: every page would re-read the
+        file from one of its ends. Paging it would therefore turn one browsing
+        session into a long series of expensive requests, so this log store
+        serves a whole log stream at once and reports no cursors, and the
+        cursors it is given are ignored.
+
+        Filters are ignored for the same reason. Applying one while reading
+        would mean scanning until enough entries match, and a selective filter
+        over a long stream matches too rarely to ever reach the limit, so the
+        read would run to the end of the file however large it is. Since the
+        response already holds the stream, whoever displays it can filter it
+        there at no cost to the server.
+
+        A stream longer than the limit is cut off at its end, because the file
+        is read from the beginning. The limit counts stored entries, not
+        messages: a message larger than the exporter's chunk size occupies
+        several entries, and each of them counts. That is what keeps the size
+        of a response bounded no matter how large a single logged message was.
 
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+            before: Ignored.
+            after: Ignored.
+            filter_: Ignored.
 
         Returns:
-            List of log entries from the artifact store.
+            The oldest entries of the stream, up to the limit, with no cursors.
 
         Raises:
-            ValueError: If logs_model.uri is not provided.
+            ValueError: If the logs model does not belong to this log store.
         """
         if not logs_model.uri:
             raise ValueError(
@@ -361,19 +400,19 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        if start_time or end_time:
+        if any(parameter is not None for parameter in [before, after, filter_]):
             logger.warning(
-                "start_time and end_time are not supported for "
-                "ArtifactLogStore.fetch(). Both parameters will be ignored."
+                "ArtifactLogStore.fetch() ignores pagination cursors and "
+                "filters. The corresponding parameters will be ignored."
             )
 
-        log_entries = fetch_log_records(
-            artifact_store=self._artifact_store,
-            logs_uri=logs_model.uri,
-            limit=limit,
+        return LogsEntriesResponse(
+            items=fetch_log_records(
+                artifact_store=self._artifact_store,
+                logs_uri=logs_model.uri,
+                limit=self.resolve_limit(limit),
+            )
         )
-
-        return log_entries
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.
