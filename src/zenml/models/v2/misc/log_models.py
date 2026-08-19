@@ -169,13 +169,7 @@ class LogsEntriesFilter(BaseModel):
 
 
 class LogsEntriesResponse(BaseModel):
-    """A single page of log entries, with cursors to fetch adjacent pages.
-
-    A cursor is `None` when there is nothing more to fetch in that direction.
-    Log stores that cannot paginate at all (the artifact log store) always
-    return `None` for both, which tells the caller that `items` is everything
-    it is going to get.
-    """
+    """A single page of log entries, with cursors to fetch adjacent pages."""
 
     items: List[LogEntry] = Field(
         default_factory=list,

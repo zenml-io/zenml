@@ -213,9 +213,7 @@ def get_logs_entries(
             them and leave the filtering to the caller.
 
     Returns:
-        A page of log entries, oldest first, with cursors for the adjacent
-        pages. Both cursors are null for log stores that cannot paginate, in
-        which case the response holds the whole log stream up to the limit.
+        A page of log entries.
 
     Raises:
         ValueError: If both `before` and `after` are given.

@@ -319,7 +319,7 @@ class MyCustomLogExporter(LogRecordExporter):
 
 If your backend supports log retrieval, implement the `fetch()` method to enable log viewing in the ZenML dashboard.
 
-A fetch returns one page of a log stream, ordered from oldest to newest, together with the cursors that fetch the pages on either side of it. The caller passes exactly one of `before` (older entries) or `after` (newer entries) back to you, or neither to ask for the newest page. A cursor that comes back as `None` means there is nothing more to read in that direction.
+A fetch returns one page of a log stream, ordered from oldest to newest, together with the cursors that fetch the pages on either side of it. The caller passes exactly one of `before` (older entries) or `after` (newer entries) back to you, or neither to ask for the newest page of the stream. Within that page the order is still oldest to newest; "newest page" only says which slice of the stream you start from. A cursor that comes back as `None` means there is nothing more to read in that direction.
 
 Cursors are opaque to everyone but the log store that issued them, so use `encode_cursor()` to carry whatever your backend needs to resume a scan. Backends that hand out their own continuation tokens can put that token straight into the cursor. Backends that don't can carry a timestamp watermark instead, and, because timestamps rarely have enough resolution to identify a single entry, the IDs already seen at that timestamp so that the next page can skip them.
 
@@ -378,7 +378,7 @@ def fetch(
     )
 ```
 
-If your backend cannot page at all, return everything it will give you and leave both cursors unset. That is what the [artifact log store](artifact.md) does: its log files have no index, so every page would re-read the file from one of its ends, and a browsing session would turn into a long series of expensive reads. It ignores the filters too, for the reason above, and leaves both filtering and paging to whoever displays the entries.
+If your backend cannot page at all, return one response up to the limit and leave both cursors unset. That is what the [artifact log store](artifact.md) does: its log files have no index, so every page would re-read the file from one of its ends, and a browsing session would turn into a long series of expensive reads. It reads from the beginning of the file, so a truncated stream keeps the oldest entries and loses the newest. It ignores the filters too, for the reason above, and leaves both filtering and paging to whoever displays the entries.
 
 ### Build Your Own Custom Log Store
 

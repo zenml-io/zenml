@@ -293,10 +293,14 @@ class BaseLogStore(StackComponent, ABC):
         on the dashboard or via API. The implementation should not require
         any integration-specific SDKs that aren't available on the server.
 
-        At most one of `before` and `after` may be set. With neither, the
-        implementation returns the newest page. Implementations that cannot
-        paginate should return every entry they can, up to the limit, and leave
-        both cursors on the response unset.
+        At most one of `before` and `after` may be set. With neither, a
+        paginating implementation returns the newest page of the stream. Within
+        every page, entries are ordered from oldest to newest.
+
+        Implementations that cannot paginate should ignore the cursors, leave
+        both unset on the response, and return one batch up to the limit. Which
+        end of the stream that batch keeps when truncated is up to the
+        implementation: the artifact log store keeps the oldest entries.
 
         Args:
             logs_model: The logs model containing metadata about the logs.
@@ -308,7 +312,8 @@ class BaseLogStore(StackComponent, ABC):
 
         Returns:
             A page of log entries ordered from oldest to newest, with cursors
-            for the adjacent pages.
+            for the adjacent pages, or one non-paginated batch when the store
+            cannot page.
         """
 
 

@@ -80,7 +80,9 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-A fetch returns the newest entries of a log stream, oldest first, along with the cursors that read the pages around it. Pass `page.before` back in to walk further into the history of the stream, and `page.after` to pick up entries written since. A cursor comes back as `None` when there is nothing more to read in that direction, and log stores that cannot page at all, such as the [artifact log store](artifact.md), return `None` for both and serve the whole stream in one response.
+For log stores that can page, a fetch with no cursor returns the newest page of the stream. Within that page, and every later one, entries are ordered oldest to newest. Pass `page.before` back in to walk further into the history of the stream, and `page.after` to pick up entries written since. A cursor comes back as `None` when there is nothing more to read in that direction.
+
+The [artifact log store](artifact.md) is different: it cannot cheaply resume a read in the middle of a file, so it ignores the cursors, returns `None` for both, and serves one response. That response is the oldest entries of the stream, up to the limit; if the stream is longer, the newest part is what gets cut off.
 
 Filters are pushed down into the backend's own query, so they cost nothing to apply:
 
