@@ -20,3 +20,7 @@ redirects:
   agents-guide/05-typed-services: llmops-guide/README.md
   agents-guide/06-hitl: llmops-guide/README.md
   agents-guide/production-notes: llmops-guide/README.md
+  # The "Durable agent platform (Kitaru)" example card was replaced by the
+  # kitaru-template repo link, which is external and cannot be a redirect
+  # target, so this lands on the closest in-space guide.
+  examples/agent_harness_platform: llmops-guide/README.md
