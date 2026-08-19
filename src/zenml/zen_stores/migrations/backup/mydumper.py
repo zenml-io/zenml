@@ -17,6 +17,7 @@ import os
 import shutil
 import ssl
 import subprocess
+import tempfile
 from typing import TYPE_CHECKING
 
 from zenml.enums import LoggingLevels
@@ -196,6 +197,9 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
                     "--sync-thread-lock-mode",
                     "LOCK_ALL",
                     "--skip-ddl-locks",
+                    # MyDumper 1.0.3 treats its optional binlog-position probes
+                    # as fatal when the user lacks global replication access.
+                    "--ignore-errors=1227",
                 ]
             )
 
@@ -312,6 +316,20 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         self.create_database(drop=True)
 
         cmd = self._build_myloader_command()
+        defaults_file: str | None = None
+        if self.config.auth_mode == "aws_rds_iam":
+            # Avoid the packaged SQL_LOG_BIN=0 default, which requires global
+            # administrative privileges that workspace users must not have.
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".cnf", delete=False
+            ) as file:
+                file.write(
+                    "[myloader_session_variables]\n"
+                    "FOREIGN_KEY_CHECKS=0\n"
+                    "UNIQUE_CHECKS=0\n"
+                )
+                defaults_file = file.name
+            cmd.extend(["--defaults-file", defaults_file, "--enable-binlog"])
 
         logger.info(
             f"Starting myloader restore of database `{self.url.database}` "
@@ -319,21 +337,25 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         )
         logger.debug(f"myloader command: {cmd}")
 
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=self._get_mysql_env(),
-        )
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=self._get_mysql_env(),
+            )
 
-        assert process.stdout is not None
-        for line in process.stdout:
-            line = line.rstrip()
-            if line:
-                logger.info(f"[myloader] {line}")
+            assert process.stdout is not None
+            for line in process.stdout:
+                line = line.rstrip()
+                if line:
+                    logger.info(f"[myloader] {line}")
 
-        return_code = process.wait()
+            return_code = process.wait()
+        finally:
+            if defaults_file:
+                os.unlink(defaults_file)
         if return_code != 0:
             raise RuntimeError(
                 f"myloader restore failed with return code {return_code}"
