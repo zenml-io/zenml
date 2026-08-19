@@ -124,6 +124,35 @@ def _create_rds_client(region: str, role_arn: str | None) -> Any:
     ).client("rds")
 
 
+def generate_rds_iam_token(
+    *,
+    region: str,
+    role_arn: str | None,
+    host: str,
+    port: int,
+    username: str,
+) -> str:
+    """Generate an RDS IAM token for a non-SQLAlchemy database client.
+
+    Args:
+        region: AWS region of the database.
+        role_arn: Optional role assumed directly with the pod's web identity.
+        host: Database or proxy hostname.
+        port: Database port.
+        username: Database username.
+
+    Returns:
+        A short-lived RDS IAM authentication token.
+    """
+    client = _create_rds_client(region, role_arn)
+    token: str = client.generate_db_auth_token(
+        DBHostname=host,
+        Port=port,
+        DBUsername=username,
+    )
+    return token
+
+
 def configure_rds_iam_authentication(
     engine: Engine,
     region: str,

@@ -210,16 +210,12 @@ def test_backup_engines_receive_iam_authentication(
     configure.assert_called_once_with(engine)
 
 
-@pytest.mark.parametrize(
-    "strategy",
-    [DatabaseBackupStrategy.DATABASE, DatabaseBackupStrategy.MYDUMPER],
-)
-def test_iam_rejects_backups_that_need_other_credentials_or_databases(
-    strategy: DatabaseBackupStrategy,
-) -> None:
-    """IAM mode rejects only backup strategies it cannot authenticate."""
+def test_iam_rejects_database_backup_strategy() -> None:
+    """IAM mode rejects backups that require a second database."""
     store = MagicMock()
     store.config = _iam_config()
 
     with pytest.raises(ValueError, match="not supported"):
-        SqlZenStore.initialize_database_backup_engine(store, strategy=strategy)
+        SqlZenStore.initialize_database_backup_engine(
+            store, strategy=DatabaseBackupStrategy.DATABASE
+        )

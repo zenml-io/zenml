@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import ssl
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -107,8 +108,26 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if self.url.username:
             args.extend(["--user", self.url.username])
 
-        if self.config.ssl:
-            args.extend(["--ssl", "--ssl-mode", "REQUIRED"])
+        if self.config.auth_mode == "aws_rds_iam":
+            args.extend(["--ssl", "--ssl-mode", "VERIFY_IDENTITY"])
+            trust_paths = ssl.get_default_verify_paths()
+            if trust_paths.capath:
+                args.extend(["--capath", trust_paths.capath])
+            elif trust_paths.cafile:
+                args.extend(["--ca", trust_paths.cafile])
+            else:
+                raise RuntimeError(
+                    "AWS RDS IAM authentication requires an operating-system "
+                    "certificate trust store for mydumper/myloader."
+                )
+            args.append("--enable-cleartext-plugin")
+        elif self.config.ssl:
+            ssl_mode = (
+                "VERIFY_IDENTITY"
+                if self.config.ssl_verify_server_cert
+                else "REQUIRED"
+            )
+            args.extend(["--ssl", "--ssl-mode", ssl_mode])
             if self.config.ssl_ca:
                 args.extend(["--ca", self.config.ssl_ca.get_secret_value()])
             if self.config.ssl_cert:
@@ -127,8 +146,23 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             Dictionary of environment variables to pass to subprocess,
             or None if no password is configured.
         """
-        if self.url.password:
-            return {"MYSQL_PWD": self.url.password}
+        credential = self.url.password
+        if self.config.auth_mode == "aws_rds_iam":
+            from zenml.zen_stores.rds_iam import generate_rds_iam_token
+
+            assert self.config.aws_region is not None
+            assert self.url.host is not None
+            assert self.url.username is not None
+            credential = generate_rds_iam_token(
+                region=self.config.aws_region,
+                role_arn=self.config.aws_rds_iam_role_arn,
+                host=self.url.host,
+                port=self.url.port or 3306,
+                username=self.url.username,
+            )
+
+        if credential:
+            return {**os.environ, "MYSQL_PWD": credential}
 
         return None
 
@@ -178,7 +212,6 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--database", self.url.database])
         cmd.extend(["--directory", self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
-        cmd.append("--overwrite-tables")
 
         if self.config.myloader_threads:
             cmd.extend(["--threads", str(self.config.myloader_threads)])
