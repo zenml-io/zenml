@@ -103,6 +103,15 @@ class OAuthDeviceInternalUpdate(OAuthDeviceUpdate):
     user_id: Optional[UUID] = Field(
         default=None, description="User that owns the OAuth2 device."
     )
+    clear_user_id: bool = Field(
+        default=False,
+        description="Whether to clear the user association of the OAuth2 "
+        "device. `user_id` is dropped by the generic exclude_none update "
+        "logic when it is None, so this explicit flag is needed to actually "
+        "unset it (e.g. when a device is reused for a new authorization "
+        "attempt and must no longer be considered owned by the previous "
+        "user).",
+    )
     status: Optional[OAuthDeviceStatus] = Field(
         default=None, description="The new status of the OAuth2 device."
     )

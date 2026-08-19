@@ -217,6 +217,14 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         # name in the internal model and the schema.
         self.update(device_update)
 
+        # `update()` excludes None values, so it can never unset `user_id`.
+        # Devices reused for a new authorization attempt (see
+        # `device_authorization` in auth_endpoints.py) need that, otherwise
+        # the previous owner's user association survives the reset and
+        # blocks a different user from verifying the device.
+        if device_update.clear_user_id:
+            self.user_id = None
+
         if device_update.expires_in is not None:
             if device_update.expires_in <= 0:
                 self.expires = None
