@@ -62,8 +62,6 @@ A fetch reads the file from the beginning and stops once it has collected as man
 
 Search, level and time filters are ignored, and so are the pagination cursors. Applying a filter here would mean reading until enough entries match it, and a selective filter over a long stream matches too rarely for the limit to ever stop that read, so it would run to the end of the file however large the file is. Because the response already carries the log stream, the dashboard filters and pages through it on the client side instead, at no cost to the server. This is the one behavior that sets this log store apart from those backed by a queryable API, where the same filters are pushed down into the query.
 
-The limit counts stored entries rather than logged messages. A message larger than 5 KiB is stored as several entries that share an ID and carry a chunk index, and each of those counts towards the limit, which is what keeps the size of a response bounded no matter how large a single logged message was.
-
 ### Log format
 
 Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contains the following fields:
