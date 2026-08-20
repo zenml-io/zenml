@@ -119,6 +119,7 @@ from zenml.models import (
     DeploymentResponse,
     FlavorFilter,
     FlavorResponse,
+    GitHubWebhookEventConfiguration,
     HookInvocationFilter,
     HookInvocationResponse,
     ModelFilter,
@@ -4733,6 +4734,7 @@ class Client(metaclass=ClientMetaClass):
         project_id: str | UUID | None = None,
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
     ) -> WebhookTriggerResponse:
         """Create a webhook trigger.
 
@@ -4744,6 +4746,7 @@ class Client(metaclass=ClientMetaClass):
             active: Whether the trigger should be active. Detached triggers
                 are always created inactive.
             concurrency: The trigger run concurrency behavior.
+            events: The provider-specific semantic event configurations.
 
         Returns:
             The created webhook trigger.
@@ -4772,6 +4775,7 @@ class Client(metaclass=ClientMetaClass):
                 active=active,
                 concurrency=concurrency,
                 webhook_integration_id=integration_id,
+                events=list(events) if events is not None else None,
             )
         )
         assert isinstance(trigger, WebhookTriggerResponse)
@@ -4785,6 +4789,7 @@ class Client(metaclass=ClientMetaClass):
         concurrency: TriggerRunConcurrency | None = None,
         webhook_integration: str | UUID | None = None,
         detach_webhook_integration: bool = False,
+        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
     ) -> WebhookTriggerResponse:
         """Update a webhook trigger.
 
@@ -4797,6 +4802,8 @@ class Client(metaclass=ClientMetaClass):
                 prefix.
             detach_webhook_integration: Whether to clear the integration
                 association and deactivate the trigger.
+            events: Replacement semantic event configurations. If omitted,
+                the existing configurations are preserved.
 
         Returns:
             The updated webhook trigger.
@@ -4833,6 +4840,9 @@ class Client(metaclass=ClientMetaClass):
                     else trigger.concurrency
                 ),
                 webhook_integration_id=webhook_integration_id,
+                events=(
+                    list(events) if events is not None else trigger.events
+                ),
             ),
         )
         assert isinstance(response, WebhookTriggerResponse)

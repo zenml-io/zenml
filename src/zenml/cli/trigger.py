@@ -36,7 +36,10 @@ from zenml.enums import (
     WebhookType,
 )
 from zenml.logger import get_logger
-from zenml.models import TriggerFilter
+from zenml.models import (
+    GitHubWebhookConfiguration,
+    TriggerFilter,
+)
 from zenml.utils.time_utils import iso8601_to_utc_naive
 
 logger = get_logger(__name__)
@@ -780,7 +783,7 @@ def list_platform_events(
 # WEBHOOK COMMANDS
 
 
-@webhook.command("create", help="Create a new webhook trigger.")
+@webhook.command("create")
 @click.argument("name", type=str)
 @click.option(
     "--webhook-type",
@@ -794,6 +797,13 @@ def list_platform_events(
     help="Optional webhook integration name or ID.",
 )
 @click.option(
+    "--event-config",
+    "-c",
+    "event_config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to a GitHub webhook event configuration YAML file.",
+)
+@click.option(
     "--concurrency",
     type=click.Choice(TriggerRunConcurrency.values()),
     default=TriggerRunConcurrency.SKIP.value,
@@ -804,23 +814,79 @@ def create_webhook_trigger(
     name: str,
     webhook_type: str,
     webhook_integration: str | None,
+    event_config_path: str | None,
     concurrency: str,
     active: bool,
 ) -> None:
-    """Create a webhook trigger.
+    """Create a new webhook trigger.
+
+    For --webhook-type github, --event-config is required and must point to a
+    YAML file with a non-empty events list. Supported event entries and fields:
+
+    \b
+      events:
+        - type: merged_pull_request
+          repo: <OWNER>/<REPOSITORY>
+          target_branch: <TARGET_BRANCH>
+          source_branch: startswith:<SOURCE_BRANCH_PREFIX>
+          author: <GITHUB_LOGIN>
+        - type: workflow_run_completed
+          workflow: <WORKFLOW_NAME>
+          conclusion: <CONCLUSION>
+          actor: <GITHUB_LOGIN>
+        - type: push
+          repo: <OWNER>/<REPOSITORY>
+          branch: <BRANCH>
+          actor: <GITHUB_LOGIN>
+        - type: release_published
+          repo: <OWNER>/<REPOSITORY>
+          tag: startswith:<TAG_PREFIX>
+          target_branch: <TARGET_BRANCH>
+          actor: <GITHUB_LOGIN>
+
+    All fields are optional filters. Fields within an entry are ANDed; event
+    entries are ORed. Multiple entries of the same type are allowed. "author"
+    and "actor" are GitHub logins.
+
+    For --webhook-type custom, do not pass --event-config. Custom webhook
+    triggers do not have a typed event configuration.
+
+    \f
 
     Args:
         name: The trigger name.
         webhook_type: The compatible webhook provider type.
         webhook_integration: Optional integration name or ID.
+        event_config_path: Path to the GitHub event configuration.
         concurrency: The trigger run concurrency behavior.
         active: Whether the trigger should be active.
+
+    Raises:
+        ValueError: If the event configuration is incompatible with the
+            selected webhook type.
     """
     try:
+        webhook_type_value = WebhookType(webhook_type)
+        if webhook_type_value == WebhookType.GITHUB:
+            if event_config_path is None:
+                raise ValueError(
+                    "GitHub webhook triggers require --event-config."
+                )
+            events = GitHubWebhookConfiguration.from_yaml(
+                event_config_path
+            ).events
+        else:
+            if event_config_path is not None:
+                raise ValueError(
+                    "Custom webhook triggers do not support --event-config."
+                )
+            events = None
+
         created = Client().create_webhook_trigger(
             name=name,
-            webhook_type=WebhookType(webhook_type),
+            webhook_type=webhook_type_value,
             webhook_integration=webhook_integration,
+            events=events,
             concurrency=TriggerRunConcurrency(concurrency),
             active=active,
         )
@@ -830,7 +896,7 @@ def create_webhook_trigger(
         cli_utils.declare(f"Created webhook trigger '{created.id}'.")
 
 
-@webhook.command("update", help="Update a webhook trigger.")
+@webhook.command("update")
 @click.argument("trigger_name_or_id", type=str)
 @click.option("--name", type=str)
 @click.option("--active", type=bool)
@@ -845,6 +911,13 @@ def create_webhook_trigger(
     help="Replacement webhook integration name or ID.",
 )
 @click.option(
+    "--event-config",
+    "-c",
+    "event_config_path",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to a replacement GitHub event configuration YAML file.",
+)
+@click.option(
     "--detach-webhook-integration",
     is_flag=True,
     help="Detach the webhook integration and deactivate the trigger.",
@@ -855,9 +928,43 @@ def update_webhook_trigger(
     active: bool | None,
     concurrency: str | None,
     webhook_integration: str | None,
+    event_config_path: str | None,
     detach_webhook_integration: bool,
 ) -> None:
     """Update a webhook trigger.
+
+    For a GitHub webhook trigger, --event-config must point to a YAML file with
+    a non-empty events list. Passing the option atomically replaces the entire
+    existing event list; omitting it preserves the existing list.
+
+    \b
+      events:
+        - type: merged_pull_request
+          repo: <OWNER>/<REPOSITORY>
+          target_branch: <TARGET_BRANCH>
+          source_branch: startswith:<SOURCE_BRANCH_PREFIX>
+          author: <GITHUB_LOGIN>
+        - type: workflow_run_completed
+          workflow: <WORKFLOW_NAME>
+          conclusion: <CONCLUSION>
+          actor: <GITHUB_LOGIN>
+        - type: push
+          repo: <OWNER>/<REPOSITORY>
+          branch: <BRANCH>
+          actor: <GITHUB_LOGIN>
+        - type: release_published
+          repo: <OWNER>/<REPOSITORY>
+          tag: startswith:<TAG_PREFIX>
+          target_branch: <TARGET_BRANCH>
+          actor: <GITHUB_LOGIN>
+
+    All fields are optional filters. Fields within an entry are ANDed; event
+    entries are ORed. Multiple entries of the same type are allowed. "author"
+    and "actor" are GitHub logins.
+
+    Custom webhook triggers do not support --event-config.
+
+    \f
 
     Args:
         trigger_name_or_id: The trigger name or ID.
@@ -865,12 +972,19 @@ def update_webhook_trigger(
         active: The new active state.
         concurrency: The new concurrency behavior.
         webhook_integration: A replacement integration name or ID.
+        event_config_path: Path to replacement GitHub event configuration.
         detach_webhook_integration: Whether to detach the integration.
     """
     if (
         not any(
             value is not None
-            for value in [name, active, concurrency, webhook_integration]
+            for value in [
+                name,
+                active,
+                concurrency,
+                webhook_integration,
+                event_config_path,
+            ]
         )
         and not detach_webhook_integration
     ):
@@ -878,6 +992,11 @@ def update_webhook_trigger(
         return
 
     try:
+        events = (
+            GitHubWebhookConfiguration.from_yaml(event_config_path).events
+            if event_config_path is not None
+            else None
+        )
         Client().update_webhook_trigger(
             trigger_name_id_or_prefix=trigger_name_or_id,
             name=name,
@@ -887,6 +1006,7 @@ def update_webhook_trigger(
             ),
             webhook_integration=webhook_integration,
             detach_webhook_integration=detach_webhook_integration,
+            events=events,
         )
     except Exception as e:
         cli_utils.exception(e)

@@ -46,8 +46,10 @@ from zenml.models import (
 )
 from zenml.webhooks import (
     WebhookAuthenticationError,
+    WebhookEvent,
     WebhookPayloadError,
     get_webhook_adapter,
+    notify_webhook_event_consumers,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -235,7 +237,22 @@ async def receive_webhook_event(
 
     Returns:
         An empty accepted response.
+
+    Raises:
+        HTTPException: If required provider metadata is malformed.
     """
+    adapter = get_webhook_adapter(webhook_type)
+    try:
+        should_process = adapter.pre_validate(headers=request.headers)
+    except WebhookPayloadError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+
+    if not should_process:
+        return Response(status_code=status.HTTP_202_ACCEPTED)
+
     body = await request.body()
     return await run_in_threadpool(
         _receive_webhook_event,
@@ -268,9 +285,12 @@ def _receive_webhook_event(
             request fails authentication or payload validation.
     """
     try:
-        stored_type, active, secret_id = zen_store().get_webhook_intake_config(
-            integration_id
-        )
+        (
+            stored_type,
+            active,
+            secret_id,
+            project_id,
+        ) = zen_store().get_webhook_intake_config(integration_id)
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
 
@@ -302,7 +322,7 @@ def _receive_webhook_event(
         )
 
     try:
-        adapter.parse(body=body, headers=headers)
+        parsed_event = adapter.parse(body=body, headers=headers)
     except WebhookPayloadError as error:
         zen_store().record_webhook_event(
             integration_id,
@@ -318,4 +338,13 @@ def _receive_webhook_event(
     zen_store().record_webhook_event(
         integration_id, WebhookEventStatsUpdate(accepted=True)
     )
+    event = WebhookEvent(
+        project_id=project_id,
+        webhook_integration_id=integration_id,
+        webhook_type=parsed_event.webhook_type,
+        event_type=parsed_event.event_type,
+        delivery_id=parsed_event.delivery_id,
+        payload=parsed_event.payload,
+    )
+    notify_webhook_event_consumers(event)
     return Response(status_code=status.HTTP_202_ACCEPTED)
