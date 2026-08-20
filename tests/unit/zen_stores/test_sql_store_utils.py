@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects import mysql
 from sqlmodel import Session, col, select
 
@@ -243,14 +244,28 @@ def test_pipeline_snapshot_indexes_cover_pagination_and_name_filters():
     ) == ["project_id", "name"]
 
 
-def test_step_configuration_indexes_cover_snapshot_and_run_hydration():
-    """Step configuration indexes support snapshot and step-run hydration."""
-    assert _index_columns(
-        StepConfigurationSchema, "ix_step_configuration_snapshot_id_name"
-    ) == ["snapshot_id", "name"]
-    assert _index_columns(
-        StepConfigurationSchema, "ix_step_configuration_step_run_id"
-    ) == ["step_run_id"]
+def test_step_configuration_constraints_enforce_owner_scoped_names() -> None:
+    """Step configuration names are unique within their owning entity."""
+    table = StepConfigurationSchema.metadata.tables[
+        StepConfigurationSchema.__tablename__
+    ]
+    constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in table.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+
+    assert constraints["unique_step_configuration_for_snapshot"] == [
+        "snapshot_id",
+        "name",
+    ]
+    assert constraints["unique_step_configuration_for_step_run"] == [
+        "step_run_id",
+        "name",
+    ]
+    index_names = {index.name for index in table.indexes}
+    assert "ix_step_configuration_snapshot_id_name" not in index_names
+    assert "ix_step_configuration_step_run_id" not in index_names
 
 
 def test_step_run_index_covers_hydrated_listing_query_shape():

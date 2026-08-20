@@ -654,24 +654,17 @@ class StepConfigurationSchema(BaseSchema, table=True):
 
     __tablename__ = "step_configuration"
     __table_args__ = (
+        # The owner columns are mutually exclusive, and SQL uniqueness treats
+        # NULL values as distinct. Each owner therefore needs its own constraint.
         UniqueConstraint(
             "snapshot_id",
+            "name",
+            name="unique_step_configuration_for_snapshot",
+        ),
+        UniqueConstraint(
             "step_run_id",
             "name",
-            name="unique_step_configuration_for_snapshot_or_step_run",
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=[
-                "snapshot_id",
-                "name",
-            ],
-        ),
-        build_index(
-            table_name=__tablename__,
-            column_names=[
-                "step_run_id",
-            ],
+            name="unique_step_configuration_for_step_run",
         ),
         CheckConstraint(
             "(snapshot_id IS NULL AND step_run_id IS NOT NULL) OR "
