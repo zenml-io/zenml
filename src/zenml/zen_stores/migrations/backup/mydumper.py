@@ -97,6 +97,10 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         Returns:
             List of command-line arguments for MySQL connection.
+
+        Raises:
+            RuntimeError: If IAM authentication is enabled but no operating-
+                system certificate trust store is available.
         """
         args: list[str] = []
 
