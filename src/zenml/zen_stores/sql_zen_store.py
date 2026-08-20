@@ -5175,34 +5175,97 @@ class SqlZenStore(BaseZenStore):
             )
         )
 
-    def _remove_name_from_snapshot(
-        self, session: Session, pipeline_id: UUID, name: str
+    def _snapshot_has_references(
+        self,
+        session: Session,
+        snapshot: PipelineSnapshotSchema,
+    ) -> bool:
+        """Check whether a snapshot must be retained for another resource.
+
+        Args:
+            session: SQLAlchemy session.
+            snapshot: Snapshot to check.
+
+        Returns:
+            Whether another resource references the snapshot.
+        """
+        if (
+            snapshot.schedule_id is not None
+            or snapshot.template_id is not None
+        ):
+            return True
+
+        reference_queries = (
+            select(PipelineRunSchema.id).where(
+                PipelineRunSchema.snapshot_id == snapshot.id
+            ),
+            select(StepRunSchema.id).where(
+                StepRunSchema.snapshot_id == snapshot.id
+            ),
+            select(PipelineSnapshotSchema.id).where(
+                PipelineSnapshotSchema.source_snapshot_id == snapshot.id
+            ),
+            select(DeploymentSchema.id).where(
+                DeploymentSchema.snapshot_id == snapshot.id
+            ),
+            select(RunTemplateSchema.id).where(
+                RunTemplateSchema.source_snapshot_id == snapshot.id
+            ),
+            select(TriggerSnapshotSchema.snapshot_id).where(
+                TriggerSnapshotSchema.snapshot_id == snapshot.id
+            ),
+        )
+        return any(
+            session.exec(query.limit(1)).first() is not None
+            for query in reference_queries
+        )
+
+    def _prepare_snapshot_replacement(
+        self,
+        session: Session,
+        pipeline_id: UUID,
+        name: str,
+        snapshot_to_keep_id: Optional[UUID] = None,
     ) -> None:
-        """Remove the name of a snapshot if it exists.
+        """Prepare an existing snapshot name for atomic replacement.
 
         Args:
             session: SQLAlchemy session.
             pipeline_id: The pipeline ID of the snapshot.
             name: The name of the snapshot.
+            snapshot_to_keep_id: Snapshot being renamed, if any.
         """
         existing = session.exec(
-            select(PipelineSnapshotSchema).where(
+            select(PipelineSnapshotSchema)
+            .where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
             )
+            .with_for_update()
         ).first()
 
-        if not existing:
+        if not existing or existing.id == snapshot_to_keep_id:
             return
 
-        existing.name = None
+        if self._snapshot_has_references(session=session, snapshot=existing):
+            existing.name = None
+            session.add(existing)
 
-        session.add(existing)
+            self._drop_snapshot_trigger_assoc(
+                snapshot_id=existing.id,
+                session=session,
+            )
+            return
 
-        self._drop_snapshot_trigger_assoc(
-            snapshot_id=existing.id,
-            session=session,
+        session.execute(
+            delete(TagResourceSchema).where(
+                TagResourceSchema.resource_id == existing.id,
+                TagResourceSchema.resource_type
+                == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+            )
         )
+        session.delete(existing)
+        session.flush()
 
     def create_snapshot(
         self,
@@ -5288,7 +5351,7 @@ class SqlZenStore(BaseZenStore):
                 validate_name(snapshot)
 
                 if snapshot.replace:
-                    self._remove_name_from_snapshot(
+                    self._prepare_snapshot_replacement(
                         session=session,
                         pipeline_id=snapshot.pipeline,
                         name=snapshot.name,
@@ -5451,10 +5514,11 @@ class SqlZenStore(BaseZenStore):
                 validate_name(snapshot_update)
 
                 if snapshot_update.replace:
-                    self._remove_name_from_snapshot(
+                    self._prepare_snapshot_replacement(
                         session=session,
                         pipeline_id=snapshot.pipeline_id,
                         name=snapshot_update.name,
+                        snapshot_to_keep_id=snapshot.id,
                     )
 
             snapshot.update(snapshot_update)

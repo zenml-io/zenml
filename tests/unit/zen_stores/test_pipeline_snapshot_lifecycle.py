@@ -20,16 +20,27 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import event
 from sqlalchemy.exc import IntegrityError
+from sqlmodel import col, select
 
 from zenml.client import Client
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.enums import (
+    ExecutionStatus,
+    TaggableResourceTypes,
+)
 from zenml.models import (
     PipelineRequest,
+    PipelineRunRequest,
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
+    PipelineSnapshotUpdate,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.schemas import (
+    StepConfigurationSchema,
+    TagResourceSchema,
+)
+from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
 
 
 def _create_snapshot_context(
@@ -56,6 +67,8 @@ def _snapshot_request(
     name: str,
     step_names: tuple[str, ...],
     replace: bool = False,
+    tags: tuple[str, ...] = (),
+    source_snapshot: UUID | None = None,
 ) -> PipelineSnapshotRequest:
     return PipelineSnapshotRequest(
         project=project_id,
@@ -63,6 +76,8 @@ def _snapshot_request(
         pipeline=pipeline_id,
         name=name,
         replace=replace,
+        tags=list(tags),
+        source_snapshot=source_snapshot,
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         client_version="test",
@@ -184,3 +199,177 @@ def test_failed_snapshot_replacement_preserves_existing_snapshot(
     preserved = store.get_snapshot(existing.id)
     assert preserved.name == "saved-snapshot"
     assert preserved.step_configurations == existing.step_configurations
+
+
+def test_replacing_unused_snapshot_discards_superseded_payload(
+    clean_client: Client,
+) -> None:
+    """Repeated replacement retains only the latest unused snapshot."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    superseded_ids: list[UUID] = []
+
+    for step_names in (("first",), ("first", "second"), ("latest",)):
+        snapshot = store.create_snapshot(
+            _snapshot_request(
+                project_id=project_id,
+                stack_id=stack_id,
+                pipeline_id=pipeline_id,
+                name="saved-snapshot",
+                step_names=step_names,
+                replace=bool(superseded_ids),
+                tags=("snapshot-tag",),
+            )
+        )
+        if superseded_ids:
+            assert snapshot.id not in superseded_ids
+        superseded_ids.append(snapshot.id)
+
+    snapshots = store.list_snapshots(
+        PipelineSnapshotFilter(project=project_id, named_only=False)
+    )
+    assert [snapshot.id for snapshot in snapshots.items] == [
+        superseded_ids[-1]
+    ]
+    assert set(snapshots.items[0].step_configurations) == {"latest"}
+
+    with Session(store.engine) as session:
+        stale_step_configurations = session.exec(
+            select(StepConfigurationSchema.id).where(
+                col(StepConfigurationSchema.snapshot_id).in_(
+                    superseded_ids[:-1]
+                )
+            )
+        ).all()
+        stale_tag_links = session.exec(
+            select(TagResourceSchema.id).where(
+                TagResourceSchema.resource_type
+                == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+                col(TagResourceSchema.resource_id).in_(superseded_ids[:-1]),
+            )
+        ).all()
+    assert stale_step_configurations == []
+    assert stale_tag_links == []
+
+
+def test_replacing_referenced_snapshot_preserves_run_history(
+    clean_client: Client,
+) -> None:
+    """Replacement keeps an old snapshot that owns historical run data."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    existing = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="saved-snapshot",
+            step_names=("first",),
+        )
+    )
+    run, _ = store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            name="historical-run",
+            snapshot=existing.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+
+    replacement = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="saved-snapshot",
+            step_names=("replacement",),
+            replace=True,
+        )
+    )
+
+    snapshots = store.list_snapshots(
+        PipelineSnapshotFilter(project=project_id, named_only=False)
+    )
+    assert {snapshot.id for snapshot in snapshots.items} == {
+        existing.id,
+        replacement.id,
+    }
+    assert store.get_snapshot(existing.id).name is None
+    preserved_run = store.get_run(run.id)
+    assert preserved_run.snapshot is not None
+    assert preserved_run.snapshot.id == existing.id
+
+
+def test_replacing_snapshot_name_with_itself_keeps_snapshot(
+    clean_client: Client,
+) -> None:
+    """Replacing an unchanged name does not discard the snapshot itself."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    existing = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="saved-snapshot",
+            step_names=("first",),
+        )
+    )
+
+    updated = store.update_snapshot(
+        existing.id,
+        PipelineSnapshotUpdate(name="saved-snapshot", replace=True),
+    )
+
+    snapshots = store.list_snapshots(
+        PipelineSnapshotFilter(project=project_id, named_only=False)
+    )
+    assert [snapshot.id for snapshot in snapshots.items] == [existing.id]
+    assert updated.id == existing.id
+    assert updated.name == "saved-snapshot"
+
+
+def test_replacing_source_snapshot_preserves_derived_snapshot(
+    clean_client: Client,
+) -> None:
+    """Replacement keeps a snapshot used as another snapshot's source."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    existing = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="saved-snapshot",
+            step_names=("first",),
+        )
+    )
+    derived = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="derived-snapshot",
+            step_names=("derived",),
+            source_snapshot=existing.id,
+        )
+    )
+
+    replacement = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name="saved-snapshot",
+            step_names=("replacement",),
+            replace=True,
+        )
+    )
+
+    assert store.get_snapshot(existing.id).name is None
+    assert store.get_snapshot(derived.id).source_snapshot_id == existing.id
+    assert replacement.name == "saved-snapshot"
