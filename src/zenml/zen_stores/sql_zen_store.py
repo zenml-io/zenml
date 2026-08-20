@@ -8478,14 +8478,14 @@ class SqlZenStore(BaseZenStore):
 
     def get_webhook_intake_config(
         self, integration_id: UUID
-    ) -> Tuple[WebhookType, bool, UUID]:
+    ) -> Tuple[WebhookType, bool, UUID, UUID]:
         """Get the minimal configuration required for webhook intake.
 
         Args:
             integration_id: The webhook integration ID.
 
         Returns:
-            The webhook type, active state, and internal secret ID.
+            The webhook type, active state, internal secret ID, and project ID.
 
         Raises:
             KeyError: If the webhook integration does not exist.
@@ -8496,12 +8496,13 @@ class SqlZenStore(BaseZenStore):
                     WebhookIntegrationSchema.webhook_type,
                     WebhookIntegrationSchema.active,
                     WebhookIntegrationSchema.secret_id,
+                    WebhookIntegrationSchema.project_id,
                 ).where(col(WebhookIntegrationSchema.id) == integration_id)
             ).first()
         if config is None:
             raise KeyError(f"Webhook integration {integration_id} not found.")
-        webhook_type, active, secret_id = config
-        return WebhookType(webhook_type), active, secret_id
+        webhook_type, active, secret_id, project_id = config
+        return WebhookType(webhook_type), active, secret_id, project_id
 
     def get_webhook_secret(self, secret_id: UUID) -> str:
         """Get a webhook signing secret from the configured secrets store.
@@ -8758,6 +8759,12 @@ class SqlZenStore(BaseZenStore):
 
             detach_webhook_integration = False
             if isinstance(trigger_update, WebhookTriggerUpdate):
+                try:
+                    trigger_update.validate_events_for_flavor(
+                        TriggerFlavor(existing_trigger.flavor)
+                    )
+                except ValueError as error:
+                    raise IllegalOperationError(str(error)) from error
                 if "webhook_integration_id" in trigger_update.model_fields_set:
                     if trigger_update.webhook_integration_id is None:
                         detach_webhook_integration = True

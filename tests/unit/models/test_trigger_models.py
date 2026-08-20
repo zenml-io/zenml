@@ -1,4 +1,6 @@
+import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -11,10 +13,15 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.models import (
+    GitHubWebhookConfiguration,
+    GitHubWebhookEvent,
+    MergedPullRequest,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
+    PushEvent,
+    ReleasePublished,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
@@ -22,7 +29,9 @@ from zenml.models import (
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerRequest,
     WebhookTriggerUpdate,
+    WorkflowRunCompleted,
 )
 
 
@@ -64,6 +73,133 @@ def test_webhook_trigger_update_requires_complete_payload() -> None:
     assert attached.get_extra_fields() == {
         "webhook_integration_id": integration_id
     }
+
+
+def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
+    """Multiple typed GitHub event configurations are stored in config JSON."""
+    events = [
+        MergedPullRequest(
+            repo='oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
+            target_branch="develop",
+            source_branch="startswith:feature/",
+            author="george",
+        ),
+        PushEvent(repo="zenml-io/zenml", branch="main", actor="george"),
+        ReleasePublished(
+            repo="zenml-io/zenml",
+            tag="startswith:v",
+            target_branch="main",
+        ),
+        WorkflowRunCompleted(
+            workflow="CI",
+            conclusion='oneof:["success", "failure"]',
+            actor="george",
+        ),
+    ]
+    request = WebhookTriggerRequest(
+        project=uuid4(),
+        name="github-webhook-trigger",
+        flavor=TriggerFlavor.GITHUB_WEBHOOK,
+        webhook_integration_id=uuid4(),
+        events=events,
+    )
+
+    assert events[0].type == GitHubWebhookEvent.MERGED_PULL_REQUEST
+    assert json.loads(request.get_config()) == {
+        "events": [
+            {
+                "type": "merged_pull_request",
+                "repo": 'oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
+                "target_branch": "develop",
+                "source_branch": "startswith:feature/",
+                "author": "george",
+            },
+            {
+                "type": "push",
+                "repo": "zenml-io/zenml",
+                "branch": "main",
+                "actor": "george",
+            },
+            {
+                "type": "release_published",
+                "repo": "zenml-io/zenml",
+                "tag": "startswith:v",
+                "target_branch": "main",
+            },
+            {
+                "type": "workflow_run_completed",
+                "workflow": "CI",
+                "conclusion": 'oneof:["success", "failure"]',
+                "actor": "george",
+            },
+        ]
+    }
+
+
+def test_webhook_trigger_event_configuration_matches_flavor() -> None:
+    """GitHub requires event configuration while custom forbids it."""
+    events = [MergedPullRequest(repo="zenml-io/zenml")]
+
+    with pytest.raises(ValidationError, match="require event configurations"):
+        WebhookTriggerRequest(
+            project=uuid4(),
+            name="github-webhook-trigger",
+            flavor=TriggerFlavor.GITHUB_WEBHOOK,
+        )
+
+    with pytest.raises(ValidationError, match="do not support"):
+        WebhookTriggerRequest(
+            project=uuid4(),
+            name="custom-webhook-trigger",
+            flavor=TriggerFlavor.CUSTOM_WEBHOOK,
+            events=events,
+        )
+
+
+def test_github_webhook_configuration_loads_yaml(tmp_path: Path) -> None:
+    """The CLI configuration wrapper loads heterogeneous event lists."""
+    path = tmp_path / "events.yaml"
+    path.write_text(
+        """
+events:
+  - type: merged_pull_request
+    repo: zenml-io/zenml
+    target_branch: develop
+  - type: push
+    repo: zenml-io/zenml
+    branch: main
+""".lstrip()
+    )
+
+    configuration = GitHubWebhookConfiguration.from_yaml(str(path))
+
+    assert configuration.events == [
+        MergedPullRequest(repo="zenml-io/zenml", target_branch="develop"),
+        PushEvent(repo="zenml-io/zenml", branch="main"),
+    ]
+
+
+def test_github_webhook_configuration_rejects_empty_event_list() -> None:
+    """GitHub configuration must select at least one event."""
+    with pytest.raises(ValidationError):
+        GitHubWebhookConfiguration(events=[])
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("repo", "startswith:zenml-io/"),
+        ("author", "contains:george"),
+        ("source_branch", "oneof:not-json"),
+        ("target_branch", 'oneof:["develop", 42]'),
+    ],
+)
+def test_pull_request_merged_rejects_unsupported_filters(
+    field: str, value: str
+) -> None:
+    """Semantic event fields enforce their operator allowlists."""
+    with pytest.raises(ValidationError):
+        MergedPullRequest(**{field: value})
 
 
 def test_schedule_trigger_valid_and_inheritance():

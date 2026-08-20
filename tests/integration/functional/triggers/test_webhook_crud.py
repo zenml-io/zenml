@@ -10,7 +10,10 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    MergedPullRequest,
     ProjectRequest,
+    PushEvent,
+    ReleasePublished,
     TriggerFilter,
     WebhookIntegrationRequest,
     WebhookTriggerRequest,
@@ -49,6 +52,69 @@ def test_webhook_trigger_store_lifecycle(clean_client):
             )
         )
 
+    github_trigger = store.create_trigger(
+        WebhookTriggerRequest(
+            project=project_id,
+            name=sample_name("github-webhook-trigger"),
+            flavor=TriggerFlavor.GITHUB_WEBHOOK,
+            webhook_integration_id=github_integration.id,
+            events=[
+                MergedPullRequest(
+                    repo="zenml-io/zenml",
+                    target_branch="develop",
+                ),
+                PushEvent(repo="zenml-io/zenml", branch="main"),
+            ],
+        )
+    )
+
+    assert isinstance(github_trigger, WebhookTriggerResponse)
+    assert github_trigger.events == [
+        MergedPullRequest(
+            repo="zenml-io/zenml",
+            target_branch="develop",
+        ),
+        PushEvent(repo="zenml-io/zenml", branch="main"),
+    ]
+
+    with pytest.raises(
+        IllegalOperationError, match="require event configurations"
+    ):
+        store.update_trigger(
+            trigger_id=github_trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=github_trigger.name,
+                active=github_trigger.active,
+                concurrency=github_trigger.concurrency,
+                webhook_integration_id=github_trigger.webhook_integration_id,
+            ),
+        )
+
+    github_trigger = store.update_trigger(
+        trigger_id=github_trigger.id,
+        trigger_update=WebhookTriggerUpdate(
+            name=github_trigger.name,
+            active=github_trigger.active,
+            concurrency=github_trigger.concurrency,
+            webhook_integration_id=github_trigger.webhook_integration_id,
+            events=[
+                ReleasePublished(
+                    repo="zenml-io/zenml",
+                    tag="startswith:v",
+                    target_branch='oneof:["develop", "main"]',
+                )
+            ],
+        ),
+    )
+
+    assert github_trigger.events == [
+        ReleasePublished(
+            repo="zenml-io/zenml",
+            tag="startswith:v",
+            target_branch='oneof:["develop", "main"]',
+        )
+    ]
+
     trigger = store.create_trigger(
         WebhookTriggerRequest(
             project=project_id,
@@ -64,6 +130,18 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     assert trigger.webhook_integration_id == custom_integration.id
     assert trigger.webhook_integration == custom_integration
     assert trigger.webhook_type == WebhookType.CUSTOM
+
+    with pytest.raises(IllegalOperationError, match="do not support"):
+        store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=trigger.name,
+                active=trigger.active,
+                concurrency=trigger.concurrency,
+                webhook_integration_id=trigger.webhook_integration_id,
+                events=[MergedPullRequest(repo="zenml-io/zenml")],
+            ),
+        )
 
     retrieved = store.get_trigger(trigger.id)
     listed = store.list_triggers(
@@ -205,11 +283,27 @@ def test_webhook_trigger_client_lifecycle(clean_client):
         webhook_type=WebhookType.GITHUB,
         webhook_integration=integration.name,
         concurrency=TriggerRunConcurrency.SUBMIT,
+        events=[
+            MergedPullRequest(
+                repo="zenml-io/zenml",
+                target_branch="develop",
+                source_branch="startswith:feature/",
+                author="george",
+            )
+        ],
     )
 
     assert trigger.webhook_integration_id == integration.id
     assert trigger.webhook_integration == integration
     assert trigger.webhook_type == WebhookType.GITHUB
+    assert trigger.events == [
+        MergedPullRequest(
+            repo="zenml-io/zenml",
+            target_branch="develop",
+            source_branch="startswith:feature/",
+            author="george",
+        )
+    ]
     assert clean_client.get_webhook_trigger(trigger.name).id == trigger.id
 
     listed = clean_client.list_webhook_triggers(
@@ -230,6 +324,7 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     assert updated.webhook_integration == integration
     assert updated.active is True
     assert updated.concurrency == TriggerRunConcurrency.SUBMIT
+    assert updated.events == trigger.events
 
     updated = clean_client.update_webhook_trigger(
         trigger.id,

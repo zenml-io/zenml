@@ -19,11 +19,13 @@ import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import WebhookType
 from zenml.exceptions import CredentialsNotValid
+from zenml.utils.enum_utils import StrEnum
 
 
 class WebhookAuthenticationError(CredentialsNotValid):
@@ -34,8 +36,21 @@ class WebhookPayloadError(ValueError):
     """Raised when a webhook payload fails fundamental validation."""
 
 
-class WebhookEvent(BaseModel):
-    """Authenticated provider event produced by an intake adapter."""
+class GitHubWebhookEventType(StrEnum):
+    """Raw GitHub event families supported by semantic webhook triggers.
+
+    Extend this enum when implementing a semantic event that requires another
+    raw GitHub event family.
+    """
+
+    PULL_REQUEST = "pull_request"
+    WORKFLOW_RUN = "workflow_run"
+    PUSH = "push"
+    RELEASE = "release"
+
+
+class ParsedWebhookEvent(BaseModel):
+    """Provider event parsed by a webhook adapter."""
 
     webhook_type: WebhookType
     event_type: str
@@ -43,14 +58,37 @@ class WebhookEvent(BaseModel):
     payload: dict[str, Any]
 
 
+class WebhookEvent(ParsedWebhookEvent):
+    """Trusted webhook event handed to registered consumers."""
+
+    model_config = ConfigDict(frozen=True)
+
+    project_id: UUID
+    webhook_integration_id: UUID
+
+
 class BaseWebhookAdapter(ABC):
     """Base class for provider-specific webhook adapters."""
 
     webhook_type: WebhookType
 
+    def pre_validate(self, headers: Mapping[str, str]) -> bool:
+        """Decide whether a request requires full provider validation.
+
+        Args:
+            headers: The untrusted request headers.
+
+        Returns:
+            True if the request should continue, otherwise False.
+
+        Raises:
+            WebhookPayloadError: If required provider metadata is malformed.
+        """  # noqa: DOC502
+        return True
+
     def validate(
         self, body: bytes, headers: Mapping[str, str], secret: str
-    ) -> WebhookEvent:
+    ) -> ParsedWebhookEvent:
         """Authenticate and structurally validate a provider event.
 
         Args:
@@ -68,7 +106,9 @@ class BaseWebhookAdapter(ABC):
         self.authenticate(body=body, headers=headers, secret=secret)
         return self.parse(body=body, headers=headers)
 
-    def parse(self, body: bytes, headers: Mapping[str, str]) -> WebhookEvent:
+    def parse(
+        self, body: bytes, headers: Mapping[str, str]
+    ) -> ParsedWebhookEvent:
         """Structurally validate and parse a provider event.
 
         Args:
@@ -92,7 +132,7 @@ class BaseWebhookAdapter(ABC):
                 "Request body must contain a top-level JSON object."
             )
         event_type = self.get_event_type(payload=payload, headers=headers)
-        return WebhookEvent(
+        return ParsedWebhookEvent(
             webhook_type=self.webhook_type,
             event_type=event_type,
             delivery_id=self.get_delivery_id(payload=payload, headers=headers),
@@ -182,6 +222,31 @@ class GitHubWebhookAdapter(HMACSHA256WebhookAdapter):
     signature_header = "x-hub-signature-256"
     event_header = "x-github-event"
     delivery_header = "x-github-delivery"
+
+    def pre_validate(self, headers: Mapping[str, str]) -> bool:
+        """Reject malformed and ignore unsupported GitHub event families.
+
+        Args:
+            headers: The untrusted request headers.
+
+        Returns:
+            True if the request should continue, otherwise False.
+
+        Raises:
+            WebhookPayloadError: If the GitHub event header is missing or empty.
+        """
+        event_type = headers.get(self.event_header)
+        if not event_type:
+            raise WebhookPayloadError(
+                f"Missing or empty {self.event_header} header."
+            )
+
+        try:
+            GitHubWebhookEventType(event_type)
+        except ValueError:
+            return False
+
+        return True
 
     def get_event_type(
         self, payload: dict[str, Any], headers: Mapping[str, str]

@@ -14,8 +14,10 @@
 import hashlib
 import hmac
 from collections.abc import Mapping
+from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from zenml.enums import WebhookType
 from zenml.webhooks.adapters import (
@@ -23,6 +25,7 @@ from zenml.webhooks.adapters import (
     CustomWebhookAdapter,
     GitHubWebhookAdapter,
     WebhookAuthenticationError,
+    WebhookEvent,
     WebhookPayloadError,
     get_webhook_adapter,
 )
@@ -72,6 +75,65 @@ def test_get_webhook_adapter_returns_registered_adapter(
 
     assert isinstance(adapter, adapter_type)
     assert adapter.webhook_type == webhook_type
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {},
+        {"x-github-event": ""},
+    ],
+)
+def test_github_pre_validation_rejects_missing_or_empty_event_header(
+    headers: Mapping[str, str],
+) -> None:
+    adapter = GitHubWebhookAdapter()
+
+    with pytest.raises(
+        WebhookPayloadError,
+        match="Missing or empty x-github-event header",
+    ):
+        adapter.pre_validate(headers=headers)
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    ["pull request", "pull-request", "PULL_REQUEST"],
+)
+def test_github_pre_validation_ignores_unsupported_event_type(
+    event_type: str,
+) -> None:
+    adapter = GitHubWebhookAdapter()
+
+    should_process = adapter.pre_validate(
+        headers={"x-github-event": event_type}
+    )
+
+    assert should_process is False
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    ["pull_request", "workflow_run", "push", "release"],
+)
+def test_github_pre_validation_processes_supported_event_type(
+    event_type: str,
+) -> None:
+    adapter = GitHubWebhookAdapter()
+
+    should_process = adapter.pre_validate(
+        headers={"x-github-event": event_type}
+    )
+
+    assert should_process is True
+
+
+def test_custom_pre_validation_always_processes() -> None:
+    adapter = CustomWebhookAdapter()
+
+    should_process = adapter.pre_validate(headers={})
+
+    assert should_process is True
 
 
 @pytest.mark.parametrize(
@@ -127,6 +189,20 @@ def test_validate_supports_bearer_auth_and_body_event_metadata() -> None:
 
     assert event.event_type == "monitor.page"
     assert event.delivery_id == "delivery-id"
+
+
+def test_trusted_webhook_event_is_immutable() -> None:
+    """Trusted webhook event identity cannot change after construction."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_integration_id=uuid4(),
+        webhook_type=WebhookType.GITHUB,
+        event_type="pull_request",
+        payload={"action": "closed"},
+    )
+
+    with pytest.raises(ValidationError):
+        event.event_type = "workflow_run"
 
 
 def test_parse_rejects_missing_body_event_type() -> None:

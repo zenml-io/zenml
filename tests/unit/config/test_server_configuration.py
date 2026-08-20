@@ -23,3 +23,15 @@ def test_api_transaction_cleanup_time_budget_can_match_interval() -> None:
     )
 
     assert config.api_transaction_cleanup_time_budget == 1
+
+
+def test_webhook_event_consumer_sources_accept_comma_separated_value() -> None:
+    """Webhook consumer implementations can be configured through the env."""
+    config = ServerConfiguration(
+        webhook_event_consumer_sources="package.First, package.Second"
+    )
+
+    assert config.webhook_event_consumer_sources == [
+        "package.First",
+        "package.Second",
+    ]

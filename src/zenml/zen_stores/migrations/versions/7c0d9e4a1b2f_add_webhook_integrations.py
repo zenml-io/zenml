@@ -14,7 +14,7 @@
 """Add webhook integrations [7c0d9e4a1b2f].
 
 Revision ID: 7c0d9e4a1b2f
-Revises: 0.96.2
+Revises: 0.96.3
 Create Date: 2026-07-07
 
 """
@@ -24,7 +24,7 @@ import sqlmodel
 from alembic import op
 
 revision = "7c0d9e4a1b2f"
-down_revision = "0.96.2"
+down_revision = "0.96.3"
 branch_labels = None
 depends_on = None
 
