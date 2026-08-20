@@ -10,6 +10,7 @@ from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.enums import WebhookType
+from zenml.models import MergedPullRequest, PushEvent
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 trigger_command = cli.commands["trigger"]
@@ -108,3 +109,60 @@ def test_webhook_trigger_cli_lifecycle(clean_client):
         reactivated.id, is_archived=True
     )
     assert archived.webhook_integration_id is None
+
+
+def test_github_webhook_trigger_cli_event_configuration(
+    clean_client, tmp_path
+):
+    """CLI exposes typed GitHub semantic event configuration."""
+    if isinstance(clean_client.zen_store, SqlZenStore):
+        pytest.skip("Webhooks require a REST store.")
+
+    runner = cli_runner()
+    integration = clean_client.create_webhook(
+        name=sample_name("github-webhook-trigger-cli-integration"),
+        webhook_type=WebhookType.GITHUB,
+    ).webhook
+    trigger_name = sample_name("github-webhook-trigger-cli")
+    config_path = tmp_path / "events.yaml"
+    config_path.write_text(
+        """
+events:
+  - type: merged_pull_request
+    repo: zenml-io/zenml
+    target_branch: develop
+    source_branch: startswith:feature/
+    author: george
+  - type: push
+    repo: zenml-io/zenml
+    branch: main
+""".lstrip()
+    )
+
+    result = runner.invoke(
+        create_command,
+        [
+            trigger_name,
+            "--webhook-type",
+            WebhookType.GITHUB.value,
+            "--webhook-integration",
+            integration.name,
+            "--event-config",
+            str(config_path),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    trigger = clean_client.get_webhook_trigger(trigger_name)
+    assert trigger.events == [
+        MergedPullRequest(
+            repo="zenml-io/zenml",
+            target_branch="develop",
+            source_branch="startswith:feature/",
+            author="george",
+        ),
+        PushEvent(repo="zenml-io/zenml", branch="main"),
+    ]
+
+    clean_client.delete_trigger(trigger.id, soft=False)
+    clean_client.delete_webhook(integration.id)

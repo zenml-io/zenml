@@ -19,10 +19,20 @@ from zenml.webhooks.adapters import (
     WebhookPayloadError,
     get_webhook_adapter,
 )
+from zenml.webhooks.consumer import (
+    WebhookEventConsumer,
+    notify_webhook_event_consumers,
+    register_webhook_event_consumer,
+    unregister_webhook_event_consumer,
+)
 
 __all__ = [
     "WebhookAuthenticationError",
     "WebhookEvent",
+    "WebhookEventConsumer",
     "WebhookPayloadError",
     "get_webhook_adapter",
+    "notify_webhook_event_consumers",
+    "register_webhook_event_consumer",
+    "unregister_webhook_event_consumer",
 ]

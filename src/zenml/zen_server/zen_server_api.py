@@ -114,6 +114,7 @@ from zenml.zen_server.utils import (
     initialize_workload_manager,
     initialize_zen_store,
     register_event_handlers,
+    register_webhook_event_consumers,
     server_config,
     shutdown_snapshot_run_dispatcher,
     shutdown_streaming,
@@ -198,6 +199,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         start_event_loop_lag_monitor()
 
     await register_event_handlers()
+    await register_webhook_event_consumers()
 
     yield
 

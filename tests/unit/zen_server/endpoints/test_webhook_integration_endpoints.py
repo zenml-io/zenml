@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Unit tests for public webhook integration intake."""
+
+import asyncio
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -19,7 +22,13 @@ from fastapi import HTTPException, status
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
-from zenml.webhooks import WebhookAuthenticationError, WebhookPayloadError
+from zenml.webhooks import (
+    WebhookAuthenticationError,
+    WebhookPayloadError,
+    register_webhook_event_consumer,
+    unregister_webhook_event_consumer,
+)
+from zenml.webhooks.adapters import GitHubWebhookAdapter
 from zenml.zen_server.routers import webhook_integration_endpoints as endpoints
 
 
@@ -31,12 +40,77 @@ def test_webhook_routers_use_public_webhook_prefix() -> None:
     assert endpoints.intake_router.prefix == expected_prefix
 
 
+class _Request:
+    def __init__(self, headers):
+        self.headers = headers
+        self.body_calls = 0
+
+    async def body(self):
+        self.body_calls += 1
+        return b'{"event":"ready"}'
+
+
+@pytest.mark.parametrize(
+    "event_type, expected_status, expected_body_calls",
+    [
+        (None, status.HTTP_400_BAD_REQUEST, 0),
+        ("push", status.HTTP_202_ACCEPTED, 1),
+        ("pull_request", status.HTTP_202_ACCEPTED, 1),
+    ],
+)
+def test_github_pre_validation_happens_before_body_and_store_io(
+    monkeypatch,
+    event_type: str | None,
+    expected_status: int,
+    expected_body_calls: int,
+) -> None:
+    """Reject malformed GitHub metadata before body or store access."""
+    adapter = GitHubWebhookAdapter()
+    request = _Request(
+        headers={"x-github-event": event_type}
+        if event_type is not None
+        else {}
+    )
+    receive_calls = []
+
+    async def _run_in_threadpool(function, **kwargs):
+        receive_calls.append((function, kwargs))
+        return endpoints.Response(status_code=status.HTTP_202_ACCEPTED)
+
+    monkeypatch.setattr(endpoints, "get_webhook_adapter", lambda _: adapter)
+    monkeypatch.setattr(endpoints, "run_in_threadpool", _run_in_threadpool)
+
+    if expected_status == status.HTTP_400_BAD_REQUEST:
+        with pytest.raises(HTTPException) as error:
+            asyncio.run(
+                endpoints.receive_webhook_event(
+                    webhook_type=WebhookType.GITHUB,
+                    webhook_id=uuid4(),
+                    request=request,
+                )
+            )
+        assert error.value.status_code == expected_status
+    else:
+        response = asyncio.run(
+            endpoints.receive_webhook_event(
+                webhook_type=WebhookType.GITHUB,
+                webhook_id=uuid4(),
+                request=request,
+            )
+        )
+        assert response.status_code == expected_status
+
+    assert request.body_calls == expected_body_calls
+    assert len(receive_calls) == expected_body_calls
+
+
 class _Store:
     def __init__(self, integration: SimpleNamespace | None) -> None:
         self.integration = integration
         self.secret_requests = 0
         self.records = []
         self.secret_id = uuid4()
+        self.project_id = uuid4()
 
     def get_webhook_intake_config(self, integration_id):
         if self.integration is None:
@@ -45,6 +119,7 @@ class _Store:
             self.integration.webhook_type,
             self.integration.active,
             self.secret_id,
+            self.project_id,
         )
 
     def get_webhook_secret(self, secret_id):
@@ -76,6 +151,20 @@ class _Adapter:
         self.parse_calls += 1
         if self.payload_error:
             raise self.payload_error
+        return SimpleNamespace(
+            webhook_type=WebhookType.CUSTOM,
+            event_type="pipeline.ready",
+            delivery_id="delivery-id",
+            payload={"event": "ready"},
+        )
+
+
+class _Consumer:
+    def __init__(self) -> None:
+        self.events = []
+
+    def consume(self, event):
+        self.events.append(event)
 
 
 def _install_dependencies(monkeypatch, store: _Store, adapter: _Adapter):
@@ -155,6 +244,7 @@ def test_receive_webhook_event_decision_table(
     expected_outcome: str | None,
     expected_error: str | None,
 ) -> None:
+    """Exercise webhook authentication, validation, and consumption paths."""
     integration_id = uuid4()
     store = _Store(
         integration=(
@@ -165,15 +255,20 @@ def test_receive_webhook_event_decision_table(
     )
     adapter = _Adapter(auth_error=auth_error, payload_error=payload_error)
     _install_dependencies(monkeypatch, store, adapter)
+    consumer = _Consumer()
+    register_webhook_event_consumer(consumer)
 
-    if expected_status == status.HTTP_202_ACCEPTED:
-        assert _receive(integration_id).status_code == expected_status
-    else:
-        with pytest.raises(HTTPException) as error:
-            _receive(integration_id)
-        assert error.value.status_code == expected_status
-        if auth_error is not None:
-            assert error.value.detail == "Invalid webhook authentication."
+    try:
+        if expected_status == status.HTTP_202_ACCEPTED:
+            assert _receive(integration_id).status_code == expected_status
+        else:
+            with pytest.raises(HTTPException) as error:
+                _receive(integration_id)
+            assert error.value.status_code == expected_status
+            if auth_error is not None:
+                assert error.value.detail == "Invalid webhook authentication."
+    finally:
+        unregister_webhook_event_consumer(consumer)
 
     resolved = stored_type == WebhookType.CUSTOM
     parsed = expected_status in {
@@ -192,3 +287,15 @@ def test_receive_webhook_event_decision_table(
         assert recorded_id == integration_id
         assert getattr(update, expected_outcome) is True
         assert update.error_summary == expected_error
+
+    if expected_status == status.HTTP_202_ACCEPTED:
+        assert len(consumer.events) == 1
+        event = consumer.events[0]
+        assert event.project_id == store.project_id
+        assert event.webhook_integration_id == integration_id
+        assert event.webhook_type == WebhookType.CUSTOM
+        assert event.event_type == "pipeline.ready"
+        assert event.delivery_id == "delivery-id"
+        assert event.payload == {"event": "ready"}
+    else:
+        assert consumer.events == []
