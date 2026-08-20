@@ -27,6 +27,7 @@ from opentelemetry.sdk._logs.export import (
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
+from zenml.io import fileio
 from zenml.log_stores.artifact.artifact_log_store import (
     END_OF_STREAM_MESSAGE,
     remove_ansi_escape_codes,
@@ -309,9 +310,6 @@ class ArtifactLogExporter(LogRecordExporter):
         Args:
             log_uri: The URI of the log files to merge.
         """
-        from zenml.artifacts.utils import _load_file_from_artifact_store
-        from zenml.exceptions import DoesNotExistException
-
         # Check if the log directory exists - it may not if no logs
         # were written yet. The URI folder gets created only when the
         # first log message is sent.
@@ -323,24 +321,23 @@ class ArtifactLogExporter(LogRecordExporter):
             files_.sort()
 
             missing_files = set()
-            # dump all logs to a local file first
+            # dump all logs to a single merged file. Copy in binary mode so
+            # that the merge makes no assumptions about the file encodings.
             with self.artifact_store.open(
                 os.path.join(log_uri, f"{time.time()}_merged{LOGS_EXTENSION}"),
-                "w",
+                "wb",
             ) as merged_file:
                 for file in files_:
                     try:
-                        merged_file.write(
-                            str(
-                                _load_file_from_artifact_store(
-                                    os.path.join(log_uri, str(file)),
-                                    artifact_store=self.artifact_store,
-                                    mode="r",
-                                )
-                            )
+                        source_file = self.artifact_store.open(
+                            os.path.join(log_uri, str(file)), "rb"
                         )
-                    except DoesNotExistException:
+                    except FileNotFoundError:
                         missing_files.add(file)
+                        continue
+
+                    with source_file:
+                        fileio.copy_fileobj(source_file, merged_file)
 
             # clean up left over files
             for file in files_:

@@ -19,7 +19,6 @@ import logging
 import posixpath
 import queue
 import shlex
-import shutil
 import tarfile
 import threading
 import time
@@ -47,6 +46,7 @@ from zenml.container_engines import (
     get_container_engine,
 )
 from zenml.enums import ContainerEngineType
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.sandboxes.base import (
     BaseSandbox,
@@ -484,7 +484,7 @@ class DockerSandboxSession(SandboxSession):
                 )
 
             with open(local_path, "wb") as destination_file:
-                shutil.copyfileobj(extracted, destination_file)
+                fileio.copy_fileobj(extracted, destination_file)
 
     def _create_snapshot(self) -> SandboxSnapshot:
         """Commit the session container filesystem as a local image.
