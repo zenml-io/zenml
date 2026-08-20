@@ -7486,9 +7486,103 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Delete the pipeline run
+            metadata_ids = self._detach_run_metadata(
+                run_id=run_id, session=session
+            )
+            self._delete_unreferenced_run_metadata(
+                metadata_ids=metadata_ids, session=session
+            )
             session.delete(existing_run)
             session.commit()
+
+    @staticmethod
+    def _detach_run_metadata(run_id: UUID, session: Session) -> List[UUID]:
+        """Detach metadata linked to a run and its owned resources.
+
+        Args:
+            run_id: The ID of the pipeline run.
+            session: The active database session.
+
+        Returns:
+            IDs of the detached metadata values.
+        """
+        step_run_ids = select(StepRunSchema.id).where(
+            StepRunSchema.pipeline_run_id == run_id
+        )
+        wait_condition_ids = select(RunWaitConditionSchema.id).where(
+            RunWaitConditionSchema.run_id == run_id
+        )
+        owned_link_filter = or_(
+            and_(
+                RunMetadataResourceSchema.resource_type
+                == MetadataResourceTypes.PIPELINE_RUN.value,
+                RunMetadataResourceSchema.resource_id == run_id,
+            ),
+            and_(
+                RunMetadataResourceSchema.resource_type
+                == MetadataResourceTypes.STEP_RUN.value,
+                col(RunMetadataResourceSchema.resource_id).in_(step_run_ids),
+            ),
+            and_(
+                RunMetadataResourceSchema.resource_type
+                == MetadataResourceTypes.WAIT_CONDITION.value,
+                col(RunMetadataResourceSchema.resource_id).in_(
+                    wait_condition_ids
+                ),
+            ),
+        )
+        metadata_ids = list(
+            session.exec(
+                select(RunMetadataResourceSchema.run_metadata_id)
+                .where(owned_link_filter)
+                .distinct()
+            ).all()
+        )
+        if not metadata_ids:
+            return []
+
+        session.exec(
+            delete(RunMetadataResourceSchema)
+            .where(owned_link_filter)
+            .execution_options(synchronize_session=False)
+        )
+        return metadata_ids
+
+    @staticmethod
+    def _delete_unreferenced_run_metadata(
+        metadata_ids: Sequence[UUID], session: Session
+    ) -> None:
+        """Delete captured metadata values that have no remaining bindings.
+
+        Args:
+            metadata_ids: Candidate metadata value IDs from a deleted run.
+            session: The active database session.
+        """
+        batch_size = 1000
+        for offset in range(0, len(metadata_ids), batch_size):
+            batch = metadata_ids[offset : offset + batch_size]
+            referenced_ids = set(
+                session.exec(
+                    select(RunMetadataResourceSchema.run_metadata_id)
+                    .where(
+                        col(RunMetadataResourceSchema.run_metadata_id).in_(
+                            batch
+                        )
+                    )
+                    .distinct()
+                ).all()
+            )
+            unreferenced_ids = [
+                metadata_id
+                for metadata_id in batch
+                if metadata_id not in referenced_ids
+            ]
+            if unreferenced_ids:
+                session.exec(
+                    delete(RunMetadataSchema).where(
+                        col(RunMetadataSchema.id).in_(unreferenced_ids)
+                    )
+                )
 
     def count_runs(self, filter_model: PipelineRunFilter) -> int:
         """Count all pipeline runs.
@@ -8128,15 +8222,16 @@ class SqlZenStore(BaseZenStore):
                 # foreign-key ordering without committing the transaction.
                 session.flush()
 
-                for metadata_schema in metadata_schemas:
-                    for resource in run_metadata.resources:
-                        session.add(
-                            RunMetadataResourceSchema(
-                                resource_id=resource.id,
-                                resource_type=resource.type.value,
-                                run_metadata_id=metadata_schema.id,
-                            )
-                        )
+                metadata_links = [
+                    RunMetadataResourceSchema(
+                        resource_id=resource.id,
+                        resource_type=resource.type.value,
+                        run_metadata_id=metadata_schema.id,
+                    )
+                    for metadata_schema in metadata_schemas
+                    for resource in run_metadata.resources
+                ]
+                session.add_all(metadata_links)
 
                 session.commit()
         return None
