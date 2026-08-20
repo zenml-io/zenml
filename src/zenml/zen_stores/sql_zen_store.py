@@ -5221,6 +5221,17 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created snapshot.
         """
+        serialized_step_configurations = [
+            (
+                index,
+                step_name,
+                step_configuration.model_dump_json(exclude={"config"}),
+            )
+            for index, (step_name, step_configuration) in enumerate(
+                snapshot.step_configurations.items()
+            )
+        ]
+
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
             self._get_reference_schema_by_id(
@@ -5293,15 +5304,36 @@ class SqlZenStore(BaseZenStore):
                 snapshot, code_reference_id=code_reference_id
             )
 
+            session.add(new_snapshot)
+            for (
+                index,
+                step_name,
+                serialized_configuration,
+            ) in serialized_step_configurations:
+                session.add(
+                    StepConfigurationSchema(
+                        index=index,
+                        name=step_name,
+                        # Don't include the merged config in the step
+                        # configurations, we reconstruct it in the `to_model`
+                        # method using the pipeline configuration.
+                        config=serialized_configuration,
+                        snapshot_id=new_snapshot.id,
+                    )
+                )
+
             try:
-                session.add(new_snapshot)
                 session.commit()
             except IntegrityError as e:
                 session.rollback()
-                if new_snapshot.name and self._snapshot_exists(
-                    session=session,
-                    pipeline_id=snapshot.pipeline,
-                    name=new_snapshot.name,
+                if (
+                    new_snapshot.name
+                    and not snapshot.replace
+                    and self._snapshot_exists(
+                        session=session,
+                        pipeline_id=snapshot.pipeline,
+                        name=new_snapshot.name,
+                    )
                 ):
                     raise EntityExistsError(
                         f"Snapshot with name `{new_snapshot.name}` already "
@@ -5309,25 +5341,7 @@ class SqlZenStore(BaseZenStore):
                         "want to replace the existing snapshot, set the "
                         "`replace` flag to `True`."
                     )
-                else:
-                    raise RuntimeError("Snapshot creation failed.") from e
-
-            for index, (step_name, step_configuration) in enumerate(
-                snapshot.step_configurations.items()
-            ):
-                step_configuration_schema = StepConfigurationSchema(
-                    index=index,
-                    name=step_name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_configuration.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    snapshot_id=new_snapshot.id,
-                )
-                session.add(step_configuration_schema)
-            session.commit()
+                raise RuntimeError("Snapshot creation failed.") from e
 
             self._attach_tags_to_resources(
                 tags=snapshot.tags,
