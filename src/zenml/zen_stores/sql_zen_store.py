@@ -8106,33 +8106,39 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            if run_metadata.resources:
+            if run_metadata.resources and run_metadata.values:
                 from zenml.utils.json_utils import pydantic_encoder
 
-                for key, value in run_metadata.values.items():
-                    type_ = run_metadata.types[key]
-
-                    run_metadata_schema = RunMetadataSchema(
+                metadata_schemas = [
+                    RunMetadataSchema(
                         project_id=run_metadata.project,
                         user_id=run_metadata.user,
                         stack_component_id=run_metadata.stack_component_id,
                         key=key,
                         value=json.dumps(value, default=pydantic_encoder),
-                        type=type_,
+                        type=run_metadata.types[key],
                         publisher_step_id=run_metadata.publisher_step_id,
                     )
+                    for key, value in run_metadata.values.items()
+                ]
+                session.add_all(metadata_schemas)
 
-                    session.add(run_metadata_schema)
-                    session.commit()
+                # The link schema has no ORM relationship to the metadata
+                # schema, so flush the parent rows first to guarantee
+                # foreign-key ordering without committing the transaction.
+                session.flush()
 
+                for metadata_schema in metadata_schemas:
                     for resource in run_metadata.resources:
-                        rm_resource_link = RunMetadataResourceSchema(
-                            resource_id=resource.id,
-                            resource_type=resource.type.value,
-                            run_metadata_id=run_metadata_schema.id,
+                        session.add(
+                            RunMetadataResourceSchema(
+                                resource_id=resource.id,
+                                resource_type=resource.type.value,
+                                run_metadata_id=metadata_schema.id,
+                            )
                         )
-                        session.add(rm_resource_link)
-                        session.commit()
+
+                session.commit()
         return None
 
     # -------------------- Triggers ---------------------
