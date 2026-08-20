@@ -844,9 +844,9 @@ def create_webhook_trigger(
           target_branch: <TARGET_BRANCH>
           actor: <GITHUB_LOGIN>
 
-    All fields are optional filters. Fields within an entry are ANDed; event
-    entries are ORed. Multiple entries of the same type are allowed. "author"
-    and "actor" are GitHub logins.
+    All fields are optional filters. Fields within an entry are combined using
+    logical AND; event entries are combined using logical OR. Multiple entries
+    of the same type are allowed. "author" and "actor" are GitHub logins.
 
     For --webhook-type custom, do not pass --event-config. Custom webhook
     triggers do not have a typed event configuration.
@@ -958,9 +958,9 @@ def update_webhook_trigger(
           target_branch: <TARGET_BRANCH>
           actor: <GITHUB_LOGIN>
 
-    All fields are optional filters. Fields within an entry are ANDed; event
-    entries are ORed. Multiple entries of the same type are allowed. "author"
-    and "actor" are GitHub logins.
+    All fields are optional filters. Fields within an entry are combined using
+    logical AND; event entries are combined using logical OR. Multiple entries
+    of the same type are allowed. "author" and "actor" are GitHub logins.
 
     Custom webhook triggers do not support --event-config.
 
