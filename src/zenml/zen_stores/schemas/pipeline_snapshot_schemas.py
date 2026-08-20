@@ -13,14 +13,19 @@
 #  permissions and limitations under the License.
 """Pipeline snapshot schemas."""
 
+import base64
+import binascii
 import json
+import zlib
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -66,6 +71,102 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 logger = get_logger(__name__)
+
+_COMPRESSED_STEP_CONFIGURATION_MARKER = "zenml-step-config:"
+_COMPRESSED_STEP_CONFIGURATION_PREFIX = (
+    f"{_COMPRESSED_STEP_CONFIGURATION_MARKER}zlib:v1:"
+)
+
+
+def _decode_step_configuration(value: str) -> str:
+    """Decode a compressed step configuration while preserving legacy JSON.
+
+    Args:
+        value: Stored step configuration value.
+
+    Returns:
+        The original JSON string.
+
+    Raises:
+        ValueError: If a compressed value is malformed or exceeds the column
+            limit after decompression.
+    """
+    if not value.startswith(_COMPRESSED_STEP_CONFIGURATION_MARKER):
+        return value
+    if not value.startswith(_COMPRESSED_STEP_CONFIGURATION_PREFIX):
+        raise ValueError("Unsupported compressed step configuration.")
+
+    encoded = value.removeprefix(_COMPRESSED_STEP_CONFIGURATION_PREFIX)
+    try:
+        compressed = base64.b64decode(encoded, validate=True)
+        decompressor = zlib.decompressobj()
+        decoded = decompressor.decompress(
+            compressed, MEDIUMTEXT_MAX_LENGTH + 1
+        )
+    except (binascii.Error, ValueError, zlib.error) as error:
+        raise ValueError("Invalid compressed step configuration.") from error
+
+    if (
+        len(decoded) > MEDIUMTEXT_MAX_LENGTH
+        or decompressor.unconsumed_tail
+        or not decompressor.eof
+        or decompressor.unused_data
+    ):
+        raise ValueError("Invalid compressed step configuration.")
+
+    try:
+        return decoded.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("Invalid compressed step configuration.") from error
+
+
+class _StepConfigurationText(TypeDecorator[str]):
+    """Step configuration text with rolling-safe compressed-value reads."""
+
+    impl = String
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect: Dialect) -> Any:
+        """Load the existing database type for the active dialect.
+
+        Args:
+            dialect: Active SQLAlchemy dialect.
+
+        Returns:
+            The unchanged step configuration database type.
+        """
+        storage_type = String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+            MEDIUMTEXT(), "mysql"
+        )
+        return dialect.type_descriptor(storage_type)
+
+    def process_bind_param(
+        self, value: Optional[str], dialect: Dialect
+    ) -> Optional[str]:
+        """Keep writes compatible with servers that do not decode compression.
+
+        Args:
+            value: Step configuration being stored.
+            dialect: Active SQLAlchemy dialect.
+
+        Returns:
+            The original step configuration.
+        """
+        return value
+
+    def process_result_value(
+        self, value: Optional[str], dialect: Dialect
+    ) -> Optional[str]:
+        """Decode compressed values and pass legacy JSON through unchanged.
+
+        Args:
+            value: Stored step configuration.
+            dialect: Active SQLAlchemy dialect.
+
+        Returns:
+            The decoded step configuration.
+        """
+        return _decode_step_configuration(value) if value is not None else None
 
 
 class PipelineSnapshotSchema(BaseSchema, table=True):
@@ -684,9 +785,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     name: str
     config: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            _StepConfigurationText(),
             nullable=False,
         )
     )
