@@ -442,6 +442,7 @@ class ServerConfiguration(BaseModel):
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
+    webhook_event_consumer_sources: list[str] = []
 
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
@@ -664,6 +665,25 @@ class ServerConfiguration(BaseModel):
 
         if isinstance(value, str):
             return [i.strip() for i in value.strip().split(",")]
+
+        return []
+
+    @field_validator("webhook_event_consumer_sources", mode="before")
+    @classmethod
+    def _convert_webhook_event_consumers(cls, value: Any) -> list[str]:
+        """Convert comma-separated value to list of strings.
+
+        Args:
+            value: A comma-separated string or None.
+
+        Returns:
+            A list of webhook event consumers or an empty list.
+        """
+        if isinstance(value, list):
+            return value
+
+        if isinstance(value, str):
+            return [item.strip() for item in value.strip().split(",")]
 
         return []
 

@@ -381,9 +381,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -403,11 +403,17 @@ from zenml.models.v2.core.triggers import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,
+    GitHubWebhookConfiguration,
+    GitHubWebhookEvent,
+    GitHubWebhookEventConfiguration,
+    MergedPullRequest,
     PlatformEventTrigger,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
+    PushEvent,
+    ReleasePublished,
     ScheduleTriggerRequest,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
@@ -423,6 +429,12 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
     TriggerUpdate,
+    WebhookTrigger,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerResponseBody,
+    WebhookTriggerUpdate,
+    WorkflowRunCompleted,
 )
 from zenml.models.v2.core.user import (
     UserFilter,
@@ -431,6 +443,20 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
     UserUpdate,
+)
+from zenml.models.v2.core.webhook_integration import (
+    WebhookEventStatsUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationResponseBody,
+    WebhookIntegrationResponseMetadata,
+    WebhookIntegrationResponseResources,
+    WebhookIntegrationRotateSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationStats,
+    WebhookIntegrationUpdate,
 )
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -643,6 +669,16 @@ PlatformEventTriggerRequest.model_rebuild()
 PlatformEventTriggerUpdate.model_rebuild()
 PlatformEventTriggerResponse.model_rebuild()
 PlatformEventTriggerResponseBody.model_rebuild()
+WebhookTrigger.model_rebuild()
+WebhookTriggerRequest.model_rebuild()
+WebhookTriggerUpdate.model_rebuild()
+WebhookTriggerResponse.model_rebuild()
+WebhookTriggerResponseBody.model_rebuild()
+WebhookIntegrationResponseBody.model_rebuild()
+WebhookIntegrationStats.model_rebuild()
+WebhookIntegrationResponseMetadata.model_rebuild()
+WebhookIntegrationResponseResources.model_rebuild()
+WebhookIntegrationResponse.model_rebuild()
 
 
 __all__ = [
@@ -1022,9 +1058,33 @@ __all__ = [
     "PlatformEventTriggerResponse",
     "PlatformEventTriggerResponseBody",
     "PlatformEventTrigger",
+    "WebhookTrigger",
+    "WebhookTriggerRequest",
+    "WebhookTriggerUpdate",
+    "WebhookTriggerResponse",
+    "WebhookTriggerResponseBody",
+    "GitHubWebhookEvent",
+    "GitHubWebhookEventConfiguration",
+    "GitHubWebhookConfiguration",
+    "MergedPullRequest",
+    "PushEvent",
+    "ReleasePublished",
+    "WorkflowRunCompleted",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
     "SourceEntity",
     "TriggerExecutionInfo",
+    "WebhookEventStatsUpdate",
+    "WebhookIntegrationCreateResponse",
+    "WebhookIntegrationFilter",
+    "WebhookIntegrationRequest",
+    "WebhookIntegrationResponse",
+    "WebhookIntegrationResponseBody",
+    "WebhookIntegrationResponseMetadata",
+    "WebhookIntegrationResponseResources",
+    "WebhookIntegrationRotateSecretRequest",
+    "WebhookIntegrationSecretResponse",
+    "WebhookIntegrationStats",
+    "WebhookIntegrationUpdate",
 ]

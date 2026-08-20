@@ -78,6 +78,7 @@ class ResourceType(StrEnum):
     # Deactivated for now
     # USER = "user"
     TRIGGER = "trigger"
+    WEBHOOK_INTEGRATION = "webhook_integration"
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.

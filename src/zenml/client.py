@@ -62,6 +62,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
+    WEBHOOK_TYPE_TO_TRIGGER_FLAVOR,
     ColorVariants,
     CuratedVisualizationSize,
     LogicalOperators,
@@ -78,6 +79,7 @@ from zenml.enums import (
     TriggerRunConcurrency,
     TriggerType,
     VisualizationResourceTypes,
+    WebhookType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -117,6 +119,7 @@ from zenml.models import (
     DeploymentResponse,
     FlavorFilter,
     FlavorResponse,
+    GitHubWebhookEventConfiguration,
     HookInvocationFilter,
     HookInvocationResponse,
     ModelFilter,
@@ -215,6 +218,16 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationRotateSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationUpdate,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerUpdate,
 )
 from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
@@ -4713,6 +4726,280 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
+    def create_webhook_trigger(
+        self,
+        name: str,
+        webhook_type: WebhookType,
+        webhook_integration: str | UUID | None = None,
+        project_id: str | UUID | None = None,
+        active: bool = True,
+        concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
+    ) -> WebhookTriggerResponse:
+        """Create a webhook trigger.
+
+        Args:
+            name: The trigger name.
+            webhook_type: The compatible webhook provider type.
+            webhook_integration: Optional integration name, ID, or ID prefix.
+            project_id: The project ID.
+            active: Whether the trigger should be active. Detached triggers
+                are always created inactive.
+            concurrency: The trigger run concurrency behavior.
+            events: The provider-specific semantic event configurations.
+
+        Returns:
+            The created webhook trigger.
+
+        Raises:
+            IllegalOperationError: If the integration type is incompatible.
+        """
+        integration_id = None
+        if webhook_integration is not None:
+            integration = self.get_webhook(
+                webhook_integration,
+                project=project_id,
+            )
+            if integration.webhook_type != webhook_type:
+                raise IllegalOperationError(
+                    f"A {webhook_type.value} webhook trigger requires a "
+                    f"{webhook_type.value} webhook integration."
+                )
+            integration_id = integration.id
+
+        trigger = self.zen_store.create_trigger(
+            trigger=WebhookTriggerRequest(
+                project=project_id or self.active_project.id,
+                name=name,
+                flavor=WEBHOOK_TYPE_TO_TRIGGER_FLAVOR[webhook_type],
+                active=active,
+                concurrency=concurrency,
+                webhook_integration_id=integration_id,
+                events=list(events) if events is not None else None,
+            )
+        )
+        assert isinstance(trigger, WebhookTriggerResponse)
+        return trigger
+
+    def update_webhook_trigger(
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        name: str | None = None,
+        active: bool | None = None,
+        concurrency: TriggerRunConcurrency | None = None,
+        webhook_integration: str | UUID | None = None,
+        detach_webhook_integration: bool = False,
+        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
+    ) -> WebhookTriggerResponse:
+        """Update a webhook trigger.
+
+        Args:
+            trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+            name: The new trigger name.
+            active: The new active state.
+            concurrency: The new trigger run concurrency behavior.
+            webhook_integration: A replacement integration name, ID, or ID
+                prefix.
+            detach_webhook_integration: Whether to clear the integration
+                association and deactivate the trigger.
+            events: Replacement semantic event configurations. If omitted,
+                the existing configurations are preserved.
+
+        Returns:
+            The updated webhook trigger.
+
+        Raises:
+            IllegalOperationError: If conflicting association changes are
+                requested or the integration type is incompatible.
+        """
+        if webhook_integration is not None and detach_webhook_integration:
+            raise IllegalOperationError(
+                "Can not attach and detach a webhook integration in the same "
+                "update."
+            )
+
+        trigger = self.get_webhook_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=False,
+        )
+        webhook_integration_id = trigger.webhook_integration_id
+        if webhook_integration is not None:
+            integration = self.get_webhook(webhook_integration)
+            webhook_integration_id = integration.id
+        elif detach_webhook_integration:
+            webhook_integration_id = None
+
+        response = self.zen_store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=name if name is not None else trigger.name,
+                active=active if active is not None else trigger.active,
+                concurrency=(
+                    concurrency
+                    if concurrency is not None
+                    else trigger.concurrency
+                ),
+                webhook_integration_id=webhook_integration_id,
+                events=(
+                    list(events) if events is not None else trigger.events
+                ),
+            ),
+        )
+        assert isinstance(response, WebhookTriggerResponse)
+        return response
+
+    def get_webhook_trigger(
+        self,
+        trigger_name_id_or_prefix: Union[str, UUID],
+        allow_name_prefix_match: bool = True,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
+        is_archived: bool = False,
+    ) -> WebhookTriggerResponse:
+        """Retrieve a webhook trigger by name, ID, or prefix.
+
+        Args:
+            trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+            allow_name_prefix_match: Whether to allow name prefix matching.
+            project: The project name or ID.
+            hydrate: Whether to hydrate the response.
+            is_archived: Whether to search archived triggers.
+
+        Returns:
+            The webhook trigger.
+
+        Raises:
+            ValueError: If the resolved trigger has an incompatible type.
+        """
+
+        def _get_webhook_trigger_by_id(
+            trigger_id: UUID, hydrate: bool = True
+        ) -> WebhookTriggerResponse:
+            trigger = self.zen_store.get_trigger(
+                trigger_id=trigger_id,
+                hydrate=hydrate,
+            )
+            if (
+                not isinstance(trigger, WebhookTriggerResponse)
+                or trigger.is_archived != is_archived
+            ):
+                raise KeyError(
+                    f"No webhook trigger found for ID `{trigger_id}`."
+                )
+            return trigger
+
+        list_method = cast(
+            Callable[..., Page[WebhookTriggerResponse]],
+            functools.partial(
+                self.list_webhook_triggers,
+                is_archived=is_archived,
+            ),
+        )
+        trigger = self._get_entity_by_id_or_name_or_prefix(
+            get_method=_get_webhook_trigger_by_id,
+            list_method=list_method,
+            name_id_or_prefix=trigger_name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            project=project,
+            hydrate=hydrate,
+        )
+        if not isinstance(trigger, WebhookTriggerResponse):
+            raise ValueError(
+                f"Found trigger {trigger.id} of incompatible type "
+                f"(expected {TriggerType.WEBHOOK})."
+            )
+        return trigger
+
+    def list_webhook_triggers(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        active: bool | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
+        is_archived: bool = False,
+        webhook_type: WebhookType | None = None,
+        webhook_integration_id: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        hydrate: bool = True,
+    ) -> Page[WebhookTriggerResponse]:
+        """List webhook triggers.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum page size.
+            logical_operator: The operator used to combine filters.
+            user: Filter by creating user.
+            project: Filter by project name or ID.
+            id: Filter by trigger ID.
+            created: Filter by creation time.
+            updated: Filter by update time.
+            name: Filter by trigger name.
+            active: Filter by active state.
+            concurrency: Filter by concurrency behavior.
+            is_archived: Filter by archived state.
+            webhook_type: Filter by compatible webhook provider type.
+            webhook_integration_id: Filter by webhook integration ID.
+            pipeline_id: Filter by pipeline with attached snapshots.
+            snapshot_id: Filter by attached snapshot.
+            hydrate: Whether to hydrate responses.
+
+        Returns:
+            A page of webhook triggers.
+        """
+        pipeline_ids = None
+        if pipeline_id is not None:
+            pipeline_ids = (
+                [str(value) for value in pipeline_id]
+                if isinstance(pipeline_id, list)
+                else [str(pipeline_id)]
+            )
+        snapshot_ids = None
+        if snapshot_id is not None:
+            snapshot_ids = (
+                [str(value) for value in snapshot_id]
+                if isinstance(snapshot_id, list)
+                else [str(snapshot_id)]
+            )
+
+        flavor = (
+            WEBHOOK_TYPE_TO_TRIGGER_FLAVOR[webhook_type]
+            if webhook_type is not None
+            else None
+        )
+        return self.zen_store.list_triggers(  # type: ignore[return-value]
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                user=user,
+                id=id,
+                created=created,
+                updated=updated,
+                name=name,
+                active=active,
+                concurrency=concurrency,
+                is_archived=is_archived,
+                flavor=flavor,
+                type=TriggerType.WEBHOOK,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                webhook_integration_id=webhook_integration_id,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
+            ),
+            hydrate=hydrate,
+        )
+
     def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
         """Delete a trigger by ID.
 
@@ -6838,6 +7125,202 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
+
+    # ------------------------------ Webhooks ------------------------------
+
+    @_fail_for_sql_zen_store
+    def create_webhook(
+        self,
+        name: str,
+        webhook_type: WebhookType,
+        active: bool = True,
+        secret: str | None = None,
+    ) -> WebhookIntegrationCreateResponse:
+        """Create a webhook in the active project.
+
+        Args:
+            name: The webhook name.
+            webhook_type: The webhook provider type.
+            active: Whether the integration accepts events immediately.
+            secret: An optional signing secret.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """
+        return self.zen_store.create_webhook_integration(
+            WebhookIntegrationRequest(
+                project=self.active_project.id,
+                name=name,
+                webhook_type=webhook_type,
+                active=active,
+                secret=secret,
+            )
+        )
+
+    @_fail_for_sql_zen_store
+    def get_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        allow_name_prefix_match: bool = True,
+        project: str | UUID | None = None,
+        hydrate: bool = True,
+    ) -> WebhookIntegrationResponse:
+        """Get a webhook by name, ID, or prefix.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            allow_name_prefix_match: Whether to allow name prefix matching.
+            project: The project name or ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_webhook_integration,
+            list_method=self.list_webhooks,
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=allow_name_prefix_match,
+            hydrate=hydrate,
+            project=project,
+        )
+
+    @_fail_for_sql_zen_store
+    def list_webhooks(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        project: str | UUID | None = None,
+        user: UUIDFilterOption = None,
+        webhook_type: EnumFilterOption[WebhookType] = None,
+        active: bool | None = None,
+        hydrate: bool = False,
+    ) -> Page[WebhookIntegrationResponse]:
+        """List webhooks.
+
+        Args:
+            sort_by: The field used to sort results.
+            page: The page index.
+            size: The maximum page size.
+            logical_operator: The operator used to combine filters.
+            id: Filter by webhook ID.
+            created: Filter by creation time.
+            updated: Filter by update time.
+            name: Filter by webhook name.
+            project: Filter by project name or ID.
+            user: Filter by creating user.
+            webhook_type: Filter by webhook provider type.
+            active: Filter by active state.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        filter_model = WebhookIntegrationFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            name=name,
+            project=project or self.active_project.id,
+            user=user,
+            webhook_type=webhook_type,
+            active=active,
+        )
+        return self.zen_store.list_webhook_integrations(
+            filter_model=filter_model, hydrate=hydrate
+        )
+
+    @_fail_for_sql_zen_store
+    def update_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        name: str | None = None,
+        active: bool | None = None,
+        project: str | UUID | None = None,
+    ) -> WebhookIntegrationResponse:
+        """Update a webhook.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            name: The new webhook name.
+            active: The new active state.
+            project: The project name or ID.
+
+        Returns:
+            The updated webhook.
+        """
+        if is_valid_uuid(name_id_or_prefix):
+            integration_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            integration_id = self.get_webhook(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                project=project,
+            ).id
+        return self.zen_store.update_webhook_integration(
+            integration_id=integration_id,
+            update=WebhookIntegrationUpdate(name=name, active=active),
+        )
+
+    @_fail_for_sql_zen_store
+    def delete_webhook(
+        self,
+        name_id_or_prefix: str | UUID,
+        project: str | UUID | None = None,
+    ) -> None:
+        """Delete a webhook.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            project: The project name or ID.
+        """
+        integration = self.get_webhook(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+        )
+        self.zen_store.delete_webhook_integration(integration.id)
+
+    @_fail_for_sql_zen_store
+    def rotate_webhook_secret(
+        self,
+        name_id_or_prefix: str | UUID,
+        secret: str | None = None,
+        project: str | UUID | None = None,
+    ) -> WebhookIntegrationSecretResponse:
+        """Rotate a webhook signing secret.
+
+        Args:
+            name_id_or_prefix: The webhook name, ID, or ID prefix.
+            secret: An optional direct replacement secret.
+            project: The project name or ID.
+
+        Returns:
+            The newly active signing secret.
+        """
+        integration = self.get_webhook(
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            project=project,
+        )
+        return self.zen_store.rotate_webhook_integration_secret(
+            integration_id=integration.id,
+            request=WebhookIntegrationRotateSecretRequest(secret=secret),
+        )
 
     # --------------------------- Service Connectors ---------------------------
 
