@@ -96,6 +96,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import (
     Mapped,
+    aliased,
     load_only,
     noload,
     selectinload,
@@ -5175,34 +5176,240 @@ class SqlZenStore(BaseZenStore):
             )
         )
 
-    def _remove_name_from_snapshot(
-        self, session: Session, pipeline_id: UUID, name: str
+    def _snapshot_has_references(
+        self,
+        session: Session,
+        snapshot: PipelineSnapshotSchema,
+    ) -> bool:
+        """Check whether a snapshot must be retained for another resource.
+
+        Args:
+            session: SQLAlchemy session.
+            snapshot: Snapshot to check.
+
+        Returns:
+            Whether another resource references the snapshot.
+        """
+        if (
+            snapshot.schedule_id is not None
+            or snapshot.template_id is not None
+        ):
+            return True
+
+        return any(
+            session.exec(query.limit(1)).first() is not None
+            for query in self._snapshot_reference_queries(snapshot.id)
+        )
+
+    @staticmethod
+    def _snapshot_reference_queries(snapshot_id: Any) -> Tuple[Any, ...]:
+        """Build queries for resources that reference a snapshot.
+
+        Args:
+            snapshot_id: Snapshot ID or column to match.
+
+        Returns:
+            Queries for all supported snapshot references.
+        """
+        derived_snapshot = aliased(PipelineSnapshotSchema)
+        return (
+            select(PipelineRunSchema.id).where(
+                PipelineRunSchema.snapshot_id == snapshot_id
+            ),
+            select(StepRunSchema.id).where(
+                StepRunSchema.snapshot_id == snapshot_id
+            ),
+            select(derived_snapshot.id).where(
+                derived_snapshot.source_snapshot_id == snapshot_id
+            ),
+            select(DeploymentSchema.id).where(
+                DeploymentSchema.snapshot_id == snapshot_id
+            ),
+            select(RunTemplateSchema.id).where(
+                RunTemplateSchema.source_snapshot_id == snapshot_id
+            ),
+            select(TriggerSnapshotSchema.snapshot_id).where(
+                TriggerSnapshotSchema.snapshot_id == snapshot_id
+            ),
+        )
+
+    @staticmethod
+    def _unreachable_snapshot_conditions(
+        project_id: UUID,
+        older_than: datetime,
+    ) -> Tuple[Any, ...]:
+        """Build the conditions that identify unreachable snapshots.
+
+        Args:
+            project_id: Project whose snapshots should be inspected.
+            older_than: Exclusive snapshot creation cutoff.
+
+        Returns:
+            Conditions that exclude every supported snapshot reference.
+        """
+        reference_queries = SqlZenStore._snapshot_reference_queries(
+            PipelineSnapshotSchema.id
+        )
+        return (
+            PipelineSnapshotSchema.project_id == project_id,
+            col(PipelineSnapshotSchema.name).is_(None),
+            col(PipelineSnapshotSchema.created) < older_than,
+            col(PipelineSnapshotSchema.schedule_id).is_(None),
+            col(PipelineSnapshotSchema.template_id).is_(None),
+            *(~query.exists() for query in reference_queries),
+        )
+
+    def cleanup_unreachable_snapshots(
+        self,
+        older_than: datetime,
+        batch_size: int = 250,
+        apply: bool = False,
+    ) -> Tuple[int, int]:
+        """Report or delete old snapshots with no operational references.
+
+        The cleanup scans one project at a time using keyset pagination.
+        Applying changes requires all ZenML processes that can write to the
+        database to be stopped.
+
+        Args:
+            older_than: Exclusive snapshot creation cutoff.
+            batch_size: Maximum snapshots processed per transaction.
+            apply: Whether to persist deletions.
+
+        Returns:
+            A tuple containing eligible and deleted snapshot counts.
+
+        Raises:
+            ValueError: If the batch size is not positive.
+        """
+        if batch_size < 1:
+            raise ValueError("Batch size must be positive.")
+
+        with Session(self.engine) as session:
+            project_ids = session.exec(select(ProjectSchema.id)).all()
+
+        eligible_count = 0
+        deleted_count = 0
+
+        for project_id in project_ids:
+            cursor: Optional[Tuple[datetime, UUID]] = None
+
+            while True:
+                with Session(self.engine) as session:
+                    conditions = self._unreachable_snapshot_conditions(
+                        project_id=project_id,
+                        older_than=older_than,
+                    )
+                    query = select(
+                        PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.created,
+                    ).where(*conditions)
+
+                    if cursor is not None:
+                        created, snapshot_id = cursor
+                        query = query.where(
+                            or_(
+                                PipelineSnapshotSchema.created > created,
+                                and_(
+                                    PipelineSnapshotSchema.created == created,
+                                    PipelineSnapshotSchema.id > snapshot_id,
+                                ),
+                            )
+                        )
+
+                    batch = session.exec(
+                        query.order_by(
+                            col(PipelineSnapshotSchema.created),
+                            col(PipelineSnapshotSchema.id),
+                        ).limit(batch_size)
+                    ).all()
+
+                    if not batch:
+                        break
+
+                    eligible_count += len(batch)
+                    cursor = (batch[-1][1], batch[-1][0])
+
+                    if not apply:
+                        continue
+
+                    candidate_ids = [row[0] for row in batch]
+                    session.execute(
+                        delete(TagResourceSchema).where(
+                            col(TagResourceSchema.resource_id).in_(
+                                candidate_ids
+                            ),
+                            col(TagResourceSchema.resource_type)
+                            == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+                        )
+                    )
+                    session.execute(
+                        delete(CuratedVisualizationSchema).where(
+                            col(CuratedVisualizationSchema.project_id)
+                            == project_id,
+                            col(CuratedVisualizationSchema.resource_id).in_(
+                                candidate_ids
+                            ),
+                            col(CuratedVisualizationSchema.resource_type)
+                            == VisualizationResourceTypes.PIPELINE_SNAPSHOT.value,
+                        )
+                    )
+                    session.execute(
+                        delete(PipelineSnapshotSchema).where(
+                            col(PipelineSnapshotSchema.id).in_(candidate_ids)
+                        )
+                    )
+                    session.commit()
+                    deleted_count += len(candidate_ids)
+
+        return eligible_count, deleted_count
+
+    def _prepare_snapshot_replacement(
+        self,
+        session: Session,
+        pipeline_id: UUID,
+        name: str,
+        snapshot_to_keep_id: Optional[UUID] = None,
     ) -> None:
-        """Remove the name of a snapshot if it exists.
+        """Prepare an existing snapshot name for atomic replacement.
 
         Args:
             session: SQLAlchemy session.
             pipeline_id: The pipeline ID of the snapshot.
             name: The name of the snapshot.
+            snapshot_to_keep_id: Snapshot being renamed, if any.
         """
         existing = session.exec(
-            select(PipelineSnapshotSchema).where(
+            select(PipelineSnapshotSchema)
+            .where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
             )
+            .with_for_update()
         ).first()
 
-        if not existing:
+        if not existing or existing.id == snapshot_to_keep_id:
             return
 
-        existing.name = None
+        if self._snapshot_has_references(session=session, snapshot=existing):
+            existing.name = None
+            session.add(existing)
 
-        session.add(existing)
+            self._drop_snapshot_trigger_assoc(
+                snapshot_id=existing.id,
+                session=session,
+            )
+            return
 
-        self._drop_snapshot_trigger_assoc(
-            snapshot_id=existing.id,
-            session=session,
+        session.execute(
+            delete(TagResourceSchema).where(
+                col(TagResourceSchema.resource_id) == existing.id,
+                col(TagResourceSchema.resource_type)
+                == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+            )
         )
+        session.delete(existing)
+        session.flush()
 
     def create_snapshot(
         self,
@@ -5221,6 +5428,17 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created snapshot.
         """
+        serialized_step_configurations = [
+            (
+                index,
+                step_name,
+                step_configuration.model_dump_json(exclude={"config"}),
+            )
+            for index, (step_name, step_configuration) in enumerate(
+                snapshot.step_configurations.items()
+            )
+        ]
+
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
             self._get_reference_schema_by_id(
@@ -5277,7 +5495,7 @@ class SqlZenStore(BaseZenStore):
                 validate_name(snapshot)
 
                 if snapshot.replace:
-                    self._remove_name_from_snapshot(
+                    self._prepare_snapshot_replacement(
                         session=session,
                         pipeline_id=snapshot.pipeline,
                         name=snapshot.name,
@@ -5293,15 +5511,36 @@ class SqlZenStore(BaseZenStore):
                 snapshot, code_reference_id=code_reference_id
             )
 
+            session.add(new_snapshot)
+            for (
+                index,
+                step_name,
+                serialized_configuration,
+            ) in serialized_step_configurations:
+                session.add(
+                    StepConfigurationSchema(
+                        index=index,
+                        name=step_name,
+                        # Don't include the merged config in the step
+                        # configurations, we reconstruct it in the `to_model`
+                        # method using the pipeline configuration.
+                        config=serialized_configuration,
+                        snapshot_id=new_snapshot.id,
+                    )
+                )
+
             try:
-                session.add(new_snapshot)
                 session.commit()
             except IntegrityError as e:
                 session.rollback()
-                if new_snapshot.name and self._snapshot_exists(
-                    session=session,
-                    pipeline_id=snapshot.pipeline,
-                    name=new_snapshot.name,
+                if (
+                    new_snapshot.name
+                    and not snapshot.replace
+                    and self._snapshot_exists(
+                        session=session,
+                        pipeline_id=snapshot.pipeline,
+                        name=new_snapshot.name,
+                    )
                 ):
                     raise EntityExistsError(
                         f"Snapshot with name `{new_snapshot.name}` already "
@@ -5309,25 +5548,7 @@ class SqlZenStore(BaseZenStore):
                         "want to replace the existing snapshot, set the "
                         "`replace` flag to `True`."
                     )
-                else:
-                    raise RuntimeError("Snapshot creation failed.") from e
-
-            for index, (step_name, step_configuration) in enumerate(
-                snapshot.step_configurations.items()
-            ):
-                step_configuration_schema = StepConfigurationSchema(
-                    index=index,
-                    name=step_name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_configuration.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    snapshot_id=new_snapshot.id,
-                )
-                session.add(step_configuration_schema)
-            session.commit()
+                raise RuntimeError("Snapshot creation failed.") from e
 
             self._attach_tags_to_resources(
                 tags=snapshot.tags,
@@ -5437,10 +5658,11 @@ class SqlZenStore(BaseZenStore):
                 validate_name(snapshot_update)
 
                 if snapshot_update.replace:
-                    self._remove_name_from_snapshot(
+                    self._prepare_snapshot_replacement(
                         session=session,
                         pipeline_id=snapshot.pipeline_id,
                         name=snapshot_update.name,
+                        snapshot_to_keep_id=snapshot.id,
                     )
 
             snapshot.update(snapshot_update)
