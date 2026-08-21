@@ -36,7 +36,10 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.models.v2.core.step_run import (
+    StepHeartbeatRequest,
+    StepHeartbeatResponse,
+)
 from zenml.utils.logging_utils import (
     LogEntry,
     fetch_logs,
@@ -212,21 +215,32 @@ def update_step(
 @async_fastapi_endpoint_wrapper(deduplicate=False)
 def update_heartbeat(
     step_run_id: UUID,
+    heartbeat_request: Optional[StepHeartbeatRequest] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> StepHeartbeatResponse:
     """Updates a step.
 
     Args:
         step_run_id: ID of the step.
+        heartbeat_request: Optional heartbeat request body.
         auth_context: Authorization/Authentication context.
 
     Returns:
         The step heartbeat response (id, status, last_heartbeat).
     """
+    heartbeat_liveness_timeout_seconds = None
+    if heartbeat_request:
+        heartbeat_liveness_timeout_seconds = (
+            heartbeat_request.heartbeat_liveness_timeout_seconds
+        )
+
     return zen_store().validate_and_update_heartbeat(
         step_run_id=step_run_id,
         token_run_id=auth_context.access_token.pipeline_run_id,  # type: ignore[union-attr]
         token_schedule_id=auth_context.access_token.schedule_id,  # type: ignore[union-attr]
+        heartbeat_liveness_timeout_seconds=(
+            heartbeat_liveness_timeout_seconds
+        ),
     )
 
 

@@ -168,6 +168,8 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
@@ -177,6 +179,7 @@ from zenml.enums import (
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
+    StepRuntime,
     StoreType,
     TaggableResourceTypes,
     VisualizationResourceTypes,
@@ -293,14 +296,6 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -374,6 +369,9 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+)
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRenewalRequest,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -477,6 +475,7 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 if TYPE_CHECKING:
     from concurrent.futures import Future
 
+    from zenml.config import ResourceSettings
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.models.v2.core.triggers import (
         TriggerExecutionInfo,
@@ -3970,151 +3969,6 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type."
             )
 
-    # -------------------- Resource Pools -------------
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-        return self.resource_pools.create_resource_pool(resource_pool)
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self.resource_pools.get_resource_pool(
-            resource_pool_id, hydrate=hydrate
-        )
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-        return self.resource_pools.list_resource_pools(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        return self.resource_pools.update_resource_pool(
-            resource_pool_id, update
-        )
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-        self.resource_pools.delete_resource_pool(resource_pool_id)
-
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-        return self.resource_pools.create_resource_pool_subject_policy(policy)
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            The requested policy.
-        """
-        return self.resource_pools.get_resource_pool_subject_policy(
-            policy_id, hydrate=hydrate
-        )
-
-    def list_resource_pool_subject_policies(
-        self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            Matching policies.
-        """
-        return self.resource_pools.list_resource_pool_subject_policies(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update model.
-
-        Returns:
-            The updated policy.
-        """
-        return self.resource_pools.update_resource_pool_subject_policy(
-            policy_id, update
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-        self.resource_pools.delete_resource_pool_subject_policy(policy_id)
-
     # -------------------- Resource Requests -------------
 
     def get_resource_request(
@@ -4152,13 +4006,40 @@ class SqlZenStore(BaseZenStore):
             filter_model, hydrate=hydrate
         )
 
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
 
         Args:
-            resource_request_id: The ID of the resource request to delete.
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
         """
-        self.resource_pools.delete_resource_request(resource_request_id)
+        return self.resource_pools.release_resource_request(
+            resource_request_id,
+        )
+
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
+        """
+        return self.resource_pools.renew_resource_request(
+            resource_request_id,
+            renewal_request,
+        )
 
     # -------------------------- Devices -------------------------
 
@@ -8324,7 +8205,7 @@ class SqlZenStore(BaseZenStore):
                     delete(TriggerSnapshotSchema).where(
                         col(TriggerSnapshotSchema.trigger_id) == trigger_id
                     )
-                )  # type: ignore[call-overload, unused-ignore]
+                )
 
             session.commit()
 
@@ -11473,6 +11354,127 @@ class SqlZenStore(BaseZenStore):
             "Stack deployments are not supported by local ZenML deployments."
         )
 
+    @staticmethod
+    def _validate_reclaim_tolerance_for_resource_request(
+        resource_settings: "ResourceSettings",
+        runtime: StepRuntime,
+        heartbeat_enabled: bool,
+        step_name: str,
+    ) -> None:
+        """Validate that reclaim tolerance matches runtime capabilities.
+
+        Args:
+            resource_settings: Resource settings from the step configuration.
+            runtime: Resolved dynamic step runtime.
+            heartbeat_enabled: Whether heartbeat is enabled for the step run.
+            step_name: Step name used in error messages.
+
+        Raises:
+            IllegalOperationError: If the reclaim tolerance cannot be honored.
+        """
+        reclaim_tolerance = resource_settings.effective_reclaim_tolerance(
+            runtime
+        )
+        if reclaim_tolerance == ResourceRequestReclaimTolerance.NONE:
+            return
+
+        if (
+            resource_settings.reclaim_tolerance_explicitly_set
+            and runtime == StepRuntime.INLINE
+        ):
+            raise IllegalOperationError(
+                f"Step `{step_name}` is configured with reclaim tolerance "
+                f"`{resource_settings.reclaim_tolerance}` but will run inline. "
+                "Inline dynamic steps are not reclaimable. Configure the step "
+                "to run isolated or set reclaim tolerance to `none`."
+            )
+
+        if (
+            resource_settings.reclaim_tolerance_explicitly_set
+            and not heartbeat_enabled
+        ):
+            raise IllegalOperationError(
+                f"Step `{step_name}` is configured with reclaim tolerance "
+                f"`{reclaim_tolerance}` but heartbeat is disabled. Enable "
+                "heartbeat or set reclaim tolerance to `none`."
+            )
+
+    def _renew_step_resource_request_from_heartbeat(
+        self,
+        session: Session,
+        step_run: StepRunSchema,
+        heartbeat_liveness_timeout_seconds: int | None = None,
+    ) -> ExecutionStatus:
+        """Renew the step resource request lease during heartbeat.
+
+        Args:
+            session: Active database session.
+            step_run: Step run schema receiving the heartbeat.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
+
+        Returns:
+            The status that should be returned to the heartbeat caller.
+        """
+        step_status = ExecutionStatus(step_run.status)
+        if (
+            not self.resource_pools_enabled
+            or step_run.resource_request_id is None
+            or step_run.heartbeat_threshold is None
+        ):
+            return step_status
+
+        if heartbeat_liveness_timeout_seconds is None:
+            lease_duration = timedelta(minutes=step_run.heartbeat_threshold)
+        else:
+            lease_duration = timedelta(
+                seconds=heartbeat_liveness_timeout_seconds
+            )
+
+        try:
+            request = self.resource_pools.renew_resource_request(
+                step_run.resource_request_id,
+                ResourceRequestRenewalRequest(
+                    lease_expires_at=utc_now() + lease_duration,
+                    runtime_state=ResourceRequestRuntimeState.RUNNING,
+                ),
+            )
+        except KeyError:
+            logger.warning(
+                "Resource request `%s` for step `%s` no longer exists. "
+                "Cancelling the step run.",
+                step_run.resource_request_id,
+                step_run.name,
+            )
+            request_status = ResourceRequestStatus.CANCELLED
+        except Exception as e:
+            logger.warning(
+                "Failed to renew resource request `%s` for step `%s`: %s",
+                step_run.resource_request_id,
+                step_run.name,
+                e,
+            )
+            return step_status
+        else:
+            request_status = request.status
+
+        if request_status in {
+            ResourceRequestStatus.PREEMPTING,
+            ResourceRequestStatus.PREEMPTED,
+            ResourceRequestStatus.CANCELLED,
+            ResourceRequestStatus.REJECTED,
+            ResourceRequestStatus.RELEASED,
+            ResourceRequestStatus.EXPIRED,
+        }:
+            if not step_status.is_finished:
+                step_run.status = ExecutionStatus.CANCELLING.value
+                session.add(step_run)
+                session.commit()
+            return ExecutionStatus.CANCELLING
+
+        return step_status
+
     # ----------------------------- Step runs -----------------------------
 
     def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
@@ -11538,6 +11540,31 @@ class SqlZenStore(BaseZenStore):
                 step_run.dynamic_config
                 or run.get_step_configuration(step_name=step_run.name)
             )
+            resource_runtime: Optional[StepRuntime] = None
+            resource_request_heartbeat_enabled: Optional[bool] = None
+            if (
+                self.resource_pools_enabled
+                and step_run.status
+                in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }
+                and step_run.resource_requester
+            ):
+                resource_settings = step_config.config.resource_settings
+                resource_runtime = (
+                    step_run.resource_request_runtime or StepRuntime.ISOLATED
+                )
+                resource_request_heartbeat_enabled = (
+                    step_config.spec.enable_heartbeat and run.enable_heartbeat
+                )
+                self._validate_reclaim_tolerance_for_resource_request(
+                    resource_settings=resource_settings,
+                    runtime=resource_runtime,
+                    heartbeat_enabled=resource_request_heartbeat_enabled,
+                    step_name=step_run.name,
+                )
 
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
@@ -11890,6 +11917,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.refresh(step_schema)
 
+            created_resource_request: ResourceRequestResponse | None = None
             if (
                 self.resource_pools_enabled
                 and step_schema.status
@@ -11900,32 +11928,70 @@ class SqlZenStore(BaseZenStore):
                 }
                 and step_run.resource_requester
             ):
-                requested_resources = step_config.config.resource_settings.merged_requested_resources()
-                requested_resources["step_run"] = 1
-
-                request = self.resource_pools.create_resource_request(
-                    session=session,
-                    resource_request=ResourceRequestRequest(
-                        user=step_run.user,
-                        component_id=step_run.resource_requester,
-                        step_run_id=step_schema.id,
-                        requested_resources=requested_resources,
-                        preemptible=step_config.config.resource_settings.preemptible,
-                    ),
+                resource_settings = step_config.config.resource_settings
+                resource_runtime = (
+                    resource_runtime
+                    or step_run.resource_request_runtime
+                    or StepRuntime.ISOLATED
                 )
-                if (
-                    request is not None
-                    and request.status != ResourceRequestStatus.ALLOCATED
-                ):
-                    step_schema.status = ExecutionStatus.QUEUED.value
-                    session.add(step_schema)
-                    session.commit()
+                heartbeat_enabled = (
+                    resource_request_heartbeat_enabled
+                    if resource_request_heartbeat_enabled is not None
+                    else step_schema.heartbeat_threshold is not None
+                )
+                demands = resource_settings.merged_resource_demands()
+
+                if demands:
+                    lease_expires_at = None
+                    if (
+                        resource_runtime == StepRuntime.ISOLATED
+                        and heartbeat_enabled
+                        and step_schema.heartbeat_threshold is not None
+                    ):
+                        lease_expires_at = utc_now() + timedelta(
+                            minutes=step_schema.heartbeat_threshold
+                        )
+
+                    request = self.resource_pools.create_resource_request(
+                        session,
+                        ResourceRequestRequest(
+                            user=step_run.user,
+                            component_ids=[step_run.resource_requester],
+                            step_run_id=step_schema.id,
+                            demands=demands,
+                            reclaim_tolerance=resource_settings.effective_reclaim_tolerance(
+                                resource_runtime
+                            ),
+                            lease_expires_at=lease_expires_at,
+                            allocation_wait_timeout_seconds=(
+                                resource_settings.allocation_wait_timeout_seconds
+                            ),
+                        ),
+                    )
+                    if (
+                        request.status
+                        != ResourceRequestStatus.NO_MATCHING_POOL
+                    ):
+                        step_schema.resource_request_id = request.id
+                        created_resource_request = request
+                        if request.status != ResourceRequestStatus.ALLOCATED:
+                            step_schema.status = ExecutionStatus.QUEUED.value
+                        session.add(step_schema)
+                        session.commit()
 
                 session.refresh(step_schema)
 
-            return step_schema.to_model(
+            step_run_response = step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
+            if (
+                created_resource_request is not None
+                and step_run_response.resources is not None
+            ):
+                step_run_response.resources.resource_request = (
+                    created_resource_request
+                )
+            return step_run_response
 
     def get_run_step(
         self, step_run_id: UUID, hydrate: bool = True
@@ -12160,7 +12226,9 @@ class SqlZenStore(BaseZenStore):
         )
 
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: int | None = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat value.
 
@@ -12168,6 +12236,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             step_run_id: ID of the step run.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             Step heartbeat response (minimal info, id, status & latest_heartbeat).
@@ -12183,10 +12254,19 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
             session.refresh(existing_step_run)
+            heartbeat_status = (
+                self._renew_step_resource_request_from_heartbeat(
+                    session=session,
+                    step_run=existing_step_run,
+                    heartbeat_liveness_timeout_seconds=(
+                        heartbeat_liveness_timeout_seconds
+                    ),
+                )
+            )
 
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
-                status=ExecutionStatus(existing_step_run.status),
+                status=heartbeat_status,
                 latest_heartbeat=existing_step_run.latest_heartbeat,
                 heartbeat_enabled=existing_step_run.heartbeat_threshold
                 is not None,
@@ -12197,6 +12277,7 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         token_run_id: UUID | None = None,
         token_schedule_id: UUID | None = None,
+        heartbeat_liveness_timeout_seconds: int | None = None,
     ) -> StepHeartbeatResponse:
         """Updates & Validates a step run heartbeat value.
 
@@ -12206,6 +12287,9 @@ class SqlZenStore(BaseZenStore):
             step_run_id: ID of the step run.
             token_run_id: Pipeline run id of the auth context
             token_schedule_id: Schedule id of the auth context
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             Step heartbeat response (minimal info, id, status & latest_heartbeat).
@@ -12249,10 +12333,19 @@ class SqlZenStore(BaseZenStore):
             latest_heartbeat = datetime.now(timezone.utc)
             step_run.latest_heartbeat = latest_heartbeat
             session.commit()
+            heartbeat_status = (
+                self._renew_step_resource_request_from_heartbeat(
+                    session=session,
+                    step_run=step_run,
+                    heartbeat_liveness_timeout_seconds=(
+                        heartbeat_liveness_timeout_seconds
+                    ),
+                )
+            )
 
             return StepHeartbeatResponse(
                 id=step_run_id,
-                status=ExecutionStatus(step_run.status),
+                status=heartbeat_status,
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
                 pipeline_run_status=ExecutionStatus(run.status),

@@ -67,6 +67,8 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestStatus,
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
@@ -152,14 +154,8 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -2276,235 +2272,68 @@ class Client(metaclass=ClientMetaClass):
             component.name,
         )
 
-    # -------------------------------- Resource Pools --------------------------
-
-    def create_resource_pool(
-        self,
-        name: str,
-        capacity: Dict[str, int],
-        description: Optional[str] = None,
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
 
         Args:
-            name: The name of the resource pool.
-            capacity: The capacity of the resource pool.
-            description: The description of the resource pool.
-
-        Returns:
-            The created resource pool.
-        """
-        request = ResourcePoolRequest(
-            name=name,
-            description=description,
-            capacity=capacity,
-        )
-        return self.zen_store.create_resource_pool(resource_pool=request)
-
-    def get_resource_pool(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-        allow_name_prefix_match: bool = True,
-        hydrate: bool = True,
-    ) -> ResourcePoolResponse:
-        """Get a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                get.
-            allow_name_prefix_match: If True, allow matching by name prefix.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_resource_pool,
-            list_method=self.list_resource_pools,
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=allow_name_prefix_match,
-            hydrate=hydrate,
-        )
-
-    def list_resource_pools(
-        self,
-        sort_by: str = "created",
-        page: int = PAGINATION_STARTING_PAGE,
-        size: int = PAGE_SIZE_DEFAULT,
-        logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: UUIDFilterOption = None,
-        created: DatetimeFilterOption = None,
-        updated: DatetimeFilterOption = None,
-        name: StringFilterOption = None,
-        user: UUIDFilterOption = None,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolResponse]:
-        """Lists resource pools.
-
-        Args:
-            sort_by: The column to sort by
-            page: The page of items
-            size: The maximum size of all pages
-            logical_operator: Which logical operator to use [and, or]
-            id: Use the id of resource pool to filter by.
-            created: Filter by creation time.
-            updated: Filter by last updated time.
-            name: The name of the resource pool to filter by.
-            user: The ID of name of the user to filter by.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A page of resource pools.
-        """
-        filter_model = ResourcePoolFilter(
-            page=page,
-            size=size,
-            sort_by=sort_by,
-            logical_operator=logical_operator,
-            id=id,
-            name=name,
-            created=created,
-            updated=updated,
-            user=user,
-        )
-
-        return self.zen_store.list_resource_pools(
-            filter_model=filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool(
-        self,
-        name_id_or_prefix: Union[UUID, str],
-        description: Optional[str] = None,
-        capacity: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolResponse:
-        """Update a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                update.
-            description: The new description of the resource pool.
-            capacity: The new capacity of the resource pool. Setting a value to
-                0 will remove the resource from the pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        resource_pool = self.get_resource_pool(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-
-        update_model = ResourcePoolUpdate(
-            description=description,
-            capacity=capacity,
-        )
-
-        return self.zen_store.update_resource_pool(
-            resource_pool_id=resource_pool.id,
-            update=update_model,
-        )
-
-    def delete_resource_pool(
-        self,
-        name_id_or_prefix: Union[str, UUID],
-    ) -> None:
-        """Delete a resource pool.
-
-        Args:
-            name_id_or_prefix: The name, id or prefix of the resource pool to
-                delete.
-        """
-        resource_pool = self.get_resource_pool(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-        )
-        self.zen_store.delete_resource_pool(resource_pool_id=resource_pool.id)
-
-    def create_resource_pool_subject_policy(
-        self,
-        component_id: UUID,
-        pool_id: UUID,
-        priority: int,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            component_id: The component ID this policy applies to.
-            pool_id: The pool ID this policy belongs to.
-            priority: The policy priority.
-            reserved: Optional reserved resources by key.
-            limit: Optional resource limits by key.
-
-        Returns:
-            The created policy.
-        """
-        request = ResourcePoolSubjectPolicyRequest(
-            component_id=component_id,
-            pool_id=pool_id,
-            priority=priority,
-            reserved=reserved,
-            limit=limit,
-        )
-        return self.zen_store.create_resource_pool_subject_policy(
-            policy=request
-        )
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to fetch.
+            resource_request_id: The resource request ID.
             hydrate: Whether to include metadata in the response.
 
         Returns:
-            The requested policy.
+            The requested resource request.
         """
-        return self.zen_store.get_resource_pool_subject_policy(
-            policy_id=policy_id, hydrate=hydrate
+        return self.zen_store.get_resource_request(
+            resource_request_id=resource_request_id,
+            hydrate=hydrate,
         )
 
-    def list_resource_pool_subject_policies(
+    def list_resource_requests(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: UUIDFilterOption = None,
-        created: DatetimeFilterOption = None,
-        updated: DatetimeFilterOption = None,
-        user: UUIDFilterOption = None,
-        pool_id: UUIDFilterOption = None,
-        component_id: UUIDFilterOption = None,
-        priority: IntegerFilterOption = None,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        user: Optional[Union[UUID, str]] = None,
+        reclaim_tolerance: Optional[
+            Union[ResourceRequestReclaimTolerance, str]
+        ] = None,
+        component_id: Optional[Union[UUID, str]] = None,
+        step_run_id: Optional[Union[UUID, str]] = None,
+        preemption_initiated_by_id: Optional[Union[UUID, str]] = None,
+        status: Optional[Union[ResourceRequestStatus, str]] = None,
+        pipeline_run_id: Optional[Union[UUID, str]] = None,
+        pool_id: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourceRequestResponse]:
+        """List resource requests.
 
         Args:
             sort_by: The column to sort by.
             page: The page of items.
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use.
-            id: Filter by policy ID.
+            id: Filter by request ID.
             created: Filter by creation time.
             updated: Filter by last update time.
             user: Filter by user name/ID.
+            reclaim_tolerance: Filter by reclaim tolerance.
+            component_id: Filter by stack component name/ID.
+            step_run_id: Filter by step run name/ID.
+            preemption_initiated_by_id: Filter by preempting request ID.
+            status: Filter by lifecycle status.
+            pipeline_run_id: Filter by pipeline run name/ID.
             pool_id: Filter by resource pool name/ID.
-            component_id: Filter by component name/ID.
-            priority: Filter by priority.
-            hydrate: Whether to include metadata in the response.
+            hydrate: Whether to include related resources in the response.
 
         Returns:
-            A page of matching policies.
+            A page of matching resource requests.
         """
-        filter_model = ResourcePoolSubjectPolicyFilter(
+        filter_model = ResourceRequestFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -2513,46 +2342,18 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             user=user,
-            pool_id=pool_id,
+            reclaim_tolerance=reclaim_tolerance,
             component_id=component_id,
-            priority=priority,
+            step_run_id=step_run_id,
+            preemption_initiated_by_id=preemption_initiated_by_id,
+            status=status,
+            pipeline_run_id=pipeline_run_id,
+            pool_id=pool_id,
         )
-        return self.zen_store.list_resource_pool_subject_policies(
-            filter_model=filter_model, hydrate=hydrate
+        return self.zen_store.list_resource_requests(
+            filter_model=filter_model,
+            hydrate=hydrate,
         )
-
-    def update_resource_pool_subject_policy(
-        self,
-        policy_id: UUID,
-        priority: Optional[int] = None,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update a resource pool subject policy.
-
-        Args:
-            policy_id: The policy ID.
-            priority: Updated priority.
-            reserved: Updated reserved resources by key.
-            limit: Updated limits by key.
-
-        Returns:
-            The updated policy.
-        """
-        update = ResourcePoolSubjectPolicyUpdate(
-            priority=priority, reserved=reserved, limit=limit
-        )
-        return self.zen_store.update_resource_pool_subject_policy(
-            policy_id=policy_id, update=update
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The policy ID.
-        """
-        self.zen_store.delete_resource_pool_subject_policy(policy_id=policy_id)
 
     # --------------------------------- Flavors --------------------------------
 

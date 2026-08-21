@@ -2721,12 +2721,17 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: Optional[int] = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat.
 
         Args:
             step_run_id: The ID of the step to update.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             The step heartbeat response.
