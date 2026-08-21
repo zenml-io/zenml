@@ -79,13 +79,12 @@ Use custom resources when your admin created descriptors outside the stock
 CPU, memory, and GPU language. For example, a training license:
 
 ```python
-from zenml.config import ResourceSettings
-from zenml.models import ResourceRequestDemand
+from zenml.config import PoolResourceDemand, ResourceSettings
 
 license_settings = ResourceSettings(
     resources=[
-        ResourceRequestDemand(
-            resource="training-license",
+        PoolResourceDemand(
+            name="training-license",
             quantity=1,
             unit="seat",
         )

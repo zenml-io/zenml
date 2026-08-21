@@ -2293,12 +2293,12 @@ The strategy is:
 ### Runtime behavior: custom license demand
 
 ```python
-from zenml.models import ResourceRequestDemand
+from zenml.config import PoolResourceDemand, ResourceSettings
 
 ResourceSettings(
     resources=[
-        ResourceRequestDemand(
-            resource="training-license",
+        PoolResourceDemand(
+            name="training-license",
             quantity=1,
             unit="seat",
             class_name="license-seat",
