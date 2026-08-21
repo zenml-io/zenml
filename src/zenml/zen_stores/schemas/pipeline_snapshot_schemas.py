@@ -71,8 +71,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-_COMPRESSED_TEXT_MARKER = "\x00zenml-compressed:"
-_COMPRESSED_TEXT_PREFIX = f"{_COMPRESSED_TEXT_MARKER}zlib:v1:"
+EXECUTION_DEFINITION_COMPRESSION_MARKER = "\x00zenml-compressed:"
+_COMPRESSED_TEXT_PREFIX = f"{EXECUTION_DEFINITION_COMPRESSION_MARKER}zlib:v1:"
 
 
 def _decode_compressed_text(value: str, max_length: int) -> str:
@@ -89,7 +89,7 @@ def _decode_compressed_text(value: str, max_length: int) -> str:
         ValueError: If a compressed value is malformed or exceeds the column
             limit after decompression.
     """
-    if not value.startswith(_COMPRESSED_TEXT_MARKER):
+    if not value.startswith(EXECUTION_DEFINITION_COMPRESSION_MARKER):
         return value
     if not value.startswith(_COMPRESSED_TEXT_PREFIX):
         raise ValueError("Unsupported compressed text payload.")
@@ -120,12 +120,57 @@ def _decode_compressed_text(value: str, max_length: int) -> str:
         raise ValueError("Invalid compressed text payload.") from error
 
 
+def compress_execution_definition_payload(value: str, max_length: int) -> str:
+    """Compress an execution-definition payload when storage gets smaller.
+
+    Args:
+        value: Plain or already encoded text value.
+        max_length: Maximum encoded and decoded value length.
+
+    Returns:
+        The most compact supported representation of the value.
+
+    Raises:
+        ValueError: If an already marked value is malformed.
+    """
+    if value.startswith(EXECUTION_DEFINITION_COMPRESSION_MARKER):
+        _decode_compressed_text(value, max_length)
+        return value
+
+    raw = value.encode("utf-8")
+    if len(raw) > max_length:
+        return value
+
+    encoded = _COMPRESSED_TEXT_PREFIX + base64.b64encode(
+        zlib.compress(raw)
+    ).decode("ascii")
+    return encoded if len(encoded) < len(raw) else value
+
+
 class _CompressedText(TypeDecorator[str]):
-    """Text with rolling-safe compressed-value reads."""
+    """Text with rolling-safe compressed-value reads and writes."""
 
     impl: TypeEngine[Any] = TEXT()
     cache_ok = True
     _max_length = TEXT_FIELD_MAX_LENGTH
+
+    def process_bind_param(
+        self, value: Optional[str], dialect: Dialect
+    ) -> Optional[str]:
+        """Compress values only when the complete envelope is smaller.
+
+        Args:
+            value: Text value to store.
+            dialect: Active SQLAlchemy dialect.
+
+        Returns:
+            The compact storage representation.
+        """
+        return (
+            compress_execution_definition_payload(value, self._max_length)
+            if value is not None
+            else None
+        )
 
     def process_result_value(
         self, value: Optional[str], dialect: Dialect
