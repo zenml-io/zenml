@@ -195,17 +195,11 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
         if self.config.auth_mode == "aws_rds_iam":
-            cmd.extend(
-                [
-                    "--trx-tables",
-                    "--sync-thread-lock-mode",
-                    "LOCK_ALL",
-                    "--skip-ddl-locks",
-                    # MyDumper 1.0.3 treats its optional binlog-position probes
-                    # as fatal when the user lacks global replication access.
-                    "--ignore-errors=1227",
-                ]
-            )
+            # Workspace database users are deliberately limited to one schema
+            # and therefore do not have the global REPLICATION CLIENT
+            # privilege. MyDumper 1.0.3 treats its optional binlog-position
+            # probes as fatal without this exception.
+            cmd.append("--ignore-errors=1227")
 
         if self.config.mydumper_threads:
             cmd.extend(["--threads", str(self.config.mydumper_threads)])
