@@ -15,7 +15,9 @@
 
 import os
 import shutil
+import ssl
 import subprocess
+import tempfile
 from typing import TYPE_CHECKING
 
 from zenml.enums import LoggingLevels
@@ -95,6 +97,10 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         Returns:
             List of command-line arguments for MySQL connection.
+
+        Raises:
+            RuntimeError: If IAM authentication is enabled but no operating-
+                system certificate trust store is available.
         """
         args: list[str] = []
 
@@ -107,8 +113,26 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if self.url.username:
             args.extend(["--user", self.url.username])
 
-        if self.config.ssl:
-            args.extend(["--ssl", "--ssl-mode", "REQUIRED"])
+        if self.config.auth_mode == "aws_rds_iam":
+            args.extend(["--ssl", "--ssl-mode", "VERIFY_IDENTITY"])
+            trust_paths = ssl.get_default_verify_paths()
+            if trust_paths.capath:
+                args.extend(["--capath", trust_paths.capath])
+            elif trust_paths.cafile:
+                args.extend(["--ca", trust_paths.cafile])
+            else:
+                raise RuntimeError(
+                    "AWS RDS IAM authentication requires an operating-system "
+                    "certificate trust store for mydumper/myloader."
+                )
+            args.append("--enable-cleartext-plugin")
+        elif self.config.ssl:
+            ssl_mode = (
+                "VERIFY_IDENTITY"
+                if self.config.ssl_verify_server_cert
+                else "REQUIRED"
+            )
+            args.extend(["--ssl", "--ssl-mode", ssl_mode])
             if self.config.ssl_ca:
                 args.extend(["--ca", self.config.ssl_ca.get_secret_value()])
             if self.config.ssl_cert:
@@ -127,8 +151,23 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             Dictionary of environment variables to pass to subprocess,
             or None if no password is configured.
         """
-        if self.url.password:
-            return {"MYSQL_PWD": self.url.password}
+        credential = self.url.password
+        if self.config.auth_mode == "aws_rds_iam":
+            from zenml.zen_stores.rds_iam import generate_rds_iam_token
+
+            assert self.config.aws_region is not None
+            assert self.url.host is not None
+            assert self.url.username is not None
+            credential = generate_rds_iam_token(
+                region=self.config.aws_region,
+                role_arn=self.config.aws_rds_iam_role_arn,
+                host=self.url.host,
+                port=self.url.port or 3306,
+                username=self.url.username,
+            )
+
+        if credential:
+            return {**os.environ, "MYSQL_PWD": credential}
 
         return None
 
@@ -155,6 +194,13 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--outputdir", self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
+        if self.config.auth_mode == "aws_rds_iam":
+            # Workspace database users are deliberately limited to one schema
+            # and therefore do not have the global REPLICATION CLIENT
+            # privilege. MyDumper 1.0.3 treats its optional binlog-position
+            # probes as fatal without this exception.
+            cmd.append("--ignore-errors=1227")
+
         if self.config.mydumper_threads:
             cmd.extend(["--threads", str(self.config.mydumper_threads)])
 
@@ -178,7 +224,6 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--database", self.url.database])
         cmd.extend(["--directory", self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
-        cmd.append("--overwrite-tables")
 
         if self.config.myloader_threads:
             cmd.extend(["--threads", str(self.config.myloader_threads)])
@@ -269,6 +314,20 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         self.create_database(drop=True)
 
         cmd = self._build_myloader_command()
+        defaults_file: str | None = None
+        if self.config.auth_mode == "aws_rds_iam":
+            # Avoid the packaged SQL_LOG_BIN=0 default, which requires global
+            # administrative privileges that workspace users must not have.
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".cnf", delete=False
+            ) as file:
+                file.write(
+                    "[myloader_session_variables]\n"
+                    "FOREIGN_KEY_CHECKS=0\n"
+                    "UNIQUE_CHECKS=0\n"
+                )
+                defaults_file = file.name
+            cmd.extend(["--defaults-file", defaults_file, "--enable-binlog"])
 
         logger.info(
             f"Starting myloader restore of database `{self.url.database}` "
@@ -276,21 +335,25 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         )
         logger.debug(f"myloader command: {cmd}")
 
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=self._get_mysql_env(),
-        )
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=self._get_mysql_env(),
+            )
 
-        assert process.stdout is not None
-        for line in process.stdout:
-            line = line.rstrip()
-            if line:
-                logger.info(f"[myloader] {line}")
+            assert process.stdout is not None
+            for line in process.stdout:
+                line = line.rstrip()
+                if line:
+                    logger.info(f"[myloader] {line}")
 
-        return_code = process.wait()
+            return_code = process.wait()
+        finally:
+            if defaults_file:
+                os.unlink(defaults_file)
         if return_code != 0:
             raise RuntimeError(
                 f"myloader restore failed with return code {return_code}"
