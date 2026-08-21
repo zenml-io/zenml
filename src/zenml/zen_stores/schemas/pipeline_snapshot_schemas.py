@@ -13,14 +13,18 @@
 #  permissions and limitations under the License.
 """Pipeline snapshot schemas."""
 
+import base64
 import json
+import zlib
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.types import TypeDecorator, TypeEngine
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -67,6 +71,90 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_COMPRESSED_TEXT_MARKER = "\x00zenml-compressed:"
+_COMPRESSED_TEXT_PREFIX = f"{_COMPRESSED_TEXT_MARKER}zlib:v1:"
+
+
+def _decode_compressed_text(value: str, max_length: int) -> str:
+    """Decode a compressed text payload while preserving legacy values.
+
+    Args:
+        value: Stored text value.
+        max_length: Maximum decoded value length.
+
+    Returns:
+        The original text value.
+
+    Raises:
+        ValueError: If a compressed value is malformed or exceeds the column
+            limit after decompression.
+    """
+    if not value.startswith(_COMPRESSED_TEXT_MARKER):
+        return value
+    if not value.startswith(_COMPRESSED_TEXT_PREFIX):
+        raise ValueError("Unsupported compressed text payload.")
+    if len(value) > max_length:
+        raise ValueError("Invalid compressed text payload.")
+
+    try:
+        compressed = base64.b64decode(
+            value[len(_COMPRESSED_TEXT_PREFIX) :],
+            validate=True,
+        )
+        decompressor = zlib.decompressobj()
+        decoded = decompressor.decompress(compressed, max_length + 1)
+    except (ValueError, zlib.error) as error:
+        raise ValueError("Invalid compressed text payload.") from error
+
+    if (
+        len(decoded) > max_length
+        or decompressor.unconsumed_tail
+        or not decompressor.eof
+        or decompressor.unused_data
+    ):
+        raise ValueError("Invalid compressed text payload.")
+
+    try:
+        return decoded.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ValueError("Invalid compressed text payload.") from error
+
+
+class _CompressedText(TypeDecorator[str]):
+    """Text with rolling-safe compressed-value reads."""
+
+    impl: TypeEngine[Any] = TEXT()
+    cache_ok = True
+    _max_length = TEXT_FIELD_MAX_LENGTH
+
+    def process_result_value(
+        self, value: Optional[str], dialect: Dialect
+    ) -> Optional[str]:
+        """Decode compressed values and pass legacy text through unchanged.
+
+        Args:
+            value: Stored text value.
+            dialect: Active SQLAlchemy dialect.
+
+        Returns:
+            The decoded text value.
+        """
+        return (
+            _decode_compressed_text(value, self._max_length)
+            if value is not None
+            else None
+        )
+
+
+class _CompressedMediumText(_CompressedText):
+    """Medium text with rolling-safe compressed-value reads."""
+
+    impl: TypeEngine[Any] = String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+        MEDIUMTEXT(), "mysql"
+    )
+    cache_ok = True
+    _max_length = MEDIUMTEXT_MAX_LENGTH
+
 
 class PipelineSnapshotSchema(BaseSchema, table=True):
     """SQL Model for pipeline snapshots."""
@@ -106,26 +194,26 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
     pipeline_configuration: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            _CompressedMediumText(),
             nullable=False,
         )
     )
-    client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
+    client_environment: str = Field(
+        sa_column=Column(_CompressedText(), nullable=False)
+    )
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
     pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
     pipeline_spec: Optional[str] = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            _CompressedMediumText(),
             nullable=True,
         )
     )
-    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code: Optional[str] = Field(
+        sa_column=Column(_CompressedText(), nullable=True)
+    )
     code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
@@ -684,9 +772,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     name: str
     config: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            _CompressedMediumText(),
             nullable=False,
         )
     )
