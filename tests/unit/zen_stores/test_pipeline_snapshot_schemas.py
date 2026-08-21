@@ -20,6 +20,7 @@ from typing import cast
 
 import pytest
 from sqlalchemy import (
+    TEXT,
     Column,
     Integer,
     MetaData,
@@ -32,38 +33,65 @@ from sqlalchemy.dialects import mysql, sqlite
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import SQLModel
 
-from zenml.zen_stores.schemas import StepConfigurationSchema
+from zenml.zen_stores.schemas import (
+    PipelineSnapshotSchema,
+    StepConfigurationSchema,
+)
 
-_COMPRESSED_PREFIX = "zenml-step-config:zlib:v1:"
+_COMPRESSED_PREFIX = "\x00zenml-compressed:zlib:v1:"
 
 
-def _config_column_type() -> TypeDecorator[str]:
-    """Get the step configuration column type.
+def _column_type(table_name: str, column_name: str) -> TypeDecorator[str]:
+    """Get a column type from the SQLModel metadata.
+
+    Args:
+        table_name: Name of the table.
+        column_name: Name of the column.
 
     Returns:
-        The step configuration column type.
+        The column type.
     """
-    table = SQLModel.metadata.tables[StepConfigurationSchema.__tablename__]
-    return cast(TypeDecorator[str], table.c.config.type)
+    table = SQLModel.metadata.tables[table_name]
+    return cast(TypeDecorator[str], table.c[column_name].type)
 
 
-def test_step_configuration_compression_reader_is_rolling_safe() -> None:
-    """New readers decode compressed rows without changing current writes."""
-    column_type = _config_column_type()
+def _encode_payload(payload: bytes) -> str:
+    """Wrap compressed bytes in the versioned storage format.
+
+    Args:
+        payload: Compressed payload bytes.
+
+    Returns:
+        The encoded storage value.
+    """
+    return _COMPRESSED_PREFIX + base64.b64encode(payload).decode("ascii")
+
+
+def test_execution_definition_compression_reader_is_rolling_safe() -> None:
+    """New readers decode marked rows without changing current writes."""
     legacy = json.dumps(
         {"name": "step", "value": "こんにちは" + "payload" * 100},
         ensure_ascii=False,
     )
-    compressed = _COMPRESSED_PREFIX + base64.b64encode(
-        zlib.compress(legacy.encode("utf-8"), level=6)
-    ).decode("ascii")
+    compressed = _encode_payload(zlib.compress(legacy.encode("utf-8")))
+
+    snapshot_table = PipelineSnapshotSchema.__tablename__
 
     metadata = MetaData()
     table = Table(
-        "step_configuration_codec_test",
+        "execution_definition_codec_test",
         metadata,
         Column("id", Integer, primary_key=True),
-        Column("config", column_type, nullable=False),
+        Column(
+            "snapshot",
+            _column_type(snapshot_table, "pipeline_configuration"),
+            nullable=False,
+        ),
+        Column(
+            "source",
+            _column_type(snapshot_table, "source_code"),
+            nullable=False,
+        ),
     )
     engine = create_engine("sqlite://")
     metadata.create_all(engine)
@@ -71,46 +99,79 @@ def test_step_configuration_compression_reader_is_rolling_safe() -> None:
     with engine.begin() as connection:
         connection.execute(
             table.insert(),
-            [{"id": 1, "config": legacy}, {"id": 2, "config": compressed}],
+            [
+                {
+                    "id": 1,
+                    "snapshot": legacy,
+                    "source": legacy,
+                },
+                {
+                    "id": 2,
+                    "snapshot": compressed,
+                    "source": compressed,
+                },
+            ],
         )
         stored = connection.exec_driver_sql(
-            "SELECT config FROM step_configuration_codec_test ORDER BY id"
-        ).scalars()
+            "SELECT snapshot, source FROM execution_definition_codec_test "
+            "ORDER BY id"
+        )
         decoded = connection.execute(
-            select(table.c.config).order_by(table.c.id)
-        ).scalars()
+            select(table.c.snapshot, table.c.source).order_by(table.c.id)
+        )
 
-        assert stored.all() == [legacy, compressed]
-        assert decoded.all() == [legacy, legacy]
+        assert stored.tuples().all() == [
+            (legacy, legacy),
+            (compressed, compressed),
+        ]
+        assert decoded.tuples().all() == [
+            (legacy, legacy),
+            (legacy, legacy),
+        ]
 
 
 @pytest.mark.parametrize(
     "value",
     [
         f"{_COMPRESSED_PREFIX}not-base64",
-        "zenml-step-config:zlib:v2:not-supported",
-        _COMPRESSED_PREFIX + base64.b64encode(b"not-zlib").decode("ascii"),
-        _COMPRESSED_PREFIX
-        + base64.b64encode(zlib.compress(b"truncated")[:-1]).decode("ascii"),
-        _COMPRESSED_PREFIX
-        + base64.b64encode(zlib.compress(b"trailing") + b"extra").decode(
-            "ascii"
-        ),
-        _COMPRESSED_PREFIX
-        + base64.b64encode(zlib.compress(b"\xff")).decode("ascii"),
+        "\x00zenml-compressed:zlib:v2:not-supported",
+        _encode_payload(b"not-zlib"),
+        _encode_payload(zlib.compress(b"truncated")[:-1]),
+        _encode_payload(zlib.compress(b"trailing") + b"extra"),
+        _encode_payload(zlib.compress(b"\xff")),
     ],
 )
-def test_step_configuration_compression_reader_rejects_invalid_values(
+def test_execution_definition_reader_rejects_invalid_values(
     value: str,
 ) -> None:
     """Malformed or unsupported rows fail instead of returning invalid JSON."""
-    with pytest.raises(ValueError, match="compressed step configuration"):
-        _config_column_type().process_result_value(value, sqlite.dialect())
+    with pytest.raises(ValueError, match="compressed text payload"):
+        _column_type(
+            StepConfigurationSchema.__tablename__, "config"
+        ).process_result_value(value, sqlite.dialect())
 
 
-def test_step_configuration_compression_preserves_column_types() -> None:
+def test_execution_definition_compression_preserves_column_types() -> None:
     """Compression support does not require a database schema migration."""
-    column_type = _config_column_type()
+    snapshot_table = PipelineSnapshotSchema.__tablename__
+    step_configuration_table = StepConfigurationSchema.__tablename__
 
-    assert str(column_type.compile(dialect=mysql.dialect())) == "MEDIUMTEXT"
-    assert isinstance(column_type.load_dialect_impl(sqlite.dialect()), String)
+    for table_name, column_name in [
+        (snapshot_table, "pipeline_configuration"),
+        (snapshot_table, "pipeline_spec"),
+        (step_configuration_table, "config"),
+    ]:
+        column_type = _column_type(table_name, column_name)
+        assert (
+            str(column_type.compile(dialect=mysql.dialect())) == "MEDIUMTEXT"
+        )
+        assert isinstance(
+            column_type.load_dialect_impl(sqlite.dialect()), String
+        )
+
+    for column_name in ["client_environment", "source_code"]:
+        column_type = _column_type(snapshot_table, column_name)
+        assert str(column_type.compile(dialect=mysql.dialect())) == "TEXT"
+        assert isinstance(
+            column_type.load_dialect_impl(sqlite.dialect()), TEXT
+        )
