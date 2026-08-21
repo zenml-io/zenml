@@ -19,7 +19,15 @@ import zlib
 from typing import cast
 
 import pytest
-from sqlalchemy import String
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    select,
+)
 from sqlalchemy.dialects import mysql, sqlite
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import SQLModel
@@ -42,7 +50,6 @@ def _config_column_type() -> TypeDecorator[str]:
 def test_step_configuration_compression_reader_is_rolling_safe() -> None:
     """New readers decode compressed rows without changing current writes."""
     column_type = _config_column_type()
-    dialect = sqlite.dialect()
     legacy = json.dumps(
         {"name": "step", "value": "こんにちは" + "payload" * 100},
         ensure_ascii=False,
@@ -51,9 +58,30 @@ def test_step_configuration_compression_reader_is_rolling_safe() -> None:
         zlib.compress(legacy.encode("utf-8"), level=6)
     ).decode("ascii")
 
-    assert column_type.process_bind_param(legacy, dialect) == legacy
-    assert column_type.process_result_value(legacy, dialect) == legacy
-    assert column_type.process_result_value(compressed, dialect) == legacy
+    metadata = MetaData()
+    table = Table(
+        "step_configuration_codec_test",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("config", column_type, nullable=False),
+    )
+    engine = create_engine("sqlite://")
+    metadata.create_all(engine)
+
+    with engine.begin() as connection:
+        connection.execute(
+            table.insert(),
+            [{"id": 1, "config": legacy}, {"id": 2, "config": compressed}],
+        )
+        stored = connection.exec_driver_sql(
+            "SELECT config FROM step_configuration_codec_test ORDER BY id"
+        ).scalars()
+        decoded = connection.execute(
+            select(table.c.config).order_by(table.c.id)
+        ).scalars()
+
+        assert stored.all() == [legacy, compressed]
+        assert decoded.all() == [legacy, legacy]
 
 
 @pytest.mark.parametrize(
@@ -61,6 +89,15 @@ def test_step_configuration_compression_reader_is_rolling_safe() -> None:
     [
         f"{_COMPRESSED_PREFIX}not-base64",
         "zenml-step-config:zlib:v2:not-supported",
+        _COMPRESSED_PREFIX + base64.b64encode(b"not-zlib").decode("ascii"),
+        _COMPRESSED_PREFIX
+        + base64.b64encode(zlib.compress(b"truncated")[:-1]).decode("ascii"),
+        _COMPRESSED_PREFIX
+        + base64.b64encode(zlib.compress(b"trailing") + b"extra").decode(
+            "ascii"
+        ),
+        _COMPRESSED_PREFIX
+        + base64.b64encode(zlib.compress(b"\xff")).decode("ascii"),
     ],
 )
 def test_step_configuration_compression_reader_rejects_invalid_values(
