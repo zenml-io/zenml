@@ -16,6 +16,7 @@
 import os
 import subprocess
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -51,6 +52,7 @@ from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
 from zenml.utils.package_utils import get_package_information
 from zenml.utils.server_utils import get_local_server
+from zenml.utils.time_utils import utc_now
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -705,6 +707,76 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     else:
         cli_utils.warning(
             "Unable to migrate database while connected to a ZenML server."
+        )
+
+
+@cli.command(
+    "cleanup-unreachable-snapshots",
+    help="Report or delete old, unreachable pipeline snapshots.",
+    hidden=True,
+)
+@click.option(
+    "--older-than-days",
+    type=click.IntRange(min=1),
+    required=True,
+    help="Only inspect snapshots older than this many days.",
+)
+@click.option(
+    "--batch-size",
+    type=click.IntRange(min=1, max=10000),
+    default=250,
+    show_default=True,
+    help="Maximum snapshots processed in each database transaction.",
+)
+@click.option(
+    "--apply",
+    "apply_changes",
+    is_flag=True,
+    default=False,
+    help="Persist deletions. All ZenML processes that can write to this "
+    "database must be stopped. Without this flag, only report eligible rows.",
+)
+def cleanup_unreachable_snapshots(
+    older_than_days: int,
+    batch_size: int,
+    apply_changes: bool,
+) -> None:
+    """Report or delete old, unreachable pipeline snapshots.
+
+    Args:
+        older_than_days: Minimum snapshot age in days.
+        batch_size: Maximum snapshots processed per transaction.
+        apply_changes: Whether to persist deletions.
+    """
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+    store_config = GlobalConfiguration().store_configuration
+    if store_config.type != StoreType.SQL:
+        cli_utils.warning(
+            "Unable to clean up snapshots while connected to a ZenML server."
+        )
+        return
+
+    store = BaseZenStore.create_store(
+        store_config,
+        skip_default_registrations=True,
+        skip_migrations=True,
+    )
+    assert isinstance(store, SqlZenStore)
+    eligible, deleted = store.cleanup_unreachable_snapshots(
+        older_than=utc_now() - timedelta(days=older_than_days),
+        batch_size=batch_size,
+        apply=apply_changes,
+    )
+    cli_utils.declare(
+        "Unreachable snapshot cleanup finished: "
+        f"eligible={eligible}, deleted={deleted}."
+    )
+
+    if not apply_changes and eligible:
+        cli_utils.declare(
+            "This was a dry run. Repeat with --apply to persist deletions."
         )
 
 

@@ -13,6 +13,7 @@
 #  limitations under the License.
 """Tests for pipeline snapshot lifecycle behavior in the SQL store."""
 
+from datetime import timedelta
 from typing import Any
 from unittest.mock import patch
 from uuid import UUID, uuid4
@@ -26,17 +27,27 @@ from zenml.client import Client
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import (
+    ArtifactSaveType,
+    ArtifactType,
     ExecutionStatus,
     TaggableResourceTypes,
+    VisualizationResourceTypes,
+    VisualizationType,
 )
 from zenml.models import (
+    ArtifactRequest,
+    ArtifactVersionRequest,
+    ArtifactVisualizationRequest,
+    CuratedVisualizationRequest,
     PipelineRequest,
     PipelineRunRequest,
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
     PipelineSnapshotUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas import (
+    PipelineSnapshotSchema,
     StepConfigurationSchema,
     TagResourceSchema,
 )
@@ -64,7 +75,7 @@ def _snapshot_request(
     project_id: UUID,
     stack_id: UUID,
     pipeline_id: UUID,
-    name: str,
+    name: str | None,
     step_names: tuple[str, ...],
     replace: bool = False,
     tags: tuple[str, ...] = (),
@@ -373,3 +384,129 @@ def test_replacing_source_snapshot_preserves_derived_snapshot(
     assert store.get_snapshot(existing.id).name is None
     assert store.get_snapshot(derived.id).source_snapshot_id == existing.id
     assert replacement.name == "saved-snapshot"
+
+
+def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
+    clean_client: Client,
+) -> None:
+    """Cleanup deletes only old anonymous snapshots without references."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+
+    def create_snapshot(name: str | None, tag: str) -> UUID:
+        return store.create_snapshot(
+            _snapshot_request(
+                project_id=project_id,
+                stack_id=stack_id,
+                pipeline_id=pipeline_id,
+                name=name,
+                step_names=("step",),
+                tags=(tag,),
+            )
+        ).id
+
+    unreachable_id = create_snapshot(None, "unreachable")
+    recent_id = create_snapshot(None, "recent")
+    named_id = create_snapshot("saved", "named")
+    referenced_id = create_snapshot(None, "referenced")
+    store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            name="historical-run",
+            snapshot=referenced_id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+
+    artifact = store.create_artifact(
+        ArtifactRequest(
+            name=f"artifact-{uuid4().hex[:8]}",
+            project=project_id,
+            has_custom_name=True,
+        )
+    )
+    artifact_version = store.create_artifact_version(
+        ArtifactVersionRequest(
+            artifact_id=artifact.id,
+            project=project_id,
+            version="1",
+            type=ArtifactType.DATA,
+            uri="s3://visualizations/snapshot.html",
+            materializer=Source(
+                module="acme.materializer", type=SourceType.INTERNAL
+            ),
+            data_type=Source(module="acme.data", type=SourceType.INTERNAL),
+            save_type=ArtifactSaveType.STEP_OUTPUT,
+            visualizations=[
+                ArtifactVisualizationRequest(
+                    type=VisualizationType.HTML,
+                    uri="s3://visualizations/snapshot.html",
+                )
+            ],
+        )
+    )
+    artifact_visualization = (artifact_version.visualizations or [])[0]
+    curated_visualization = store.create_curated_visualization(
+        CuratedVisualizationRequest(
+            project=project_id,
+            artifact_visualization_id=artifact_visualization.id,
+            resource_id=unreachable_id,
+            resource_type=VisualizationResourceTypes.PIPELINE_SNAPSHOT,
+        )
+    )
+
+    old_created = utc_now() - timedelta(days=60)
+    cutoff = utc_now() - timedelta(days=30)
+    with Session(store.engine) as session:
+        for snapshot_id in (unreachable_id, named_id, referenced_id):
+            snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+            assert snapshot is not None
+            snapshot.created = old_created
+            session.add(snapshot)
+        session.commit()
+
+    assert store.cleanup_unreachable_snapshots(
+        older_than=cutoff,
+        batch_size=1,
+    ) == (1, 0)
+    assert store.get_snapshot(unreachable_id).id == unreachable_id
+
+    assert store.cleanup_unreachable_snapshots(
+        older_than=cutoff,
+        batch_size=1,
+        apply=True,
+    ) == (1, 1)
+
+    with pytest.raises(KeyError):
+        store.get_snapshot(unreachable_id)
+    with pytest.raises(KeyError):
+        store.get_curated_visualization(curated_visualization.id)
+
+    for retained_id in (recent_id, named_id, referenced_id):
+        assert store.get_snapshot(retained_id).id == retained_id
+
+    with Session(store.engine) as session:
+        assert (
+            session.exec(
+                select(StepConfigurationSchema.id).where(
+                    StepConfigurationSchema.snapshot_id == unreachable_id
+                )
+            ).all()
+            == []
+        )
+        assert (
+            session.exec(
+                select(TagResourceSchema.id).where(
+                    TagResourceSchema.resource_id == unreachable_id,
+                    TagResourceSchema.resource_type
+                    == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+                )
+            ).all()
+            == []
+        )
+
+    assert store.cleanup_unreachable_snapshots(
+        older_than=cutoff,
+        apply=True,
+    ) == (0, 0)

@@ -96,6 +96,7 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import (
     Mapped,
+    aliased,
     load_only,
     noload,
     selectinload,
@@ -5195,30 +5196,173 @@ class SqlZenStore(BaseZenStore):
         ):
             return True
 
-        reference_queries = (
-            select(PipelineRunSchema.id).where(
-                PipelineRunSchema.snapshot_id == snapshot.id
-            ),
-            select(StepRunSchema.id).where(
-                StepRunSchema.snapshot_id == snapshot.id
-            ),
-            select(PipelineSnapshotSchema.id).where(
-                PipelineSnapshotSchema.source_snapshot_id == snapshot.id
-            ),
-            select(DeploymentSchema.id).where(
-                DeploymentSchema.snapshot_id == snapshot.id
-            ),
-            select(RunTemplateSchema.id).where(
-                RunTemplateSchema.source_snapshot_id == snapshot.id
-            ),
-            select(TriggerSnapshotSchema.snapshot_id).where(
-                TriggerSnapshotSchema.snapshot_id == snapshot.id
-            ),
-        )
         return any(
             session.exec(query.limit(1)).first() is not None
-            for query in reference_queries
+            for query in self._snapshot_reference_queries(snapshot.id)
         )
+
+    @staticmethod
+    def _snapshot_reference_queries(snapshot_id: Any) -> Tuple[Any, ...]:
+        """Build queries for resources that reference a snapshot.
+
+        Args:
+            snapshot_id: Snapshot ID or column to match.
+
+        Returns:
+            Queries for all supported snapshot references.
+        """
+        derived_snapshot = aliased(PipelineSnapshotSchema)
+        return (
+            select(PipelineRunSchema.id).where(
+                PipelineRunSchema.snapshot_id == snapshot_id
+            ),
+            select(StepRunSchema.id).where(
+                StepRunSchema.snapshot_id == snapshot_id
+            ),
+            select(derived_snapshot.id).where(
+                derived_snapshot.source_snapshot_id == snapshot_id
+            ),
+            select(DeploymentSchema.id).where(
+                DeploymentSchema.snapshot_id == snapshot_id
+            ),
+            select(RunTemplateSchema.id).where(
+                RunTemplateSchema.source_snapshot_id == snapshot_id
+            ),
+            select(TriggerSnapshotSchema.snapshot_id).where(
+                TriggerSnapshotSchema.snapshot_id == snapshot_id
+            ),
+        )
+
+    @staticmethod
+    def _unreachable_snapshot_conditions(
+        project_id: UUID,
+        older_than: datetime,
+    ) -> Tuple[Any, ...]:
+        """Build the conditions that identify unreachable snapshots.
+
+        Args:
+            project_id: Project whose snapshots should be inspected.
+            older_than: Exclusive snapshot creation cutoff.
+
+        Returns:
+            Conditions that exclude every supported snapshot reference.
+        """
+        reference_queries = SqlZenStore._snapshot_reference_queries(
+            PipelineSnapshotSchema.id
+        )
+        return (
+            PipelineSnapshotSchema.project_id == project_id,
+            col(PipelineSnapshotSchema.name).is_(None),
+            col(PipelineSnapshotSchema.created) < older_than,
+            col(PipelineSnapshotSchema.schedule_id).is_(None),
+            col(PipelineSnapshotSchema.template_id).is_(None),
+            *(~query.exists() for query in reference_queries),
+        )
+
+    def cleanup_unreachable_snapshots(
+        self,
+        older_than: datetime,
+        batch_size: int = 250,
+        apply: bool = False,
+    ) -> Tuple[int, int]:
+        """Report or delete old snapshots with no operational references.
+
+        The cleanup scans one project at a time using keyset pagination.
+        Applying changes requires all ZenML processes that can write to the
+        database to be stopped.
+
+        Args:
+            older_than: Exclusive snapshot creation cutoff.
+            batch_size: Maximum snapshots processed per transaction.
+            apply: Whether to persist deletions.
+
+        Returns:
+            A tuple containing eligible and deleted snapshot counts.
+
+        Raises:
+            ValueError: If the batch size is not positive.
+        """
+        if batch_size < 1:
+            raise ValueError("Batch size must be positive.")
+
+        with Session(self.engine) as session:
+            project_ids = session.exec(select(ProjectSchema.id)).all()
+
+        eligible_count = 0
+        deleted_count = 0
+
+        for project_id in project_ids:
+            cursor: Optional[Tuple[datetime, UUID]] = None
+
+            while True:
+                with Session(self.engine) as session:
+                    conditions = self._unreachable_snapshot_conditions(
+                        project_id=project_id,
+                        older_than=older_than,
+                    )
+                    query = select(
+                        PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.created,
+                    ).where(*conditions)
+
+                    if cursor is not None:
+                        created, snapshot_id = cursor
+                        query = query.where(
+                            or_(
+                                PipelineSnapshotSchema.created > created,
+                                and_(
+                                    PipelineSnapshotSchema.created == created,
+                                    PipelineSnapshotSchema.id > snapshot_id,
+                                ),
+                            )
+                        )
+
+                    batch = session.exec(
+                        query.order_by(
+                            col(PipelineSnapshotSchema.created),
+                            col(PipelineSnapshotSchema.id),
+                        ).limit(batch_size)
+                    ).all()
+
+                    if not batch:
+                        break
+
+                    eligible_count += len(batch)
+                    cursor = (batch[-1][1], batch[-1][0])
+
+                    if not apply:
+                        continue
+
+                    candidate_ids = [row[0] for row in batch]
+                    session.execute(
+                        delete(TagResourceSchema).where(
+                            col(TagResourceSchema.resource_id).in_(
+                                candidate_ids
+                            ),
+                            col(TagResourceSchema.resource_type)
+                            == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
+                        )
+                    )
+                    session.execute(
+                        delete(CuratedVisualizationSchema).where(
+                            col(CuratedVisualizationSchema.project_id)
+                            == project_id,
+                            col(CuratedVisualizationSchema.resource_id).in_(
+                                candidate_ids
+                            ),
+                            col(CuratedVisualizationSchema.resource_type)
+                            == VisualizationResourceTypes.PIPELINE_SNAPSHOT.value,
+                        )
+                    )
+                    session.execute(
+                        delete(PipelineSnapshotSchema).where(
+                            col(PipelineSnapshotSchema.id).in_(candidate_ids)
+                        )
+                    )
+                    session.commit()
+                    deleted_count += len(candidate_ids)
+
+        return eligible_count, deleted_count
 
     def _prepare_snapshot_replacement(
         self,
@@ -5259,8 +5403,8 @@ class SqlZenStore(BaseZenStore):
 
         session.execute(
             delete(TagResourceSchema).where(
-                TagResourceSchema.resource_id == existing.id,
-                TagResourceSchema.resource_type
+                col(TagResourceSchema.resource_id) == existing.id,
+                col(TagResourceSchema.resource_type)
                 == TaggableResourceTypes.PIPELINE_SNAPSHOT.value,
             )
         )
