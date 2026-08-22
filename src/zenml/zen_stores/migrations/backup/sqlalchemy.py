@@ -564,23 +564,37 @@ class FileDatabaseBackupEngine(SQLAlchemyDatabaseBackupEngine):
                     "Reusing the existing backup."
                 )
                 return
-
             self.cleanup_database_backup()
 
-        if self.url.drivername == "sqlite":
-            # For a sqlite database, we can just make a copy of the database
-            # file
-            assert self.url.database is not None
-            shutil.copyfile(
-                self.url.database,
-                self.backup_location,
-            )
-            return
+        temp_backup_location = f"{self.backup_location}.tmp"
+        if os.path.isfile(temp_backup_location):
+            try:
+                os.remove(temp_backup_location)
+            except OSError:
+                pass
 
-        with open(self.backup_location, "w") as f:
-            self.backup_database_to_storage(dump_file=f)
+        try:
+            if self.url.drivername == "sqlite":
+                # For a sqlite database, copy to temporary location first
+                assert self.url.database is not None
+                shutil.copyfile(
+                    self.url.database,
+                    temp_backup_location,
+                )
+            else:
+                with open(temp_backup_location, "w") as f:
+                    self.backup_database_to_storage(dump_file=f)
 
-        logger.debug(f"Database backed up to file `{self.backup_location}`.")
+            shutil.move(temp_backup_location, self.backup_location)
+            logger.debug(f"Database backed up to file `{self.backup_location}`.")
+
+        except Exception as e:
+            if os.path.isfile(temp_backup_location):
+                try:
+                    os.remove(temp_backup_location)
+                except OSError:
+                    pass
+            raise e
 
     def restore_database(
         self,
@@ -752,21 +766,22 @@ class DBCloneDatabaseBackupEngine(BaseDatabaseBackupEngine):
                     f"`{self.backup_location}`. Reusing the existing backup."
                 )
                 return
-
             self.cleanup_database_backup()
 
         self.create_database(
             database=self.backup_location,
             drop=True,
         )
+        try:
+            backup_engine = self.create_engine(database=self.backup_location)
+            self._copy_database(self.engine, backup_engine)
+            logger.debug(
+                f"Database backed up to the `{self.backup_location}` backup database."
+            )
+        except Exception as e:
+            self.cleanup_database_backup()
+            raise e
 
-        backup_engine = self.create_engine(database=self.backup_location)
-
-        self._copy_database(self.engine, backup_engine)
-
-        logger.debug(
-            f"Database backed up to the `{self.backup_location}` backup database."
-        )
 
     def restore_database(
         self,
