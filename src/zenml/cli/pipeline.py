@@ -1553,7 +1553,9 @@ def snapshot() -> None:
     "-r",
     is_flag=True,
     required=False,
-    help="Whether to replace the existing snapshot with the same name.",
+    help="Whether to replace the existing snapshot with the same name. "
+    "The superseded snapshot is deleted unless something still "
+    "references it.",
 )
 @click.option(
     "--tags",

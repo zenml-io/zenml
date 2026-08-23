@@ -726,7 +726,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     type=click.IntRange(min=1, max=10000),
     default=250,
     show_default=True,
-    help="Maximum snapshots processed in each database transaction.",
+    help="Maximum snapshots deleted in each database transaction.",
 )
 @click.option(
     "--apply",
@@ -745,7 +745,7 @@ def cleanup_unreachable_snapshots(
 
     Args:
         older_than_days: Minimum snapshot age in days.
-        batch_size: Maximum snapshots processed per transaction.
+        batch_size: Maximum snapshots deleted per transaction.
         apply_changes: Whether to persist deletions.
     """
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -769,14 +769,13 @@ def cleanup_unreachable_snapshots(
         batch_size=batch_size,
         apply=apply_changes,
     )
-    cli_utils.declare(
-        "Unreachable snapshot cleanup finished: "
-        f"eligible={eligible}, deleted={deleted}."
-    )
-
-    if not apply_changes and eligible:
+    if apply_changes:
+        cli_utils.declare(f"Deleted {deleted} unreachable snapshot(s).")
+    else:
         cli_utils.declare(
-            "This was a dry run. Repeat with --apply to persist deletions."
+            f"Dry run: at least {eligible} snapshot(s) can be deleted. "
+            "Deleting a snapshot can make its source snapshot unreachable "
+            "too, so --apply may remove more than this count."
         )
 
 

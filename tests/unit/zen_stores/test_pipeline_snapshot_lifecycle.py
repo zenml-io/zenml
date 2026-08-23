@@ -510,3 +510,126 @@ def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
         older_than=cutoff,
         apply=True,
     ) == (0, 0)
+
+
+def _backdate(store: SqlZenStore, *snapshot_ids: UUID) -> None:
+    """Move snapshots past any realistic cleanup cutoff."""
+    with Session(store.engine) as session:
+        for snapshot_id in snapshot_ids:
+            snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+            assert snapshot is not None
+            snapshot.created = utc_now() - timedelta(days=60)
+            session.add(snapshot)
+        session.commit()
+
+
+def test_cleanup_collects_a_source_chain_in_one_run(
+    clean_client: Client,
+) -> None:
+    """Snapshots freed by deleting their derived snapshot are also collected."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    source_snapshot: UUID | None = None
+    chain: list[UUID] = []
+    for index in range(3):
+        snapshot = store.create_snapshot(
+            _snapshot_request(
+                project_id=project_id,
+                stack_id=stack_id,
+                pipeline_id=pipeline_id,
+                name=None,
+                step_names=(f"step-{index}",),
+                source_snapshot=source_snapshot,
+            )
+        )
+        chain.append(snapshot.id)
+        source_snapshot = snapshot.id
+
+    _backdate(store, *chain)
+    cutoff = utc_now() - timedelta(days=30)
+
+    # Only the leaf is unreferenced up front, so the dry run reports a single
+    # pass while applying keeps rescanning until the chain is gone.
+    assert store.cleanup_unreachable_snapshots(older_than=cutoff) == (1, 0)
+    assert store.cleanup_unreachable_snapshots(
+        older_than=cutoff, apply=True
+    ) == (3, 3)
+    assert store.cleanup_unreachable_snapshots(
+        older_than=cutoff, apply=True
+    ) == (0, 0)
+
+
+def test_cleanup_retains_a_source_of_a_referenced_snapshot(
+    clean_client: Client,
+) -> None:
+    """A run anywhere in a chain keeps the whole chain alive."""
+    store, project_id, stack_id, pipeline_id = _create_snapshot_context(
+        clean_client
+    )
+    source = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name=None,
+            step_names=("source",),
+        )
+    )
+    derived = store.create_snapshot(
+        _snapshot_request(
+            project_id=project_id,
+            stack_id=stack_id,
+            pipeline_id=pipeline_id,
+            name=None,
+            step_names=("derived",),
+            source_snapshot=source.id,
+        )
+    )
+    store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            name="historical-run",
+            snapshot=derived.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    _backdate(store, source.id, derived.id)
+
+    assert store.cleanup_unreachable_snapshots(
+        older_than=utc_now() - timedelta(days=30),
+        apply=True,
+    ) == (0, 0)
+    assert store.get_snapshot(source.id).id == source.id
+    assert store.get_snapshot(derived.id).id == derived.id
+
+
+def test_snapshot_reference_check_covers_every_foreign_key() -> None:
+    """Guard the reachability rule against schema drift.
+
+    Deleting a snapshot cascades to its pipeline and step runs, so a new table
+    referencing `pipeline_snapshot` that `_snapshot_is_referenced` does not
+    know about would silently destroy run history. `step_configuration` is
+    excluded because it is data owned by the snapshot rather than a reference
+    to it.
+    """
+    owned_tables = {"step_configuration"}
+    referencing_columns = {
+        f"{fk.parent.table.name}.{fk.parent.name}"
+        for table in PipelineSnapshotSchema.metadata.tables.values()
+        for fk in table.foreign_keys
+        if fk.column.table.name == "pipeline_snapshot"
+        and fk.parent.table.name not in owned_tables
+    }
+    checked_columns = {
+        "pipeline_run.snapshot_id",
+        "step_run.snapshot_id",
+        "deployment.snapshot_id",
+        "run_template.source_snapshot_id",
+        "trigger_snapshot.snapshot_id",
+    }
+
+    assert referencing_columns == checked_columns, (
+        "Tables referencing `pipeline_snapshot` changed. Update "
+        "`SqlZenStore._snapshot_is_referenced` and this list together."
+    )

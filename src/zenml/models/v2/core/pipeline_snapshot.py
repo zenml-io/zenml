@@ -134,6 +134,11 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
     replace: Optional[bool] = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
+        description=(
+            "The superseded snapshot is deleted unless runs, "
+            "deployments, triggers or other snapshots still reference "
+            "it, in which case it is kept without a name."
+        ),
     )
     tags: Optional[List[str]] = Field(
         default=None,
@@ -201,6 +206,11 @@ class PipelineSnapshotUpdate(BaseUpdate):
     replace: Optional[bool] = Field(
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
+        description=(
+            "The superseded snapshot is deleted unless runs, "
+            "deployments, triggers or other snapshots still reference "
+            "it, in which case it is kept without a name."
+        ),
     )
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the snapshot."
