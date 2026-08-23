@@ -6069,9 +6069,10 @@ class Client(metaclass=ClientMetaClass):
             )
             if not unused_versions.items:
                 raise ValueError(
-                    "The metadata of artifact versions that are used in runs "
-                    "cannot be deleted. Please delete all runs that use this "
-                    "artifact first."
+                    "The metadata of artifact versions that are still "
+                    "referenced by runs or model versions cannot be deleted. "
+                    "Please remove all references to this artifact version "
+                    "first."
                 )
         if delete_from_artifact_store:
             from zenml.zen_stores.rest_zen_store import RestZenStore

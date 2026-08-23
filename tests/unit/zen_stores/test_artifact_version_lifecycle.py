@@ -244,6 +244,31 @@ def test_only_unused_excludes_every_supported_reference(
     assert {version.id for version in unused.items} == {unused_id}
 
 
+def test_only_unused_combines_with_model_filters(
+    sql_store: SqlZenStore,
+) -> None:
+    """The unused filter must compose with the model filters on the same query.
+
+    Both reference the model-version link table, so the unused subqueries have
+    to stay independent of whatever the outer query joins.
+    """
+    project_id = _project_id(sql_store)
+    artifact_version_id = _create_artifact_version(sql_store, project_id)
+    model_version_id = _link_model_version(
+        sql_store, project_id, artifact_version_id
+    )
+
+    unused = sql_store.list_artifact_versions(
+        ArtifactVersionFilter(
+            project=project_id,
+            only_unused=True,
+            model_version_id=model_version_id,
+        )
+    )
+
+    assert unused.items == []
+
+
 def test_prune_does_not_delete_artifacts_from_other_projects(
     sql_store: SqlZenStore,
 ) -> None:

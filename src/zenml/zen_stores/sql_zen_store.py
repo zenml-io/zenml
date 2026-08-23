@@ -3371,42 +3371,19 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             ).id
 
-            unused_artifact_versions = [
-                a[0]
-                for a in session.execute(
-                    select(ArtifactVersionSchema.id).where(
-                        and_(
-                            ArtifactVersionSchema.unused_filter(),
-                            col(ArtifactVersionSchema.project_id)
-                            == project_id,
-                        )
-                    )
-                ).fetchall()
-            ]
             session.execute(
                 delete(ArtifactVersionSchema).where(
-                    col(ArtifactVersionSchema.id).in_(
-                        unused_artifact_versions
-                    ),
+                    ArtifactVersionSchema.unused_filter(),
+                    col(ArtifactVersionSchema.project_id) == project_id,
                 )
             )
             if not only_versions:
-                unused_artifacts = [
-                    a[0]
-                    for a in session.execute(
-                        select(ArtifactSchema.id).where(
-                            and_(
-                                col(ArtifactSchema.id).notin_(
-                                    select(ArtifactVersionSchema.artifact_id)
-                                ),
-                                col(ArtifactSchema.project_id) == project_id,
-                            )
-                        )
-                    ).fetchall()
-                ]
                 session.execute(
                     delete(ArtifactSchema).where(
-                        col(ArtifactSchema.id).in_(unused_artifacts)
+                        col(ArtifactSchema.id).notin_(
+                            select(ArtifactVersionSchema.artifact_id)
+                        ),
+                        col(ArtifactSchema.project_id) == project_id,
                     )
                 )
             session.commit()

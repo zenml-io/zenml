@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column, UniqueConstraint, exists
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.elements import ColumnElement
@@ -386,9 +386,8 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     def unused_filter(cls) -> ColumnElement[bool]:
         """Build the authoritative filter for unused artifact versions.
 
-        An artifact version is unused only if no supported product resource
-        references it. Keeping this predicate in one place prevents listing
-        and destructive pruning from applying different liveness rules.
+        Each reference subquery correlates only to the artifact version so
+        outer model filters cannot auto-correlate away its reference table.
 
         Returns:
             A SQL expression matching unused artifact versions.
@@ -407,17 +406,19 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             StepRunOutputArtifactSchema,
         )
 
+        referencing_columns = [
+            StepRunInputArtifactSchema.artifact_id,
+            StepRunOutputArtifactSchema.artifact_id,
+            PipelineRunOutputSchema.artifact_id,
+            HookInvocationOutputArtifactSchema.artifact_version_id,
+            ModelVersionArtifactSchema.artifact_version_id,
+        ]
+
         return and_(
-            ~exists().where(StepRunOutputArtifactSchema.artifact_id == cls.id),
-            ~exists().where(StepRunInputArtifactSchema.artifact_id == cls.id),
-            ~exists().where(PipelineRunOutputSchema.artifact_id == cls.id),
-            ~exists().where(
-                HookInvocationOutputArtifactSchema.artifact_version_id
-                == cls.id
-            ),
-            ~exists().where(
-                ModelVersionArtifactSchema.artifact_version_id == cls.id
-            ),
+            *(
+                ~select(1).where(column == cls.id).correlate(cls).exists()
+                for column in referencing_columns
+            )
         )
 
     @classmethod
