@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 from typing import TYPE_CHECKING
 
-from zenml.enums import LoggingLevels
+from zenml.enums import LoggingLevels, SQLDatabaseAuthMode
 from zenml.logger import get_logger, get_logging_level
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 
@@ -113,7 +113,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         if self.url.username:
             args.extend(["--user", self.url.username])
 
-        if self.config.auth_mode == "aws_rds_iam":
+        if self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
             args.extend(["--ssl", "--ssl-mode", "VERIFY_IDENTITY"])
             trust_paths = ssl.get_default_verify_paths()
             if trust_paths.capath:
@@ -152,7 +152,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             or None if no password is configured.
         """
         credential = self.url.password
-        if self.config.auth_mode == "aws_rds_iam":
+        if self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
             from zenml.zen_stores.rds_iam import generate_rds_iam_token
 
             assert self.config.aws_region is not None
@@ -194,7 +194,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd.extend(["--outputdir", self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
-        if self.config.auth_mode == "aws_rds_iam":
+        if self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
             # Workspace database users are deliberately limited to one schema
             # and therefore do not have the global REPLICATION CLIENT
             # privilege. MyDumper 1.0.3 treats its optional binlog-position
@@ -315,7 +315,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
 
         cmd = self._build_myloader_command()
         defaults_file: str | None = None
-        if self.config.auth_mode == "aws_rds_iam":
+        if self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
             # Avoid the packaged SQL_LOG_BIN=0 default, which requires global
             # administrative privileges that workspace users must not have.
             with tempfile.NamedTemporaryFile(

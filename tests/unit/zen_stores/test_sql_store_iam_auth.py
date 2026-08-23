@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from pymysql.constants import CLIENT
 from sqlalchemy import create_engine
 
-from zenml.enums import DatabaseBackupStrategy
+from zenml.enums import DatabaseBackupStrategy, SQLDatabaseAuthMode
 from zenml.zen_stores.migrations.backup.sqlalchemy import (
     InMemoryDatabaseBackupEngine,
 )
@@ -74,14 +74,16 @@ def test_password_authentication_remains_the_default() -> None:
         url="mysql://user:secret@db.example.com:3306/zenml"
     )
 
-    assert config.auth_mode == "password"
+    assert config.auth_mode == SQLDatabaseAuthMode.PASSWORD
     assert config.password is not None
 
 
 def test_iam_connections_use_verified_system_trust() -> None:
     """IAM mode verifies both the certificate chain and hostname."""
-    _, connect_args, _ = _iam_config().get_sqlalchemy_config()
+    config = _iam_config()
+    _, connect_args, _ = config.get_sqlalchemy_config()
 
+    assert config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM
     context = connect_args["ssl"]
     assert isinstance(context, ssl.SSLContext)
     assert context.verify_mode == ssl.CERT_REQUIRED

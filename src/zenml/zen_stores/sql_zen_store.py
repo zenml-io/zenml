@@ -171,6 +171,7 @@ from zenml.enums import (
     RunWaitConditionStatus,
     SecretResourceTypes,
     SecretsStoreType,
+    SQLDatabaseAuthMode,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -670,7 +671,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     database: Optional[str] = None
     username: Optional[PlainSerializedSecretStr] = None
     password: Optional[PlainSerializedSecretStr] = None
-    auth_mode: Literal["password", "aws_rds_iam"] = "password"  # ggignore
+    auth_mode: SQLDatabaseAuthMode = SQLDatabaseAuthMode.PASSWORD
     aws_region: Optional[str] = None
     aws_rds_iam_role_arn: Optional[str] = None
     ssl: bool = False
@@ -904,11 +905,14 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
             database = self.database
             password_missing = (
-                self.auth_mode == "password" and not self.password
+                self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                and not self.password
             )
             if not self.username or password_missing or not database:
                 password_requirement = (
-                    ", password" if self.auth_mode == "password" else ""
+                    ", password"
+                    if self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                    else ""
                 )
                 raise ValueError(
                     f"Invalid MySQL configuration: The username"
@@ -925,7 +929,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     f"rules ({regexp}): {database}"
                 )
 
-            if self.auth_mode == "aws_rds_iam" and (
+            if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM and (
                 self.ssl_ca or self.ssl_cert or self.ssl_key
             ):
                 raise ValueError(
@@ -972,7 +976,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Raises:
             ValueError: If RDS IAM authentication is configured unsafely.
         """
-        if self.auth_mode != "aws_rds_iam":
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
             return self
 
         if self.driver != SQLDatabaseDriver.MYSQL:
@@ -1002,7 +1006,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         Args:
             engine: The engine whose connections should use this configuration.
         """
-        if self.auth_mode != "aws_rds_iam":
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
             return
 
         from zenml.zen_stores.rds_iam import (
@@ -1078,7 +1082,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
-            if self.auth_mode == "password":
+            if self.auth_mode == SQLDatabaseAuthMode.PASSWORD:
                 assert self.password is not None
             assert sql_url.host is not None
 
@@ -1103,7 +1107,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             )
 
             if self.ssl:
-                if self.auth_mode == "aws_rds_iam":
+                if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
                     from zenml.zen_stores.rds_iam import (
                         create_verified_ssl_context,
                     )
@@ -1656,7 +1660,7 @@ class SqlZenStore(BaseZenStore):
         """
         strategy = strategy or self.config.backup_strategy
         if (
-            self.config.auth_mode == "aws_rds_iam"
+            self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM
             and strategy == DatabaseBackupStrategy.DATABASE
         ):
             raise ValueError(
