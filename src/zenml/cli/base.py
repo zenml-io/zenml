@@ -764,16 +764,16 @@ def cleanup_unreachable_snapshots(
         skip_migrations=True,
     )
     assert isinstance(store, SqlZenStore)
-    eligible, deleted = store.cleanup_unreachable_snapshots(
+    count = store.cleanup_unreachable_snapshots(
         older_than=utc_now() - timedelta(days=older_than_days),
         batch_size=batch_size,
         apply=apply_changes,
     )
     if apply_changes:
-        cli_utils.declare(f"Deleted {deleted} unreachable snapshot(s).")
+        cli_utils.declare(f"Deleted {count} unreachable snapshot(s).")
     else:
         cli_utils.declare(
-            f"Dry run: at least {eligible} snapshot(s) can be deleted. "
+            f"Dry run: at least {count} snapshot(s) can be deleted. "
             "Deleting a snapshot can make its source snapshot unreachable "
             "too, so --apply may remove more than this count."
         )
