@@ -1961,7 +1961,18 @@ class DynamicPipelineRunner:
         while True:
             if self._exception:
                 raise self._exception
-            if not self._future_registry.has_in_progress_work():
+
+            has_in_progress_work = False
+            for future in self._future_registry.get_all_futures():
+                if future.running():
+                    has_in_progress_work = True
+                else:
+                    # A terminal future can represent either a successful or
+                    # failed invocation. Consume its result so an unawaited
+                    # failure cannot be mistaken for successful settlement.
+                    future.wait()
+
+            if not has_in_progress_work:
                 return
             time.sleep(1)
 
