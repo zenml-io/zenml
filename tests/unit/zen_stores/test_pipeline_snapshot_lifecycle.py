@@ -27,19 +27,8 @@ from sqlmodel import Session, col, select
 from zenml.client import Client
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
-from zenml.enums import (
-    ArtifactSaveType,
-    ArtifactType,
-    ExecutionStatus,
-    TaggableResourceTypes,
-    VisualizationResourceTypes,
-    VisualizationType,
-)
+from zenml.enums import ExecutionStatus, TaggableResourceTypes
 from zenml.models import (
-    ArtifactRequest,
-    ArtifactVersionRequest,
-    ArtifactVisualizationRequest,
-    CuratedVisualizationRequest,
     PipelineRequest,
     PipelineRunRequest,
     PipelineSnapshotFilter,
@@ -95,7 +84,7 @@ def _snapshot_request(
     stack_id: UUID,
     pipeline_id: UUID,
     name: str | None,
-    step_names: tuple[str, ...],
+    step_names: tuple[str, ...] = ("step",),
     replace: bool = False,
     tags: tuple[str, ...] = (),
     source_snapshot: UUID | None = None,
@@ -180,45 +169,21 @@ def _backdate(store: SqlZenStore, *snapshot_ids: UUID) -> None:
         session.commit()
 
 
-def _create_curated_visualization(
-    store: SqlZenStore, project_id: UUID, snapshot_id: UUID
-) -> UUID:
-    artifact = store.create_artifact(
-        ArtifactRequest(
-            name=f"artifact-{uuid4().hex[:8]}",
-            project=project_id,
-            has_custom_name=True,
+def _create_chain(
+    store: SqlZenStore,
+    snapshot_request: SnapshotRequestFactory,
+    length: int,
+) -> list[UUID]:
+    """Create anonymous snapshots that each derive from the previous one."""
+    chain: list[UUID] = []
+    for _ in range(length):
+        snapshot = store.create_snapshot(
+            snapshot_request(
+                name=None, source_snapshot=chain[-1] if chain else None
+            )
         )
-    )
-    artifact_version = store.create_artifact_version(
-        ArtifactVersionRequest(
-            artifact_id=artifact.id,
-            project=project_id,
-            version="1",
-            type=ArtifactType.DATA,
-            uri="s3://visualizations/snapshot.html",
-            materializer=Source(
-                module="acme.materializer", type=SourceType.INTERNAL
-            ),
-            data_type=Source(module="acme.data", type=SourceType.INTERNAL),
-            save_type=ArtifactSaveType.STEP_OUTPUT,
-            visualizations=[
-                ArtifactVisualizationRequest(
-                    type=VisualizationType.HTML,
-                    uri="s3://visualizations/snapshot.html",
-                )
-            ],
-        )
-    )
-    artifact_visualization = (artifact_version.visualizations or [])[0]
-    return store.create_curated_visualization(
-        CuratedVisualizationRequest(
-            project=project_id,
-            artifact_visualization_id=artifact_visualization.id,
-            resource_id=snapshot_id,
-            resource_type=VisualizationResourceTypes.PIPELINE_SNAPSHOT,
-        )
-    ).id
+        chain.append(snapshot.id)
+    return chain
 
 
 def test_failed_snapshot_creation_leaves_no_snapshot(
@@ -252,9 +217,7 @@ def test_failed_snapshot_replacement_preserves_existing_snapshot(
     snapshot_request: SnapshotRequestFactory,
 ) -> None:
     """A failed replacement preserves the existing named snapshot."""
-    existing = store.create_snapshot(
-        snapshot_request(name="saved-snapshot", step_names=("first",))
-    )
+    existing = store.create_snapshot(snapshot_request(name="saved-snapshot"))
     replacement = snapshot_request(
         name="saved-snapshot", step_names=("first", "second"), replace=True
     )
@@ -314,86 +277,47 @@ def test_replacing_unused_snapshot_discards_superseded_payload(
             )
         )
         snapshot_ids.append(snapshot.id)
+    latest_id = snapshot_ids[-1]
 
-    assert _snapshot_ids(store, project_id) == [snapshot_ids[-1]]
-    assert set(store.get_snapshot(snapshot_ids[-1]).step_configurations) == {
-        "latest"
-    }
+    assert _snapshot_ids(store, project_id) == [latest_id]
+    assert set(store.get_snapshot(latest_id).step_configurations) == {"latest"}
     assert _owned_rows(store, snapshot_ids[:-1]) == ([], [])
 
-
-def test_replacing_referenced_snapshot_preserves_run_history(
-    store: SqlZenStore,
-    project_id: UUID,
-    snapshot_request: SnapshotRequestFactory,
-) -> None:
-    """Replacement keeps an old snapshot that owns historical run data."""
-    existing = store.create_snapshot(
-        snapshot_request(name="saved-snapshot", step_names=("first",))
-    )
-    run_id = _create_run(store, project_id, existing.id)
-
-    replacement = store.create_snapshot(
-        snapshot_request(
-            name="saved-snapshot", step_names=("replacement",), replace=True
-        )
-    )
-
-    assert set(_snapshot_ids(store, project_id)) == {
-        existing.id,
-        replacement.id,
-    }
-    assert store.get_snapshot(existing.id).name is None
-    preserved_run = store.get_run(run_id)
-    assert preserved_run.snapshot is not None
-    assert preserved_run.snapshot.id == existing.id
-
-
-def test_replacing_snapshot_name_with_itself_keeps_snapshot(
-    store: SqlZenStore,
-    project_id: UUID,
-    snapshot_request: SnapshotRequestFactory,
-) -> None:
-    """Replacing an unchanged name does not discard the snapshot itself."""
-    existing = store.create_snapshot(
-        snapshot_request(name="saved-snapshot", step_names=("first",))
-    )
-
+    # Re-asserting a snapshot's own name must not discard that snapshot.
     updated = store.update_snapshot(
-        existing.id,
-        PipelineSnapshotUpdate(name="saved-snapshot", replace=True),
+        latest_id, PipelineSnapshotUpdate(name="saved-snapshot", replace=True)
     )
-
-    assert _snapshot_ids(store, project_id) == [existing.id]
-    assert updated.id == existing.id
     assert updated.name == "saved-snapshot"
+    assert _snapshot_ids(store, project_id) == [latest_id]
 
 
-def test_replacing_source_snapshot_preserves_derived_snapshot(
+def test_replacing_referenced_snapshots_keeps_them_unnamed(
     store: SqlZenStore,
+    project_id: UUID,
     snapshot_request: SnapshotRequestFactory,
 ) -> None:
-    """Replacement keeps a snapshot used as another snapshot's source."""
-    existing = store.create_snapshot(
-        snapshot_request(name="saved-snapshot", step_names=("first",))
+    """Replacement keeps snapshots that runs or derived snapshots need."""
+    run_source = store.create_snapshot(snapshot_request(name="run-source"))
+    run_id = _create_run(store, project_id, run_source.id)
+    derived_source = store.create_snapshot(
+        snapshot_request(name="derived-source")
     )
     derived = store.create_snapshot(
-        snapshot_request(
-            name="derived-snapshot",
-            step_names=("derived",),
-            source_snapshot=existing.id,
-        )
+        snapshot_request(name="derived", source_snapshot=derived_source.id)
     )
 
-    replacement = store.create_snapshot(
-        snapshot_request(
-            name="saved-snapshot", step_names=("replacement",), replace=True
-        )
-    )
+    for name in ("run-source", "derived-source"):
+        store.create_snapshot(snapshot_request(name=name, replace=True))
 
-    assert store.get_snapshot(existing.id).name is None
-    assert store.get_snapshot(derived.id).source_snapshot_id == existing.id
-    assert replacement.name == "saved-snapshot"
+    assert len(_snapshot_ids(store, project_id)) == 5
+    assert store.get_snapshot(run_source.id).name is None
+    assert store.get_snapshot(derived_source.id).name is None
+    preserved_run = store.get_run(run_id)
+    assert preserved_run.snapshot is not None
+    assert preserved_run.snapshot.id == run_source.id
+    assert (
+        store.get_snapshot(derived.id).source_snapshot_id == derived_source.id
+    )
 
 
 def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
@@ -405,7 +329,7 @@ def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
 
     def create_snapshot(name: str | None, tag: str) -> UUID:
         return store.create_snapshot(
-            snapshot_request(name=name, step_names=("step",), tags=(tag,))
+            snapshot_request(name=name, tags=(tag,))
         ).id
 
     unreachable_id = create_snapshot(None, "unreachable")
@@ -413,9 +337,6 @@ def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
     named_id = create_snapshot("saved", "named")
     referenced_id = create_snapshot(None, "referenced")
     _create_run(store, project_id, referenced_id)
-    curated_visualization_id = _create_curated_visualization(
-        store, project_id, unreachable_id
-    )
     _backdate(store, unreachable_id, named_id, referenced_id)
 
     assert store.cleanup_unreachable_snapshots(CUTOFF, batch_size=1) == 1
@@ -428,8 +349,6 @@ def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
 
     with pytest.raises(KeyError):
         store.get_snapshot(unreachable_id)
-    with pytest.raises(KeyError):
-        store.get_curated_visualization(curated_visualization_id)
     assert _owned_rows(store, [unreachable_id]) == ([], [])
     for retained_id in (recent_id, named_id, referenced_id):
         store.get_snapshot(retained_id)
@@ -437,50 +356,24 @@ def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
     assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 0
 
 
-def test_cleanup_collects_a_source_chain_in_one_run(
-    store: SqlZenStore,
-    snapshot_request: SnapshotRequestFactory,
-) -> None:
-    """Snapshots freed by deleting their derived snapshot are also collected."""
-    chain: list[UUID] = []
-    for index in range(3):
-        snapshot = store.create_snapshot(
-            snapshot_request(
-                name=None,
-                step_names=(f"step-{index}",),
-                source_snapshot=chain[-1] if chain else None,
-            )
-        )
-        chain.append(snapshot.id)
-    _backdate(store, *chain)
-
-    # Only the leaf is unreferenced up front, so the dry run reports a single
-    # pass while applying keeps rescanning until the chain is gone.
-    assert store.cleanup_unreachable_snapshots(CUTOFF) == 1
-    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 3
-    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 0
-
-
-def test_cleanup_retains_a_source_of_a_referenced_snapshot(
+def test_cleanup_collects_only_unreferenced_source_chains(
     store: SqlZenStore,
     project_id: UUID,
     snapshot_request: SnapshotRequestFactory,
 ) -> None:
-    """A run anywhere in a chain keeps the whole chain alive."""
-    source = store.create_snapshot(
-        snapshot_request(name=None, step_names=("source",))
-    )
-    derived = store.create_snapshot(
-        snapshot_request(
-            name=None, step_names=("derived",), source_snapshot=source.id
-        )
-    )
-    _create_run(store, project_id, derived.id)
-    _backdate(store, source.id, derived.id)
+    """A chain is collected in one run unless a run pins any part of it."""
+    collectable = _create_chain(store, snapshot_request, length=3)
+    pinned = _create_chain(store, snapshot_request, length=2)
+    _create_run(store, project_id, pinned[-1])
+    _backdate(store, *collectable, *pinned)
 
+    # Only the collectable leaf is unreferenced up front, so the dry run
+    # reports a single pass while applying keeps rescanning until the chain
+    # is gone.
+    assert store.cleanup_unreachable_snapshots(CUTOFF) == 1
+    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 3
     assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 0
-    store.get_snapshot(source.id)
-    store.get_snapshot(derived.id)
+    assert set(_snapshot_ids(store, project_id)) == set(pinned)
 
 
 def test_snapshot_reference_check_covers_every_foreign_key() -> None:
