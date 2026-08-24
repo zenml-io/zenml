@@ -787,7 +787,7 @@ class ArtifactVersionFilter(
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, select
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             ArtifactSchema,
