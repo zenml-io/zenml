@@ -68,6 +68,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     verify_permission,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -81,6 +82,37 @@ router = APIRouter(
     tags=["snapshots"],
     responses={401: error_response, 403: error_response},
 )
+
+
+def verify_replace_permission(
+    project_id: UUID,
+    pipeline_id: UUID,
+    name: str,
+    exclude_snapshot_id: Optional[UUID] = None,
+) -> None:
+    """Require DELETE permission on the snapshot a `replace` displaces.
+
+    The store deletes the superseded snapshot when nothing references it, so
+    replacing must not be a way around the delete permission that an explicit
+    deletion would need.
+
+    Args:
+        project_id: Project of the snapshot being created or updated.
+        pipeline_id: Pipeline of the snapshot being created or updated.
+        name: The name that will be taken over.
+        exclude_snapshot_id: Snapshot that is allowed to keep the name.
+    """
+    existing = (
+        zen_store()
+        .list_snapshots(
+            PipelineSnapshotFilter(
+                project=project_id, pipeline=pipeline_id, name=name, size=1
+            )
+        )
+        .items
+    )
+    if existing and existing[0].id != exclude_snapshot_id:
+        verify_permission_for_model(existing[0], action=Action.DELETE)
 
 
 @router.post(
@@ -105,6 +137,13 @@ def create_pipeline_snapshot(
     if project_name_or_id:
         project = zen_store().get_project(project_name_or_id)
         snapshot.project = project.id
+
+    if snapshot.replace and isinstance(snapshot.name, str):
+        verify_replace_permission(
+            project_id=snapshot.project,
+            pipeline_id=snapshot.pipeline,
+            name=snapshot.name,
+        )
 
     return verify_permissions_and_create_entity(
         request_model=snapshot,
@@ -202,6 +241,16 @@ def update_pipeline_snapshot(
     Returns:
         The updated snapshot.
     """
+    if snapshot_update.replace and isinstance(snapshot_update.name, str):
+        snapshot = zen_store().get_snapshot(snapshot_id, hydrate=False)
+        if snapshot.pipeline_id:
+            verify_replace_permission(
+                project_id=snapshot.project_id,
+                pipeline_id=snapshot.pipeline_id,
+                name=snapshot_update.name,
+                exclude_snapshot_id=snapshot.id,
+            )
+
     return verify_permissions_and_update_entity(
         id=snapshot_id,
         update_model=snapshot_update,
