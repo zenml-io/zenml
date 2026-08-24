@@ -27,6 +27,7 @@ from sqlalchemy import create_engine
 
 from zenml.enums import DatabaseBackupStrategy, SQLDatabaseAuthMode
 from zenml.zen_stores.migrations.backup.sqlalchemy import (
+    DBCloneDatabaseBackupEngine,
     InMemoryDatabaseBackupEngine,
 )
 from zenml.zen_stores.rds_iam import TLSRequiredMySQLConnection
@@ -212,12 +213,13 @@ def test_backup_engines_receive_iam_authentication(
     configure.assert_called_once_with(engine)
 
 
-def test_iam_rejects_database_backup_strategy() -> None:
-    """IAM mode rejects backups that require a second database."""
+def test_iam_supports_database_backup_strategy() -> None:
+    """IAM mode supports a separately authorized backup database."""
     store = MagicMock()
-    store.config = _iam_config()
+    store.config = _iam_config(backup_database="zenml_backup")
 
-    with pytest.raises(ValueError, match="not supported"):
-        SqlZenStore.initialize_database_backup_engine(
-            store, strategy=DatabaseBackupStrategy.DATABASE
-        )
+    backup_engine = SqlZenStore.initialize_database_backup_engine(
+        store, strategy=DatabaseBackupStrategy.DATABASE
+    )
+
+    assert isinstance(backup_engine, DBCloneDatabaseBackupEngine)

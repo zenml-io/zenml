@@ -1659,14 +1659,6 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the backup strategy or arguments are invalid.
         """
         strategy = strategy or self.config.backup_strategy
-        if (
-            self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM
-            and strategy == DatabaseBackupStrategy.DATABASE
-        ):
-            raise ValueError(
-                f"Backup strategy `{strategy.value}` is not supported with "
-                "AWS RDS IAM authentication."
-            )
 
         backup_engine_class: Type[BaseDatabaseBackupEngine]
 
