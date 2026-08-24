@@ -311,7 +311,7 @@ def delete_artifact_version(
     "prune",
     help=(
         "Delete all unused artifacts and artifact versions that are no longer "
-        "referenced by any pipeline runs."
+        "referenced by any pipeline runs or model versions."
     ),
 )
 @click.option(

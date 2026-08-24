@@ -384,10 +384,17 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def unused_filter(cls) -> ColumnElement[bool]:
-        """Build the authoritative filter for unused artifact versions.
+        """Build the filter matching artifact versions with no references.
 
-        Each reference subquery correlates only to the artifact version so
-        outer model filters cannot auto-correlate away its reference table.
+        A version counts as referenced while any step input/output, pipeline
+        output, hook output, or model version link points at it.
+
+        The reference subqueries are deliberately uncorrelated: SQLite has no
+        artifact-leading index on the link tables, so a correlated `EXISTS`
+        would rescan every link table per artifact version. `correlate(None)`
+        also keeps outer filters that join the same link table (e.g. model
+        version filters) from auto-correlating its FROM clause away. `NOT IN`
+        is safe here because none of the referencing columns is nullable.
 
         Returns:
             A SQL expression matching unused artifact versions.
@@ -416,7 +423,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
         return and_(
             *(
-                ~select(1).where(column == cls.id).correlate(cls).exists()
+                col(cls.id).notin_(select(column).correlate(None))
                 for column in referencing_columns
             )
         )

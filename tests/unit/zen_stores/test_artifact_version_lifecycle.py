@@ -13,7 +13,6 @@
 #  limitations under the License.
 """Tests for artifact-version liveness in the SQL store."""
 
-from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -40,18 +39,39 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
 
 
+@pytest.fixture
+def store(clean_client: Client) -> SqlZenStore:
+    """The SQL store backing the isolated test client.
+
+    Args:
+        clean_client: An isolated client for the test.
+
+    Returns:
+        The SQL store.
+    """
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    return store
+
+
+@pytest.fixture
+def project_id(clean_client: Client) -> UUID:
+    """The active project of the isolated test client.
+
+    Args:
+        clean_client: An isolated client for the test.
+
+    Returns:
+        The active project ID.
+    """
+    return clean_client.active_project.id
+
+
 def _create_artifact_version(store: SqlZenStore, project_id: UUID) -> UUID:
-    artifact = store.create_artifact(
-        ArtifactRequest(
-            project=project_id,
-            name=f"artifact-{uuid4().hex[:8]}",
-            has_custom_name=False,
-        )
-    )
     return store.create_artifact_version(
         ArtifactVersionRequest(
             project=project_id,
-            artifact_id=artifact.id,
+            artifact_name=f"artifact-{uuid4().hex[:8]}",
             version=1,
             type=ArtifactType.DATA,
             uri="s3://bucket/artifact",
@@ -62,27 +82,49 @@ def _create_artifact_version(store: SqlZenStore, project_id: UUID) -> UUID:
     ).id
 
 
+def _create_run_with_output(
+    store: SqlZenStore, project_id: UUID, artifact_version_id: UUID
+) -> None:
+    run_id = uuid4()
+    with Session(store.engine) as session:
+        session.add(
+            PipelineRunSchema(
+                id=run_id,
+                project_id=project_id,
+                name=f"run-{uuid4().hex[:8]}",
+                status=ExecutionStatus.COMPLETED.value,
+                index=1,
+                in_progress=False,
+                enable_heartbeat=False,
+            )
+        )
+        session.add(
+            PipelineRunOutputSchema(
+                name="output",
+                output_index=0,
+                pipeline_run_id=run_id,
+                artifact_id=artifact_version_id,
+            )
+        )
+        session.commit()
+
+
 def test_model_linked_version_is_not_unused_or_pruned(
-    clean_client: Client,
+    store: SqlZenStore, project_id: UUID
 ) -> None:
     """Verify model-linked versions remain live.
 
     Args:
-        clean_client: An isolated client for the test.
+        store: The SQL store under test.
+        project_id: The project to create resources in.
     """
-    store = cast(SqlZenStore, clean_client.zen_store)
-    project_id = clean_client.active_project.id
     linked_version_id = _create_artifact_version(store, project_id)
     unused_version_id = _create_artifact_version(store, project_id)
     model = store.create_model(
         ModelRequest(project=project_id, name=f"model-{uuid4().hex[:8]}")
     )
     model_version = store.create_model_version(
-        ModelVersionRequest(
-            project=project_id,
-            model=model.id,
-            name="version-1",
-        )
+        ModelVersionRequest(project=project_id, model=model.id)
     )
     store.create_model_version_artifact_link(
         ModelVersionArtifactRequest(
@@ -102,54 +144,23 @@ def test_model_linked_version_is_not_unused_or_pruned(
 
     store.prune_artifact_versions(project_id, only_versions=True)
 
-    assert (
-        store.get_artifact_version(linked_version_id).id == linked_version_id
-    )
+    store.get_artifact_version(linked_version_id)
     with pytest.raises(KeyError):
         store.get_artifact_version(unused_version_id)
 
 
 def test_only_unused_excludes_pipeline_outputs(
-    clean_client: Client,
+    store: SqlZenStore, project_id: UUID
 ) -> None:
     """Verify pipeline outputs are excluded from unused versions.
 
     Args:
-        clean_client: An isolated client for the test.
+        store: The SQL store under test.
+        project_id: The project to create resources in.
     """
-    store = cast(SqlZenStore, clean_client.zen_store)
-    project_id = clean_client.active_project.id
     pipeline_output_id = _create_artifact_version(store, project_id)
     unused_version_id = _create_artifact_version(store, project_id)
-    run_id = uuid4()
-
-    with Session(store.engine) as session:
-        session.add(
-            PipelineRunSchema(
-                id=run_id,
-                project_id=project_id,
-                name=f"run-{uuid4().hex[:8]}",
-                orchestrator_run_id=None,
-                start_time=None,
-                end_time=None,
-                status=ExecutionStatus.COMPLETED.value,
-                index=1,
-                in_progress=False,
-                enable_heartbeat=False,
-                pipeline_id=None,
-                snapshot_id=None,
-                user_id=None,
-            )
-        )
-        session.add(
-            PipelineRunOutputSchema(
-                name="pipeline-output",
-                output_index=0,
-                pipeline_run_id=run_id,
-                artifact_id=pipeline_output_id,
-            )
-        )
-        session.commit()
+    _create_run_with_output(store, project_id, pipeline_output_id)
 
     unused = store.list_artifact_versions(
         ArtifactVersionFilter(project=project_id, only_unused=True)
@@ -158,22 +169,21 @@ def test_only_unused_excludes_pipeline_outputs(
     assert {version.id for version in unused.items} == {unused_version_id}
 
 
-def test_prune_keeps_other_project_artifacts(clean_client: Client) -> None:
+def test_prune_keeps_other_project_artifacts(
+    store: SqlZenStore, project_id: UUID
+) -> None:
     """Verify pruning remains scoped to the requested project.
 
     Args:
-        clean_client: An isolated client for the test.
+        store: The SQL store under test.
+        project_id: The project to prune.
     """
-    store = cast(SqlZenStore, clean_client.zen_store)
-    project_id = clean_client.active_project.id
     other_project = store.create_project(
         ProjectRequest(name=f"project-{uuid4().hex[:8]}")
     )
-    other_artifact = store.create_artifact(
+    empty_artifact = store.create_artifact(
         ArtifactRequest(
-            project=other_project.id,
-            name=f"artifact-{uuid4().hex[:8]}",
-            has_custom_name=False,
+            project=other_project.id, name=f"artifact-{uuid4().hex[:8]}"
         )
     )
     unused_version_id = _create_artifact_version(store, project_id)
@@ -182,4 +192,4 @@ def test_prune_keeps_other_project_artifacts(clean_client: Client) -> None:
 
     with pytest.raises(KeyError):
         store.get_artifact_version(unused_version_id)
-    assert store.get_artifact(other_artifact.id).id == other_artifact.id
+    store.get_artifact(empty_artifact.id)

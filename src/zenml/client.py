@@ -5911,8 +5911,8 @@ class Client(metaclass=ClientMetaClass):
             materializer: The materializer of the artifact to filter by.
             project: The project name/ID to filter by.
             model_version_id: Filter by model version ID.
-            only_unused: Only return artifact versions that are not used in
-                any pipeline runs.
+            only_unused: Only return artifact versions that are not
+                referenced by any pipeline run or model version.
             has_custom_name: Filter artifacts with/without custom names.
             tags: Tags to filter by.
             user: Filter by user name or ID.
@@ -6059,7 +6059,8 @@ class Client(metaclass=ClientMetaClass):
                 the artifact data from the artifact store.
 
         Raises:
-            ValueError: If the artifact version is still used in any runs.
+            ValueError: If the artifact version is still referenced by a
+                run or model version.
             TypeError: If server-side artifact data deletion is requested
                 without a REST store.
         """

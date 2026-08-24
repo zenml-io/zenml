@@ -618,7 +618,9 @@ class ArtifactVersionFilter(
         union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
-        default=False, description="Filter only for unused artifacts"
+        default=False,
+        description="Filter only for artifact versions that are not "
+        "referenced by any pipeline run or model version.",
     )
     has_custom_name: Optional[bool] = Field(
         default=None,
