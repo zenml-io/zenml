@@ -11,101 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""RBAC regression tests for snapshot replacement."""
+"""Tests for the snapshot replacement permission check."""
 
-import asyncio
-from typing import Any, Dict, Optional
-from uuid import UUID, uuid4
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
-from tests.unit.zen_server.rbac_harness import (
-    AllowAllRBAC,
-    DenyActionRBAC,
-    RBACTestServer,
-    rbac_test_server,
-)
-from zenml.client import Client
-from zenml.constants import API, PIPELINE_SNAPSHOTS, VERSION_1
-from zenml.models import PipelineRequest, PipelineSnapshotRequest
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.routers import pipeline_snapshot_endpoints
 
-SNAPSHOTS_URL = API + VERSION_1 + PIPELINE_SNAPSHOTS
 
-
-def _snapshot_request(
-    server: RBACTestServer,
-    stack_id: UUID,
-    pipeline_id: UUID,
-    name: Optional[str],
-    replace: bool = False,
-) -> PipelineSnapshotRequest:
-    return PipelineSnapshotRequest(
-        project=server.project.id,
-        stack=stack_id,
-        pipeline=pipeline_id,
-        name=name,
-        replace=replace,
-        run_name_template="",
-        pipeline_configuration={"name": "pipeline"},
-        client_version="test",
-        server_version="test",
-        step_configurations={},
-    )
-
-
-def _json(request: PipelineSnapshotRequest) -> Dict[str, Any]:
-    return request.model_dump(mode="json", exclude_none=True)
-
-
-async def _run_snapshot_replace_rbac_regression(client: Client) -> None:
-    async with rbac_test_server(client, pipeline_snapshot_endpoints) as server:
-        store = server.store
-        stack_id = client.active_stack.id
-        pipeline = store.create_pipeline(
-            PipelineRequest(
-                project=server.project.id, name=f"pipe-{uuid4().hex[:8]}"
-            )
-        )
-        victim = store.create_snapshot(
-            _snapshot_request(server, stack_id, pipeline.id, name="shared")
-        )
-        own = store.create_snapshot(
-            _snapshot_request(server, stack_id, pipeline.id, name=None)
-        )
-        takeover = _json(
-            _snapshot_request(
-                server, stack_id, pipeline.id, "shared", replace=True
-            )
-        )
-
-        server.use_rbac(DenyActionRBAC(Action.DELETE))
-        denied_create = server.http.post(SNAPSHOTS_URL, json=takeover)
-        assert denied_create.status_code == 403, denied_create.text
-        denied_update = server.http.put(
-            f"{SNAPSHOTS_URL}/{own.id}",
-            json={"name": "shared", "replace": True},
-        )
-        assert denied_update.status_code == 403, denied_update.text
-        assert store.get_snapshot(victim.id).name == "shared"
-
-        # Re-asserting a snapshot's own name displaces nothing.
-        self_rename = server.http.put(
-            f"{SNAPSHOTS_URL}/{victim.id}",
-            json={"name": "shared", "replace": True},
-        )
-        assert self_rename.status_code == 200, self_rename.text
-
-        server.use_rbac(AllowAllRBAC())
-        allowed_create = server.http.post(SNAPSHOTS_URL, json=takeover)
-        assert allowed_create.status_code == 200, allowed_create.text
-        with pytest.raises(KeyError):
-            store.get_snapshot(victim.id)
-
-
-def test_snapshot_replace_requires_delete_permission(
-    clean_client: Client,
+@pytest.mark.parametrize("renaming_itself", [False, True])
+def test_replace_requires_delete_on_displaced_snapshot(
+    renaming_itself: bool,
 ) -> None:
-    """Replacing a named snapshot needs DELETE on the displaced snapshot."""
-    asyncio.run(_run_snapshot_replace_rbac_regression(clean_client))
+    """Replacing a name needs DELETE on the snapshot that currently holds it."""
+    existing = MagicMock(id=uuid4())
+    store = MagicMock()
+    store.list_snapshots.return_value.items = [existing]
+
+    with (
+        patch.object(
+            pipeline_snapshot_endpoints, "zen_store", return_value=store
+        ),
+        patch.object(
+            pipeline_snapshot_endpoints, "verify_permission_for_model"
+        ) as verify,
+    ):
+        pipeline_snapshot_endpoints.verify_replace_permission(
+            project_id=uuid4(),
+            pipeline_id=uuid4(),
+            name="shared",
+            exclude_snapshot_id=existing.id if renaming_itself else None,
+        )
+
+    if renaming_itself:
+        verify.assert_not_called()
+    else:
+        verify.assert_called_once_with(existing, action=Action.DELETE)

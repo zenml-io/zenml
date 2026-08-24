@@ -61,14 +61,7 @@ CUTOFF = utc_now() - timedelta(days=30)
 
 @pytest.fixture
 def store(clean_client: Client) -> SqlZenStore:
-    """The SQL store backing the isolated test client.
-
-    Args:
-        clean_client: An isolated client for the test.
-
-    Returns:
-        The SQL store.
-    """
+    """The SQL store backing the isolated test client."""
     store = clean_client.zen_store
     assert isinstance(store, SqlZenStore)
     return store
@@ -76,14 +69,7 @@ def store(clean_client: Client) -> SqlZenStore:
 
 @pytest.fixture
 def project_id(clean_client: Client) -> UUID:
-    """The active project of the isolated test client.
-
-    Args:
-        clean_client: An isolated client for the test.
-
-    Returns:
-        The active project ID.
-    """
+    """The active project of the isolated test client."""
     return clean_client.active_project.id
 
 
@@ -91,16 +77,7 @@ def project_id(clean_client: Client) -> UUID:
 def snapshot_request(
     clean_client: Client, store: SqlZenStore, project_id: UUID
 ) -> SnapshotRequestFactory:
-    """Factory for snapshot requests bound to a fresh pipeline.
-
-    Args:
-        clean_client: An isolated client for the test.
-        store: The SQL store under test.
-        project_id: The project to create the pipeline in.
-
-    Returns:
-        A factory accepting the per-snapshot arguments of `_snapshot_request`.
-    """
+    """Factory for snapshot requests bound to a fresh pipeline."""
     pipeline = store.create_pipeline(
         PipelineRequest(project=project_id, name=f"pipeline-{uuid4().hex[:8]}")
     )
