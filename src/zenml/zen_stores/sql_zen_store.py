@@ -1062,8 +1062,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
 # Foreign keys that keep a snapshot alive. `step_configuration` also points
 # at snapshots but is data owned by them rather than a reference, so it is
-# deliberately absent. Deleting a snapshot cascades to its pipeline and step
-# runs, so an omission here silently destroys run history.
+# deliberately absent. Deleting a snapshot cascades to its pipeline run and step
+# run, so an omission here silently destroys run history.
 SNAPSHOT_OWNER_COLUMNS = (
     PipelineRunSchema.snapshot_id,
     StepRunSchema.snapshot_id,
