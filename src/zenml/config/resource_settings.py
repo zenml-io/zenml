@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import math
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
@@ -29,6 +28,7 @@ from pydantic import (
 )
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.constants import BASIC_RESOURCE_KINDS
 from zenml.enums import ResourceRequestReclaimTolerance, StepRuntime
 
 if TYPE_CHECKING:
@@ -73,7 +73,6 @@ class ByteUnit(Enum):
 
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
-BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory"})
 DEFAULT_ALLOCATION_WAIT_TIMEOUT_SECONDS = 3600
 DEFAULT_INITIALIZATION_LEASE_SECONDS = 3600
 
@@ -437,11 +436,18 @@ class ResourceSettings(BaseSettings):
             )
 
         if self.cpu_count is not None:
+            if self.cpu_count.is_integer():
+                cpu_quantity = int(self.cpu_count)
+                cpu_unit = "CPU"
+            else:
+                cpu_quantity = round(self.cpu_count * 1000)
+                cpu_unit = "mCPU"
+
             demands.append(
                 ResourceRequestDemand(
                     kind="cpu",
-                    quantity=math.ceil(self.cpu_count),
-                    unit="CPU",
+                    quantity=cpu_quantity,
+                    unit=cpu_unit,
                 )
             )
 

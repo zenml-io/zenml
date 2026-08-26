@@ -20,17 +20,15 @@ def resource_request() -> None:
 
 
 @resource_request.command("describe", help="Describe a resource request.")
-@click.argument("resource_request_id", type=str, required=True)
-def describe_resource_request(resource_request_id: str) -> None:
+@click.argument("resource_request_id", type=UUID, required=True)
+def describe_resource_request(resource_request_id: UUID) -> None:
     """Describe a resource request.
 
     Args:
         resource_request_id: ID of the resource request.
     """
     try:
-        resource_request = Client().zen_store.get_resource_request(
-            UUID(resource_request_id)
-        )
+        resource_request = Client().get_resource_request(resource_request_id)
     except KeyError as err:
         cli_utils.exception(err)
     else:
@@ -55,11 +53,8 @@ def list_resource_requests(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments used to build the filter model.
     """
-    filter_model = ResourceRequestFilter(**kwargs)
     with console.status("Listing resource requests...\n"):
-        page = Client().zen_store.list_resource_requests(
-            filter_model=filter_model, hydrate=False
-        )
+        page = Client().list_resource_requests(**kwargs)
 
     cli_utils.print_page(
         page,

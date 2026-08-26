@@ -18,7 +18,8 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.config.resource_settings import ResourceSettings
+from zenml.enums import ExecutionStatus, StackComponentType, StepRuntime
 from zenml.orchestrators.step_launcher import (
     StepLauncher,
     _get_step_operator,
@@ -137,6 +138,65 @@ def test_dynamic_command_step_failure_raises(mocker):
     # Publishing the failed status is the responsibility of the generic
     # exception handling in `StepLauncher.launch(...)`.
     publish_failed.assert_not_called()
+
+
+def test_inline_step_with_resource_demands_warns_before_isolated_run(mocker):
+    """Explicit inline steps warn when resources force isolated execution."""
+    launcher = object.__new__(StepLauncher)
+    launcher._invocation_id = "resource_step"
+    launcher._wait = True
+    launcher._stack = mocker.Mock()
+    launcher._stack.orchestrator.can_run_isolated_steps = True
+    launcher._snapshot = mocker.Mock()
+    launcher._snapshot.is_dynamic = True
+    launcher._step = mocker.Mock()
+    launcher._step.config.name = "resource_step"
+    launcher._step.config.step_operator = None
+    launcher._step.config.runtime = StepRuntime.INLINE
+    launcher._step.config.resource_settings = ResourceSettings(cpu_count=1)
+    launcher._step.config.docker_settings = (
+        launcher._snapshot.pipeline_configuration.docker_settings
+    )
+
+    pipeline_run = mocker.Mock()
+    step_run = mocker.Mock()
+    step_run_info = mocker.Mock()
+    mocker.patch(
+        "zenml.orchestrators.step_launcher.StepRunInfo",
+        return_value=step_run_info,
+    )
+    mocker.patch(
+        "zenml.deployers.server.runtime.should_skip_artifact_materialization",
+        return_value=False,
+    )
+    mocker.patch(
+        "zenml.orchestrators.step_launcher.output_utils.prepare_output_artifact_uris",
+        return_value={},
+    )
+    mocker.patch.object(
+        launcher, "_wait_until_resources_acquired", return_value=None
+    )
+    run_isolated = mocker.patch.object(
+        launcher, "_run_step_with_dynamic_orchestrator"
+    )
+    warning = mocker.patch("zenml.orchestrators.step_launcher.logger.warning")
+
+    launcher._run_step(
+        pipeline_run=pipeline_run,
+        step_run=step_run,
+        force_write_logs=mocker.Mock(),
+    )
+
+    warning.assert_called_once_with(
+        "%s",
+        "Resource settings for step `resource_step` require an isolated "
+        "runtime, but the step was configured to run inline. Running the "
+        "step in isolated runtime instead.",
+    )
+    run_isolated.assert_called_once_with(
+        step_run_info=step_run_info,
+        allocated_resource_request=None,
+    )
 
 
 def _make_isolated_step_launcher(mocker, status):

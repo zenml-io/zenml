@@ -31,7 +31,7 @@ from zenml.enums import (
 )
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
-    UserScopedFilter,
+    ProjectScopedFilter,
     UserScopedRequest,
     UserScopedResponse,
     UserScopedResponseBody,
@@ -459,7 +459,7 @@ class ResourceRequestResponse(
         """
         from zenml.client import Client
 
-        return Client().zen_store.get_resource_request(self.id)
+        return Client().get_resource_request(self.id)
 
     @property
     def component_ids(self) -> list[UUID]:
@@ -588,7 +588,7 @@ class ResourceRequestResponse(
         return self.get_body().preemption_initiated_by_id
 
 
-class ResourceRequestFilter(UserScopedFilter):
+class ResourceRequestFilter(ProjectScopedFilter):
     """Resource request filter model."""
 
     user: UUID | str | None = Field(
