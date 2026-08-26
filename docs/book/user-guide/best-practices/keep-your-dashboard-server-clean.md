@@ -117,6 +117,36 @@ By default, this method deletes artifacts physically from the underlying artifac
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 
+## Cleaning Up Unreachable Pipeline Snapshots
+
+Self-hosted ZenML servers can accumulate anonymous pipeline snapshots that are
+no longer referenced. The following maintenance command reports snapshots that
+are older than 180 days and can be removed:
+
+```bash
+zenml cleanup-unreachable-snapshots --older-than-days 180
+```
+
+The command performs a dry run by default. It only considers anonymous
+snapshots that no run, deployment, schedule, run template, trigger, or derived
+snapshot still references. Named, recent, and referenced snapshots are
+retained.
+
+Before deleting anything, back up the database and stop all ZenML processes
+that can write to it. Then run the command against the self-hosted server's SQL
+store with the `--apply` flag:
+
+```bash
+zenml cleanup-unreachable-snapshots \
+    --older-than-days 180 \
+    --batch-size 250 \
+    --apply
+```
+
+This command cannot be run through a connected remote ZenML server. The dry-run
+count can be lower than the final deletion count because deleting a snapshot
+can make its source snapshot unreachable too.
+
 ## Cleaning your environment
 
 As a more drastic measure, the `zenml clean` command can be used to start from\

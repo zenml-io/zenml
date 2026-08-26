@@ -5194,14 +5194,10 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _snapshot_is_referenced() -> "ColumnElement[bool]":
-        """Build the condition matching snapshots that are still in use.
-
-        The condition correlates with `PipelineSnapshotSchema` in the enclosing
-        query, so the same rule gates both the single-row check and the bulk
-        scan.
+        """Build a SQL condition matching referenced snapshots.
 
         Returns:
-            Condition matching snapshots that another resource still needs.
+            A SQL condition matching snapshots that must be retained.
         """
         # `source_snapshot_id` deliberately has no foreign key (it would form
         # a cycle), so it cannot be part of `SNAPSHOT_OWNER_COLUMNS`.
@@ -5268,23 +5264,17 @@ class SqlZenStore(BaseZenStore):
         batch_size: int = 250,
         apply: bool = False,
     ) -> int:
-        """Report or delete old snapshots with no operational references.
-
-        Deleting a snapshot can in turn leave its source snapshot unreachable,
-        so applying repeats full passes until a pass finds nothing. The dry
-        run only counts a single pass and is therefore a lower bound.
-
-        Applying requires all ZenML processes that can write to the database
-        to be stopped, as candidate rows are not locked.
+        """Report or delete old anonymous, unreferenced snapshots.
 
         Args:
-            older_than: Exclusive snapshot creation cutoff.
+            older_than: Only snapshots created before this time are eligible.
             batch_size: Maximum snapshots deleted per transaction.
-            apply: Whether to persist deletions.
+            apply: If true, delete eligible snapshots; otherwise only count
+                them.
 
         Returns:
-            The number of snapshots eligible for deletion in a dry run, or
-            the number of deleted snapshots otherwise.
+            The number of currently eligible snapshots if `apply` is false,
+            or the total number of deleted snapshots otherwise.
         """
         unreachable = (
             col(PipelineSnapshotSchema.name).is_(None),
