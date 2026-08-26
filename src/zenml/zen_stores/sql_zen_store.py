@@ -5233,7 +5233,7 @@ class SqlZenStore(BaseZenStore):
         no foreign key, so they have to be deleted explicitly.
 
         Callers must establish first that the snapshots are unreferenced:
-        deleting one cascades to any pipeline and step runs pointing at it.
+        deleting one cascades to all pipeline runs and step runs pointing at it.
 
         Args:
             session: SQLAlchemy session.
