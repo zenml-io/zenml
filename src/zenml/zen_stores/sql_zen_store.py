@@ -58,6 +58,7 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
+    Iterator,
     List,
     Literal,
     NoReturn,
@@ -500,6 +501,31 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+# Caps how many IDs are bound into a single `IN (...)` clause when cleaning up
+# run metadata, so a snapshot or run with a lot of children cannot exceed the
+# database driver's bound-parameter limit.
+METADATA_CLEANUP_BATCH_SIZE = 1000
+
+# The metadata resource types whose lifetime is bound to a pipeline run.
+RUN_METADATA_RESOURCE_TYPES = (
+    MetadataResourceTypes.PIPELINE_RUN.value,
+    MetadataResourceTypes.STEP_RUN.value,
+    MetadataResourceTypes.WAIT_CONDITION.value,
+)
+
+
+def metadata_cleanup_batches(ids: Sequence[UUID]) -> Iterator[Sequence[UUID]]:
+    """Split IDs into batches that fit into a single `IN (...)` clause.
+
+    Args:
+        ids: The IDs to split.
+
+    Yields:
+        Consecutive slices of at most `METADATA_CLEANUP_BATCH_SIZE` IDs.
+    """
+    for offset in range(0, len(ids), METADATA_CLEANUP_BATCH_SIZE):
+        yield ids[offset : offset + METADATA_CLEANUP_BATCH_SIZE]
 
 
 def exponential_backoff_with_jitter(
@@ -5500,30 +5526,46 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # Deleting a snapshot cascades to its pipeline runs, so the
+            # metadata those runs own has to be collected before the cascade
+            # removes the links that identify it.
+            metadata_ids = self._get_run_metadata_ids(
+                run_ids=session.exec(
+                    select(PipelineRunSchema.id).where(
+                        PipelineRunSchema.snapshot_id == snapshot_id
+                    )
+                ).all(),
+                session=session,
+            )
+
             session.delete(snapshot)
 
             # We set the reference of all snapshots to this snapshot to null
             # manually as we can't have a foreign key there to avoid a cycle
-            snapshots = session.exec(
+            referencing_snapshots = session.exec(
                 select(PipelineSnapshotSchema).where(
                     PipelineSnapshotSchema.source_snapshot_id == snapshot_id
                 )
             ).all()
 
-            for snapshot in snapshots:
-                snapshot.source_snapshot_id = None
-                session.add(snapshot)
+            for referencing_snapshot in referencing_snapshots:
+                referencing_snapshot.source_snapshot_id = None
+                session.add(referencing_snapshot)
 
             # Remove the attached trigger snapshots
 
             session.execute(
                 delete(TriggerSnapshotSchema).where(
                     col(TriggerSnapshotSchema.snapshot_id).in_(
-                        [s.id for s in snapshots]
+                        [s.id for s in referencing_snapshots]
                     )
                 )
             )
 
+            session.flush()
+            self._delete_orphaned_run_metadata(
+                metadata_ids=metadata_ids, session=session
+            )
             session.commit()
 
     def run_snapshot(
@@ -7486,103 +7528,105 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            metadata_ids = self._detach_run_metadata(
-                run_id=run_id, session=session
+            # The links have to be read before the run goes away: they are
+            # the only record of which metadata values the run closure holds.
+            metadata_ids = self._get_run_metadata_ids(
+                run_ids=[run_id], session=session
             )
-            self._delete_unreferenced_run_metadata(
+            # Deleting the run cascades to its step runs and wait conditions,
+            # which removes all of their metadata links but leaves the metadata
+            # values themselves behind.
+            session.delete(existing_run)
+            session.flush()
+            self._delete_orphaned_run_metadata(
                 metadata_ids=metadata_ids, session=session
             )
-            session.delete(existing_run)
             session.commit()
 
     @staticmethod
-    def _detach_run_metadata(run_id: UUID, session: Session) -> List[UUID]:
-        """Detach metadata linked to a run and its owned resources.
+    def _get_run_metadata_ids(
+        run_ids: Sequence[UUID], session: Session
+    ) -> List[UUID]:
+        """Get the metadata values that a set of pipeline runs links to.
+
+        Must be called before the runs are deleted, because deleting them
+        removes the links this reads.
 
         Args:
-            run_id: The ID of the pipeline run.
+            run_ids: The IDs of the pipeline runs.
             session: The active database session.
 
         Returns:
-            IDs of the detached metadata values.
+            The IDs of the metadata values linked to the runs themselves, to
+            their step runs or to their wait conditions.
         """
-        step_run_ids = select(StepRunSchema.id).where(
-            StepRunSchema.pipeline_run_id == run_id
-        )
-        wait_condition_ids = select(RunWaitConditionSchema.id).where(
-            RunWaitConditionSchema.run_id == run_id
-        )
-        owned_link_filter = or_(
-            and_(
-                RunMetadataResourceSchema.resource_type
-                == MetadataResourceTypes.PIPELINE_RUN.value,
-                RunMetadataResourceSchema.resource_id == run_id,
-            ),
-            and_(
-                RunMetadataResourceSchema.resource_type
-                == MetadataResourceTypes.STEP_RUN.value,
-                col(RunMetadataResourceSchema.resource_id).in_(step_run_ids),
-            ),
-            and_(
-                RunMetadataResourceSchema.resource_type
-                == MetadataResourceTypes.WAIT_CONDITION.value,
-                col(RunMetadataResourceSchema.resource_id).in_(
-                    wait_condition_ids
-                ),
-            ),
-        )
-        metadata_ids = list(
-            session.exec(
-                select(RunMetadataResourceSchema.run_metadata_id)
-                .where(owned_link_filter)
-                .distinct()
-            ).all()
-        )
-        if not metadata_ids:
+        if not run_ids:
             return []
 
-        session.exec(
-            delete(RunMetadataResourceSchema)
-            .where(owned_link_filter)
-            .execution_options(synchronize_session=False)
-        )
-        return metadata_ids
-
-    @staticmethod
-    def _delete_unreferenced_run_metadata(
-        metadata_ids: Sequence[UUID], session: Session
-    ) -> None:
-        """Delete captured metadata values that have no remaining bindings.
-
-        Args:
-            metadata_ids: Candidate metadata value IDs from a deleted run.
-            session: The active database session.
-        """
-        batch_size = 1000
-        for offset in range(0, len(metadata_ids), batch_size):
-            batch = metadata_ids[offset : offset + batch_size]
-            referenced_ids = set(
+        # `run_metadata_resource.resource_id` is polymorphic and carries no
+        # foreign key, so the owned resource IDs are resolved first and matched
+        # with a literal `IN` list. That is the only shape MySQL can serve from
+        # the (resource_id, resource_type, run_metadata_id) index; with a
+        # correlated subquery it falls back to scanning the whole link table.
+        resource_ids: List[UUID] = list(run_ids)
+        for batch in metadata_cleanup_batches(run_ids):
+            resource_ids.extend(
                 session.exec(
-                    select(RunMetadataResourceSchema.run_metadata_id)
-                    .where(
-                        col(RunMetadataResourceSchema.run_metadata_id).in_(
-                            batch
-                        )
+                    select(StepRunSchema.id).where(
+                        col(StepRunSchema.pipeline_run_id).in_(batch)
                     )
-                    .distinct()
                 ).all()
             )
-            unreferenced_ids = [
-                metadata_id
-                for metadata_id in batch
-                if metadata_id not in referenced_ids
-            ]
-            if unreferenced_ids:
+            resource_ids.extend(
                 session.exec(
-                    delete(RunMetadataSchema).where(
-                        col(RunMetadataSchema.id).in_(unreferenced_ids)
+                    select(RunWaitConditionSchema.id).where(
+                        col(RunWaitConditionSchema.run_id).in_(batch)
                     )
+                ).all()
+            )
+
+        metadata_ids: Set[UUID] = set()
+        for batch in metadata_cleanup_batches(resource_ids):
+            metadata_ids.update(
+                session.exec(
+                    select(RunMetadataResourceSchema.run_metadata_id).where(
+                        col(RunMetadataResourceSchema.resource_id).in_(batch),
+                        col(RunMetadataResourceSchema.resource_type).in_(
+                            RUN_METADATA_RESOURCE_TYPES
+                        ),
+                    )
+                ).all()
+            )
+        return list(metadata_ids)
+
+    @staticmethod
+    def _delete_orphaned_run_metadata(
+        metadata_ids: Sequence[UUID], session: Session
+    ) -> None:
+        """Delete metadata values that no resource links to anymore.
+
+        Metadata values outlive individual resources: a cached step run reuses
+        the original step's values instead of republishing them. A value is
+        therefore only deleted once its last link is gone.
+
+        Args:
+            metadata_ids: The candidate metadata value IDs.
+            session: The active database session.
+        """
+        for batch in metadata_cleanup_batches(metadata_ids):
+            session.execute(
+                delete(RunMetadataSchema)
+                .where(
+                    col(RunMetadataSchema.id).in_(batch),
+                    ~select(RunMetadataResourceSchema.id)
+                    .where(
+                        RunMetadataResourceSchema.run_metadata_id
+                        == RunMetadataSchema.id
+                    )
+                    .exists(),
                 )
+                .execution_options(synchronize_session=False)
+            )
 
     def count_runs(self, filter_model: PipelineRunFilter) -> int:
         """Count all pipeline runs.
