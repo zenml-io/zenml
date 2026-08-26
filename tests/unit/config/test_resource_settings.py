@@ -198,11 +198,36 @@ def test_merged_resource_demands_typed_fields_use_kind_convention() -> None:
     assert demands[0].kind == "gpu"
     assert demands[0].quantity == 1
     assert demands[1].kind == "cpu"
-    assert demands[1].unit == "CPU"
-    assert demands[1].quantity == 3
+    assert demands[1].unit == "mCPU"
+    assert demands[1].quantity == 2500
     assert demands[2].kind == "memory"
     assert demands[2].unit == ByteUnit.GB.value
     assert demands[2].quantity == 1
+
+
+@pytest.mark.parametrize(
+    ("cpu_count", "expected_quantity", "expected_unit"),
+    [
+        (1, 1, "CPU"),
+        (2.0, 2, "CPU"),
+        (10, 10, "CPU"),
+        (0.25, 250, "mCPU"),
+        (1.5, 1500, "mCPU"),
+        (1.001, 1001, "mCPU"),
+    ],
+)
+def test_merged_resource_demands_converts_fractional_cpu_to_millicpu(
+    cpu_count: float,
+    expected_quantity: int,
+    expected_unit: str,
+) -> None:
+    """Fractional CPU counts become mCPU while whole counts remain CPU."""
+    demands = ResourceSettings(cpu_count=cpu_count).merged_resource_demands()
+
+    assert len(demands) == 1
+    assert demands[0].kind == "cpu"
+    assert demands[0].quantity == expected_quantity
+    assert demands[0].unit == expected_unit
 
 
 def test_empty_property_excludes_resources() -> None:

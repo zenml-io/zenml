@@ -2295,19 +2295,20 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        user: UUIDFilterOption = None,
         reclaim_tolerance: Optional[
             Union[ResourceRequestReclaimTolerance, str]
         ] = None,
-        component_id: Optional[Union[UUID, str]] = None,
-        step_run_id: Optional[Union[UUID, str]] = None,
-        preemption_initiated_by_id: Optional[Union[UUID, str]] = None,
+        component_id: UUIDFilterOption = None,
+        step_run_id: UUIDFilterOption = None,
+        preemption_initiated_by_id: UUIDFilterOption = None,
         status: Optional[Union[ResourceRequestStatus, str]] = None,
-        pipeline_run_id: Optional[Union[UUID, str]] = None,
-        pool_id: Optional[Union[UUID, str]] = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pool_id: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ResourceRequestResponse]:
         """List resource requests.
@@ -2328,6 +2329,7 @@ class Client(metaclass=ClientMetaClass):
             status: Filter by lifecycle status.
             pipeline_run_id: Filter by pipeline run name/ID.
             pool_id: Filter by resource pool name/ID.
+            project: The project name/ID to filter by.
             hydrate: Whether to include related resources in the response.
 
         Returns:
@@ -2349,6 +2351,7 @@ class Client(metaclass=ClientMetaClass):
             status=status,
             pipeline_run_id=pipeline_run_id,
             pool_id=pool_id,
+            project=project or self.active_project.id,
         )
         return self.zen_store.list_resource_requests(
             filter_model=filter_model,

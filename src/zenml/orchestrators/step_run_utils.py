@@ -300,7 +300,7 @@ class StepRunRequestFactory:
                 get_step_runtime,
             )
 
-            request.resource_request_runtime = get_step_runtime(
+            request.resource_request_runtime, _ = get_step_runtime(
                 step_config=step.config,
                 pipeline_docker_settings=(
                     self.snapshot.pipeline_configuration.docker_settings

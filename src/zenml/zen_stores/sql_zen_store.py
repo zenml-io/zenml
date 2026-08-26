@@ -4002,6 +4002,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all resource requests matching the filter criteria.
         """
+        self.set_filter_project_id(filter_model)
         return self.resource_pools.list_resource_requests(
             filter_model, hydrate=hydrate
         )

@@ -71,6 +71,9 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_RESOURCE_REQUEST_WAIT_LOG_INITIAL_INTERVAL_SECONDS = 5.0
+_RESOURCE_REQUEST_WAIT_LOG_MAX_INTERVAL_SECONDS = 15 * 60.0
+
 
 def _get_step_operator(
     stack: "Stack", step_operator_name: Optional[str]
@@ -445,24 +448,15 @@ class StepLauncher:
                     get_step_runtime,
                 )
 
-                step_runtime = get_step_runtime(
+                step_runtime, runtime_warning = get_step_runtime(
                     step_config=self._step.config,
                     pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
                     orchestrator=self._stack.orchestrator,
                 )
+                if runtime_warning:
+                    logger.warning("%s", runtime_warning)
 
                 if step_runtime == StepRuntime.INLINE:
-                    if self._step.config.runtime == StepRuntime.ISOLATED:
-                        # The step was configured to run in an isolated runtime,
-                        # but the orchestrator doesn't support it.
-                        logger.warning(
-                            "The %s does not support running steps "
-                            "in isolated runtimes. Running step `%s` in inline "
-                            "runtime instead.",
-                            self._stack.orchestrator.__class__.__name__,
-                            self._invocation_id,
-                        )
-
                     terminal_step_run = self._run_step_in_current_thread(
                         pipeline_run=pipeline_run,
                         step_run=step_run,
@@ -770,7 +764,7 @@ class StepLauncher:
             get_step_runtime,
         )
 
-        step_runtime = get_step_runtime(
+        step_runtime, _ = get_step_runtime(
             step_config=self._step.config,
             pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
             orchestrator=self._stack.orchestrator,
@@ -796,7 +790,7 @@ class StepLauncher:
                 # we can remove this special case.
                 return ExecutionStatus.RUNNING
 
-            step_runtime = get_step_runtime(
+            step_runtime, _ = get_step_runtime(
                 step_config=self._step.config,
                 pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
                 orchestrator=self._stack.orchestrator,
@@ -846,6 +840,10 @@ class StepLauncher:
         allocation_wait_deadline = wait_started_at + allocation_wait_timeout
         max_poll_delay_seconds = 20.0
         poller_lease_buffer = timedelta(seconds=2 * max_poll_delay_seconds)
+        next_wait_log_time = time.monotonic()
+        wait_log_interval_seconds = (
+            _RESOURCE_REQUEST_WAIT_LOG_INITIAL_INTERVAL_SECONDS
+        )
 
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
@@ -928,12 +926,20 @@ class StepLauncher:
                     f"`{step_name}` was cancelled: {reason}"
                 )
 
-            logger.info(
-                "Waiting for resource request `%s` of step `%s` to be "
-                "approved...",
-                resource_request.id,
-                step_name,
-            )
+            monotonic_now = time.monotonic()
+            if monotonic_now >= next_wait_log_time:
+                logger.info(
+                    "Waiting for resource request `%s` of step `%s` to be "
+                    "approved...",
+                    resource_request.id,
+                    step_name,
+                )
+                next_wait_log_time = monotonic_now + wait_log_interval_seconds
+                wait_log_interval_seconds = min(
+                    wait_log_interval_seconds * 2,
+                    _RESOURCE_REQUEST_WAIT_LOG_MAX_INTERVAL_SECONDS,
+                )
+
             time.sleep(delay)
             resource_request = None
 
