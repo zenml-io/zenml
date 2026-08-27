@@ -37,10 +37,12 @@ from zenml.models import (
     PipelineBuildResponseMetadata,
     PipelineSnapshotBase,
     PipelineSnapshotResponse,
+)
+from zenml.pipelines import build_utils
+from zenml.pipelines.build_utils import (
     PreparedBuildItem,
     PreparedPipelineBuild,
 )
-from zenml.pipelines import build_utils
 from zenml.stack import Stack
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,

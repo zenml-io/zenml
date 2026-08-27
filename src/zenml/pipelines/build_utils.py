@@ -21,13 +21,17 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Union,
 )
 from uuid import UUID
 
+from pydantic import BaseModel, Field
+
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.container_engines import ContainerEngine
 from zenml.logger import get_logger
 from zenml.models import (
@@ -36,8 +40,6 @@ from zenml.models import (
     PipelineBuildRequest,
     PipelineBuildResponse,
     PipelineSnapshotBase,
-    PreparedBuildItem,
-    PreparedPipelineBuild,
     StackResponse,
 )
 from zenml.stack import Stack
@@ -48,10 +50,66 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepositoryContext
-    from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.docker_settings import DockerSettings
 
 logger = get_logger(__name__)
+
+
+class PreparedBuildItem(BaseModel):
+    """A build configuration with its precomputed identifiers.
+
+    Attributes:
+        configuration: The Docker build configuration.
+        key: The key used to identify the image in a pipeline build.
+        settings_checksum: Checksum of the build configuration settings.
+    """
+
+    configuration: BuildConfiguration = Field(
+        title="The Docker build configuration."
+    )
+    key: str = Field(title="The pipeline build image key.")
+    settings_checksum: str = Field(
+        title="The checksum of the build configuration settings."
+    )
+
+
+class PreparedPipelineBuild(BaseModel):
+    """Precomputed data needed to find or create a pipeline build.
+
+    Attributes:
+        items: Build configurations with their precomputed identifiers.
+    """
+
+    items: List[PreparedBuildItem] = Field(
+        title="The prepared Docker build configurations."
+    )
+
+    @property
+    def checksum(self) -> str:
+        """Compute the aggregate checksum of all prepared build items.
+
+        Returns:
+            The aggregate pipeline build checksum.
+        """
+        hash_ = hashlib.md5()  # nosec
+        for item in self.items:
+            hash_.update(item.key.encode())
+            hash_.update(item.settings_checksum.encode())
+
+        return hash_.hexdigest()
+
+    def prune(self, required_keys: Set[str]) -> "PreparedPipelineBuild":
+        """Create a prepared build containing only required build items.
+
+        Args:
+            required_keys: Keys of build items that should be retained.
+
+        Returns:
+            A new prepared pipeline build containing the required items.
+        """
+        return PreparedPipelineBuild(
+            items=[item for item in self.items if item.key in required_keys]
+        )
 
 
 def get_docker_settings(
