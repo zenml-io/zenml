@@ -455,10 +455,15 @@ def create_pipeline_build(
         logger.debug("No docker builds required.")
         return None
 
-    logger.info(
-        "Building Docker image(s) for pipeline `%s`.",
-        snapshot.pipeline_configuration.name,
+    will_build_images = any(
+        not item.configuration.settings.skip_build
+        for item in prepared_build.items
     )
+    if will_build_images:
+        logger.info(
+            "Building Docker image(s) for pipeline `%s`.",
+            snapshot.pipeline_configuration.name,
+        )
     start_time = time.time()
 
     docker_image_builder = PipelineDockerImageBuilder()
@@ -542,7 +547,8 @@ def create_pipeline_build(
         )
         checksums[checksum] = combined_key
 
-    logger.info("Finished building Docker image(s).")
+    if will_build_images:
+        logger.info("Finished building Docker image(s).")
 
     duration = round(time.time() - start_time)
     is_local = stack.container_registry is None
