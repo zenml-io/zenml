@@ -50,7 +50,7 @@ if TYPE_CHECKING:
         ServiceSchema,
         StepRunSchema,
         TriggerSchema,
-        WebhookIntegrationSchema,
+        WebhookSchema,
     )
 
 
@@ -146,7 +146,7 @@ class ProjectSchema(NamedSchema, table=True):
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    webhook_integrations: list["WebhookIntegrationSchema"] = Relationship(
+    webhooks: list["WebhookSchema"] = Relationship(
         back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -23,7 +23,7 @@ from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, WebhookType
-from zenml.models import WebhookIntegrationFilter
+from zenml.models import WebhookFilter
 
 
 @cli.group("webhook", cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -84,17 +84,17 @@ def describe_webhook(name_or_id: str) -> None:
     Args:
         name_or_id: The webhook name or ID.
     """
-    integration = Client().get_webhook(name_or_id)
+    webhook = Client().get_webhook(name_or_id)
     cli_utils.print_pydantic_model(
-        title=f"Webhook '{integration.name}'",
-        model=integration,
+        title=f"Webhook '{webhook.name}'",
+        model=webhook,
     )
-    cli_utils.declare(f"Endpoint path: {integration.endpoint_path}")
+    cli_utils.declare(f"Endpoint path: {webhook.endpoint_path}")
 
 
 @webhook.command("list")
 @list_options(
-    WebhookIntegrationFilter,
+    WebhookFilter,
     default_columns=["id", "name", "webhook_type", "active"],
 )
 def list_webhooks(
@@ -108,9 +108,9 @@ def list_webhooks(
         **kwargs: The webhook filters.
     """
     with console.status("Listing webhooks...\n"):
-        integrations = Client().list_webhooks(**kwargs)
+        webhooks = Client().list_webhooks(**kwargs)
     cli_utils.print_page(
-        integrations,
+        webhooks,
         columns,
         output_format,
         empty_message="No webhooks found for this filter.",
@@ -135,14 +135,14 @@ def update_webhook(
         new_name: The new webhook name.
         active: The new active state.
     """
-    integration = Client().update_webhook(
+    webhook = Client().update_webhook(
         name_id_or_prefix=name_or_id,
         name=new_name,
         active=active,
     )
     cli_utils.print_pydantic_model(
-        title=f"Webhook '{integration.name}'",
-        model=integration,
+        title=f"Webhook '{webhook.name}'",
+        model=webhook,
     )
 
 

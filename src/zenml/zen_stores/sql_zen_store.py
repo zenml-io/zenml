@@ -156,7 +156,6 @@ from zenml.constants import (
     is_true_string_value,
 )
 from zenml.enums import (
-    WEBHOOK_TRIGGER_FLAVOR_TO_TYPE,
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
@@ -179,7 +178,6 @@ from zenml.enums import (
     StepRunInputArtifactType,
     StoreType,
     TaggableResourceTypes,
-    TriggerFlavor,
     TriggerType,
     VisualizationResourceTypes,
     WebhookType,
@@ -377,16 +375,16 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+    WebhookCreateResponse,
     WebhookEventStatsUpdate,
-    WebhookIntegrationCreateResponse,
-    WebhookIntegrationFilter,
-    WebhookIntegrationRequest,
-    WebhookIntegrationResponse,
-    WebhookIntegrationRotateSecretRequest,
-    WebhookIntegrationSecretResponse,
-    WebhookIntegrationUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
     WebhookTriggerRequest,
     WebhookTriggerUpdate,
+    WebhookUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -405,6 +403,10 @@ from zenml.utils.string_utils import (
     validate_name,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.webhooks.providers import (
+    BaseWebhookProvider,
+    get_webhook_provider,
+)
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -471,8 +473,8 @@ from zenml.zen_stores.schemas import (
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
-    WebhookIntegrationSchema,
-    WebhookIntegrationStatsSchema,
+    WebhookSchema,
+    WebhookStatsSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -8247,11 +8249,9 @@ class SqlZenStore(BaseZenStore):
                         session.commit()
         return None
 
-    # -------------------- Webhook integrations ---------------------
+    # -------------------- Webhooks ---------------------
 
-    def _create_webhook_integration_secret(
-        self, secret: str, session: Session
-    ) -> UUID:
+    def _create_webhook_secret(self, secret: str, session: Session) -> UUID:
         """Create an internal secret containing a webhook signing secret.
 
         Args:
@@ -8272,42 +8272,36 @@ class SqlZenStore(BaseZenStore):
             internal=True,
         ).id
 
-    def create_webhook_integration(
-        self, integration: WebhookIntegrationRequest
-    ) -> WebhookIntegrationCreateResponse:
-        """Create a webhook integration and its internal signing secret.
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook and its internal signing secret.
 
         Args:
-            integration: The webhook integration creation request.
+            webhook: The webhook creation request.
 
         Returns:
-            The created integration and any generated signing secret.
+            The created webhook and any generated signing secret.
         """  # noqa: DOC501, DOC503
-        generated_secret = integration.secret is None
-        if integration.secret is None:
+        generated_secret = webhook.secret is None
+        if webhook.secret is None:
             secret = secrets.token_urlsafe(32)
         else:
-            secret = integration.secret.get_secret_value()
+            secret = webhook.secret.get_secret_value()
         with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=integration, session=session
-            )
+            self._set_request_user_id(request_model=webhook, session=session)
             self._verify_name_uniqueness(
-                resource=integration,
-                schema=WebhookIntegrationSchema,
+                resource=webhook,
+                schema=WebhookSchema,
                 session=session,
             )
-            secret_id = self._create_webhook_integration_secret(
+            secret_id = self._create_webhook_secret(
                 secret=secret,
                 session=session,
             )
             try:
-                schema = WebhookIntegrationSchema.from_request(
-                    request=integration, secret_id=secret_id
+                schema = WebhookSchema.from_request(
+                    request=webhook, secret_id=secret_id
                 )
-                stats_schema = WebhookIntegrationStatsSchema(
-                    webhook_id=schema.id
-                )
+                stats_schema = WebhookStatsSchema(webhook_id=schema.id)
                 session.add(schema)
                 session.add(stats_schema)
                 session.commit()
@@ -8317,7 +8311,7 @@ class SqlZenStore(BaseZenStore):
                     secret_id=secret_id, session=session
                 )
                 raise
-            return WebhookIntegrationCreateResponse(
+            return WebhookCreateResponse(
                 webhook=schema.to_model(
                     include_metadata=True, include_resources=True
                 ),
@@ -8328,25 +8322,25 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
-    def get_webhook_integration(
-        self, integration_id: UUID, hydrate: bool = True
-    ) -> WebhookIntegrationResponse:
-        """Get a webhook integration.
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
 
         Args:
-            integration_id: The webhook integration ID.
+            webhook_id: The webhook ID.
             hydrate: Whether to include intake statistics.
 
         Returns:
-            The webhook integration.
+            The webhook.
         """
         with Session(self.engine) as session:
-            query_options = WebhookIntegrationSchema.get_query_options(
+            query_options = WebhookSchema.get_query_options(
                 include_metadata=hydrate, include_resources=True
             )
             schema = self._get_schema_by_id(
-                resource_id=integration_id,
-                schema_class=WebhookIntegrationSchema,
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
                 session=session,
                 query_options=query_options,
             )
@@ -8354,19 +8348,19 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=hydrate, include_resources=True
             )
 
-    def list_webhook_integrations(
+    def list_webhooks(
         self,
-        filter_model: WebhookIntegrationFilter,
+        filter_model: WebhookFilter,
         hydrate: bool = False,
-    ) -> Page[WebhookIntegrationResponse]:
-        """List webhook integrations in the active project.
+    ) -> Page[WebhookResponse]:
+        """List webhooks in the active project.
 
         Args:
-            filter_model: The webhook integration filters.
+            filter_model: The webhook filters.
             hydrate: Whether to include intake statistics.
 
         Returns:
-            A page of webhook integrations.
+            A page of webhooks.
         """
         with Session(self.engine) as session:
             self._set_filter_project_id(
@@ -8374,31 +8368,31 @@ class SqlZenStore(BaseZenStore):
             )
             return self.filter_and_paginate(
                 session=session,
-                query=select(WebhookIntegrationSchema),
-                table=WebhookIntegrationSchema,
+                query=select(WebhookSchema),
+                table=WebhookSchema,
                 filter_model=filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
             )
 
-    def update_webhook_integration(
+    def update_webhook(
         self,
-        integration_id: UUID,
-        update: WebhookIntegrationUpdate,
-    ) -> WebhookIntegrationResponse:
-        """Update a webhook integration.
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
 
         Args:
-            integration_id: The webhook integration ID.
-            update: The webhook integration update.
+            webhook_id: The webhook ID.
+            update: The webhook update.
 
         Returns:
-            The updated webhook integration.
+            The updated webhook.
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
-                resource_id=integration_id,
-                schema_class=WebhookIntegrationSchema,
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
                 session=session,
             )
             self._verify_name_uniqueness(
@@ -8411,27 +8405,35 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def delete_webhook_integration(self, integration_id: UUID) -> None:
-        """Delete a webhook integration and deactivate its triggers.
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook after clearing references from archived triggers.
 
         Args:
-            integration_id: The webhook integration ID.
+            webhook_id: The webhook ID.
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
-                resource_id=integration_id,
-                schema_class=WebhookIntegrationSchema,
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
                 session=session,
             )
             secret_id = schema.secret_id
+            live_trigger_id = session.exec(
+                select(TriggerSchema.id)
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
+                .where(col(TriggerSchema.is_archived).is_(False))
+                .limit(1)
+            ).first()
+            if live_trigger_id is not None:
+                raise IllegalOperationError(
+                    "The webhook can not be deleted while non-archived "
+                    "triggers reference it."
+                )
             session.exec(
                 update(TriggerSchema)
-                .where(
-                    col(TriggerSchema.webhook_integration_id) == integration_id
-                )
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
                 .values(
-                    active=False,
-                    webhook_integration_id=None,
+                    webhook_id=None,
                     updated=utc_now(),
                 )
             )
@@ -8439,15 +8441,15 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             self._delete_secret_schema(secret_id=secret_id, session=session)
 
-    def rotate_webhook_integration_secret(
+    def rotate_webhook_secret(
         self,
-        integration_id: UUID,
-        request: WebhookIntegrationRotateSecretRequest,
-    ) -> WebhookIntegrationSecretResponse:
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
         """Replace the active webhook signing secret.
 
         Args:
-            integration_id: The webhook integration ID.
+            webhook_id: The webhook ID.
             request: The secret rotation request.
 
         Returns:
@@ -8455,8 +8457,8 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
-                resource_id=integration_id,
-                schema_class=WebhookIntegrationSchema,
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
                 session=session,
             )
             secret = (
@@ -8472,35 +8474,33 @@ class SqlZenStore(BaseZenStore):
             schema.updated = utc_now()
             session.add(schema)
             session.commit()
-        return WebhookIntegrationSecretResponse(
-            secret=PlainSerializedSecretStr(secret)
-        )
+        return WebhookSecretResponse(secret=PlainSerializedSecretStr(secret))
 
     def get_webhook_intake_config(
-        self, integration_id: UUID
+        self, webhook_id: UUID
     ) -> Tuple[WebhookType, bool, UUID, UUID]:
         """Get the minimal configuration required for webhook intake.
 
         Args:
-            integration_id: The webhook integration ID.
+            webhook_id: The webhook ID.
 
         Returns:
             The webhook type, active state, internal secret ID, and project ID.
 
         Raises:
-            KeyError: If the webhook integration does not exist.
+            KeyError: If the webhook does not exist.
         """
         with Session(self.engine) as session:
             config = session.exec(
                 select(
-                    WebhookIntegrationSchema.webhook_type,
-                    WebhookIntegrationSchema.active,
-                    WebhookIntegrationSchema.secret_id,
-                    WebhookIntegrationSchema.project_id,
-                ).where(col(WebhookIntegrationSchema.id) == integration_id)
+                    WebhookSchema.webhook_type,
+                    WebhookSchema.active,
+                    WebhookSchema.secret_id,
+                    WebhookSchema.project_id,
+                ).where(col(WebhookSchema.id) == webhook_id)
             ).first()
         if config is None:
-            raise KeyError(f"Webhook integration {integration_id} not found.")
+            raise KeyError(f"Webhook {webhook_id} not found.")
         webhook_type, active, secret_id, project_id = config
         return WebhookType(webhook_type), active, secret_id, project_id
 
@@ -8516,36 +8516,32 @@ class SqlZenStore(BaseZenStore):
         return self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
 
     def record_webhook_event(
-        self, integration_id: UUID, update: WebhookEventStatsUpdate
+        self, webhook_id: UUID, update: WebhookEventStatsUpdate
     ) -> None:
         """Record a webhook intake outcome.
 
         Args:
-            integration_id: The webhook integration ID.
+            webhook_id: The webhook ID.
             update: The terminal intake outcome.
 
         Raises:
-            KeyError: If the webhook integration no longer exists.
+            KeyError: If the webhook no longer exists.
         """
         now = utc_now()
         values: Dict[str, Any] = {
-            "received_count": (
-                WebhookIntegrationStatsSchema.received_count + 1
-            ),
+            "received_count": (WebhookStatsSchema.received_count + 1),
             "last_received_at": now,
         }
         if update.accepted:
-            values["accepted_count"] = (
-                WebhookIntegrationStatsSchema.accepted_count + 1
-            )
+            values["accepted_count"] = WebhookStatsSchema.accepted_count + 1
             values["last_accepted_at"] = now
         elif update.auth_failed:
             values["auth_failed_count"] = (
-                WebhookIntegrationStatsSchema.auth_failed_count + 1
+                WebhookStatsSchema.auth_failed_count + 1
             )
         elif update.invalid_payload:
             values["invalid_payload_count"] = (
-                WebhookIntegrationStatsSchema.invalid_payload_count + 1
+                WebhookStatsSchema.invalid_payload_count + 1
             )
         if update.error_summary is not None:
             values["last_error_at"] = now
@@ -8553,59 +8549,44 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             result = session.exec(
-                sqlalchemy.update(WebhookIntegrationStatsSchema)
-                .where(
-                    col(WebhookIntegrationStatsSchema.webhook_id)
-                    == integration_id
-                )
+                sqlalchemy.update(WebhookStatsSchema)
+                .where(col(WebhookStatsSchema.webhook_id) == webhook_id)
                 .values(**values)
             )
             if result.rowcount == 0:
-                raise KeyError(
-                    f"Webhook integration {integration_id} not found."
-                )
+                raise KeyError(f"Webhook {webhook_id} not found.")
             session.commit()
 
     # -------------------- Triggers ---------------------
 
-    def _validate_webhook_trigger_integration(
+    def _get_webhook_trigger_provider(
         self,
         *,
-        webhook_integration_id: UUID,
+        webhook_id: UUID,
         project_id: UUID,
-        flavor: TriggerFlavor,
         session: Session,
-    ) -> None:
-        """Validate a webhook trigger integration association.
+    ) -> BaseWebhookProvider:
+        """Resolve the provider for a project-scoped webhook.
 
         Args:
-            webhook_integration_id: The integration to associate.
+            webhook_id: The webhook to associate.
             project_id: The trigger project.
-            flavor: The webhook trigger flavor.
             session: The active database session.
 
+        Returns:
+            The webhook's stateless provider.
+
         Raises:
-            KeyError: If the integration does not belong to the trigger
-                project.
-            IllegalOperationError: If the integration type is incompatible
-                with the trigger flavor.
+            KeyError: If the webhook does not belong to the trigger project.
         """
-        integration = self._get_schema_by_id(
-            resource_id=webhook_integration_id,
-            schema_class=WebhookIntegrationSchema,
+        webhook = self._get_schema_by_id(
+            resource_id=webhook_id,
+            schema_class=WebhookSchema,
             session=session,
         )
-        if integration.project_id != project_id:
-            raise KeyError(
-                f"Webhook integration {webhook_integration_id} not found."
-            )
-
-        expected_type = WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[flavor]
-        if WebhookType(integration.webhook_type) != expected_type:
-            raise IllegalOperationError(
-                f"The {flavor.value} trigger flavor requires a "
-                f"{expected_type.value} webhook integration."
-            )
+        if webhook.project_id != project_id:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        return get_webhook_provider(WebhookType(webhook.webhook_type))
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
@@ -8621,15 +8602,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
-            if (
-                isinstance(trigger, WebhookTriggerRequest)
-                and trigger.webhook_integration_id is not None
-            ):
-                self._validate_webhook_trigger_integration(
-                    webhook_integration_id=trigger.webhook_integration_id,
+            if isinstance(trigger, WebhookTriggerRequest):
+                provider = self._get_webhook_trigger_provider(
+                    webhook_id=trigger.webhook_id,
                     project_id=trigger.project,
-                    flavor=trigger.flavor,
                     session=session,
+                )
+                trigger.configuration = provider.validate_configuration(
+                    trigger.configuration
                 )
             self._verify_name_uniqueness(
                 resource=trigger,
@@ -8757,26 +8737,19 @@ class SqlZenStore(BaseZenStore):
                     "type."
                 )
 
-            detach_webhook_integration = False
             if isinstance(trigger_update, WebhookTriggerUpdate):
-                try:
-                    trigger_update.validate_events_for_flavor(
-                        TriggerFlavor(existing_trigger.flavor)
+                if existing_trigger.webhook_id is None:
+                    raise IllegalOperationError(
+                        "An archived webhook reference can not be restored."
                     )
-                except ValueError as error:
-                    raise IllegalOperationError(str(error)) from error
-                if "webhook_integration_id" in trigger_update.model_fields_set:
-                    if trigger_update.webhook_integration_id is None:
-                        detach_webhook_integration = True
-                    else:
-                        self._validate_webhook_trigger_integration(
-                            webhook_integration_id=(
-                                trigger_update.webhook_integration_id
-                            ),
-                            project_id=existing_trigger.project_id,
-                            flavor=TriggerFlavor(existing_trigger.flavor),
-                            session=session,
-                        )
+                provider = self._get_webhook_trigger_provider(
+                    webhook_id=existing_trigger.webhook_id,
+                    project_id=existing_trigger.project_id,
+                    session=session,
+                )
+                trigger_update.configuration = provider.validate_configuration(
+                    trigger_update.configuration
+                )
 
             self._verify_name_uniqueness(
                 resource=trigger_update,
@@ -8786,11 +8759,6 @@ class SqlZenStore(BaseZenStore):
 
             # Update the trigger.
             existing_trigger = existing_trigger.update(trigger_update)
-            if detach_webhook_integration or (
-                existing_trigger.type == TriggerType.WEBHOOK.value
-                and existing_trigger.webhook_integration_id is None
-            ):
-                existing_trigger.active = False
             session.add(existing_trigger)
             session.commit()
             return existing_trigger.to_model(
@@ -8827,7 +8795,6 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
-                trigger.webhook_integration_id = None
                 # Renames to name_(hash) to enable re-using the name.
                 trigger.name = f"{trigger.name}_({str(uuid.uuid4())[:8]})"
                 session.add(trigger)
@@ -9115,8 +9082,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of PlatformEventTriggerResponse objects matching the conditions.
         """
-        from zenml.enums import TriggerType
-
         if not conditions:
             return []
 
@@ -10160,8 +10125,8 @@ class SqlZenStore(BaseZenStore):
         # which may use a separate connection to the same SQLite database.
         with session.no_autoflush:
             webhook_id = session.exec(
-                select(WebhookIntegrationSchema.id).where(
-                    WebhookIntegrationSchema.secret_id == secret_id
+                select(WebhookSchema.id).where(
+                    WebhookSchema.secret_id == secret_id
                 )
             ).first()
         if webhook_id is not None:
@@ -14034,8 +13999,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             webhook_secret_ids = session.exec(
-                select(WebhookIntegrationSchema.secret_id).where(
-                    WebhookIntegrationSchema.project_id == project.id
+                select(WebhookSchema.secret_id).where(
+                    WebhookSchema.project_id == project.id
                 )
             ).all()
             session.delete(project)

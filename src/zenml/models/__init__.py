@@ -403,17 +403,11 @@ from zenml.models.v2.core.triggers import (
     TRIGGER_CREATE_TYPE_UNION,
     TRIGGER_RETURN_TYPE_UNION,
     TRIGGER_UPDATE_TYPE_UNION,
-    GitHubWebhookConfiguration,
-    GitHubWebhookEvent,
-    GitHubWebhookEventConfiguration,
-    MergedPullRequest,
     PlatformEventTrigger,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
-    PushEvent,
-    ReleasePublished,
     ScheduleTriggerRequest,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
@@ -434,7 +428,6 @@ from zenml.models.v2.core.triggers import (
     WebhookTriggerResponse,
     WebhookTriggerResponseBody,
     WebhookTriggerUpdate,
-    WorkflowRunCompleted,
 )
 from zenml.models.v2.core.user import (
     UserFilter,
@@ -444,19 +437,19 @@ from zenml.models.v2.core.user import (
     UserResponseMetadata,
     UserUpdate,
 )
-from zenml.models.v2.core.webhook_integration import (
+from zenml.models.v2.core.webhook import (
+    WebhookCreateResponse,
     WebhookEventStatsUpdate,
-    WebhookIntegrationCreateResponse,
-    WebhookIntegrationFilter,
-    WebhookIntegrationRequest,
-    WebhookIntegrationResponse,
-    WebhookIntegrationResponseBody,
-    WebhookIntegrationResponseMetadata,
-    WebhookIntegrationResponseResources,
-    WebhookIntegrationRotateSecretRequest,
-    WebhookIntegrationSecretResponse,
-    WebhookIntegrationStats,
-    WebhookIntegrationUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookResponseBody,
+    WebhookResponseMetadata,
+    WebhookResponseResources,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookStats,
+    WebhookUpdate,
 )
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -534,6 +527,21 @@ from zenml.models.v2.misc.tag import (
     TagResource,
 )
 from zenml.models.v2.misc.user_auth import UserAuthModel
+from zenml.webhooks.providers.base import (
+    WebhookTargetEvent,
+    WebhookTriggerConfiguration,
+)
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    GitHubWebhookEvent,
+    GitHubWebhookEventConfiguration,
+    GitHubWebhookTargetEvent,
+    GitHubWebhookTriggerConfiguration,
+    MergedPullRequest,
+    PushEvent,
+    ReleasePublished,
+    WorkflowRunCompleted,
+)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -674,11 +682,11 @@ WebhookTriggerRequest.model_rebuild()
 WebhookTriggerUpdate.model_rebuild()
 WebhookTriggerResponse.model_rebuild()
 WebhookTriggerResponseBody.model_rebuild()
-WebhookIntegrationResponseBody.model_rebuild()
-WebhookIntegrationStats.model_rebuild()
-WebhookIntegrationResponseMetadata.model_rebuild()
-WebhookIntegrationResponseResources.model_rebuild()
-WebhookIntegrationResponse.model_rebuild()
+WebhookResponseBody.model_rebuild()
+WebhookStats.model_rebuild()
+WebhookResponseMetadata.model_rebuild()
+WebhookResponseResources.model_rebuild()
+WebhookResponse.model_rebuild()
 
 
 __all__ = [
@@ -1063,9 +1071,13 @@ __all__ = [
     "WebhookTriggerUpdate",
     "WebhookTriggerResponse",
     "WebhookTriggerResponseBody",
+    "WebhookTargetEvent",
+    "WebhookTriggerConfiguration",
     "GitHubWebhookEvent",
     "GitHubWebhookEventConfiguration",
     "GitHubWebhookConfiguration",
+    "GitHubWebhookTargetEvent",
+    "GitHubWebhookTriggerConfiguration",
     "MergedPullRequest",
     "PushEvent",
     "ReleasePublished",
@@ -1076,15 +1088,15 @@ __all__ = [
     "SourceEntity",
     "TriggerExecutionInfo",
     "WebhookEventStatsUpdate",
-    "WebhookIntegrationCreateResponse",
-    "WebhookIntegrationFilter",
-    "WebhookIntegrationRequest",
-    "WebhookIntegrationResponse",
-    "WebhookIntegrationResponseBody",
-    "WebhookIntegrationResponseMetadata",
-    "WebhookIntegrationResponseResources",
-    "WebhookIntegrationRotateSecretRequest",
-    "WebhookIntegrationSecretResponse",
-    "WebhookIntegrationStats",
-    "WebhookIntegrationUpdate",
+    "WebhookCreateResponse",
+    "WebhookFilter",
+    "WebhookRequest",
+    "WebhookResponse",
+    "WebhookResponseBody",
+    "WebhookResponseMetadata",
+    "WebhookResponseResources",
+    "WebhookRotateSecretRequest",
+    "WebhookSecretResponse",
+    "WebhookStats",
+    "WebhookUpdate",
 ]

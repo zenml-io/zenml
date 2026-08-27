@@ -1,17 +1,4 @@
-#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-"""Tests for webhook trigger CLI configuration."""
+"""Tests for provider-neutral webhook trigger CLI configuration."""
 
 from importlib import import_module
 from pathlib import Path
@@ -20,14 +7,11 @@ from uuid import uuid4
 
 from click.testing import CliRunner
 
-from zenml.enums import WebhookType
-from zenml.models import MergedPullRequest, PushEvent
-
 trigger_module = import_module("zenml.cli.trigger")
 
 
-def test_webhook_trigger_help_describes_event_config_formats() -> None:
-    """Create and update help expose provider-specific YAML guidance."""
+def test_webhook_trigger_help_describes_generic_configuration() -> None:
+    """Create and update help expose the provider-neutral contract."""
     create_result = CliRunner().invoke(
         trigger_module.webhook.commands["create"], ["--help"]
     )
@@ -37,24 +21,17 @@ def test_webhook_trigger_help_describes_event_config_formats() -> None:
 
     assert create_result.exit_code == 0, create_result.output
     assert update_result.exit_code == 0, update_result.output
-    for output in [create_result.output, update_result.output]:
-        assert "type: merged_pull_request" in output
-        assert "type: workflow_run_completed" in output
-        assert "type: push" in output
-        assert "type: release_published" in output
-        assert "Custom webhook triggers" in output
-        assert "<OWNER>/<REPOSITORY>" in output
-        assert "<GITHUB_LOGIN>" in output
-
-    assert "--event-config is required" in create_result.output
-    assert "atomically replaces the entire" in update_result.output
-    assert "omitting it preserves" in update_result.output
+    assert "target_events" in create_result.output
+    assert "--webhook" in create_result.output
+    assert "--config" in create_result.output
+    assert "complete configuration" in update_result.output
+    assert "--webhook-type" not in create_result.output
 
 
-def test_create_github_webhook_trigger_loads_event_config(
+def test_create_webhook_trigger_loads_generic_config(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """GitHub event YAML produces the public typed event models."""
+    """Create passes a generic configuration and selected webhook."""
     calls = []
 
     class _Client:
@@ -63,16 +40,10 @@ def test_create_github_webhook_trigger_loads_event_config(
             return SimpleNamespace(id=uuid4())
 
     monkeypatch.setattr(trigger_module, "Client", _Client)
-    command = trigger_module.webhook.commands["create"]
-    config_path = tmp_path / "events.yaml"
+    config_path = tmp_path / "webhook.yaml"
     config_path.write_text(
         """
-events:
-  - type: merged_pull_request
-    repo: zenml-io/zenml
-    target_branch: develop
-    source_branch: startswith:feature/
-    author: george
+target_events:
   - type: push
     repo: zenml-io/zenml
     branch: main
@@ -80,56 +51,41 @@ events:
     )
 
     result = CliRunner().invoke(
-        command,
+        trigger_module.webhook.commands["create"],
         [
             "github-trigger",
-            "--webhook-type",
-            WebhookType.GITHUB.value,
-            "--event-config",
+            "--webhook",
+            "github-webhook",
+            "--config",
             str(config_path),
         ],
     )
 
     assert result.exit_code == 0, result.output
-    assert calls[0]["events"] == [
-        MergedPullRequest(
-            repo="zenml-io/zenml",
-            target_branch="develop",
-            source_branch="startswith:feature/",
-            author="george",
-        ),
-        PushEvent(repo="zenml-io/zenml", branch="main"),
+    assert calls[0]["webhook"] == "github-webhook"
+    assert calls[0]["configuration"].target_events == [
+        {
+            "type": "push",
+            "repo": "zenml-io/zenml",
+            "branch": "main",
+        }
     ]
 
 
-def test_create_github_webhook_trigger_requires_event_config(
-    monkeypatch,
-) -> None:
-    """GitHub trigger creation rejects missing event configuration."""
-
-    class _Client:
-        pass
-
-    monkeypatch.setattr(trigger_module, "Client", _Client)
-    command = trigger_module.webhook.commands["create"]
-
+def test_create_webhook_trigger_requires_webhook_and_config() -> None:
+    """Create requires both ownership and configuration arguments."""
     result = CliRunner().invoke(
-        command,
-        [
-            "github-trigger",
-            "--webhook-type",
-            WebhookType.GITHUB.value,
-        ],
+        trigger_module.webhook.commands["create"], ["webhook-trigger"]
     )
 
     assert result.exit_code != 0
-    assert "require --event-config" in result.output
+    assert "Missing option '--webhook'" in result.output
 
 
-def test_update_webhook_trigger_replaces_events_from_config(
+def test_update_webhook_trigger_replaces_complete_config(
     monkeypatch, tmp_path: Path
 ) -> None:
-    """The update command passes the complete replacement event list."""
+    """Update passes the complete replacement configuration."""
     calls = []
 
     class _Client:
@@ -137,27 +93,13 @@ def test_update_webhook_trigger_replaces_events_from_config(
             calls.append(kwargs)
 
     monkeypatch.setattr(trigger_module, "Client", _Client)
-    command = trigger_module.webhook.commands["update"]
     config_path = tmp_path / "replacement.yaml"
-    config_path.write_text(
-        """
-events:
-  - type: push
-    repo: zenml-io/zenml
-    branch: develop
-  - type: push
-    repo: zenml-io/zenml
-    branch: main
-""".lstrip()
-    )
+    config_path.write_text("target_events: []\n")
 
     result = CliRunner().invoke(
-        command,
-        ["github-trigger", "--event-config", str(config_path)],
+        trigger_module.webhook.commands["update"],
+        ["custom-trigger", "--config", str(config_path)],
     )
 
     assert result.exit_code == 0, result.output
-    assert calls[0]["events"] == [
-        PushEvent(repo="zenml-io/zenml", branch="develop"),
-        PushEvent(repo="zenml-io/zenml", branch="main"),
-    ]
+    assert calls[0]["configuration"].target_events == []

@@ -62,7 +62,6 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
-    WEBHOOK_TYPE_TO_TRIGGER_FLAVOR,
     ColorVariants,
     CuratedVisualizationSize,
     LogicalOperators,
@@ -119,7 +118,6 @@ from zenml.models import (
     DeploymentResponse,
     FlavorFilter,
     FlavorResponse,
-    GitHubWebhookEventConfiguration,
     HookInvocationFilter,
     HookInvocationResponse,
     ModelFilter,
@@ -218,16 +216,17 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WebhookIntegrationCreateResponse,
-    WebhookIntegrationFilter,
-    WebhookIntegrationRequest,
-    WebhookIntegrationResponse,
-    WebhookIntegrationRotateSecretRequest,
-    WebhookIntegrationSecretResponse,
-    WebhookIntegrationUpdate,
+    WebhookCreateResponse,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookTriggerConfiguration,
     WebhookTriggerRequest,
     WebhookTriggerResponse,
     WebhookTriggerUpdate,
+    WebhookUpdate,
 )
 from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
@@ -242,6 +241,7 @@ from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
+from zenml.webhooks import get_webhook_provider
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -4729,53 +4729,42 @@ class Client(metaclass=ClientMetaClass):
     def create_webhook_trigger(
         self,
         name: str,
-        webhook_type: WebhookType,
-        webhook_integration: str | UUID | None = None,
+        webhook: str | UUID,
+        configuration: Mapping[str, Any] | WebhookTriggerConfiguration,
         project_id: str | UUID | None = None,
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
-        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
     ) -> WebhookTriggerResponse:
         """Create a webhook trigger.
 
         Args:
             name: The trigger name.
-            webhook_type: The compatible webhook provider type.
-            webhook_integration: Optional integration name, ID, or ID prefix.
+            webhook: The owning webhook name, ID, or ID prefix.
+            configuration: The complete provider trigger configuration.
             project_id: The project ID.
-            active: Whether the trigger should be active. Detached triggers
-                are always created inactive.
+            active: Whether the trigger should be active.
             concurrency: The trigger run concurrency behavior.
-            events: The provider-specific semantic event configurations.
 
         Returns:
             The created webhook trigger.
 
         Raises:
-            IllegalOperationError: If the integration type is incompatible.
+            ValueError: If the provider configuration is invalid.
         """
-        integration_id = None
-        if webhook_integration is not None:
-            integration = self.get_webhook(
-                webhook_integration,
-                project=project_id,
-            )
-            if integration.webhook_type != webhook_type:
-                raise IllegalOperationError(
-                    f"A {webhook_type.value} webhook trigger requires a "
-                    f"{webhook_type.value} webhook integration."
-                )
-            integration_id = integration.id
+        webhook_model = self.get_webhook(webhook, project=project_id)
+        validated_configuration = get_webhook_provider(
+            webhook_model.webhook_type
+        ).validate_configuration(configuration)
 
         trigger = self.zen_store.create_trigger(
             trigger=WebhookTriggerRequest(
                 project=project_id or self.active_project.id,
                 name=name,
-                flavor=WEBHOOK_TYPE_TO_TRIGGER_FLAVOR[webhook_type],
+                flavor=TriggerFlavor.WEBHOOK,
                 active=active,
                 concurrency=concurrency,
-                webhook_integration_id=integration_id,
-                events=list(events) if events is not None else None,
+                webhook_id=webhook_model.id,
+                configuration=validated_configuration,
             )
         )
         assert isinstance(trigger, WebhookTriggerResponse)
@@ -4787,9 +4776,9 @@ class Client(metaclass=ClientMetaClass):
         name: str | None = None,
         active: bool | None = None,
         concurrency: TriggerRunConcurrency | None = None,
-        webhook_integration: str | UUID | None = None,
-        detach_webhook_integration: bool = False,
-        events: Sequence[GitHubWebhookEventConfiguration] | None = None,
+        configuration: Mapping[str, Any]
+        | WebhookTriggerConfiguration
+        | None = None,
     ) -> WebhookTriggerResponse:
         """Update a webhook trigger.
 
@@ -4798,36 +4787,29 @@ class Client(metaclass=ClientMetaClass):
             name: The new trigger name.
             active: The new active state.
             concurrency: The new trigger run concurrency behavior.
-            webhook_integration: A replacement integration name, ID, or ID
-                prefix.
-            detach_webhook_integration: Whether to clear the integration
-                association and deactivate the trigger.
-            events: Replacement semantic event configurations. If omitted,
-                the existing configurations are preserved.
+            configuration: Complete replacement configuration. If omitted,
+                the existing configuration is preserved.
 
         Returns:
             The updated webhook trigger.
 
-        Raises:
-            IllegalOperationError: If conflicting association changes are
-                requested or the integration type is incompatible.
         """
-        if webhook_integration is not None and detach_webhook_integration:
-            raise IllegalOperationError(
-                "Can not attach and detach a webhook integration in the same "
-                "update."
-            )
-
         trigger = self.get_webhook_trigger(
             trigger_name_id_or_prefix=trigger_name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        webhook_integration_id = trigger.webhook_integration_id
-        if webhook_integration is not None:
-            integration = self.get_webhook(webhook_integration)
-            webhook_integration_id = integration.id
-        elif detach_webhook_integration:
-            webhook_integration_id = None
+        validated_configuration = WebhookTriggerConfiguration.model_validate(
+            trigger.configuration
+        )
+        if configuration is not None:
+            if trigger.webhook_id is None:
+                raise IllegalOperationError(
+                    "Archived triggers without a webhook can not be updated."
+                )
+            webhook_model = self.get_webhook(trigger.webhook_id)
+            validated_configuration = get_webhook_provider(
+                webhook_model.webhook_type
+            ).validate_configuration(configuration)
 
         response = self.zen_store.update_trigger(
             trigger_id=trigger.id,
@@ -4839,10 +4821,7 @@ class Client(metaclass=ClientMetaClass):
                     if concurrency is not None
                     else trigger.concurrency
                 ),
-                webhook_integration_id=webhook_integration_id,
-                events=(
-                    list(events) if events is not None else trigger.events
-                ),
+                configuration=validated_configuration,
             ),
         )
         assert isinstance(response, WebhookTriggerResponse)
@@ -4925,8 +4904,7 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        webhook_type: WebhookType | None = None,
-        webhook_integration_id: UUIDFilterOption = None,
+        webhook_id: UUIDFilterOption = None,
         pipeline_id: UUIDFilterOption = None,
         snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
@@ -4947,8 +4925,7 @@ class Client(metaclass=ClientMetaClass):
             active: Filter by active state.
             concurrency: Filter by concurrency behavior.
             is_archived: Filter by archived state.
-            webhook_type: Filter by compatible webhook provider type.
-            webhook_integration_id: Filter by webhook integration ID.
+            webhook_id: Filter by webhook ID.
             pipeline_id: Filter by pipeline with attached snapshots.
             snapshot_id: Filter by attached snapshot.
             hydrate: Whether to hydrate responses.
@@ -4971,11 +4948,6 @@ class Client(metaclass=ClientMetaClass):
                 else [str(snapshot_id)]
             )
 
-        flavor = (
-            WEBHOOK_TYPE_TO_TRIGGER_FLAVOR[webhook_type]
-            if webhook_type is not None
-            else None
-        )
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4987,13 +4959,13 @@ class Client(metaclass=ClientMetaClass):
                 active=active,
                 concurrency=concurrency,
                 is_archived=is_archived,
-                flavor=flavor,
+                flavor=TriggerFlavor.WEBHOOK,
                 type=TriggerType.WEBHOOK,
                 sort_by=sort_by,
                 page=page,
                 size=size,
                 logical_operator=logical_operator,
-                webhook_integration_id=webhook_integration_id,
+                webhook_id=webhook_id,
                 pipeline_id=pipeline_ids,
                 snapshot_id=snapshot_ids,
             ),
@@ -7135,20 +7107,20 @@ class Client(metaclass=ClientMetaClass):
         webhook_type: WebhookType,
         active: bool = True,
         secret: str | None = None,
-    ) -> WebhookIntegrationCreateResponse:
+    ) -> WebhookCreateResponse:
         """Create a webhook in the active project.
 
         Args:
             name: The webhook name.
             webhook_type: The webhook provider type.
-            active: Whether the integration accepts events immediately.
+            active: Whether the webhook accepts events immediately.
             secret: An optional signing secret.
 
         Returns:
             The created webhook and any generated signing secret.
         """
-        return self.zen_store.create_webhook_integration(
-            WebhookIntegrationRequest(
+        return self.zen_store.create_webhook(
+            WebhookRequest(
                 project=self.active_project.id,
                 name=name,
                 webhook_type=webhook_type,
@@ -7164,7 +7136,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         project: str | UUID | None = None,
         hydrate: bool = True,
-    ) -> WebhookIntegrationResponse:
+    ) -> WebhookResponse:
         """Get a webhook by name, ID, or prefix.
 
         Args:
@@ -7177,7 +7149,7 @@ class Client(metaclass=ClientMetaClass):
             The webhook.
         """
         return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_webhook_integration,
+            get_method=self.zen_store.get_webhook,
             list_method=self.list_webhooks,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
@@ -7201,7 +7173,7 @@ class Client(metaclass=ClientMetaClass):
         webhook_type: EnumFilterOption[WebhookType] = None,
         active: bool | None = None,
         hydrate: bool = False,
-    ) -> Page[WebhookIntegrationResponse]:
+    ) -> Page[WebhookResponse]:
         """List webhooks.
 
         Args:
@@ -7222,7 +7194,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of webhooks.
         """
-        filter_model = WebhookIntegrationFilter(
+        filter_model = WebhookFilter(
             sort_by=sort_by,
             page=page,
             size=size,
@@ -7236,7 +7208,7 @@ class Client(metaclass=ClientMetaClass):
             webhook_type=webhook_type,
             active=active,
         )
-        return self.zen_store.list_webhook_integrations(
+        return self.zen_store.list_webhooks(
             filter_model=filter_model, hydrate=hydrate
         )
 
@@ -7247,7 +7219,7 @@ class Client(metaclass=ClientMetaClass):
         name: str | None = None,
         active: bool | None = None,
         project: str | UUID | None = None,
-    ) -> WebhookIntegrationResponse:
+    ) -> WebhookResponse:
         """Update a webhook.
 
         Args:
@@ -7260,20 +7232,20 @@ class Client(metaclass=ClientMetaClass):
             The updated webhook.
         """
         if is_valid_uuid(name_id_or_prefix):
-            integration_id = (
+            webhook_id = (
                 UUID(name_id_or_prefix)
                 if isinstance(name_id_or_prefix, str)
                 else name_id_or_prefix
             )
         else:
-            integration_id = self.get_webhook(
+            webhook_id = self.get_webhook(
                 name_id_or_prefix=name_id_or_prefix,
                 allow_name_prefix_match=False,
                 project=project,
             ).id
-        return self.zen_store.update_webhook_integration(
-            integration_id=integration_id,
-            update=WebhookIntegrationUpdate(name=name, active=active),
+        return self.zen_store.update_webhook(
+            webhook_id=webhook_id,
+            update=WebhookUpdate(name=name, active=active),
         )
 
     @_fail_for_sql_zen_store
@@ -7288,12 +7260,12 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The webhook name, ID, or ID prefix.
             project: The project name or ID.
         """
-        integration = self.get_webhook(
+        webhook = self.get_webhook(
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
         )
-        self.zen_store.delete_webhook_integration(integration.id)
+        self.zen_store.delete_webhook(webhook.id)
 
     @_fail_for_sql_zen_store
     def rotate_webhook_secret(
@@ -7301,7 +7273,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: str | UUID,
         secret: str | None = None,
         project: str | UUID | None = None,
-    ) -> WebhookIntegrationSecretResponse:
+    ) -> WebhookSecretResponse:
         """Rotate a webhook signing secret.
 
         Args:
@@ -7312,14 +7284,14 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly active signing secret.
         """
-        integration = self.get_webhook(
+        webhook = self.get_webhook(
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
         )
-        return self.zen_store.rotate_webhook_integration_secret(
-            integration_id=integration.id,
-            request=WebhookIntegrationRotateSecretRequest(secret=secret),
+        return self.zen_store.rotate_webhook_secret(
+            webhook_id=webhook.id,
+            request=WebhookRotateSecretRequest(secret=secret),
         )
 
     # --------------------------- Service Connectors ---------------------------

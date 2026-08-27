@@ -14,8 +14,8 @@
 """Utility functions to manage triggers."""
 
 import logging
-from collections.abc import Sequence
-from typing import Literal, overload
+from collections.abc import Mapping
+from typing import Any, overload
 from uuid import UUID
 
 from pydantic import validate_call
@@ -28,12 +28,11 @@ from zenml.enums import (
     PipelineSnapshotEvent,
     SourceType,
     TriggerRunConcurrency,
-    WebhookType,
 )
 from zenml.models import (
-    GitHubWebhookEventConfiguration,
     PipelineRunResponse,
     PlatformEventTriggerResponse,
+    WebhookTriggerConfiguration,
     WebhookTriggerResponse,
 )
 
@@ -266,50 +265,21 @@ def update_platform_event_trigger(
     )
 
 
-@overload
 def create_webhook_trigger(
     *,
     name: str,
-    webhook_type: Literal[WebhookType.GITHUB],
-    events: Sequence[GitHubWebhookEventConfiguration],
-    webhook_integration: str | UUID | None = None,
+    webhook: str | UUID,
+    configuration: Mapping[str, Any] | WebhookTriggerConfiguration,
     project_id: str | UUID | None = None,
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
 ) -> WebhookTriggerResponse:
-    pass
-
-
-@overload
-def create_webhook_trigger(
-    *,
-    name: str,
-    webhook_type: Literal[WebhookType.CUSTOM],
-    webhook_integration: str | UUID | None = None,
-    project_id: str | UUID | None = None,
-    active: bool = True,
-    concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
-) -> WebhookTriggerResponse:
-    pass
-
-
-def create_webhook_trigger(
-    *,
-    name: str,
-    webhook_type: WebhookType,
-    events: Sequence[GitHubWebhookEventConfiguration] | None = None,
-    webhook_integration: str | UUID | None = None,
-    project_id: str | UUID | None = None,
-    active: bool = True,
-    concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
-) -> WebhookTriggerResponse:
-    """Create a webhook trigger with provider-specific type guidance.
+    """Create a webhook trigger owned by a webhook.
 
     Args:
         name: The trigger name.
-        webhook_type: The compatible webhook provider type.
-        events: GitHub semantic event configurations.
-        webhook_integration: Optional integration name, ID, or ID prefix.
+        webhook: The owning webhook name, ID, or ID prefix.
+        configuration: The complete webhook trigger configuration.
         project_id: The project ID.
         active: Whether the trigger should be active.
         concurrency: The trigger run concurrency behavior.
@@ -319,9 +289,8 @@ def create_webhook_trigger(
     """
     return Client().create_webhook_trigger(
         name=name,
-        webhook_type=webhook_type,
-        events=events,
-        webhook_integration=webhook_integration,
+        webhook=webhook,
+        configuration=configuration,
         project_id=project_id,
         active=active,
         concurrency=concurrency,
@@ -334,21 +303,19 @@ def update_webhook_trigger(
     name: str | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
-    webhook_integration: str | UUID | None = None,
-    detach_webhook_integration: bool = False,
-    events: Sequence[GitHubWebhookEventConfiguration] | None = None,
+    configuration: Mapping[str, Any]
+    | WebhookTriggerConfiguration
+    | None = None,
 ) -> WebhookTriggerResponse:
-    """Update a webhook trigger and optionally replace its event list.
+    """Update a webhook trigger and optionally replace its configuration.
 
     Args:
         trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
         name: The new trigger name.
         active: The new active state.
         concurrency: The new trigger run concurrency behavior.
-        webhook_integration: A replacement integration name, ID, or ID prefix.
-        detach_webhook_integration: Whether to detach the integration.
-        events: Replacement GitHub semantic event configurations. Omitting
-            this preserves the existing list.
+        configuration: Complete replacement configuration. Omitting this
+            preserves the existing configuration.
 
     Returns:
         The updated webhook trigger.
@@ -358,9 +325,7 @@ def update_webhook_trigger(
         name=name,
         active=active,
         concurrency=concurrency,
-        webhook_integration=webhook_integration,
-        detach_webhook_integration=detach_webhook_integration,
-        events=events,
+        configuration=configuration,
     )
 
 

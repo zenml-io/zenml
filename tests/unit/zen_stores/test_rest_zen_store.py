@@ -109,7 +109,7 @@ def test_webhook_trigger_updates_use_full_serialization(
         name="webhook-trigger",
         active=True,
         concurrency=TriggerRunConcurrency.SKIP,
-        webhook_integration_id=None,
+        configuration={"target_events": []},
     )
     store.put.return_value = {}
 

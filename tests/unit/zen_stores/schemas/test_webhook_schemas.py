@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Unit tests for webhook integration schemas and request models."""
+"""Unit tests for webhook schemas and request models."""
 
 from datetime import datetime
 from uuid import uuid4
@@ -23,19 +23,21 @@ from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
 from zenml.models import (
     WebhookEventStatsUpdate,
-    WebhookIntegrationRequest,
-    WebhookIntegrationRotateSecretRequest,
-    WebhookIntegrationStats,
-    WebhookIntegrationUpdate,
+    WebhookRequest,
+    WebhookRotateSecretRequest,
+    WebhookStats,
+    WebhookUpdate,
 )
-from zenml.zen_stores.schemas.webhook_integration_schemas import (
-    WebhookIntegrationSchema,
-    WebhookIntegrationStatsSchema,
+from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import get_resource_type_for_model
+from zenml.zen_stores.schemas.webhook_schemas import (
+    WebhookSchema,
+    WebhookStatsSchema,
 )
 
 
-def _webhook_integration_schema() -> WebhookIntegrationSchema:
-    schema = WebhookIntegrationSchema(
+def _webhook_schema() -> WebhookSchema:
+    schema = WebhookSchema(
         id=uuid4(),
         name="github-intake",
         project_id=uuid4(),
@@ -44,9 +46,9 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
         webhook_type=WebhookType.GITHUB.value,
         active=True,
     )
-    schema.stats = WebhookIntegrationStatsSchema(
+    schema.stats = WebhookStatsSchema(
         webhook_id=schema.id,
-        **WebhookIntegrationStats(
+        **WebhookStats(
             received_count=3,
             accepted_count=1,
             auth_failed_count=1,
@@ -80,51 +82,63 @@ def test_webhook_event_stats_update_rejects_invalid_outcome(
     ("model_class", "kwargs"),
     [
         (
-            WebhookIntegrationRequest,
+            WebhookRequest,
             {
                 "name": "github-intake",
                 "project": uuid4(),
                 "webhook_type": WebhookType.GITHUB,
             },
         ),
-        (WebhookIntegrationRotateSecretRequest, {}),
+        (WebhookRotateSecretRequest, {}),
     ],
     ids=["create", "rotate"],
 )
 @pytest.mark.parametrize("secret", ["", "   "])
-def test_webhook_integration_models_reject_empty_secret(
+def test_webhook_models_reject_empty_secret(
     model_class: type[BaseModel],
     kwargs: dict[str, object],
     secret: str,
 ) -> None:
-    """Webhook integration models reject empty signing secrets."""
+    """Webhook models reject empty signing secrets."""
     with pytest.raises(ValidationError):
         model_class(secret=secret, **kwargs)
 
 
-def test_webhook_integration_requests_allow_missing_secret() -> None:
-    """Webhook integration requests allow missing secrets for generation."""
-    integration_request = WebhookIntegrationRequest(
+def test_webhook_requests_allow_missing_secret() -> None:
+    """Webhook requests allow missing secrets for generation."""
+    webhook_request = WebhookRequest(
         name="github-intake",
         project=uuid4(),
         webhook_type=WebhookType.GITHUB,
     )
-    secret_request = WebhookIntegrationRotateSecretRequest()
+    secret_request = WebhookRotateSecretRequest()
 
-    assert integration_request.secret is None
+    assert webhook_request.secret is None
     assert secret_request.secret is None
 
 
-def test_webhook_integration_update_excludes_secret() -> None:
-    """Webhook integration updates are limited to database fields."""
-    assert "secret" not in WebhookIntegrationUpdate.model_fields
+def test_webhook_uses_cloud_compatible_rbac_resource_name() -> None:
+    """Webhook RBAC checks use the existing Cloud API resource name."""
+    request = WebhookRequest(
+        name="github-intake",
+        project=uuid4(),
+        webhook_type=WebhookType.GITHUB,
+    )
+
+    resource_type = get_resource_type_for_model(request)
+
+    assert resource_type is ResourceType.WEBHOOK_INTEGRATION
+    assert resource_type.value == "webhook_integration"
 
 
-def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
-    None
-):
-    """Webhook integration schemas include body and stats metadata."""
-    schema = _webhook_integration_schema()
+def test_webhook_update_excludes_secret() -> None:
+    """Webhook updates are limited to database fields."""
+    assert "secret" not in WebhookUpdate.model_fields
+
+
+def test_webhook_schema_to_model_includes_body_and_metadata() -> None:
+    """Webhook schemas include body and stats metadata."""
+    schema = _webhook_schema()
 
     response = schema.to_model(include_metadata=True)
 
@@ -146,12 +160,10 @@ def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
     assert response.stats.last_error_summary == "Invalid webhook signature."
 
 
-def test_webhook_integration_stats_schema_defaults_missing_stats() -> None:
-    """Webhook integration stats schemas default missing fields."""
-    schema = _webhook_integration_schema()
-    schema.stats = WebhookIntegrationStatsSchema(
-        webhook_id=schema.id, received_count=3
-    )
+def test_webhook_stats_schema_defaults_missing_stats() -> None:
+    """Webhook stats schemas default missing fields."""
+    schema = _webhook_schema()
+    schema.stats = WebhookStatsSchema(webhook_id=schema.id, received_count=3)
 
     response = schema.to_model(include_metadata=True)
 
@@ -162,11 +174,9 @@ def test_webhook_integration_stats_schema_defaults_missing_stats() -> None:
     assert response.stats.last_received_at is None
 
 
-def test_webhook_integration_schema_to_model_can_include_empty_resources() -> (
-    None
-):
-    """Webhook integration schemas can include empty resources."""
-    schema = _webhook_integration_schema()
+def test_webhook_schema_to_model_can_include_empty_resources() -> None:
+    """Webhook schemas can include empty resources."""
+    schema = _webhook_schema()
     schema.user = None
 
     response = schema.to_model(include_resources=True)

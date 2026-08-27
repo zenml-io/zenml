@@ -37,21 +37,19 @@ def test_client_webhook_lifecycle(clean_client):
 
     assert result.secret is not None
     initial_secret = result.secret.get_secret_value()
-    integration = result.webhook
-    assert integration.name == name
-    assert integration.webhook_type == WebhookType.CUSTOM
-    assert integration.active is True
-    assert integration.project_id == clean_client.active_project.id
-    assert integration.endpoint_path.endswith(
-        f"/custom/{integration.id}/events"
-    )
-    assert integration.stats.received_count == 0
+    webhook = result.webhook
+    assert webhook.name == name
+    assert webhook.webhook_type == WebhookType.CUSTOM
+    assert webhook.active is True
+    assert webhook.project_id == clean_client.active_project.id
+    assert webhook.endpoint_path.endswith(f"/custom/{webhook.id}/events")
+    assert webhook.stats.received_count == 0
 
-    by_id = clean_client.get_webhook(integration.id)
+    by_id = clean_client.get_webhook(webhook.id)
     by_name = clean_client.get_webhook(name)
 
-    assert by_id.id == integration.id
-    assert by_name.id == integration.id
+    assert by_id.id == webhook.id
+    assert by_name.id == webhook.id
     assert "secret" not in by_id.model_dump()
 
     listed_by_type = clean_client.list_webhooks(
@@ -59,8 +57,8 @@ def test_client_webhook_lifecycle(clean_client):
     )
     listed_by_active_state = clean_client.list_webhooks(active=True)
 
-    assert integration.id in {item.id for item in listed_by_type.items}
-    assert integration.id in {item.id for item in listed_by_active_state.items}
+    assert webhook.id in {item.id for item in listed_by_type.items}
+    assert webhook.id in {item.id for item in listed_by_active_state.items}
 
     updated_name = sample_name("webhook-client-updated")
     updated = clean_client.update_webhook(
@@ -69,13 +67,13 @@ def test_client_webhook_lifecycle(clean_client):
         active=False,
     )
 
-    assert updated.id == integration.id
+    assert updated.id == webhook.id
     assert updated.name == updated_name
     assert updated.active is False
 
-    inactive_integrations = clean_client.list_webhooks(active=False)
+    inactive_webhooks = clean_client.list_webhooks(active=False)
 
-    assert integration.id in {item.id for item in inactive_integrations.items}
+    assert webhook.id in {item.id for item in inactive_webhooks.items}
 
     generated_rotation = clean_client.rotate_webhook_secret(
         name_id_or_prefix=updated_name,
@@ -93,7 +91,7 @@ def test_client_webhook_lifecycle(clean_client):
     clean_client.delete_webhook(updated_name)
 
     with pytest.raises(KeyError):
-        clean_client.get_webhook(integration.id)
+        clean_client.get_webhook(webhook.id)
 
 
 def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
@@ -108,10 +106,10 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
     try:
         assert result.secret is None
 
-        integration = clean_client.get_webhook(result.webhook.id)
+        webhook = clean_client.get_webhook(result.webhook.id)
 
-        assert "secret" not in integration.model_dump()
-        assert integration.webhook_type == WebhookType.GITHUB
+        assert "secret" not in webhook.model_dump()
+        assert webhook.webhook_type == WebhookType.GITHUB
     finally:
         clean_client.delete_webhook(result.webhook.id)
 
@@ -119,13 +117,13 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
 def test_client_update_webhook_by_name_and_id(
     clean_client,
 ) -> None:
-    """Webhook integrations can be updated by name and ID."""
+    """Webhook webhooks can be updated by name and ID."""
     name = sample_name("webhook-client-update")
     result = clean_client.create_webhook(
         name=name,
         webhook_type=WebhookType.CUSTOM,
     )
-    integration_id = result.webhook.id
+    webhook_id = result.webhook.id
 
     try:
         updated_by_name = clean_client.update_webhook(
@@ -133,13 +131,13 @@ def test_client_update_webhook_by_name_and_id(
             active=False,
         )
         updated_by_id = clean_client.update_webhook(
-            integration_id,
+            webhook_id,
             active=True,
         )
 
-        assert updated_by_name.id == integration_id
+        assert updated_by_name.id == webhook_id
         assert updated_by_name.active is False
-        assert updated_by_id.id == integration_id
+        assert updated_by_id.id == webhook_id
         assert updated_by_id.active is True
     finally:
-        clean_client.delete_webhook(integration_id)
+        clean_client.delete_webhook(webhook_id)

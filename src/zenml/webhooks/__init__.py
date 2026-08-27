@@ -11,27 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Webhook provider authentication and payload validation."""
+"""Webhook provider and trusted event contracts."""
 
-from zenml.webhooks.adapters import (
-    WebhookAuthenticationError,
-    WebhookEvent,
-    WebhookPayloadError,
-    get_webhook_adapter,
-)
 from zenml.webhooks.consumer import (
     WebhookEventConsumer,
     notify_webhook_event_consumers,
     register_webhook_event_consumer,
     unregister_webhook_event_consumer,
 )
+from zenml.webhooks.events import WebhookEvent
+from zenml.webhooks.providers import (
+    BaseWebhookProvider,
+    CustomWebhookProvider,
+    GitHubWebhookProvider,
+    WebhookAuthenticationError,
+    WebhookPayloadError,
+    WebhookPreValidationResult,
+    WebhookTargetEvent,
+    WebhookTriggerConfiguration,
+    get_webhook_provider,
+)
 
 __all__ = [
+    "BaseWebhookProvider",
+    "CustomWebhookProvider",
+    "GitHubWebhookProvider",
     "WebhookAuthenticationError",
     "WebhookEvent",
     "WebhookEventConsumer",
     "WebhookPayloadError",
-    "get_webhook_adapter",
+    "WebhookPreValidationResult",
+    "WebhookTargetEvent",
+    "WebhookTriggerConfiguration",
+    "get_webhook_provider",
     "notify_webhook_event_consumers",
     "register_webhook_event_consumer",
     "unregister_webhook_event_consumer",

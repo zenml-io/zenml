@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models for project-scoped webhook integrations."""
+"""Models for project-scoped webhooks."""
 
 from datetime import datetime
 from typing import ClassVar
@@ -36,8 +36,8 @@ from zenml.utils.secret_utils import (
 )
 
 
-class WebhookIntegrationRequest(ProjectScopedRequest):
-    """Request model for creating a webhook integration."""
+class WebhookRequest(ProjectScopedRequest):
+    """Request model for creating a webhook."""
 
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
     webhook_type: WebhookType
@@ -49,23 +49,23 @@ class WebhookIntegrationRequest(ProjectScopedRequest):
     )
 
 
-class WebhookIntegrationUpdate(BaseUpdate):
-    """Request model for updating a webhook integration."""
+class WebhookUpdate(BaseUpdate):
+    """Request model for updating a webhook."""
 
     name: str | None = Field(default=None, max_length=STR_FIELD_MAX_LENGTH)
     active: bool | None = None
 
 
-class WebhookIntegrationResponseBody(ProjectScopedResponseBody):
-    """Response body for a webhook integration."""
+class WebhookResponseBody(ProjectScopedResponseBody):
+    """Response body for a webhook."""
 
     webhook_type: WebhookType
     active: bool
     endpoint_path: str
 
 
-class WebhookIntegrationStats(BaseZenModel):
-    """Intake statistics for a webhook integration."""
+class WebhookStats(BaseZenModel):
+    """Intake statistics for a webhook."""
 
     received_count: int = 0
     accepted_count: int = 0
@@ -77,38 +77,36 @@ class WebhookIntegrationStats(BaseZenModel):
     last_error_summary: str | None = None
 
 
-class WebhookIntegrationResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for a webhook integration."""
+class WebhookResponseMetadata(ProjectScopedResponseMetadata):
+    """Response metadata for a webhook."""
 
-    stats: WebhookIntegrationStats = Field(
-        default_factory=WebhookIntegrationStats
-    )
+    stats: WebhookStats = Field(default_factory=WebhookStats)
 
 
-class WebhookIntegrationResponseResources(ProjectScopedResponseResources):
-    """Resources associated with a webhook integration."""
+class WebhookResponseResources(ProjectScopedResponseResources):
+    """Resources associated with a webhook."""
 
 
-class WebhookIntegrationResponse(
+class WebhookResponse(
     ProjectScopedResponse[
-        WebhookIntegrationResponseBody,
-        WebhookIntegrationResponseMetadata,
-        WebhookIntegrationResponseResources,
+        WebhookResponseBody,
+        WebhookResponseMetadata,
+        WebhookResponseResources,
     ]
 ):
-    """Response model for a webhook integration."""
+    """Response model for a webhook."""
 
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
 
-    def get_hydrated_version(self) -> "WebhookIntegrationResponse":
-        """Return the hydrated webhook integration.
+    def get_hydrated_version(self) -> "WebhookResponse":
+        """Return the hydrated webhook.
 
         Returns:
-            The hydrated webhook integration.
+            The hydrated webhook.
         """
         from zenml.client import Client
 
-        return Client().zen_store.get_webhook_integration(self.id)
+        return Client().zen_store.get_webhook(self.id)
 
     @property
     def webhook_type(self) -> WebhookType:
@@ -121,10 +119,10 @@ class WebhookIntegrationResponse(
 
     @property
     def active(self) -> bool:
-        """Return whether the integration accepts events.
+        """Return whether the webhook accepts events.
 
         Returns:
-            Whether the integration accepts events.
+            Whether the webhook accepts events.
         """
         return self.get_body().active
 
@@ -138,17 +136,17 @@ class WebhookIntegrationResponse(
         return self.get_body().endpoint_path
 
     @property
-    def stats(self) -> WebhookIntegrationStats:
-        """Return intake statistics for this webhook integration.
+    def stats(self) -> WebhookStats:
+        """Return intake statistics for this webhook.
 
         Returns:
-            Intake statistics for this webhook integration.
+            Intake statistics for this webhook.
         """
         return self.get_metadata().stats
 
 
-class WebhookIntegrationFilter(ProjectScopedFilter):
-    """Filter model for webhook integrations."""
+class WebhookFilter(ProjectScopedFilter):
+    """Filter model for webhooks."""
 
     name: StringFilterOption = None
     webhook_type: EnumFilterOption[WebhookType] = None
@@ -160,15 +158,15 @@ class WebhookIntegrationFilter(ProjectScopedFilter):
     active: bool | None = None
 
 
-class WebhookIntegrationCreateResponse(BaseZenModel):
+class WebhookCreateResponse(BaseZenModel):
     """Creation result with a generated secret when applicable."""
 
-    webhook: WebhookIntegrationResponse
+    webhook: WebhookResponse
     secret: PlainSerializedSecretStr | None = None
 
 
-class WebhookIntegrationRotateSecretRequest(BaseZenModel):
-    """Request model for rotating a webhook integration secret."""
+class WebhookRotateSecretRequest(BaseZenModel):
+    """Request model for rotating a webhook secret."""
 
     secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
@@ -176,7 +174,7 @@ class WebhookIntegrationRotateSecretRequest(BaseZenModel):
     )
 
 
-class WebhookIntegrationSecretResponse(BaseZenModel):
+class WebhookSecretResponse(BaseZenModel):
     """One-time response containing a newly active signing secret."""
 
     secret: PlainSerializedSecretStr

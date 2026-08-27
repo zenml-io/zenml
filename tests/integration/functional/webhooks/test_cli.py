@@ -64,9 +64,9 @@ def test_webhook_cli_lifecycle(clean_client):
         assert result.exit_code == 0, result.output
         assert "Signing secret:" in result.output
 
-        integration = clean_client.get_webhook(name)
-        assert integration.webhook_type == WebhookType.CUSTOM
-        assert integration.active is True
+        webhook = clean_client.get_webhook(name)
+        assert webhook.webhook_type == WebhookType.CUSTOM
+        assert webhook.active is True
 
         list_output_buffer = io.StringIO()
         with patch.object(zenml_cli, "_original_stdout", list_output_buffer):
@@ -81,7 +81,7 @@ def test_webhook_cli_lifecycle(clean_client):
 
         assert result.exit_code == 0, result.output
         assert name in result.output
-        assert integration.endpoint_path in result.output
+        assert webhook.endpoint_path in result.output
 
         result = runner.invoke(
             update_command,
@@ -90,7 +90,7 @@ def test_webhook_cli_lifecycle(clean_client):
 
         assert result.exit_code == 0, result.output
         updated = clean_client.get_webhook(updated_name)
-        assert updated.id == integration.id
+        assert updated.id == webhook.id
         assert updated.active is False
 
         result = runner.invoke(
@@ -133,8 +133,8 @@ def test_webhook_cli_does_not_echo_user_supplied_secret(
         assert "user-supplied-secret" not in result.output
         assert "Signing secret:" not in result.output
 
-        integration = clean_client.get_webhook(name)
-        assert integration.webhook_type == WebhookType.GITHUB
-        assert "secret" not in integration.model_dump()
+        webhook = clean_client.get_webhook(name)
+        assert webhook.webhook_type == WebhookType.GITHUB
+        assert "secret" not in webhook.model_dump()
     finally:
         _delete_if_exists(name)

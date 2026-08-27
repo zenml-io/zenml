@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 
 from zenml.logger import get_logger
-from zenml.webhooks.adapters import WebhookEvent
+from zenml.webhooks.events import WebhookEvent
 
 logger = get_logger(__name__)
 

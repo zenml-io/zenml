@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Add webhook integrations [7c0d9e4a1b2f].
+"""Add webhooks [7c0d9e4a1b2f].
 
 Revision ID: 7c0d9e4a1b2f
 Revises: 0.96.3
@@ -30,9 +30,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Create the webhook integration table."""
+    """Create the webhook table."""
     op.create_table(
-        "webhook_integration",
+        "webhook",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
@@ -47,36 +47,36 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["project_id"],
             ["project.id"],
-            name="fk_webhook_integration_project_id_project",
+            name="fk_webhook_project_id_project",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["user.id"],
-            name="fk_webhook_integration_user_id_user",
+            name="fk_webhook_user_id_user",
             ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["secret_id"],
             ["secret.id"],
-            name="fk_webhook_integration_secret_id_secret",
+            name="fk_webhook_secret_id_secret",
             ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "project_id",
             "name",
-            name="unique_webhook_integration_name_in_project",
+            name="unique_webhook_name_in_project",
         ),
     )
     op.create_index(
-        "ix_webhook_integration_webhook_type",
-        "webhook_integration",
+        "ix_webhook_webhook_type",
+        "webhook",
         ["webhook_type"],
         unique=False,
     )
     op.create_table(
-        "webhook_integration_stats",
+        "webhook_stats",
         sa.Column("webhook_id", sa.Uuid(), nullable=False),
         sa.Column(
             "received_count", sa.Integer(), nullable=False, server_default="0"
@@ -102,10 +102,8 @@ def upgrade() -> None:
         sa.Column("last_error_summary", sa.TEXT(), nullable=True),
         sa.ForeignKeyConstraint(
             ["webhook_id"],
-            ["webhook_integration.id"],
-            name=(
-                "fk_webhook_integration_stats_webhook_id_webhook_integration"
-            ),
+            ["webhook.id"],
+            name=("fk_webhook_stats_webhook_id_webhook"),
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("webhook_id"),
@@ -113,10 +111,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Drop the webhook integration table."""
-    op.drop_table("webhook_integration_stats")
+    """Drop the webhook table."""
+    op.drop_table("webhook_stats")
     op.drop_index(
-        "ix_webhook_integration_webhook_type",
-        table_name="webhook_integration",
+        "ix_webhook_webhook_type",
+        table_name="webhook",
     )
-    op.drop_table("webhook_integration")
+    op.drop_table("webhook")

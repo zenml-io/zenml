@@ -37,7 +37,6 @@ from zenml.models import (
     PlatformEventTriggerUpdate,
     TriggerFilter,
     WebhookTriggerRequest,
-    WebhookTriggerUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -126,14 +125,9 @@ def create_trigger(
             source_type=trigger.source_entity.type,
             source_id=trigger.source_entity.id,
         )
-    elif (
-        isinstance(trigger, WebhookTriggerRequest)
-        and trigger.webhook_integration_id is not None
-    ):
+    elif isinstance(trigger, WebhookTriggerRequest):
         verify_permission_for_model(
-            model=zen_store().get_webhook_integration(
-                trigger.webhook_integration_id
-            ),
+            model=zen_store().get_webhook(trigger.webhook_id),
             action=Action.READ,
         )
 
@@ -227,17 +221,6 @@ def update_trigger(
             source_type=trigger_update.source_entity.type,
             source_id=trigger_update.source_entity.id,
         )
-    elif (
-        isinstance(trigger_update, WebhookTriggerUpdate)
-        and trigger_update.webhook_integration_id is not None
-    ):
-        verify_permission_for_model(
-            model=zen_store().get_webhook_integration(
-                trigger_update.webhook_integration_id
-            ),
-            action=Action.READ,
-        )
-
     check_entitlement(feature=SCHEDULE_FEATURE)
 
     return verify_permissions_and_update_entity(

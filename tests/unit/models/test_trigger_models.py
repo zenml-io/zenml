@@ -50,29 +50,17 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
 
 def test_webhook_trigger_update_requires_complete_payload() -> None:
     """Webhook trigger updates preserve PUT semantics."""
-    with pytest.raises(
-        ValidationError, match="must include all mutable fields"
-    ):
+    with pytest.raises(ValidationError):
         WebhookTriggerUpdate(name="webhook-trigger")
 
-    detached = WebhookTriggerUpdate(
+    update = WebhookTriggerUpdate(
         name="webhook-trigger",
         active=False,
         concurrency=TriggerRunConcurrency.SKIP,
-        webhook_integration_id=None,
-    )
-    integration_id = uuid4()
-    attached = WebhookTriggerUpdate(
-        name="webhook-trigger",
-        active=True,
-        concurrency=TriggerRunConcurrency.SUBMIT,
-        webhook_integration_id=integration_id,
+        configuration={"target_events": []},
     )
 
-    assert detached.get_extra_fields() == {"webhook_integration_id": None}
-    assert attached.get_extra_fields() == {
-        "webhook_integration_id": integration_id
-    }
+    assert update.get_extra_fields() == {}
 
 
 def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
@@ -99,60 +87,57 @@ def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
     request = WebhookTriggerRequest(
         project=uuid4(),
         name="github-webhook-trigger",
-        flavor=TriggerFlavor.GITHUB_WEBHOOK,
-        webhook_integration_id=uuid4(),
-        events=events,
+        flavor=TriggerFlavor.WEBHOOK,
+        webhook_id=uuid4(),
+        configuration={
+            "target_events": [
+                event.model_dump(mode="json", exclude_none=True)
+                for event in events
+            ]
+        },
     )
 
     assert events[0].type == GitHubWebhookEvent.MERGED_PULL_REQUEST
     assert json.loads(request.get_config()) == {
-        "events": [
-            {
-                "type": "merged_pull_request",
-                "repo": 'oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
-                "target_branch": "develop",
-                "source_branch": "startswith:feature/",
-                "author": "george",
-            },
-            {
-                "type": "push",
-                "repo": "zenml-io/zenml",
-                "branch": "main",
-                "actor": "george",
-            },
-            {
-                "type": "release_published",
-                "repo": "zenml-io/zenml",
-                "tag": "startswith:v",
-                "target_branch": "main",
-            },
-            {
-                "type": "workflow_run_completed",
-                "workflow": "CI",
-                "conclusion": 'oneof:["success", "failure"]',
-                "actor": "george",
-            },
-        ]
+        "configuration": {
+            "target_events": [
+                {
+                    "type": "merged_pull_request",
+                    "repo": 'oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
+                    "target_branch": "develop",
+                    "source_branch": "startswith:feature/",
+                    "author": "george",
+                },
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                    "actor": "george",
+                },
+                {
+                    "type": "release_published",
+                    "repo": "zenml-io/zenml",
+                    "tag": "startswith:v",
+                    "target_branch": "main",
+                },
+                {
+                    "type": "workflow_run_completed",
+                    "workflow": "CI",
+                    "conclusion": 'oneof:["success", "failure"]',
+                    "actor": "george",
+                },
+            ]
+        }
     }
 
 
-def test_webhook_trigger_event_configuration_matches_flavor() -> None:
-    """GitHub requires event configuration while custom forbids it."""
-    events = [MergedPullRequest(repo="zenml-io/zenml")]
-
-    with pytest.raises(ValidationError, match="require event configurations"):
+def test_webhook_trigger_requires_owner_only_on_create() -> None:
+    """Webhook ownership is required on create and absent from updates."""
+    with pytest.raises(ValidationError):
         WebhookTriggerRequest(
             project=uuid4(),
-            name="github-webhook-trigger",
-            flavor=TriggerFlavor.GITHUB_WEBHOOK,
-        )
-
-    with pytest.raises(ValidationError, match="do not support"):
-        WebhookTriggerRequest(
-            project=uuid4(),
-            name="custom-webhook-trigger",
-            flavor=TriggerFlavor.CUSTOM_WEBHOOK,
-            events=events,
+            name="webhook-trigger",
+            configuration={"target_events": []},
         )
 
 
@@ -161,7 +146,7 @@ def test_github_webhook_configuration_loads_yaml(tmp_path: Path) -> None:
     path = tmp_path / "events.yaml"
     path.write_text(
         """
-events:
+target_events:
   - type: merged_pull_request
     repo: zenml-io/zenml
     target_branch: develop
@@ -173,7 +158,7 @@ events:
 
     configuration = GitHubWebhookConfiguration.from_yaml(str(path))
 
-    assert configuration.events == [
+    assert configuration.target_events == [
         MergedPullRequest(repo="zenml-io/zenml", target_branch="develop"),
         PushEvent(repo="zenml-io/zenml", branch="main"),
     ]
@@ -182,7 +167,7 @@ events:
 def test_github_webhook_configuration_rejects_empty_event_list() -> None:
     """GitHub configuration must select at least one event."""
     with pytest.raises(ValidationError):
-        GitHubWebhookConfiguration(events=[])
+        GitHubWebhookConfiguration(target_events=[])
 
 
 @pytest.mark.parametrize(

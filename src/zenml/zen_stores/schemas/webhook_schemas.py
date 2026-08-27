@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL schemas for webhook integrations."""
+"""SQL schemas for webhooks."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Sequence
@@ -24,13 +24,13 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.models import (
-    WebhookIntegrationRequest,
-    WebhookIntegrationResponse,
-    WebhookIntegrationResponseBody,
-    WebhookIntegrationResponseMetadata,
-    WebhookIntegrationResponseResources,
-    WebhookIntegrationStats,
-    WebhookIntegrationUpdate,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookResponseBody,
+    WebhookResponseMetadata,
+    WebhookResponseResources,
+    WebhookStats,
+    WebhookUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -47,15 +47,15 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 
 
-class WebhookIntegrationSchema(NamedSchema, table=True):
-    """SQL schema for a project-scoped webhook integration."""
+class WebhookSchema(NamedSchema, table=True):
+    """SQL schema for a project-scoped webhook."""
 
-    __tablename__ = "webhook_integration"
+    __tablename__ = "webhook"
     __table_args__ = (
         UniqueConstraint(
             "project_id",
             "name",
-            name="unique_webhook_integration_name_in_project",
+            name="unique_webhook_name_in_project",
         ),
         build_index(
             table_name=__tablename__,
@@ -71,9 +71,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(
-        back_populates="webhook_integrations"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="webhooks")
     user_id: UUID | None = build_foreign_key_field(
         source=__tablename__,
         target=UserSchema.__tablename__,
@@ -83,9 +81,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: UserSchema | None = Relationship()
-    triggers: list["TriggerSchema"] = Relationship(
-        back_populates="webhook_integration"
-    )
+    triggers: list["TriggerSchema"] = Relationship(back_populates="webhook")
     secret_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=SecretSchema.__tablename__,
@@ -96,7 +92,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
     )
     webhook_type: str
     active: bool = Field(default=True)
-    stats: "WebhookIntegrationStatsSchema" = Relationship(
+    stats: "WebhookStatsSchema" = Relationship(
         back_populates="webhook",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
@@ -112,7 +108,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         include_resources: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
-        """Get query options for webhook integrations.
+        """Get query options for webhooks.
 
         Args:
             include_metadata: Whether statistics will be included.
@@ -131,16 +127,16 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
 
     @classmethod
     def from_request(
-        cls, request: WebhookIntegrationRequest, secret_id: UUID
-    ) -> "WebhookIntegrationSchema":
+        cls, request: WebhookRequest, secret_id: UUID
+    ) -> "WebhookSchema":
         """Create a schema from a request.
 
         Args:
-            request: The webhook integration creation request.
+            request: The webhook creation request.
             secret_id: The internal signing secret ID.
 
         Returns:
-            The created webhook integration schema.
+            The created webhook schema.
         """
         return cls(
             name=request.name,
@@ -156,7 +152,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> WebhookIntegrationResponse:
+    ) -> WebhookResponse:
         """Convert the schema to a response model.
 
         Args:
@@ -165,24 +161,22 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
             **kwargs: Additional conversion options.
 
         Returns:
-            The webhook integration response.
+            The webhook response.
         """
         metadata = None
         if include_metadata:
-            metadata = WebhookIntegrationResponseMetadata(
-                stats=self.stats.to_model()
-            )
+            metadata = WebhookResponseMetadata(stats=self.stats.to_model())
 
         resources = None
         if include_resources:
-            resources = WebhookIntegrationResponseResources(
+            resources = WebhookResponseResources(
                 user=self.user.to_model() if self.user else None,
             )
 
-        return WebhookIntegrationResponse(
+        return WebhookResponse(
             id=self.id,
             name=self.name,
-            body=WebhookIntegrationResponseBody(
+            body=WebhookResponseBody(
                 user_id=self.user_id,
                 project_id=self.project_id,
                 created=self.created,
@@ -198,16 +192,14 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
             resources=resources,
         )
 
-    def update(
-        self, update: WebhookIntegrationUpdate
-    ) -> "WebhookIntegrationSchema":
-        """Apply a webhook integration update.
+    def update(self, update: WebhookUpdate) -> "WebhookSchema":
+        """Apply a webhook update.
 
         Args:
-            update: The webhook integration update.
+            update: The webhook update.
 
         Returns:
-            The updated webhook integration schema.
+            The updated webhook schema.
         """
         if update.name is not None:
             self.name = update.name
@@ -217,14 +209,14 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         return self
 
 
-class WebhookIntegrationStatsSchema(SQLModel, table=True):
+class WebhookStatsSchema(SQLModel, table=True):
     """SQL schema for webhook intake statistics."""
 
-    __tablename__ = "webhook_integration_stats"
+    __tablename__ = "webhook_stats"
 
     webhook_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WebhookIntegrationSchema.__tablename__,
+        target=WebhookSchema.__tablename__,
         source_column="webhook_id",
         target_column="id",
         ondelete="CASCADE",
@@ -242,14 +234,12 @@ class WebhookIntegrationStatsSchema(SQLModel, table=True):
         default=None, sa_column=Column(TEXT, nullable=True)
     )
 
-    webhook: WebhookIntegrationSchema = Relationship(back_populates="stats")
+    webhook: WebhookSchema = Relationship(back_populates="stats")
 
-    def to_model(self) -> WebhookIntegrationStats:
+    def to_model(self) -> WebhookStats:
         """Convert persisted statistics to their domain model.
 
         Returns:
             The webhook intake statistics.
         """
-        return WebhookIntegrationStats.model_validate(
-            self, from_attributes=True
-        )
+        return WebhookStats.model_validate(self, from_attributes=True)

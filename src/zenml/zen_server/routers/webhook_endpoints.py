@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Management and public intake endpoints for webhook integrations."""
+"""Management and public intake endpoints for webhooks."""
 
 from uuid import UUID
 
@@ -35,20 +35,21 @@ from zenml.constants import (
 from zenml.enums import WebhookType
 from zenml.models import (
     Page,
+    WebhookCreateResponse,
     WebhookEventStatsUpdate,
-    WebhookIntegrationCreateResponse,
-    WebhookIntegrationFilter,
-    WebhookIntegrationRequest,
-    WebhookIntegrationResponse,
-    WebhookIntegrationRotateSecretRequest,
-    WebhookIntegrationSecretResponse,
-    WebhookIntegrationUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookUpdate,
 )
 from zenml.webhooks import (
     WebhookAuthenticationError,
     WebhookEvent,
     WebhookPayloadError,
-    get_webhook_adapter,
+    WebhookPreValidationResult,
+    get_webhook_provider,
     notify_webhook_event_consumers,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -85,31 +86,29 @@ intake_router = APIRouter(
 @management_router.post("")
 @async_fastapi_endpoint_wrapper
 def create_webhook(
-    integration: WebhookIntegrationRequest,
+    webhook: WebhookRequest,
     _: AuthContext = Security(authorize),
-) -> WebhookIntegrationCreateResponse:
+) -> WebhookCreateResponse:
     """Create a project-scoped webhook.
 
     Args:
-        integration: The webhook creation request.
+        webhook: The webhook creation request.
 
     Returns:
-        The created integration and any generated signing secret.
+        The created webhook and any generated signing secret.
     """
-    verify_permission_for_model(model=integration, action=Action.CREATE)
-    result = zen_store().create_webhook_integration(integration)
+    verify_permission_for_model(model=webhook, action=Action.CREATE)
+    result = zen_store().create_webhook(webhook)
     return dehydrate_response_model(result)
 
 
 @management_router.get("")
 @async_fastapi_endpoint_wrapper
 def list_webhooks(
-    filter_model: WebhookIntegrationFilter = Depends(
-        make_dependable(WebhookIntegrationFilter)
-    ),
+    filter_model: WebhookFilter = Depends(make_dependable(WebhookFilter)),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[WebhookIntegrationResponse]:
+) -> Page[WebhookResponse]:
     """List webhooks.
 
     Args:
@@ -122,7 +121,7 @@ def list_webhooks(
     return verify_permissions_and_list_entities(
         filter_model=filter_model,
         resource_type=ResourceType.WEBHOOK_INTEGRATION,
-        list_method=zen_store().list_webhook_integrations,
+        list_method=zen_store().list_webhooks,
         hydrate=hydrate,
     )
 
@@ -133,7 +132,7 @@ def get_webhook(
     webhook_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> WebhookIntegrationResponse:
+) -> WebhookResponse:
     """Get a webhook.
 
     Args:
@@ -145,7 +144,7 @@ def get_webhook(
     """
     return verify_permissions_and_get_entity(
         id=webhook_id,
-        get_method=zen_store().get_webhook_integration,
+        get_method=zen_store().get_webhook,
         hydrate=hydrate,
     )
 
@@ -154,9 +153,9 @@ def get_webhook(
 @async_fastapi_endpoint_wrapper
 def update_webhook(
     webhook_id: UUID,
-    update: WebhookIntegrationUpdate,
+    update: WebhookUpdate,
     _: AuthContext = Security(authorize),
-) -> WebhookIntegrationResponse:
+) -> WebhookResponse:
     """Update a webhook.
 
     Args:
@@ -166,15 +165,13 @@ def update_webhook(
     Returns:
         The updated webhook.
     """
-    integration = zen_store().get_webhook_integration(
-        webhook_id, hydrate=False
-    )
-    verify_permission_for_model(model=integration, action=Action.UPDATE)
-    updated_integration = zen_store().update_webhook_integration(
-        integration_id=integration.id,
+    webhook = zen_store().get_webhook(webhook_id, hydrate=False)
+    verify_permission_for_model(model=webhook, action=Action.UPDATE)
+    updated_webhook = zen_store().update_webhook(
+        webhook_id=webhook.id,
         update=update,
     )
-    return dehydrate_response_model(updated_integration)
+    return dehydrate_response_model(updated_webhook)
 
 
 @management_router.delete("/{webhook_id}")
@@ -190,8 +187,8 @@ def delete_webhook(
     """
     verify_permissions_and_delete_entity(
         id=webhook_id,
-        get_method=zen_store().get_webhook_integration,
-        delete_method=zen_store().delete_webhook_integration,
+        get_method=zen_store().get_webhook,
+        delete_method=zen_store().delete_webhook,
     )
 
 
@@ -199,9 +196,9 @@ def delete_webhook(
 @async_fastapi_endpoint_wrapper
 def rotate_webhook_secret(
     webhook_id: UUID,
-    request: WebhookIntegrationRotateSecretRequest,
+    request: WebhookRotateSecretRequest,
     _: AuthContext = Security(authorize),
-) -> WebhookIntegrationSecretResponse:
+) -> WebhookSecretResponse:
     """Rotate a webhook signing secret.
 
     Args:
@@ -211,10 +208,10 @@ def rotate_webhook_secret(
     Returns:
         The newly active signing secret.
     """
-    integration = zen_store().get_webhook_integration(webhook_id)
-    verify_permission_for_model(model=integration, action=Action.UPDATE)
-    return zen_store().rotate_webhook_integration_secret(
-        integration_id=webhook_id, request=request
+    webhook = zen_store().get_webhook(webhook_id)
+    verify_permission_for_model(model=webhook, action=Action.UPDATE)
+    return zen_store().rotate_webhook_secret(
+        webhook_id=webhook_id, request=request
     )
 
 
@@ -241,23 +238,23 @@ async def receive_webhook_event(
     Raises:
         HTTPException: If required provider metadata is malformed.
     """
-    adapter = get_webhook_adapter(webhook_type)
+    provider = get_webhook_provider(webhook_type)
     try:
-        should_process = adapter.pre_validate(headers=request.headers)
+        result = provider.pre_validate(headers=request.headers)
     except WebhookPayloadError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error),
         ) from error
 
-    if not should_process:
+    if result == WebhookPreValidationResult.IGNORE:
         return Response(status_code=status.HTTP_202_ACCEPTED)
 
     body = await request.body()
     return await run_in_threadpool(
         _receive_webhook_event,
         webhook_type=webhook_type,
-        integration_id=webhook_id,
+        webhook_id=webhook_id,
         body=body,
         headers=request.headers,
     )
@@ -265,7 +262,7 @@ async def receive_webhook_event(
 
 def _receive_webhook_event(
     webhook_type: WebhookType,
-    integration_id: UUID,
+    webhook_id: UUID,
     body: bytes,
     headers: Headers,
 ) -> Response:
@@ -273,7 +270,7 @@ def _receive_webhook_event(
 
     Args:
         webhook_type: The provider type from the public endpoint path.
-        integration_id: The webhook ID.
+        webhook_id: The webhook ID.
         body: The raw request body.
         headers: The request headers.
 
@@ -281,7 +278,7 @@ def _receive_webhook_event(
         An empty accepted response.
 
     Raises:
-        HTTPException: If the integration cannot accept the event or the
+        HTTPException: If the webhook cannot accept the event or the
             request fails authentication or payload validation.
     """
     try:
@@ -290,7 +287,7 @@ def _receive_webhook_event(
             active,
             secret_id,
             project_id,
-        ) = zen_store().get_webhook_intake_config(integration_id)
+        ) = zen_store().get_webhook_intake_config(webhook_id)
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
 
@@ -298,14 +295,14 @@ def _receive_webhook_event(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     secret = zen_store().get_webhook_secret(secret_id)
-    adapter = get_webhook_adapter(webhook_type)
+    provider = get_webhook_provider(webhook_type)
 
     try:
-        adapter.authenticate(body=body, headers=headers, secret=secret)
+        provider.authenticate(body=body, headers=headers, secret=secret)
     except WebhookAuthenticationError as error:
         if active:
             zen_store().record_webhook_event(
-                integration_id,
+                webhook_id,
                 WebhookEventStatsUpdate(
                     auth_failed=True, error_summary=str(error)
                 ),
@@ -318,14 +315,14 @@ def _receive_webhook_event(
     if not active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Webhook integration is inactive.",
+            detail="Webhook is inactive.",
         )
 
     try:
-        parsed_event = adapter.parse(body=body, headers=headers)
+        parsed_event = provider.parse(body=body, headers=headers)
     except WebhookPayloadError as error:
         zen_store().record_webhook_event(
-            integration_id,
+            webhook_id,
             WebhookEventStatsUpdate(
                 invalid_payload=True, error_summary=str(error)
             ),
@@ -336,12 +333,12 @@ def _receive_webhook_event(
         ) from error
 
     zen_store().record_webhook_event(
-        integration_id, WebhookEventStatsUpdate(accepted=True)
+        webhook_id, WebhookEventStatsUpdate(accepted=True)
     )
     event = WebhookEvent(
         project_id=project_id,
-        webhook_integration_id=integration_id,
-        webhook_type=parsed_event.webhook_type,
+        webhook_id=webhook_id,
+        webhook_type=webhook_type,
         event_type=parsed_event.event_type,
         delivery_id=parsed_event.delivery_id,
         payload=parsed_event.payload,

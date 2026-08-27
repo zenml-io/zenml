@@ -33,13 +33,9 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
     TriggerType,
-    WebhookType,
 )
 from zenml.logger import get_logger
-from zenml.models import (
-    GitHubWebhookConfiguration,
-    TriggerFilter,
-)
+from zenml.models import TriggerFilter, WebhookTriggerConfiguration
 from zenml.utils.time_utils import iso8601_to_utc_naive
 
 logger = get_logger(__name__)
@@ -786,22 +782,18 @@ def list_platform_events(
 @webhook.command("create")
 @click.argument("name", type=str)
 @click.option(
-    "--webhook-type",
-    type=click.Choice(WebhookType.values()),
-    required=True,
-    help="The compatible webhook provider type.",
-)
-@click.option(
-    "--webhook-integration",
+    "--webhook",
     type=str,
-    help="Optional webhook integration name or ID.",
+    required=True,
+    help="Owning webhook name or ID.",
 )
 @click.option(
-    "--event-config",
+    "--config",
     "-c",
-    "event_config_path",
+    "config_path",
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to a GitHub webhook event configuration YAML file.",
+    required=True,
+    help="Path to a webhook trigger configuration YAML file.",
 )
 @click.option(
     "--concurrency",
@@ -812,81 +804,33 @@ def list_platform_events(
 @click.option("--active", type=bool, default=True)
 def create_webhook_trigger(
     name: str,
-    webhook_type: str,
-    webhook_integration: str | None,
-    event_config_path: str | None,
+    webhook: str,
+    config_path: str,
     concurrency: str,
     active: bool,
 ) -> None:
-    """Create a new webhook trigger.
+    """Create a new webhook trigger from a generic configuration file.
 
-    For --webhook-type github, --event-config is required and must point to a
-    YAML file with a non-empty events list. Supported event entries and fields:
-
-    \b
-      events:
-        - type: merged_pull_request
-          repo: <OWNER>/<REPOSITORY>
-          target_branch: <TARGET_BRANCH>
-          source_branch: startswith:<SOURCE_BRANCH_PREFIX>
-          author: <GITHUB_LOGIN>
-        - type: workflow_run_completed
-          workflow: <WORKFLOW_NAME>
-          conclusion: <CONCLUSION>
-          actor: <GITHUB_LOGIN>
-        - type: push
-          repo: <OWNER>/<REPOSITORY>
-          branch: <BRANCH>
-          actor: <GITHUB_LOGIN>
-        - type: release_published
-          repo: <OWNER>/<REPOSITORY>
-          tag: startswith:<TAG_PREFIX>
-          target_branch: <TARGET_BRANCH>
-          actor: <GITHUB_LOGIN>
-
-    All fields are optional filters. Fields within an entry are combined using
-    logical AND; event entries are combined using logical OR. Multiple entries
-    of the same type are allowed. "author" and "actor" are GitHub logins.
-
-    For --webhook-type custom, do not pass --event-config. Custom webhook
-    triggers do not have a typed event configuration.
+    The YAML file must contain a ``target_events`` list. The selected webhook's
+    provider validates the entries authoritatively.
 
     \f
 
     Args:
         name: The trigger name.
-        webhook_type: The compatible webhook provider type.
-        webhook_integration: Optional integration name or ID.
-        event_config_path: Path to the GitHub event configuration.
+        webhook: The owning webhook name or ID.
+        config_path: Path to the webhook trigger configuration.
         concurrency: The trigger run concurrency behavior.
         active: Whether the trigger should be active.
 
     Raises:
-        ValueError: If the event configuration is incompatible with the
-            selected webhook type.
+        ValueError: If the configuration is invalid for the webhook provider.
     """
     try:
-        webhook_type_value = WebhookType(webhook_type)
-        if webhook_type_value == WebhookType.GITHUB:
-            if event_config_path is None:
-                raise ValueError(
-                    "GitHub webhook triggers require --event-config."
-                )
-            events = GitHubWebhookConfiguration.from_yaml(
-                event_config_path
-            ).events
-        else:
-            if event_config_path is not None:
-                raise ValueError(
-                    "Custom webhook triggers do not support --event-config."
-                )
-            events = None
-
         created = Client().create_webhook_trigger(
             name=name,
-            webhook_type=webhook_type_value,
-            webhook_integration=webhook_integration,
-            events=events,
+            webhook=webhook,
+            configuration=WebhookTriggerConfiguration.from_yaml(config_path),
             concurrency=TriggerRunConcurrency(concurrency),
             active=active,
         )
@@ -906,63 +850,22 @@ def create_webhook_trigger(
     help="Option to control the concurrency of the trigger.",
 )
 @click.option(
-    "--webhook-integration",
-    type=str,
-    help="Replacement webhook integration name or ID.",
-)
-@click.option(
-    "--event-config",
+    "--config",
     "-c",
-    "event_config_path",
+    "config_path",
     type=click.Path(exists=True, dir_okay=False),
-    help="Path to a replacement GitHub event configuration YAML file.",
-)
-@click.option(
-    "--detach-webhook-integration",
-    is_flag=True,
-    help="Detach the webhook integration and deactivate the trigger.",
+    help="Path to a complete replacement trigger configuration YAML file.",
 )
 def update_webhook_trigger(
     trigger_name_or_id: str,
     name: str | None,
     active: bool | None,
     concurrency: str | None,
-    webhook_integration: str | None,
-    event_config_path: str | None,
-    detach_webhook_integration: bool,
+    config_path: str | None,
 ) -> None:
     """Update a webhook trigger.
 
-    For a GitHub webhook trigger, --event-config must point to a YAML file with
-    a non-empty events list. Passing the option atomically replaces the entire
-    existing event list; omitting it preserves the existing list.
-
-    \b
-      events:
-        - type: merged_pull_request
-          repo: <OWNER>/<REPOSITORY>
-          target_branch: <TARGET_BRANCH>
-          source_branch: startswith:<SOURCE_BRANCH_PREFIX>
-          author: <GITHUB_LOGIN>
-        - type: workflow_run_completed
-          workflow: <WORKFLOW_NAME>
-          conclusion: <CONCLUSION>
-          actor: <GITHUB_LOGIN>
-        - type: push
-          repo: <OWNER>/<REPOSITORY>
-          branch: <BRANCH>
-          actor: <GITHUB_LOGIN>
-        - type: release_published
-          repo: <OWNER>/<REPOSITORY>
-          tag: startswith:<TAG_PREFIX>
-          target_branch: <TARGET_BRANCH>
-          actor: <GITHUB_LOGIN>
-
-    All fields are optional filters. Fields within an entry are combined using
-    logical AND; event entries are combined using logical OR. Multiple entries
-    of the same type are allowed. "author" and "actor" are GitHub logins.
-
-    Custom webhook triggers do not support --event-config.
+    Passing ``--config`` atomically replaces the complete configuration.
 
     \f
 
@@ -971,30 +874,24 @@ def update_webhook_trigger(
         name: The new trigger name.
         active: The new active state.
         concurrency: The new concurrency behavior.
-        webhook_integration: A replacement integration name or ID.
-        event_config_path: Path to replacement GitHub event configuration.
-        detach_webhook_integration: Whether to detach the integration.
+        config_path: Path to the complete replacement configuration.
     """
-    if (
-        not any(
-            value is not None
-            for value in [
-                name,
-                active,
-                concurrency,
-                webhook_integration,
-                event_config_path,
-            ]
-        )
-        and not detach_webhook_integration
+    if not any(
+        value is not None
+        for value in [
+            name,
+            active,
+            concurrency,
+            config_path,
+        ]
     ):
         cli_utils.declare("No webhook trigger update requested.")
         return
 
     try:
-        events = (
-            GitHubWebhookConfiguration.from_yaml(event_config_path).events
-            if event_config_path is not None
+        configuration = (
+            WebhookTriggerConfiguration.from_yaml(config_path)
+            if config_path is not None
             else None
         )
         Client().update_webhook_trigger(
@@ -1004,9 +901,7 @@ def update_webhook_trigger(
             concurrency=(
                 TriggerRunConcurrency(concurrency) if concurrency else None
             ),
-            webhook_integration=webhook_integration,
-            detach_webhook_integration=detach_webhook_integration,
-            events=events,
+            configuration=configuration,
         )
     except Exception as e:
         cli_utils.exception(e)
@@ -1016,14 +911,9 @@ def update_webhook_trigger(
 
 @webhook.command("list", help="List available webhook triggers.")
 @click.option(
-    "--webhook-type",
-    type=click.Choice(WebhookType.values()),
-    help="Filter by compatible webhook provider type.",
-)
-@click.option(
-    "--webhook-integration-id",
+    "--webhook-id",
     type=UUID,
-    help="Filter by webhook integration ID.",
+    help="Filter by webhook ID.",
 )
 @cli_utils.list_options(
     TriggerFilter,
@@ -1031,15 +921,14 @@ def update_webhook_trigger(
         "id",
         "name",
         "active",
-        "webhook_integration_id",
+        "webhook_id",
         "concurrency",
     ],
 )
 def list_webhook_triggers(
     columns: str,
     output_format: cli_utils.OutputFormat,
-    webhook_type: str | None,
-    webhook_integration_id: UUID | None,
+    webhook_id: UUID | None,
     **kwargs: Any,
 ) -> None:
     """List webhook triggers that fulfill the filter requirements.
@@ -1047,16 +936,12 @@ def list_webhook_triggers(
     Args:
         columns: Columns to display in output.
         output_format: Format for output.
-        webhook_type: Filter by compatible webhook provider type.
-        webhook_integration_id: Filter by webhook integration ID.
+        webhook_id: Filter by webhook ID.
         **kwargs: Additional trigger filters.
     """
     with console.status("Listing triggers...\n"):
         triggers = Client().list_webhook_triggers(
-            webhook_type=(
-                WebhookType(webhook_type) if webhook_type is not None else None
-            ),
-            webhook_integration_id=webhook_integration_id,
+            webhook_id=webhook_id,
             **kwargs,
         )
     cli_utils.print_page(

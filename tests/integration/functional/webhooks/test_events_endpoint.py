@@ -20,7 +20,7 @@ import requests
 
 from tests.integration.functional.utils import sample_name
 from zenml.enums import WebhookType
-from zenml.models import WebhookIntegrationCreateResponse
+from zenml.models import WebhookCreateResponse
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 
@@ -52,43 +52,43 @@ def _post_webhook(
 
 
 @pytest.fixture
-def webhook_integration_factory(clean_project):
-    integration_ids = []
+def webhook_factory(clean_project):
+    webhook_ids = []
 
     def create(
         name_prefix: str,
         *,
         active: bool = True,
         secret: str | None = None,
-    ) -> WebhookIntegrationCreateResponse:
+    ) -> WebhookCreateResponse:
         result = clean_project.create_webhook(
             name=sample_name(name_prefix),
             webhook_type=WebhookType.CUSTOM,
             active=active,
             secret=secret,
         )
-        integration_ids.append(result.webhook.id)
+        webhook_ids.append(result.webhook.id)
         return result
 
     yield create
 
-    for integration_id in integration_ids:
-        clean_project.delete_webhook(integration_id)
+    for webhook_id in webhook_ids:
+        clean_project.delete_webhook(webhook_id)
 
 
 def test_webhook_intake_accepts_valid_custom_delivery(
-    clean_project, webhook_integration_factory
+    clean_project, webhook_factory
 ):
     store = _require_rest_store(clean_project)
-    result = webhook_integration_factory("webhook-intake-valid")
-    integration = result.webhook
+    result = webhook_factory("webhook-intake-valid")
+    webhook = result.webhook
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b'{"pipeline":"training"}'
 
     response = _post_webhook(
         store=store,
-        endpoint_path=integration.endpoint_path,
+        endpoint_path=webhook.endpoint_path,
         body=body,
         headers={
             "X-ZenML-Event": "pipeline.ready",
@@ -100,7 +100,7 @@ def test_webhook_intake_accepts_valid_custom_delivery(
     assert response.status_code == 202
     assert response.content == b""
 
-    updated = clean_project.get_webhook(integration.id)
+    updated = clean_project.get_webhook(webhook.id)
     assert updated.stats.received_count == 1
     assert updated.stats.accepted_count == 1
     assert updated.stats.auth_failed_count == 0
@@ -130,22 +130,22 @@ def test_webhook_intake_accepts_valid_custom_delivery(
 )
 def test_webhook_intake_failure_scenarios(
     clean_project,
-    webhook_integration_factory,
+    webhook_factory,
     scenario: str,
     expected_status: int,
     expected_counts: tuple[int, int, int, int],
     expected_error: str | None,
 ):
     store = _require_rest_store(clean_project)
-    result = webhook_integration_factory(
+    result = webhook_factory(
         f"webhook-intake-{scenario}",
         active=scenario != "inactive",
     )
-    integration = result.webhook
+    webhook = result.webhook
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b"not-json" if scenario == "invalid-payload" else b'{"ok":true}'
-    endpoint_path = integration.endpoint_path
+    endpoint_path = webhook.endpoint_path
     headers = {
         "X-ZenML-Event": "pipeline.ready",
         "X-ZenML-Signature-256": _signature(secret, body),
@@ -164,7 +164,7 @@ def test_webhook_intake_failure_scenarios(
     )
 
     assert response.status_code == expected_status
-    updated = clean_project.get_webhook(integration.id)
+    updated = clean_project.get_webhook(webhook.id)
     assert (
         updated.stats.received_count,
         updated.stats.accepted_count,
@@ -177,7 +177,7 @@ def test_webhook_intake_failure_scenarios(
     )
 
 
-def test_webhook_intake_returns_not_found_for_unknown_integration(
+def test_webhook_intake_returns_not_found_for_unknown_webhook(
     clean_project,
 ):
     store = _require_rest_store(clean_project)

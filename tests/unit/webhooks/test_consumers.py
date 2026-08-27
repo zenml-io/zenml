@@ -48,7 +48,7 @@ def test_webhook_consumers_are_failure_isolated() -> None:
     """One consumer failure must not block subsequent consumers."""
     event = WebhookEvent(
         project_id=uuid4(),
-        webhook_integration_id=uuid4(),
+        webhook_id=uuid4(),
         webhook_type=WebhookType.GITHUB,
         event_type="pull_request",
         payload={"action": "closed"},
