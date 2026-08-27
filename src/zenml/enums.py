@@ -570,6 +570,13 @@ class DatabaseBackupStrategy(StrEnum):
     CUSTOM = "custom"
 
 
+class SQLDatabaseAuthMode(StrEnum):
+    """Authentication modes supported by SQL ZenML stores."""
+
+    PASSWORD = "password"
+    AWS_RDS_IAM = "aws_rds_iam"
+
+
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 

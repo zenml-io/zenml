@@ -6,3 +6,21 @@ structure:
 redirects:
   tutorials/organizing-pipelines-and-models: tutorial/organizing-pipelines-and-models.md
   examples/floracasts: starter-guide/README.md
+  # The agents guide was written against Kitaru's v1 durable-workflow API
+  # (kitaru.wait / kitaru.log / kitaru.save), which v2 removed. Agent docs now
+  # live in the Kitaru space at docs.zenml.io/kitaru, which this map cannot
+  # target across spaces, so these land on the closest in-space guide.
+  # Targets must be pages listed in toc.md — the space README is not one.
+  agents-guide: llmops-guide/README.md
+  agents-guide/01-durable-agent: llmops-guide/README.md
+  agents-guide/replay-and-improve: llmops-guide/README.md
+  agents-guide/02-sandbox: llmops-guide/README.md
+  agents-guide/03-skills: llmops-guide/README.md
+  agents-guide/04-credential-proxy: llmops-guide/README.md
+  agents-guide/05-typed-services: llmops-guide/README.md
+  agents-guide/06-hitl: llmops-guide/README.md
+  agents-guide/production-notes: llmops-guide/README.md
+  # The "Durable agent platform (Kitaru)" example card was replaced by the
+  # kitaru-template repo link, which is external and cannot be a redirect
+  # target, so this lands on the closest in-space guide.
+  examples/agent_harness_platform: llmops-guide/README.md
