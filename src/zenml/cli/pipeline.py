@@ -15,6 +15,7 @@
 
 import json
 import os
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
@@ -48,6 +49,7 @@ from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.dashboard_utils import get_deployment_url
 from zenml.utils.json_utils import parse_value_for_schema
+from zenml.utils.time_utils import utc_now
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -1554,8 +1556,8 @@ def snapshot() -> None:
     is_flag=True,
     required=False,
     help="Whether to replace the existing snapshot with the same name. "
-    "The superseded snapshot is deleted unless something still "
-    "references it.",
+    "The superseded snapshot is deleted unless something still references "
+    "it, in which case it is archived (kept without a name).",
 )
 @click.option(
     "--tags",
@@ -1904,3 +1906,72 @@ def delete_pipeline_snapshot(
         cli_utils.exception(e)
     else:
         cli_utils.declare(f"Deleted snapshot '{snapshot_name_or_id}'.")
+
+
+@snapshot.command(
+    "prune",
+    help=(
+        "Delete unused snapshots older than a given age. A snapshot is "
+        "unused if it has no name and no pipeline run, deployment, schedule, "
+        "run template, trigger, or derived snapshot references it."
+    ),
+)
+@click.option(
+    "--older-than-days",
+    type=click.IntRange(min=1),
+    required=True,
+    help="Only delete snapshots older than this many days.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Only report how many snapshots would be deleted.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def prune_pipeline_snapshots(
+    older_than_days: int, dry_run: bool = False, yes: bool = False
+) -> None:
+    """Delete unused snapshots older than a given age.
+
+    Args:
+        older_than_days: Only delete snapshots older than this many days.
+        dry_run: If set, only report how many snapshots would be deleted.
+        yes: If set, don't ask for confirmation.
+    """
+    client = Client()
+    older_than = utc_now() - timedelta(days=older_than_days)
+
+    if dry_run or not yes:
+        eligible = client.prune_snapshots(older_than=older_than).snapshot_count
+        if not eligible:
+            cli_utils.declare(
+                f"No unused snapshots older than {older_than_days} days found."
+            )
+            return
+
+        found = (
+            f"Found {eligible} unused snapshot(s) older than "
+            f"{older_than_days} days"
+        )
+        if dry_run:
+            cli_utils.declare(f"{found} that can be deleted.")
+            return
+
+        if not cli_utils.confirmation(f"{found}. Do you want to delete them?"):
+            cli_utils.declare("Snapshot pruning canceled.")
+            return
+
+    result = client.prune_snapshots(older_than=older_than, apply=True)
+    if result.task_id:
+        cli_utils.declare(
+            "The server is deleting the snapshots in the background. Search "
+            f"the server logs for task ID `{result.task_id}` to follow the "
+            "progress."
+        )
+    else:
+        cli_utils.declare(f"Deleted {result.snapshot_count} snapshot(s).")

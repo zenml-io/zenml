@@ -239,6 +239,8 @@ from zenml.models.v2.core.pipeline_run import (
 from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotBase,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotResponseBody,
@@ -381,9 +383,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -820,6 +822,8 @@ __all__ = [
     "PipelineSnapshotResponseMetadata",
     "PipelineSnapshotResponseResources",
     "PipelineSnapshotRunRequest",
+    "PipelineSnapshotPruneRequest",
+    "PipelineSnapshotPruneResponse",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",

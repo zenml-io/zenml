@@ -117,35 +117,33 @@ By default, this method deletes artifacts physically from the underlying artifac
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 
-## Cleaning Up Unreachable Pipeline Snapshots
+## Pipeline Snapshots
 
-Self-hosted ZenML servers can accumulate anonymous pipeline snapshots that are
-no longer referenced. The following maintenance command reports snapshots that
-are older than 180 days and can be removed:
+### Pruning unused snapshots
 
-```bash
-zenml cleanup-unreachable-snapshots --older-than-days 180
-```
-
-The command performs a dry run by default. It only considers anonymous
-snapshots that no run, deployment, schedule, run template, trigger, or derived
-snapshot still references. Named, recent, and referenced snapshots are
-retained.
-
-Before deleting anything, back up the database and stop all ZenML processes
-that can write to it. Then run the command against the self-hosted server's SQL
-store with the `--apply` flag:
+Every pipeline run stores a snapshot of its configuration. Snapshots that you
+never named and that nothing references anymore, for example because the runs
+that used them were deleted, only take up space in the database. You can delete
+those that are older than a given number of days with:
 
 ```bash
-zenml cleanup-unreachable-snapshots \
-    --older-than-days 180 \
-    --batch-size 250 \
-    --apply
+zenml pipeline snapshot prune --older-than-days 90
 ```
 
-This command cannot be run through a connected remote ZenML server. The dry-run
-count can be lower than the final deletion count because deleting a snapshot
-can make its source snapshot unreachable too.
+Only snapshots without a name that no pipeline run, deployment, schedule, run
+template, trigger, or derived snapshot references are considered. Named,
+recent, and referenced snapshots are always kept. The command reports how many
+snapshots it found and asks for confirmation before deleting them. Use
+`--dry-run` to only see the count, and `--yes` to skip the confirmation.
+
+When connected to a ZenML server, the deletion runs in the background on the
+server and the command prints a task ID. Search the server logs for that task
+ID to follow the progress. Deleting a snapshot can make the snapshot it was
+derived from unused as well, so the number of deleted snapshots can be higher
+than the count reported by the dry run.
+
+The pruning commands for artifacts and snapshots are also available under a
+common `zenml prune` group, e.g. `zenml prune snapshots --older-than-days 90`.
 
 ## Cleaning your environment
 

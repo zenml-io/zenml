@@ -30,14 +30,18 @@ from zenml.constants import (
     CODE,
     DOWNLOAD_TOKEN,
     PIPELINE_SNAPSHOTS,
+    PRUNE,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     VERSION_1,
 )
 from zenml.enums import DownloadType, StackComponentType
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     PipelineRunResponse,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -74,8 +78,11 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
+    submit_maintenance_task,
     zen_store,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_SNAPSHOTS,
@@ -102,6 +109,9 @@ def verify_replace_permission(
         name: The name that will be taken over.
         exclude_snapshot_id: Snapshot that is allowed to keep the name.
     """
+    if not server_config().rbac_enabled:
+        return
+
     existing = (
         zen_store()
         .list_snapshots(
@@ -277,6 +287,53 @@ def delete_pipeline_snapshot(
         id=snapshot_id,
         get_method=zen_store().get_snapshot,
         delete_method=zen_store().delete_snapshot,
+    )
+
+
+@router.post(
+    PRUNE,
+    responses={401: error_response, 422: error_response, 429: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def prune_pipeline_snapshots(
+    prune_request: PipelineSnapshotPruneRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> PipelineSnapshotPruneResponse:
+    """Counts or deletes old anonymous snapshots that nothing references.
+
+    Deleting can take a long time on large databases, so it is scheduled as a
+    maintenance task and the request only returns the task ID.
+
+    Args:
+        prune_request: Which snapshots to prune and whether to delete
+            them or only count them.
+        auth_context: Authentication context.
+
+    Returns:
+        The number of eligible snapshots for a dry run, or the ID of the
+        task deleting them.
+    """
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_SNAPSHOT,
+        action=Action.PRUNE,
+        project_id=prune_request.project,
+    )
+
+    if not prune_request.apply:
+        return zen_store().prune_snapshots(prune_request)
+
+    user_id = auth_context.user.id
+
+    def _prune() -> None:
+        logger.info(
+            f"Pruning snapshots of project {prune_request.project} created "
+            f"before {prune_request.older_than} on behalf of user {user_id}."
+        )
+        result = zen_store().prune_snapshots(prune_request)
+        logger.info(f"Pruned {result.snapshot_count} snapshot(s).")
+
+    return PipelineSnapshotPruneResponse(
+        task_id=submit_maintenance_task(_prune)
     )
 
 

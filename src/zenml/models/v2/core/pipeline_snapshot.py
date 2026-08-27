@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline snapshot models."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -135,9 +136,9 @@ class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
         description=(
-            "The superseded snapshot is deleted unless runs, "
-            "deployments, triggers or other snapshots still reference "
-            "it, in which case it is kept without a name."
+            "The superseded snapshot is deleted unless runs, deployments, "
+            "triggers or other snapshots still reference it, in which case "
+            "it is archived (kept without a name)."
         ),
     )
     tags: Optional[List[str]] = Field(
@@ -207,9 +208,9 @@ class PipelineSnapshotUpdate(BaseUpdate):
         default=None,
         title="Whether to replace the existing snapshot with the same name.",
         description=(
-            "The superseded snapshot is deleted unless runs, "
-            "deployments, triggers or other snapshots still reference "
-            "it, in which case it is kept without a name."
+            "The superseded snapshot is deleted unless runs, deployments, "
+            "triggers or other snapshots still reference it, in which case "
+            "it is archived (kept without a name)."
         ),
     )
     add_tags: Optional[List[str]] = Field(
@@ -976,4 +977,39 @@ class PipelineSnapshotRunRequest(BaseZenModel):
     step_run: Optional[UUID] = Field(
         default=None,
         title="The ID of the step run that ran the snapshot.",
+    )
+
+
+class PipelineSnapshotPruneRequest(BaseZenModel):
+    """Request model for pruning unused pipeline snapshots."""
+
+    project: UUID = Field(
+        title="The project whose snapshots should be pruned.",
+    )
+    older_than: datetime = Field(
+        title="Only snapshots created before this point in time are pruned.",
+    )
+    apply: bool = Field(
+        default=False,
+        title="Whether to delete the eligible snapshots. If false, the "
+        "eligible snapshots are only counted.",
+    )
+
+
+class PipelineSnapshotPruneResponse(BaseZenModel):
+    """Response model for pruning unused pipeline snapshots."""
+
+    snapshot_count: Optional[int] = Field(
+        default=None,
+        title="The number of eligible snapshots for a dry run, or the number "
+        "of deleted snapshots. Unset if the deletion was scheduled in the "
+        "background.",
+        description="Deleting a snapshot can make the snapshot it was "
+        "derived from eligible as well, so the number of eventually deleted "
+        "snapshots can exceed the count reported by a dry run.",
+    )
+    task_id: Optional[str] = Field(
+        default=None,
+        title="ID of the background task deleting the snapshots. Only set if "
+        "the deletion was scheduled in the background.",
     )

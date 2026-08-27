@@ -282,6 +282,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -5258,57 +5260,69 @@ class SqlZenStore(BaseZenStore):
             )
         )
 
-    def cleanup_unreachable_snapshots(
+    def prune_snapshots(
         self,
-        older_than: datetime,
+        prune_request: PipelineSnapshotPruneRequest,
         batch_size: int = 250,
-        apply: bool = False,
-    ) -> int:
-        """Report or delete old anonymous, unreferenced snapshots.
+    ) -> PipelineSnapshotPruneResponse:
+        """Counts or deletes old anonymous snapshots that nothing references.
 
         Args:
-            older_than: Only snapshots created before this time are eligible.
-            batch_size: Maximum snapshots deleted per transaction.
-            apply: If true, delete eligible snapshots; otherwise only count
-                them.
+            prune_request: Which snapshots to prune and whether to delete
+                them or only count them.
+            batch_size: Maximum number of snapshots deleted per transaction.
 
         Returns:
-            The number of currently eligible snapshots if `apply` is false,
-            or the total number of deleted snapshots otherwise.
+            The number of deleted or, for a dry run, eligible snapshots.
         """
-        unreachable = (
+        eligible = (
+            col(PipelineSnapshotSchema.project_id) == prune_request.project,
             col(PipelineSnapshotSchema.name).is_(None),
-            col(PipelineSnapshotSchema.created) < older_than,
+            col(PipelineSnapshotSchema.created) < prune_request.older_than,
             ~self._snapshot_is_referenced(),
         )
 
-        if not apply:
+        if not prune_request.apply:
             with Session(self.engine) as session:
-                return session.exec(
+                count = session.exec(
                     select(func.count())
                     .select_from(PipelineSnapshotSchema)
-                    .where(*unreachable)
+                    .where(*eligible)
                 ).one()
+            return PipelineSnapshotPruneResponse(snapshot_count=count)
 
         deleted_count = 0
         while True:
-            # Evaluate the reachability rule once per row per pass; the
-            # deletes are chunked only to bound the transaction size.
+            # Each batch re-evaluates the reachability rule, so a snapshot
+            # that only became unreferenced because the previous batch deleted
+            # the snapshots derived from it is collected by a later batch.
             with Session(self.engine) as session:
-                snapshot_ids = session.exec(
-                    select(PipelineSnapshotSchema.id).where(*unreachable)
+                candidate_ids = session.exec(
+                    select(PipelineSnapshotSchema.id)
+                    .where(*eligible)
+                    .limit(batch_size)
                 ).all()
-
-            if not snapshot_ids:
-                return deleted_count
-
-            for start in range(0, len(snapshot_ids), batch_size):
-                with Session(self.engine) as session:
-                    self._delete_snapshots(
-                        session=session,
-                        snapshot_ids=snapshot_ids[start : start + batch_size],
+                if not candidate_ids:
+                    return PipelineSnapshotPruneResponse(
+                        snapshot_count=deleted_count
                     )
-                    session.commit()
+
+                # Lock the candidates by primary key rather than the scan
+                # itself, so the locks stay bounded to one batch. Concurrent
+                # inserts referencing a locked snapshot wait and then fail
+                # their foreign key check instead of being cascaded away.
+                snapshot_ids = session.exec(
+                    select(PipelineSnapshotSchema.id)
+                    .where(
+                        col(PipelineSnapshotSchema.id).in_(candidate_ids),
+                        *eligible,
+                    )
+                    .with_for_update()
+                ).all()
+                self._delete_snapshots(
+                    session=session, snapshot_ids=snapshot_ids
+                )
+                session.commit()
 
             deleted_count += len(snapshot_ids)
 
@@ -5331,8 +5345,11 @@ class SqlZenStore(BaseZenStore):
             name: The name to free.
             exclude_snapshot_id: Snapshot that is allowed to keep the name.
         """
-        existing_id = session.exec(
-            select(PipelineSnapshotSchema.id)
+        existing = session.exec(
+            select(
+                PipelineSnapshotSchema.id,
+                self._snapshot_is_referenced().label("is_referenced"),
+            )
             .where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
@@ -5340,18 +5357,10 @@ class SqlZenStore(BaseZenStore):
             .with_for_update()
         ).first()
 
-        if existing_id is None or existing_id == exclude_snapshot_id:
+        if existing is None or existing[0] == exclude_snapshot_id:
             return
 
-        is_referenced = (
-            session.exec(
-                select(PipelineSnapshotSchema.id).where(
-                    col(PipelineSnapshotSchema.id) == existing_id,
-                    self._snapshot_is_referenced(),
-                )
-            ).first()
-            is not None
-        )
+        existing_id, is_referenced = existing
         if is_referenced:
             session.execute(
                 update(PipelineSnapshotSchema)

@@ -32,8 +32,10 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunRequest,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
     PipelineSnapshotRequest,
     PipelineSnapshotUpdate,
+    ProjectRequest,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas import (
@@ -167,6 +169,21 @@ def _backdate(store: SqlZenStore, *snapshot_ids: UUID) -> None:
             snapshot.created = CUTOFF - timedelta(days=30)
             session.add(snapshot)
         session.commit()
+
+
+def _prune(
+    store: SqlZenStore,
+    project_id: UUID,
+    apply: bool = False,
+    batch_size: int = 250,
+) -> int:
+    """Prune snapshots older than `CUTOFF` and return the reported count."""
+    return store.prune_snapshots(
+        PipelineSnapshotPruneRequest(
+            project=project_id, older_than=CUTOFF, apply=apply
+        ),
+        batch_size=batch_size,
+    ).snapshot_count
 
 
 def _create_chain(
@@ -320,43 +337,56 @@ def test_replacing_referenced_snapshots_keeps_them_unnamed(
     )
 
 
-def test_unreachable_snapshot_cleanup_is_explicit_and_conservative(
+def test_pruning_is_explicit_and_conservative(
+    clean_client: Client,
     store: SqlZenStore,
     project_id: UUID,
     snapshot_request: SnapshotRequestFactory,
 ) -> None:
-    """Cleanup deletes only old anonymous snapshots without references."""
+    """Pruning deletes only old anonymous snapshots of the given project."""
 
     def create_snapshot(name: str | None, tag: str) -> UUID:
         return store.create_snapshot(
             snapshot_request(name=name, tags=(tag,))
         ).id
 
-    unreachable_id = create_snapshot(None, "unreachable")
+    unused_id = create_snapshot(None, "unused")
     recent_id = create_snapshot(None, "recent")
     named_id = create_snapshot("saved", "named")
     referenced_id = create_snapshot(None, "referenced")
     _create_run(store, project_id, referenced_id)
-    _backdate(store, unreachable_id, named_id, referenced_id)
 
-    assert store.cleanup_unreachable_snapshots(CUTOFF, batch_size=1) == 1
-    store.get_snapshot(unreachable_id)
-
-    assert (
-        store.cleanup_unreachable_snapshots(CUTOFF, batch_size=1, apply=True)
-        == 1
+    other_project = store.create_project(
+        ProjectRequest(name="other", display_name="Other")
     )
+    other_pipeline = store.create_pipeline(
+        PipelineRequest(project=other_project.id, name="other-pipeline")
+    )
+    other_project_id = store.create_snapshot(
+        _snapshot_request(
+            project_id=other_project.id,
+            stack_id=clean_client.active_stack.id,
+            pipeline_id=other_pipeline.id,
+            name=None,
+        )
+    ).id
+    _backdate(store, unused_id, named_id, referenced_id, other_project_id)
+
+    assert _prune(store, project_id, batch_size=1) == 1
+    store.get_snapshot(unused_id)
+
+    assert _prune(store, project_id, apply=True, batch_size=1) == 1
 
     with pytest.raises(KeyError):
-        store.get_snapshot(unreachable_id)
-    assert _owned_rows(store, [unreachable_id]) == ([], [])
-    for retained_id in (recent_id, named_id, referenced_id):
+        store.get_snapshot(unused_id)
+    assert _owned_rows(store, [unused_id]) == ([], [])
+    for retained_id in (recent_id, named_id, referenced_id, other_project_id):
         store.get_snapshot(retained_id)
 
-    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 0
+    assert _prune(store, project_id, apply=True) == 0
 
 
-def test_cleanup_collects_only_unreferenced_source_chains(
+def test_pruning_collects_only_unreferenced_source_chains(
     store: SqlZenStore,
     project_id: UUID,
     snapshot_request: SnapshotRequestFactory,
@@ -367,24 +397,17 @@ def test_cleanup_collects_only_unreferenced_source_chains(
     _create_run(store, project_id, pinned[-1])
     _backdate(store, *collectable, *pinned)
 
-    # Only the collectable leaf is unreferenced up front, so the dry run
-    # reports a single pass while applying keeps rescanning until the chain
-    # is gone.
-    assert store.cleanup_unreachable_snapshots(CUTOFF) == 1
-    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 3
-    assert store.cleanup_unreachable_snapshots(CUTOFF, apply=True) == 0
+    # Only the leaf of the collectable chain is unreferenced up front, so the
+    # dry run reports one snapshot while each deleted batch exposes the next
+    # link of the chain until it is gone.
+    assert _prune(store, project_id) == 1
+    assert _prune(store, project_id, apply=True, batch_size=1) == 3
+    assert _prune(store, project_id, apply=True) == 0
     assert set(_snapshot_ids(store, project_id)) == set(pinned)
 
 
 def test_snapshot_reference_check_covers_every_foreign_key() -> None:
-    """Guard the reachability rule against schema drift.
-
-    Deleting a snapshot cascades to its pipeline and step runs, so a new table
-    referencing `pipeline_snapshot` that `SNAPSHOT_OWNER_COLUMNS` does not
-    know about would silently destroy run history. `step_configuration` is
-    excluded because it is data owned by the snapshot rather than a reference
-    to it.
-    """
+    """Guard `SNAPSHOT_OWNER_COLUMNS` against schema drift; see its comment."""
     owned_tables = {"step_configuration"}
     foreign_key_columns = {
         f"{fk.parent.table.name}.{fk.parent.name}"
