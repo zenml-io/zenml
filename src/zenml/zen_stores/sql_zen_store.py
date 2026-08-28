@@ -90,10 +90,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import (
-    ArgumentError,
-    IntegrityError,
-)
+from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import (
     Mapped,
     load_only,
@@ -174,6 +171,7 @@ from zenml.enums import (
     RunWaitConditionStatus,
     SecretResourceTypes,
     SecretsStoreType,
+    SQLDatabaseAuthMode,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -482,7 +480,6 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
-
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -630,6 +627,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        auth_mode: The database authentication mode.
+        aws_region: The AWS region used to generate RDS IAM authentication
+            tokens.
+        aws_rds_iam_role_arn: Optional web-identity role used only for RDS IAM
+            authentication.
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
@@ -642,9 +644,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         username: The database username.
         password: The database password.
         ssl: Whether to use SSL.
-        ssl_ca: certificate authority certificate. Required for SSL
-            enabled authentication if the CA certificate is not part of the
-            certificates shipped by the operating system.
+        ssl_ca: Optional certificate authority certificate.
         ssl_cert: client certificate. Required for SSL enabled
             authentication if client certificates are used.
         ssl_key: client certificate private key. Required for SSL
@@ -671,6 +671,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     database: Optional[str] = None
     username: Optional[PlainSerializedSecretStr] = None
     password: Optional[PlainSerializedSecretStr] = None
+    auth_mode: SQLDatabaseAuthMode = SQLDatabaseAuthMode.PASSWORD
+    aws_region: Optional[str] = None
+    aws_rds_iam_role_arn: Optional[str] = None
     ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
@@ -901,11 +904,20 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 sql_url = sql_url._replace(query=immutabledict())
 
             database = self.database
-            if not self.username or not self.password or not database:
+            password_missing = (
+                self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                and not self.password
+            )
+            if not self.username or password_missing or not database:
+                password_requirement = (
+                    ", password"
+                    if self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                    else ""
+                )
                 raise ValueError(
-                    "Invalid MySQL configuration: The username, password and "
-                    "database must be set in the URL or as configuration "
-                    "attributes",
+                    f"Invalid MySQL configuration: The username"
+                    f"{password_requirement} and database must be set in the "
+                    "URL or as configuration attributes"
                 )
 
             regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
@@ -915,6 +927,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     f"The database name does not conform to the required "
                     f"format "
                     f"rules ({regexp}): {database}"
+                )
+
+            if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM and (
+                self.ssl_ca or self.ssl_cert or self.ssl_key
+            ):
+                raise ValueError(
+                    "AWS RDS IAM authentication uses the operating system "
+                    "trust store and does not accept `ssl_ca`, `ssl_cert`, "
+                    "or `ssl_key`."
                 )
 
             # Save the certificates in a secure location on disk
@@ -934,10 +955,70 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         "w",
                     ) as f:
                         f.write(content.get_secret_value())
-                    setattr(self, key, str(file_path))
+                    # Keep the field a secret string: every reader calls
+                    # `get_secret_value()` on it, and `validate_assignment` is
+                    # off so a plain `str` here would survive validation and
+                    # only fail later, when the engine is built.
+                    setattr(
+                        self, key, PlainSerializedSecretStr(str(file_path))
+                    )
 
         self.url = str(sql_url)
         return self
+
+    @model_validator(mode="after")
+    def _validate_authentication(self) -> "SqlZenStoreConfiguration":
+        """Validate database authentication settings.
+
+        Returns:
+            The validated configuration.
+
+        Raises:
+            ValueError: If RDS IAM authentication is configured unsafely.
+        """
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
+            return self
+
+        if self.driver != SQLDatabaseDriver.MYSQL:
+            raise ValueError(
+                "AWS RDS IAM authentication is supported only for MySQL."
+            )
+        if self.password is not None:
+            raise ValueError(
+                "The `password` attribute must not be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.aws_region:
+            raise ValueError(
+                "The `aws_region` attribute must be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.ssl or not self.ssl_verify_server_cert:
+            raise ValueError(
+                "AWS RDS IAM authentication requires `ssl=true`, "
+                "and `ssl_verify_server_cert=true`."
+            )
+        return self
+
+    def configure_engine_auth(self, engine: Engine) -> None:
+        """Configure per-connection authentication for an SQLAlchemy engine.
+
+        Args:
+            engine: The engine whose connections should use this configuration.
+        """
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
+            return
+
+        from zenml.zen_stores.rds_iam import (
+            configure_rds_iam_authentication,
+        )
+
+        assert self.aws_region is not None
+        configure_rds_iam_authentication(
+            engine,
+            self.aws_region,
+            role_arn=self.aws_rds_iam_role_arn,
+        )
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -1001,7 +1082,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
-            assert self.password is not None
+            if self.auth_mode == SQLDatabaseAuthMode.PASSWORD:
+                assert self.password is not None
             assert sql_url.host is not None
 
             if not database:
@@ -1016,30 +1098,40 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
                 username=self.username.get_secret_value(),
-                password=self.password.get_secret_value(),
+                password=(
+                    self.password.get_secret_value()
+                    if self.password is not None
+                    else None
+                ),
                 database=database,
             )
 
-            sqlalchemy_ssl_args: Dict[str, Any] = {}
-
-            # Handle SSL params
             if self.ssl:
-                sqlalchemy_ssl_args["ssl"] = True
-                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                    ssl_setting = getattr(self, key)
-                    if not ssl_setting:
-                        continue
-                    if not os.path.isfile(ssl_setting.get_secret_value()):
-                        logger.warning(
-                            f"Database SSL setting `{key}` is not a file. "
-                        )
-                    sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
-                        ssl_setting.get_secret_value()
+                if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
+                    from zenml.zen_stores.rds_iam import (
+                        create_verified_ssl_context,
                     )
-                sqlalchemy_ssl_args["check_hostname"] = (
-                    self.ssl_verify_server_cert
-                )
-                sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
+
+                    sqlalchemy_connect_args["ssl"] = (
+                        create_verified_ssl_context()
+                    )
+                else:
+                    sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
+                    for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                        ssl_setting = getattr(self, key)
+                        if not ssl_setting:
+                            continue
+                        if not os.path.isfile(ssl_setting.get_secret_value()):
+                            logger.warning(
+                                f"Database SSL setting `{key}` is not a file. "
+                            )
+                        sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                            ssl_setting.get_secret_value()
+                        )
+                    sqlalchemy_ssl_args["check_hostname"] = (
+                        self.ssl_verify_server_cert
+                    )
+                    sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -1454,6 +1546,7 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+        self.config.configure_engine_auth(self._engine)
         self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
