@@ -24,6 +24,8 @@ from pydantic import ValidationError
 
 from zenml.enums import WebhookType
 from zenml.models import (
+    GitHubCommit,
+    GitHubMergedPullRequestEvent,
     GitHubPushEvent,
     GitHubSemanticEvent,
     GitHubWebhookTriggerConfiguration,
@@ -81,6 +83,7 @@ def test_github_semantic_events_are_public_pydantic_models() -> None:
         repo="zenml-io/zenml",
         branch="main",
         actor="octocat",
+        commit=GitHubCommit(name="Add webhook triggers", sha="abc123"),
     )
 
     assert isinstance(event, GitHubSemanticEvent)
@@ -88,7 +91,63 @@ def test_github_semantic_events_are_public_pydantic_models() -> None:
         "repo": "zenml-io/zenml",
         "branch": "main",
         "actor": "octocat",
+        "commit": {"name": "Add webhook triggers", "sha": "abc123"},
     }
+
+
+def test_github_semantic_push_event_includes_head_commit() -> None:
+    """Push parsing includes the head commit message and SHA."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type=WebhookType.GITHUB,
+        event_type="push",
+        payload={
+            "ref": "refs/heads/main",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "sender": {"login": "octocat"},
+            "head_commit": {
+                "id": "abc123",
+                "message": "Add webhook triggers",
+            },
+        },
+    )
+
+    parsed = GitHubWebhookProvider().parse_semantic_event(event)
+
+    assert isinstance(parsed, GitHubPushEvent)
+    assert parsed.commit == GitHubCommit(
+        name="Add webhook triggers", sha="abc123"
+    )
+
+
+def test_github_semantic_merged_pr_includes_merge_commit() -> None:
+    """Merged-PR parsing includes the PR title and merge commit SHA."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type=WebhookType.GITHUB,
+        event_type="pull_request",
+        payload={
+            "action": "closed",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "pull_request": {
+                "merged": True,
+                "title": "Add webhook triggers",
+                "merge_commit_sha": "def456",
+                "base": {"ref": "main"},
+                "head": {"ref": "feature/webhook-triggers"},
+                "user": {"login": "octocat"},
+            },
+        },
+    )
+
+    parsed = GitHubWebhookProvider().parse_semantic_event(event)
+
+    assert isinstance(parsed, GitHubMergedPullRequestEvent)
+    assert parsed.commit == GitHubCommit(
+        name="Add webhook triggers", sha="def456"
+    )
 
 
 def _signature(secret: str, body: bytes) -> str:

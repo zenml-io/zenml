@@ -287,6 +287,13 @@ class GitHubSemanticEvent(BaseModel):
         raise NotImplementedError
 
 
+class GitHubCommit(BaseModel):
+    """Commit metadata associated with a GitHub semantic event."""
+
+    name: str | None = None
+    sha: str
+
+
 class GitHubMergedPullRequestEvent(GitHubSemanticEvent):
     """Normalized merged pull request event."""
 
@@ -295,6 +302,7 @@ class GitHubMergedPullRequestEvent(GitHubSemanticEvent):
     target_branch: str
     source_branch: str | None
     author: str | None
+    commit: GitHubCommit | None = None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
         """Return whether this event matches a merged-pull-request target."""
@@ -352,6 +360,7 @@ class GitHubPushEvent(GitHubSemanticEvent):
     repo: str
     branch: str
     actor: str | None
+    commit: GitHubCommit | None = None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
         """Return whether this event matches a push target."""
@@ -521,7 +530,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         candidates: Sequence["WebhookTriggerResponse"],
     ) -> list["WebhookTriggerResponse"]:
         """Match GitHub candidates while tolerating stale stored entries."""
-        semantic = self._extract_semantic_event(event)
+        semantic = self.parse_semantic_event(event)
         if semantic is None:
             return []
         matches: list[WebhookTriggerResponse] = []
@@ -533,9 +542,17 @@ class GitHubWebhookProvider(BaseWebhookProvider):
                 matches.append(trigger)
         return matches
 
-    def _extract_semantic_event(
+    def parse_semantic_event(
         self, event: "WebhookEvent"
     ) -> GitHubSemanticEvent | None:
+        """Parse a trusted delivery into a normalized semantic event.
+
+        Args:
+            event: The trusted GitHub webhook event.
+
+        Returns:
+            The normalized semantic event, or `None` for irrelevant payloads.
+        """
         payload = event.payload
         if event.event_type == "pull_request":
             pull_request = payload.get("pull_request")
@@ -549,6 +566,9 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             target = _string_at(payload, "pull_request", "base", "ref")
             if repo is None or target is None:
                 return None
+            merge_commit_sha = _string_at(
+                payload, "pull_request", "merge_commit_sha"
+            )
             return GitHubMergedPullRequestEvent(
                 repo=repo,
                 target_branch=target,
@@ -556,6 +576,14 @@ class GitHubWebhookProvider(BaseWebhookProvider):
                     payload, "pull_request", "head", "ref"
                 ),
                 author=_string_at(payload, "pull_request", "user", "login"),
+                commit=(
+                    GitHubCommit(
+                        name=_string_at(payload, "pull_request", "title"),
+                        sha=merge_commit_sha,
+                    )
+                    if merge_commit_sha
+                    else None
+                ),
             )
         if event.event_type == "workflow_run":
             if payload.get("action") != "completed":
@@ -574,10 +602,19 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             prefix = "refs/heads/"
             if ref is None or repo is None or not ref.startswith(prefix):
                 return None
+            head_commit_sha = _string_at(payload, "head_commit", "id")
             return GitHubPushEvent(
                 repo=repo,
                 branch=ref.removeprefix(prefix),
                 actor=_string_at(payload, "sender", "login"),
+                commit=(
+                    GitHubCommit(
+                        name=_string_at(payload, "head_commit", "message"),
+                        sha=head_commit_sha,
+                    )
+                    if head_commit_sha
+                    else None
+                ),
             )
         if event.event_type == "release":
             if payload.get("action") != "published":

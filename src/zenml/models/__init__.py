@@ -532,6 +532,7 @@ from zenml.webhooks.providers.base import (
     WebhookTriggerConfiguration,
 )
 from zenml.webhooks.providers.github import (
+    GitHubCommit,
     GitHubMergedPullRequestEvent,
     GitHubPushEvent,
     GitHubReleasePublishedEvent,
@@ -1078,6 +1079,7 @@ __all__ = [
     "WebhookTriggerResponseBody",
     "WebhookTargetEvent",
     "WebhookTriggerConfiguration",
+    "GitHubCommit",
     "GitHubSemanticEvent",
     "GitHubMergedPullRequestEvent",
     "GitHubWorkflowRunCompletedEvent",
