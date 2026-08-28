@@ -90,6 +90,8 @@ Once this is set, you should also modify the `zenml.database.poolSize` and `zenm
 
 An important component of the ZenML server deployment is the backing database. When you start scaling your ZenML server instances, you will also need to scale your database to avoid any bottlenecks.
 
+The largest rows in the database are the pipeline snapshot and step configuration payloads that every run stores. Set `zenml.database.compressTextPayloads` (or the `ZENML_STORE_COMPRESS_TEXT_PAYLOADS` environment variable) to `true` to store them compressed whenever that takes less space than the plain text. Only enable this once every server sharing the database runs a version newer than 0.96.3: once compressed rows exist, the server can no longer be rolled back to a version without the compressed-payload reader. Switching the option off again only stops compressing new rows; already compressed rows stay readable. It affects rows written from then on, not existing ones.
+
 We would recommend starting out with a simple (single) database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
 
 * CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utilization are expected but it should not be consistently high.

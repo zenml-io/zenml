@@ -14,6 +14,7 @@
 """Tests for the compressed text column types."""
 
 import base64
+import hashlib
 import zlib
 from typing import Any
 
@@ -27,10 +28,12 @@ from zenml.zen_stores.schemas import compressed_text
 from zenml.zen_stores.schemas.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     COMPRESSED_TEXT_PREFIX,
+    MIN_COMPRESSIBLE_BYTES,
     CompressedMediumText,
     CompressedText,
     decode_compressed_text,
     encode_compressed_text,
+    set_compressed_writes,
 )
 
 TEXT_WITH_UNICODE = (
@@ -124,7 +127,7 @@ def test_compressed_columns_keep_their_database_types() -> None:
 
 
 def test_column_types_decode_reads_and_guard_writes() -> None:
-    """Reads decode compressed values; writes pass plain text through."""
+    """With compressed writes off, reads decode and writes stay plain."""
     column = CompressedText("pipeline_snapshot.source_code")
     dialect = sqlite.dialect()
     encoded = encode_compressed_text(TEXT_WITH_UNICODE)
@@ -139,7 +142,33 @@ def test_column_types_decode_reads_and_guard_writes() -> None:
     assert column.process_bind_param(TEXT_WITH_UNICODE, dialect) == (
         TEXT_WITH_UNICODE
     )
-    # A writer compresses after this check, so anything that already looks
-    # compressed can only be plain text impersonating the format.
     with pytest.raises(ValueError, match="pipeline_snapshot.source_code"):
         column.process_bind_param(encoded, dialect)
+
+
+def test_column_types_compress_writes_only_when_smaller() -> None:
+    """With compressed writes on, only values that shrink are compressed."""
+    column = CompressedMediumText("step_configuration.config")
+    # A fresh dialect per test, so enabling writes on it cannot leak.
+    dialect = sqlite.dialect()
+    set_compressed_writes(dialect, True)
+
+    assert column.process_bind_param(None, dialect) is None
+    assert column.process_bind_param("{}", dialect) == "{}"
+    # Compressible, but too short for compression to be worth attempting.
+    short = "a" * (MIN_COMPRESSIBLE_BYTES - 1)
+    assert column.process_bind_param(short, dialect) == short
+    entropy = b"".join(hashlib.sha256(bytes([i])).digest() for i in range(10))
+    incompressible = base64.b64encode(entropy).decode("ascii")
+    assert len(encode_compressed_text(incompressible)) >= len(incompressible)
+    assert column.process_bind_param(incompressible, dialect) == incompressible
+
+    stored = column.process_bind_param(TEXT_WITH_UNICODE, dialect)
+    assert stored is not None
+    assert stored.startswith(COMPRESSED_TEXT_PREFIX)
+    assert len(stored) < len(TEXT_WITH_UNICODE.encode("utf-8"))
+    assert column.process_result_value(stored, dialect) == TEXT_WITH_UNICODE
+
+    # A raw stored value read past the decoder must not be written back.
+    with pytest.raises(ValueError, match="step_configuration.config"):
+        column.process_bind_param(stored, dialect)

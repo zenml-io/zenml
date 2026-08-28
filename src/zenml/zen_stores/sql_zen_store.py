@@ -47,7 +47,6 @@ import sys
 import time
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -84,14 +83,10 @@ from pydantic import (
     model_validator,
 )
 from sqlalchemy import (
-    Column,
     QueuePool,
-    String,
     Table,
-    bindparam,
     event,
     func,
-    type_coerce,
     update,
 )
 from sqlalchemy.engine import URL, Engine, make_url
@@ -153,7 +148,6 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
-    MEDIUMTEXT_MAX_LENGTH,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -466,11 +460,10 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
-from zenml.zen_stores.schemas.logs_schemas import LogsSchema
-from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
-    EXECUTION_DEFINITION_COMPRESSION_MARKER,
-    compress_execution_definition_payload,
+from zenml.zen_stores.schemas.compressed_text import (
+    set_compressed_writes,
 )
+from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
 from zenml.zen_stores.schemas.utils import (
@@ -507,28 +500,6 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
-
-
-@dataclass(frozen=True)
-class ExecutionDefinitionCompressionResult:
-    """Result of scanning one execution-definition database column."""
-
-    table_name: str
-    column_name: str
-    scanned_rows: int
-    compressible_rows: int
-    updated_rows: int
-    bytes_before: int
-    bytes_after: int
-
-    @property
-    def bytes_saved(self) -> int:
-        """Return the logical bytes avoided by compression.
-
-        Returns:
-            The difference between the plain and selected representations.
-        """
-        return self.bytes_before - self.bytes_after
 
 
 def exponential_backoff_with_jitter(
@@ -690,6 +661,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         pool_pre_ping: Enable emitting a test statement on the SQL connection
             at the start of each connection pool checkout, to test that the
             database connection is still viable.
+        compress_text_payloads: Store pipeline snapshot and step
+            configuration payloads compressed when that is smaller than the
+            plain text. Only enable this once every server sharing the database runs a version newer than 0.96.3: once compressed rows exist, the server can no longer be rolled back to a version without the compressed-payload reader. Switching the option off again only stops compressing new rows; already compressed rows stay readable. It affects rows written from then on, not existing ones.
     """
 
     type: StoreType = StoreType.SQL
@@ -714,6 +688,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+    compress_text_payloads: bool = False
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -1580,6 +1555,17 @@ class SqlZenStore(BaseZenStore):
         )
         self.config.configure_engine_auth(self._engine)
         self._db_backup_engine = self.initialize_database_backup_engine()
+        # The column types are shared by every engine in the process, so the
+        # setting is registered against this engine's dialect.
+        set_compressed_writes(
+            self._engine.dialect, self.config.compress_text_payloads
+        )
+        if self.config.compress_text_payloads:
+            logger.info(
+                "Compressed text payloads are enabled. Rows written from now "
+                "on cannot be read by server versions without the compressed "
+                "payload reader."
+            )
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.
@@ -1885,144 +1871,6 @@ class SqlZenStore(BaseZenStore):
                 pass
 
             self._sync_flavors()
-
-    def backfill_execution_definition_compression(
-        self,
-        *,
-        batch_size: int = 250,
-        apply: bool = False,
-    ) -> List[ExecutionDefinitionCompressionResult]:
-        """Compress legacy execution-definition payloads in bounded batches.
-
-        This operation must only be applied after every server replica can
-        read the versioned compressed representation. It is safe to stop and
-        rerun: already compressed rows are skipped and each batch commits
-        independently.
-
-        Args:
-            batch_size: Maximum rows read and updated per transaction.
-            apply: Whether to persist compressed values. If false, only scan
-                and report the potential savings.
-
-        Returns:
-            Per-column compression results.
-
-        Raises:
-            ValueError: If the batch size is not positive.
-        """
-        if batch_size <= 0:
-            raise ValueError("Batch size must be positive.")
-
-        snapshot_table = SQLModel.metadata.tables[
-            PipelineSnapshotSchema.__tablename__
-        ]
-        step_configuration_table = SQLModel.metadata.tables[
-            StepConfigurationSchema.__tablename__
-        ]
-        columns: List[Tuple[Column[Any], int]] = [
-            (snapshot_table.c.pipeline_configuration, MEDIUMTEXT_MAX_LENGTH),
-            (snapshot_table.c.client_environment, TEXT_FIELD_MAX_LENGTH),
-            (snapshot_table.c.pipeline_spec, MEDIUMTEXT_MAX_LENGTH),
-            (snapshot_table.c.source_code, TEXT_FIELD_MAX_LENGTH),
-            (step_configuration_table.c.config, MEDIUMTEXT_MAX_LENGTH),
-        ]
-        return [
-            self._backfill_execution_definition_column(
-                column=column,
-                max_length=max_length,
-                batch_size=batch_size,
-                apply=apply,
-            )
-            for column, max_length in columns
-        ]
-
-    def _backfill_execution_definition_column(
-        self,
-        *,
-        column: Column[Any],
-        max_length: int,
-        batch_size: int,
-        apply: bool,
-    ) -> ExecutionDefinitionCompressionResult:
-        """Scan and optionally compress one execution-definition column.
-
-        Args:
-            column: Text column to backfill.
-            max_length: Maximum encoded and decoded value length.
-            batch_size: Maximum rows handled in one transaction.
-            apply: Whether to persist compressed values.
-
-        Returns:
-            Compression result for the column.
-        """
-        table = column.table
-        raw_column = type_coerce(column, String())
-        last_id: Optional[UUID] = None
-        scanned_rows = 0
-        compressible_rows = 0
-        updated_rows = 0
-        bytes_before = 0
-        bytes_after = 0
-
-        while True:
-            with Session(self.engine) as session:
-                query = select(table.c.id, raw_column).where(
-                    ~raw_column.like(
-                        f"{EXECUTION_DEFINITION_COMPRESSION_MARKER}%"
-                    )
-                )
-                if last_id is not None:
-                    query = query.where(table.c.id > last_id)
-
-                rows = session.execute(
-                    query.order_by(table.c.id).limit(batch_size)
-                ).all()
-                if not rows:
-                    break
-
-                updates: List[Dict[str, Any]] = []
-                for row_id, value in rows:
-                    value = cast(str, value)
-                    compressed = compress_execution_definition_payload(
-                        value, max_length
-                    )
-                    before = len(value.encode("utf-8"))
-                    after = len(compressed.encode("utf-8"))
-                    scanned_rows += 1
-                    bytes_before += before
-                    bytes_after += after
-
-                    if compressed != value:
-                        compressible_rows += 1
-                        if apply:
-                            updates.append(
-                                {
-                                    "backfill_id": row_id,
-                                    "backfill_value": compressed,
-                                }
-                            )
-
-                if updates:
-                    session.execute(
-                        table.update()
-                        .where(table.c.id == bindparam("backfill_id"))
-                        .values({column.key: bindparam("backfill_value")}),
-                        updates,
-                    )
-                    updated_rows += len(updates)
-
-                session.commit()
-                last_id = rows[-1][0]
-
-        return ExecutionDefinitionCompressionResult(
-            table_name=table.name,
-            column_name=column.key,
-            scanned_rows=scanned_rows,
-            compressible_rows=compressible_rows,
-            updated_rows=updated_rows,
-            bytes_before=bytes_before,
-            bytes_after=bytes_after,
-        )
 
     def _sync_flavors(self) -> None:
         """Purge all in-built and integration flavors from the DB and sync."""

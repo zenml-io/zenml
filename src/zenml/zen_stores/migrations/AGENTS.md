@@ -19,7 +19,8 @@ below. For detailed migration recipes and SQL inspection queries, use
   string functions such as `REPLACE()` or `LIKE` to these columns in a
   migration; decode values read from them with `decode_compressed_text`
   before parsing them and write transformed values back as plain text, which
-  every reader accepts.
+  every reader accepts. Only writes through the ORM column types may store
+  compressed values.
 - Include both schema changes and data migrations when needed.
 - Run `scripts/check-alembic-branches.sh` to verify migration consistency.
 
