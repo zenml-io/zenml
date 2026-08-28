@@ -654,8 +654,10 @@ class StepConfigurationSchema(BaseSchema, table=True):
 
     __tablename__ = "step_configuration"
     __table_args__ = (
-        # The owner columns are mutually exclusive, and SQL uniqueness treats
-        # NULL values as distinct. Each owner therefore needs its own constraint.
+        # The owner columns are mutually exclusive and SQL uniqueness treats
+        # NULL as distinct, so each owner needs its own constraint. A snapshot
+        # holds one configuration per step name, a dynamic step run holds
+        # exactly one configuration.
         UniqueConstraint(
             "snapshot_id",
             "name",
@@ -663,7 +665,6 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ),
         UniqueConstraint(
             "step_run_id",
-            "name",
             name="unique_step_configuration_for_step_run",
         ),
         CheckConstraint(

@@ -92,6 +92,17 @@ def _index_columns(schema: type, index_name: str) -> list[str]:
     return indexes[index_name]
 
 
+def _unique_constraint_columns(
+    schema: type, constraint_name: str
+) -> list[str]:
+    constraints = {
+        constraint.name: [column.name for column in constraint.columns]
+        for constraint in schema.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+    }
+    return constraints[constraint_name]
+
+
 def test_expired_api_transaction_cleanup_is_batched(clean_client):
     """Expired API transaction cleanup deletes a bounded batch."""
     store = clean_client.zen_store
@@ -246,24 +257,16 @@ def test_pipeline_snapshot_indexes_cover_pagination_and_name_filters():
 
 def test_step_configuration_constraints_enforce_owner_scoped_names() -> None:
     """Step configuration names are unique within their owning entity."""
-    table = StepConfigurationSchema.metadata.tables[
-        StepConfigurationSchema.__tablename__
-    ]
-    constraints = {
-        constraint.name: [column.name for column in constraint.columns]
-        for constraint in table.constraints
-        if isinstance(constraint, UniqueConstraint)
+    assert _unique_constraint_columns(
+        StepConfigurationSchema, "unique_step_configuration_for_snapshot"
+    ) == ["snapshot_id", "name"]
+    assert _unique_constraint_columns(
+        StepConfigurationSchema, "unique_step_configuration_for_step_run"
+    ) == ["step_run_id"]
+    # The unique constraints already index both owner columns.
+    index_names = {
+        index.name for index in StepConfigurationSchema.__table__.indexes
     }
-
-    assert constraints["unique_step_configuration_for_snapshot"] == [
-        "snapshot_id",
-        "name",
-    ]
-    assert constraints["unique_step_configuration_for_step_run"] == [
-        "step_run_id",
-        "name",
-    ]
-    index_names = {index.name for index in table.indexes}
     assert "ix_step_configuration_snapshot_id_name" not in index_names
     assert "ix_step_configuration_step_run_id" not in index_names
 
