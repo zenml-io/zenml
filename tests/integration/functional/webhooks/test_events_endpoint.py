@@ -38,13 +38,12 @@ def _signature(secret: str, body: bytes) -> str:
 
 
 def _post_webhook(
-    store: RestZenStore,
-    endpoint_path: str,
+    endpoint_url: str,
     body: bytes,
     headers: dict[str, str],
 ) -> requests.Response:
     return requests.post(
-        store.url + endpoint_path,
+        endpoint_url,
         data=body,
         headers=headers,
         timeout=31,
@@ -79,16 +78,16 @@ def webhook_factory(clean_project):
 def test_webhook_intake_accepts_valid_custom_delivery(
     clean_project, webhook_factory
 ):
-    store = _require_rest_store(clean_project)
+    _require_rest_store(clean_project)
     result = webhook_factory("webhook-intake-valid")
     webhook = result.webhook
     assert result.secret is not None
+    assert webhook.endpoint_url is not None
     secret = result.secret.get_secret_value()
     body = b'{"pipeline":"training"}'
 
     response = _post_webhook(
-        store=store,
-        endpoint_path=webhook.endpoint_path,
+        endpoint_url=webhook.endpoint_url,
         body=body,
         headers={
             "X-ZenML-Event": "pipeline.ready",
@@ -136,7 +135,7 @@ def test_webhook_intake_failure_scenarios(
     expected_counts: tuple[int, int, int, int],
     expected_error: str | None,
 ):
-    store = _require_rest_store(clean_project)
+    _require_rest_store(clean_project)
     result = webhook_factory(
         f"webhook-intake-{scenario}",
         active=scenario != "inactive",
@@ -145,7 +144,8 @@ def test_webhook_intake_failure_scenarios(
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b"not-json" if scenario == "invalid-payload" else b'{"ok":true}'
-    endpoint_path = webhook.endpoint_path
+    assert webhook.endpoint_url is not None
+    endpoint_url = webhook.endpoint_url
     headers = {
         "X-ZenML-Event": "pipeline.ready",
         "X-ZenML-Signature-256": _signature(secret, body),
@@ -153,12 +153,11 @@ def test_webhook_intake_failure_scenarios(
     if scenario == "auth-failure":
         headers["X-ZenML-Signature-256"] = "sha256=invalid"
     elif scenario == "type-mismatch":
-        endpoint_path = endpoint_path.replace("/custom/", "/github/")
+        endpoint_url = endpoint_url.replace("/custom/", "/github/")
         headers = {}
 
     response = _post_webhook(
-        store=store,
-        endpoint_path=endpoint_path,
+        endpoint_url=endpoint_url,
         body=body,
         headers=headers,
     )
@@ -182,8 +181,7 @@ def test_webhook_intake_returns_not_found_for_unknown_webhook(
 ):
     store = _require_rest_store(clean_project)
     response = _post_webhook(
-        store=store,
-        endpoint_path=f"/api/v1/webhooks/custom/{uuid4()}/events",
+        endpoint_url=(f"{store.url}/api/v1/webhooks/custom/{uuid4()}/events"),
         body=b'{"pipeline":"training"}',
         headers={},
     )

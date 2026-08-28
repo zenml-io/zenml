@@ -19,7 +19,6 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
 from zenml.models import (
     WebhookEventStatsUpdate,
@@ -136,9 +135,18 @@ def test_webhook_update_excludes_secret() -> None:
     assert "secret" not in WebhookUpdate.model_fields
 
 
-def test_webhook_schema_to_model_includes_body_and_metadata() -> None:
+def test_webhook_schema_to_model_includes_body_and_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Webhook schemas include body and stats metadata."""
     schema = _webhook_schema()
+    endpoint_url = (
+        f"https://zenml.example.com/api/v1/webhooks/github/{schema.id}/events"
+    )
+    monkeypatch.setattr(
+        "zenml.webhooks.urls.get_webhook_intake_url",
+        lambda **_: endpoint_url,
+    )
 
     response = schema.to_model(include_metadata=True)
 
@@ -146,10 +154,7 @@ def test_webhook_schema_to_model_includes_body_and_metadata() -> None:
     assert response.name == "github-intake"
     assert response.webhook_type == WebhookType.GITHUB
     assert response.active is True
-    assert response.endpoint_path == (
-        f"{API}{VERSION_1}{WEBHOOKS}/{WebhookType.GITHUB.value}/"
-        f"{schema.id}/events"
-    )
+    assert response.endpoint_url == endpoint_url
     assert response.stats.received_count == 3
     assert response.stats.accepted_count == 1
     assert response.stats.auth_failed_count == 1

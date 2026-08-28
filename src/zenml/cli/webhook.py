@@ -89,7 +89,8 @@ def describe_webhook(name_or_id: str) -> None:
         title=f"Webhook '{webhook.name}'",
         model=webhook,
     )
-    cli_utils.declare(f"Endpoint path: {webhook.endpoint_path}")
+    if webhook.endpoint_url:
+        cli_utils.declare(f"Endpoint URL: {webhook.endpoint_url}")
 
 
 @webhook.command("list")

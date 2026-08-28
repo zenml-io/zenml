@@ -15,8 +15,32 @@
 
 from typing import TYPE_CHECKING, Optional
 
+from zenml.constants import API, VERSION_1
+
 if TYPE_CHECKING:
     from zenml.zen_server.deploy import LocalServerDeployment
+
+
+def get_server_api_url() -> Optional[str]:
+    """Get the externally reachable base URL of the ZenML server API.
+
+    Returns:
+        The absolute API URL, or `None` when the server has no externally
+        reachable URL configured.
+    """
+    from zenml.config.server_config import ServerConfiguration
+
+    config = ServerConfiguration.get_server_config()
+    if not config.server_url:
+        return None
+
+    segments = [
+        config.server_url.rstrip("/"),
+        config.root_url_path.strip("/"),
+        API.strip("/"),
+        VERSION_1.strip("/"),
+    ]
+    return "/".join(segment for segment in segments if segment)
 
 
 def get_local_server() -> Optional["LocalServerDeployment"]:

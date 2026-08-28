@@ -22,7 +22,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.models import (
     WebhookRequest,
     WebhookResponse,
@@ -183,10 +182,6 @@ class WebhookSchema(NamedSchema, table=True):
                 updated=self.updated,
                 webhook_type=self.webhook_type,
                 active=self.active,
-                endpoint_path=(
-                    f"{API}{VERSION_1}{WEBHOOKS}/{self.webhook_type}/"
-                    f"{self.id}/events"
-                ),
             ),
             metadata=metadata,
             resources=resources,

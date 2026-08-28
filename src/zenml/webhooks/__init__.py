@@ -31,6 +31,7 @@ from zenml.webhooks.providers import (
     WebhookTriggerConfiguration,
     get_webhook_provider,
 )
+from zenml.webhooks.urls import get_webhook_intake_url
 
 __all__ = [
     "BaseWebhookProvider",
@@ -44,6 +45,7 @@ __all__ = [
     "WebhookTargetEvent",
     "WebhookTriggerConfiguration",
     "get_webhook_provider",
+    "get_webhook_intake_url",
     "notify_webhook_event_consumers",
     "register_webhook_event_consumer",
     "unregister_webhook_event_consumer",

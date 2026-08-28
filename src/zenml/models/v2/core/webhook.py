@@ -61,7 +61,7 @@ class WebhookResponseBody(ProjectScopedResponseBody):
 
     webhook_type: WebhookType
     active: bool
-    endpoint_path: str
+    endpoint_url: str | None = None
 
 
 class WebhookStats(BaseZenModel):
@@ -98,6 +98,18 @@ class WebhookResponse(
 
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
 
+    @model_validator(mode="after")
+    def _set_endpoint_url(self) -> "WebhookResponse":
+        """Populate the externally reachable webhook intake URL."""
+        if self.body is not None and self.body.endpoint_url is None:
+            from zenml.webhooks.urls import get_webhook_intake_url
+
+            self.body.endpoint_url = get_webhook_intake_url(
+                webhook_type=self.body.webhook_type,
+                webhook_id=self.id,
+            )
+        return self
+
     def get_hydrated_version(self) -> "WebhookResponse":
         """Return the hydrated webhook.
 
@@ -127,13 +139,13 @@ class WebhookResponse(
         return self.get_body().active
 
     @property
-    def endpoint_path(self) -> str:
-        """Return the provider-facing event endpoint path.
+    def endpoint_url(self) -> str | None:
+        """Return the provider-facing event endpoint URL.
 
         Returns:
-            The provider-facing event endpoint path.
+            The absolute endpoint URL, if the server URL is configured.
         """
-        return self.get_body().endpoint_path
+        return self.get_body().endpoint_url
 
     @property
     def stats(self) -> WebhookStats:

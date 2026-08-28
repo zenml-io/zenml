@@ -81,7 +81,8 @@ def test_webhook_cli_lifecycle(clean_client):
 
         assert result.exit_code == 0, result.output
         assert name in result.output
-        assert webhook.endpoint_path in result.output
+        assert webhook.endpoint_url is not None
+        assert webhook.endpoint_url in result.output
 
         result = runner.invoke(
             update_command,
