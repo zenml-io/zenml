@@ -288,11 +288,3 @@ class FutureRegistry:
                 #   sets the active exception (the wrapped one) as the context
                 e.__suppress_context__ = True
                 pass
-
-    def has_in_progress_work(self) -> bool:
-        """Check whether any tracked future is still running.
-
-        Returns:
-            True if any tracked future is still running, False otherwise.
-        """
-        return any(future.running() for future in self.get_all_futures())
