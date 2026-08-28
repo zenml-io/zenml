@@ -25,7 +25,7 @@ readme = "README.md"
 license = "Apache-2.0"
 keywords = ["machine learning", "production", "pipeline", "mlops", "devops", "ai", "agents", "agentic workflows"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
@@ -108,6 +108,7 @@ jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]
 secrets-aws = ["boto3>=1.16.0"]
+aws-rds-iam = ["boto3>=1.16.0"]
 secrets-gcp = ["google-cloud-secret-manager>=2.12.5"]
 secrets-azure = ["azure-identity>=1.4.0", "azure-keyvault-secrets>=4.0.0"]
 secrets-hashicorp = ["hvac>=0.11.2"]
