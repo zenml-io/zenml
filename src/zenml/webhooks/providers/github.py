@@ -405,7 +405,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         GitHubWebhookTargetEvent
     )
 
-    def pre_validate(
+    async def pre_validate(
         self, headers: Mapping[str, str]
     ) -> WebhookPreValidationResult:
         """Reject malformed and ignore unsupported GitHub event families."""

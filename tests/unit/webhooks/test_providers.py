@@ -35,6 +35,8 @@ from zenml.webhooks.providers import (
     get_webhook_provider,
 )
 
+pytestmark = pytest.mark.anyio
+
 
 class _BodyMetadataBearerProvider(BaseWebhookProvider):
     """Test provider with bearer auth and body-derived event metadata."""
@@ -97,7 +99,7 @@ def test_get_webhook_provider_returns_registered_provider(
         {"x-github-event": ""},
     ],
 )
-def test_github_pre_validation_rejects_missing_or_empty_event_header(
+async def test_github_pre_validation_rejects_missing_or_empty_event_header(
     headers: Mapping[str, str],
 ) -> None:
     """GitHub pre-validation rejects absent event metadata."""
@@ -107,20 +109,22 @@ def test_github_pre_validation_rejects_missing_or_empty_event_header(
         WebhookPayloadError,
         match="Missing or empty x-github-event header",
     ):
-        provider.pre_validate(headers=headers)
+        await provider.pre_validate(headers=headers)
 
 
 @pytest.mark.parametrize(
     "event_type",
     ["pull request", "pull-request", "PULL_REQUEST"],
 )
-def test_github_pre_validation_ignores_unsupported_event_type(
+async def test_github_pre_validation_ignores_unsupported_event_type(
     event_type: str,
 ) -> None:
     """GitHub pre-validation explicitly ignores unsupported families."""
     provider = GitHubWebhookProvider()
 
-    result = provider.pre_validate(headers={"x-github-event": event_type})
+    result = await provider.pre_validate(
+        headers={"x-github-event": event_type}
+    )
 
     assert result == WebhookPreValidationResult.IGNORE
 
@@ -129,22 +133,24 @@ def test_github_pre_validation_ignores_unsupported_event_type(
     "event_type",
     ["pull_request", "workflow_run", "push", "release"],
 )
-def test_github_pre_validation_processes_supported_event_type(
+async def test_github_pre_validation_processes_supported_event_type(
     event_type: str,
 ) -> None:
     """GitHub pre-validation processes every supported raw family."""
     provider = GitHubWebhookProvider()
 
-    result = provider.pre_validate(headers={"x-github-event": event_type})
+    result = await provider.pre_validate(
+        headers={"x-github-event": event_type}
+    )
 
     assert result == WebhookPreValidationResult.PROCESS
 
 
-def test_custom_pre_validation_always_processes() -> None:
+async def test_custom_pre_validation_always_processes() -> None:
     """Custom deliveries always continue to full intake validation."""
     provider = CustomWebhookProvider()
 
-    result = provider.pre_validate(headers={})
+    result = await provider.pre_validate(headers={})
 
     assert result == WebhookPreValidationResult.PROCESS
 

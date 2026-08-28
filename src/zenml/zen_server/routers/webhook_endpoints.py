@@ -240,7 +240,7 @@ async def receive_webhook_event(
     """
     provider = get_webhook_provider(webhook_type)
     try:
-        result = provider.pre_validate(headers=request.headers)
+        result = await provider.pre_validate(headers=request.headers)
     except WebhookPayloadError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

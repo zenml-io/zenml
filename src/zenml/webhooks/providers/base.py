@@ -66,7 +66,7 @@ class BaseWebhookProvider(ABC):
     webhook_type: WebhookType
     configuration_class: type[BaseModel]
 
-    def pre_validate(
+    async def pre_validate(
         self, headers: Mapping[str, str]
     ) -> WebhookPreValidationResult:
         """Validate headers before webhook lookup and body reading.
