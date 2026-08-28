@@ -83,6 +83,8 @@ from zenml.models.v2.core.artifact import (
 )
 from zenml.models.v2.core.artifact_version import (
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
@@ -381,9 +383,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -707,6 +709,8 @@ __all__ = [
     "ArtifactVersionResponseMetadata",
     "ArtifactVersionResponseResources",
     "ArtifactVersionUpdate",
+    "ArtifactVersionPruneRequest",
+    "ArtifactVersionPruneResponse",
     "ArtifactVisualizationRequest",
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",

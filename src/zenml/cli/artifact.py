@@ -27,7 +27,6 @@ from zenml.logger import get_logger
 from zenml.models import ArtifactFilter, ArtifactVersionFilter
 from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
-from zenml.utils.pagination_utils import depaginate
 
 logger = get_logger(__name__)
 
@@ -310,8 +309,9 @@ def delete_artifact_version(
 @artifact.command(
     "prune",
     help=(
-        "Delete all unused artifacts and artifact versions that are no longer "
-        "referenced by any pipeline runs or model versions."
+        "Delete all unused artifact versions, i.e. versions that no pipeline "
+        "run, step, hook or model version references, together with their "
+        "artifact data and the artifacts left without versions."
     ),
 )
 @click.option(
@@ -319,8 +319,8 @@ def delete_artifact_version(
     "-a",
     is_flag=True,
     help=(
-        "Only delete the actual artifact object from the artifact store but "
-        "keep the metadata."
+        "Only delete the artifact data from the artifact store but keep the "
+        "metadata."
     ),
 )
 @click.option(
@@ -328,9 +328,14 @@ def delete_artifact_version(
     "-m",
     is_flag=True,
     help=(
-        "Only delete metadata and not the actual artifact object stored in "
-        "the artifact store."
+        "Only delete the metadata and not the artifact data stored in the "
+        "artifact store."
     ),
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Only report how many artifact versions would be deleted.",
 )
 @click.option(
     "--yes",
@@ -342,76 +347,76 @@ def delete_artifact_version(
     "--ignore-errors",
     "-i",
     is_flag=True,
-    help="Ignore errors and continue with the next artifact version.",
+    help="Deprecated and ignored: artifact versions whose data cannot be "
+    "deleted are always kept.",
 )
 @click.option(
     "--server-side",
     is_flag=True,
-    help="Flag to decide whether the deletion should happen client-side or server-side.",
+    help="Deprecated and ignored: pruning always runs on the server when "
+    "connected to one.",
 )
 def prune_artifacts(
     only_artifact: bool = False,
     only_metadata: bool = False,
+    dry_run: bool = False,
     yes: bool = False,
     ignore_errors: bool = False,
     server_side: bool = False,
 ) -> None:
-    """Delete all unused artifacts and artifact versions.
-
-    Unused artifact versions are those that are no longer referenced by any
-    pipeline runs. Similarly, unused artifacts are those that no longer have
-    any used artifact versions.
+    """Delete all unused artifact versions and artifacts.
 
     Args:
-        only_artifact: If set, only delete the actual artifact object from the
+        only_artifact: If set, only delete the artifact data from the
             artifact store but keep the metadata.
-        only_metadata: If set, only delete metadata and not the actual artifact
-            objects stored in the artifact store.
+        only_metadata: If set, only delete the metadata and not the artifact
+            data stored in the artifact store.
+        dry_run: If set, only report how many artifact versions would be
+            deleted.
         yes: If set, don't ask for confirmation.
-        ignore_errors: If set, ignore errors and continue with the next
-            artifact version.
-        server_side: If set, artifact deletion will happen on the server side.
+        ignore_errors: Deprecated and ignored.
+        server_side: Deprecated and ignored.
     """
-    client = Client()
-    unused_artifact_versions = depaginate(
-        client.list_artifact_versions, only_unused=True
-    )
+    if ignore_errors or server_side:
+        cli_utils.warning(
+            "`--ignore-errors` and `--server-side` are deprecated and ignored."
+        )
+    if only_artifact and only_metadata:
+        cli_utils.error(
+            "`--only-artifact` and `--only-metadata` exclude each other."
+        )
 
-    if not unused_artifact_versions:
+    client = Client()
+    unused = client.prune_artifacts(dry_run=True).artifact_version_count
+    if not unused:
         cli_utils.declare("No unused artifact versions found.")
         return
+    found = f"Found {unused} unused artifact version(s)"
+    if dry_run:
+        cli_utils.declare(f"{found} that can be deleted.")
+        return
+    if not yes and not cli_utils.confirmation(
+        f"{found}. Do you want to delete them?"
+    ):
+        cli_utils.declare("Artifact pruning canceled.")
+        return
 
-    if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Found {len(unused_artifact_versions)} unused artifact versions. "
-            f"Do you want to delete them?"
+    result = client.prune_artifacts(
+        only_versions=False,
+        delete_from_artifact_store=not only_metadata,
+        delete_metadata=not only_artifact,
+    )
+    if result.task_id:
+        cli_utils.declare(
+            f"The server is pruning the {unused} artifact version(s) in the "
+            "background, deleting artifact data through its own access to "
+            "the artifact store(s). Search the server logs for task ID "
+            f"`{result.task_id}` to follow the progress."
         )
-        if not confirmation:
-            cli_utils.declare("Artifact deletion canceled.")
-            return
-
-    for unused_artifact_version in unused_artifact_versions:
-        try:
-            Client().delete_artifact_version(
-                name_id_or_prefix=unused_artifact_version.id,
-                delete_metadata=not only_artifact,
-                delete_from_artifact_store=not only_metadata,
-                server_side=server_side,
-            )
-            unused_artifact = unused_artifact_version.artifact
-            if not unused_artifact.versions and not only_artifact:
-                Client().delete_artifact(unused_artifact.id)
-
-        except Exception as e:
-            if ignore_errors:
-                cli_utils.warning(
-                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
-                )
-            else:
-                cli_utils.error(
-                    f"Failed to delete artifact version {unused_artifact_version.id}: {str(e)}"
-                )
-    cli_utils.declare("All unused artifacts and artifact versions deleted.")
+    else:
+        cli_utils.declare(
+            f"Deleted {result.artifact_version_count} artifact version(s)."
+        )
 
 
 def _artifact_version_to_print(

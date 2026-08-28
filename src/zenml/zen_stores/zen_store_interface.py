@@ -35,6 +35,8 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
@@ -682,16 +684,16 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def prune_artifact_versions(
-        self,
-        project_name_or_id: Union[str, UUID],
-        only_versions: bool = True,
-    ) -> None:
-        """Prunes unused artifact versions and their artifacts.
+        self, prune_request: ArtifactVersionPruneRequest
+    ) -> ArtifactVersionPruneResponse:
+        """Counts or deletes artifact versions that nothing references.
 
         Args:
-            project_name_or_id: The project name or ID to prune artifact
-                versions for.
-            only_versions: Only delete artifact versions, keeping artifacts
+            prune_request: Which artifact versions to prune and whether to
+                delete them or only count them.
+
+        Returns:
+            The number of pruned or, for a dry run, unused artifact versions.
         """
 
     # -------------------- Artifact Visualization --------------------

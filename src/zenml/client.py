@@ -99,6 +99,8 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     BaseIdentifiedResponse,
@@ -5779,31 +5781,111 @@ class Client(metaclass=ClientMetaClass):
         only_versions: bool = True,
         delete_from_artifact_store: bool = False,
         project: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Delete all unused artifacts and artifact versions.
+        delete_metadata: bool = True,
+        dry_run: bool = False,
+    ) -> ArtifactVersionPruneResponse:
+        """Delete all unused artifact versions and, optionally, artifacts.
+
+        An artifact version is unused if no step input or output, pipeline
+        output, hook output, or model version references it. When connected
+        to a ZenML server, pruning runs there as a background task, including
+        the deletion of artifact data; the returned task ID is attached to
+        the server log records it emits.
 
         Args:
-            only_versions: Only delete artifact versions, keeping artifacts
-            delete_from_artifact_store: Delete data from artifact metadata
-            project: The project name/ID to filter by.
+            only_versions: Keep artifacts that are left without versions.
+            delete_from_artifact_store: Also delete the artifact data from
+                the artifact store.
+            project: The project name/ID to prune in. Defaults to the active
+                project.
+            delete_metadata: Delete the artifact versions from the database.
+            dry_run: Only count the unused artifact versions.
+
+        Returns:
+            The number of unused or pruned artifact versions, or the ID of
+            the background task pruning them.
         """
-        if delete_from_artifact_store:
-            unused_artifact_versions = depaginate(
-                self.list_artifact_versions,
-                only_unused=True,
-                project=project,
-            )
-            for unused_artifact_version in unused_artifact_versions:
-                self._delete_artifact_from_artifact_store(
-                    unused_artifact_version
-                )
+        from zenml.zen_stores.rest_zen_store import RestZenStore
 
-        project = project or self.active_project.id
-
-        self.zen_store.prune_artifact_versions(
-            project_name_or_id=project, only_versions=only_versions
+        project_id = (
+            self.get_project(project).id if project else self.active_project.id
         )
-        logger.info("All unused artifacts and artifact versions deleted.")
+        if (
+            delete_from_artifact_store
+            and not dry_run
+            and not isinstance(self.zen_store, RestZenStore)
+        ):
+            return self._prune_local_artifact_versions(
+                project_id=project_id,
+                only_versions=only_versions,
+                delete_metadata=delete_metadata,
+            )
+
+        return self.zen_store.prune_artifact_versions(
+            ArtifactVersionPruneRequest(
+                project=project_id,
+                only_versions=only_versions,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+                apply=not dry_run,
+            )
+        )
+
+    def _prune_local_artifact_versions(
+        self, project_id: UUID, only_versions: bool, delete_metadata: bool
+    ) -> ArtifactVersionPruneResponse:
+        """Prune the unused artifact versions of a local store, data included.
+
+        A local store cannot reach the artifact store, so the data of each
+        batch is deleted here before its metadata. Versions whose data cannot
+        be deleted are kept.
+
+        Args:
+            project_id: The project to prune in.
+            only_versions: Keep artifacts that are left without versions.
+            delete_metadata: Delete the artifact versions from the database.
+
+        Returns:
+            The number of pruned artifact versions.
+        """
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+        assert isinstance(self.zen_store, SqlZenStore)
+        pruned_count = 0
+        after: Optional[UUID] = None
+        while (
+            locations := self.zen_store.list_unused_artifact_version_locations(
+                project_id=project_id, after=after
+            )
+        ):
+            after = locations[-1].id
+            deleted_data = []
+            for location in locations:
+                try:
+                    self._delete_artifact_from_artifact_store(
+                        uri=location.uri,
+                        artifact_store_id=location.artifact_store_id,
+                    )
+                except Exception:
+                    logger.warning(
+                        f"Keeping artifact version {location.id} because its "
+                        "data could not be deleted."
+                    )
+                else:
+                    deleted_data.append(location.id)
+            if not delete_metadata:
+                pruned_count += len(deleted_data)
+            elif deleted_data:
+                pruned_count += len(
+                    self.zen_store.delete_unused_artifact_versions(
+                        deleted_data
+                    )
+                )
+        if delete_metadata and not only_versions:
+            self.zen_store.prune_artifacts_without_versions(project_id)
+        return ArtifactVersionPruneResponse(
+            artifact_version_count=pruned_count
+        )
 
     # --------------------------- Artifact Versions ---------------------------
 
@@ -6033,7 +6115,8 @@ class Client(metaclass=ClientMetaClass):
         )
         if delete_from_artifact_store and not server_side:
             self._delete_artifact_from_artifact_store(
-                artifact_version=artifact_version
+                uri=artifact_version.uri,
+                artifact_store_id=artifact_version.artifact_store_id,
             )
         if delete_metadata or (server_side and delete_from_artifact_store):
             self._delete_artifact_version(
@@ -6097,12 +6180,13 @@ class Client(metaclass=ClientMetaClass):
             )
 
     def _delete_artifact_from_artifact_store(
-        self, artifact_version: ArtifactVersionResponse
+        self, uri: str, artifact_store_id: Optional[UUID]
     ) -> None:
         """Delete an artifact object from the artifact store.
 
         Args:
-            artifact_version: The artifact version to delete.
+            uri: The URI of the artifact object.
+            artifact_store_id: The artifact store holding the object.
 
         Raises:
             Exception: If the artifact store is inaccessible.
@@ -6110,24 +6194,23 @@ class Client(metaclass=ClientMetaClass):
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 
-        if not artifact_version.artifact_store_id:
+        if not artifact_store_id:
             logger.warning(
-                f"Artifact '{artifact_version.uri}' does not have an artifact "
-                "store associated with it. Skipping deletion from artifact "
-                "store."
+                f"Artifact '{uri}' does not have an artifact store associated "
+                "with it. Skipping deletion from artifact store."
             )
             return
         try:
             artifact_store_model = self.get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact_version.artifact_store_id,
+                name_id_or_prefix=artifact_store_id,
             )
             artifact_store = StackComponent.from_model(artifact_store_model)
             assert isinstance(artifact_store, BaseArtifactStore)
-            artifact_store.rmtree(artifact_version.uri)
+            artifact_store.rmtree(uri)
         except Exception as e:
             logger.error(
-                f"Failed to delete artifact '{artifact_version.uri}' from the "
+                f"Failed to delete artifact '{uri}' from the "
                 "artifact store. This might happen if your local client "
                 "does not have access to the artifact store or does not "
                 "have the required integrations installed. Full error: "
@@ -6135,10 +6218,7 @@ class Client(metaclass=ClientMetaClass):
             )
             raise e
         else:
-            logger.info(
-                f"Deleted artifact '{artifact_version.uri}' from the artifact "
-                "store."
-            )
+            logger.info(f"Deleted artifact '{uri}' from the artifact store.")
 
     # ------------------------------ Run Metadata ------------------------------
 

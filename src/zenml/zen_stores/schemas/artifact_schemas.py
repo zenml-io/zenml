@@ -384,17 +384,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
 
     @classmethod
     def unused_filter(cls) -> ColumnElement[bool]:
-        """Build the filter matching artifact versions with no references.
+        """Build the filter matching artifact versions that nothing references.
 
-        A version counts as referenced while any step input/output, pipeline
-        output, hook output, or model version link points at it.
-
-        The reference subqueries are deliberately uncorrelated: SQLite has no
-        artifact-leading index on the link tables, so a correlated `EXISTS`
-        would rescan every link table per artifact version. `correlate(None)`
-        also keeps outer filters that join the same link table (e.g. model
-        version filters) from auto-correlating its FROM clause away. `NOT IN`
-        is safe here because none of the referencing columns is nullable.
+        A version is referenced while a step input or output, a pipeline
+        output, a hook output, or a model version link points at it.
 
         Returns:
             A SQL expression matching unused artifact versions.
@@ -421,9 +414,14 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             ModelVersionArtifactSchema.artifact_version_id,
         ]
 
+        # Correlated `NOT EXISTS` lets MySQL probe each link table through
+        # its foreign key index instead of materializing every referenced ID
+        # in memory as `NOT IN` does. Correlating on this table explicitly
+        # keeps a link table that an outer filter also joins (e.g. a model
+        # version filter) inside the subquery.
         return and_(
             *(
-                col(cls.id).notin_(select(column).correlate(None))
+                ~select(1).where(column == col(cls.id)).correlate(cls).exists()
                 for column in referencing_columns
             )
         )

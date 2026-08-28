@@ -60,6 +60,7 @@ from typing import (
     ForwardRef,
     List,
     Literal,
+    NamedTuple,
     NoReturn,
     Optional,
     Sequence,
@@ -207,6 +208,8 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
@@ -497,6 +500,14 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+
+class ArtifactVersionLocation(NamedTuple):
+    """Where the data of an artifact version is stored."""
+
+    id: UUID
+    uri: str
+    artifact_store_id: Optional[UUID]
 
 
 def exponential_backoff_with_jitter(
@@ -3445,41 +3456,194 @@ class SqlZenStore(BaseZenStore):
             session.delete(artifact_version)
             session.commit()
 
-    def prune_artifact_versions(
+    def list_unused_artifact_version_locations(
         self,
-        project_name_or_id: Union[str, UUID],
-        only_versions: bool = True,
-    ) -> None:
-        """Prunes unused artifact versions and their artifacts.
+        project_id: UUID,
+        after: Optional[UUID] = None,
+        limit: int = 500,
+    ) -> List[ArtifactVersionLocation]:
+        """List where the data of unused artifact versions is stored.
 
         Args:
-            project_name_or_id: The project name or ID to prune artifact
-                versions for.
-            only_versions: Only delete artifact versions, keeping artifacts
+            project_id: The project whose artifact versions are listed.
+            after: Only list artifact versions with an ID greater than this
+                one, which lets a caller walk the versions in stable batches
+                while deleting some of them.
+            limit: Maximum number of artifact versions to list.
+
+        Returns:
+            The locations, in ID order.
+        """
+        query = (
+            select(
+                ArtifactVersionSchema.id,
+                ArtifactVersionSchema.uri,
+                ArtifactVersionSchema.artifact_store_id,
+            )
+            .where(
+                ArtifactVersionSchema.unused_filter(),
+                col(ArtifactVersionSchema.project_id) == project_id,
+            )
+            .order_by(col(ArtifactVersionSchema.id))
+            .limit(limit)
+        )
+        if after is not None:
+            query = query.where(col(ArtifactVersionSchema.id) > after)
+        with Session(self.engine) as session:
+            return [
+                ArtifactVersionLocation(*row) for row in session.exec(query)
+            ]
+
+    def delete_unused_artifact_versions(
+        self, artifact_version_ids: Sequence[UUID]
+    ) -> List[UUID]:
+        """Delete the given artifact versions unless something references them.
+
+        The liveness rule is checked again in the delete, so a version that
+        was referenced after the caller selected it survives. All versions
+        are deleted in one transaction; callers batch.
+
+        Args:
+            artifact_version_ids: The artifact versions to delete.
+
+        Returns:
+            The IDs of the artifact versions that were deleted.
         """
         with Session(self.engine) as session:
-            project_id = self._get_schema_by_name_or_id(
-                object_name_or_id=project_name_or_id,
-                schema_class=ProjectSchema,
-                session=session,
-            ).id
-
-            session.execute(
-                delete(ArtifactVersionSchema).where(
-                    ArtifactVersionSchema.unused_filter(),
-                    col(ArtifactVersionSchema.project_id) == project_id,
-                )
+            deleted = self._delete_unused_artifact_versions(
+                session, artifact_version_ids
             )
-            if not only_versions:
-                session.execute(
-                    delete(ArtifactSchema).where(
-                        col(ArtifactSchema.id).notin_(
-                            select(ArtifactVersionSchema.artifact_id)
-                        ),
-                        col(ArtifactSchema.project_id) == project_id,
-                    )
-                )
             session.commit()
+        return deleted
+
+    @staticmethod
+    def _delete_unused_artifact_versions(
+        session: Session, artifact_version_ids: Sequence[UUID]
+    ) -> List[UUID]:
+        """Delete the given artifact versions unless something references them.
+
+        Args:
+            session: The session to delete in.
+            artifact_version_ids: The artifact versions to delete.
+
+        Returns:
+            The IDs of the artifact versions that were deleted.
+        """
+        session.execute(
+            delete(ArtifactVersionSchema)
+            .where(
+                col(ArtifactVersionSchema.id).in_(artifact_version_ids),
+                ArtifactVersionSchema.unused_filter(),
+            )
+            .execution_options(synchronize_session=False)
+        )
+        survivors = set(
+            session.exec(
+                select(col(ArtifactVersionSchema.id)).where(
+                    col(ArtifactVersionSchema.id).in_(artifact_version_ids)
+                )
+            ).all()
+        )
+        deleted = [id_ for id_ in artifact_version_ids if id_ not in survivors]
+        if deleted:
+            # Run metadata links carry no foreign key to the artifact version
+            # table, so the database cannot cascade them.
+            session.execute(
+                delete(RunMetadataResourceSchema)
+                .where(
+                    col(RunMetadataResourceSchema.resource_type)
+                    == MetadataResourceTypes.ARTIFACT_VERSION.value,
+                    col(RunMetadataResourceSchema.resource_id).in_(deleted),
+                )
+                .execution_options(synchronize_session=False)
+            )
+        return deleted
+
+    def prune_artifacts_without_versions(self, project_id: UUID) -> int:
+        """Delete the artifacts of a project that have no versions left.
+
+        Args:
+            project_id: The project whose artifacts are pruned.
+
+        Returns:
+            The number of deleted artifacts.
+        """
+        with Session(self.engine) as session:
+            result = session.execute(
+                delete(ArtifactSchema)
+                .where(
+                    ~select(1)
+                    .where(
+                        ArtifactVersionSchema.artifact_id == ArtifactSchema.id
+                    )
+                    .correlate(ArtifactSchema)
+                    .exists(),
+                    col(ArtifactSchema.project_id) == project_id,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            session.commit()
+        return int(result.rowcount)  # type: ignore[attr-defined]
+
+    def prune_artifact_versions(
+        self,
+        prune_request: ArtifactVersionPruneRequest,
+        batch_size: int = 1000,
+    ) -> ArtifactVersionPruneResponse:
+        """Counts or deletes artifact versions that nothing references.
+
+        Only the database is touched; deleting artifact data from the
+        artifact store is the caller's job.
+
+        Args:
+            prune_request: Which artifact versions to prune and whether to
+                delete them or only count them.
+            batch_size: Maximum number of artifact versions deleted per
+                transaction.
+
+        Returns:
+            The number of pruned or, for a dry run, unused artifact versions.
+        """
+        unused = (
+            ArtifactVersionSchema.unused_filter(),
+            col(ArtifactVersionSchema.project_id) == prune_request.project,
+        )
+
+        if not prune_request.apply:
+            with Session(self.engine) as session:
+                count = session.exec(
+                    select(func.count())
+                    .select_from(ArtifactVersionSchema)
+                    .where(*unused)
+                ).one()
+            return ArtifactVersionPruneResponse(artifact_version_count=count)
+
+        if not prune_request.delete_metadata:
+            return ArtifactVersionPruneResponse(artifact_version_count=0)
+
+        deleted_count = 0
+        candidates = (
+            select(col(ArtifactVersionSchema.id))
+            .where(*unused)
+            .order_by(col(ArtifactVersionSchema.id))
+            .limit(batch_size)
+        )
+        while True:
+            with Session(self.engine) as session:
+                batch = session.exec(candidates).all()
+                if not batch:
+                    break
+                deleted_count += len(
+                    self._delete_unused_artifact_versions(session, batch)
+                )
+                session.commit()
+
+        if not prune_request.only_versions:
+            self.prune_artifacts_without_versions(prune_request.project)
+
+        return ArtifactVersionPruneResponse(
+            artifact_version_count=deleted_count
+        )
 
     # ------------------------ Artifact Visualizations ------------------------
 

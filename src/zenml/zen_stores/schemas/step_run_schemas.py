@@ -615,6 +615,9 @@ class StepRunInputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are inputs to which step."""
 
     __tablename__ = "step_run_input_artifact"
+    __table_args__ = (
+        build_index(table_name=__tablename__, column_names=["artifact_id"]),
+    )
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
@@ -657,6 +660,9 @@ class StepRunOutputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are outputs of which step."""
 
     __tablename__ = "step_run_output_artifact"
+    __table_args__ = (
+        build_index(table_name=__tablename__, column_names=["artifact_id"]),
+    )
 
     # Fields
     name: str

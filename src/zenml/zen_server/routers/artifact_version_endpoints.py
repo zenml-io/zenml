@@ -14,7 +14,7 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import List, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -32,12 +32,17 @@ from zenml.constants import (
     BATCH,
     DATA,
     DOWNLOAD_TOKEN,
+    PRUNE,
     VERSION_1,
     VISUALIZE,
 )
 from zenml.enums import DownloadType
+from zenml.exceptions import IllegalOperationError
+from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
@@ -59,23 +64,33 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
-    verify_permissions_and_prune_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     dehydrate_page,
     delete_model_resource,
+    delete_resources,
     get_allowed_resource_ids,
+    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
+    set_auth_context,
     set_filter_project_scope,
+    submit_maintenance_task,
     zen_store,
 )
+from zenml.zen_stores.sql_zen_store import ArtifactVersionLocation
+
+logger = get_logger(__name__)
+
+# Smaller than the store's own delete batches because every version in a
+# batch costs a round trip to the artifact store before its metadata goes.
+PRUNE_BATCH_SIZE = 500
 
 artifact_version_router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACT_VERSIONS,
@@ -279,30 +294,11 @@ def delete_artifact_version(
                 "Artifact version has no artifact store, cannot delete data."
             )
 
-        artifact_store_model = zen_store().get_stack_component(
-            artifact_version.artifact_store_id, hydrate=True
-        )
-        verify_permission_for_model(
-            artifact_store_model,
-            action=Action.READ,
-        )
-        if artifact_store_model.connector:
-            verify_permission_for_model(
-                artifact_store_model.connector,
-                action=Action.READ,
-            )
-            verify_permission_for_model(
-                artifact_store_model.connector,
-                action=Action.CLIENT,
-            )
-
+        _verify_artifact_store_access(artifact_version.artifact_store_id)
         try:
-            artifact_store = load_artifact_store(
-                artifact_store_id=artifact_version.artifact_store_id,
-                zen_store=zen_store(),
+            _delete_artifact_data(
+                artifact_version.uri, artifact_version.artifact_store_id
             )
-            if artifact_store.exists(artifact_version.uri):
-                artifact_store.rmtree(artifact_version.uri)
         except Exception as e:
             raise RuntimeError(
                 f"Artifact data at '{artifact_version.uri}' could not be "
@@ -315,31 +311,254 @@ def delete_artifact_version(
         delete_model_resource(artifact_version)
 
 
-@artifact_version_router.delete(
-    "",
-    responses={401: error_response, 404: error_response, 422: error_response},
+@artifact_version_router.post(
+    PRUNE,
+    responses={401: error_response, 422: error_response, 429: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def prune_artifact_versions(
+    prune_request: ArtifactVersionPruneRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> ArtifactVersionPruneResponse:
+    """Counts or deletes artifact versions that nothing references.
+
+    Pruning can take a long time, so it runs as a maintenance task and the
+    request only returns the task ID. Artifact data is deleted only from the
+    artifact stores the caller may use, and versions whose data cannot be
+    deleted are kept.
+
+    Args:
+        prune_request: Which artifact versions to prune and whether to
+            delete them or only count them.
+        auth_context: Authentication context.
+
+    Returns:
+        The number of unused artifact versions for a dry run, or the ID of
+        the task pruning them.
+    """
+    verify_permission(
+        resource_type=ResourceType.ARTIFACT_VERSION,
+        action=Action.PRUNE,
+        project_id=prune_request.project,
+    )
+
+    if not prune_request.apply:
+        return zen_store().prune_artifact_versions(prune_request)
+
+    def _prune() -> None:
+        # The task thread serves no request, so the caller's context is
+        # restored for the artifact store permission checks.
+        set_auth_context(auth_context)
+        logger.info(
+            f"Pruning unused artifact versions of project "
+            f"{prune_request.project} on behalf of user "
+            f"{auth_context.user.id}."
+        )
+        count = _prune_unused_artifact_versions(prune_request)
+        logger.info(f"Pruned {count} artifact version(s).")
+
+    return ArtifactVersionPruneResponse(
+        task_id=submit_maintenance_task(_prune)
+    )
+
+
+@artifact_version_router.delete(
+    "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
+@async_fastapi_endpoint_wrapper
+def prune_artifact_versions_legacy(
     project_name_or_id: Union[str, UUID],
     only_versions: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Prunes unused artifact versions and their artifacts.
+    """Prunes unused artifact versions synchronously.
+
+    Kept for clients older than the `prune` route, which delete artifact
+    data themselves before calling it.
 
     Args:
         project_name_or_id: The project name or ID to prune artifact
             versions for.
-        only_versions: Only delete artifact versions, keeping artifacts
+        only_versions: Only delete artifact versions, keeping artifacts.
     """
     project_id = zen_store().get_project(project_name_or_id).id
-
-    verify_permissions_and_prune_entities(
+    verify_permission(
         resource_type=ResourceType.ARTIFACT_VERSION,
-        prune_method=zen_store().prune_artifact_versions,
-        only_versions=only_versions,
+        action=Action.PRUNE,
         project_id=project_id,
     )
+    zen_store().prune_artifact_versions(
+        ArtifactVersionPruneRequest(
+            project=project_id, only_versions=only_versions, apply=True
+        )
+    )
+
+
+def _prune_unused_artifact_versions(
+    prune_request: ArtifactVersionPruneRequest,
+) -> int:
+    """Prune unused artifact versions batch by batch.
+
+    Each batch's artifact data is deleted before its metadata, the same
+    order as deleting a single version: a version whose data cannot be
+    deleted keeps its metadata and can be retried, and an interrupted task
+    leaves at most one batch of versions without data. The one exception is
+    a version that is referenced between the two steps; its metadata
+    survives while its data is gone, so it is reported as an error.
+
+    Args:
+        prune_request: Which artifact versions to prune.
+
+    Returns:
+        The number of artifact versions whose metadata, or for a data-only
+        prune whose data, was deleted.
+    """
+    project_id = prune_request.project
+    usable_artifact_stores: Dict[UUID, bool] = {}
+    pruned_count = 0
+    after: Optional[UUID] = None
+    while locations := zen_store().list_unused_artifact_version_locations(
+        project_id=project_id, after=after, limit=PRUNE_BATCH_SIZE
+    ):
+        after = locations[-1].id
+        if prune_request.delete_from_artifact_store:
+            locations = [
+                location
+                for location in locations
+                if _delete_unused_artifact_data(
+                    location, usable_artifact_stores
+                )
+            ]
+        if not prune_request.delete_metadata:
+            pruned_count += len(locations)
+            continue
+
+        candidates = [location.id for location in locations]
+        if not candidates:
+            continue
+        deleted = zen_store().delete_unused_artifact_versions(candidates)
+        if prune_request.delete_from_artifact_store and len(deleted) < len(
+            candidates
+        ):
+            kept = ", ".join(
+                str(id_) for id_ in set(candidates) - set(deleted)
+            )
+            logger.error(
+                f"Artifact version(s) {kept} were referenced after their "
+                "data was deleted and were kept. Their data is gone."
+            )
+        delete_resources(
+            [
+                Resource(
+                    type=ResourceType.ARTIFACT_VERSION,
+                    id=id_,
+                    project_id=project_id,
+                )
+                for id_ in deleted
+            ]
+        )
+        pruned_count += len(deleted)
+
+    if prune_request.delete_metadata and not prune_request.only_versions:
+        zen_store().prune_artifacts_without_versions(project_id)
+    return pruned_count
+
+
+def _delete_unused_artifact_data(
+    location: ArtifactVersionLocation,
+    usable_artifact_stores: Dict[UUID, bool],
+) -> bool:
+    """Delete the data of an unused artifact version if that is possible.
+
+    Args:
+        location: Where the data is stored.
+        usable_artifact_stores: Whether the caller may use each artifact
+            store seen so far; artifact stores not seen yet are checked and
+            added.
+
+    Returns:
+        Whether the data was deleted.
+    """
+    artifact_store_id = location.artifact_store_id
+    if artifact_store_id is None:
+        logger.warning(
+            f"Keeping artifact version {location.id}: it has no artifact "
+            "store."
+        )
+        return False
+    if artifact_store_id not in usable_artifact_stores:
+        usable_artifact_stores[artifact_store_id] = _may_use_artifact_store(
+            artifact_store_id
+        )
+    if not usable_artifact_stores[artifact_store_id]:
+        return False
+    try:
+        _delete_artifact_data(location.uri, artifact_store_id)
+    except Exception as e:
+        logger.warning(
+            f"Keeping artifact version {location.id} because its data at "
+            f"'{location.uri}' could not be deleted: {e}"
+        )
+        return False
+    return True
+
+
+def _may_use_artifact_store(artifact_store_id: UUID) -> bool:
+    """Check whether the caller may delete data from an artifact store.
+
+    Args:
+        artifact_store_id: The artifact store.
+
+    Returns:
+        Whether the artifact store exists and the caller may use it and its
+        service connector.
+    """
+    try:
+        _verify_artifact_store_access(artifact_store_id)
+    except (KeyError, IllegalOperationError) as e:
+        logger.warning(
+            f"Keeping the artifact versions stored in artifact store "
+            f"{artifact_store_id}: {e}"
+        )
+        return False
+    return True
+
+
+def _verify_artifact_store_access(artifact_store_id: UUID) -> None:
+    """Verify that the caller may use an artifact store and its connector.
+
+    Args:
+        artifact_store_id: The artifact store.
+    """
+    artifact_store_model = zen_store().get_stack_component(
+        artifact_store_id, hydrate=True
+    )
+    verify_permission_for_model(artifact_store_model, action=Action.READ)
+    if artifact_store_model.connector:
+        verify_permission_for_model(
+            artifact_store_model.connector, action=Action.READ
+        )
+        verify_permission_for_model(
+            artifact_store_model.connector, action=Action.CLIENT
+        )
+
+
+def _delete_artifact_data(uri: str, artifact_store_id: UUID) -> None:
+    """Delete artifact data from its artifact store.
+
+    Args:
+        uri: The URI of the data.
+        artifact_store_id: The artifact store holding the data.
+    """
+    # The server caches artifact store instances, so loading one per
+    # version is a dictionary lookup after the first time.
+    artifact_store = load_artifact_store(
+        artifact_store_id=artifact_store_id, zen_store=zen_store()
+    )
+    if artifact_store.exists(uri):
+        artifact_store.rmtree(uri)
 
 
 @artifact_version_router.get(

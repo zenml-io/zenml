@@ -91,6 +91,7 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    PRUNE,
     REPLAY,
     RESOLVE,
     RESOURCE_POOL_SUBJECT_POLICIES,
@@ -161,6 +162,8 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
@@ -1078,24 +1081,21 @@ class RestZenStore(BaseZenStore):
         )
 
     def prune_artifact_versions(
-        self,
-        project_name_or_id: Union[str, UUID],
-        only_versions: bool = True,
-    ) -> None:
-        """Prunes unused artifact versions and their artifacts.
+        self, prune_request: ArtifactVersionPruneRequest
+    ) -> ArtifactVersionPruneResponse:
+        """Counts or deletes artifact versions that nothing references.
 
         Args:
-            project_name_or_id: The project name or ID to prune artifact
-                versions for.
-            only_versions: Only delete artifact versions, keeping artifacts
+            prune_request: Which artifact versions to prune and whether to
+                delete them or only count them.
+
+        Returns:
+            The number of pruned or, for a dry run, unused artifact versions.
         """
-        self.delete(
-            path=ARTIFACT_VERSIONS,
-            params={
-                "only_versions": only_versions,
-                "project_name_or_id": project_name_or_id,
-            },
+        response_body = self.post(
+            path=f"{ARTIFACT_VERSIONS}{PRUNE}", body=prune_request
         )
+        return ArtifactVersionPruneResponse.model_validate(response_body)
 
     # ------------------------ Artifact Visualizations ------------------------
 
