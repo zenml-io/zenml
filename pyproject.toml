@@ -25,7 +25,7 @@ readme = "README.md"
 license = "Apache-2.0"
 keywords = ["machine learning", "production", "pipeline", "mlops", "devops", "ai", "agents", "agentic workflows"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
