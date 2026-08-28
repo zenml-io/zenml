@@ -25,13 +25,24 @@ def test_api_transaction_cleanup_time_budget_can_match_interval() -> None:
     assert config.api_transaction_cleanup_time_budget == 1
 
 
-def test_webhook_event_consumer_sources_accept_comma_separated_value() -> None:
-    """Webhook consumer implementations can be configured through the env."""
+def test_event_sources_accept_comma_separated_values() -> None:
+    """Event extensions can be configured through comma-separated env vars."""
     config = ServerConfiguration(
-        webhook_event_consumer_sources="package.First, package.Second"
+        event_handler_sources="package.Handler, , package.OtherHandler",
+        webhook_event_consumer_sources="package.First, package.Second, ",
     )
 
+    assert config.event_handler_sources == [
+        "package.Handler",
+        "package.OtherHandler",
+    ]
     assert config.webhook_event_consumer_sources == [
         "package.First",
         "package.Second",
     ]
+
+
+def test_event_sources_reject_invalid_values() -> None:
+    """Invalid extension-source values are not silently discarded."""
+    with pytest.raises(ValidationError):
+        ServerConfiguration(webhook_event_consumer_sources={"invalid": True})

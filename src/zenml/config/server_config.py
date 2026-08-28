@@ -649,43 +649,27 @@ class ServerConfiguration(BaseModel):
 
         return value
 
-    @field_validator("event_handler_sources", mode="before")
+    @field_validator(
+        "event_handler_sources",
+        "webhook_event_consumer_sources",
+        mode="before",
+    )
     @classmethod
-    def _convert_event_handlers(cls, value: Any) -> list[str]:
-        """Convert comma-separated value to list of strings.
+    def _convert_event_sources(cls, value: Any) -> Any:
+        """Convert comma-separated extension sources to a list.
 
         Args:
             value: A comma-separated string or None.
 
         Returns:
-            A list of event handlers or an empty list.
+            The potentially converted source list.
         """
-        if isinstance(value, list):
-            return value
-
         if isinstance(value, str):
-            return [i.strip() for i in value.strip().split(",")]
+            return [
+                source.strip() for source in value.split(",") if source.strip()
+            ]
 
-        return []
-
-    @field_validator("webhook_event_consumer_sources", mode="before")
-    @classmethod
-    def _convert_webhook_event_consumers(cls, value: Any) -> list[str]:
-        """Convert comma-separated value to list of strings.
-
-        Args:
-            value: A comma-separated string or None.
-
-        Returns:
-            A list of webhook event consumers or an empty list.
-        """
-        if isinstance(value, list):
-            return value
-
-        if isinstance(value, str):
-            return [item.strip() for item in value.strip().split(",")]
-
-        return []
+        return value
 
     @property
     def deployment_id(self) -> UUID:
