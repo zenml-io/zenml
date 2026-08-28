@@ -13,12 +13,10 @@
 #  permissions and limitations under the License.
 import pytest
 from sqlalchemy import event
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from tests.integration.functional.utils import sample_name
 from zenml.enums import WebhookType
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     WebhookEventStatsUpdate,
     WebhookFilter,
@@ -162,7 +160,10 @@ def test_zen_store_webhook_lifecycle(clean_client):
             )
         ).one()
         assert rotated_secret_id == initial_secret_id
-    assert store.get_webhook_secret(rotated_secret_id) == "replacement-secret"
+    intake_config = store.get_webhook_intake_config(
+        webhook.id, expected_webhook_type=WebhookType.CUSTOM
+    )
+    assert intake_config.secret.get_secret_value() == "replacement-secret"
 
     store.delete_webhook(webhook.id)
 
@@ -170,10 +171,10 @@ def test_zen_store_webhook_lifecycle(clean_client):
         store.get_webhook(webhook.id)
 
 
-def test_sql_store_webhook_intake_uses_one_config_read_and_stats_update(
+def test_sql_store_webhook_intake_config_contains_masked_secret(
     clean_client,
 ) -> None:
-    """Webhook intake uses one SQL statement per database operation."""
+    """Webhook intake resolves its secret without exposing it in output."""
     store = clean_client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Local SQL store behavior is required for this test.")
@@ -194,15 +195,22 @@ def test_sql_store_webhook_intake_uses_one_config_read_and_stats_update(
 
     event.listen(store.engine, "before_cursor_execute", capture_statement)
     try:
-        webhook_type, active, _, project_id = store.get_webhook_intake_config(
-            result.webhook.id
+        config = store.get_webhook_intake_config(
+            result.webhook.id,
+            expected_webhook_type=WebhookType.CUSTOM,
         )
 
-        assert webhook_type == WebhookType.CUSTOM
-        assert active is True
-        assert project_id == clean_client.active_project.id
-        assert len(statements) == 1
-        assert statements[0].lstrip().upper().startswith("SELECT")
+        assert config.webhook_type == WebhookType.CUSTOM
+        assert config.active is True
+        assert config.project_id == clean_client.active_project.id
+        secret = config.secret.get_secret_value()
+        assert secret not in repr(config)
+        assert secret not in config.model_dump_json()
+        assert len(statements) == 2
+        assert all(
+            statement.lstrip().upper().startswith("SELECT")
+            for statement in statements
+        )
 
         statements.clear()
         store.record_webhook_event(
@@ -216,8 +224,10 @@ def test_sql_store_webhook_intake_uses_one_config_read_and_stats_update(
         store.delete_webhook(result.webhook.id)
 
 
-def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
-    """Webhook-owned secrets require explicit webhook deletion."""
+def test_public_secret_deletion_hides_webhook_owned_secret(
+    clean_client,
+) -> None:
+    """Public secret deletion cannot address internal webhook secrets."""
     store = clean_client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Local SQL store behavior is required for this test.")
@@ -239,19 +249,14 @@ def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
             ).one()
             secret_id = schema.secret_id
 
-            secret = session.get(SecretSchema, secret_id)
-            assert secret is not None
-            session.delete(secret)
-            with pytest.raises(IntegrityError):
-                session.commit()
-            session.rollback()
+        with pytest.raises(KeyError):
+            store.delete_secret(secret_id)
 
-            with pytest.raises(IllegalOperationError):
-                store._delete_secret_schema(
-                    secret_id=secret_id, session=session
-                )
-
-        assert store.get_webhook_secret(secret_id) == "owned-secret"
+        intake_config = store.get_webhook_intake_config(
+            webhook_id,
+            expected_webhook_type=WebhookType.CUSTOM,
+        )
+        assert intake_config.secret.get_secret_value() == "owned-secret"
         assert store.get_webhook(webhook_id).id == webhook_id
 
         store.delete_webhook(webhook_id)

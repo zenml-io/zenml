@@ -77,8 +77,10 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
+    BaseModel,
     ConfigDict,
     Field,
+    SecretStr,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -516,6 +518,18 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 _WEBHOOK_SECRET_VALUE_KEY = "secret"
+
+
+class _WebhookIntakeConfig(BaseModel):
+    """Internal webhook configuration required to authenticate one delivery."""
+
+    model_config = ConfigDict(frozen=True)
+
+    webhook_type: WebhookType
+    active: bool
+    project_id: UUID
+    secret: SecretStr
+
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
@@ -8477,18 +8491,22 @@ class SqlZenStore(BaseZenStore):
         return WebhookSecretResponse(secret=PlainSerializedSecretStr(secret))
 
     def get_webhook_intake_config(
-        self, webhook_id: UUID
-    ) -> Tuple[WebhookType, bool, UUID, UUID]:
-        """Get the minimal configuration required for webhook intake.
+        self,
+        webhook_id: UUID,
+        expected_webhook_type: WebhookType,
+    ) -> _WebhookIntakeConfig:
+        """Get the internal configuration required for webhook intake.
 
         Args:
             webhook_id: The webhook ID.
+            expected_webhook_type: The provider type encoded in the endpoint.
 
         Returns:
-            The webhook type, active state, internal secret ID, and project ID.
+            The provider type, active state, project ID, and signing secret.
 
         Raises:
-            KeyError: If the webhook does not exist.
+            KeyError: If the webhook does not exist or its provider type does
+                not match the endpoint.
         """
         with Session(self.engine) as session:
             config = session.exec(
@@ -8502,18 +8520,15 @@ class SqlZenStore(BaseZenStore):
         if config is None:
             raise KeyError(f"Webhook {webhook_id} not found.")
         webhook_type, active, secret_id, project_id = config
-        return WebhookType(webhook_type), active, secret_id, project_id
-
-    def get_webhook_secret(self, secret_id: UUID) -> str:
-        """Get a webhook signing secret from the configured secrets store.
-
-        Args:
-            secret_id: The internal webhook secret ID.
-
-        Returns:
-            The signing secret.
-        """
-        return self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
+        if webhook_type != expected_webhook_type.value:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        secret = self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
+        return _WebhookIntakeConfig(
+            webhook_type=WebhookType(webhook_type),
+            active=active,
+            project_id=project_id,
+            secret=secret,
+        )
 
     def record_webhook_event(
         self, webhook_id: UUID, update: WebhookEventStatsUpdate
@@ -10117,24 +10132,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             secret_id: The ID of the secret to delete.
             session: The session to use.
-
-        Raises:
-            IllegalOperationError: If the secret is owned by a webhook.
         """
-        # Avoid flushing pending resource deletions before the secrets store,
-        # which may use a separate connection to the same SQLite database.
-        with session.no_autoflush:
-            webhook_id = session.exec(
-                select(WebhookSchema.id).where(
-                    WebhookSchema.secret_id == secret_id
-                )
-            ).first()
-        if webhook_id is not None:
-            raise IllegalOperationError(
-                f"Cannot delete secret {secret_id}: it is owned by webhook "
-                f"{webhook_id}. Delete the webhook instead."
-            )
-
         # Delete the secret values in the configured secrets store
         try:
             self._delete_secret_values(secret_id=secret_id)

@@ -19,6 +19,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, status
+from pydantic import SecretStr
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
@@ -112,20 +113,19 @@ class _Store:
         self.secret_id = uuid4()
         self.project_id = uuid4()
 
-    def get_webhook_intake_config(self, webhook_id):
-        if self.webhook is None:
+    def get_webhook_intake_config(self, webhook_id, expected_webhook_type):
+        if (
+            self.webhook is None
+            or self.webhook.webhook_type != expected_webhook_type
+        ):
             raise KeyError(webhook_id)
-        return (
-            self.webhook.webhook_type,
-            self.webhook.active,
-            self.secret_id,
-            self.project_id,
-        )
-
-    def get_webhook_secret(self, secret_id):
-        assert secret_id == self.secret_id
         self.secret_requests += 1
-        return "webhook-secret"
+        return SimpleNamespace(
+            webhook_type=self.webhook.webhook_type,
+            active=self.webhook.active,
+            project_id=self.project_id,
+            secret=SecretStr("webhook-secret"),
+        )
 
     def record_webhook_event(self, webhook_id, update):
         self.records.append((webhook_id, update))

@@ -282,25 +282,23 @@ def _receive_webhook_event(
             request fails authentication or payload validation.
     """
     try:
-        (
-            stored_type,
-            active,
-            secret_id,
-            project_id,
-        ) = zen_store().get_webhook_intake_config(webhook_id)
+        config = zen_store().get_webhook_intake_config(
+            webhook_id,
+            expected_webhook_type=webhook_type,
+        )
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
 
-    if stored_type != webhook_type:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    secret = zen_store().get_webhook_secret(secret_id)
     provider = get_webhook_provider(webhook_type)
 
     try:
-        provider.authenticate(body=body, headers=headers, secret=secret)
+        provider.authenticate(
+            body=body,
+            headers=headers,
+            secret=config.secret.get_secret_value(),
+        )
     except WebhookAuthenticationError as error:
-        if active:
+        if config.active:
             zen_store().record_webhook_event(
                 webhook_id,
                 WebhookEventStatsUpdate(
@@ -312,7 +310,7 @@ def _receive_webhook_event(
             detail="Invalid webhook authentication.",
         ) from error
 
-    if not active:
+    if not config.active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Webhook is inactive.",
@@ -336,7 +334,7 @@ def _receive_webhook_event(
         webhook_id, WebhookEventStatsUpdate(accepted=True)
     )
     event = WebhookEvent(
-        project_id=project_id,
+        project_id=config.project_id,
         webhook_id=webhook_id,
         webhook_type=webhook_type,
         event_type=parsed_event.event_type,
