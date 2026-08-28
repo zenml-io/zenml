@@ -966,6 +966,23 @@ class ArtifactVersionPruneRequest(BaseZenModel):
         "versions are only counted.",
     )
 
+    @model_validator(mode="after")
+    def _require_something_to_delete(self) -> "ArtifactVersionPruneRequest":
+        """Reject a request that deletes neither metadata nor data.
+
+        Returns:
+            The validated request.
+
+        Raises:
+            ValueError: If neither metadata nor data is to be deleted.
+        """
+        if not self.delete_metadata and not self.delete_from_artifact_store:
+            raise ValueError(
+                "Nothing to prune: the request deletes neither the metadata "
+                "nor the data of the artifact versions."
+            )
+        return self
+
 
 class ArtifactVersionPruneResponse(BaseZenModel):
     """Response model for pruning unused artifact versions."""

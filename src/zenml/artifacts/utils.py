@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
     Mapping,
@@ -81,6 +82,7 @@ if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
     from zenml.models import ComponentResponse
     from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.sql_zen_store import ArtifactVersionLocation
 
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
@@ -965,6 +967,61 @@ def load_artifact_store(
             f"instantiated. This is likely because the artifact store's "
             f"dependencies are not installed. For more information, see {link}."
         )
+
+
+class ArtifactDataDeleter:
+    """Deletes the data of unused artifact versions while they are pruned.
+
+    Every artifact store is loaded once. A version whose data cannot be
+    deleted is reported and kept, so pruning never removes the metadata of
+    data that is still there.
+    """
+
+    def __init__(
+        self,
+        load_artifact_store: Callable[[UUID], Optional["BaseArtifactStore"]],
+    ) -> None:
+        """Initialize the deleter.
+
+        Args:
+            load_artifact_store: Loads an artifact store by ID, or returns
+                None if it cannot be used; its versions are then kept.
+        """
+        self._load_artifact_store = load_artifact_store
+        self._artifact_stores: Dict[UUID, Optional["BaseArtifactStore"]] = {}
+
+    def __call__(self, location: "ArtifactVersionLocation") -> bool:
+        """Delete the data of an unused artifact version if that is possible.
+
+        Args:
+            location: Where the data is stored.
+
+        Returns:
+            Whether the data was deleted.
+        """
+        if location.artifact_store_id is None:
+            logger.warning(
+                f"Keeping artifact version {location.id}: it has no artifact "
+                "store."
+            )
+            return False
+        if location.artifact_store_id not in self._artifact_stores:
+            self._artifact_stores[location.artifact_store_id] = (
+                self._load_artifact_store(location.artifact_store_id)
+            )
+        artifact_store = self._artifact_stores[location.artifact_store_id]
+        if artifact_store is None:
+            return False
+        try:
+            if artifact_store.exists(location.uri):
+                artifact_store.rmtree(location.uri)
+        except Exception as e:
+            logger.warning(
+                f"Keeping artifact version {location.id} because its data at "
+                f"'{location.uri}' could not be deleted: {e}"
+            )
+            return False
+        return True
 
 
 def _get_artifact_store_from_response_or_from_active_stack(

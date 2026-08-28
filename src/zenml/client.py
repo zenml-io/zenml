@@ -5805,87 +5805,29 @@ class Client(metaclass=ClientMetaClass):
             The number of unused or pruned artifact versions, or the ID of
             the background task pruning them.
         """
-        from zenml.zen_stores.rest_zen_store import RestZenStore
-
-        project_id = (
-            self.get_project(project).id if project else self.active_project.id
+        from zenml.artifacts.utils import (
+            ArtifactDataDeleter,
+            load_artifact_store,
         )
-        if (
-            delete_from_artifact_store
-            and not dry_run
-            and not isinstance(self.zen_store, RestZenStore)
-        ):
-            return self._prune_local_artifact_versions(
-                project_id=project_id,
-                only_versions=only_versions,
-                delete_metadata=delete_metadata,
-            )
-
-        return self.zen_store.prune_artifact_versions(
-            ArtifactVersionPruneRequest(
-                project=project_id,
-                only_versions=only_versions,
-                delete_metadata=delete_metadata,
-                delete_from_artifact_store=delete_from_artifact_store,
-                apply=not dry_run,
-            )
-        )
-
-    def _prune_local_artifact_versions(
-        self, project_id: UUID, only_versions: bool, delete_metadata: bool
-    ) -> ArtifactVersionPruneResponse:
-        """Prune the unused artifact versions of a local store, data included.
-
-        A local store cannot reach the artifact store, so the data of each
-        batch is deleted here before its metadata. Versions whose data cannot
-        be deleted are kept.
-
-        Args:
-            project_id: The project to prune in.
-            only_versions: Keep artifacts that are left without versions.
-            delete_metadata: Delete the artifact versions from the database.
-
-        Returns:
-            The number of pruned artifact versions.
-        """
         from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-        assert isinstance(self.zen_store, SqlZenStore)
-        pruned_count = 0
-        after: Optional[UUID] = None
-        while (
-            locations := self.zen_store.list_unused_artifact_version_locations(
-                project_id=project_id, after=after
-            )
-        ):
-            after = locations[-1].id
-            deleted_data = []
-            for location in locations:
-                try:
-                    self._delete_artifact_from_artifact_store(
-                        uri=location.uri,
-                        artifact_store_id=location.artifact_store_id,
-                    )
-                except Exception:
-                    logger.warning(
-                        f"Keeping artifact version {location.id} because its "
-                        "data could not be deleted."
-                    )
-                else:
-                    deleted_data.append(location.id)
-            if not delete_metadata:
-                pruned_count += len(deleted_data)
-            elif deleted_data:
-                pruned_count += len(
-                    self.zen_store.delete_unused_artifact_versions(
-                        deleted_data
-                    )
-                )
-        if delete_metadata and not only_versions:
-            self.zen_store.prune_artifacts_without_versions(project_id)
-        return ArtifactVersionPruneResponse(
-            artifact_version_count=pruned_count
+        prune_request = ArtifactVersionPruneRequest(
+            project=self.get_project(project).id
+            if project
+            else self.active_project.id,
+            only_versions=only_versions,
+            delete_metadata=delete_metadata,
+            delete_from_artifact_store=delete_from_artifact_store,
+            apply=not dry_run,
         )
+        # A local store cannot reach the artifact store from a server, so the
+        # data is deleted here.
+        if isinstance(self.zen_store, SqlZenStore):
+            return self.zen_store.prune_artifact_versions(
+                prune_request,
+                delete_artifact_data=ArtifactDataDeleter(load_artifact_store),
+            )
+        return self.zen_store.prune_artifact_versions(prune_request)
 
     # --------------------------- Artifact Versions ---------------------------
 
