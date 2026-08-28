@@ -13,18 +13,14 @@
 #  permissions and limitations under the License.
 """Pipeline snapshot schemas."""
 
-import base64
 import json
-import zlib
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.types import TypeDecorator, TypeEngine
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -45,6 +41,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
+)
+from zenml.zen_stores.schemas.compressed_text import (
+    CompressedMediumText,
+    CompressedText,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -70,135 +70,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 
 logger = get_logger(__name__)
-
-EXECUTION_DEFINITION_COMPRESSION_MARKER = "\x00zenml-compressed:"
-_COMPRESSED_TEXT_PREFIX = f"{EXECUTION_DEFINITION_COMPRESSION_MARKER}zlib:v1:"
-
-
-def _decode_compressed_text(value: str, max_length: int) -> str:
-    """Decode a compressed text payload while preserving legacy values.
-
-    Args:
-        value: Stored text value.
-        max_length: Maximum decoded value length.
-
-    Returns:
-        The original text value.
-
-    Raises:
-        ValueError: If a compressed value is malformed or exceeds the column
-            limit after decompression.
-    """
-    if not value.startswith(EXECUTION_DEFINITION_COMPRESSION_MARKER):
-        return value
-    if not value.startswith(_COMPRESSED_TEXT_PREFIX):
-        raise ValueError("Unsupported compressed text payload.")
-    if len(value) > max_length:
-        raise ValueError("Invalid compressed text payload.")
-
-    try:
-        compressed = base64.b64decode(
-            value[len(_COMPRESSED_TEXT_PREFIX) :],
-            validate=True,
-        )
-        decompressor = zlib.decompressobj()
-        decoded = decompressor.decompress(compressed, max_length + 1)
-    except (ValueError, zlib.error) as error:
-        raise ValueError("Invalid compressed text payload.") from error
-
-    if (
-        len(decoded) > max_length
-        or decompressor.unconsumed_tail
-        or not decompressor.eof
-        or decompressor.unused_data
-    ):
-        raise ValueError("Invalid compressed text payload.")
-
-    try:
-        return decoded.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ValueError("Invalid compressed text payload.") from error
-
-
-def compress_execution_definition_payload(value: str, max_length: int) -> str:
-    """Compress an execution-definition payload when storage gets smaller.
-
-    Args:
-        value: Plain or already encoded text value.
-        max_length: Maximum encoded and decoded value length.
-
-    Returns:
-        The most compact supported representation of the value.
-
-    Raises:
-        ValueError: If an already marked value is malformed.
-    """
-    if value.startswith(EXECUTION_DEFINITION_COMPRESSION_MARKER):
-        _decode_compressed_text(value, max_length)
-        return value
-
-    raw = value.encode("utf-8")
-    if len(raw) > max_length:
-        return value
-
-    encoded = _COMPRESSED_TEXT_PREFIX + base64.b64encode(
-        zlib.compress(raw)
-    ).decode("ascii")
-    return encoded if len(encoded) < len(raw) else value
-
-
-class _CompressedText(TypeDecorator[str]):
-    """Text with rolling-safe compressed-value reads and writes."""
-
-    impl: TypeEngine[Any] = TEXT()
-    cache_ok = True
-    _max_length = TEXT_FIELD_MAX_LENGTH
-
-    def process_bind_param(
-        self, value: Optional[str], dialect: Dialect
-    ) -> Optional[str]:
-        """Compress values only when the complete envelope is smaller.
-
-        Args:
-            value: Text value to store.
-            dialect: Active SQLAlchemy dialect.
-
-        Returns:
-            The compact storage representation.
-        """
-        return (
-            compress_execution_definition_payload(value, self._max_length)
-            if value is not None
-            else None
-        )
-
-    def process_result_value(
-        self, value: Optional[str], dialect: Dialect
-    ) -> Optional[str]:
-        """Decode compressed values and pass legacy text through unchanged.
-
-        Args:
-            value: Stored text value.
-            dialect: Active SQLAlchemy dialect.
-
-        Returns:
-            The decoded text value.
-        """
-        return (
-            _decode_compressed_text(value, self._max_length)
-            if value is not None
-            else None
-        )
-
-
-class _CompressedMediumText(_CompressedText):
-    """Medium text with rolling-safe compressed-value reads."""
-
-    impl: TypeEngine[Any] = String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-        MEDIUMTEXT(), "mysql"
-    )
-    cache_ok = True
-    _max_length = MEDIUMTEXT_MAX_LENGTH
 
 
 class PipelineSnapshotSchema(BaseSchema, table=True):
@@ -239,12 +110,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
     pipeline_configuration: str = Field(
         sa_column=Column(
-            _CompressedMediumText(),
+            CompressedMediumText(f"{__tablename__}.pipeline_configuration"),
             nullable=False,
         )
     )
     client_environment: str = Field(
-        sa_column=Column(_CompressedText(), nullable=False)
+        sa_column=Column(
+            CompressedText(f"{__tablename__}.client_environment"),
+            nullable=False,
+        )
     )
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
@@ -252,12 +126,14 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
     pipeline_spec: Optional[str] = Field(
         sa_column=Column(
-            _CompressedMediumText(),
+            CompressedMediumText(f"{__tablename__}.pipeline_spec"),
             nullable=True,
         )
     )
     source_code: Optional[str] = Field(
-        sa_column=Column(_CompressedText(), nullable=True)
+        sa_column=Column(
+            CompressedText(f"{__tablename__}.source_code"), nullable=True
+        )
     )
     code_path: Optional[str] = Field(nullable=True)
 
@@ -817,7 +693,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     name: str
     config: str = Field(
         sa_column=Column(
-            _CompressedMediumText(),
+            CompressedMediumText(f"{__tablename__}.config"),
             nullable=False,
         )
     )
