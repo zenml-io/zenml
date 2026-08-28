@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Add webhooks [7c0d9e4a1b2f].
+"""Add webhooks and webhook triggers [7c0d9e4a1b2f].
 
 Revision ID: 7c0d9e4a1b2f
 Revises: 0.96.3
@@ -30,7 +30,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Create the webhook table."""
+    """Create webhooks and associate webhook triggers."""
     op.create_table(
         "webhook",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -108,10 +108,31 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("webhook_id"),
     )
+    with op.batch_alter_table("trigger", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("webhook_id", sa.Uuid(), nullable=True))
+        batch_op.create_foreign_key(
+            "fk_trigger_webhook_id_webhook",
+            "webhook",
+            ["webhook_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch_op.create_index(
+            "ix_trigger_type_webhook_id",
+            ["type", "webhook_id"],
+            unique=False,
+        )
 
 
 def downgrade() -> None:
-    """Drop the webhook table."""
+    """Remove webhooks and their trigger association."""
+    with op.batch_alter_table("trigger", schema=None) as batch_op:
+        batch_op.drop_index("ix_trigger_type_webhook_id")
+        batch_op.drop_constraint(
+            "fk_trigger_webhook_id_webhook",
+            type_="foreignkey",
+        )
+        batch_op.drop_column("webhook_id")
     op.drop_table("webhook_stats")
     op.drop_index(
         "ix_webhook_webhook_type",
