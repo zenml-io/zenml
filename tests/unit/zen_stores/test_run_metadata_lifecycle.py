@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import event
 from sqlalchemy.engine import Connection, Engine
-from sqlmodel import Session, col, select
+from sqlmodel import Session, select
 
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
