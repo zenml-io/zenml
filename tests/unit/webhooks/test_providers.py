@@ -23,6 +23,12 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.enums import WebhookType
+from zenml.models import (
+    GitHubPushEvent,
+    GitHubSemanticEvent,
+    GitHubWebhookTriggerConfiguration,
+    PushEvent,
+)
 from zenml.webhooks import WebhookEvent
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
@@ -67,6 +73,22 @@ class _BodyMetadataBearerProvider(BaseWebhookProvider):
 
     def match_triggers(self, *, event, candidates):
         return list(candidates)
+
+
+def test_github_semantic_events_are_public_pydantic_models() -> None:
+    """Normalized GitHub events are available through the public models API."""
+    event = GitHubPushEvent(
+        repo="zenml-io/zenml",
+        branch="main",
+        actor="octocat",
+    )
+
+    assert isinstance(event, GitHubSemanticEvent)
+    assert event.model_dump() == {
+        "repo": "zenml-io/zenml",
+        "branch": "main",
+        "actor": "octocat",
+    }
 
 
 def _signature(secret: str, body: bytes) -> str:
@@ -317,6 +339,29 @@ def test_github_configuration_reports_all_invalid_target_events() -> None:
     message = str(error.value)
     assert "index 0 (type=unknown)" in message
     assert "index 1 (type=merged_pull_request)" in message
+
+
+def test_github_configuration_accepts_typed_configuration() -> None:
+    """Strict GitHub validation accepts its public typed configuration."""
+    provider = GitHubWebhookProvider()
+    configuration = GitHubWebhookTriggerConfiguration(
+        target_events=[
+            PushEvent(repo="zenml-io/zenml", branch="main"),
+        ]
+    )
+
+    assert provider.validate_configuration(configuration) == (
+        WebhookTriggerConfiguration(
+            target_events=[
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                    "actor": None,
+                }
+            ]
+        )
+    )
 
 
 def test_custom_configuration_accepts_only_empty_target_events() -> None:

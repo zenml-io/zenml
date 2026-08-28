@@ -4,10 +4,10 @@
 import json
 import logging
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, TypeAlias
 
 from pydantic import (
+    BaseModel,
     Field,
     TypeAdapter,
     ValidationError,
@@ -18,7 +18,6 @@ from pydantic import (
 from zenml.enums import WebhookType
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
-from zenml.utils.pydantic_utils import YAMLSerializationMixin
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
     WebhookPayloadError,
@@ -237,7 +236,7 @@ GitHubWebhookTargetEvent: TypeAlias = Annotated[
 GitHubWebhookEventConfiguration = GitHubWebhookTargetEvent
 
 
-class GitHubWebhookTriggerConfiguration(YAMLSerializationMixin):
+class GitHubWebhookTriggerConfiguration(WebhookTriggerConfiguration):
     """Typed configuration for a GitHub webhook trigger."""
 
     target_events: list[GitHubWebhookTargetEvent] = Field(min_length=1)
@@ -278,8 +277,9 @@ def _string_at(payload: Mapping[str, Any], *path: str) -> str | None:
     return value if isinstance(value, str) and value else None
 
 
-@dataclass
-class _SemanticEvent:
+class GitHubSemanticEvent(BaseModel):
+    """Provider event normalized for semantic trigger matching."""
+
     event_filter_type: ClassVar[type[WebhookTargetEvent]]
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
@@ -287,8 +287,9 @@ class _SemanticEvent:
         raise NotImplementedError
 
 
-@dataclass
-class _MergedPullRequestEvent(_SemanticEvent):
+class GitHubMergedPullRequestEvent(GitHubSemanticEvent):
+    """Normalized merged pull request event."""
+
     event_filter_type = MergedPullRequest
     repo: str
     target_branch: str
@@ -296,6 +297,7 @@ class _MergedPullRequestEvent(_SemanticEvent):
     author: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
+        """Return whether this event matches a merged-pull-request target."""
         if not isinstance(target, MergedPullRequest):
             return False
         return all(
@@ -316,14 +318,16 @@ class _MergedPullRequestEvent(_SemanticEvent):
         )
 
 
-@dataclass
-class _WorkflowRunCompletedEvent(_SemanticEvent):
+class GitHubWorkflowRunCompletedEvent(GitHubSemanticEvent):
+    """Normalized completed workflow run event."""
+
     event_filter_type = WorkflowRunCompleted
     workflow: str
     conclusion: str | None
     actor: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
+        """Return whether this event matches a workflow-run target."""
         if not isinstance(target, WorkflowRunCompleted):
             return False
         return all(
@@ -341,14 +345,16 @@ class _WorkflowRunCompletedEvent(_SemanticEvent):
         )
 
 
-@dataclass
-class _PushEvent(_SemanticEvent):
+class GitHubPushEvent(GitHubSemanticEvent):
+    """Normalized branch push event."""
+
     event_filter_type = PushEvent
     repo: str
     branch: str
     actor: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
+        """Return whether this event matches a push target."""
         if not isinstance(target, PushEvent):
             return False
         return all(
@@ -366,8 +372,9 @@ class _PushEvent(_SemanticEvent):
         )
 
 
-@dataclass
-class _ReleasePublishedEvent(_SemanticEvent):
+class GitHubReleasePublishedEvent(GitHubSemanticEvent):
+    """Normalized published release event."""
+
     event_filter_type = ReleasePublished
     repo: str
     tag: str
@@ -375,6 +382,7 @@ class _ReleasePublishedEvent(_SemanticEvent):
     actor: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
+        """Return whether this event matches a published-release target."""
         if not isinstance(target, ReleasePublished):
             return False
         return all(
@@ -527,7 +535,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
 
     def _extract_semantic_event(
         self, event: "WebhookEvent"
-    ) -> _SemanticEvent | None:
+    ) -> GitHubSemanticEvent | None:
         payload = event.payload
         if event.event_type == "pull_request":
             pull_request = payload.get("pull_request")
@@ -541,7 +549,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             target = _string_at(payload, "pull_request", "base", "ref")
             if repo is None or target is None:
                 return None
-            return _MergedPullRequestEvent(
+            return GitHubMergedPullRequestEvent(
                 repo=repo,
                 target_branch=target,
                 source_branch=_string_at(
@@ -555,7 +563,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             workflow = _string_at(payload, "workflow_run", "name")
             if workflow is None:
                 return None
-            return _WorkflowRunCompletedEvent(
+            return GitHubWorkflowRunCompletedEvent(
                 workflow=workflow,
                 conclusion=_string_at(payload, "workflow_run", "conclusion"),
                 actor=_string_at(payload, "workflow_run", "actor", "login"),
@@ -566,7 +574,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             prefix = "refs/heads/"
             if ref is None or repo is None or not ref.startswith(prefix):
                 return None
-            return _PushEvent(
+            return GitHubPushEvent(
                 repo=repo,
                 branch=ref.removeprefix(prefix),
                 actor=_string_at(payload, "sender", "login"),
@@ -578,7 +586,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             tag = _string_at(payload, "release", "tag_name")
             if repo is None or tag is None:
                 return None
-            return _ReleasePublishedEvent(
+            return GitHubReleasePublishedEvent(
                 repo=repo,
                 tag=tag,
                 target_branch=_string_at(
