@@ -31,6 +31,7 @@ from pydantic import Field, model_validator
 
 from zenml.enums import GenericFilterOps
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -55,6 +56,20 @@ if TYPE_CHECKING:
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 logger = get_logger(__name__)
+
+_FILTERABLE_METADATA_TYPES = tuple(
+    metadata_type.value
+    for metadata_type in (
+        MetadataTypeEnum.STRING,
+        MetadataTypeEnum.INT,
+        MetadataTypeEnum.FLOAT,
+        MetadataTypeEnum.BOOL,
+        MetadataTypeEnum.URI,
+        MetadataTypeEnum.PATH,
+        MetadataTypeEnum.DTYPE,
+        MetadataTypeEnum.STORAGE_SIZE,
+    )
+)
 
 
 # ---------------------- Request Models ----------------------
@@ -612,7 +627,7 @@ class TaggableFilter(BaseFilter):
 
 
 class RunMetadataFilterMixin(BaseFilter):
-    """Model to enable filtering and sorting by run metadata."""
+    """Model to enable filtering and sorting by scalar run metadata."""
 
     run_metadata: StringFilterOption = Field(
         default=None,
@@ -690,7 +705,7 @@ class RunMetadataFilterMixin(BaseFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.run_metadata is not None:
-            from sqlmodel import exists, select
+            from sqlmodel import col, exists, select
 
             from zenml.enums import MetadataResourceTypes
             from zenml.zen_stores.schemas import (
@@ -722,6 +737,7 @@ class RunMetadataFilterMixin(BaseFilter):
             for entry in metadata_entries:
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
+                _, operator = self._resolve_operator(value)
 
                 # Create an exists subquery
                 exists_subquery = exists(
@@ -747,6 +763,16 @@ class RunMetadataFilterMixin(BaseFilter):
                         ),
                     )
                 )
+                # `isnotnull:` is also the existing key-presence query, which
+                # remains useful for structured values. All predicates that
+                # inspect a value are deliberately limited to scalar metadata.
+                if operator != GenericFilterOps.IS_NOT_NULL:
+                    exists_subquery = exists_subquery.where(
+                        col(RunMetadataSchema.type).in_(
+                            _FILTERABLE_METADATA_TYPES
+                        )
+                    )
+
                 custom_filters.append(exists_subquery)
 
         return custom_filters

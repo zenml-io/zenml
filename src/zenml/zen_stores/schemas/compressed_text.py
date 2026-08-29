@@ -20,9 +20,9 @@ compressed values unambiguously, and the `<algorithm>:<version>` segment lets
 readers reject encodings they do not know instead of handing garbage to the
 JSON parser.
 
-Compressed writes are off by default and enabled per engine through
-`SqlZenStoreConfiguration.compress_text_payloads`. They may only be enabled
-once every server that shares the database runs a version that contains this
+Compressed writes are off by default and enabled per engine through the
+corresponding `SqlZenStoreConfiguration` setting. They may only be enabled once
+every server that shares the database runs a version that contains the relevant
 decoder; otherwise an upgraded replica would write rows that the remaining
 replicas cannot read during a rolling upgrade. Readers never depend on the
 setting, so it can be switched off again at any time.
@@ -78,6 +78,7 @@ MIN_COMPRESSIBLE_BYTES = 256
 # the dialect object that bind processors receive. The references are weak so
 # that the registry never keeps an engine alive.
 _compressing_dialects: "WeakSet[Dialect]" = WeakSet()
+_compressing_structured_json_dialects: "WeakSet[Dialect]" = WeakSet()
 
 
 def set_compressed_writes(dialect: Dialect, enabled: bool) -> None:
@@ -91,6 +92,58 @@ def set_compressed_writes(dialect: Dialect, enabled: bool) -> None:
         _compressing_dialects.add(dialect)
     else:
         _compressing_dialects.discard(dialect)
+
+
+def set_compressed_structured_json_writes(
+    dialect: Dialect, enabled: bool
+) -> None:
+    """Enable or disable compressed structured JSON writes for an engine.
+
+    This setting is separate from general compressed text writes because a
+    server must contain the `run_metadata.value` reader before any server that
+    shares its database writes compressed metadata.
+
+    Args:
+        dialect: The dialect of the engine.
+        enabled: Whether structured JSON values are compressed on write.
+    """
+    if enabled:
+        _compressing_structured_json_dialects.add(dialect)
+    else:
+        _compressing_structured_json_dialects.discard(dialect)
+
+
+def _encode_if_smaller(value: str, minimum_bytes: int) -> str:
+    """Encode a value only when the complete envelope is smaller.
+
+    Args:
+        value: The plain text value.
+        minimum_bytes: The size below which compression is not attempted.
+
+    Returns:
+        The encoded value when it is smaller, otherwise the original value.
+    """
+    raw = value.encode("utf-8")
+    if len(raw) < minimum_bytes:
+        return value
+    encoded = _encode_utf8(raw)
+    return encoded if len(encoded) < len(raw) else value
+
+
+def _reject_compressed_input(value: str, column: str) -> None:
+    """Reject a stored envelope passed back through a plain-text writer.
+
+    Args:
+        value: The value being written.
+        column: The qualified column name used in the error message.
+
+    Raises:
+        ValueError: If the value starts with the compressed-text marker.
+    """
+    if value.startswith(COMPRESSED_TEXT_MARKER):
+        raise ValueError(
+            f"The {column} must not start with the compressed text marker."
+        )
 
 
 def decode_compressed_text(value: str, context: str) -> str:
@@ -198,19 +251,10 @@ class CompressedText(TypeDecorator[str]):
         # JSON documents cannot start with a NUL byte and Python refuses to
         # compile source code containing one, so this only rejects a raw
         # stored value that was read past the decoder and written back.
-        if value.startswith(COMPRESSED_TEXT_MARKER):
-            raise ValueError(
-                f"The {self.column} must not start with the compressed text "
-                "marker."
-            )
+        _reject_compressed_input(value, self.column)
         if dialect not in _compressing_dialects:
             return value
-
-        raw = value.encode("utf-8")
-        if len(raw) < MIN_COMPRESSIBLE_BYTES:
-            return value
-        encoded = _encode_utf8(raw)
-        return encoded if len(encoded) < len(raw) else value
+        return _encode_if_smaller(value, MIN_COMPRESSIBLE_BYTES)
 
     def process_result_value(
         self, value: Optional[str], dialect: Dialect
@@ -237,3 +281,36 @@ class CompressedMediumText(CompressedText):
     )
     # SQLAlchemy reads this from the class itself, it is not inherited.
     cache_ok = True
+
+
+class CompressedStructuredJsonText(CompressedText):
+    """`TEXT` column that compresses only JSON objects and arrays.
+
+    Scalar JSON values stay plain so database-side metadata filtering keeps
+    its documented behavior. JSON objects and arrays are decoded transparently
+    on reads and are compressed only when the metadata-specific setting is
+    enabled and the complete storage envelope is smaller.
+    """
+
+    cache_ok = True
+
+    def process_bind_param(
+        self, value: Optional[str], dialect: Dialect
+    ) -> Optional[str]:
+        """Conditionally compress a structured JSON value.
+
+        Args:
+            value: The JSON text being written.
+            dialect: The dialect of the engine writing the value.
+
+        Returns:
+            The value to store.
+        """
+        if value is None:
+            return None
+        _reject_compressed_input(value, self.column)
+        if dialect not in _compressing_structured_json_dialects:
+            return value
+        if not value.startswith(("{", "[")):
+            return value
+        return _encode_if_smaller(value, MIN_COMPRESSIBLE_BYTES)

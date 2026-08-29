@@ -16,11 +16,14 @@
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import TEXT, VARCHAR, Column
+from sqlalchemy import VARCHAR, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.compressed_text import (
+    CompressedStructuredJsonText,
+)
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
@@ -74,7 +77,12 @@ class RunMetadataSchema(BaseSchema, table=True):
     project: "ProjectSchema" = Relationship(back_populates="run_metadata")
 
     key: str
-    value: str = Field(sa_column=Column(TEXT, nullable=False))
+    value: str = Field(
+        sa_column=Column(
+            CompressedStructuredJsonText("run_metadata.value"),
+            nullable=False,
+        )
+    )
     type: str
 
     publisher_step_id: Optional[UUID] = build_foreign_key_field(

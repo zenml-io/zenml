@@ -3302,6 +3302,36 @@ def test_run_metadata_filtering(clean_client):
         assert isinstance(av.run_metadata["blupus"], int)
         assert av.run_metadata["blupus"] < 30
 
+    artifact_version = store.list_artifact_versions(
+        artifact_version_filter_model=ArtifactVersionFilter()
+    ).items[0]
+    clean_client.create_run_metadata(
+        metadata={"structured": {"nested": "search token"}},
+        resources=[
+            RunMetadataResource(
+                id=artifact_version.id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
+        ],
+    )
+
+    # Structured contents are payloads, not an implicit SQL search format.
+    av_filter = ArtifactVersionFilter(
+        run_metadata=["structured:contains:search token"]
+    )
+    assert (
+        store.list_artifact_versions(
+            artifact_version_filter_model=av_filter
+        ).total
+        == 0
+    )
+
+    # Key-presence filtering remains available for structured metadata.
+    av_filter = ArtifactVersionFilter(run_metadata=["structured:isnotnull:"])
+    assert store.list_artifact_versions(
+        artifact_version_filter_model=av_filter
+    ).items == [artifact_version]
+
 
 def _create_dynamic_pipeline_run(
     clean_client: "Client",

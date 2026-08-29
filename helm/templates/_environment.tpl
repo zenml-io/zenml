@@ -84,6 +84,9 @@ max_overflow: {{ .ZenML.database.maxOverflow | quote }}
 {{- if .ZenML.database.compressTextPayloads }}
 compress_text_payloads: {{ .ZenML.database.compressTextPayloads | quote }}
 {{- end }}
+{{- if .ZenML.database.compressRunMetadataPayloads }}
+compress_run_metadata_payloads: {{ .ZenML.database.compressRunMetadataPayloads | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 

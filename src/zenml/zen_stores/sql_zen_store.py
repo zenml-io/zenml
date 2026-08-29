@@ -461,6 +461,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.compressed_text import (
+    set_compressed_structured_json_writes,
     set_compressed_writes,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -664,6 +665,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         compress_text_payloads: Store pipeline snapshot and step
             configuration payloads compressed when that is smaller than the
             plain text. Only enable this once every server sharing the database runs a version newer than 0.96.3: once compressed rows exist, the server can no longer be rolled back to a version without the compressed-payload reader. Switching the option off again only stops compressing new rows; already compressed rows stay readable. It affects rows written from then on, not existing ones.
+        compress_run_metadata_payloads: Store structured run metadata values
+            compressed when that is smaller than the plain JSON. Only enable
+            this once every server sharing the database contains the structured
+            metadata reader. Scalar values remain plain and SQL-filterable.
     """
 
     type: StoreType = StoreType.SQL
@@ -689,6 +694,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     max_overflow: int = 20
     pool_pre_ping: bool = True
     compress_text_payloads: bool = False
+    compress_run_metadata_payloads: bool = False
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -1560,11 +1566,21 @@ class SqlZenStore(BaseZenStore):
         set_compressed_writes(
             self._engine.dialect, self.config.compress_text_payloads
         )
+        set_compressed_structured_json_writes(
+            self._engine.dialect,
+            self.config.compress_run_metadata_payloads,
+        )
         if self.config.compress_text_payloads:
             logger.info(
                 "Compressed text payloads are enabled. Rows written from now "
                 "on cannot be read by server versions without the compressed "
                 "payload reader."
+            )
+        if self.config.compress_run_metadata_payloads:
+            logger.info(
+                "Structured run metadata compression is enabled. Rows written "
+                "from now on cannot be read by server versions without the "
+                "structured metadata reader."
             )
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will

@@ -446,6 +446,14 @@ server:
     #
     # compressTextPayloads: false
 
+    # Store structured run metadata compressed when the complete encoded value
+    # is smaller than its plain JSON. Scalar metadata stays plain and
+    # SQL-filterable. Only enable this once every server sharing the database
+    # contains the structured metadata reader; compressed rows cannot be read
+    # by older servers. It affects new rows only and defaults to false.
+    #
+    # compressRunMetadataPayloads: false
+
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,
     # see the following documentation:
