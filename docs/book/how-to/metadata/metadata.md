@@ -582,6 +582,37 @@ def my_pipeline():
         )
 ```
 
+## Filtering Metadata
+
+Server-side metadata filters operate on scalar values. Strings and string-like
+special types support equality and string operators, while integers, floats,
+and `StorageSize` support numerical comparisons. For example:
+
+```python
+client.list_artifact_versions(run_metadata=["row_count:gt:500"])
+```
+
+Structured values such as dictionaries and lists remain available when
+metadata is retrieved and in the dashboard, but their serialized contents are
+not a server-side search format. Publish fields that need filtering as
+top-level scalar metadata alongside the richer structured value:
+
+```python
+log_metadata(
+    metadata={
+        "data_stats": {
+            "row_count": 1000,
+            "columns": ["age", "income"],
+        },
+        "row_count": 1000,
+    },
+    infer_artifact=True,
+)
+```
+
+Use `key:isnotnull:` to filter for resources that contain a metadata key,
+including keys whose values are structured.
+
 ## Best Practices
 
 To make the most of ZenML's metadata capabilities:

@@ -15,6 +15,7 @@
 
 import base64
 import hashlib
+import json
 import zlib
 from typing import Any
 
@@ -30,9 +31,11 @@ from zenml.zen_stores.schemas.compressed_text import (
     COMPRESSED_TEXT_PREFIX,
     MIN_COMPRESSIBLE_BYTES,
     CompressedMediumText,
+    CompressedStructuredJsonText,
     CompressedText,
     decode_compressed_text,
     encode_compressed_text,
+    set_compressed_structured_json_writes,
     set_compressed_writes,
 )
 
@@ -112,6 +115,7 @@ def test_compressed_columns_keep_their_database_types() -> None:
         "pipeline_snapshot.client_environment",
         "pipeline_snapshot.pipeline_spec",
         "pipeline_snapshot.source_code",
+        "run_metadata.value",
         "step_configuration.config",
     }
     for name, column in columns.items():
@@ -172,3 +176,23 @@ def test_column_types_compress_writes_only_when_smaller() -> None:
     # A raw stored value read past the decoder must not be written back.
     with pytest.raises(ValueError, match="step_configuration.config"):
         column.process_bind_param(stored, dialect)
+
+
+def test_structured_json_compression_leaves_scalars_plain() -> None:
+    """Metadata compression applies to structures without hiding scalars."""
+    column = CompressedStructuredJsonText("run_metadata.value")
+    dialect = sqlite.dialect()
+    structured = json.dumps(
+        {"schema": {f"field_{i}": "string" for i in range(100)}}
+    )
+    scalar = json.dumps("searchable" * 100)
+
+    assert column.process_bind_param(structured, dialect) == structured
+    set_compressed_structured_json_writes(dialect, True)
+
+    stored = column.process_bind_param(structured, dialect)
+    assert stored is not None
+    assert stored.startswith(COMPRESSED_TEXT_PREFIX)
+    assert len(stored) < len(structured.encode("utf-8"))
+    assert column.process_result_value(stored, dialect) == structured
+    assert column.process_bind_param(scalar, dialect) == scalar
