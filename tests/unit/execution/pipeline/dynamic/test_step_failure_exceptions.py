@@ -26,7 +26,10 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepFuture,
     _IsolatedStepFuture,
 )
-from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
+from zenml.execution.pipeline.dynamic.runner import (
+    DynamicPipelineRunner,
+    RunPaused,
+)
 
 
 @step
@@ -110,10 +113,21 @@ def test_unawaited_failure_raises_step_execution_exception() -> None:
         unawaited_pipeline()
 
 
-def test_unawaited_isolated_failure_raises_during_settlement(
+def _settling_runner(
+    registry: FutureRegistry, *, continue_on_failure: bool = False
+) -> DynamicPipelineRunner:
+    """Build a runner with only the state that settlement reads."""
+    runner = object.__new__(DynamicPipelineRunner)
+    runner._exception = None
+    runner._continue_on_failure = continue_on_failure
+    runner._future_registry = registry
+    return runner
+
+
+def _unawaited_failed_isolated_step(
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An isolated failure is raised even before the monitor processes it."""
+) -> FutureRegistry:
+    """Register an isolated step that failed before the monitor noticed."""
     failed_step_run = SimpleNamespace(
         status=ExecutionStatus.FAILED,
         exception_info=None,
@@ -135,13 +149,43 @@ def test_unawaited_isolated_failure_raises_during_settlement(
             ),
         ),
     )
+    return registry
 
-    runner = object.__new__(DynamicPipelineRunner)
-    runner._exception = None
-    runner._future_registry = registry
+
+def test_unawaited_isolated_failure_raises_during_settlement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An isolated failure is raised even before the monitor processes it."""
+    runner = _settling_runner(_unawaited_failed_isolated_step(monkeypatch))
 
     with pytest.raises(RuntimeError, match="failing_step"):
         runner._settle_concurrent_work()
+
+
+def test_unawaited_isolated_failure_settles_when_continuing_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """CONTINUE_ON_FAILURE lets the run settle past an unawaited failure."""
+    runner = _settling_runner(
+        _unawaited_failed_isolated_step(monkeypatch),
+        continue_on_failure=True,
+    )
+
+    runner._settle_concurrent_work()
+
+
+def test_paused_node_settles_without_failing() -> None:
+    """A node that inherited a pause is not a failure at settlement."""
+    registry = FutureRegistry()
+    registry.register_step_future(
+        invocation_id="paused_step",
+        future=StepFuture(invocation_id="paused_step", output_keys=[]),
+    )
+    registry.set_startup_exception(
+        invocation_id="paused_step", exception=RunPaused()
+    )
+
+    _settling_runner(registry)._settle_concurrent_work()
 
 
 @pipeline(dynamic=True, enable_cache=False)

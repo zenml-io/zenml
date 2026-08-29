@@ -1966,11 +1966,25 @@ class DynamicPipelineRunner:
             for future in self._future_registry.get_all_futures():
                 if future.running():
                     has_in_progress_work = True
-                else:
-                    # A terminal future can represent either a successful or
-                    # failed invocation. Consume its result so an unawaited
-                    # failure cannot be mistaken for successful settlement.
+                    continue
+                if self._continue_on_failure:
+                    # A failed node never fails the run in this mode, see
+                    # `_fail_concurrent_node`.
+                    continue
+                # A terminal future can represent a failed invocation that
+                # the monitor has not processed yet. Consume its result so an
+                # unawaited failure cannot be mistaken for successful
+                # settlement.
+                try:
                     future.wait()
+                except RunPaused:
+                    # A paused child is not a failure; the pause is already
+                    # recorded on this runner.
+                    pass
+                except BaseException as failure:
+                    # The monitor may have recorded the root cause meanwhile,
+                    # leaving this future cancelled only as a consequence.
+                    raise self._exception or failure
 
             if not has_in_progress_work:
                 return
