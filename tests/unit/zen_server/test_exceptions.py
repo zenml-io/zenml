@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for server-to-client exception serialization."""
 
 import json
 from typing import Type
+from uuid import uuid4
 
 import pytest
 import requests
@@ -24,6 +26,7 @@ from zenml.exceptions import (
     AuthorizationException,
     DoesNotExistException,
     EntityExistsError,
+    ExecutionArchiveRestoreRequiredError,
     IllegalOperationError,
     ValidationError,
     ZenKeyError,
@@ -72,7 +75,6 @@ def get_exception(exception_type: Type[Exception]) -> Exception:
 )
 def test_http_exception_reconstruction(exception_type: Type[Exception]):
     """Test the HTTP exception reconstruction."""
-
     exception = get_exception(exception_type)
     http_exception = http_exception_from_error(exception)
 
@@ -95,6 +97,23 @@ def test_http_exception_reconstruction(exception_type: Type[Exception]):
     else:
         assert reconstructed_exception.__class__ is exception_type
         assert reconstructed_exception.args == exception.args
+
+
+def test_restore_required_error_preserves_archive_id() -> None:
+    """The client receives the archive generation needed for restoration."""
+    archive_id = uuid4()
+    http_exception = http_exception_from_error(
+        ExecutionArchiveRestoreRequiredError(archive_id)
+    )
+    response = requests.Response()
+    response.status_code = http_exception.status_code
+    response._content = json.dumps({"detail": http_exception.detail}).encode()
+
+    reconstructed = exception_from_response(response)
+
+    assert http_exception.status_code == 409
+    assert isinstance(reconstructed, ExecutionArchiveRestoreRequiredError)
+    assert reconstructed.archive_id == archive_id
 
 
 @pytest.mark.parametrize(
@@ -174,7 +193,6 @@ def test_reconstruct_unknown_exception_as_runtime_error():
 )
 def test_unpack_unknown_error(error_code, exception_type):
     """Test that arbitrary errors are properly reconstructed."""
-
     response = requests.Response()
     response.status_code = error_code
     response._content = "error message".encode()

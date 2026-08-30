@@ -24,6 +24,7 @@ from zenml.exceptions import (
     DoesNotExistException,
     EntityCreationError,
     EntityExistsError,
+    ExecutionArchiveRestoreRequiredError,
     IllegalOperationError,
     MaxConcurrentTasksError,
     MethodNotAllowedError,
@@ -69,6 +70,7 @@ error_response = dict(model=ErrorModel)
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 409 Conflict
+    (ExecutionArchiveRestoreRequiredError, 409),
     (EntityExistsError, 409),
     # 403 Forbidden
     (IllegalOperationError, 403),
@@ -116,6 +118,8 @@ def error_detail(
     class_name = (
         exception_type.__name__ if exception_type else type(error).__name__
     )
+    if isinstance(error, ExecutionArchiveRestoreRequiredError):
+        return [class_name, str(error.archive_id)]
     return [class_name, str(error)]
 
 
@@ -241,7 +245,6 @@ def exception_from_response(
         if len(detail) < 1 or not isinstance(detail[0], str):
             return None, response.text
 
-        # Remaining detail items are the exception arguments
         message = ": ".join([str(arg) for arg in detail[1:]])
         return detail[0], message
 
@@ -278,5 +281,11 @@ def exception_from_response(
         if not isinstance(exception(), CredentialsNotValid):
             if response.headers.get("WWW-Authenticate"):
                 return CredentialsNotValid(exc_msg)
+
+    if exception is ExecutionArchiveRestoreRequiredError:
+        try:
+            return ExecutionArchiveRestoreRequiredError(exc_msg)
+        except ValueError:
+            return EntityExistsError(exc_msg)
 
     return exception(exc_msg)

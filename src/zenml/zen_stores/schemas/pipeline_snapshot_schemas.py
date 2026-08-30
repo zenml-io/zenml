@@ -38,6 +38,7 @@ from zenml.models import (
     PipelineSnapshotUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.execution_archive_utils import require_active_payload
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -113,6 +114,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
     )
     client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
+    # Set while an execution archive is authoritative for this snapshot's
+    # payload. Writers that would reference the snapshot read it from the
+    # locked row, so they always see the latest committed authority switch.
+    execution_archive_id: Optional[UUID] = Field(default=None, nullable=True)
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
@@ -520,6 +525,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
         Returns:
             The response.
+
         """
         deployable = False
         if self.build and self.stack and self.stack.has_deployer:
@@ -537,13 +543,26 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            require_active_payload(
+                self.pipeline_configuration,
+                self.client_environment,
+                self.pipeline_spec,
+                self.source_code,
+            )
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
             step_configurations = {}
-            for step_configuration in self.get_step_configurations(
+            step_configuration_schemas = self.get_step_configurations(
                 include=step_configuration_filter
-            ):
+            )
+            require_active_payload(
+                *(
+                    configuration.config
+                    for configuration in step_configuration_schemas
+                )
+            )
+            for step_configuration in step_configuration_schemas:
                 step_configurations[step_configuration.name] = Step.from_dict(
                     json.loads(step_configuration.config),
                     pipeline_configuration,
@@ -564,13 +583,22 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     # If only a subset of step configurations is requested,
                     # we still need to get all of them to generate the config
                     # template and schema
+                    all_step_configuration_schemas = (
+                        self.get_step_configurations()
+                    )
+                    require_active_payload(
+                        *(
+                            configuration.config
+                            for configuration in all_step_configuration_schemas
+                        )
+                    )
                     all_step_configurations = {
                         step_configuration.name: Step.from_dict(
                             json.loads(step_configuration.config),
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
                         )
-                        for step_configuration in self.get_step_configurations()
+                        for step_configuration in all_step_configuration_schemas
                     }
                 else:
                     all_step_configurations = step_configurations

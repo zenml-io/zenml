@@ -381,9 +381,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -443,6 +443,10 @@ from zenml.models.v2.misc.auth_models import (
 )
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.exception_info import ExceptionInfo
+from zenml.models.v2.misc.execution_archive import (
+    ExecutionArchiveObject,
+    ExecutionArchiveResponse,
+)
 from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
@@ -966,6 +970,8 @@ __all__ = [
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
     "UserAuthModel",
+    "ExecutionArchiveObject",
+    "ExecutionArchiveResponse",
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",

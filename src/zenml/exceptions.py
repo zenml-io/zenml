@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """ZenML specific exception definitions."""
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
+from uuid import UUID
 
 
 class ZenMLBaseException(Exception):
@@ -166,6 +167,26 @@ class SubscriptionUpgradeRequiredError(ZenMLBaseException):
 
 class HydrationError(ZenMLBaseException):
     """Raised when the model hydration failed."""
+
+
+class ArchiveUnavailableError(HydrationError):
+    """Raised when authoritative archived payload cannot be read safely."""
+
+
+class ExecutionArchiveRestoreRequiredError(ZenMLBaseException):
+    """Raised when a response needs payload that was moved out of SQL."""
+
+    def __init__(self, archive_id: Union[str, UUID]) -> None:
+        """Initialize the error.
+
+        Args:
+            archive_id: Archive generation that must be restored.
+        """
+        self.archive_id = UUID(str(archive_id))
+        super().__init__(
+            "Execution history is archived. Restore archive "
+            f"{self.archive_id} before requesting its full payload."
+        )
 
 
 class ZenKeyError(KeyError):

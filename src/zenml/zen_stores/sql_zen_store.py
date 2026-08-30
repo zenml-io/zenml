@@ -11723,6 +11723,15 @@ class SqlZenStore(BaseZenStore):
                 # the step run is created.
                 is_retriable=is_retriable,
             )
+            step_schema.step_type = (
+                step_config.config.step_type.value
+                if step_config.config.step_type
+                else None
+            )
+            step_schema.substitutions = json.dumps(
+                step_config.config.substitutions,
+                sort_keys=True,
+            )
 
             # cached top-level heartbeat config property (for fast validation).
             step_schema.heartbeat_threshold = (

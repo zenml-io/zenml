@@ -577,6 +577,37 @@ class SQLDatabaseAuthMode(StrEnum):
     AWS_RDS_IAM = "aws_rds_iam"
 
 
+class ExecutionArchiveState(StrEnum):
+    """Lifecycle states of one execution archive generation.
+
+    SQL payload stays authoritative through `VERIFIED`. From `COMPACTING`
+    until restoration completes, full payload reads require an explicit
+    restore from the archive.
+    """
+
+    EXPORTING = "exporting"
+    VERIFIED = "verified"
+    COMPACTING = "compacting"
+    COLD = "cold"
+    RESTORING = "restoring"
+    RESTORED = "restored"
+    FAILED = "failed"
+    CORRUPT = "corrupt"
+
+    @property
+    def is_authoritative(self) -> bool:
+        """Whether SQL may contain archive markers instead of full payload.
+
+        Returns:
+            Whether callers must restore the archive before full reads.
+        """
+        return self in {
+            ExecutionArchiveState.COMPACTING,
+            ExecutionArchiveState.COLD,
+            ExecutionArchiveState.RESTORING,
+        }
+
+
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 

@@ -61,6 +61,7 @@ from zenml.utils.run_utils import (
     find_all_downstream_steps,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.execution_archive_utils import require_active_payload
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -162,6 +163,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
     child_key: Optional[str] = Field(nullable=True, default=None)
+    execution_archive_id: Optional[UUID] = Field(default=None, nullable=True)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -548,10 +550,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.snapshot:
+            require_active_payload(self.snapshot.pipeline_configuration)
             pipeline_config = PipelineConfiguration.model_validate_json(
                 self.snapshot.pipeline_configuration
             )
         elif self.pipeline_configuration:
+            require_active_payload(self.pipeline_configuration)
             pipeline_config = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
@@ -579,10 +583,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         if self.snapshot:
             pipeline_configuration = self.get_pipeline_configuration()
+            configuration = self.snapshot.get_step_configuration(step_name)
+            require_active_payload(configuration.config)
             return Step.from_dict(
-                data=json.loads(
-                    self.snapshot.get_step_configuration(step_name).config
-                ),
+                data=json.loads(configuration.config),
                 pipeline_configuration=pipeline_configuration,
                 exclude_hook_sources=self.snapshot.is_dynamic,
             )
@@ -600,6 +604,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the snapshot has no pipeline spec.
         """
         if self.snapshot and self.snapshot.pipeline_spec:
+            require_active_payload(self.snapshot.pipeline_spec)
             pipeline_spec = PipelineSpec.model_validate_json(
                 self.snapshot.pipeline_spec
             )
@@ -692,29 +697,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Raises:
             RuntimeError: if the model creation fails.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -730,6 +712,44 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
+            require_active_payload(
+                self.orchestrator_environment,
+                self.exception_info,
+            )
+            if self.snapshot is not None:
+                require_active_payload(
+                    self.snapshot.pipeline_configuration,
+                    self.snapshot.client_environment,
+                )
+                config = PipelineConfiguration.model_validate_json(
+                    self.snapshot.pipeline_configuration
+                )
+                client_environment = json.loads(
+                    self.snapshot.client_environment
+                )
+            elif self.pipeline_configuration is not None:
+                require_active_payload(
+                    self.pipeline_configuration,
+                    self.client_environment,
+                )
+                config = PipelineConfiguration.model_validate_json(
+                    self.pipeline_configuration
+                )
+                client_environment = (
+                    json.loads(self.client_environment)
+                    if self.client_environment
+                    else {}
+                )
+            else:
+                raise RuntimeError(
+                    "Pipeline run model creation has failed. Each pipeline "
+                    "run entry should either have a snapshot ID or a legacy "
+                    "pipeline configuration."
+                )
+
+            config.finalize_substitutions(
+                start_time=self.start_time, inplace=True
+            )
             is_templatable = False
             if (
                 self.snapshot

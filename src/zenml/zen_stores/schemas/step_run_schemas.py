@@ -33,6 +33,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
     StepRunInputArtifactType,
+    StepType,
 )
 from zenml.models import (
     ExceptionInfo,
@@ -48,6 +49,7 @@ from zenml.models.v2.core.step_run import (
     StepRunResponseResources,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.execution_archive_utils import require_active_payload
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -246,13 +248,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     # In legacy pipelines (before snapshots, former deployments), the config
     # is stored as a string in the step run.
-    step_configuration: str = Field(
+    step_configuration: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
             ),
             nullable=True,
         )
+    )
+    step_type: Optional[str] = Field(nullable=True, default=None)
+    substitutions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(TEXT, nullable=True),
     )
     resource_request: Optional["ResourceRequestSchema"] = Relationship(
         back_populates="step_run"
@@ -395,6 +402,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if self.snapshot is not None:
             if config_schema := (self.dynamic_config or self.static_config):
+                require_active_payload(
+                    self.snapshot.pipeline_configuration,
+                    config_schema.config,
+                )
                 pipeline_configuration = (
                     PipelineConfiguration.model_validate_json(
                         self.snapshot.pipeline_configuration
@@ -433,6 +444,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     )
 
         if not step and self.step_configuration:
+            require_active_payload(self.step_configuration)
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the
             # `Step` object directly without passing the pipeline
@@ -464,13 +476,32 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The created StepRunResponse.
+
+        Raises:
+            RuntimeError: If metadata is requested but the step
+                configuration cannot be assembled.
         """
-        step = self.get_step_configuration()
+        needs_legacy_projection = (
+            self.step_type is None and self.substitutions is None
+        )
+        step = (
+            self.get_step_configuration()
+            if include_metadata or needs_legacy_projection
+            else None
+        )
+        if step is not None:
+            step_type = step.config.step_type
+            substitutions = step.config.substitutions
+        else:
+            step_type = StepType(self.step_type) if self.step_type else None
+            substitutions = (
+                json.loads(self.substitutions) if self.substitutions else {}
+            )
 
         body = StepRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
-            type=step.config.step_type,
+            type=step_type,
             status=ExecutionStatus(self.status),
             version=self.version,
             is_retriable=self.is_retriable,
@@ -480,11 +511,20 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
-            substitutions=step.config.substitutions,
+            substitutions=substitutions,
             heartbeat_threshold=self.heartbeat_threshold,
         )
         metadata = None
         if include_metadata:
+            require_active_payload(
+                self.docstring,
+                self.source_code,
+                self.exception_info,
+            )
+            if step is None:
+                raise RuntimeError(
+                    "The step configuration is required for metadata."
+                )
             metadata = StepRunResponseMetadata(
                 config=step.config,
                 spec=step.spec,
