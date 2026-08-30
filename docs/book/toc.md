@@ -27,6 +27,7 @@
 * [Manage](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
   * [Using ZenML server in production](how-to/manage-zenml-server/using-zenml-server-in-prod.md)
+  * [Archive execution history](how-to/manage-zenml-server/archive-execution-history.md)
   * [Troubleshoot your ZenML server](how-to/manage-zenml-server/troubleshoot-your-deployed-server.md)
   * [Migration guide](how-to/manage-zenml-server/migration-guide/migration-guide.md)
     * [Migration guide 0.13.2 → 0.20.0](how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md)

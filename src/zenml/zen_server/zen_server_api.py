@@ -64,6 +64,7 @@ from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     deployment_endpoints,
     devices_endpoints,
+    execution_archive_endpoints,
     flavors_endpoints,
     hook_invocations_endpoints,
     logs_endpoints,
@@ -104,6 +105,7 @@ from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_artifact_store_cache,
     initialize_feature_gate,
+    initialize_maintenance_executor,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
@@ -112,6 +114,7 @@ from zenml.zen_server.utils import (
     initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
+    maintenance_executor,
     register_event_handlers,
     server_config,
     shutdown_snapshot_run_dispatcher,
@@ -198,8 +201,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await register_event_handlers()
 
+    initialize_maintenance_executor()
     yield
-
+    # Maintenance work is resumable batch by batch, so a shutdown does not
+    # wait for a running pass.
+    maintenance_executor().shutdown(wait=False, cancel_futures=True)
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
     shutdown_otel()
@@ -308,6 +314,7 @@ app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
+app.include_router(execution_archive_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)

@@ -444,6 +444,9 @@ from zenml.models.v2.misc.auth_models import (
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.execution_archive import (
+    ExecutionArchiveCandidate,
+    ExecutionArchiveMaintenanceRequest,
+    ExecutionArchiveMaintenanceResponse,
     ExecutionArchiveObject,
     ExecutionArchiveResponse,
 )
@@ -897,6 +900,9 @@ __all__ = [
     "ServerSettingsResponseBody",
     "ServerSettingsResponseMetadata",
     "ServerSettingsUpdate",
+    "ExecutionArchiveCandidate",
+    "ExecutionArchiveMaintenanceRequest",
+    "ExecutionArchiveMaintenanceResponse",
     "ExecutionArchiveObject",
     "ExecutionArchiveResponse",
     "ServiceAccountFilter",

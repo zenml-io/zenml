@@ -24,6 +24,8 @@ from zenml.models.v2.base.base import BaseZenModel
 
 Sha256Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 
+MAX_ARCHIVE_MAINTENANCE_FAMILIES = 50
+
 
 def validate_relative_path(value: str) -> str:
     """Require a relative path that cannot escape its root.
@@ -102,3 +104,58 @@ class ExecutionArchiveResponse(BaseZenModel):
     created: datetime
 
     model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchiveMaintenanceRequest(BaseZenModel):
+    """Bounded archive maintenance pass over one project."""
+
+    project: UUID = Field(description="The project to archive in.")
+    root_run_ids: List[UUID] = Field(
+        default_factory=list,
+        max_length=MAX_ARCHIVE_MAINTENANCE_FAMILIES,
+        description="Root runs to consider. If empty, the oldest completed "
+        "root runs of the project that are not archived yet are considered.",
+    )
+    older_than_days: int = Field(
+        default=180,
+        ge=30,
+        le=3650,
+        description="Only families unchanged for at least this many days "
+        "are archived.",
+    )
+    limit: int = Field(
+        default=25,
+        ge=1,
+        le=MAX_ARCHIVE_MAINTENANCE_FAMILIES,
+        description="Maximum number of execution families to consider.",
+    )
+
+
+class ExecutionArchiveCandidate(BaseZenModel):
+    """Eligibility of one execution family."""
+
+    root_run_id: UUID
+    eligible: bool
+    eligible_at: Optional[datetime] = None
+    stored_bytes: Optional[int] = Field(
+        default=None,
+        description="Bytes of payload the family holds in the database.",
+    )
+    blockers: List[str] = Field(default_factory=list)
+    archive_id: Optional[UUID] = None
+    archive_state: Optional[ExecutionArchiveState] = None
+
+
+class ExecutionArchiveMaintenanceResponse(BaseZenModel):
+    """Result of a dry run, or the task scheduled for an apply."""
+
+    candidates: List[ExecutionArchiveCandidate] = Field(
+        default_factory=list,
+        description="Eligibility of every considered family. Filled by a "
+        "dry run only.",
+    )
+    task_id: Optional[str] = Field(
+        default=None,
+        description="ID of the background task running the pass, bound to "
+        "every log record it emits. Unset for a dry run.",
+    )

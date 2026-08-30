@@ -36,7 +36,7 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psutil
 from pydantic import BaseModel, ValidationError
@@ -51,8 +51,12 @@ from zenml.constants import (
     INFO,
     VERSION_1,
 )
-from zenml.exceptions import IllegalOperationError, OAuthError
-from zenml.logger import get_logger
+from zenml.exceptions import (
+    IllegalOperationError,
+    MaxConcurrentTasksError,
+    OAuthError,
+)
+from zenml.logger import get_logger, get_logging_context, logging_context
 from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
@@ -98,6 +102,7 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
+_maintenance_executor: Optional["BoundedThreadPoolExecutor"] = None
 _snapshot_run_dispatcher: Optional[SnapshotRunDispatcher] = None
 _request_manager: Optional[RequestManager] = None
 _stream_broker: Optional[StreamBroker] = None
@@ -122,6 +127,77 @@ def zen_store() -> "SqlZenStore":
     if _zen_store is None:
         raise RuntimeError("ZenML Store not initialized")
     return _zen_store
+
+
+def maintenance_executor() -> "BoundedThreadPoolExecutor":
+    """Return the initialized maintenance executor.
+
+    Raises:
+        RuntimeError: If the maintenance executor is not initialized.
+
+    Returns:
+        The maintenance executor.
+    """
+    global _maintenance_executor
+    if _maintenance_executor is None:
+        raise RuntimeError("Maintenance executor not initialized")
+
+    return _maintenance_executor
+
+
+def initialize_maintenance_executor() -> None:
+    """Initialize the maintenance executor.
+
+    Maintenance jobs such as archiving scan large tables and are not
+    expected to overlap, so a single worker serializes them per server
+    process and rejects a job while another one is still running.
+    """
+    global _maintenance_executor
+    from zenml.zen_server.pipeline_execution.utils import (
+        BoundedThreadPoolExecutor,
+    )
+
+    _maintenance_executor = BoundedThreadPoolExecutor(
+        max_workers=1,
+        thread_name_prefix="zenml-maintenance-executor",
+    )
+
+
+def submit_maintenance_task(task: Callable[[], Any]) -> str:
+    """Run a task on the maintenance executor.
+
+    The task runs detached from the request that submitted it, so its outcome
+    is only reported through the server logs. Every log record it emits
+    carries the returned task ID and the ID of the submitting request.
+
+    Args:
+        task: The task to run.
+
+    Raises:
+        MaxConcurrentTasksError: If another maintenance task is still running.
+
+    Returns:
+        The ID of the scheduled task.
+    """
+    task_id = str(uuid4())
+    request_id = get_logging_context().get("request_id")
+
+    def _run() -> None:
+        with logging_context(task_id=task_id, request_id=request_id):
+            try:
+                task()
+            except Exception:
+                logger.exception("Maintenance task failed.")
+
+    try:
+        maintenance_executor().submit(_run)
+    except MaxConcurrentTasksError:
+        raise MaxConcurrentTasksError(
+            "Another maintenance task is still running. Retry once it has "
+            "finished."
+        ) from None
+
+    return task_id
 
 
 def rbac() -> RBACInterface:

@@ -19,6 +19,7 @@ import requests
 from pydantic import BaseModel
 
 from zenml.exceptions import (
+    ArchiveUnavailableError,
     AuthorizationException,
     CredentialsNotValid,
     DoesNotExistException,
@@ -68,6 +69,8 @@ error_response = dict(model=ErrorModel)
 # exception can be reconstructed from two or more HTTP error responses with
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
+    # 503 Service Unavailable
+    (ArchiveUnavailableError, 503),
     # 409 Conflict
     (EntityExistsError, 409),
     # 403 Forbidden
