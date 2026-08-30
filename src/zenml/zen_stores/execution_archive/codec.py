@@ -18,6 +18,7 @@ import hashlib
 import hmac
 import io
 import json
+import zlib
 from typing import Any
 
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_DECODED_BYTES,
 )
 from zenml.zen_stores.execution_archive.exceptions import (
+    ArchiveObjectInvalidError,
     ChecksumMismatchError,
 )
 
@@ -114,12 +116,18 @@ def decompress(payload: bytes) -> bytes:
         The canonical bytes.
 
     Raises:
+        ArchiveObjectInvalidError: If the bytes are not valid gzip data.
         ValueError: If the decompressed payload exceeds the limit.
     """
-    with gzip.GzipFile(fileobj=io.BytesIO(payload), mode="rb") as stream:
-        decompressed = stream.read(
-            DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_DECODED_BYTES + 1
-        )
+    try:
+        with gzip.GzipFile(fileobj=io.BytesIO(payload), mode="rb") as stream:
+            decompressed = stream.read(
+                DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_DECODED_BYTES + 1
+            )
+    except (EOFError, gzip.BadGzipFile, zlib.error) as e:
+        raise ArchiveObjectInvalidError(
+            "The execution archive object is not valid gzip data."
+        ) from e
     if (
         len(decompressed)
         > DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_DECODED_BYTES

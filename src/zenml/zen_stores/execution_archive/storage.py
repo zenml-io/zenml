@@ -39,6 +39,7 @@ from zenml.zen_stores.execution_archive.codec import (
     verify_sha256,
 )
 from zenml.zen_stores.execution_archive.exceptions import (
+    ArchiveObjectInvalidError,
     ExecutionArchiveStateError,
 )
 
@@ -175,6 +176,8 @@ class ExecutionArchiveStorage:
             Exact compressed bytes.
 
         Raises:
+            ArchiveObjectInvalidError: If the object's bytes do not match its
+                recorded size or digest.
             ArchiveUnavailableError: If the object cannot be trusted.
         """
         if object_.stored_bytes > _MAX_STORED_BYTES:
@@ -190,7 +193,7 @@ class ExecutionArchiveStorage:
                 f"Could not read execution archive object '{key}': {e}"
             ) from e
         if len(payload) != object_.stored_bytes:
-            raise ArchiveUnavailableError(
+            raise ArchiveObjectInvalidError(
                 f"Execution archive object '{key}' has {len(payload)} bytes "
                 f"instead of {object_.stored_bytes}."
             )

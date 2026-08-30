@@ -64,6 +64,7 @@ from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     deployment_endpoints,
     devices_endpoints,
+    execution_archive_endpoints,
     flavors_endpoints,
     hook_invocations_endpoints,
     logs_endpoints,
@@ -199,7 +200,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await register_event_handlers()
 
     yield
-
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
     shutdown_otel()
@@ -308,6 +308,7 @@ app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
 app.include_router(devices_endpoints.router)
+app.include_router(execution_archive_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)

@@ -189,6 +189,22 @@ class ExecutionArchiveRestoreRequiredError(ZenMLBaseException):
         )
 
 
+class ExecutionArchiveError(ZenMLBaseException):
+    """Base class for invalid execution archive operations."""
+
+
+class ExecutionArchiveStateError(ExecutionArchiveError):
+    """Raised when an archive lifecycle operation is not allowed."""
+
+
+class ExecutionArchiveNotEligibleError(ExecutionArchiveError):
+    """Raised when an execution family is unsafe to archive."""
+
+
+class ExecutionArchiveParityError(ExecutionArchiveError):
+    """Raised when archived bytes no longer match their SQL source."""
+
+
 class ZenKeyError(KeyError):
     """Specialized key error which allows error messages with line breaks."""
 

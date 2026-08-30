@@ -13,15 +13,13 @@
 #  permissions and limitations under the License.
 """Errors raised while archiving execution history."""
 
-from zenml.exceptions import ArchiveUnavailableError, ZenMLBaseException
-
-
-class ExecutionArchiveError(ZenMLBaseException):
-    """Base class of execution archive errors."""
-
-
-class ExecutionArchiveStateError(ExecutionArchiveError):
-    """Raised when a catalog transition is not allowed from the current state."""
+from zenml.exceptions import (
+    ArchiveUnavailableError,
+    ExecutionArchiveError,
+    ExecutionArchiveNotEligibleError,
+    ExecutionArchiveParityError,
+    ExecutionArchiveStateError,
+)
 
 
 class ChecksumMismatchError(ArchiveUnavailableError):
@@ -30,3 +28,13 @@ class ChecksumMismatchError(ArchiveUnavailableError):
 
 class ArchiveObjectInvalidError(ArchiveUnavailableError):
     """Raised when verified bytes do not contain a valid archive object."""
+
+
+__all__ = [
+    "ArchiveObjectInvalidError",
+    "ChecksumMismatchError",
+    "ExecutionArchiveError",
+    "ExecutionArchiveNotEligibleError",
+    "ExecutionArchiveParityError",
+    "ExecutionArchiveStateError",
+]

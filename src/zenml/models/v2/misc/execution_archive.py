@@ -86,3 +86,12 @@ class ExecutionArchiveResponse(BaseZenModel):
     created: datetime
 
     model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchiveExportRequest(BaseZenModel):
+    """Request to export one complete execution tree."""
+
+    project_id: UUID
+    root_run_id: UUID
+
+    model_config = ConfigDict(frozen=True)

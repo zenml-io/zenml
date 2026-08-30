@@ -21,6 +21,7 @@ from sqlalchemy import TEXT, BigInteger, Column, String, UniqueConstraint
 from sqlmodel import Field
 
 from zenml.enums import ExecutionArchiveState
+from zenml.exceptions import ExecutionArchiveStateError
 from zenml.models import ExecutionArchiveObject, ExecutionArchiveResponse
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_index
@@ -176,7 +177,7 @@ class ExecutionArchiveSchema(BaseSchema, table=True):
         if all(value is None for value in values):
             return None
         if any(value is None for value in values):
-            raise RuntimeError(
+            raise ExecutionArchiveStateError(
                 f"Execution archive {self.id} has incomplete object metadata."
             )
         return ExecutionArchiveObject(
