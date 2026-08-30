@@ -276,6 +276,14 @@ class ServerConfiguration(BaseModel):
             transactions to delete per SQL batch.
         api_transaction_cleanup_time_budget: The maximum number of seconds a
             cleanup pass spends draining full batches before sleeping again.
+        execution_archive_flavor: Artifact store flavor of the storage
+            that holds execution archives, for example `s3` or `local`.
+            Unset disables archiving.
+        execution_archive_configuration: Configuration of that artifact
+            store flavor, as a JSON object. The server authenticates with
+            its own identity; credentials do not belong here.
+        execution_archive_path_prefix: Directory below the artifact store
+            path that holds every archive object.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -417,6 +425,9 @@ class ServerConfiguration(BaseModel):
         default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
         le=MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     )
+    execution_archive_flavor: Optional[str] = None
+    execution_archive_configuration: Dict[str, Any] = {}
+    execution_archive_path_prefix: str = "execution-archive"
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
@@ -564,6 +575,19 @@ class ServerConfiguration(BaseModel):
             data["cors_allow_origins"] = origins
         else:
             data["cors_allow_origins"] = ["*"]
+
+        # The archive storage configuration arrives as a JSON string from
+        # the environment.
+        if isinstance(data.get("execution_archive_configuration"), str):
+            try:
+                data["execution_archive_configuration"] = json.loads(
+                    data["execution_archive_configuration"]
+                )
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    "The execution archive configuration is not a valid "
+                    f"JSON object: {e}"
+                )
 
         # if metadata is a string, convert it to a dictionary
         if isinstance(data.get("metadata"), str):

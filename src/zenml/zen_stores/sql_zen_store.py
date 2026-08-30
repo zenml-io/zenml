@@ -44,6 +44,7 @@ import os
 import random
 import re
 import sys
+import threading
 import time
 import uuid
 from collections import defaultdict
@@ -480,7 +481,14 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
+    from zenml.zen_stores.execution_archive.targets import (
+        ExecutionArchiveTargets,
+    )
+
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
+# Guards the lazy construction of the execution archive components; the
+# reader builds on the targets, so the lock must be reentrant.
+_EXECUTION_ARCHIVE_INIT_LOCK = threading.RLock()
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 AnyResponse = TypeVar("AnyResponse", bound=BaseResponse)  # type: ignore[type-arg]  # noqa: F821
@@ -1174,6 +1182,7 @@ class SqlZenStore(BaseZenStore):
     _cached_onboarding_state: Optional[Set[str]] = None
     _default_user: Optional[UserResponse] = None
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
+    _execution_archive_targets: Optional["ExecutionArchiveTargets"] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1252,6 +1261,22 @@ class SqlZenStore(BaseZenStore):
         if not self._engine:
             raise ValueError("Store not initialized")
         return self._engine
+
+    @property
+    def execution_archive_targets(self) -> "ExecutionArchiveTargets":
+        """The execution archive storage targets, opened once per store.
+
+        Returns:
+            The targets.
+        """
+        with _EXECUTION_ARCHIVE_INIT_LOCK:
+            if self._execution_archive_targets is None:
+                from zenml.zen_stores.execution_archive.targets import (
+                    ExecutionArchiveTargets,
+                )
+
+                self._execution_archive_targets = ExecutionArchiveTargets(self)
+            return self._execution_archive_targets
 
     @property
     def db_backup_engine(self) -> BaseDatabaseBackupEngine:
@@ -6354,6 +6379,7 @@ class SqlZenStore(BaseZenStore):
                     load_only(
                         jl_arg(PipelineRunSchema.status),
                         jl_arg(PipelineRunSchema.start_time),
+                        jl_arg(PipelineRunSchema.root_run_id),
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
@@ -11722,6 +11748,15 @@ class SqlZenStore(BaseZenStore):
                 # step runs. Or if it doesn't reach the point in code where
                 # the step run is created.
                 is_retriable=is_retriable,
+            )
+            step_schema.step_type = (
+                step_config.config.step_type.value
+                if step_config.config.step_type
+                else None
+            )
+            step_schema.substitutions = json.dumps(
+                step_config.config.substitutions,
+                sort_keys=True,
             )
 
             # cached top-level heartbeat config property (for fast validation).

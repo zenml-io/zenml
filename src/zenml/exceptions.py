@@ -168,6 +168,10 @@ class HydrationError(ZenMLBaseException):
     """Raised when the model hydration failed."""
 
 
+class ArchiveUnavailableError(HydrationError):
+    """Raised when authoritative archived payload cannot be read safely."""
+
+
 class ZenKeyError(KeyError):
     """Specialized key error which allows error messages with line breaks."""
 

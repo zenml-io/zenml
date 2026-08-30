@@ -113,6 +113,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
     )
     client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
+    # Set while an execution archive is authoritative for this snapshot's
+    # payload. Writers that would reference the snapshot read it from the
+    # locked row, so they always see the latest committed authority switch.
+    execution_archive_id: Optional[UUID] = Field(default=None, nullable=True)
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
@@ -520,6 +524,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
         Returns:
             The response.
+
         """
         deployable = False
         if self.build and self.stack and self.stack.has_deployer:

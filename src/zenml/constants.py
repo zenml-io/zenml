@@ -405,6 +405,16 @@ DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME = (
 )  # 7 days
 DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT = 2 * 1024 * 1024 * 1024  # 20 GB
 DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS = 2
+# Families whose payload columns hold more bytes than this stay in SQL:
+# exporting or reading one holds several copies of the payload in memory.
+# Checked in SQL before any payload is loaded.
+DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_FAMILY_STORED_BYTES = (
+    128 * 1024 * 1024  # 128 MiB
+)
+# Budget of decoded archived payload a server process keeps in memory.
+DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_CACHE_BYTES = (
+    128 * 1024 * 1024  # 128 MiB
+)
 
 DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL = 15  # seconds
 DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE = 1000
