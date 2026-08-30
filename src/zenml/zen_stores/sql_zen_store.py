@@ -143,6 +143,7 @@ from zenml.constants import (
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_CACHE_BYTES,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -481,12 +482,15 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
+    from zenml.zen_stores.execution_archive.hydrator import (
+        ExecutionArchiveHydrator,
+    )
     from zenml.zen_stores.execution_archive.targets import (
         ExecutionArchiveTargets,
     )
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
-# Guards the lazy construction of the execution archive components; the
+# Guards the lazy construction of the archive reader and its targets; the
 # reader builds on the targets, so the lock must be reentrant.
 _EXECUTION_ARCHIVE_INIT_LOCK = threading.RLock()
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -663,6 +667,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             pool.
         max_overflow: The maximum number of connections to allow in the
             SQLAlchemy pool in addition to the pool_size.
+        execution_archive_cache_bytes: Budget of the in-memory cache of
+            decoded execution archive payload, per server process.
         pool_pre_ping: Enable emitting a test statement on the SQL connection
             at the start of each connection pool checkout, to test that the
             database connection is still viable.
@@ -690,6 +696,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+    execution_archive_cache_bytes: int = Field(
+        default=DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_CACHE_BYTES, gt=0
+    )
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -1183,6 +1192,7 @@ class SqlZenStore(BaseZenStore):
     _default_user: Optional[UserResponse] = None
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
     _execution_archive_targets: Optional["ExecutionArchiveTargets"] = None
+    _execution_archive_hydrator: Optional["ExecutionArchiveHydrator"] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1277,6 +1287,72 @@ class SqlZenStore(BaseZenStore):
 
                 self._execution_archive_targets = ExecutionArchiveTargets(self)
             return self._execution_archive_targets
+
+    @property
+    def execution_archive_hydrator(self) -> "ExecutionArchiveHydrator":
+        """The reader of archived execution payload.
+
+        Built once per store and consulted by every read that needs payload:
+        a batch without archived rows costs nothing, one with them costs one
+        catalog query and the object reads its cache does not cover.
+        Nothing is cached about which families are archived, so a replica
+        sees an archive the moment another replica makes it authoritative.
+
+        Returns:
+            The hydrator.
+        """
+        with _EXECUTION_ARCHIVE_INIT_LOCK:
+            if self._execution_archive_hydrator is None:
+                from zenml.zen_stores.execution_archive.hydrator import (
+                    ExecutionArchiveHydrator,
+                )
+
+                self._execution_archive_hydrator = ExecutionArchiveHydrator(
+                    self.execution_archive_targets,
+                    cache_bytes=self.config.execution_archive_cache_bytes,
+                )
+            return self._execution_archive_hydrator
+
+    def _hydrate_run_payload(
+        self, session: Session, run: PipelineRunSchema
+    ) -> None:
+        """Hydrate a run and its snapshot before code that parses payload.
+
+        Called right before the parse: a commit or refresh in between would
+        expire the row and drop the archived values again.
+
+        Args:
+            session: The session the run was loaded in.
+            run: The run.
+        """
+        from zenml.zen_stores.execution_archive.utils import is_loaded
+
+        # A commit or refresh expires the row; the pre-scan only looks at
+        # loaded columns, so an expired row must be loaded again first.
+        if not is_loaded(run, "orchestrator_environment"):
+            session.refresh(run)
+        hydrator = self.execution_archive_hydrator
+        hydrator.hydrate_runs(session, [run])
+        if run.snapshot is not None:
+            hydrator.hydrate_snapshots(session, [run.snapshot])
+
+    def _hydrate_step_payload(
+        self, session: Session, step: StepRunSchema
+    ) -> None:
+        """Hydrate a step run and its snapshot before code that parses payload.
+
+        Args:
+            session: The session the step run was loaded in.
+            step: The step run.
+        """
+        from zenml.zen_stores.execution_archive.utils import is_loaded
+
+        if not is_loaded(step, "source_code"):
+            session.refresh(step)
+        hydrator = self.execution_archive_hydrator
+        hydrator.hydrate_steps(session, [step])
+        if step.snapshot is not None:
+            hydrator.hydrate_snapshots(session, [step.snapshot])
 
     @property
     def db_backup_engine(self) -> BaseDatabaseBackupEngine:
@@ -1405,6 +1481,9 @@ class SqlZenStore(BaseZenStore):
                 Sequence[Any],
             ]
         ] = None,
+        pre_model_conversion: Optional[
+            Callable[[Sequence[AnySchema]], None]
+        ] = None,
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
         query_options_kwargs: Optional[Dict[str, Any]] = None,
@@ -1426,6 +1505,8 @@ class SqlZenStore(BaseZenStore):
                 perform additional filtering). The callable should take a
                 `Session`, a `Select` query and a `BaseFilterModel` filter as
                 arguments and return a `List` of items.
+            pre_model_conversion: Optional batch hook run after fetching ORM
+                schemas and before converting them to response models.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             apply_query_options_from_schema: Flag deciding whether to apply
@@ -1518,6 +1599,9 @@ class SqlZenStore(BaseZenStore):
                 query.limit(filter_model.size).offset(filter_model.offset)
             )
             item_schemas = query_result.all()
+
+        if pre_model_conversion:
+            pre_model_conversion(item_schemas)
 
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
@@ -5486,6 +5570,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
+            if hydrate:
+                self.execution_archive_hydrator.hydrate_snapshots(
+                    session, [snapshot]
+                )
 
             return snapshot.to_model(
                 include_metadata=hydrate,
@@ -5522,6 +5610,15 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSnapshotSchema,
                 filter_model=snapshot_filter_model,
                 hydrate=hydrate,
+                pre_model_conversion=(
+                    lambda schemas: (
+                        self.execution_archive_hydrator.hydrate_snapshots(
+                            session, schemas
+                        )
+                        if hydrate
+                        else None
+                    )
+                ),
                 apply_query_options_from_schema=True,
             )
 
@@ -6424,6 +6521,7 @@ class SqlZenStore(BaseZenStore):
                 ],
             )
             assert run.snapshot is not None
+            self.execution_archive_hydrator.hydrate_family(session, run)
             snapshot = run.snapshot
             for condition in run.wait_conditions:
                 node_metadata: Dict[str, Any] = {
@@ -6990,6 +7088,9 @@ class SqlZenStore(BaseZenStore):
             pipeline_id=snapshot.pipeline_id, session=session
         )
 
+        # The heartbeat setting is read from the snapshot's configuration at
+        # the schema level; an archived snapshot holds it in the archive.
+        self.execution_archive_hydrator.hydrate_snapshots(session, [snapshot])
         new_run = PipelineRunSchema.from_request(
             pipeline_run,
             pipeline_id=snapshot.pipeline_id,
@@ -7058,6 +7159,9 @@ class SqlZenStore(BaseZenStore):
                     verify=False,
                 )
 
+        # Resolving the model version converts the run with its snapshot's
+        # configuration; an archived snapshot holds it in the archive.
+        self._hydrate_run_payload(session, new_run)
         try:
             model_version_id = self._get_or_create_model_version_for_run(
                 new_run
@@ -7086,6 +7190,7 @@ class SqlZenStore(BaseZenStore):
         )
 
         session.refresh(new_run)
+        self._hydrate_run_payload(session, new_run)
 
         return new_run.to_model(include_metadata=True, include_resources=True)
 
@@ -7121,6 +7226,8 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
+            if hydrate:
+                self.execution_archive_hydrator.hydrate_runs(session, [run])
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -7444,13 +7551,21 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             query = select(PipelineRunSchema)
-
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
+                pre_model_conversion=(
+                    lambda schemas: (
+                        self.execution_archive_hydrator.hydrate_runs(
+                            session, schemas
+                        )
+                        if hydrate
+                        else None
+                    )
+                ),
                 custom_schema_to_model_conversion=lambda schema: (
                     schema.to_model(
                         include_metadata=hydrate,
@@ -7531,6 +7646,7 @@ class SqlZenStore(BaseZenStore):
                         reference_type="output artifact version",
                     )
 
+            self._hydrate_run_payload(session, existing_run)
             existing_run.update(run_update=run_update)
             session.add(existing_run)
             if run_update.outputs is not None:
@@ -7586,6 +7702,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(existing_run)
+            self._hydrate_run_payload(session, existing_run)
 
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
@@ -11653,6 +11770,12 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            # The configuration lookup below reads the snapshot's payload at
+            # the schema level; an archived family holds it in the archive.
+            if run.snapshot is not None:
+                self.execution_archive_hydrator.hydrate_snapshots(
+                    session, [run.snapshot]
+                )
             step_config = (
                 step_run.dynamic_config
                 or run.get_step_configuration(step_name=step_run.name)
@@ -12051,6 +12174,9 @@ class SqlZenStore(BaseZenStore):
 
                 session.refresh(step_schema)
 
+            self.execution_archive_hydrator.hydrate_steps(
+                session, [step_schema]
+            )
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -12077,6 +12203,10 @@ class SqlZenStore(BaseZenStore):
                     include_metadata=hydrate, include_resources=True
                 ),
             )
+            if hydrate:
+                self.execution_archive_hydrator.hydrate_steps(
+                    session, [step_run]
+                )
             return step_run.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -12109,6 +12239,15 @@ class SqlZenStore(BaseZenStore):
                 table=StepRunSchema,
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
+                pre_model_conversion=(
+                    lambda schemas: (
+                        self.execution_archive_hydrator.hydrate_steps(
+                            session, schemas
+                        )
+                        if hydrate
+                        else None
+                    )
+                ),
                 apply_query_options_from_schema=True,
             )
 
@@ -12449,6 +12588,7 @@ class SqlZenStore(BaseZenStore):
                 step_run_update.status = ExecutionStatus.STOPPED
 
             # Update the step
+            self._hydrate_step_payload(session, existing_step_run)
             existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
@@ -12513,6 +12653,7 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
+            self._hydrate_step_payload(session, existing_step_run)
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -12804,6 +12945,7 @@ class SqlZenStore(BaseZenStore):
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
+                self._hydrate_run_payload(session, pipeline_run)
                 dispatcher.handle_run_status_update(
                     run=pipeline_run.to_model(include_metadata=True)
                 )
