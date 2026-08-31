@@ -181,7 +181,7 @@ def test_webhook_trigger_rest_endpoint_validation(clean_client):
             ]
         },
     )
-    with pytest.raises(ValueError, match="Invalid target_events"):
+    with pytest.raises(ValueError, match="target_events"):
         store.update_trigger(
             trigger_id=trigger.id,
             trigger_update=WebhookTriggerUpdate(

@@ -40,7 +40,10 @@ from zenml.webhooks.providers import (
     WebhookTriggerConfiguration,
     get_webhook_provider,
 )
-from zenml.webhooks.providers.custom import CustomWebhookProvider
+from zenml.webhooks.providers.custom import (
+    CustomWebhookProvider,
+    CustomWebhookTriggerConfiguration,
+)
 from zenml.webhooks.providers.github import GitHubWebhookProvider
 
 pytestmark = pytest.mark.anyio
@@ -420,8 +423,8 @@ def test_github_configuration_reports_all_invalid_target_events() -> None:
         )
 
     message = str(error.value)
-    assert "index 0 (type=unknown)" in message
-    assert "index 1 (type=merged_pull_request)" in message
+    assert "target_events.0" in message
+    assert "target_events.1" in message
 
 
 def test_github_configuration_accepts_typed_configuration() -> None:
@@ -433,18 +436,7 @@ def test_github_configuration_accepts_typed_configuration() -> None:
         ]
     )
 
-    assert provider.validate_configuration(configuration) == (
-        WebhookTriggerConfiguration(
-            target_events=[
-                {
-                    "type": "push",
-                    "repo": "zenml-io/zenml",
-                    "branch": "main",
-                    "actor": None,
-                }
-            ]
-        )
-    )
+    assert provider.validate_configuration(configuration) is configuration
 
 
 def test_custom_configuration_accepts_only_empty_target_events() -> None:
@@ -452,16 +444,16 @@ def test_custom_configuration_accepts_only_empty_target_events() -> None:
     provider = CustomWebhookProvider()
 
     assert provider.validate_configuration({"target_events": []}) == (
-        WebhookTriggerConfiguration(target_events=[])
+        CustomWebhookTriggerConfiguration(target_events=[])
     )
-    with pytest.raises(ValueError, match="empty target_events"):
+    with pytest.raises(ValueError, match="target_events"):
         provider.validate_configuration(
             {"target_events": [{"type": "pipeline.ready"}]}
         )
 
 
-def test_runtime_matching_skips_stale_github_entries_individually() -> None:
-    """One stale stored target does not disable remaining valid targets."""
+def test_runtime_matching_rejects_stale_github_configuration() -> None:
+    """One stale stored target invalidates the complete configuration."""
     provider = GitHubWebhookProvider()
     event = WebhookEvent(
         project_id=uuid4(),
@@ -492,13 +484,16 @@ def test_runtime_matching_skips_stale_github_entries_individually() -> None:
         configuration={"target_events": [{"type": "removed_event"}]},
     )
 
-    assert provider.match_triggers(
-        event=event, candidates=[partially_stale, entirely_stale]
-    ) == [partially_stale]
+    assert (
+        provider.match_triggers(
+            event=event, candidates=[partially_stale, entirely_stale]
+        )
+        == []
+    )
 
 
-def test_runtime_empty_target_events_are_unrestricted() -> None:
-    """An originally empty target list has unrestricted runtime meaning."""
+def test_runtime_empty_target_events_are_rejected() -> None:
+    """An empty GitHub target list is invalid at runtime."""
     provider = GitHubWebhookProvider()
     event = WebhookEvent(
         project_id=uuid4(),
@@ -512,6 +507,4 @@ def test_runtime_empty_target_events_are_unrestricted() -> None:
     )
     trigger = SimpleNamespace(id=uuid4(), configuration={"target_events": []})
 
-    assert provider.match_triggers(event=event, candidates=[trigger]) == [
-        trigger
-    ]
+    assert provider.match_triggers(event=event, candidates=[trigger]) == []

@@ -142,7 +142,7 @@ class BaseWebhookProvider(ABC):
     """Stateless provider behavior used by intake and trigger matching."""
 
     webhook_type: ClassVar[str]
-    configuration_class: type[BaseModel]
+    configuration_class: ClassVar[type[WebhookTriggerConfiguration]]
 
     async def pre_validate(
         self, headers: Mapping[str, str]
@@ -237,7 +237,6 @@ class BaseWebhookProvider(ABC):
         """
         return None
 
-    @abstractmethod
     def validate_configuration(
         self,
         configuration: WebhookTriggerConfiguration | Mapping[str, Any],
@@ -251,8 +250,22 @@ class BaseWebhookProvider(ABC):
             A normalized provider-neutral configuration.
 
         Raises:
-            ValueError: If any target event is invalid.
+            TypeError: If a configuration for another provider is supplied.
+            ValueError: If the configuration is invalid.
         """
+        if isinstance(configuration, Mapping):
+            return self.configuration_class.model_validate(configuration)
+        if isinstance(configuration, self.configuration_class):
+            return configuration
+        if type(configuration) is WebhookTriggerConfiguration:
+            return self.configuration_class.model_validate(
+                configuration.model_dump()
+            )
+        raise TypeError(
+            "Expected a mapping or an instance of "
+            f"{self.configuration_class.__name__}, got "
+            f"{type(configuration).__name__}."
+        )
 
     @abstractmethod
     def match_triggers(

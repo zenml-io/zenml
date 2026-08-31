@@ -4,9 +4,17 @@
 import json
 import logging
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, TypeAlias
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Literal,
+    TypeAlias,
+    cast,
+)
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, Field
 
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
@@ -323,9 +331,6 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     signature_header = "x-hub-signature-256"
     event_header = "x-github-event"
     delivery_header = "x-github-delivery"
-    _target_adapter: TypeAdapter[GitHubWebhookTargetEvent] = TypeAdapter(
-        GitHubWebhookTargetEvent
-    )
 
     async def pre_validate(
         self, headers: Mapping[str, str]
@@ -370,63 +375,20 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         """Extract the optional GitHub delivery ID."""
         return headers.get(self.delivery_header)
 
-    def validate_configuration(
-        self,
-        configuration: WebhookTriggerConfiguration | Mapping[str, Any],
-    ) -> WebhookTriggerConfiguration:
-        """Validate every GitHub target event and report all failures."""
-        generic = WebhookTriggerConfiguration.model_validate(configuration)
-        if not generic.target_events:
-            raise ValueError(
-                "GitHub webhook triggers require at least one target event."
-            )
-        valid: list[dict[str, Any]] = []
-        errors: list[str] = []
-        for index, raw_target in enumerate(generic.target_events):
-            event_type = (
-                raw_target.get("type", "unknown")
-                if isinstance(raw_target, Mapping)
-                else "unknown"
-            )
-            try:
-                target = self._target_adapter.validate_python(raw_target)
-            except ValidationError as error:
-                reason = "; ".join(
-                    item["msg"] for item in error.errors(include_url=False)
-                )
-                errors.append(f"index {index} (type={event_type}): {reason}")
-            else:
-                valid.append(target.model_dump(mode="json"))
-        if errors:
-            raise ValueError("Invalid target_events: " + "; ".join(errors))
-        return WebhookTriggerConfiguration(target_events=valid)
-
     def _cast_runtime_targets(
         self, trigger: "WebhookTriggerResponse"
-    ) -> tuple[bool, list[GitHubWebhookTargetEvent]]:
+    ) -> list[GitHubWebhookTargetEvent]:
         try:
-            generic = WebhookTriggerConfiguration.model_validate(
-                trigger.configuration
-            )
-        except ValueError:
+            configuration = self.validate_configuration(trigger.configuration)
+        except (TypeError, ValueError):
             logger.exception(
                 "Skipping defective webhook trigger configuration %s",
                 trigger.id,
             )
-            return False, []
-        if not generic.target_events:
-            return True, []
-        valid: list[GitHubWebhookTargetEvent] = []
-        for index, raw_target in enumerate(generic.target_events):
-            try:
-                valid.append(self._target_adapter.validate_python(raw_target))
-            except ValidationError:
-                logger.exception(
-                    "Skipping defective target event %s for trigger %s",
-                    index,
-                    trigger.id,
-                )
-        return False, valid
+            return []
+        return cast(
+            GitHubWebhookTriggerConfiguration, configuration
+        ).target_events
 
     def match_triggers(
         self,
@@ -440,10 +402,8 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             return []
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
-            unrestricted, targets = self._cast_runtime_targets(trigger)
-            if unrestricted or any(
-                semantic.matches(target) for target in targets
-            ):
+            targets = self._cast_runtime_targets(trigger)
+            if any(semantic.matches(target) for target in targets):
                 matches.append(trigger)
         return matches
 

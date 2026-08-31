@@ -5,6 +5,8 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+from pydantic import Field
+
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
     WebhookPayloadError,
@@ -19,11 +21,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class CustomWebhookTriggerConfiguration(WebhookTriggerConfiguration):
+    """Configuration for an unfiltered custom webhook trigger."""
+
+    target_events: list[Any] = Field(max_length=0)
+
+
 class CustomWebhookProvider(BaseWebhookProvider):
     """Provider for signed custom JSON webhook deliveries."""
 
     webhook_type = "custom"
-    configuration_class = WebhookTriggerConfiguration
+    configuration_class = CustomWebhookTriggerConfiguration
     signature_header = "x-zenml-signature-256"
     event_header = "x-zenml-event"
     delivery_header = "x-zenml-delivery"
@@ -81,28 +89,6 @@ class CustomWebhookProvider(BaseWebhookProvider):
         """
         return headers.get(self.delivery_header)
 
-    def validate_configuration(
-        self,
-        configuration: WebhookTriggerConfiguration | Mapping[str, Any],
-    ) -> WebhookTriggerConfiguration:
-        """Require an empty custom target event list.
-
-        Args:
-            configuration: The custom trigger configuration.
-
-        Returns:
-            The normalized configuration.
-
-        Raises:
-            ValueError: If custom filtering was configured.
-        """
-        config = WebhookTriggerConfiguration.model_validate(configuration)
-        if config.target_events:
-            raise ValueError(
-                "Custom webhook triggers require an empty target_events list."
-            )
-        return config
-
     def match_triggers(
         self,
         *,
@@ -121,18 +107,10 @@ class CustomWebhookProvider(BaseWebhookProvider):
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             try:
-                configuration = WebhookTriggerConfiguration.model_validate(
-                    trigger.configuration
-                )
-            except ValueError:
+                self.validate_configuration(trigger.configuration)
+            except (TypeError, ValueError):
                 logger.exception(
                     "Skipping defective webhook trigger configuration %s",
-                    trigger.id,
-                )
-                continue
-            if configuration.target_events:
-                logger.warning(
-                    "Skipping unsupported custom target events for trigger %s",
                     trigger.id,
                 )
                 continue
