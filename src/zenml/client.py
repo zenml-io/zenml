@@ -78,7 +78,6 @@ from zenml.enums import (
     TriggerRunConcurrency,
     TriggerType,
     VisualizationResourceTypes,
-    WebhookType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -7104,7 +7103,7 @@ class Client(metaclass=ClientMetaClass):
     def create_webhook(
         self,
         name: str,
-        webhook_type: WebhookType,
+        webhook_type: str,
         active: bool = True,
         secret: str | None = None,
     ) -> WebhookCreateResponse:
@@ -7170,7 +7169,7 @@ class Client(metaclass=ClientMetaClass):
         name: StringFilterOption = None,
         project: str | UUID | None = None,
         user: UUIDFilterOption = None,
-        webhook_type: EnumFilterOption[WebhookType] = None,
+        webhook_type: StringFilterOption = None,
         active: bool | None = None,
         hydrate: bool = False,
     ) -> Page[WebhookResponse]:

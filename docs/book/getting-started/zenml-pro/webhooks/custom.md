@@ -27,12 +27,11 @@ Via the SDK:
 
 ```python
 from zenml.client import Client
-from zenml.enums import WebhookType
 
 client = Client()
 result = client.create_webhook(
     name="custom-events",
-    webhook_type=WebhookType.CUSTOM,
+    webhook_type="custom",
 )
 
 endpoint_url = result.webhook.endpoint_url

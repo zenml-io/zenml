@@ -22,7 +22,6 @@ from fastapi import HTTPException, status
 from pydantic import SecretStr
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
-from zenml.enums import WebhookType
 from zenml.webhooks import (
     WebhookAuthenticationError,
     WebhookPayloadError,
@@ -39,6 +38,23 @@ def test_webhook_routers_use_public_webhook_prefix() -> None:
 
     assert endpoints.management_router.prefix == expected_prefix
     assert endpoints.intake_router.prefix == expected_prefix
+
+
+def test_unknown_webhook_provider_is_hidden_before_body_read() -> None:
+    """Unknown provider paths return not found without reading the body."""
+    request = _Request(headers={})
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(
+            endpoints.receive_webhook_event(
+                webhook_type="unknown",
+                webhook_id=uuid4(),
+                request=request,
+            )
+        )
+
+    assert error.value.status_code == status.HTTP_404_NOT_FOUND
+    assert request.body_calls == 0
 
 
 class _Request:
@@ -85,7 +101,7 @@ def test_github_pre_validation_happens_before_body_and_store_io(
         with pytest.raises(HTTPException) as error:
             asyncio.run(
                 endpoints.receive_webhook_event(
-                    webhook_type=WebhookType.GITHUB,
+                    webhook_type="github",
                     webhook_id=uuid4(),
                     request=request,
                 )
@@ -94,7 +110,7 @@ def test_github_pre_validation_happens_before_body_and_store_io(
     else:
         response = asyncio.run(
             endpoints.receive_webhook_event(
-                webhook_type=WebhookType.GITHUB,
+                webhook_type="github",
                 webhook_id=uuid4(),
                 request=request,
             )
@@ -152,7 +168,7 @@ class _Provider:
         if self.payload_error:
             raise self.payload_error
         return SimpleNamespace(
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
             event_type="pipeline.ready",
             delivery_id="delivery-id",
             payload={"event": "ready"},
@@ -174,7 +190,7 @@ def _install_dependencies(monkeypatch, store: _Store, provider: _Provider):
 
 def _receive(webhook_id):
     return endpoints._receive_webhook_event(
-        webhook_type=WebhookType.CUSTOM,
+        webhook_type="custom",
         webhook_id=webhook_id,
         body=b'{"event":"ready"}',
         headers={},
@@ -193,9 +209,9 @@ def _receive(webhook_id):
     ),
     [
         (None, None, None, None, 404, None, None),
-        (WebhookType.GITHUB, True, None, None, 404, None, None),
+        ("github", True, None, None, 404, None, None),
         (
-            WebhookType.CUSTOM,
+            "custom",
             True,
             WebhookAuthenticationError("bad auth"),
             None,
@@ -204,7 +220,7 @@ def _receive(webhook_id):
             "bad auth",
         ),
         (
-            WebhookType.CUSTOM,
+            "custom",
             False,
             WebhookAuthenticationError("bad auth"),
             None,
@@ -212,9 +228,9 @@ def _receive(webhook_id):
             None,
             None,
         ),
-        (WebhookType.CUSTOM, False, None, None, 409, None, None),
+        ("custom", False, None, None, 409, None, None),
         (
-            WebhookType.CUSTOM,
+            "custom",
             True,
             None,
             WebhookPayloadError("bad payload"),
@@ -222,7 +238,7 @@ def _receive(webhook_id):
             "invalid_payload",
             "bad payload",
         ),
-        (WebhookType.CUSTOM, True, None, None, 202, "accepted", None),
+        ("custom", True, None, None, 202, "accepted", None),
     ],
     ids=[
         "missing-webhook",
@@ -236,7 +252,7 @@ def _receive(webhook_id):
 )
 def test_receive_webhook_event_decision_table(
     monkeypatch,
-    stored_type: WebhookType | None,
+    stored_type: str | None,
     active: bool | None,
     auth_error: Exception | None,
     payload_error: Exception | None,
@@ -270,7 +286,7 @@ def test_receive_webhook_event_decision_table(
     finally:
         unregister_webhook_event_consumer(consumer)
 
-    resolved = stored_type == WebhookType.CUSTOM
+    resolved = stored_type == "custom"
     parsed = expected_status in {
         status.HTTP_202_ACCEPTED,
         status.HTTP_400_BAD_REQUEST,
@@ -293,7 +309,7 @@ def test_receive_webhook_event_decision_table(
         event = consumer.events[0]
         assert event.project_id == store.project_id
         assert event.webhook_id == webhook_id
-        assert event.webhook_type == WebhookType.CUSTOM
+        assert event.webhook_type == "custom"
         assert event.event_type == "pipeline.ready"
         assert event.delivery_id == "delivery-id"
         assert event.payload == {"event": "ready"}

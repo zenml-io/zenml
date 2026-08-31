@@ -9,11 +9,10 @@ import hmac
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from zenml.enums import WebhookType
 from zenml.exceptions import CredentialsNotValid
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
@@ -142,7 +141,7 @@ class ParsedWebhookEvent(BaseModel):
 class BaseWebhookProvider(ABC):
     """Stateless provider behavior used by intake and trigger matching."""
 
-    webhook_type: WebhookType
+    webhook_type: ClassVar[str]
     configuration_class: type[BaseModel]
 
     async def pre_validate(

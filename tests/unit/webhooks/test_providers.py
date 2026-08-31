@@ -22,7 +22,6 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from zenml.enums import WebhookType
 from zenml.models import (
     GitHubCommit,
     GitHubMergedPullRequestEvent,
@@ -50,7 +49,7 @@ pytestmark = pytest.mark.anyio
 class _BodyMetadataBearerProvider(BaseWebhookProvider):
     """Test provider with bearer auth and body-derived event metadata."""
 
-    webhook_type = WebhookType.CUSTOM
+    webhook_type = "custom"
     configuration_class = WebhookTriggerConfiguration
 
     def authenticate(
@@ -101,7 +100,7 @@ def test_github_semantic_push_event_includes_head_commit() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         event_type="push",
         payload={
             "ref": "refs/heads/main",
@@ -127,7 +126,7 @@ def test_github_semantic_merged_pr_includes_merge_commit() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         event_type="pull_request",
         payload={
             "action": "closed",
@@ -160,14 +159,14 @@ def _signature(secret: str, body: bytes) -> str:
 @pytest.mark.parametrize(
     "webhook_type, provider_type",
     [
-        (WebhookType.GITHUB, GitHubWebhookProvider),
-        (WebhookType.CUSTOM, CustomWebhookProvider),
+        ("github", GitHubWebhookProvider),
+        ("custom", CustomWebhookProvider),
     ],
 )
 def test_get_webhook_provider_returns_registered_provider(
-    webhook_type: WebhookType, provider_type: type
+    webhook_type: str, provider_type: type
 ) -> None:
-    """The closed resolver returns the provider for each webhook type."""
+    """The registry returns the provider for each built-in webhook type."""
     provider = get_webhook_provider(webhook_type)
 
     assert isinstance(provider, provider_type)
@@ -179,6 +178,8 @@ def test_webhook_provider_registry_registers_provider_classes() -> None:
     created_providers: list[_BodyMetadataBearerProvider] = []
 
     class _TrackedProvider(_BodyMetadataBearerProvider):
+        webhook_type = "third-party"
+
         def __init__(self) -> None:
             created_providers.append(self)
 
@@ -187,8 +188,8 @@ def test_webhook_provider_registry_registers_provider_classes() -> None:
 
     assert created_providers == []
 
-    first_provider = registry.get(WebhookType.CUSTOM)
-    second_provider = registry.get(WebhookType.CUSTOM)
+    first_provider = registry.get("third-party")
+    second_provider = registry.get("third-party")
 
     assert created_providers == [first_provider, second_provider]
     assert first_provider is not second_provider
@@ -323,13 +324,15 @@ def test_trusted_webhook_event_is_immutable() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="third-party",
         event_type="pull_request",
         payload={"action": "closed"},
     )
 
     with pytest.raises(ValidationError):
         event.event_type = "workflow_run"
+
+    assert event.webhook_type == "third-party"
 
 
 def test_parse_rejects_missing_body_event_type() -> None:
@@ -463,7 +466,7 @@ def test_runtime_matching_skips_stale_github_entries_individually() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         event_type="push",
         payload={
             "ref": "refs/heads/develop",
@@ -500,7 +503,7 @@ def test_runtime_empty_target_events_are_unrestricted() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         event_type="push",
         payload={
             "ref": "refs/heads/develop",

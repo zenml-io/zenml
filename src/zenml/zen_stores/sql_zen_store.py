@@ -182,7 +182,6 @@ from zenml.enums import (
     TaggableResourceTypes,
     TriggerType,
     VisualizationResourceTypes,
-    WebhookType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -525,7 +524,7 @@ class _WebhookIntakeConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    webhook_type: WebhookType
+    webhook_type: str
     active: bool
     project_id: UUID
     secret: SecretStr
@@ -8493,7 +8492,7 @@ class SqlZenStore(BaseZenStore):
     def get_webhook_intake_config(
         self,
         webhook_id: UUID,
-        expected_webhook_type: WebhookType,
+        expected_webhook_type: str,
     ) -> _WebhookIntakeConfig:
         """Get the internal configuration required for webhook intake.
 
@@ -8520,11 +8519,11 @@ class SqlZenStore(BaseZenStore):
         if config is None:
             raise KeyError(f"Webhook {webhook_id} not found.")
         webhook_type, active, secret_id, project_id = config
-        if webhook_type != expected_webhook_type.value:
+        if webhook_type != expected_webhook_type:
             raise KeyError(f"Webhook {webhook_id} not found.")
         secret = self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
         return _WebhookIntakeConfig(
-            webhook_type=WebhookType(webhook_type),
+            webhook_type=webhook_type,
             active=active,
             project_id=project_id,
             secret=secret,
@@ -8601,7 +8600,7 @@ class SqlZenStore(BaseZenStore):
         )
         if webhook.project_id != project_id:
             raise KeyError(f"Webhook {webhook_id} not found.")
-        return get_webhook_provider(WebhookType(webhook.webhook_type))
+        return get_webhook_provider(webhook.webhook_type)
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
-from zenml.enums import WebhookType
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
 from zenml.webhooks.providers.base import (
@@ -319,7 +318,7 @@ class GitHubReleasePublishedEvent(GitHubSemanticEvent):
 class GitHubWebhookProvider(BaseWebhookProvider):
     """Provider for authenticated and semantically matched GitHub webhooks."""
 
-    webhook_type = WebhookType.GITHUB
+    webhook_type = "github"
     configuration_class = GitHubWebhookTriggerConfiguration
     signature_header = "x-hub-signature-256"
     event_header = "x-github-event"

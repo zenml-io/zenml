@@ -6,8 +6,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from zenml.enums import WebhookType
-
 
 class WebhookEvent(BaseModel):
     """Trusted immutable event handed to registered consumers."""
@@ -16,7 +14,7 @@ class WebhookEvent(BaseModel):
 
     project_id: UUID
     webhook_id: UUID
-    webhook_type: WebhookType
+    webhook_type: str
     event_type: str
     delivery_id: str | None = None
     payload: dict[str, Any]

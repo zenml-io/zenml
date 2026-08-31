@@ -5,7 +5,6 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from zenml.enums import WebhookType
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
     WebhookPayloadError,
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 class CustomWebhookProvider(BaseWebhookProvider):
     """Provider for signed custom JSON webhook deliveries."""
 
-    webhook_type = WebhookType.CUSTOM
+    webhook_type = "custom"
     configuration_class = WebhookTriggerConfiguration
     signature_header = "x-zenml-signature-256"
     event_header = "x-zenml-event"

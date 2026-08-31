@@ -15,7 +15,6 @@
 
 import threading
 
-from zenml.enums import WebhookType
 from zenml.logger import get_logger
 from zenml.webhooks.providers.base import BaseWebhookProvider
 
@@ -27,9 +26,7 @@ class WebhookProviderRegistry:
 
     def __init__(self) -> None:
         """Initialize the webhook provider registry."""
-        self._provider_classes: dict[
-            WebhookType, type[BaseWebhookProvider]
-        ] = {}
+        self._provider_classes: dict[str, type[BaseWebhookProvider]] = {}
         self._builtins_registered = False
         self._lock = threading.RLock()
 
@@ -63,7 +60,7 @@ class WebhookProviderRegistry:
                 webhook_type,
             )
 
-    def get(self, webhook_type: WebhookType) -> BaseWebhookProvider:
+    def get(self, webhook_type: str) -> BaseWebhookProvider:
         """Instantiate the provider registered for a webhook type.
 
         Args:
@@ -101,7 +98,7 @@ class WebhookProviderRegistry:
 webhook_provider_registry = WebhookProviderRegistry()
 
 
-def get_webhook_provider(webhook_type: WebhookType) -> BaseWebhookProvider:
+def get_webhook_provider(webhook_type: str) -> BaseWebhookProvider:
     """Get the provider registered for a webhook type.
 
     Args:

@@ -21,7 +21,6 @@ from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.enums import WebhookType
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -58,14 +57,14 @@ def test_webhook_cli_lifecycle(clean_client):
     try:
         result = runner.invoke(
             create_command,
-            [name, "--type", WebhookType.CUSTOM.value],
+            [name, "--type", "custom"],
         )
 
         assert result.exit_code == 0, result.output
         assert "Signing secret:" in result.output
 
         webhook = clean_client.get_webhook(name)
-        assert webhook.webhook_type == WebhookType.CUSTOM
+        assert webhook.webhook_type == "custom"
         assert webhook.active is True
 
         list_output_buffer = io.StringIO()
@@ -124,7 +123,7 @@ def test_webhook_cli_does_not_echo_user_supplied_secret(
             [
                 name,
                 "--type",
-                WebhookType.GITHUB.value,
+                "github",
                 "--secret",
                 "user-supplied-secret",
             ],
@@ -135,7 +134,7 @@ def test_webhook_cli_does_not_echo_user_supplied_secret(
         assert "Signing secret:" not in result.output
 
         webhook = clean_client.get_webhook(name)
-        assert webhook.webhook_type == WebhookType.GITHUB
+        assert webhook.webhook_type == "github"
         assert "secret" not in webhook.model_dump()
     finally:
         _delete_if_exists(name)

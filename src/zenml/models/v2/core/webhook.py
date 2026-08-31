@@ -19,9 +19,8 @@ from typing import ClassVar
 from pydantic import Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import WebhookType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
-from zenml.models.v2.base.filter import EnumFilterOption, StringFilterOption
+from zenml.models.v2.base.filter import StringFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -40,7 +39,10 @@ class WebhookRequest(ProjectScopedRequest):
     """Request model for creating a webhook."""
 
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
-    webhook_type: WebhookType
+    webhook_type: str = Field(
+        min_length=1,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     active: bool = True
     secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
@@ -59,7 +61,10 @@ class WebhookUpdate(BaseUpdate):
 class WebhookResponseBody(ProjectScopedResponseBody):
     """Response body for a webhook."""
 
-    webhook_type: WebhookType
+    webhook_type: str = Field(
+        min_length=1,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     active: bool
     endpoint_url: str | None = None
 
@@ -121,7 +126,7 @@ class WebhookResponse(
         return Client().zen_store.get_webhook(self.id)
 
     @property
-    def webhook_type(self) -> WebhookType:
+    def webhook_type(self) -> str:
         """Return the webhook provider type.
 
         Returns:
@@ -161,7 +166,7 @@ class WebhookFilter(ProjectScopedFilter):
     """Filter model for webhooks."""
 
     name: StringFilterOption = None
-    webhook_type: EnumFilterOption[WebhookType] = None
+    webhook_type: StringFilterOption = None
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         "active",

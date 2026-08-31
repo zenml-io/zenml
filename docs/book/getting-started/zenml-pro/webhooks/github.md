@@ -29,12 +29,11 @@ Via the SDK:
 
 ```python
 from zenml.client import Client
-from zenml.enums import WebhookType
 
 client = Client()
 result = client.create_webhook(
     name="github-ml-pipelines",
-    webhook_type=WebhookType.GITHUB,
+    webhook_type="github",
 )
 
 endpoint_url = result.webhook.endpoint_url

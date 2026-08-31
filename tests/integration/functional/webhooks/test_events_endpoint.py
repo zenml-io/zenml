@@ -19,7 +19,6 @@ import pytest
 import requests
 
 from tests.integration.functional.utils import sample_name
-from zenml.enums import WebhookType
 from zenml.models import WebhookCreateResponse
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -62,7 +61,7 @@ def webhook_factory(clean_project):
     ) -> WebhookCreateResponse:
         result = clean_project.create_webhook(
             name=sample_name(name_prefix),
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
             active=active,
             secret=secret,
         )

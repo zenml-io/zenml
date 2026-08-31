@@ -141,7 +141,7 @@ class WebhookSchema(NamedSchema, table=True):
             name=request.name,
             project_id=request.project,
             user_id=request.user,
-            webhook_type=request.webhook_type.value,
+            webhook_type=request.webhook_type,
             active=request.active,
             secret_id=secret_id,
         )

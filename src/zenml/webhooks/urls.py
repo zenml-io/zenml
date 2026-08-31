@@ -7,12 +7,11 @@
 from uuid import UUID
 
 from zenml.constants import WEBHOOKS
-from zenml.enums import WebhookType
 from zenml.utils.server_utils import get_server_api_url
 
 
 def get_webhook_intake_url(
-    *, webhook_type: WebhookType | str, webhook_id: UUID
+    *, webhook_type: str, webhook_id: UUID
 ) -> str | None:
     """Build the externally reachable intake URL for a webhook.
 
@@ -27,9 +26,4 @@ def get_webhook_intake_url(
     server_api_url = get_server_api_url()
     if server_api_url is None:
         return None
-    provider = (
-        webhook_type.value
-        if isinstance(webhook_type, WebhookType)
-        else webhook_type
-    )
-    return f"{server_api_url}{WEBHOOKS}/{provider}/{webhook_id}/events"
+    return f"{server_api_url}{WEBHOOKS}/{webhook_type}/{webhook_id}/events"

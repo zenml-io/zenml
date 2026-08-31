@@ -58,17 +58,20 @@ The equivalent SDK flow is:
 
 ```python
 from zenml.client import Client
-from zenml.enums import WebhookType
 
 client = Client()
 result = client.create_webhook(
     name="my-github-webhook",
-    webhook_type=WebhookType.GITHUB,
+    webhook_type="github",
 )
 
 webhook = result.webhook
 print(webhook.endpoint_url)
 ```
+
+Provider types are string identifiers. ZenML includes `github` and `custom`;
+servers may register additional provider implementations, and reject provider
+types that are not registered.
 
 The provider type determines how deliveries are authenticated and interpreted
 and cannot be changed after creation. By default, ZenML also generates a
@@ -92,13 +95,12 @@ supports filters such as provider type and active state:
 
 ```python
 from zenml.client import Client
-from zenml.enums import WebhookType
 
 client = Client()
 
 webhook = client.get_webhook("my-github-webhook")
 github_webhooks = client.list_webhooks(
-    webhook_type=WebhookType.GITHUB,
+    webhook_type="github",
     active=True,
 )
 ```
@@ -182,7 +184,7 @@ SDK, the generated secret is available only on the create result:
 ```python
 result = client.create_webhook(
     name="my-github-webhook",
-    webhook_type=WebhookType.GITHUB,
+    webhook_type="github",
 )
 signing_secret = result.secret.get_secret_value()
 ```
@@ -208,7 +210,7 @@ import os
 webhook_secret = os.environ["WEBHOOK_SECRET"]
 result = client.create_webhook(
     name="my-github-webhook",
-    webhook_type=WebhookType.GITHUB,
+    webhook_type="github",
     secret=webhook_secret,
 )
 ```

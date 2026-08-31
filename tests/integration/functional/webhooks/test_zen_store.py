@@ -16,7 +16,6 @@ from sqlalchemy import event
 from sqlmodel import Session, select
 
 from tests.integration.functional.utils import sample_name
-from zenml.enums import WebhookType
 from zenml.models import (
     WebhookEventStatsUpdate,
     WebhookFilter,
@@ -42,7 +41,7 @@ def test_client_webhook_methods_require_rest_store(
     with pytest.raises(TypeError, match=error):
         clean_client.create_webhook(
             name="webhook",
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
         )
     with pytest.raises(TypeError, match=error):
         clean_client.get_webhook("webhook")
@@ -65,7 +64,7 @@ def test_zen_store_webhook_lifecycle(clean_client):
         WebhookRequest(
             project=project_id,
             name=name,
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
         )
     )
 
@@ -74,7 +73,7 @@ def test_zen_store_webhook_lifecycle(clean_client):
     assert result.secret is not None
     assert webhook.name == name
     assert webhook.project_id == project_id
-    assert webhook.webhook_type == WebhookType.CUSTOM
+    assert webhook.webhook_type == "custom"
     assert webhook.active is True
     assert webhook.stats.received_count == 0
     assert webhook.get_resources().user is not None
@@ -105,7 +104,7 @@ def test_zen_store_webhook_lifecycle(clean_client):
     filtered = store.list_webhooks(
         WebhookFilter(
             project=project_id,
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
             active=True,
         ),
         hydrate=True,
@@ -161,7 +160,7 @@ def test_zen_store_webhook_lifecycle(clean_client):
         ).one()
         assert rotated_secret_id == initial_secret_id
     intake_config = store.get_webhook_intake_config(
-        webhook.id, expected_webhook_type=WebhookType.CUSTOM
+        webhook.id, expected_webhook_type="custom"
     )
     assert intake_config.secret.get_secret_value() == "replacement-secret"
 
@@ -183,7 +182,7 @@ def test_sql_store_webhook_intake_config_contains_masked_secret(
         WebhookRequest(
             project=clean_client.active_project.id,
             name=sample_name("webhook-intake-query-count"),
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
         )
     )
     statements = []
@@ -197,10 +196,10 @@ def test_sql_store_webhook_intake_config_contains_masked_secret(
     try:
         config = store.get_webhook_intake_config(
             result.webhook.id,
-            expected_webhook_type=WebhookType.CUSTOM,
+            expected_webhook_type="custom",
         )
 
-        assert config.webhook_type == WebhookType.CUSTOM
+        assert config.webhook_type == "custom"
         assert config.active is True
         assert config.project_id == clean_client.active_project.id
         secret = config.secret.get_secret_value()
@@ -236,7 +235,7 @@ def test_public_secret_deletion_hides_webhook_owned_secret(
         WebhookRequest(
             project=clean_client.active_project.id,
             name=sample_name("webhook-owned-secret"),
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
             secret="owned-secret",
         )
     )
@@ -254,7 +253,7 @@ def test_public_secret_deletion_hides_webhook_owned_secret(
 
         intake_config = store.get_webhook_intake_config(
             webhook_id,
-            expected_webhook_type=WebhookType.CUSTOM,
+            expected_webhook_type="custom",
         )
         assert intake_config.secret.get_secret_value() == "owned-secret"
         assert store.get_webhook(webhook_id).id == webhook_id

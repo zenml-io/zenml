@@ -3,7 +3,7 @@
 import pytest
 
 from tests.integration.functional.utils import sample_name
-from zenml.enums import TriggerFlavor, TriggerRunConcurrency, WebhookType
+from zenml.enums import TriggerFlavor, TriggerRunConcurrency
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ProjectRequest,
@@ -24,7 +24,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
         WebhookRequest(
             project=project_id,
             name=sample_name("custom-webhook"),
-            webhook_type=WebhookType.CUSTOM,
+            webhook_type="custom",
             active=False,
         )
     ).webhook
@@ -111,7 +111,7 @@ def test_webhook_trigger_client_lifecycle(clean_client):
 
     webhook = clean_client.create_webhook(
         name=sample_name("github-webhook"),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
     ).webhook
     trigger = clean_client.create_webhook_trigger(
         name=sample_name("github-webhook-trigger"),

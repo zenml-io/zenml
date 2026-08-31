@@ -22,7 +22,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.console import console
-from zenml.enums import CliCategories, WebhookType
+from zenml.enums import CliCategories
 from zenml.models import WebhookFilter
 
 
@@ -36,7 +36,7 @@ def webhook() -> None:
 @click.option(
     "--type",
     "webhook_type",
-    type=click.Choice([value.value for value in WebhookType]),
+    type=str,
     required=True,
 )
 @click.option(
@@ -62,7 +62,7 @@ def create_webhook(
     """
     result = Client().create_webhook(
         name=name,
-        webhook_type=WebhookType(webhook_type),
+        webhook_type=webhook_type,
         active=not inactive,
         secret=secret,
     )

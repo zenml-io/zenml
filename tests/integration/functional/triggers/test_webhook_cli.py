@@ -9,7 +9,6 @@ import zenml_cli
 from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
-from zenml.enums import WebhookType
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 trigger_command = cli.commands["trigger"]
@@ -28,7 +27,7 @@ def test_webhook_trigger_cli_lifecycle(clean_client, tmp_path):
     runner = cli_runner()
     webhook = clean_client.create_webhook(
         name=sample_name("webhook-trigger-cli-webhook"),
-        webhook_type=WebhookType.CUSTOM,
+        webhook_type="custom",
     ).webhook
     trigger_name = sample_name("webhook-trigger-cli")
     updated_name = sample_name("webhook-trigger-cli-updated")
@@ -106,7 +105,7 @@ def test_github_webhook_trigger_cli_event_configuration(
     runner = cli_runner()
     webhook = clean_client.create_webhook(
         name=sample_name("github-webhook-trigger-cli-webhook"),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
     ).webhook
     trigger_name = sample_name("github-webhook-trigger-cli")
     config_path = tmp_path / "events.yaml"

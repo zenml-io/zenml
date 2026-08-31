@@ -32,7 +32,6 @@ from zenml.constants import (
     VERSION_1,
     WEBHOOKS,
 )
-from zenml.enums import WebhookType
 from zenml.models import (
     Page,
     WebhookCreateResponse,
@@ -97,6 +96,14 @@ def create_webhook(
     Returns:
         The created webhook and any generated signing secret.
     """
+    try:
+        get_webhook_provider(webhook.webhook_type)
+    except KeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unsupported webhook type: {webhook.webhook_type}.",
+        ) from error
+
     verify_permission_for_model(model=webhook, action=Action.CREATE)
     result = zen_store().create_webhook(webhook)
     return dehydrate_response_model(result)
@@ -221,7 +228,7 @@ def rotate_webhook_secret(
 )
 @async_handle_endpoint_errors
 async def receive_webhook_event(
-    webhook_type: WebhookType,
+    webhook_type: str,
     webhook_id: UUID,
     request: Request,
 ) -> Response:
@@ -238,7 +245,10 @@ async def receive_webhook_event(
     Raises:
         HTTPException: If required provider metadata is malformed.
     """
-    provider = get_webhook_provider(webhook_type)
+    try:
+        provider = get_webhook_provider(webhook_type)
+    except KeyError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
     try:
         result = await provider.pre_validate(headers=request.headers)
     except WebhookPayloadError as error:
@@ -261,7 +271,7 @@ async def receive_webhook_event(
 
 
 def _receive_webhook_event(
-    webhook_type: WebhookType,
+    webhook_type: str,
     webhook_id: UUID,
     body: bytes,
     headers: Headers,

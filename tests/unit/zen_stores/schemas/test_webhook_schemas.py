@@ -19,7 +19,6 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from zenml.enums import WebhookType
 from zenml.models import (
     WebhookEventStatsUpdate,
     WebhookRequest,
@@ -42,7 +41,7 @@ def _webhook_schema() -> WebhookSchema:
         project_id=uuid4(),
         user_id=uuid4(),
         secret_id=uuid4(),
-        webhook_type=WebhookType.GITHUB.value,
+        webhook_type="github",
         active=True,
     )
     schema.stats = WebhookStatsSchema(
@@ -85,7 +84,7 @@ def test_webhook_event_stats_update_rejects_invalid_outcome(
             {
                 "name": "github-intake",
                 "project": uuid4(),
-                "webhook_type": WebhookType.GITHUB,
+                "webhook_type": "github",
             },
         ),
         (WebhookRotateSecretRequest, {}),
@@ -108,7 +107,7 @@ def test_webhook_requests_allow_missing_secret() -> None:
     webhook_request = WebhookRequest(
         name="github-intake",
         project=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
     )
     secret_request = WebhookRotateSecretRequest()
 
@@ -116,12 +115,23 @@ def test_webhook_requests_allow_missing_secret() -> None:
     assert secret_request.secret is None
 
 
+def test_webhook_request_accepts_extensible_provider_type() -> None:
+    """Webhook provider names are not constrained by a core enum."""
+    request = WebhookRequest(
+        name="third-party-intake",
+        project=uuid4(),
+        webhook_type="third-party",
+    )
+
+    assert request.webhook_type == "third-party"
+
+
 def test_webhook_uses_cloud_compatible_rbac_resource_name() -> None:
     """Webhook RBAC checks use the existing Cloud API resource name."""
     request = WebhookRequest(
         name="github-intake",
         project=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
     )
 
     resource_type = get_resource_type_for_model(request)
@@ -152,7 +162,7 @@ def test_webhook_schema_to_model_includes_body_and_metadata(
 
     assert response.id == schema.id
     assert response.name == "github-intake"
-    assert response.webhook_type == WebhookType.GITHUB
+    assert response.webhook_type == "github"
     assert response.active is True
     assert response.endpoint_url == endpoint_url
     assert response.stats.received_count == 3

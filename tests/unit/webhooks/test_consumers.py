@@ -15,7 +15,6 @@
 
 from uuid import uuid4
 
-from zenml.enums import WebhookType
 from zenml.webhooks import (
     WebhookEvent,
     WebhookEventConsumer,
@@ -49,7 +48,7 @@ def test_webhook_consumers_are_failure_isolated() -> None:
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         event_type="pull_request",
         payload={"action": "closed"},
     )

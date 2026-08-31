@@ -15,7 +15,6 @@ import pytest
 
 from tests.integration.functional.utils import sample_name
 from zenml.client import Client
-from zenml.enums import WebhookType
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -32,14 +31,14 @@ def test_client_webhook_lifecycle(clean_client):
 
     result = clean_client.create_webhook(
         name=name,
-        webhook_type=WebhookType.CUSTOM,
+        webhook_type="custom",
     )
 
     assert result.secret is not None
     initial_secret = result.secret.get_secret_value()
     webhook = result.webhook
     assert webhook.name == name
-    assert webhook.webhook_type == WebhookType.CUSTOM
+    assert webhook.webhook_type == "custom"
     assert webhook.active is True
     assert webhook.project_id == clean_client.active_project.id
     assert webhook.endpoint_url is not None
@@ -53,9 +52,7 @@ def test_client_webhook_lifecycle(clean_client):
     assert by_name.id == webhook.id
     assert "secret" not in by_id.model_dump()
 
-    listed_by_type = clean_client.list_webhooks(
-        webhook_type=WebhookType.CUSTOM
-    )
+    listed_by_type = clean_client.list_webhooks(webhook_type="custom")
     listed_by_active_state = clean_client.list_webhooks(active=True)
 
     assert webhook.id in {item.id for item in listed_by_type.items}
@@ -100,7 +97,7 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
 
     result = clean_client.create_webhook(
         name=name,
-        webhook_type=WebhookType.GITHUB,
+        webhook_type="github",
         secret="user-supplied-secret",
     )
 
@@ -110,7 +107,7 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
         webhook = clean_client.get_webhook(result.webhook.id)
 
         assert "secret" not in webhook.model_dump()
-        assert webhook.webhook_type == WebhookType.GITHUB
+        assert webhook.webhook_type == "github"
     finally:
         clean_client.delete_webhook(result.webhook.id)
 
@@ -122,7 +119,7 @@ def test_client_update_webhook_by_name_and_id(
     name = sample_name("webhook-client-update")
     result = clean_client.create_webhook(
         name=name,
-        webhook_type=WebhookType.CUSTOM,
+        webhook_type="custom",
     )
     webhook_id = result.webhook.id
 
