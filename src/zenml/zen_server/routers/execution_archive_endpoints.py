@@ -40,6 +40,9 @@ from zenml.zen_stores.execution_archive.archiver import (
 from zenml.zen_stores.execution_archive.catalog import (
     ExecutionArchiveCatalog,
 )
+from zenml.zen_stores.execution_archive.compactor import (
+    ExecutionArchiveAuthority,
+)
 
 router = APIRouter(
     prefix=API + VERSION_1 + "/archive",
@@ -102,6 +105,68 @@ def export_execution_archive(
     return ExecutionArchiveExporter(store=zen_store()).export(
         project_id=request.project_id,
         root_run_id=request.root_run_id,
+    )
+
+
+@router.post(
+    "/{archive_id}/compact",
+    responses={404: error_response, 409: error_response, 503: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def compact_execution_archive(
+    archive_id: UUID,
+    project_id: UUID,
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchiveResponse:
+    """Move SQL authority to one verified archive generation.
+
+    Args:
+        archive_id: Generation to compact.
+        project_id: Project that must own the generation.
+        auth_context: Authenticated caller.
+
+    Returns:
+        Cold archive generation.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="compact execution history",
+        permission=Action.UPDATE,
+        project_id=project_id,
+    )
+    return ExecutionArchiveAuthority(store=zen_store()).compact(
+        archive_id=archive_id, project_id=project_id
+    )
+
+
+@router.post(
+    "/{archive_id}/restore",
+    responses={404: error_response, 409: error_response, 503: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def restore_execution_archive(
+    archive_id: UUID,
+    project_id: UUID,
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchiveResponse:
+    """Restore one generation's payload and return authority to SQL.
+
+    Args:
+        archive_id: Generation to restore.
+        project_id: Project that must own the generation.
+        auth_context: Authenticated caller.
+
+    Returns:
+        Restored archive generation.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="restore execution history",
+        permission=Action.UPDATE,
+        project_id=project_id,
+    )
+    return ExecutionArchiveAuthority(store=zen_store()).restore(
+        archive_id=archive_id, project_id=project_id
     )
 
 

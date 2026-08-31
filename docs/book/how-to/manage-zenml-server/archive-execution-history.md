@@ -18,10 +18,9 @@ relationships, and other workspace tables remain in the metadata database and
 continue to grow normally.
 
 {% hint style="warning" %}
-The export endpoint in this release is a non-destructive administrator tool.
-It creates a verified object but does not remove or replace any SQL payload.
-SQL remains authoritative until compaction support is enabled in a later
-release.
+Export is always non-destructive. Compaction is a separate administrator
+operation and is disabled by default. Deploy the archive-aware version to
+every server replica before enabling it.
 {% endhint %}
 
 ## Configure the storage tier
@@ -34,6 +33,8 @@ prefix on every server replica. For example:
 export ZENML_SERVER_EXECUTION_ARCHIVE_FLAVOR=s3
 export ZENML_SERVER_EXECUTION_ARCHIVE_CONFIGURATION='{"path":"s3://example-history"}'
 export ZENML_SERVER_EXECUTION_ARCHIVE_PATH_PREFIX=execution-archive
+# Enable only after every replica runs this archive-aware release.
+export ZENML_SERVER_EXECUTION_ARCHIVE_COMPACTION_ENABLED=true
 ```
 
 The server builds the existing ZenML artifact-store implementation directly.
@@ -50,8 +51,8 @@ entry; restore and purge existing generations before deliberately moving the
 archive tier.
 
 Use object-store encryption, versioning, retention, and lifecycle controls
-appropriate for your environment. Once SQL is compacted in a later release,
-historical payload availability also depends on this destination.
+appropriate for your environment. Once SQL is compacted, historical payload
+availability depends on this destination.
 
 ## Export one execution tree
 
@@ -96,15 +97,57 @@ List generations with
 Get one generation with
 `GET /api/v1/archive/<ARCHIVE-ID>?project_id=<PROJECT-ID>`.
 
-## Current read and downgrade behavior
+## Compact and restore one generation
+
+After a generation reaches `verified`, an administrator can make its archive
+authoritative:
+
+```text
+POST /api/v1/archive/<ARCHIVE-ID>/compact?project_id=<PROJECT-ID>
+```
+
+The server reads and validates the object again immediately before the
+authority switch. It then locks the complete execution tree, compares its
+current semantic fingerprint with the object, and atomically marks all of its
+runs and snapshots as archived. Only after this fence commits does it replace
+the covered SQL payload fields in bounded, resumable batches. The lifecycle is
+`verified` → `compacting` → `cold`.
+
+There is no transparent object-store hydration. Payload-free list summaries
+remain available for cold history, while a request that needs compacted
+payload returns HTTP 409 with the archive ID to restore. Restore explicitly:
+
+```text
+POST /api/v1/archive/<ARCHIVE-ID>/restore?project_id=<PROJECT-ID>
+```
+
+Restoration verifies the object, writes payload back in bounded, resumable
+batches, and clears the run and snapshot fences only after every surviving row
+has been restored. Rows deleted while the generation was cold are skipped.
+The lifecycle is `cold` → `restoring` → `restored`.
+
+An interrupted compaction or restoration is safe to call again. A fenced
+worker whose lease was taken over cannot commit another batch. A checksum or
+format failure becomes `corrupt`; when it occurs after authority moved, the
+generation continues to require restoration and the server fails closed.
+
+The three source reads serve different safety boundaries: the first builds the
+export, the second detects changes made while the object was uploaded, and the
+third runs under row locks immediately before SQL authority moves. Removing
+one would leave a different concurrent-write window unchecked.
+
+## Read and downgrade behavior
 
 Ordinary hot reads do not contact archive storage. This release never writes
-archive markers, so existing reads and writes retain their current behavior.
-The schema already contains fail-closed conversion guards needed by later
-compaction support: if a future compacted row is encountered, a full-payload
-request returns a typed HTTP 409 that names the archive to restore, while
-payload-free list summaries remain available.
+archive markers unless an administrator explicitly calls the compact endpoint
+and the deployment gate is enabled. A full-payload request for cold history
+returns a typed HTTP 409 that names the archive to restore. New runs, steps,
+operational snapshot references, and updates are fenced from modifying a cold
+execution tree until it is restored. Deleting an individual cold run or
+snapshot is also refused: partial deletion would break the tree closure and
+make restoration semantics ambiguous. Restore the tree first, perform the
+deletion, and archive the remaining history again if needed.
 
-The database migration refuses to downgrade while any future archive is
-authoritative. Verified-only generations do not block downgrade because SQL
-still contains their full payload.
+The database migration refuses to downgrade while any archive is authoritative.
+Verified-only and restored generations do not block downgrade because SQL
+contains their full payload.

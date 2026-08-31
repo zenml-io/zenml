@@ -45,7 +45,9 @@ _TRANSITIONS: Dict[S, FrozenSet[S]] = {
     S.COLD: frozenset({S.COLD, S.RESTORING, S.CORRUPT}),
     S.RESTORING: frozenset({S.RESTORING, S.RESTORED, S.COLD, S.CORRUPT}),
     S.RESTORED: frozenset(),
-    S.CORRUPT: frozenset(),
+    # A cold object can be repaired out of band and restored. The service
+    # only permits this transition when the generation still owns SQL.
+    S.CORRUPT: frozenset({S.RESTORING}),
 }
 _RESUMABLE_EXPORT_STATES = frozenset({S.EXPORTING, S.FAILED})
 _PURGEABLE_SUPERSEDED_STATES = frozenset(
@@ -270,6 +272,37 @@ class ExecutionArchiveCatalog:
             )
             session.commit()
             return renewed
+
+    def claim(
+        self,
+        archive_id: UUID,
+        *,
+        owner: str,
+        lease_seconds: float,
+    ) -> ExecutionArchiveClaim:
+        """Claim an existing generation with a new fencing token.
+
+        Args:
+            archive_id: Generation to claim.
+            owner: Unique worker identity.
+            lease_seconds: Initial ownership lease duration.
+
+        Returns:
+            Claimed generation and its fencing token.
+        """
+        with Session(self._engine) as session:
+            schema = self._lock(session, archive_id)
+            token = self._acquire(
+                schema, owner=owner, lease_seconds=lease_seconds
+            )
+            schema.updated = utc_now()
+            session.add(schema)
+            session.flush()
+            claim = ExecutionArchiveClaim(
+                archive=schema.to_model(), owner=owner, token=token
+            )
+            session.commit()
+            return claim
 
     def mark_verified(
         self,
@@ -520,6 +553,21 @@ class ExecutionArchiveCatalog:
         schema.updated = utc_now()
         session.add(schema)
         return schema
+
+    @staticmethod
+    def require_claimed(
+        session: Session, claim: ExecutionArchiveClaim
+    ) -> ExecutionArchiveSchema:
+        """Lock a generation and validate its live fencing token.
+
+        Args:
+            session: SQL transaction.
+            claim: Current fenced ownership.
+
+        Returns:
+            Locked catalog row.
+        """
+        return ExecutionArchiveCatalog._claimed(session, claim)
 
     @staticmethod
     def _claimed(

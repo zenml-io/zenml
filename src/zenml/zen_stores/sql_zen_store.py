@@ -2777,6 +2777,10 @@ class SqlZenStore(BaseZenStore):
                 reference_id=service.pipeline_run_id,
                 session=session,
             )
+            if service.pipeline_run_id is not None:
+                self._assert_run_history_writable(
+                    session=session, run_id=service.pipeline_run_id
+                )
 
             self._get_reference_schema_by_id(
                 resource=service,
@@ -2863,6 +2867,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ServiceSchema,
                 session=session,
             )
+            if existing_service.pipeline_run_id is not None:
+                self._assert_run_history_writable(
+                    session=session,
+                    run_id=existing_service.pipeline_run_id,
+                )
 
             self._get_reference_schema_by_id(
                 resource=existing_service,
@@ -5365,6 +5374,11 @@ class SqlZenStore(BaseZenStore):
                 reference_id=snapshot.source_snapshot,
                 session=session,
             )
+            if snapshot.source_snapshot is not None:
+                self._assert_execution_history_writable(
+                    session=session,
+                    snapshot_id=snapshot.source_snapshot,
+                )
 
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
@@ -5525,6 +5539,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
+            self._assert_execution_history_writable(
+                session=session, snapshot_id=snapshot.id
+            )
 
             if isinstance(snapshot_update.name, str):
                 validate_name(snapshot_update)
@@ -5591,6 +5608,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
+            )
+            self._assert_execution_history_writable(
+                session=session, snapshot_id=snapshot.id
             )
 
             session.delete(snapshot)
@@ -5701,6 +5721,9 @@ class SqlZenStore(BaseZenStore):
                 reference_schema=PipelineSnapshotSchema,
                 reference_id=deployment.snapshot_id,
                 session=session,
+            )
+            self._assert_execution_history_writable(
+                session=session, snapshot_id=deployment.snapshot_id
             )
             self._get_reference_schema_by_id(
                 resource=deployment,
@@ -6157,6 +6180,9 @@ class SqlZenStore(BaseZenStore):
                 reference_schema=PipelineSnapshotSchema,
                 reference_id=template.source_snapshot_id,
                 session=session,
+            )
+            self._assert_execution_history_writable(
+                session=session, snapshot_id=snapshot.id
             )
 
             template_utils.validate_snapshot_is_templatable(snapshot)
@@ -6876,6 +6902,72 @@ class SqlZenStore(BaseZenStore):
             f"For more information on run naming, see: https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration#run-name"
         )
 
+    @staticmethod
+    def _assert_execution_history_writable(
+        *,
+        session: Session,
+        snapshot_id: Optional[UUID],
+        run_id: Optional[UUID] = None,
+    ) -> None:
+        """Lock execution fences and reject writes to compacted history.
+
+        Snapshot then run is the shared lock order used by step creation and
+        the archive authority switch. Holding these locks through the caller's
+        write makes the marker check race-free under MySQL REPEATABLE READ.
+
+        Args:
+            session: Transaction that will perform the write.
+            snapshot_id: Snapshot referenced or changed by the write, if any.
+            run_id: Existing run referenced or changed by the write.
+
+        Raises:
+            IllegalOperationError: If an execution archive owns either row.
+        """
+        if snapshot_id is not None:
+            snapshot_archive_id = session.exec(
+                select(PipelineSnapshotSchema.execution_archive_id)
+                .where(col(PipelineSnapshotSchema.id) == snapshot_id)
+                .with_for_update()
+            ).one_or_none()
+            if snapshot_archive_id is not None:
+                raise IllegalOperationError(
+                    "This execution history is compacted in archive "
+                    f"{snapshot_archive_id}. Restore it before modifying or "
+                    "reusing its snapshot."
+                )
+        if run_id is None:
+            return
+        run_archive_id = session.exec(
+            select(PipelineRunSchema.execution_archive_id)
+            .where(col(PipelineRunSchema.id) == run_id)
+            .with_for_update()
+        ).one_or_none()
+        if run_archive_id is not None:
+            raise IllegalOperationError(
+                "This execution history is compacted in archive "
+                f"{run_archive_id}. Restore it before modifying or extending "
+                "the run."
+            )
+
+    @classmethod
+    def _assert_run_history_writable(
+        cls, *, session: Session, run_id: UUID
+    ) -> None:
+        """Resolve a run's snapshot and apply the ordered archive fence.
+
+        Args:
+            session: Transaction that will perform the write.
+            run_id: Existing run referenced or changed by the write.
+        """
+        snapshot_id = session.exec(
+            select(PipelineRunSchema.snapshot_id).where(
+                col(PipelineRunSchema.id) == run_id
+            )
+        ).one_or_none()
+        cls._assert_execution_history_writable(
+            session=session, snapshot_id=snapshot_id, run_id=run_id
+        )
+
     def _get_next_run_index(self, pipeline_id: UUID, session: Session) -> int:
         """Get the next run index for a pipeline.
 
@@ -6962,6 +7054,13 @@ class SqlZenStore(BaseZenStore):
 
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
+        )
+        # `_get_next_run_index` commits twice. Recheck the archive markers
+        # under the locks held by the run insert after that transaction gap.
+        self._assert_execution_history_writable(
+            session=session,
+            snapshot_id=snapshot.id,
+            run_id=pipeline_run.parent_run_id,
         )
 
         new_run = PipelineRunSchema.from_request(
@@ -7462,6 +7561,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+            self._assert_execution_history_writable(
+                session=session,
+                snapshot_id=existing_run.snapshot_id,
+                run_id=existing_run.id,
+            )
 
             if run_update.status is not None:
                 self._update_pipeline_run_status(
@@ -7578,6 +7682,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+            self._assert_execution_history_writable(
+                session=session,
+                snapshot_id=existing_run.snapshot_id,
+                run_id=existing_run.id,
+            )
 
             # Delete the pipeline run
             session.delete(existing_run)
@@ -7669,16 +7778,16 @@ class SqlZenStore(BaseZenStore):
                 request_model=run_wait_condition,
                 session=session,
             )
-            session.exec(
-                select(PipelineRunSchema.id)
-                .with_for_update()
-                .where(PipelineRunSchema.id == run_wait_condition.run)
-            ).one()
             run_schema = self._get_reference_schema_by_id(
                 resource=run_wait_condition,
                 reference_schema=PipelineRunSchema,
                 reference_id=run_wait_condition.run,
                 session=session,
+            )
+            self._assert_execution_history_writable(
+                session=session,
+                snapshot_id=run_schema.snapshot_id,
+                run_id=run_schema.id,
             )
             if not run_schema.snapshot or not run_schema.snapshot.is_dynamic:
                 raise IllegalOperationError(
@@ -8461,6 +8570,9 @@ class SqlZenStore(BaseZenStore):
                     f"Can not attach snapshot {snapshot_id} to archived trigger {trigger_id}."
                 )
 
+            self._assert_execution_history_writable(
+                session=session, snapshot_id=snapshot_id
+            )
             new_assoc = TriggerSnapshotSchema(
                 trigger_id=trigger_id,
                 snapshot_id=snapshot_id,
@@ -11636,18 +11748,13 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
-            # Acquire exclusive lock on the snapshot and run to prevent
-            # deadlocks during insertion
-            assert run.snapshot_id
-            session.exec(
-                select(PipelineSnapshotSchema.id)
-                .with_for_update()
-                .where(PipelineSnapshotSchema.id == run.snapshot_id)
-            )
-            session.exec(
-                select(PipelineRunSchema.id)
-                .with_for_update()
-                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
+            # Acquire the existing snapshot/run locks in their shared order
+            # and refuse the insert if archive authority moved while the
+            # earlier transaction was being committed.
+            self._assert_execution_history_writable(
+                session=session,
+                snapshot_id=run.snapshot_id,
+                run_id=step_run.pipeline_run_id,
             )
 
             existing_step_runs = session.exec(
@@ -12111,6 +12218,9 @@ class SqlZenStore(BaseZenStore):
                 reference_id=hook_invocation.pipeline_run_id,
                 session=session,
             )
+            self._assert_run_history_writable(
+                session=session, run_id=hook_invocation.pipeline_run_id
+            )
             # Check that the step run exists (if set).
             self._get_reference_schema_by_id(
                 resource=hook_invocation,
@@ -12380,6 +12490,11 @@ class SqlZenStore(BaseZenStore):
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
+            )
+            self._assert_execution_history_writable(
+                session=session,
+                snapshot_id=existing_step_run.snapshot_id,
+                run_id=existing_step_run.pipeline_run_id,
             )
 
             if step_run_update.status:

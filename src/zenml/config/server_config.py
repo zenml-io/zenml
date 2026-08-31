@@ -284,6 +284,9 @@ class ServerConfiguration(BaseModel):
             its own identity; credentials do not belong here.
         execution_archive_path_prefix: Directory below the artifact store
             path that holds every archive object.
+        execution_archive_compaction_enabled: Deployment-level safety gate.
+            Archived objects can be exported while this is false, but SQL
+            payload cannot be compacted until every replica enables it.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -430,6 +433,7 @@ class ServerConfiguration(BaseModel):
         default_factory=dict
     )
     execution_archive_path_prefix: str = "execution-archive"
+    execution_archive_compaction_enabled: bool = False
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES

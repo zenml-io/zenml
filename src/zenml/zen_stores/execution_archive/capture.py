@@ -243,7 +243,8 @@ class ExecutionArchiveCapturer:
             project_id: Project that must own the execution tree.
             root_run_id: Root run of the execution tree.
             session: Existing transaction, if any.
-            for_update: Whether to lock the family until transaction end.
+            for_update: Whether to lock the execution tree until transaction
+                end.
 
         Returns:
             Complete archive source records.

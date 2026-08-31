@@ -23,6 +23,9 @@ from zenml.models import ExecutionArchiveObject
 from zenml.zen_stores.execution_archive.archiver import (
     ExecutionArchiveExporter,
 )
+from zenml.zen_stores.execution_archive.compactor import (
+    ExecutionArchiveAuthority,
+)
 from zenml.zen_stores.execution_archive.storage import (
     ExecutionArchiveStorage,
     build_execution_archive_storage,
@@ -169,4 +172,39 @@ def exporter(
         clock=lambda: NOW,
         owner=owner,
         lease_seconds=lease_seconds,
+    )
+
+
+def authority(
+    store: SqlZenStore,
+    root: Path,
+    *,
+    storage: Optional[ExecutionArchiveStorage] = None,
+    owner: str = "test-worker",
+    lease_seconds: float = 600,
+    batch_size: int = 2,
+    compaction_enabled: bool = True,
+) -> ExecutionArchiveAuthority:
+    """Build a deterministic authority service backed by local storage.
+
+    Args:
+        store: SQL store.
+        root: Local artifact-store root.
+        storage: Optional observable storage wrapper.
+        owner: Worker identity.
+        lease_seconds: Fenced lease duration.
+        batch_size: Maximum changed rows per transaction.
+        compaction_enabled: Deployment-gate value.
+
+    Returns:
+        Configured authority service.
+    """
+    return ExecutionArchiveAuthority(
+        store=store,
+        storage=storage or local_storage(store, root),
+        clock=lambda: NOW,
+        owner=owner,
+        lease_seconds=lease_seconds,
+        batch_size=batch_size,
+        compaction_enabled=compaction_enabled,
     )
