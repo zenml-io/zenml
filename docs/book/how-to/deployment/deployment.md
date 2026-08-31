@@ -45,29 +45,14 @@ Pipeline deployments are ideal for scenarios requiring real-time, on-demand exec
 
 ## Traditional Model Serving vs. Deployed Pipelines
 
-If you're reaching for tools like Seldon or KServe, consider this: deployed
-pipelines give you all the core serving primitives, plus the power of a full
-application runtime.
+If you're reaching for tools like Seldon or KServe, consider this: deployed pipelines give you all the core serving primitives, plus the power of a full application runtime.
 
-- Equivalent functionality: A pipeline handles the end-to-end inference path
-  out of the box — request validation, feature pre-processing, model loading
-  and inference, post-processing, and response shaping.
-- More flexible: Deployed pipelines are unopinionated, so you can layer in
-  retrieval, guardrails, rules, A/B routing, canary logic, human-in-the-loop,
-  or any custom orchestration. You're not constrained by a model-server template.
-- More customizable: The deployment is a real ASGI app. Tailor endpoints,
-  authentication, authorization, rate limiting, structured logging, tracing,
-  correlation IDs, or SSO/OIDC — all with first-class middleware and
-  framework-level hooks.
-- More features: Serve single-page apps alongside the API. Ship admin/ops
-  dashboards, experiment playgrounds, model cards, or customer-facing UIs
-  from the very same deployment for tighter operational feedback loops.
+- Equivalent functionality: A pipeline handles the end-to-end inference path out of the box — request validation, feature pre-processing, model loading and inference, post-processing, and response shaping.
+- More flexible: Deployed pipelines are unopinionated, so you can layer in retrieval, guardrails, rules, A/B routing, canary logic, human-in-the-loop, or any custom orchestration. You're not constrained by a model-server template.
+- More customizable: The deployment is a real ASGI app. Tailor endpoints, authentication, authorization, rate limiting, structured logging, tracing, correlation IDs, or SSO/OIDC — all with first-class middleware and framework-level hooks.
+- More features: Serve single-page apps alongside the API. Ship admin/ops dashboards, experiment playgrounds, model cards, or customer-facing UIs from the very same deployment for tighter operational feedback loops.
 
-This approach aligns better with production realities: inference is rarely
-"just call a model." There are policies, data dependencies, and integrations
-that need a programmable, evolvable surface. Deployed pipelines give you that
-without sacrificing the convenience of a managed deployer and a clean HTTP
-contract.
+This approach aligns better with production realities: inference is rarely "just call a model." There are policies, data dependencies, and integrations that need a programmable, evolvable surface. Deployed pipelines give you that without sacrificing the convenience of a managed deployer and a clean HTTP contract.
 
 {% hint style="info" %}
 Deprecation notice: ZenML is phasing out the Model Deployer stack components

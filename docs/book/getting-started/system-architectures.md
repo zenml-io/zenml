@@ -5,8 +5,7 @@ icon: building-columns
 
 # System Architecture
 
-This guide walks through the various ways that ZenML can be deployed, from self-hosted OSS to\
-SaaS to self-hosted ZenML Pro!
+This guide walks through the various ways that ZenML can be deployed, from self-hosted OSS to\ SaaS to self-hosted ZenML Pro!
 
 ## ZenML OSS (Self-hosted)
 
@@ -89,16 +88,14 @@ The key advantages of this setup include:
 * Secure networking - workspaces communicate through outbound-only connections via VPN/private networks
 * Ability to customize and configure workspaces according to specific team needs
 * Reduced operational overhead compared to fully self-hosted deployments
-* Reduced maintenance burden - all control plane updates and maintenance are handled by ZenML
-This architecture strikes a balance between convenience and control, making it a popular choice for enterprises looking to standardize their MLOps practices while maintaining sovereignty.
+* Reduced maintenance burden - all control plane updates and maintenance are handled by ZenML This architecture strikes a balance between convenience and control, making it a popular choice for enterprises looking to standardize their MLOps practices while maintaining sovereignty.
 
 
 ### ZenML Pro Self-Hosted Architecture
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.avif)
 
-In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer\
-cloud. This is meant for customers who require completely air-gapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
+In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer\ cloud. This is meant for customers who require completely air-gapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
 
 <details>
 

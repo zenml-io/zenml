@@ -7,8 +7,7 @@ icon: globe
 
 ZenML maintains a collection of [Terraform modules](https://registry.terraform.io/modules/zenml-io/zenml-stack) designed to streamline the provisioning of cloud resources and seamlessly integrate them with ZenML Stacks. These modules simplify the setup process, allowing users to quickly provision cloud resources as well as configure and authorize ZenML to utilize them for running pipelines and other AI/ML operations.
 
-By leveraging these Terraform modules, users can ensure a more efficient and scalable deployment of their machine learning infrastructure, ultimately enhancing their development and operational workflows. The modules' implementation can also be used as a reference for creating custom Terraform\
-configurations tailored to specific cloud environments and requirements.
+By leveraging these Terraform modules, users can ensure a more efficient and scalable deployment of their machine learning infrastructure, ultimately enhancing their development and operational workflows. The modules' implementation can also be used as a reference for creating custom Terraform\ configurations tailored to specific cloud environments and requirements.
 
 {% hint style="info" %}
 Terraform requires you to manage your infrastructure as code yourself. Among other things, this means that you will need to have Terraform installed on your machine, and you will need to manually manage the state of your infrastructure.
@@ -131,16 +130,14 @@ zenml_stack_id = "04c65b96-b435-4a39-8484-8cc18f89b991"
 zenml_stack_name = "terraform-gcp-588339e64d06"
 ```
 
-At this point, a ZenML stack has also been created and registered with your\
-ZenML server, and you can start using it to run your pipelines:
+At this point, a ZenML stack has also been created and registered with your\ ZenML server, and you can start using it to run your pipelines:
 
 ```shell
 zenml integration install <list-of-required-integrations>
 zenml stack set <zenml_stack_id>
 ```
 
-You can find more details specific to the cloud provider of your choice in the\
-next section:
+You can find more details specific to the cloud provider of your choice in the\ next section:
 
 {% tabs %}
 {% tab title="AWS" %}

@@ -30,9 +30,7 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 **Native Schedule Management** means the orchestrator supports updating and deleting schedules directly through ZenML commands. When supported, commands like `zenml pipeline schedule update` and `zenml pipeline schedule delete` will automatically update/delete the schedule on the orchestrator platform (e.g., Kubernetes CronJobs). For orchestrators without this support, you'll need to manually manage schedules on the orchestrator side.
 {% endhint %}
 
-Check out [our tutorial on
-scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
-for a practical guide on how to schedule a pipeline.
+Check out [our tutorial on scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) for a practical guide on how to schedule a pipeline.
 
 ### Set a schedule
 
@@ -119,9 +117,7 @@ archived_schedules = Client().list_schedules(is_archived=True)
 
 #### Archived Object Naming
 
-After archival, you may notice that the schedule name has changed. In ZenML, schedule names act as unique identifiers. 
-To prevent naming conflicts and allow reuse of the original name, archived schedules are automatically renamed by 
-appending a random hash to the original name.
+After archival, you may notice that the schedule name has changed. In ZenML, schedule names act as unique identifiers. To prevent naming conflicts and allow reuse of the original name, archived schedules are automatically renamed by appending a random hash to the original name.
 
 #### Permanent Deletion (Hard Delete)
 
@@ -151,8 +147,7 @@ The functionality of these commands changes depending on whether the orchestrato
 - **Kubernetes orchestrator**: Fully supports native schedule management. Update and delete commands will modify/remove the actual CronJob on the cluster as well as the schedule information in ZenML.
 - **Other schedulable orchestrators**: Only update/delete the schedule information stored in ZenML. The actual schedule on the orchestrator remains unchanged.
 
-If the orchestrator **does not** support native schedule management, maintaining the lifecycle of the schedule on the orchestrator side is the responsibility of the user.
-In these cases, we recommend the following steps:
+If the orchestrator **does not** support native schedule management, maintaining the lifecycle of the schedule on the orchestrator side is the responsibility of the user. In these cases, we recommend the following steps:
 
 1. Find schedule on ZenML
 2. Match schedule on orchestrator side and delete

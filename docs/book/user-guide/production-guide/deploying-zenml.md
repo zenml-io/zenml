@@ -60,11 +60,7 @@ You can always go back to the local zenml experience by using `zenml logout`
 
 To learn more about deploying ZenML, check out the following resources:
 
-- [Deploying ZenML](https://docs.zenml.io/getting-started/deploying-zenml): an overview of
-  the different options for deploying ZenML and the system architecture of a
-  deployed ZenML instance.
-- [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to
-  deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
-  provider.
+- [Deploying ZenML](https://docs.zenml.io/getting-started/deploying-zenml): an overview of the different options for deploying ZenML and the system architecture of a deployed ZenML instance.
+- [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud provider.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

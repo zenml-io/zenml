@@ -230,9 +230,7 @@ Running `python run.py` should look somewhat like this in the terminal:
 
 <pre class="language-sh" data-line-numbers><code class="lang-sh"><strong>Registered new pipeline with name `training_pipeline`.
 </strong>.
-.
-.
-Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
+. . Pipeline run `training_pipeline-2023_04_29-09_19_54_273710` has finished in 0.236s.
 </code></pre>
 
 In the dashboard, you should now be able to see this new run, along with its runtime configuration and a visualization of the training data.

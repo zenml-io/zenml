@@ -62,8 +62,7 @@ Each connector type supports authentication methods specific to that service.
 
 ### Creating and Managing Connectors
 
-Service connectors can be created with different authentication methods
-depending on your cloud provider and security requirements.
+Service connectors can be created with different authentication methods depending on your cloud provider and security requirements.
 
 ![Authentication with Service Connectors](../../.gitbook/assets/authentication_with_connectors.png)
 
@@ -154,7 +153,7 @@ def upload_model_with_connector(model):
 ## Next Steps
 
 * Learn how to [deploy stacks](https://docs.zenml.io/stacks/deployment) using service connectors
-* Explore [authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) for different cloud providers 
+* Explore [authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) for different cloud providers
 * Understand how to [reference secrets in stack configuration](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration)
 * Read our [blog post](https://www.zenml.io/blog/how-to-simplify-authentication-in-machine-learning-pipelines-for-mlops) on how service connectors simplify authentication in ML pipelines
 

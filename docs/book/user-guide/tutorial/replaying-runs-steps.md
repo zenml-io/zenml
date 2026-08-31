@@ -15,8 +15,7 @@ A replay re-executes a pipeline or step using the same input artifacts (and para
 
 ## Replaying a pipeline
 
-Replay a pipeline either from local pipeline code (`.replay()`) or directly via
-the server (`Client().replay_pipeline_run(...)`).
+Replay a pipeline either from local pipeline code (`.replay()`) or directly via the server (`Client().replay_pipeline_run(...)`).
 
 {% tabs %}
 {% tab title="From local code" %}
@@ -62,8 +61,7 @@ Client().replay_pipeline_run(name_id_or_prefix="run_name_or_id")
 
 ### Skipping steps
 
-You can skip steps that don't need to be re-executed. Skipped steps reuse
-their output artifacts from the original run.
+You can skip steps that don't need to be re-executed. Skipped steps reuse their output artifacts from the original run.
 
 {% tabs %}
 {% tab title="From local code" %}
@@ -126,8 +124,7 @@ Client().replay_pipeline_run(
 
 ### Overriding step inputs
 
-Use `step_input_overrides` to replace specific step inputs for a replayed
-pipeline run.
+Use `step_input_overrides` to replace specific step inputs for a replayed pipeline run.
 
 {% tabs %}
 {% tab title="From local code" %}
@@ -175,10 +172,7 @@ Client().replay_pipeline_run(
 
 #### Overriding an input for every invocation of a step
 
-If you want to override inputs for **every invocation** of a step, you can
-use `step_default_input_overrides`. It is keyed by the step's name instead of
-the invocation ID. Per-invocation overrides in `step_input_overrides` take
-precedence per input key.
+If you want to override inputs for **every invocation** of a step, you can use `step_default_input_overrides`. It is keyed by the step's name instead of the invocation ID. Per-invocation overrides in `step_input_overrides` take precedence per input key.
 
 {% hint style="warning" %}
 The override applies to every invocation that shares the given name, and ZenML
@@ -223,9 +217,7 @@ Client().replay_pipeline_run(
 
 ## Replaying a single step
 
-Call `.replay()` on any `@step`-decorated function. ZenML loads the
-original input artifacts, feeds them to your (potentially updated) step code,
-and runs it as a single-step pipeline on the active stack.
+Call `.replay()` on any `@step`-decorated function. ZenML loads the original input artifacts, feeds them to your (potentially updated) step code, and runs it as a single-step pipeline on the active stack.
 
 The step to replay is resolved using the first match:
 
@@ -259,8 +251,7 @@ train.replay(
 
 ### Using `invocation_id`
 
-If a step appears more than once in a pipeline, specify which invocation to
-replay:
+If a step appears more than once in a pipeline, specify which invocation to replay:
 
 ```python
 train.replay(pipeline="training_pipeline", invocation_id="train_2")
@@ -270,10 +261,7 @@ train.replay(pipeline="training_pipeline", invocation_id="train_2")
 
 ## Debug mode
 
-Both pipeline and step replays accept `debug=True`. This runs the replay
-on a **local orchestrator** while keeping the rest of your active stack
-(artifact store, etc.), so you can iterate quickly without waiting for remote
-infrastructure.
+Both pipeline and step replays accept `debug=True`. This runs the replay on a **local orchestrator** while keeping the rest of your active stack (artifact store, etc.), so you can iterate quickly without waiting for remote infrastructure.
 
 ```python
 training_pipeline.replay(debug=True)
