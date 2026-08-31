@@ -3,6 +3,7 @@
 
 import json
 import logging
+from abc import abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
@@ -32,6 +33,10 @@ if TYPE_CHECKING:
     from zenml.webhooks.events import WebhookEvent
 
 logger = logging.getLogger(__name__)
+
+GITHUB_SIGNATURE_HEADER = "x-hub-signature-256"
+GITHUB_EVENT_HEADER = "x-github-event"
+GITHUB_DELIVERY_HEADER = "x-github-delivery"
 
 
 class GitHubWebhookEventType(StrEnum):
@@ -195,9 +200,9 @@ class GitHubSemanticEvent(BaseModel):
 
     event_filter_type: ClassVar[type[WebhookTargetEvent]]
 
+    @abstractmethod
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
         """Return whether the semantic event matches its typed target."""
-        raise NotImplementedError
 
 
 class GitHubCommit(BaseModel):
@@ -328,18 +333,15 @@ class GitHubWebhookProvider(BaseWebhookProvider):
 
     webhook_type = "github"
     configuration_class = GitHubWebhookTriggerConfiguration
-    signature_header = "x-hub-signature-256"
-    event_header = "x-github-event"
-    delivery_header = "x-github-delivery"
 
     async def pre_validate(
         self, headers: Mapping[str, str]
     ) -> WebhookPreValidationResult:
         """Reject malformed and ignore unsupported GitHub event families."""
-        event_type = headers.get(self.event_header)
+        event_type = headers.get(GITHUB_EVENT_HEADER)
         if not event_type:
             raise WebhookPayloadError(
-                f"Missing or empty {self.event_header} header."
+                f"Missing or empty {GITHUB_EVENT_HEADER} header."
             )
         try:
             GitHubWebhookEventType(event_type)
@@ -355,17 +357,17 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             body=body,
             headers=headers,
             secret=secret,
-            header=self.signature_header,
+            header=GITHUB_SIGNATURE_HEADER,
         )
 
     def get_event_type(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str:
         """Extract the raw GitHub event family."""
-        event_type = headers.get(self.event_header)
+        event_type = headers.get(GITHUB_EVENT_HEADER)
         if not event_type:
             raise WebhookPayloadError(
-                f"Missing required {self.event_header} header."
+                f"Missing required {GITHUB_EVENT_HEADER} header."
             )
         return event_type
 
@@ -373,7 +375,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str | None:
         """Extract the optional GitHub delivery ID."""
-        return headers.get(self.delivery_header)
+        return headers.get(GITHUB_DELIVERY_HEADER)
 
     def _cast_runtime_targets(
         self, trigger: "WebhookTriggerResponse"

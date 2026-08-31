@@ -41,10 +41,18 @@ from zenml.webhooks.providers import (
     get_webhook_provider,
 )
 from zenml.webhooks.providers.custom import (
+    CUSTOM_DELIVERY_HEADER,
+    CUSTOM_EVENT_HEADER,
+    CUSTOM_SIGNATURE_HEADER,
     CustomWebhookProvider,
     CustomWebhookTriggerConfiguration,
 )
-from zenml.webhooks.providers.github import GitHubWebhookProvider
+from zenml.webhooks.providers.github import (
+    GITHUB_DELIVERY_HEADER,
+    GITHUB_EVENT_HEADER,
+    GITHUB_SIGNATURE_HEADER,
+    GitHubWebhookProvider,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -90,6 +98,7 @@ def test_github_semantic_events_are_public_pydantic_models() -> None:
     )
 
     assert isinstance(event, GitHubSemanticEvent)
+    assert event.event_filter_type is PushEvent
     assert event.model_dump() == {
         "repo": "zenml-io/zenml",
         "branch": "main",
@@ -202,7 +211,7 @@ def test_webhook_provider_registry_registers_provider_classes() -> None:
     "headers",
     [
         {},
-        {"x-github-event": ""},
+        {GITHUB_EVENT_HEADER: ""},
     ],
 )
 async def test_github_pre_validation_rejects_missing_or_empty_event_header(
@@ -213,7 +222,7 @@ async def test_github_pre_validation_rejects_missing_or_empty_event_header(
 
     with pytest.raises(
         WebhookPayloadError,
-        match="Missing or empty x-github-event header",
+        match=f"Missing or empty {GITHUB_EVENT_HEADER} header",
     ):
         await provider.pre_validate(headers=headers)
 
@@ -229,7 +238,7 @@ async def test_github_pre_validation_ignores_unsupported_event_type(
     provider = GitHubWebhookProvider()
 
     result = await provider.pre_validate(
-        headers={"x-github-event": event_type}
+        headers={GITHUB_EVENT_HEADER: event_type}
     )
 
     assert result == WebhookPreValidationResult.IGNORE
@@ -246,7 +255,7 @@ async def test_github_pre_validation_processes_supported_event_type(
     provider = GitHubWebhookProvider()
 
     result = await provider.pre_validate(
-        headers={"x-github-event": event_type}
+        headers={GITHUB_EVENT_HEADER: event_type}
     )
 
     assert result == WebhookPreValidationResult.PROCESS
@@ -262,22 +271,27 @@ async def test_custom_pre_validation_always_processes() -> None:
 
 
 @pytest.mark.parametrize(
-    "provider, headers, expected_event_type, expected_delivery_id",
+    (
+        "provider, signature_header, headers, expected_event_type, "
+        "expected_delivery_id"
+    ),
     [
         (
             GitHubWebhookProvider(),
+            GITHUB_SIGNATURE_HEADER,
             {
-                "x-github-event": "push",
-                "x-github-delivery": "github-delivery-id",
+                GITHUB_EVENT_HEADER: "push",
+                GITHUB_DELIVERY_HEADER: "github-delivery-id",
             },
             "push",
             "github-delivery-id",
         ),
         (
             CustomWebhookProvider(),
+            CUSTOM_SIGNATURE_HEADER,
             {
-                "x-zenml-event": "pipeline.ready",
-                "x-zenml-delivery": "custom-delivery-id",
+                CUSTOM_EVENT_HEADER: "pipeline.ready",
+                CUSTOM_DELIVERY_HEADER: "custom-delivery-id",
             },
             "pipeline.ready",
             "custom-delivery-id",
@@ -286,6 +300,7 @@ async def test_custom_pre_validation_always_processes() -> None:
 )
 def test_authenticate_and_parse_return_provider_neutral_event(
     provider: GitHubWebhookProvider | CustomWebhookProvider,
+    signature_header: str,
     headers: dict[str, str],
     expected_event_type: str,
     expected_delivery_id: str,
@@ -293,7 +308,7 @@ def test_authenticate_and_parse_return_provider_neutral_event(
     """Authentication and parsing remain separate provider phases."""
     secret = "webhook-secret"
     body = b'{"repository":"zenml","run_id":42}'
-    headers[provider.signature_header] = _signature(secret, body)
+    headers[signature_header] = _signature(secret, body)
 
     provider.authenticate(body=body, headers=headers, secret=secret)
     event = provider.parse(body=body, headers=headers)
@@ -355,8 +370,8 @@ def test_authentication_uses_exact_raw_body_bytes() -> None:
     signed_body = b'{"repository":"zenml","run_id":42}'
     equivalent_body = b'{\n  "repository": "zenml",\n  "run_id": 42\n}'
     headers = {
-        "x-zenml-event": "pipeline.ready",
-        "x-zenml-signature-256": _signature(secret, signed_body),
+        CUSTOM_EVENT_HEADER: "pipeline.ready",
+        CUSTOM_SIGNATURE_HEADER: _signature(secret, signed_body),
     }
 
     with pytest.raises(WebhookAuthenticationError):
@@ -369,8 +384,8 @@ def test_authentication_uses_exact_raw_body_bytes() -> None:
     "headers",
     [
         {},
-        {"x-zenml-signature-256": "not-prefixed"},
-        {"x-zenml-signature-256": "sha256=invalid"},
+        {CUSTOM_SIGNATURE_HEADER: "not-prefixed"},
+        {CUSTOM_SIGNATURE_HEADER: "sha256=invalid"},
     ],
 )
 def test_authentication_rejects_missing_malformed_or_invalid_signature(
@@ -391,8 +406,8 @@ def test_authentication_rejects_missing_malformed_or_invalid_signature(
     "body, headers",
     [
         (b'{"repository":"zenml"}', {}),
-        (b"not-json", {"x-zenml-event": "pipeline.ready"}),
-        (b'["not", "an", "object"]', {"x-zenml-event": "pipeline.ready"}),
+        (b"not-json", {CUSTOM_EVENT_HEADER: "pipeline.ready"}),
+        (b'["not", "an", "object"]', {CUSTOM_EVENT_HEADER: "pipeline.ready"}),
     ],
 )
 def test_parse_rejects_missing_event_header_or_invalid_payload(

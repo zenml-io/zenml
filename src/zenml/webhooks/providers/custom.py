@@ -20,6 +20,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+CUSTOM_SIGNATURE_HEADER = "x-zenml-signature-256"
+CUSTOM_EVENT_HEADER = "x-zenml-event"
+CUSTOM_DELIVERY_HEADER = "x-zenml-delivery"
+
 
 class CustomWebhookTriggerConfiguration(WebhookTriggerConfiguration):
     """Configuration for an unfiltered custom webhook trigger."""
@@ -32,9 +36,6 @@ class CustomWebhookProvider(BaseWebhookProvider):
 
     webhook_type = "custom"
     configuration_class = CustomWebhookTriggerConfiguration
-    signature_header = "x-zenml-signature-256"
-    event_header = "x-zenml-event"
-    delivery_header = "x-zenml-delivery"
 
     def authenticate(
         self, body: bytes, headers: Mapping[str, str], secret: str
@@ -50,7 +51,7 @@ class CustomWebhookProvider(BaseWebhookProvider):
             body=body,
             headers=headers,
             secret=secret,
-            header=self.signature_header,
+            header=CUSTOM_SIGNATURE_HEADER,
         )
 
     def get_event_type(
@@ -68,10 +69,10 @@ class CustomWebhookProvider(BaseWebhookProvider):
         Raises:
             WebhookPayloadError: If the event header is missing.
         """
-        event_type = headers.get(self.event_header)
+        event_type = headers.get(CUSTOM_EVENT_HEADER)
         if not event_type:
             raise WebhookPayloadError(
-                f"Missing required {self.event_header} header."
+                f"Missing required {CUSTOM_EVENT_HEADER} header."
             )
         return event_type
 
@@ -87,7 +88,7 @@ class CustomWebhookProvider(BaseWebhookProvider):
         Returns:
             The delivery ID, if present.
         """
-        return headers.get(self.delivery_header)
+        return headers.get(CUSTOM_DELIVERY_HEADER)
 
     def match_triggers(
         self,
