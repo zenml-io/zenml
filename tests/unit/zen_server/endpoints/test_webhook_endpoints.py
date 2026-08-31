@@ -29,7 +29,7 @@ from zenml.webhooks import (
     register_webhook_event_consumer,
     unregister_webhook_event_consumer,
 )
-from zenml.webhooks.providers import GitHubWebhookProvider
+from zenml.webhooks.providers.github import GitHubWebhookProvider
 from zenml.zen_server.routers import webhook_endpoints as endpoints
 
 

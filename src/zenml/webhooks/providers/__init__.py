@@ -1,7 +1,6 @@
 #  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Built-in webhook providers and their resolver."""
+"""Webhook provider contracts and registry."""
 
-from zenml.enums import WebhookType
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
     WebhookAuthenticationError,
@@ -10,35 +9,20 @@ from zenml.webhooks.providers.base import (
     WebhookTargetEvent,
     WebhookTriggerConfiguration,
 )
-from zenml.webhooks.providers.custom import CustomWebhookProvider
-from zenml.webhooks.providers.github import GitHubWebhookProvider
-
-_PROVIDERS: dict[WebhookType, BaseWebhookProvider] = {
-    WebhookType.GITHUB: GitHubWebhookProvider(),
-    WebhookType.CUSTOM: CustomWebhookProvider(),
-}
-
-
-def get_webhook_provider(webhook_type: WebhookType) -> BaseWebhookProvider:
-    """Get the built-in provider for a webhook type.
-
-    Args:
-        webhook_type: The closed webhook type identifier.
-
-    Returns:
-        The stateless webhook provider.
-    """
-    return _PROVIDERS[webhook_type]
-
+from zenml.webhooks.providers.registry import (
+    WebhookProviderRegistry,
+    get_webhook_provider,
+    webhook_provider_registry,
+)
 
 __all__ = [
     "BaseWebhookProvider",
-    "CustomWebhookProvider",
-    "GitHubWebhookProvider",
     "WebhookAuthenticationError",
     "WebhookPayloadError",
     "WebhookPreValidationResult",
+    "WebhookProviderRegistry",
     "WebhookTargetEvent",
     "WebhookTriggerConfiguration",
     "get_webhook_provider",
+    "webhook_provider_registry",
 ]

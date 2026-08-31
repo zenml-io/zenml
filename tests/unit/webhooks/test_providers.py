@@ -34,14 +34,15 @@ from zenml.models import (
 from zenml.webhooks import WebhookEvent
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
-    CustomWebhookProvider,
-    GitHubWebhookProvider,
     WebhookAuthenticationError,
     WebhookPayloadError,
     WebhookPreValidationResult,
+    WebhookProviderRegistry,
     WebhookTriggerConfiguration,
     get_webhook_provider,
 )
+from zenml.webhooks.providers.custom import CustomWebhookProvider
+from zenml.webhooks.providers.github import GitHubWebhookProvider
 
 pytestmark = pytest.mark.anyio
 
@@ -171,6 +172,26 @@ def test_get_webhook_provider_returns_registered_provider(
 
     assert isinstance(provider, provider_type)
     assert provider.webhook_type == webhook_type
+
+
+def test_webhook_provider_registry_registers_provider_classes() -> None:
+    """Provider instances are created only when requested from the registry."""
+    created_providers: list[_BodyMetadataBearerProvider] = []
+
+    class _TrackedProvider(_BodyMetadataBearerProvider):
+        def __init__(self) -> None:
+            created_providers.append(self)
+
+    registry = WebhookProviderRegistry()
+    registry.register(_TrackedProvider)
+
+    assert created_providers == []
+
+    first_provider = registry.get(WebhookType.CUSTOM)
+    second_provider = registry.get(WebhookType.CUSTOM)
+
+    assert created_providers == [first_provider, second_provider]
+    assert first_provider is not second_provider
 
 
 @pytest.mark.parametrize(

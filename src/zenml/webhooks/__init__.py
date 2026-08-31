@@ -22,26 +22,25 @@ from zenml.webhooks.consumer import (
 from zenml.webhooks.events import WebhookEvent
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
-    CustomWebhookProvider,
-    GitHubWebhookProvider,
     WebhookAuthenticationError,
     WebhookPayloadError,
     WebhookPreValidationResult,
+    WebhookProviderRegistry,
     WebhookTargetEvent,
     WebhookTriggerConfiguration,
     get_webhook_provider,
+    webhook_provider_registry,
 )
 from zenml.webhooks.urls import get_webhook_intake_url
 
 __all__ = [
     "BaseWebhookProvider",
-    "CustomWebhookProvider",
-    "GitHubWebhookProvider",
     "WebhookAuthenticationError",
     "WebhookEvent",
     "WebhookEventConsumer",
     "WebhookPayloadError",
     "WebhookPreValidationResult",
+    "WebhookProviderRegistry",
     "WebhookTargetEvent",
     "WebhookTriggerConfiguration",
     "get_webhook_provider",
@@ -49,4 +48,5 @@ __all__ = [
     "notify_webhook_event_consumers",
     "register_webhook_event_consumer",
     "unregister_webhook_event_consumer",
+    "webhook_provider_registry",
 ]
