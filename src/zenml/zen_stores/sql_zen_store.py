@@ -384,7 +384,6 @@ from zenml.models import (
     WebhookRotateSecretRequest,
     WebhookSecretResponse,
     WebhookTriggerRequest,
-    WebhookTriggerUpdate,
     WebhookUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -404,10 +403,6 @@ from zenml.utils.string_utils import (
     validate_name,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.webhooks.providers import (
-    BaseWebhookProvider,
-    get_webhook_provider,
-)
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -8573,22 +8568,19 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Triggers ---------------------
 
-    def _get_webhook_trigger_provider(
+    def _verify_webhook_trigger_association(
         self,
         *,
         webhook_id: UUID,
         project_id: UUID,
         session: Session,
-    ) -> BaseWebhookProvider:
-        """Resolve the provider for a project-scoped webhook.
+    ) -> None:
+        """Verify that a webhook belongs to the trigger project.
 
         Args:
             webhook_id: The webhook to associate.
             project_id: The trigger project.
             session: The active database session.
-
-        Returns:
-            The webhook's stateless provider.
 
         Raises:
             KeyError: If the webhook does not belong to the trigger project.
@@ -8600,7 +8592,6 @@ class SqlZenStore(BaseZenStore):
         )
         if webhook.project_id != project_id:
             raise KeyError(f"Webhook {webhook_id} not found.")
-        return get_webhook_provider(webhook.webhook_type)
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
@@ -8617,13 +8608,10 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
             if isinstance(trigger, WebhookTriggerRequest):
-                provider = self._get_webhook_trigger_provider(
+                self._verify_webhook_trigger_association(
                     webhook_id=trigger.webhook_id,
                     project_id=trigger.project,
                     session=session,
-                )
-                trigger.configuration = provider.validate_configuration(
-                    trigger.configuration
                 )
             self._verify_name_uniqueness(
                 resource=trigger,
@@ -8749,20 +8737,6 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "A trigger can not be updated with a different trigger "
                     "type."
-                )
-
-            if isinstance(trigger_update, WebhookTriggerUpdate):
-                if existing_trigger.webhook_id is None:
-                    raise IllegalOperationError(
-                        "An archived webhook reference can not be restored."
-                    )
-                provider = self._get_webhook_trigger_provider(
-                    webhook_id=existing_trigger.webhook_id,
-                    project_id=existing_trigger.project_id,
-                    session=session,
-                )
-                trigger_update.configuration = provider.validate_configuration(
-                    trigger_update.configuration
                 )
 
             self._verify_name_uniqueness(

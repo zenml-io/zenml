@@ -4801,11 +4801,7 @@ class Client(metaclass=ClientMetaClass):
             trigger.configuration
         )
         if configuration is not None:
-            if trigger.webhook_id is None:
-                raise IllegalOperationError(
-                    "Archived triggers without a webhook can not be updated."
-                )
-            webhook_model = self.get_webhook(trigger.webhook_id)
+            webhook_model = self.get_webhook(cast(UUID, trigger.webhook_id))
             validated_configuration = get_webhook_provider(
                 webhook_model.webhook_type
             ).validate_configuration(configuration)

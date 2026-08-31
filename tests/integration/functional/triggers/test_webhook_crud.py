@@ -3,17 +3,26 @@
 import pytest
 
 from tests.integration.functional.utils import sample_name
-from zenml.enums import TriggerFlavor, TriggerRunConcurrency
+from zenml.enums import TriggerFlavor, TriggerRunConcurrency, TriggerType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ProjectRequest,
+    ScheduleTriggerRequest,
     TriggerFilter,
     WebhookRequest,
     WebhookTriggerRequest,
     WebhookTriggerResponse,
     WebhookTriggerUpdate,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.rest_zen_store import RestZenStore
+
+
+def _require_rest_store(clean_client) -> RestZenStore:
+    """Return the REST store or skip endpoint-specific tests."""
+    store = clean_client.zen_store
+    if not isinstance(store, RestZenStore):
+        pytest.skip("Webhook trigger endpoint tests require a REST store.")
+    return store
 
 
 def test_webhook_trigger_store_lifecycle(clean_client):
@@ -45,17 +54,6 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     assert trigger.webhook == webhook
     assert trigger.active is True
     assert trigger.configuration["target_events"] == []
-
-    with pytest.raises(ValueError, match="empty target_events"):
-        store.update_trigger(
-            trigger_id=trigger.id,
-            trigger_update=WebhookTriggerUpdate(
-                name=trigger.name,
-                active=True,
-                concurrency=trigger.concurrency,
-                configuration={"target_events": [{"type": "unsupported"}]},
-            ),
-        )
 
     updated = store.update_trigger(
         trigger_id=trigger.id,
@@ -106,8 +104,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
 
 def test_webhook_trigger_client_lifecycle(clean_client):
     """The public client accepts generic full-replacement configuration."""
-    if isinstance(clean_client.zen_store, SqlZenStore):
-        pytest.skip("Webhooks require a REST store.")
+    _require_rest_store(clean_client)
 
     webhook = clean_client.create_webhook(
         name=sample_name("github-webhook"),
@@ -150,3 +147,67 @@ def test_webhook_trigger_client_lifecycle(clean_client):
 
     listed = clean_client.list_webhook_triggers(webhook_id=webhook.id)
     assert trigger.id in {item.id for item in listed.items}
+
+
+def test_webhook_trigger_rest_endpoint_validation(clean_client):
+    """The REST API validates webhook configurations and trigger types."""
+    store = _require_rest_store(clean_client)
+    project_id = clean_client.active_project.id
+    webhook = clean_client.create_webhook(
+        name=sample_name("github-validation-webhook"),
+        webhook_type="github",
+    ).webhook
+
+    with pytest.raises(ValueError, match="at least one target event"):
+        store.create_trigger(
+            WebhookTriggerRequest(
+                project=project_id,
+                name=sample_name("invalid-github-trigger"),
+                webhook_id=webhook.id,
+                configuration={"target_events": []},
+            )
+        )
+
+    trigger = clean_client.create_webhook_trigger(
+        name=sample_name("validated-github-trigger"),
+        webhook=webhook.id,
+        configuration={
+            "target_events": [
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                }
+            ]
+        },
+    )
+    with pytest.raises(ValueError, match="Invalid target_events"):
+        store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=trigger.name,
+                active=trigger.active,
+                concurrency=trigger.concurrency,
+                configuration={"target_events": [{"type": "unsupported"}]},
+            ),
+        )
+
+    schedule = store.create_trigger(
+        ScheduleTriggerRequest(
+            project=project_id,
+            name=sample_name("schedule-trigger"),
+            type=TriggerType.SCHEDULE,
+            active=True,
+            cron_expression="* 1 * * *",
+        )
+    )
+    with pytest.raises(IllegalOperationError, match="different trigger type"):
+        store.update_trigger(
+            trigger_id=schedule.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=schedule.name,
+                active=schedule.active,
+                concurrency=schedule.concurrency,
+                configuration={"target_events": []},
+            ),
+        )
