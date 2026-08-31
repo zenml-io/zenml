@@ -5,19 +5,31 @@ icon: webhook
 
 # Webhooks
 
-Webhooks give external systems a project-scoped endpoint for sending events to
-ZenML. Each webhook has a provider type, an endpoint URL, a signing secret, and
-an active state. The provider validates incoming deliveries and passes accepted
-events to the consumers configured in your ZenML deployment.
+Webhooks connect external systems to ZenML so that your ZenML deployment can
+react to events that happen outside the platform. For example, you can receive
+an event when a pull request is merged in GitHub, when a GitHub Actions workflow
+finishes, or when an internal service publishes a new model version.
 
-A webhook is an event intake resource, not an automation rule. A `202 Accepted`
-response means that ZenML accepted the delivery for processing; it does not mean
-that a pipeline run was started. [Webhook triggers](triggers.md#webhook-triggers)
-are one consumer that can route accepted events to pipeline snapshots.
+When you create a webhook, ZenML exposes a project-scoped intake URL. Configure
+the external system to send signed HTTP requests to that URL.
 
-Webhooks and webhook triggers have independent lifecycles. For example, you can
-configure triggers while their webhook is inactive, then enable the webhook
-when the external provider is ready to send deliveries.
+For every delivery, the webhook endpoint:
+
+1. verifies the request signature using the webhook's signing secret;
+2. validates the headers and JSON payload required by that webhook type;
+3. records intake statistics for accepted and rejected deliveries; and
+4. makes an accepted event available to configured consumers.
+
+Consumers define how ZenML reacts to accepted events. For example, a
+[webhook trigger](triggers.md#webhook-triggers) can filter GitHub events and
+execute attached pipeline snapshots when a pull request is merged or a branch
+is pushed.
+
+The endpoint returns an HTTP response to the sender. A valid delivery normally
+returns `202 Accepted`; an invalid signature, invalid payload, missing webhook,
+or inactive webhook returns an appropriate `4xx` response. The response reports
+the result of webhook intake. Any work performed by consumers happens after
+that intake decision.
 
 ## Available providers
 
