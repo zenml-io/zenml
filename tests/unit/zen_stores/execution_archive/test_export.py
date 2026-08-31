@@ -43,6 +43,7 @@ from zenml.zen_stores.execution_archive.catalog import (
 )
 from zenml.zen_stores.execution_archive.codec import decompress
 from zenml.zen_stores.execution_archive.payload import ExecutionArchivePayload
+from zenml.zen_stores.execution_archive.purger import ExecutionArchivePurger
 from zenml.zen_stores.schemas import (
     ExecutionArchiveSchema,
     PipelineRunSchema,
@@ -247,6 +248,34 @@ def test_fencing_token_rejects_an_expired_worker(
         session.delete(row)
         session.commit()
     catalog.release(second)
+
+
+def test_target_can_change_only_after_every_generation_is_purged(
+    sql_store: SqlZenStore, tmp_path: Path
+) -> None:
+    """The workspace target check is constant-time in the steady state."""
+    family = populate_family(sql_store)
+    first_storage = local_storage(sql_store, tmp_path / "first")
+    second_storage = local_storage(sql_store, tmp_path / "second")
+    first = exporter(sql_store, tmp_path, storage=first_storage).export(
+        project_id=family.project_id, root_run_id=family.run_id
+    )
+
+    with pytest.raises(ExecutionArchiveStateError, match="target differs"):
+        exporter(sql_store, tmp_path, storage=second_storage).export(
+            project_id=family.project_id, root_run_id=family.run_id
+        )
+
+    purger = ExecutionArchivePurger(
+        sql_store.engine, storage=first_storage, owner="target-rotation"
+    )
+    purger.request(archive_id=first.id, project_id=family.project_id)
+    purger.purge(first.id)
+    rotated = exporter(sql_store, tmp_path, storage=second_storage).export(
+        project_id=family.project_id, root_run_id=family.run_id
+    )
+
+    assert rotated.storage_target_digest == second_storage.target_digest
 
 
 @pytest.mark.parametrize(

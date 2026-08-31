@@ -30,6 +30,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
@@ -77,6 +78,7 @@ from zenml.constants import (
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENTS,
+    EXECUTION_ARCHIVE,
     FLAVORS,
     HEARTBEAT,
     HOOK_INVOCATIONS,
@@ -130,6 +132,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     APITokenType,
+    ExecutionArchiveState,
     OAuthGrantTypes,
     RunWaitConditionStatus,
     StackDeploymentProvider,
@@ -185,6 +188,11 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    ExecutionArchiveActionRequest,
+    ExecutionArchiveExportRequest,
+    ExecutionArchivePolicy,
+    ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -632,6 +640,159 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.put(SERVER_SETTINGS, body=settings_update)
         return ServerSettingsResponse.model_validate(response_body)
+
+    # -------------------- Execution Archive --------------------
+
+    def get_execution_archive_policy(self) -> ExecutionArchivePolicy:
+        """Get the workspace execution-history archive policy.
+
+        Returns:
+            Current workspace policy.
+        """
+        response = self.get(f"{EXECUTION_ARCHIVE}/policy")
+        return ExecutionArchivePolicy.model_validate(response)
+
+    def update_execution_archive_policy(
+        self, policy: ExecutionArchivePolicy
+    ) -> ExecutionArchivePolicy:
+        """Replace the workspace execution-history archive policy.
+
+        Args:
+            policy: Complete replacement policy.
+
+        Returns:
+            Persisted policy.
+        """
+        response = self.put(
+            f"{EXECUTION_ARCHIVE}/policy",
+            body=policy,
+            exclude_unset=False,
+        )
+        return ExecutionArchivePolicy.model_validate(response)
+
+    def get_execution_archive_status(self) -> ExecutionArchiveStatus:
+        """Get cached workspace execution-history archive status.
+
+        Returns:
+            Current status without probing archive storage.
+        """
+        response = self.get(f"{EXECUTION_ARCHIVE}/status")
+        return ExecutionArchiveStatus.model_validate(response)
+
+    def export_execution_archive(
+        self, request: ExecutionArchiveExportRequest
+    ) -> ExecutionArchiveResponse:
+        """Export and verify one execution tree.
+
+        Args:
+            request: Project and root-run identity.
+
+        Returns:
+            Verified archive generation.
+        """
+        response = self.post(f"{EXECUTION_ARCHIVE}/export", body=request)
+        return ExecutionArchiveResponse.model_validate(response)
+
+    def compact_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Move one verified generation's payload authority out of SQL.
+
+        Args:
+            archive_id: Generation to compact.
+            project_id: Owning project.
+
+        Returns:
+            Cold archive generation.
+        """
+        response = self.post(
+            f"{EXECUTION_ARCHIVE}/{archive_id}/compact",
+            body=ExecutionArchiveActionRequest(project_id=project_id),
+        )
+        return ExecutionArchiveResponse.model_validate(response)
+
+    def restore_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Restore one generation's payload to SQL.
+
+        Args:
+            archive_id: Generation to restore.
+            project_id: Owning project.
+
+        Returns:
+            Restored archive generation.
+        """
+        response = self.post(
+            f"{EXECUTION_ARCHIVE}/{archive_id}/restore",
+            body=ExecutionArchiveActionRequest(project_id=project_id),
+        )
+        return ExecutionArchiveResponse.model_validate(response)
+
+    def request_execution_archive_purge(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Queue one safe archive generation for asynchronous purge.
+
+        Args:
+            archive_id: Generation to purge.
+            project_id: Owning project.
+
+        Returns:
+            Purge-pending generation.
+        """
+        response = self.post(
+            f"{EXECUTION_ARCHIVE}/{archive_id}/purge",
+            body=ExecutionArchiveActionRequest(project_id=project_id),
+        )
+        return ExecutionArchiveResponse.model_validate(response)
+
+    def get_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Get one archive generation in a project.
+
+        Args:
+            archive_id: Generation ID.
+            project_id: Owning project.
+
+        Returns:
+            Archive generation.
+        """
+        response = self.get(
+            f"{EXECUTION_ARCHIVE}/{archive_id}",
+            params={"project_id": str(project_id)},
+        )
+        return ExecutionArchiveResponse.model_validate(response)
+
+    def list_execution_archives(
+        self,
+        *,
+        project_id: UUID,
+        state: Optional[ExecutionArchiveState] = None,
+        limit: int = 100,
+    ) -> List[ExecutionArchiveResponse]:
+        """List newest archive generations in one project.
+
+        Args:
+            project_id: Owning project.
+            state: Optional lifecycle-state filter.
+            limit: Maximum generations returned.
+
+        Returns:
+            Newest generations first.
+        """
+        params = {
+            "project_id": str(project_id),
+            "limit": limit,
+        }
+        if state is not None:
+            params["state"] = state.value
+        response = self.get(EXECUTION_ARCHIVE, params=params)
+        return [
+            ExecutionArchiveResponse.model_validate(item)
+            for item in cast(List[Any], response)
+        ]
 
     # ----------------------------- API Keys -----------------------------
 

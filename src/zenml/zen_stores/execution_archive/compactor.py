@@ -311,6 +311,11 @@ class ExecutionArchiveAuthority:
                     f"Execution archive {schema.id} is {schema.state}; "
                     "authority can only move from a verified generation."
                 )
+            if schema.purge_pending_at is not None:
+                raise ExecutionArchiveStateError(
+                    f"Execution archive {schema.id} is queued for purge and "
+                    "cannot become authoritative."
+                )
             capture = self._capturer.capture(
                 project_id=schema.project_id,
                 root_run_id=schema.root_run_id,

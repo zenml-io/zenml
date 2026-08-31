@@ -16,6 +16,7 @@
 import ipaddress
 import re
 from typing import List, Optional, Union
+from uuid import UUID
 
 import click
 from rich.errors import MarkupError
@@ -27,10 +28,17 @@ from zenml.cli.login import login, logout
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, ServiceState, StoreType
+from zenml.enums import (
+    CliCategories,
+    ExecutionArchiveMode,
+    ExecutionArchiveState,
+    ServiceState,
+    StoreType,
+)
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerCredentials, ServerType
+from zenml.models import ExecutionArchiveResponse
 from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
@@ -512,6 +520,288 @@ def logs(
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def server() -> None:
     """Commands for managing ZenML servers."""
+
+
+@server.group("archive")
+def execution_archive() -> None:
+    """Manage workspace execution-history archiving."""
+
+
+@execution_archive.command("status")
+def execution_archive_status() -> None:
+    """Show the effective workspace archive policy and recent progress."""
+    status = Client().get_execution_archive_status()
+    cli_utils.print_table(
+        [
+            {
+                "workspace_id": str(status.workspace_id),
+                "policy": status.policy.mode.value,
+                "effective_mode": status.effective_mode.value,
+                "retention_days": status.policy.retention_days,
+                "storage": "configured"
+                if status.storage_configured
+                else "missing",
+                "compaction_gate": "enabled"
+                if status.compaction_gate_enabled
+                else "disabled",
+                "coordinator": "running"
+                if status.coordinator_running
+                else "idle",
+            }
+        ],
+        title="Execution archive status",
+    )
+    cli_utils.declare(status.message)
+    cli_utils.print_table(
+        [
+            {
+                "purge_pending": status.purge_pending_archives,
+                "requiring_restore": status.archives_requiring_restore,
+                "corrupt": status.corrupt_archives,
+                "workspace_prefix": status.workspace_prefix or "-",
+            }
+        ]
+    )
+    if status.last_pass is not None:
+        result = status.last_pass
+        cli_utils.print_table(
+            [
+                {
+                    "completed_at": str(result.completed_at),
+                    "scanned_trees": result.scanned_trees,
+                    "eligible_trees": result.eligible_trees,
+                    "scan_incomplete": result.candidate_scan_incomplete,
+                    "blocked_trees": result.blocked_trees,
+                    "exported_trees": result.exported_trees,
+                    "compacted_trees": result.compacted_trees,
+                    "resumed_trees": result.resumed_trees,
+                    "purged": result.purged_archives,
+                    "error": result.error or "-",
+                }
+            ],
+            title="Last maintenance pass",
+        )
+        if result.blocker_counts:
+            cli_utils.print_table(
+                [
+                    {"reason": reason, "execution_trees": count}
+                    for reason, count in sorted(
+                        result.blocker_counts.items(),
+                        key=lambda item: (-item[1], item[0]),
+                    )
+                ],
+                title="Blocker reasons",
+            )
+        if result.failure_counts:
+            cli_utils.print_table(
+                [
+                    {"operation": operation, "failures": count}
+                    for operation, count in sorted(
+                        result.failure_counts.items(),
+                        key=lambda item: (-item[1], item[0]),
+                    )
+                ],
+                title="Operational failures",
+            )
+
+
+@execution_archive.command("configure")
+@click.option(
+    "--mode",
+    type=click.Choice(ExecutionArchiveMode.values()),
+    help="Automatic tiering mode.",
+)
+@click.option(
+    "--retention-days",
+    type=click.IntRange(min=1, max=3650),
+    help="Minimum age of a completed, unchanged execution tree.",
+)
+def configure_execution_archive(
+    mode: Optional[str], retention_days: Optional[int]
+) -> None:
+    """Update selected workspace archive policy values.
+
+    Args:
+        mode: Automatic tiering mode.
+        retention_days: Minimum eligible age in days.
+    """
+    if mode is None and retention_days is None:
+        cli_utils.error("Specify --mode, --retention-days, or both.")
+    policy = Client().update_execution_archive_policy(
+        mode=ExecutionArchiveMode(mode) if mode is not None else None,
+        retention_days=retention_days,
+    )
+    cli_utils.success(
+        "Execution archive policy updated: "
+        f"mode={policy.mode.value}, retention_days={policy.retention_days}."
+    )
+
+
+@execution_archive.command("list")
+@click.option(
+    "--project",
+    "project_name_or_id",
+    help="Project name or ID. Uses the active project when omitted.",
+)
+@click.option(
+    "--state",
+    type=click.Choice(ExecutionArchiveState.values()),
+    help="Only show one lifecycle state.",
+)
+@click.option(
+    "--limit",
+    type=click.IntRange(min=1, max=100),
+    default=100,
+    show_default=True,
+)
+def list_execution_archives(
+    project_name_or_id: Optional[str],
+    state: Optional[str],
+    limit: int,
+) -> None:
+    """List archive generations in one project.
+
+    Args:
+        project_name_or_id: Project name or ID.
+        state: Optional lifecycle state.
+        limit: Maximum generations returned.
+    """
+    archives = Client().list_execution_archives(
+        project_name_or_id=project_name_or_id,
+        state=ExecutionArchiveState(state) if state is not None else None,
+        limit=limit,
+    )
+    if not archives:
+        cli_utils.declare("No execution archives found.")
+        return
+    cli_utils.print_table(
+        [_execution_archive_row(archive) for archive in archives],
+        title="Execution archives",
+    )
+
+
+@execution_archive.command("export")
+@click.argument("root_run_id", type=click.UUID)
+@click.option(
+    "--project",
+    "project_name_or_id",
+    help="Project name or ID. Uses the active project when omitted.",
+)
+def export_execution_archive(
+    root_run_id: UUID, project_name_or_id: Optional[str]
+) -> None:
+    """Export and verify one execution tree without compacting SQL.
+
+    Args:
+        root_run_id: Root pipeline run ID.
+        project_name_or_id: Project name or ID.
+    """
+    archive = Client().export_execution_archive(
+        root_run_id, project_name_or_id=project_name_or_id
+    )
+    _print_execution_archive(archive)
+
+
+@execution_archive.command("compact")
+@click.argument("archive_id", type=click.UUID)
+@click.option(
+    "--project",
+    "project_name_or_id",
+    help="Project name or ID. Uses the active project when omitted.",
+)
+def compact_execution_archive(
+    archive_id: UUID, project_name_or_id: Optional[str]
+) -> None:
+    """Move one policy-eligible generation's covered payload out of SQL.
+
+    Workspace mode must be `archive`, the execution tree must satisfy the
+    retention policy, and the deployment compaction gate must be enabled.
+
+    Args:
+        archive_id: Archive generation ID.
+        project_name_or_id: Project name or ID.
+    """
+    archive = Client().compact_execution_archive(
+        archive_id, project_name_or_id=project_name_or_id
+    )
+    _print_execution_archive(archive)
+
+
+@execution_archive.command("restore")
+@click.argument("archive_id", type=click.UUID)
+@click.option(
+    "--project",
+    "project_name_or_id",
+    help="Project name or ID. Uses the active project when omitted.",
+)
+def restore_execution_archive(
+    archive_id: UUID, project_name_or_id: Optional[str]
+) -> None:
+    """Restore one cold generation's covered payload to SQL.
+
+    Args:
+        archive_id: Archive generation ID.
+        project_name_or_id: Project name or ID.
+    """
+    archive = Client().restore_execution_archive(
+        archive_id, project_name_or_id=project_name_or_id
+    )
+    _print_execution_archive(archive)
+
+
+@execution_archive.command("purge")
+@click.argument("archive_id", type=click.UUID)
+@click.option(
+    "--project",
+    "project_name_or_id",
+    help="Project name or ID. Uses the active project when omitted.",
+)
+@click.option(
+    "--yes",
+    "confirmed",
+    is_flag=True,
+    help="Queue the purge without asking for confirmation.",
+)
+def purge_execution_archive(
+    archive_id: UUID,
+    project_name_or_id: Optional[str],
+    confirmed: bool,
+) -> None:
+    """Queue one non-authoritative generation for object deletion.
+
+    Args:
+        archive_id: Archive generation ID.
+        project_name_or_id: Project name or ID.
+        confirmed: Skip the interactive confirmation.
+    """
+    if not confirmed and not cli_utils.confirmation(
+        f"Queue execution archive '{archive_id}' for permanent deletion?"
+    ):
+        cli_utils.declare("Execution archive purge canceled.")
+        return
+    archive = Client().request_execution_archive_purge(
+        archive_id, project_name_or_id=project_name_or_id
+    )
+    _print_execution_archive(archive)
+
+
+def _print_execution_archive(archive: ExecutionArchiveResponse) -> None:
+    cli_utils.print_table([_execution_archive_row(archive)])
+
+
+def _execution_archive_row(
+    archive: ExecutionArchiveResponse,
+) -> dict[str, object]:
+    return {
+        "id": str(archive.id),
+        "root_run_id": str(archive.root_run_id),
+        "generation": archive.generation,
+        "state": archive.state.value,
+        "requires_restore": archive.requires_restore,
+        "source_bytes": archive.source_bytes or 0,
+        "purge_pending": archive.purge_pending_at is not None,
+        "source_updated_at": str(archive.source_updated_at),
+    }
 
 
 @server.command(

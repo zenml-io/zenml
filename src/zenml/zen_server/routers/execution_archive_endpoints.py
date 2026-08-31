@@ -18,12 +18,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Security
 
-from zenml.constants import API, VERSION_1
+from zenml.constants import API, EXECUTION_ARCHIVE, VERSION_1
 from zenml.enums import ExecutionArchiveState
-from zenml.exceptions import DoesNotExistException
 from zenml.models import (
+    ExecutionArchiveActionRequest,
     ExecutionArchiveExportRequest,
+    ExecutionArchivePolicy,
+    ExecutionArchivePolicyRequest,
     ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -34,18 +37,9 @@ from zenml.zen_server.utils import (
     verify_admin_status_if_no_rbac,
     zen_store,
 )
-from zenml.zen_stores.execution_archive.archiver import (
-    ExecutionArchiveExporter,
-)
-from zenml.zen_stores.execution_archive.catalog import (
-    ExecutionArchiveCatalog,
-)
-from zenml.zen_stores.execution_archive.compactor import (
-    ExecutionArchiveAuthority,
-)
 
 router = APIRouter(
-    prefix=API + VERSION_1 + "/archive",
+    prefix=API + VERSION_1 + EXECUTION_ARCHIVE,
     tags=["archive"],
     responses={401: error_response, 403: error_response},
 )
@@ -102,10 +96,76 @@ def export_execution_archive(
         project_id=request.project_id,
         root_run_id=request.root_run_id,
     )
-    return ExecutionArchiveExporter(store=zen_store()).export(
-        project_id=request.project_id,
-        root_run_id=request.root_run_id,
+    return zen_store().export_execution_archive(request)
+
+
+@router.get("/policy")
+@async_fastapi_endpoint_wrapper
+def get_execution_archive_policy(
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchivePolicy:
+    """Get the workspace execution-history archive policy.
+
+    Args:
+        auth_context: Authenticated caller.
+
+    Returns:
+        Current workspace policy.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="read the execution archive policy",
+        permission=Action.READ,
     )
+    return zen_store().get_execution_archive_policy()
+
+
+@router.put("/policy", responses={409: error_response, 422: error_response})
+@async_fastapi_endpoint_wrapper
+def update_execution_archive_policy(
+    request: ExecutionArchivePolicyRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchivePolicy:
+    """Replace the workspace execution-history archive policy.
+
+    Args:
+        request: Complete replacement policy.
+        auth_context: Authenticated caller.
+
+    Returns:
+        Persisted policy.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="change the execution archive policy",
+        permission=Action.UPDATE,
+    )
+    return zen_store().update_execution_archive_policy(
+        ExecutionArchivePolicy(
+            mode=request.mode, retention_days=request.retention_days
+        )
+    )
+
+
+@router.get("/status")
+@async_fastapi_endpoint_wrapper
+def get_execution_archive_status(
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchiveStatus:
+    """Get cached archive status without probing object storage.
+
+    Args:
+        auth_context: Authenticated caller.
+
+    Returns:
+        Current workspace status.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="read execution archive status",
+        permission=Action.READ,
+    )
+    return zen_store().get_execution_archive_status()
 
 
 @router.post(
@@ -115,14 +175,14 @@ def export_execution_archive(
 @async_fastapi_endpoint_wrapper
 def compact_execution_archive(
     archive_id: UUID,
-    project_id: UUID,
+    request: ExecutionArchiveActionRequest,
     auth_context: AuthContext = Security(authorize),
 ) -> ExecutionArchiveResponse:
     """Move SQL authority to one verified archive generation.
 
     Args:
         archive_id: Generation to compact.
-        project_id: Project that must own the generation.
+        request: Project that must own the generation.
         auth_context: Authenticated caller.
 
     Returns:
@@ -132,10 +192,10 @@ def compact_execution_archive(
         auth_context,
         action="compact execution history",
         permission=Action.UPDATE,
-        project_id=project_id,
+        project_id=request.project_id,
     )
-    return ExecutionArchiveAuthority(store=zen_store()).compact(
-        archive_id=archive_id, project_id=project_id
+    return zen_store().compact_execution_archive(
+        archive_id=archive_id, project_id=request.project_id
     )
 
 
@@ -146,14 +206,14 @@ def compact_execution_archive(
 @async_fastapi_endpoint_wrapper
 def restore_execution_archive(
     archive_id: UUID,
-    project_id: UUID,
+    request: ExecutionArchiveActionRequest,
     auth_context: AuthContext = Security(authorize),
 ) -> ExecutionArchiveResponse:
     """Restore one generation's payload and return authority to SQL.
 
     Args:
         archive_id: Generation to restore.
-        project_id: Project that must own the generation.
+        request: Project that must own the generation.
         auth_context: Authenticated caller.
 
     Returns:
@@ -163,10 +223,41 @@ def restore_execution_archive(
         auth_context,
         action="restore execution history",
         permission=Action.UPDATE,
-        project_id=project_id,
+        project_id=request.project_id,
     )
-    return ExecutionArchiveAuthority(store=zen_store()).restore(
-        archive_id=archive_id, project_id=project_id
+    return zen_store().restore_execution_archive(
+        archive_id=archive_id, project_id=request.project_id
+    )
+
+
+@router.post(
+    "/{archive_id}/purge",
+    responses={404: error_response, 409: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def request_execution_archive_purge(
+    archive_id: UUID,
+    request: ExecutionArchiveActionRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> ExecutionArchiveResponse:
+    """Queue one safe generation for asynchronous object purge.
+
+    Args:
+        archive_id: Generation to purge.
+        request: Project that must own the generation.
+        auth_context: Authenticated caller.
+
+    Returns:
+        Purge-pending archive generation.
+    """
+    _authorize_execution_archive(
+        auth_context,
+        action="purge execution history",
+        permission=Action.UPDATE,
+        project_id=request.project_id,
+    )
+    return zen_store().request_execution_archive_purge(
+        archive_id=archive_id, project_id=request.project_id
     )
 
 
@@ -195,7 +286,7 @@ def list_execution_archives(
         permission=Action.READ,
         project_id=project_id,
     )
-    return ExecutionArchiveCatalog(zen_store().engine).list(
+    return zen_store().list_execution_archives(
         project_id=project_id, state=state, limit=limit
     )
 
@@ -217,8 +308,6 @@ def get_execution_archive(
     Returns:
         Archive generation.
 
-    Raises:
-        DoesNotExistException: If the generation is absent from the project.
     """
     _authorize_execution_archive(
         auth_context,
@@ -226,12 +315,6 @@ def get_execution_archive(
         permission=Action.READ,
         project_id=project_id,
     )
-    archive = ExecutionArchiveCatalog(zen_store().engine).get(
-        archive_id, project_id=project_id
+    return zen_store().get_execution_archive(
+        archive_id=archive_id, project_id=project_id
     )
-    if archive is None:
-        raise DoesNotExistException(
-            f"Execution archive {archive_id} does not exist in project "
-            f"{project_id}."
-        )
-    return archive

@@ -50,6 +50,9 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
+from zenml.zen_server.execution_archive_scheduler import (
+    ExecutionArchiveScheduler,
+)
 from zenml.zen_server.middleware import add_middlewares
 from zenml.zen_server.otel import (
     configure_otel,
@@ -198,10 +201,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         start_event_loop_lag_monitor()
 
     await register_event_handlers()
+    execution_archive_scheduler = ExecutionArchiveScheduler(
+        store=zen_store(),
+        interval=cfg.execution_archive_coordinator_interval,
+    )
+    execution_archive_scheduler.start()
 
     yield
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    await execution_archive_scheduler.shutdown()
     shutdown_otel()
     snapshot_executor().shutdown(wait=True)
     await shutdown_snapshot_run_dispatcher()

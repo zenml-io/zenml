@@ -20,7 +20,7 @@ from functools import lru_cache
 from typing import Any, Dict, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import BaseArtifactStore, BaseArtifactStoreConfig
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_MAX_DECODED_BYTES,
@@ -59,6 +59,25 @@ class ExecutionArchiveTarget:
     artifact_store: BaseArtifactStore
 
 
+@dataclass(frozen=True)
+class _ExecutionArchiveTargetSpec:
+    """Validated target configuration before its storage client is built."""
+
+    digest: str
+    path_prefix: str
+    workspace_id: UUID
+    flavor: Flavor
+    configuration: BaseArtifactStoreConfig
+
+
+@dataclass(frozen=True)
+class ExecutionArchiveStorageConfiguration:
+    """Validated target identity safe to expose without storage I/O."""
+
+    target_digest: str
+    workspace_prefix: str
+
+
 class ExecutionArchiveStorage:
     """Read, write, and delete generation-scoped archive objects."""
 
@@ -78,6 +97,20 @@ class ExecutionArchiveStorage:
             SHA-256 digest of the resolved target configuration.
         """
         return self._target.digest
+
+    @property
+    def workspace_prefix(self) -> str:
+        """Return the immutable object prefix assigned to this workspace.
+
+        Returns:
+            Full artifact-store path containing the workspace archives.
+        """
+        return posixpath.join(
+            self._target.artifact_store.path.rstrip("/"),
+            self._target.path_prefix,
+            "workspaces",
+            str(self._target.workspace_id),
+        )
 
     def object_key(
         self, *, project_id: UUID, archive_id: UUID, claim_token: int
@@ -117,10 +150,7 @@ class ExecutionArchiveStorage:
             Full generation directory.
         """
         return posixpath.join(
-            self._target.artifact_store.path.rstrip("/"),
-            self._target.path_prefix,
-            "workspaces",
-            str(self._target.workspace_id),
+            self.workspace_prefix,
             "projects",
             str(project_id),
             "execution-archives",
@@ -255,6 +285,32 @@ class ExecutionArchiveStorage:
                 continue
             self.delete(posixpath.join(directory, name))
 
+    def delete_generation(self, *, project_id: UUID, archive_id: UUID) -> None:
+        """Delete every fenced write attempt for one generation.
+
+        Args:
+            project_id: Project that owns the generation.
+            archive_id: Archive generation ID.
+
+        Raises:
+            ArchiveUnavailableError: If a present generation directory cannot
+                be deleted.
+        """
+        prefix = self.generation_prefix(
+            project_id=project_id, archive_id=archive_id
+        )
+        try:
+            self._target.artifact_store.rmtree(prefix)
+        except FileNotFoundError:
+            return
+        except Exception as e:
+            if not self._target.artifact_store.exists(prefix):
+                return
+            raise ArchiveUnavailableError(
+                f"Could not delete execution archive generation '{prefix}': "
+                f"{e}"
+            ) from e
+
 
 def build_execution_archive_storage(
     config: ServerConfiguration, *, workspace_id: UUID
@@ -271,6 +327,61 @@ def build_execution_archive_storage(
     Raises:
         ExecutionArchiveStateError: If the target is absent or unsupported.
     """
+    spec = _resolve_execution_archive_target(config, workspace_id=workspace_id)
+    now = utc_now()
+    artifact_store = spec.flavor.implementation_class(
+        name="execution-archive",
+        id=uuid5(NAMESPACE_URL, f"zenml:execution-archive:{spec.digest}"),
+        config=spec.configuration,
+        flavor=spec.flavor.name,
+        type=StackComponentType.ARTIFACT_STORE,
+        user=None,
+        created=now,
+        updated=now,
+        connector_requirements=spec.flavor.service_connector_requirements,
+        connector=None,
+    )
+    if not isinstance(artifact_store, BaseArtifactStore):
+        raise ExecutionArchiveStateError(
+            f"Flavor '{spec.flavor.name}' is not an artifact store."
+        )
+    return ExecutionArchiveStorage(
+        ExecutionArchiveTarget(
+            digest=spec.digest,
+            path_prefix=spec.path_prefix,
+            workspace_id=spec.workspace_id,
+            artifact_store=artifact_store,
+        )
+    )
+
+
+def validate_execution_archive_storage_configuration(
+    config: ServerConfiguration, *, workspace_id: UUID
+) -> ExecutionArchiveStorageConfiguration:
+    """Validate a target without constructing its storage implementation.
+
+    Args:
+        config: Server configuration containing the archive destination.
+        workspace_id: Immutable deployment namespace.
+
+    Returns:
+        Target identity and full workspace prefix.
+    """
+    spec = _resolve_execution_archive_target(config, workspace_id=workspace_id)
+    return ExecutionArchiveStorageConfiguration(
+        target_digest=spec.digest,
+        workspace_prefix=posixpath.join(
+            spec.configuration.path.rstrip("/"),
+            spec.path_prefix,
+            "workspaces",
+            str(spec.workspace_id),
+        ),
+    )
+
+
+def _resolve_execution_archive_target(
+    config: ServerConfiguration, *, workspace_id: UUID
+) -> _ExecutionArchiveTargetSpec:
     flavor_name = config.execution_archive_flavor
     if not flavor_name:
         raise ExecutionArchiveStateError(
@@ -280,6 +391,11 @@ def build_execution_archive_storage(
     configuration = flavor.config_class(
         **config.execution_archive_configuration
     )
+    if not isinstance(configuration, BaseArtifactStoreConfig):
+        raise ExecutionArchiveStateError(
+            f"Flavor '{flavor.name}' does not use an artifact store "
+            "configuration."
+        )
     _require_ambient_identity(configuration)
     path_prefix = validate_relative_path(config.execution_archive_path_prefix)
     serialized_configuration = configuration.model_dump(
@@ -295,30 +411,12 @@ def build_execution_archive_storage(
             }
         )
     )
-    now = utc_now()
-    artifact_store = flavor.implementation_class(
-        name="execution-archive",
-        id=uuid5(NAMESPACE_URL, f"zenml:execution-archive:{digest}"),
-        config=configuration,
-        flavor=flavor.name,
-        type=StackComponentType.ARTIFACT_STORE,
-        user=None,
-        created=now,
-        updated=now,
-        connector_requirements=flavor.service_connector_requirements,
-        connector=None,
-    )
-    if not isinstance(artifact_store, BaseArtifactStore):
-        raise ExecutionArchiveStateError(
-            f"Flavor '{flavor.name}' is not an artifact store."
-        )
-    return ExecutionArchiveStorage(
-        ExecutionArchiveTarget(
-            digest=digest,
-            path_prefix=path_prefix,
-            workspace_id=workspace_id,
-            artifact_store=artifact_store,
-        )
+    return _ExecutionArchiveTargetSpec(
+        digest=digest,
+        path_prefix=path_prefix,
+        workspace_id=workspace_id,
+        flavor=flavor,
+        configuration=configuration,
     )
 
 

@@ -198,7 +198,7 @@ class ExecutionArchiveStateError(ExecutionArchiveError):
 
 
 class ExecutionArchiveNotEligibleError(ExecutionArchiveError):
-    """Raised when an execution family is unsafe to archive."""
+    """Raised when an execution tree is unsafe to archive."""
 
 
 class ExecutionArchiveParityError(ExecutionArchiveError):

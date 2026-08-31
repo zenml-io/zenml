@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, Optional, Set
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
+from sqlalchemy import TEXT, BigInteger, Column, String
 from sqlmodel import Field, SQLModel
 
 from zenml.models import (
@@ -48,6 +48,35 @@ class ServerSettingsSchema(SQLModel, table=True):
     )
     execution_archive_target_digest: Optional[str] = Field(
         default=None, sa_column=Column(String(64), nullable=True)
+    )
+    execution_archive_mode: str = Field(
+        default="disabled",
+        sa_column=Column(
+            String(32), nullable=False, server_default="disabled"
+        ),
+    )
+    execution_archive_retention_days: int = Field(
+        default=180,
+        sa_column=Column(BigInteger, nullable=False, server_default="180"),
+    )
+    execution_archive_cursor_completed_at: Optional[datetime] = Field(
+        default=None, nullable=True
+    )
+    execution_archive_cursor_root_run_id: Optional[UUID] = Field(
+        default=None, nullable=True
+    )
+    execution_archive_coordinator_owner: Optional[str] = Field(
+        default=None, sa_column=Column(String(255), nullable=True)
+    )
+    execution_archive_coordinator_token: int = Field(
+        default=0,
+        sa_column=Column(BigInteger, nullable=False, server_default="0"),
+    )
+    execution_archive_coordinator_expires_at: Optional[datetime] = Field(
+        default=None, nullable=True
+    )
+    execution_archive_last_pass: Optional[str] = Field(
+        default=None, sa_column=Column(TEXT, nullable=True)
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)

@@ -159,6 +159,8 @@ from zenml.enums import (
     AuthScheme,
     DatabaseBackupStrategy,
     DeploymentStatus,
+    ExecutionArchiveMode,
+    ExecutionArchiveState,
     ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
@@ -182,8 +184,11 @@ from zenml.enums import (
 from zenml.exceptions import (
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
+    DoesNotExistException,
     EntityCreationError,
     EntityExistsError,
+    ExecutionArchiveNotEligibleError,
+    ExecutionArchiveStateError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
 )
@@ -236,6 +241,11 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    ExecutionArchiveExportRequest,
+    ExecutionArchivePassResult,
+    ExecutionArchivePolicy,
+    ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -479,6 +489,12 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.triggers import (
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
+    )
+    from zenml.zen_stores.execution_archive.coordination import (
+        ExecutionArchiveCoordination,
+    )
+    from zenml.zen_stores.execution_archive.coordinator import (
+        ExecutionArchiveCoordinator,
     )
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -1174,6 +1190,9 @@ class SqlZenStore(BaseZenStore):
     _cached_onboarding_state: Optional[Set[str]] = None
     _default_user: Optional[UserResponse] = None
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
+    _execution_archive_coordinator: Optional["ExecutionArchiveCoordinator"] = (
+        None
+    )
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1981,6 +2000,260 @@ class SqlZenStore(BaseZenStore):
             return settings.to_model(
                 include_metadata=True, include_resources=True
             )
+
+    # -------------------- Execution Archive --------------------
+
+    def _execution_archive_coordination(
+        self,
+        config: Optional[ServerConfiguration] = None,
+    ) -> "ExecutionArchiveCoordination":
+        """Build workspace archive policy and status access.
+
+        Args:
+            config: Deployment archive configuration.
+
+        Returns:
+            Workspace coordination store.
+        """
+        from zenml.zen_stores.execution_archive.coordination import (
+            ExecutionArchiveCoordination,
+        )
+
+        return ExecutionArchiveCoordination(
+            self.engine,
+            workspace_id=self.get_deployment_id(),
+            config=config or ServerConfiguration.get_server_config(),
+        )
+
+    def get_execution_archive_policy(self) -> ExecutionArchivePolicy:
+        """Get the workspace execution-history archive policy.
+
+        Returns:
+            Current workspace policy.
+        """
+        return self._execution_archive_coordination().get_policy()
+
+    def update_execution_archive_policy(
+        self, policy: ExecutionArchivePolicy
+    ) -> ExecutionArchivePolicy:
+        """Replace the workspace execution-history archive policy.
+
+        Args:
+            policy: Complete replacement policy.
+
+        Returns:
+            Persisted policy.
+        """
+        return self._execution_archive_coordination().update_policy(policy)
+
+    def get_execution_archive_status(self) -> ExecutionArchiveStatus:
+        """Get cached workspace execution-history archive status.
+
+        Returns:
+            Current status without probing archive storage.
+        """
+        return self._execution_archive_coordination().status()
+
+    def export_execution_archive(
+        self, request: ExecutionArchiveExportRequest
+    ) -> ExecutionArchiveResponse:
+        """Export and verify one execution tree without changing SQL.
+
+        Args:
+            request: Project and root-run identity.
+
+        Returns:
+            Verified archive generation.
+        """
+        from zenml.zen_stores.execution_archive.archiver import (
+            ExecutionArchiveExporter,
+        )
+
+        config = ServerConfiguration.get_server_config()
+        return ExecutionArchiveExporter(store=self, config=config).export(
+            project_id=request.project_id,
+            root_run_id=request.root_run_id,
+        )
+
+    def compact_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Move one verified generation's payload authority out of SQL.
+
+        Args:
+            archive_id: Generation to compact.
+            project_id: Owning project.
+
+        Returns:
+            Cold archive generation.
+
+        Raises:
+            ExecutionArchiveStateError: If workspace policy does not allow a
+                new authority switch or the generation cannot be compacted.
+            ExecutionArchiveNotEligibleError: If the execution tree does not
+                satisfy workspace retention and safety rules.
+        """
+        from zenml.zen_stores.execution_archive.capture import (
+            ExecutionArchiveCapturer,
+        )
+        from zenml.zen_stores.execution_archive.compactor import (
+            ExecutionArchiveAuthority,
+        )
+        from zenml.zen_stores.execution_archive.eligibility import (
+            execution_archive_blocker,
+        )
+
+        archive = self.get_execution_archive(
+            archive_id=archive_id, project_id=project_id
+        )
+        config = ServerConfiguration.get_server_config()
+        if archive.state == ExecutionArchiveState.VERIFIED:
+            policy = self._execution_archive_coordination(config).get_policy()
+            if policy.mode != ExecutionArchiveMode.ARCHIVE:
+                raise ExecutionArchiveStateError(
+                    "Set the workspace execution archive policy to 'archive' "
+                    "before compacting a verified generation."
+                )
+            family = ExecutionArchiveCapturer(self.engine).inspect(
+                project_id=project_id, root_run_id=archive.root_run_id
+            )
+            blocker = execution_archive_blocker(
+                family,
+                cutoff=utc_now() - timedelta(days=policy.retention_days),
+            )
+            if blocker is not None:
+                raise ExecutionArchiveNotEligibleError(
+                    "The execution tree is not eligible for compaction: "
+                    f"{blocker}."
+                )
+
+        return ExecutionArchiveAuthority(store=self, config=config).compact(
+            archive_id=archive_id, project_id=project_id
+        )
+
+    def restore_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Restore one generation's payload to SQL.
+
+        Args:
+            archive_id: Generation to restore.
+            project_id: Owning project.
+
+        Returns:
+            Restored archive generation.
+        """
+        from zenml.zen_stores.execution_archive.compactor import (
+            ExecutionArchiveAuthority,
+        )
+
+        return ExecutionArchiveAuthority(
+            store=self, config=ServerConfiguration.get_server_config()
+        ).restore(archive_id=archive_id, project_id=project_id)
+
+    def request_execution_archive_purge(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Queue one safe archive generation for asynchronous purge.
+
+        Args:
+            archive_id: Generation to purge.
+            project_id: Owning project.
+
+        Returns:
+            Purge-pending generation.
+        """
+        from zenml.zen_stores.execution_archive.purger import (
+            ExecutionArchivePurger,
+        )
+
+        return ExecutionArchivePurger(self.engine).request(
+            archive_id=archive_id, project_id=project_id
+        )
+
+    def get_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Get one archive generation in a project.
+
+        Args:
+            archive_id: Generation ID.
+            project_id: Owning project.
+
+        Returns:
+            Archive generation.
+
+        Raises:
+            DoesNotExistException: If the generation is absent.
+        """
+        from zenml.zen_stores.execution_archive.catalog import (
+            ExecutionArchiveCatalog,
+        )
+
+        archive = ExecutionArchiveCatalog(self.engine).get(
+            archive_id, project_id=project_id
+        )
+        if archive is None:
+            raise DoesNotExistException(
+                f"Execution archive {archive_id} does not exist in project "
+                f"{project_id}."
+            )
+        return archive
+
+    def list_execution_archives(
+        self,
+        *,
+        project_id: UUID,
+        state: Optional[ExecutionArchiveState] = None,
+        limit: int = 100,
+    ) -> List[ExecutionArchiveResponse]:
+        """List newest archive generations in one project.
+
+        Args:
+            project_id: Owning project.
+            state: Optional lifecycle-state filter.
+            limit: Maximum generations returned.
+
+        Returns:
+            Newest generations first.
+
+        Raises:
+            ValueError: If the requested limit is outside the public API
+                bounds.
+        """
+        from zenml.zen_stores.execution_archive.catalog import (
+            ExecutionArchiveCatalog,
+        )
+
+        if not 1 <= limit <= 100:
+            raise ValueError("Execution archive list limit must be 1 to 100.")
+        return ExecutionArchiveCatalog(self.engine).list(
+            project_id=project_id, state=state, limit=limit
+        )
+
+    def run_execution_archive_maintenance(
+        self, *, stop_requested: Optional[Callable[[], bool]] = None
+    ) -> Optional[ExecutionArchivePassResult]:
+        """Run one bounded server-side archive maintenance pass.
+
+        Args:
+            stop_requested: Cooperative shutdown signal checked between atomic
+                archive operations.
+
+        Returns:
+            Completed pass result, or `None` if another replica owns it.
+        """
+        if self._execution_archive_coordinator is None:
+            from zenml.zen_stores.execution_archive.coordinator import (
+                ExecutionArchiveCoordinator,
+            )
+
+            self._execution_archive_coordinator = ExecutionArchiveCoordinator(
+                store=self
+            )
+        return self._execution_archive_coordinator.run_once(
+            stop_requested=stop_requested
+        )
 
     def _update_last_user_activity_timestamp(
         self, last_user_activity: datetime
@@ -13700,6 +13973,8 @@ class SqlZenStore(BaseZenStore):
             project_name_or_id: Name or ID of the project to delete.
 
         Raises:
+            DoesNotExistException: If the project is deleted while this
+                operation waits for its archive fence.
             IllegalOperationError: If the project is the default project.
         """
         with Session(self.engine) as session:
@@ -13717,6 +13992,22 @@ class SqlZenStore(BaseZenStore):
                     "The default project cannot be deleted."
                 )
 
+            locked_project = session.exec(
+                select(ProjectSchema)
+                .where(col(ProjectSchema.id) == project.id)
+                .with_for_update()
+            ).one_or_none()
+            if locked_project is None:
+                raise DoesNotExistException(
+                    f"Project {project.id} no longer exists."
+                )
+            project = locked_project
+
+            from zenml.zen_stores.execution_archive.purger import (
+                ExecutionArchivePurger,
+            )
+
+            ExecutionArchivePurger.mark_project(session, project.id)
             session.delete(project)
             session.commit()
 

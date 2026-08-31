@@ -64,6 +64,8 @@ from zenml.constants import (
 from zenml.enums import (
     ColorVariants,
     CuratedVisualizationSize,
+    ExecutionArchiveMode,
+    ExecutionArchiveState,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -115,6 +117,10 @@ from zenml.models import (
     CuratedVisualizationUpdate,
     DeploymentFilter,
     DeploymentResponse,
+    ExecutionArchiveExportRequest,
+    ExecutionArchivePolicy,
+    ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
     FlavorFilter,
     FlavorResponse,
     HookInvocationFilter,
@@ -784,6 +790,209 @@ class Client(metaclass=ClientMetaClass):
             onboarding_state=updated_onboarding_state,
         )
         return self.zen_store.update_server_settings(update_model)
+
+    # -------------------- Execution Archive --------------------
+
+    def get_execution_archive_policy(self) -> ExecutionArchivePolicy:
+        """Get the workspace execution-history archive policy.
+
+        Returns:
+            Current workspace policy.
+        """
+        return self.zen_store.get_execution_archive_policy()
+
+    def update_execution_archive_policy(
+        self,
+        *,
+        mode: Optional[ExecutionArchiveMode] = None,
+        retention_days: Optional[int] = None,
+    ) -> ExecutionArchivePolicy:
+        """Update selected workspace execution-history policy values.
+
+        Args:
+            mode: Automatic tiering mode. Omitted values stay unchanged.
+            retention_days: Days since both completion and the latest tree
+                mutation before automatic work may begin.
+
+        Returns:
+            Persisted complete policy.
+        """
+        current = self.get_execution_archive_policy()
+        if mode is None and retention_days is None:
+            return current
+        policy = ExecutionArchivePolicy(
+            mode=mode if mode is not None else current.mode,
+            retention_days=(
+                retention_days
+                if retention_days is not None
+                else current.retention_days
+            ),
+        )
+        return self.zen_store.update_execution_archive_policy(policy)
+
+    def get_execution_archive_status(self) -> ExecutionArchiveStatus:
+        """Get cached workspace execution-history archive status.
+
+        Returns:
+            Current status without probing archive storage.
+        """
+        return self.zen_store.get_execution_archive_status()
+
+    def export_execution_archive(
+        self,
+        root_run_id: UUID,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> ExecutionArchiveResponse:
+        """Export and verify one execution tree without compacting SQL.
+
+        Args:
+            root_run_id: Root run identifying the execution tree.
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+
+        Returns:
+            Verified archive generation.
+        """
+        project_id = self._execution_archive_project_id(project_name_or_id)
+        return self.zen_store.export_execution_archive(
+            ExecutionArchiveExportRequest(
+                project_id=project_id, root_run_id=root_run_id
+            )
+        )
+
+    def compact_execution_archive(
+        self,
+        archive_id: UUID,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> ExecutionArchiveResponse:
+        """Explicitly compact one policy-eligible verified generation.
+
+        First-time compaction requires workspace mode `archive`, an execution
+        tree older than the configured retention period, and the deployment
+        compaction gate. Recovery of an interrupted compaction remains
+        available when those switches are later disabled.
+
+        Args:
+            archive_id: Generation to compact.
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+
+        Returns:
+            Cold archive generation.
+        """
+        return self.zen_store.compact_execution_archive(
+            archive_id=archive_id,
+            project_id=self._execution_archive_project_id(project_name_or_id),
+        )
+
+    def restore_execution_archive(
+        self,
+        archive_id: UUID,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> ExecutionArchiveResponse:
+        """Restore one generation's payload to SQL.
+
+        Args:
+            archive_id: Generation to restore.
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+
+        Returns:
+            Restored archive generation.
+        """
+        return self.zen_store.restore_execution_archive(
+            archive_id=archive_id,
+            project_id=self._execution_archive_project_id(project_name_or_id),
+        )
+
+    def request_execution_archive_purge(
+        self,
+        archive_id: UUID,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> ExecutionArchiveResponse:
+        """Queue one safe archive generation for asynchronous purge.
+
+        Args:
+            archive_id: Generation to purge.
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+
+        Returns:
+            Purge-pending generation.
+        """
+        return self.zen_store.request_execution_archive_purge(
+            archive_id=archive_id,
+            project_id=self._execution_archive_project_id(project_name_or_id),
+        )
+
+    def get_execution_archive(
+        self,
+        archive_id: UUID,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+    ) -> ExecutionArchiveResponse:
+        """Get one archive generation.
+
+        Args:
+            archive_id: Generation ID.
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+
+        Returns:
+            Archive generation.
+        """
+        return self.zen_store.get_execution_archive(
+            archive_id=archive_id,
+            project_id=self._execution_archive_project_id(project_name_or_id),
+        )
+
+    def list_execution_archives(
+        self,
+        *,
+        project_name_or_id: Optional[Union[str, UUID]] = None,
+        state: Optional[ExecutionArchiveState] = None,
+        limit: int = 100,
+    ) -> List[ExecutionArchiveResponse]:
+        """List newest archive generations in one project.
+
+        Args:
+            project_name_or_id: Owning project, or the active project when
+                omitted.
+            state: Optional lifecycle-state filter.
+            limit: Maximum generations returned.
+
+        Returns:
+            Newest generations first.
+        """
+        return self.zen_store.list_execution_archives(
+            project_id=self._execution_archive_project_id(project_name_or_id),
+            state=state,
+            limit=limit,
+        )
+
+    def _execution_archive_project_id(
+        self, project_name_or_id: Optional[Union[str, UUID]]
+    ) -> UUID:
+        """Resolve archive operations to an explicit project ID.
+
+        Args:
+            project_name_or_id: Requested project, or `None` for the active
+                project.
+
+        Returns:
+            Resolved project ID.
+        """
+        if project_name_or_id is None:
+            return self.active_project.id
+        if isinstance(project_name_or_id, UUID):
+            return project_name_or_id
+        if is_valid_uuid(project_name_or_id):
+            return UUID(project_name_or_id)
+        return self.get_project(project_name_or_id).id
 
     # ---------------------------------- Users ---------------------------------
 

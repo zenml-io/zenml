@@ -444,9 +444,14 @@ from zenml.models.v2.misc.auth_models import (
 from zenml.models.v2.misc.build_item import BuildItem
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.execution_archive import (
+    ExecutionArchiveActionRequest,
     ExecutionArchiveExportRequest,
     ExecutionArchiveObject,
+    ExecutionArchivePassResult,
+    ExecutionArchivePolicy,
+    ExecutionArchivePolicyRequest,
     ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
 )
 from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.info_models import (
@@ -971,9 +976,14 @@ __all__ = [
     "ServiceConnectorRequirements",
     "ResourceTypeModel",
     "UserAuthModel",
+    "ExecutionArchiveActionRequest",
     "ExecutionArchiveExportRequest",
     "ExecutionArchiveObject",
+    "ExecutionArchivePassResult",
+    "ExecutionArchivePolicy",
+    "ExecutionArchivePolicyRequest",
     "ExecutionArchiveResponse",
+    "ExecutionArchiveStatus",
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",

@@ -40,6 +40,11 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_COORDINATOR_INTERVAL,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_LEASE_SECONDS,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_SCAN_LIMIT,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_TIME_BUDGET,
+    DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_WORK_LIMIT,
     DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME,
@@ -65,6 +70,10 @@ from zenml.constants import (
     ENV_ZENML_SERVER_PRO_PREFIX,
     MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+    MAX_ZENML_SERVER_EXECUTION_ARCHIVE_LEASE_SECONDS,
+    MAX_ZENML_SERVER_EXECUTION_ARCHIVE_SCAN_LIMIT,
+    MAX_ZENML_SERVER_EXECUTION_ARCHIVE_TIME_BUDGET,
+    MAX_ZENML_SERVER_EXECUTION_ARCHIVE_WORK_LIMIT,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -287,6 +296,17 @@ class ServerConfiguration(BaseModel):
         execution_archive_compaction_enabled: Deployment-level safety gate.
             Archived objects can be exported while this is false, but SQL
             payload cannot be compacted until every replica enables it.
+        execution_archive_coordinator_interval: Seconds between automatic
+            execution-history maintenance passes.
+        execution_archive_scan_limit: Maximum candidate execution trees
+            inspected by one coordinator pass.
+        execution_archive_work_limit: Maximum archive operations performed by
+            one coordinator pass.
+        execution_archive_time_budget: Maximum seconds spent starting work in
+            one coordinator pass. An in-flight archive operation is always
+            allowed to reach a safe stopping point.
+        execution_archive_lease_seconds: Duration of the workspace-wide
+            coordinator lease.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -434,6 +454,25 @@ class ServerConfiguration(BaseModel):
     )
     execution_archive_path_prefix: str = "execution-archive"
     execution_archive_compaction_enabled: bool = False
+    execution_archive_coordinator_interval: PositiveInt = (
+        DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_COORDINATOR_INTERVAL
+    )
+    execution_archive_scan_limit: PositiveInt = Field(
+        default=DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_SCAN_LIMIT,
+        le=MAX_ZENML_SERVER_EXECUTION_ARCHIVE_SCAN_LIMIT,
+    )
+    execution_archive_work_limit: PositiveInt = Field(
+        default=DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_WORK_LIMIT,
+        le=MAX_ZENML_SERVER_EXECUTION_ARCHIVE_WORK_LIMIT,
+    )
+    execution_archive_time_budget: PositiveFloat = Field(
+        default=DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_TIME_BUDGET,
+        le=MAX_ZENML_SERVER_EXECUTION_ARCHIVE_TIME_BUDGET,
+    )
+    execution_archive_lease_seconds: PositiveFloat = Field(
+        default=DEFAULT_ZENML_SERVER_EXECUTION_ARCHIVE_LEASE_SECONDS,
+        le=MAX_ZENML_SERVER_EXECUTION_ARCHIVE_LEASE_SECONDS,
+    )
 
     max_request_body_size_in_bytes: int = (
         DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES
@@ -460,6 +499,35 @@ class ServerConfiguration(BaseModel):
 
     event_handler_sources: list[str] = []
 
+    @field_validator("execution_archive_configuration", mode="before")
+    @classmethod
+    def _parse_execution_archive_configuration(cls, value: Any) -> Any:
+        """Parse an artifact-store configuration supplied through the environment.
+
+        Args:
+            value: Raw field value.
+
+        Returns:
+            Parsed configuration object, or the original non-string value.
+
+        Raises:
+            ValueError: If a string is not a JSON object.
+        """
+        if not isinstance(value, str):
+            return value
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                "The execution archive configuration is not a valid JSON "
+                f"object: {e}"
+            ) from e
+        if not isinstance(parsed, dict):
+            raise ValueError(
+                "The execution archive configuration must be a JSON object."
+            )
+        return parsed
+
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
         self,
@@ -482,6 +550,27 @@ class ServerConfiguration(BaseModel):
                 "equal to `api_transaction_cleanup_interval`."
             )
 
+        return self
+
+    @model_validator(mode="after")
+    def _validate_execution_archive_limits(self) -> "ServerConfiguration":
+        """Validate archive pass and lease bounds together.
+
+        Returns:
+            The validated server configuration.
+
+        Raises:
+            ValueError: If the coordinator lease is shorter than its pass
+                budget.
+        """
+        if (
+            self.execution_archive_lease_seconds
+            < self.execution_archive_time_budget
+        ):
+            raise ValueError(
+                "`execution_archive_lease_seconds` must be greater than or "
+                "equal to `execution_archive_time_budget`."
+            )
         return self
 
     @model_validator(mode="after")
@@ -581,19 +670,6 @@ class ServerConfiguration(BaseModel):
             data["cors_allow_origins"] = origins
         else:
             data["cors_allow_origins"] = ["*"]
-
-        # The archive storage configuration arrives as a JSON string from
-        # the environment.
-        if isinstance(data.get("execution_archive_configuration"), str):
-            try:
-                data["execution_archive_configuration"] = json.loads(
-                    data["execution_archive_configuration"]
-                )
-            except json.JSONDecodeError as e:
-                raise ValueError(
-                    "The execution archive configuration is not a valid "
-                    f"JSON object: {e}"
-                )
 
         # if metadata is a string, convert it to a dictionary
         if isinstance(data.get("metadata"), str):

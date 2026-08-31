@@ -207,6 +207,7 @@ class ExecutionArchiveCatalog:
             )
         if (
             latest is not None
+            and latest.purge_pending_at is None
             and latest.source_fingerprint == source_fingerprint
             and latest.storage_target_digest == storage_target_digest
             and latest.archive_state in _RESUMABLE_EXPORT_STATES | {S.VERIFIED}
@@ -413,7 +414,7 @@ class ExecutionArchiveCatalog:
         *,
         state: Optional[S] = None,
     ) -> bool:
-        """Record a failure unless another worker fenced this claim.
+        """Record a failure unless this worker's claim is no longer current.
 
         Args:
             claim: Worker ownership that observed the failure.
@@ -750,6 +751,53 @@ class ExecutionArchiveCatalog:
                 f"Execution archive {archive_id} does not exist."
             )
         return archive
+
+    def latest_for_root(
+        self, root_run_id: UUID
+    ) -> Optional[ExecutionArchiveResponse]:
+        """Load the newest generation of an execution tree.
+
+        Args:
+            root_run_id: Root run identifying the execution tree.
+
+        Returns:
+            Newest generation, or `None` before the first export.
+        """
+        with Session(self._engine) as session:
+            schema = session.exec(
+                select(ExecutionArchiveSchema)
+                .where(col(ExecutionArchiveSchema.root_run_id) == root_run_id)
+                .order_by(desc(col(ExecutionArchiveSchema.generation)))
+            ).first()
+            return schema.to_model() if schema else None
+
+    def list_interrupted_authority(
+        self, *, limit: int
+    ) -> List[ExecutionArchiveResponse]:
+        """List authority operations that must resume instead of purge.
+
+        Args:
+            limit: Maximum generations returned.
+
+        Returns:
+            Oldest matching generations first.
+        """
+        with Session(self._engine) as session:
+            rows = session.exec(
+                select(ExecutionArchiveSchema)
+                .where(
+                    col(ExecutionArchiveSchema.state).in_(
+                        [S.COMPACTING.value, S.RESTORING.value]
+                    )
+                )
+                .where(col(ExecutionArchiveSchema.purge_pending_at).is_(None))
+                .order_by(
+                    col(ExecutionArchiveSchema.updated),
+                    col(ExecutionArchiveSchema.id),
+                )
+                .limit(limit)
+            ).all()
+            return [row.to_model() for row in rows]
 
     def object_key(self, archive_id: UUID) -> str:
         """Load the object key of one generation.

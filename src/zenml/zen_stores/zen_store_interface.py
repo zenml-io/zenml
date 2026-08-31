@@ -22,7 +22,11 @@ from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
     ReplayRunConfiguration,
 )
-from zenml.enums import RunWaitConditionStatus, StackDeploymentProvider
+from zenml.enums import (
+    ExecutionArchiveState,
+    RunWaitConditionStatus,
+    StackDeploymentProvider,
+)
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
@@ -56,6 +60,10 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
+    ExecutionArchiveExportRequest,
+    ExecutionArchivePolicy,
+    ExecutionArchiveResponse,
+    ExecutionArchiveStatus,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
@@ -291,6 +299,125 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             The updated server settings.
+        """
+
+    # -------------------- Execution Archive --------------------
+
+    @abstractmethod
+    def get_execution_archive_policy(self) -> ExecutionArchivePolicy:
+        """Get the workspace execution-history archive policy.
+
+        Returns:
+            Current workspace policy.
+        """
+
+    @abstractmethod
+    def update_execution_archive_policy(
+        self, policy: ExecutionArchivePolicy
+    ) -> ExecutionArchivePolicy:
+        """Replace the workspace execution-history archive policy.
+
+        Args:
+            policy: Complete replacement policy.
+
+        Returns:
+            Persisted policy.
+        """
+
+    @abstractmethod
+    def get_execution_archive_status(self) -> ExecutionArchiveStatus:
+        """Get cached workspace execution-history archive status.
+
+        Returns:
+            Current status without probing archive storage.
+        """
+
+    @abstractmethod
+    def export_execution_archive(
+        self, request: ExecutionArchiveExportRequest
+    ) -> ExecutionArchiveResponse:
+        """Export and verify one execution tree.
+
+        Args:
+            request: Project and root-run identity.
+
+        Returns:
+            Verified archive generation.
+        """
+
+    @abstractmethod
+    def compact_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Move one verified generation's payload authority out of SQL.
+
+        Args:
+            archive_id: Generation to compact.
+            project_id: Owning project.
+
+        Returns:
+            Cold archive generation.
+        """
+
+    @abstractmethod
+    def restore_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Restore one generation's payload to SQL.
+
+        Args:
+            archive_id: Generation to restore.
+            project_id: Owning project.
+
+        Returns:
+            Restored archive generation.
+        """
+
+    @abstractmethod
+    def request_execution_archive_purge(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Queue one safe archive generation for purge.
+
+        Args:
+            archive_id: Generation to purge.
+            project_id: Owning project.
+
+        Returns:
+            Purge-pending generation.
+        """
+
+    @abstractmethod
+    def get_execution_archive(
+        self, *, archive_id: UUID, project_id: UUID
+    ) -> ExecutionArchiveResponse:
+        """Get one archive generation.
+
+        Args:
+            archive_id: Generation ID.
+            project_id: Owning project.
+
+        Returns:
+            Archive generation.
+        """
+
+    @abstractmethod
+    def list_execution_archives(
+        self,
+        *,
+        project_id: UUID,
+        state: Optional[ExecutionArchiveState] = None,
+        limit: int = 100,
+    ) -> List[ExecutionArchiveResponse]:
+        """List newest archive generations in one project.
+
+        Args:
+            project_id: Owning project.
+            state: Optional lifecycle-state filter.
+            limit: Maximum generations returned.
+
+        Returns:
+            Newest generations first.
         """
 
     # -------------------- API Keys --------------------

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import Index, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import (
     Session,
@@ -139,6 +139,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["triggered_by", "triggered_by_type"],
+        ),
+        # Stable keyset traversal that skips already-cold execution trees.
+        Index(
+            "ix_pipeline_run_archive_candidates",
+            "execution_archive_id",
+            "end_time",
+            "id",
         ),
     )
 

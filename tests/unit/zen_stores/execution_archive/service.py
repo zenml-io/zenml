@@ -55,6 +55,11 @@ class CallbackStorage(ExecutionArchiveStorage):
         """Return the delegated target digest."""
         return self._inner.target_digest
 
+    @property
+    def workspace_prefix(self) -> str:
+        """Return the delegated workspace prefix."""
+        return self._inner.workspace_prefix
+
     def object_key(
         self, *, project_id: UUID, archive_id: UUID, claim_token: int
     ) -> str:
@@ -124,6 +129,17 @@ class CallbackStorage(ExecutionArchiveStorage):
             committed_key: Verified object key that must remain available.
         """
         self._inner.delete_other_attempts(committed_key)
+
+    def delete_generation(self, *, project_id: UUID, archive_id: UUID) -> None:
+        """Delete a generation through the delegate.
+
+        Args:
+            project_id: Project that owns the generation.
+            archive_id: Archive generation ID.
+        """
+        self._inner.delete_generation(
+            project_id=project_id, archive_id=archive_id
+        )
 
 
 def local_storage(store: SqlZenStore, root: Path) -> ExecutionArchiveStorage:

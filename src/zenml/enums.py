@@ -608,6 +608,14 @@ class ExecutionArchiveState(StrEnum):
         }
 
 
+class ExecutionArchiveMode(StrEnum):
+    """Workspace policy for automatic execution-history tiering."""
+
+    DISABLED = "disabled"
+    EXPORT = "export"
+    ARCHIVE = "archive"
+
+
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 

@@ -89,6 +89,7 @@ def substitutions_of(start_time: datetime) -> "dict[str, str]":
 def populate_family(
     store: SqlZenStore,
     *,
+    project_id: Optional[UUID] = None,
     steps: int = 1,
     suffix: str = "",
     with_projection: bool = True,
@@ -98,6 +99,8 @@ def populate_family(
 
     Args:
         store: The store.
+        project_id: Project that owns the family. Uses the default project
+            when omitted.
         steps: How many step runs and static configurations to create.
         suffix: Distinguishes several families of one store.
         with_projection: Whether step rows carry the list projection that
@@ -111,7 +114,7 @@ def populate_family(
     """
     from zenml.models import ProjectFilter, StackFilter, UserFilter
 
-    project_id = store.list_projects(ProjectFilter()).items[0].id
+    project_id = project_id or store.list_projects(ProjectFilter()).items[0].id
     user_id = store.list_users(UserFilter()).items[0].id
     stack_id = store.list_stacks(StackFilter()).items[0].id
     pipeline = PipelineSchema(

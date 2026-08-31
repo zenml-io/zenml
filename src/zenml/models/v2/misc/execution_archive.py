@@ -14,13 +14,19 @@
 """Shared models for execution-history archiving."""
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Dict, Optional
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, NonNegativeInt, StringConstraints
+from pydantic import (
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    StringConstraints,
+)
 
 from zenml.constants import MAX_ZENML_SERVER_EXECUTION_ARCHIVE_ERROR_LENGTH
-from zenml.enums import ExecutionArchiveState
+from zenml.enums import ExecutionArchiveMode, ExecutionArchiveState
 from zenml.models.v2.base.base import BaseZenModel
 
 Sha256Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -93,5 +99,77 @@ class ExecutionArchiveExportRequest(BaseZenModel):
 
     project_id: UUID
     root_run_id: UUID
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchiveActionRequest(BaseZenModel):
+    """Project scope for an action on one archive generation."""
+
+    project_id: UUID
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchivePolicy(BaseZenModel):
+    """Workspace policy for automatic execution-history tiering."""
+
+    mode: ExecutionArchiveMode = ExecutionArchiveMode.DISABLED
+    retention_days: PositiveInt = Field(default=180, le=3650)
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchivePolicyRequest(BaseZenModel):
+    """Complete replacement of a workspace archive policy."""
+
+    mode: ExecutionArchiveMode
+    retention_days: PositiveInt = Field(le=3650)
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchivePassResult(BaseZenModel):
+    """Cached outcome of one bounded coordinator pass."""
+
+    started_at: datetime
+    completed_at: datetime
+    scanned_trees: NonNegativeInt = 0
+    eligible_trees: NonNegativeInt = 0
+    blocked_trees: NonNegativeInt = 0
+    blocker_counts: Dict[str, NonNegativeInt] = Field(default_factory=dict)
+    failure_counts: Dict[str, NonNegativeInt] = Field(default_factory=dict)
+    exported_trees: NonNegativeInt = 0
+    compacted_trees: NonNegativeInt = 0
+    resumed_trees: NonNegativeInt = 0
+    purged_archives: NonNegativeInt = 0
+    source_bytes_processed: NonNegativeInt = 0
+    candidate_scan_incomplete: bool = False
+    error: Optional[str] = Field(
+        default=None,
+        max_length=MAX_ZENML_SERVER_EXECUTION_ARCHIVE_ERROR_LENGTH,
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+
+class ExecutionArchiveStatus(BaseZenModel):
+    """Workspace execution-history tiering status without storage probes."""
+
+    workspace_id: UUID
+    workspace_prefix: Optional[str] = None
+    policy: ExecutionArchivePolicy
+    storage_configured: bool
+    compaction_gate_enabled: bool
+    effective_mode: ExecutionArchiveMode
+    message: str
+    coordinator_running: bool
+    cursor_completed_at: Optional[datetime] = None
+    cursor_root_run_id: Optional[UUID] = None
+    purge_pending_archives: NonNegativeInt = 0
+    oldest_purge_pending_at: Optional[datetime] = None
+    archives_requiring_restore: NonNegativeInt = 0
+    corrupt_archives: NonNegativeInt = 0
+    last_pass: Optional[ExecutionArchivePassResult] = None
 
     model_config = ConfigDict(frozen=True)
