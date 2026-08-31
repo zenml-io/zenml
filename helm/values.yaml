@@ -353,6 +353,19 @@ server:
     # E.g.: "mysql://admin:password@zenml-mysql:3306/database"
     url:
 
+    # The database authentication mode. Use `password` for credentials supplied
+    # in the URL or through `passwordSecretRef`. Use `aws_rds_iam` to generate a
+    # short-lived AWS RDS IAM token for every new database connection.
+    authMode: password
+
+    # The AWS region containing the RDS database or proxy. Required when
+    # `authMode` is `aws_rds_iam`.
+    awsRegion:
+
+    # An optional IAM role to assume when generating RDS IAM tokens. The role is
+    # assumed using the projected web identity token available to the pod.
+    awsRdsIamRoleArn:
+
     # The Kubernetes secret containing the MySQL password. If not set, the
     # password provided in the `url` option will be used.
     passwordSecretRef:
