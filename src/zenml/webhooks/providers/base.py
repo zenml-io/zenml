@@ -11,10 +11,11 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from zenml.enums import WebhookType
 from zenml.exceptions import CredentialsNotValid
+from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.pydantic_utils import YAMLSerializationMixin
 
@@ -44,6 +45,84 @@ class WebhookTargetEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: str
+
+    @classmethod
+    @abstractmethod
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
+
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+
+    @staticmethod
+    def _validate_filter(
+        value: StringFilterOption,
+        *,
+        field_name: str,
+        allow_startswith: bool,
+    ) -> StringFilterOption:
+        """Validate one webhook event string filter."""
+        if value is None:
+            return None
+        allowed = {"oneof"}
+        if allow_startswith:
+            allowed.add("startswith")
+        for item in value if isinstance(value, list) else [value]:
+            if not item:
+                raise ValueError(
+                    f"Webhook event filter '{field_name}' is empty."
+                )
+            if ":" not in item:
+                continue
+            operator, operand = item.split(":", 1)
+            if operator not in allowed:
+                raise ValueError(
+                    f"Webhook event filter '{field_name}' does not support "
+                    f"the '{operator}' operator."
+                )
+            if not operand:
+                raise ValueError(
+                    f"Webhook event filter '{field_name}' has an empty "
+                    "operand."
+                )
+            if operator == "oneof":
+                try:
+                    choices = json.loads(operand)
+                except json.JSONDecodeError as error:
+                    raise ValueError(
+                        f"Webhook event filter '{field_name}' requires a "
+                        "JSON-formatted list for 'oneof'."
+                    ) from error
+                if (
+                    not isinstance(choices, list)
+                    or not choices
+                    or not all(
+                        isinstance(choice, str) and choice
+                        for choice in choices
+                    )
+                ):
+                    raise ValueError(
+                        f"Webhook event filter '{field_name}' requires a "
+                        "non-empty JSON list of strings for 'oneof'."
+                    )
+        return value
+
+    @model_validator(mode="after")
+    def validate_filters(self) -> "WebhookTargetEvent":
+        """Validate all configured string filters.
+
+        Returns:
+            The validated target event.
+        """
+        prefix_matching_support = self.get_prefix_matching_support()
+        for field_name, allow_startswith in prefix_matching_support.items():
+            self._validate_filter(
+                getattr(self, field_name),
+                field_name=field_name,
+                allow_startswith=allow_startswith,
+            )
+        return self
 
 
 class WebhookTriggerConfiguration(YAMLSerializationMixin):

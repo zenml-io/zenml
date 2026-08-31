@@ -6,14 +6,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal, TypeAlias
 
-from pydantic import (
-    BaseModel,
-    Field,
-    TypeAdapter,
-    ValidationError,
-    ValidationInfo,
-    field_validator,
-)
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from zenml.enums import WebhookType
 from zenml.models.v2.base.filter import StringFilterOption
@@ -52,55 +45,6 @@ class GitHubWebhookEvent(StrEnum):
     RELEASE_PUBLISHED = "release_published"
 
 
-def _validate_filter(
-    value: StringFilterOption,
-    *,
-    field_name: str,
-    allow_startswith: bool,
-) -> StringFilterOption:
-    """Validate one semantic string filter."""
-    if value is None:
-        return None
-    allowed = {"oneof"}
-    if allow_startswith:
-        allowed.add("startswith")
-    for item in value if isinstance(value, list) else [value]:
-        if not item:
-            raise ValueError(f"GitHub event filter '{field_name}' is empty.")
-        if ":" not in item:
-            continue
-        operator, operand = item.split(":", 1)
-        if operator not in allowed:
-            raise ValueError(
-                f"GitHub event filter '{field_name}' does not support the "
-                f"'{operator}' operator."
-            )
-        if not operand:
-            raise ValueError(
-                f"GitHub event filter '{field_name}' has an empty operand."
-            )
-        if operator == "oneof":
-            try:
-                choices = json.loads(operand)
-            except json.JSONDecodeError as error:
-                raise ValueError(
-                    f"GitHub event filter '{field_name}' requires a "
-                    "JSON-formatted list for 'oneof'."
-                ) from error
-            if (
-                not isinstance(choices, list)
-                or not choices
-                or not all(
-                    isinstance(choice, str) and choice for choice in choices
-                )
-            ):
-                raise ValueError(
-                    f"GitHub event filter '{field_name}' requires a non-empty "
-                    "JSON list of strings for 'oneof'."
-                )
-    return value
-
-
 class MergedPullRequest(WebhookTargetEvent):
     """Filters for a merged GitHub pull request."""
 
@@ -112,29 +56,19 @@ class MergedPullRequest(WebhookTargetEvent):
     source_branch: StringFilterOption = None
     author: StringFilterOption = None
 
-    @field_validator("repo", "author")
     @classmethod
-    def validate_exact(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate an exact-match field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=False,
-        )
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
 
-    @field_validator("target_branch", "source_branch")
-    @classmethod
-    def validate_branch(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate a branch field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=True,
-        )
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {
+            "repo": False,
+            "target_branch": True,
+            "source_branch": True,
+            "author": False,
+        }
 
 
 class WorkflowRunCompleted(WebhookTargetEvent):
@@ -147,17 +81,14 @@ class WorkflowRunCompleted(WebhookTargetEvent):
     conclusion: StringFilterOption = None
     actor: StringFilterOption = None
 
-    @field_validator("workflow", "conclusion", "actor")
     @classmethod
-    def validate_exact(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate an exact-match field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=False,
-        )
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
+
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {"workflow": False, "conclusion": False, "actor": False}
 
 
 class PushEvent(WebhookTargetEvent):
@@ -168,29 +99,14 @@ class PushEvent(WebhookTargetEvent):
     branch: StringFilterOption = None
     actor: StringFilterOption = None
 
-    @field_validator("repo", "actor")
     @classmethod
-    def validate_exact(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate an exact-match field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=False,
-        )
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
 
-    @field_validator("branch")
-    @classmethod
-    def validate_branch(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate a branch field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=True,
-        )
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {"repo": False, "branch": True, "actor": False}
 
 
 class ReleasePublished(WebhookTargetEvent):
@@ -204,29 +120,19 @@ class ReleasePublished(WebhookTargetEvent):
     target_branch: StringFilterOption = None
     actor: StringFilterOption = None
 
-    @field_validator("repo", "actor")
     @classmethod
-    def validate_exact(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate an exact-match field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=False,
-        )
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
 
-    @field_validator("tag", "target_branch")
-    @classmethod
-    def validate_ref(
-        cls, value: StringFilterOption, info: ValidationInfo
-    ) -> StringFilterOption:
-        """Validate a tag or target branch field."""
-        return _validate_filter(
-            value,
-            field_name=info.field_name or "unknown",
-            allow_startswith=True,
-        )
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {
+            "repo": False,
+            "tag": True,
+            "target_branch": True,
+            "actor": False,
+        }
 
 
 GitHubWebhookTargetEvent: TypeAlias = Annotated[
