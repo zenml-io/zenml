@@ -80,9 +80,19 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-For log stores that can page, a fetch with no cursor returns the newest page of the stream. Within that page, and every later one, entries are ordered oldest to newest. Pass `page.before` back in to walk further into the history of the stream, and `page.after` to pick up entries written since. A cursor comes back as `None` when there is nothing more to read in that direction.
+`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way. 
 
-The [artifact log store](artifact.md) is different: it cannot cheaply resume a read in the middle of a file, so it ignores the cursors, returns `None` for both, and serves one response. That response is the oldest entries of the stream, up to the limit; if the stream is longer, the newest part is what gets cut off.
+A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page.
+
+```python
+# Start at the end of a stream and walk back through its history.
+page = log_store.fetch(logs_model=logs, start="newest")
+while page.before:
+    page = log_store.fetch(
+        logs_model=logs,
+        before=page.before,
+    )
+```
 
 Filters are pushed down into the backend's own query, so they cost nothing to apply:
 
@@ -93,14 +103,9 @@ page = log_store.fetch(
     logs_model=logs,
     filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
 )
-
-while page.before:
-    page = log_store.fetch(logs_model=logs, before=page.before)
 ```
 
-A log store with no query language behind it ignores these filters rather than scanning its whole log stream for them. The [artifact log store](artifact.md) is the one in that position, so filtering logs kept in an artifact store is the caller's job, done on the entries it hands back.
-
-3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. This is what the dashboard uses.
+3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. This is what the dashboard uses.
 
 4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
 
@@ -124,8 +129,5 @@ zenml log-store flavor list
 {% hint style="info" %}
 If you're interested in understanding the base abstraction and how log stores work internally, check out the [Develop a Custom Log Store](custom.md) page for a detailed explanation of the architecture.
 {% endhint %}
-
-
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

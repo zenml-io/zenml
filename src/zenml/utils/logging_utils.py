@@ -497,6 +497,7 @@ def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
 def fetch_logs(
     logs: "LogsResponse",
     zen_store: "BaseZenStore",
+    start: Optional[str] = None,
     limit: Optional[int] = None,
     before: Optional[str] = None,
     after: Optional[str] = None,
@@ -511,14 +512,17 @@ def fetch_logs(
     Args:
         logs: The logs response model containing metadata about the logs.
         zen_store: The zen store instance.
+        start: Which end of the stream to start reading from. Omit to let
+            the log store pick.
         limit: Maximum number of log entries to return.
-        before: Cursor pointing at entries older than a previous page.
-        after: Cursor pointing at entries newer than a previous page.
+        before: Cursor towards older entries, from a previous page.
+        after: Cursor towards newer entries, from a previous page.
         filter_: Filters to apply while retrieving the entries.
 
     Returns:
-        A page of log entries, oldest first, with cursors for the adjacent
-        pages. Empty if the logs are not backed by any store.
+        A page of log entries, oldest first, with cursors for the pages
+        around it that the store can serve. Empty if the logs are not backed
+        by any store.
 
     Raises:
         DoesNotExistException: If the log store doesn't exist or is not the right type.
@@ -569,6 +573,7 @@ def fetch_logs(
         try:
             return log_store.fetch(
                 logs_model=logs,
+                start=start,
                 limit=limit,
                 before=before,
                 after=after,
@@ -605,6 +610,7 @@ def fetch_logs(
         # with other requests, and cleaning it up would break them.
         return log_store.fetch(
             logs_model=logs,
+            start=start,
             limit=limit,
             before=before,
             after=after,

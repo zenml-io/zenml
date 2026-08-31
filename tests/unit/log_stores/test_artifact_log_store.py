@@ -90,11 +90,74 @@ def test_fetch_reports_no_cursors(
         uri=logs_uri, artifact_store_id=artifact_store.id
     )
 
-    page = log_store.fetch(logs, before="ignored", after="ignored")
+    page = log_store.fetch(logs)
 
     assert page.before is None
     assert page.after is None
     assert len(page.items) == 1
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"before": "a-cursor"},
+        {"after": "a-cursor"},
+        {"start": "newest"},
+        {"filter_": LogsEntriesFilter(search="boom")},
+        {"filter_": LogsEntriesFilter(level=LoggingLevels.ERROR)},
+        {
+            "filter_": LogsEntriesFilter(
+                since=datetime(2026, 1, 1, tzinfo=timezone.utc)
+            )
+        },
+    ],
+)
+def test_fetch_refuses_what_it_cannot_honor(
+    log_store, logs_model_factory, logs_uri, artifact_store, kwargs
+):
+    """Serving something other than what was asked for would mislead a caller."""
+    write_log_file(logs_uri, [make_entry("only line")])
+    logs = logs_model_factory(
+        uri=logs_uri, artifact_store_id=artifact_store.id
+    )
+
+    with pytest.raises(ValueError, match="only reads a log file"):
+        log_store.fetch(logs, **kwargs)
+
+
+def test_fetch_accepts_an_empty_filter(
+    log_store, logs_model_factory, logs_uri, artifact_store
+):
+    """A filter that narrows nothing down asks nothing of the log store."""
+    write_log_file(logs_uri, [make_entry("only line")])
+    logs = logs_model_factory(
+        uri=logs_uri, artifact_store_id=artifact_store.id
+    )
+
+    page = log_store.fetch(logs, filter_=LogsEntriesFilter())
+
+    assert len(page.items) == 1
+
+
+def test_fetch_names_every_filter_it_refuses(
+    log_store, logs_model_factory, logs_uri, artifact_store
+):
+    """A caller should not have to discover its refused filters one at a time."""
+    write_log_file(logs_uri, [make_entry("only line")])
+    logs = logs_model_factory(
+        uri=logs_uri, artifact_store_id=artifact_store.id
+    )
+
+    with pytest.raises(ValueError) as failure:
+        log_store.fetch(
+            logs,
+            filter_=LogsEntriesFilter(
+                search="boom", level=LoggingLevels.ERROR
+            ),
+        )
+
+    assert "search" in str(failure.value)
+    assert "level" in str(failure.value)
 
 
 def test_fetch_stops_at_the_limit(
@@ -189,38 +252,6 @@ def test_a_chunked_message_does_not_overshoot_the_limit(
     page = log_store.fetch(logs, limit=2)
 
     assert [entry.message for entry in page.items] == ["before", "part-0"]
-
-
-def test_filters_are_ignored(
-    log_store, logs_model_factory, logs_uri, artifact_store
-):
-    """Filtering here would scan the whole file, so the caller does it."""
-    write_log_file(
-        logs_uri,
-        [
-            make_entry("debug", 0, level=LoggingLevels.DEBUG),
-            make_entry("info", 1, level=LoggingLevels.INFO),
-            make_entry("error", 2, level=LoggingLevels.ERROR),
-        ],
-    )
-    logs = logs_model_factory(
-        uri=logs_uri, artifact_store_id=artifact_store.id
-    )
-
-    page = log_store.fetch(
-        logs,
-        filter_=LogsEntriesFilter(
-            search="nothing matches this",
-            level=LoggingLevels.ERROR,
-            since=START + timedelta(days=1),
-        ),
-    )
-
-    assert [entry.message for entry in page.items] == [
-        "debug",
-        "info",
-        "error",
-    ]
 
 
 def test_plain_text_logs_are_readable(

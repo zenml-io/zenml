@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Tests for the pagination helpers shared by all log stores."""
 
-import base64
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
@@ -71,6 +70,7 @@ class StubLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -80,6 +80,7 @@ class StubLogStore(BaseLogStore):
 
         Args:
             logs_model: Ignored.
+            start: Ignored.
             limit: Ignored.
             before: Ignored.
             after: Ignored.
@@ -107,20 +108,15 @@ def log_store() -> StubLogStore:
 
 
 def test_cursor_round_trip(log_store):
-    """A cursor carries its payload back unchanged."""
-    token = log_store.encode_cursor(
-        timestamp="2026-01-01T00:00:00Z", ids=["a"]
-    )
+    """A cursor carries the backend token back unchanged."""
+    token = log_store.encode_cursor("native-token")
 
-    assert log_store.decode_cursor(token) == {
-        "timestamp": "2026-01-01T00:00:00Z",
-        "ids": ["a"],
-    }
+    assert log_store.decode_cursor(token) == "native-token"
 
 
 def test_cursor_is_url_safe(log_store):
     """A cursor is passed around as a query parameter."""
-    token = log_store.encode_cursor(cursor="a/b+c=d?e&f")
+    token = log_store.encode_cursor("a/b+c=d?e&f")
 
     assert "/" not in token
     assert "+" not in token
@@ -130,13 +126,12 @@ def test_cursor_is_url_safe(log_store):
     "token",
     [
         "not base64 at all",
-        base64.urlsafe_b64encode(b"not json").decode(),
-        base64.urlsafe_b64encode(b'"a string"').decode(),
+        "@@@",
     ],
 )
 def test_invalid_cursors_are_rejected(log_store, token):
     """A cursor that was not issued by a log store is an error."""
-    with pytest.raises(ValueError, match="Invalid pagination cursor"):
+    with pytest.raises(ValueError, match="not one this server issued"):
         log_store.decode_cursor(token)
 
 

@@ -173,7 +173,13 @@ class LogsSchema(BaseSchema, table=True):
 
         metadata = None
         if include_metadata:
-            metadata = LogsResponseMetadata()
+            metadata = LogsResponseMetadata(
+                step_run_id=self.step_run_id,
+                pipeline_run_id=self.pipeline_run_id,
+                artifact_store_id=self.artifact_store_id,
+                log_store_id=self.log_store_id,
+                hook_invocation_id=self.hook_invocation_id,
+            )
 
         resources = None
         if include_resources:
