@@ -224,9 +224,7 @@ def test_before_continues_on_datadog_s_cursor(
     assert requests_made[1]["sort"] == "-timestamp"
 
 
-def test_an_oldest_read_refuses_before(
-    log_store, logs_model_factory, search
-):
+def test_an_oldest_read_refuses_before(log_store, logs_model_factory, search):
     """Datadog cannot walk backwards from a read that started at the oldest end."""
     search(make_payload([]))
 
@@ -238,9 +236,7 @@ def test_an_oldest_read_refuses_before(
         )
 
 
-def test_a_newest_read_refuses_after(
-    log_store, logs_model_factory, search
-):
+def test_a_newest_read_refuses_after(log_store, logs_model_factory, search):
     """Datadog cannot walk forwards from a read that started at the newest end."""
     search(make_payload([]))
 

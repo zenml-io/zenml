@@ -79,7 +79,7 @@ class DatadogLogStore(OtelLogStore):
 
     def _get_headers(self) -> Dict[str, str]:
         """Headers shared by the exporter and the search API.
-        
+
         Returns:
             The headers.
         """
@@ -253,7 +253,7 @@ class DatadogLogStore(OtelLogStore):
         self, logs_model: "LogsResponse", filter_: LogsEntriesFilter
     ) -> str:
         """Build the Datadog search query for a log stream.
-        
+
         Args:
             logs_model: The logs model containing run and step metadata.
             filter_: Filters to apply while retrieving the entries.
@@ -288,7 +288,7 @@ class DatadogLogStore(OtelLogStore):
 
     def _parse_log_entry(self, log: Dict[str, Any]) -> Optional[LogEntry]:
         """Parse a single log entry from Datadog's API response.
-        
+
         Args:
             log: The log entry from Datadog's API response.
 
