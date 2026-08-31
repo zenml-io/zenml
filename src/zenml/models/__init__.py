@@ -527,27 +527,6 @@ from zenml.models.v2.misc.tag import (
     TagResource,
 )
 from zenml.models.v2.misc.user_auth import UserAuthModel
-from zenml.webhooks.providers.base import (
-    WebhookTargetEvent,
-    WebhookTriggerConfiguration,
-)
-from zenml.webhooks.providers.github import (
-    GitHubCommit,
-    GitHubMergedPullRequestEvent,
-    GitHubPushEvent,
-    GitHubReleasePublishedEvent,
-    GitHubSemanticEvent,
-    GitHubWebhookConfiguration,
-    GitHubWebhookEvent,
-    GitHubWebhookEventConfiguration,
-    GitHubWebhookTargetEvent,
-    GitHubWebhookTriggerConfiguration,
-    GitHubWorkflowRunCompletedEvent,
-    MergedPullRequest,
-    PushEvent,
-    ReleasePublished,
-    WorkflowRunCompleted,
-)
 
 # ----------------------------- Forward References -----------------------------
 
@@ -1077,23 +1056,6 @@ __all__ = [
     "WebhookTriggerUpdate",
     "WebhookTriggerResponse",
     "WebhookTriggerResponseBody",
-    "WebhookTargetEvent",
-    "WebhookTriggerConfiguration",
-    "GitHubCommit",
-    "GitHubSemanticEvent",
-    "GitHubMergedPullRequestEvent",
-    "GitHubWorkflowRunCompletedEvent",
-    "GitHubPushEvent",
-    "GitHubReleasePublishedEvent",
-    "GitHubWebhookEvent",
-    "GitHubWebhookEventConfiguration",
-    "GitHubWebhookConfiguration",
-    "GitHubWebhookTargetEvent",
-    "GitHubWebhookTriggerConfiguration",
-    "MergedPullRequest",
-    "PushEvent",
-    "ReleasePublished",
-    "WorkflowRunCompleted",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",

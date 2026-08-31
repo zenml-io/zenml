@@ -68,7 +68,7 @@ def create_webhook(
     )
     cli_utils.print_pydantic_model(
         title=f"Webhook '{name}'",
-        model=result.webhook,
+        model=result,
     )
     if result.secret is not None:
         cli_utils.declare(

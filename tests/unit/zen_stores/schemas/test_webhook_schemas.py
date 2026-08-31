@@ -136,8 +136,8 @@ def test_webhook_uses_cloud_compatible_rbac_resource_name() -> None:
 
     resource_type = get_resource_type_for_model(request)
 
-    assert resource_type is ResourceType.WEBHOOK_INTEGRATION
-    assert resource_type.value == "webhook_integration"
+    assert resource_type is ResourceType.WEBHOOK
+    assert resource_type.value == "webhook"
 
 
 def test_webhook_update_excludes_secret() -> None:
@@ -145,18 +145,9 @@ def test_webhook_update_excludes_secret() -> None:
     assert "secret" not in WebhookUpdate.model_fields
 
 
-def test_webhook_schema_to_model_includes_body_and_metadata(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_webhook_schema_to_model_includes_body_and_metadata() -> None:
     """Webhook schemas include body and stats metadata."""
     schema = _webhook_schema()
-    endpoint_url = (
-        f"https://zenml.example.com/api/v1/webhooks/github/{schema.id}/events"
-    )
-    monkeypatch.setattr(
-        "zenml.webhooks.urls.get_webhook_intake_url",
-        lambda **_: endpoint_url,
-    )
 
     response = schema.to_model(include_metadata=True)
 
@@ -164,7 +155,7 @@ def test_webhook_schema_to_model_includes_body_and_metadata(
     assert response.name == "github-intake"
     assert response.webhook_type == "github"
     assert response.active is True
-    assert response.endpoint_url == endpoint_url
+    assert response.endpoint_url is None
     assert response.stats.received_count == 3
     assert response.stats.accepted_count == 1
     assert response.stats.auth_failed_count == 1

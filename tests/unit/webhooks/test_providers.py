@@ -22,46 +22,49 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from zenml.models import (
-    GitHubCommit,
-    GitHubMergedPullRequestEvent,
-    GitHubPushEvent,
-    GitHubSemanticEvent,
-    GitHubWebhookTriggerConfiguration,
-    PushEvent,
-)
 from zenml.webhooks import WebhookEvent
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
+    BuiltinWebhookType,
     WebhookAuthenticationError,
+    WebhookConfiguration,
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookProviderRegistry,
-    WebhookTriggerConfiguration,
     get_webhook_provider,
 )
 from zenml.webhooks.providers.custom import (
     CUSTOM_DELIVERY_HEADER,
     CUSTOM_EVENT_HEADER,
     CUSTOM_SIGNATURE_HEADER,
+    CustomWebhookConfiguration,
     CustomWebhookProvider,
-    CustomWebhookTriggerConfiguration,
 )
 from zenml.webhooks.providers.github import (
     GITHUB_DELIVERY_HEADER,
     GITHUB_EVENT_HEADER,
     GITHUB_SIGNATURE_HEADER,
+    GitHubCommit,
+    GitHubMergedPullRequestEvent,
+    GitHubPushEvent,
+    GitHubSemanticEvent,
+    GitHubWebhookConfiguration,
     GitHubWebhookProvider,
+    PushEvent,
 )
 
 pytestmark = pytest.mark.anyio
+
+
+class _BodyMetadataBearerConfiguration(WebhookConfiguration):
+    """Configuration for the test-only bearer provider."""
 
 
 class _BodyMetadataBearerProvider(BaseWebhookProvider):
     """Test provider with bearer auth and body-derived event metadata."""
 
     webhook_type = "custom"
-    configuration_class = WebhookTriggerConfiguration
+    configuration_class = _BodyMetadataBearerConfiguration
 
     def authenticate(
         self, body: bytes, headers: Mapping[str, str], secret: str
@@ -80,9 +83,6 @@ class _BodyMetadataBearerProvider(BaseWebhookProvider):
     ) -> str | None:
         delivery_id = payload.get("webhookId")
         return delivery_id if isinstance(delivery_id, str) else None
-
-    def validate_configuration(self, configuration):
-        return WebhookTriggerConfiguration.model_validate(configuration)
 
     def match_triggers(self, *, event, candidates):
         return list(candidates)
@@ -171,8 +171,8 @@ def _signature(secret: str, body: bytes) -> str:
 @pytest.mark.parametrize(
     "webhook_type, provider_type",
     [
-        ("github", GitHubWebhookProvider),
-        ("custom", CustomWebhookProvider),
+        (BuiltinWebhookType.GITHUB, GitHubWebhookProvider),
+        (BuiltinWebhookType.CUSTOM, CustomWebhookProvider),
     ],
 )
 def test_get_webhook_provider_returns_registered_provider(
@@ -445,7 +445,7 @@ def test_github_configuration_reports_all_invalid_target_events() -> None:
 def test_github_configuration_accepts_typed_configuration() -> None:
     """Strict GitHub validation accepts its public typed configuration."""
     provider = GitHubWebhookProvider()
-    configuration = GitHubWebhookTriggerConfiguration(
+    configuration = GitHubWebhookConfiguration(
         target_events=[
             PushEvent(repo="zenml-io/zenml", branch="main"),
         ]
@@ -454,17 +454,33 @@ def test_github_configuration_accepts_typed_configuration() -> None:
     assert provider.validate_configuration(configuration) is configuration
 
 
-def test_custom_configuration_accepts_only_empty_target_events() -> None:
+def test_provider_configuration_ignores_removed_fields() -> None:
+    """Persisted provider configuration tolerates removed fields."""
+    provider = GitHubWebhookProvider()
+
+    configuration = provider.validate_configuration(
+        {
+            "target_events": [{"type": "push", "branch": "main"}],
+            "removed_provider_option": True,
+        }
+    )
+
+    assert configuration == GitHubWebhookConfiguration(
+        target_events=[PushEvent(branch="main")]
+    )
+
+
+def test_custom_configuration_ignores_unknown_fields() -> None:
     """Custom V1 configuration remains intentionally unfiltered."""
     provider = CustomWebhookProvider()
 
-    assert provider.validate_configuration({"target_events": []}) == (
-        CustomWebhookTriggerConfiguration(target_events=[])
-    )
-    with pytest.raises(ValueError, match="target_events"):
+    assert provider.validate_configuration({}) == CustomWebhookConfiguration()
+    assert (
         provider.validate_configuration(
             {"target_events": [{"type": "pipeline.ready"}]}
         )
+        == CustomWebhookConfiguration()
+    )
 
 
 def test_runtime_matching_rejects_stale_github_configuration() -> None:

@@ -5,14 +5,13 @@ import logging
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from pydantic import Field
-
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
+    WebhookConfiguration,
     WebhookPayloadError,
-    WebhookTriggerConfiguration,
     authenticate_hmac_sha256,
 )
+from zenml.webhooks.providers.types import BuiltinWebhookType
 
 if TYPE_CHECKING:
     from zenml.models import WebhookTriggerResponse
@@ -25,17 +24,15 @@ CUSTOM_EVENT_HEADER = "x-zenml-event"
 CUSTOM_DELIVERY_HEADER = "x-zenml-delivery"
 
 
-class CustomWebhookTriggerConfiguration(WebhookTriggerConfiguration):
+class CustomWebhookConfiguration(WebhookConfiguration):
     """Configuration for an unfiltered custom webhook trigger."""
-
-    target_events: list[Any] = Field(max_length=0)
 
 
 class CustomWebhookProvider(BaseWebhookProvider):
     """Provider for signed custom JSON webhook deliveries."""
 
-    webhook_type = "custom"
-    configuration_class = CustomWebhookTriggerConfiguration
+    webhook_type = BuiltinWebhookType.CUSTOM
+    configuration_class = CustomWebhookConfiguration
 
     def authenticate(
         self, body: bytes, headers: Mapping[str, str], secret: str

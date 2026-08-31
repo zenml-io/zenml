@@ -36,7 +36,7 @@ def test_client_webhook_lifecycle(clean_client):
 
     assert result.secret is not None
     initial_secret = result.secret.get_secret_value()
-    webhook = result.webhook
+    webhook = result
     assert webhook.name == name
     assert webhook.webhook_type == "custom"
     assert webhook.active is True
@@ -104,12 +104,12 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
     try:
         assert result.secret is None
 
-        webhook = clean_client.get_webhook(result.webhook.id)
+        webhook = clean_client.get_webhook(result.id)
 
         assert "secret" not in webhook.model_dump()
         assert webhook.webhook_type == "github"
     finally:
-        clean_client.delete_webhook(result.webhook.id)
+        clean_client.delete_webhook(result.id)
 
 
 def test_client_update_webhook_by_name_and_id(
@@ -121,7 +121,7 @@ def test_client_update_webhook_by_name_and_id(
         name=name,
         webhook_type="custom",
     )
-    webhook_id = result.webhook.id
+    webhook_id = result.id
 
     try:
         updated_by_name = clean_client.update_webhook(

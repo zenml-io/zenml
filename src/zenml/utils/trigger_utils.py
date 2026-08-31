@@ -32,9 +32,9 @@ from zenml.enums import (
 from zenml.models import (
     PipelineRunResponse,
     PlatformEventTriggerResponse,
-    WebhookTriggerConfiguration,
     WebhookTriggerResponse,
 )
+from zenml.webhooks import WebhookConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +269,7 @@ def create_webhook_trigger(
     *,
     name: str,
     webhook: str | UUID,
-    configuration: Mapping[str, Any] | WebhookTriggerConfiguration,
+    configuration: Mapping[str, Any] | WebhookConfiguration,
     project_id: str | UUID | None = None,
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
@@ -303,9 +303,7 @@ def update_webhook_trigger(
     name: str | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
-    configuration: Mapping[str, Any]
-    | WebhookTriggerConfiguration
-    | None = None,
+    configuration: Mapping[str, Any] | WebhookConfiguration | None = None,
 ) -> WebhookTriggerResponse:
     """Update a webhook trigger and optionally replace its configuration.
 

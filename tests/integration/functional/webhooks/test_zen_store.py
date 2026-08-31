@@ -68,7 +68,7 @@ def test_zen_store_webhook_lifecycle(clean_client):
         )
     )
 
-    webhook = result.webhook
+    webhook = result
 
     assert result.secret is not None
     assert webhook.name == name
@@ -195,7 +195,7 @@ def test_sql_store_webhook_intake_config_contains_masked_secret(
     event.listen(store.engine, "before_cursor_execute", capture_statement)
     try:
         config = store.get_webhook_intake_config(
-            result.webhook.id,
+            result.id,
             expected_webhook_type="custom",
         )
 
@@ -213,14 +213,14 @@ def test_sql_store_webhook_intake_config_contains_masked_secret(
 
         statements.clear()
         store.record_webhook_event(
-            result.webhook.id, WebhookEventStatsUpdate(accepted=True)
+            result.id, WebhookEventStatsUpdate(accepted=True)
         )
 
         assert len(statements) == 1
         assert statements[0].lstrip().upper().startswith("UPDATE")
     finally:
         event.remove(store.engine, "before_cursor_execute", capture_statement)
-        store.delete_webhook(result.webhook.id)
+        store.delete_webhook(result.id)
 
 
 def test_public_secret_deletion_hides_webhook_owned_secret(
@@ -239,7 +239,7 @@ def test_public_secret_deletion_hides_webhook_owned_secret(
             secret="owned-secret",
         )
     )
-    webhook_id = result.webhook.id
+    webhook_id = result.id
 
     try:
         with Session(store.engine) as session:

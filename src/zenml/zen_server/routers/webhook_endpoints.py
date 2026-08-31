@@ -67,8 +67,24 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
     make_dependable,
+    server_config,
     zen_store,
 )
+
+
+def _set_webhook_endpoint_url(webhook: WebhookResponse) -> None:
+    """Set the externally reachable intake URL on a webhook response.
+
+    Args:
+        webhook: The response to enrich before API serialization.
+    """
+    server_api_url = server_config().server_api_url
+    webhook.get_body().endpoint_url = (
+        f"{server_api_url}{WEBHOOKS}/{webhook.webhook_type}/{webhook.id}/events"
+        if server_api_url
+        else None
+    )
+
 
 management_router = APIRouter(
     prefix=API + VERSION_1 + WEBHOOKS,
@@ -106,6 +122,7 @@ def create_webhook(
 
     verify_permission_for_model(model=webhook, action=Action.CREATE)
     result = zen_store().create_webhook(webhook)
+    _set_webhook_endpoint_url(result)
     return dehydrate_response_model(result)
 
 
@@ -125,12 +142,15 @@ def list_webhooks(
     Returns:
         A page of webhooks.
     """
-    return verify_permissions_and_list_entities(
+    webhooks = verify_permissions_and_list_entities(
         filter_model=filter_model,
-        resource_type=ResourceType.WEBHOOK_INTEGRATION,
+        resource_type=ResourceType.WEBHOOK,
         list_method=zen_store().list_webhooks,
         hydrate=hydrate,
     )
+    for webhook in webhooks.items:
+        _set_webhook_endpoint_url(webhook)
+    return webhooks
 
 
 @management_router.get("/{webhook_id}")
@@ -149,11 +169,13 @@ def get_webhook(
     Returns:
         The webhook.
     """
-    return verify_permissions_and_get_entity(
+    webhook = verify_permissions_and_get_entity(
         id=webhook_id,
         get_method=zen_store().get_webhook,
         hydrate=hydrate,
     )
+    _set_webhook_endpoint_url(webhook)
+    return webhook
 
 
 @management_router.put("/{webhook_id}")
@@ -178,6 +200,7 @@ def update_webhook(
         webhook_id=webhook.id,
         update=update,
     )
+    _set_webhook_endpoint_url(updated_webhook)
     return dehydrate_response_model(updated_webhook)
 
 

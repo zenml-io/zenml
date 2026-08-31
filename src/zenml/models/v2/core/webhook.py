@@ -103,18 +103,6 @@ class WebhookResponse(
 
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
 
-    @model_validator(mode="after")
-    def _set_endpoint_url(self) -> "WebhookResponse":
-        """Populate the externally reachable webhook intake URL."""
-        if self.body is not None and self.body.endpoint_url is None:
-            from zenml.webhooks.urls import get_webhook_intake_url
-
-            self.body.endpoint_url = get_webhook_intake_url(
-                webhook_type=self.body.webhook_type,
-                webhook_id=self.id,
-            )
-        return self
-
     def get_hydrated_version(self) -> "WebhookResponse":
         """Return the hydrated webhook.
 
@@ -175,10 +163,9 @@ class WebhookFilter(ProjectScopedFilter):
     active: bool | None = None
 
 
-class WebhookCreateResponse(BaseZenModel):
-    """Creation result with a generated secret when applicable."""
+class WebhookCreateResponse(WebhookResponse):
+    """Created webhook with a generated secret when applicable."""
 
-    webhook: WebhookResponse
     secret: PlainSerializedSecretStr | None = None
 
 

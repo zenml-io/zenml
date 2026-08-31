@@ -21,7 +21,7 @@ def test_webhook_trigger_help_describes_generic_configuration() -> None:
 
     assert create_result.exit_code == 0, create_result.output
     assert update_result.exit_code == 0, update_result.output
-    assert "target_events" in create_result.output
+    assert "provider validates" in create_result.output
     assert "--webhook" in create_result.output
     assert "--config" in create_result.output
     assert "complete configuration" in update_result.output
@@ -63,13 +63,15 @@ target_events:
 
     assert result.exit_code == 0, result.output
     assert calls[0]["webhook"] == "github-webhook"
-    assert calls[0]["configuration"].target_events == [
-        {
-            "type": "push",
-            "repo": "zenml-io/zenml",
-            "branch": "main",
-        }
-    ]
+    assert calls[0]["configuration"] == {
+        "target_events": [
+            {
+                "type": "push",
+                "repo": "zenml-io/zenml",
+                "branch": "main",
+            }
+        ]
+    }
 
 
 def test_create_webhook_trigger_requires_webhook_and_config() -> None:
@@ -94,7 +96,7 @@ def test_update_webhook_trigger_replaces_complete_config(
 
     monkeypatch.setattr(trigger_module, "Client", _Client)
     config_path = tmp_path / "replacement.yaml"
-    config_path.write_text("target_events: []\n")
+    config_path.write_text("{}\n")
 
     result = CliRunner().invoke(
         trigger_module.webhook.commands["update"],
@@ -102,4 +104,4 @@ def test_update_webhook_trigger_replaces_complete_config(
     )
 
     assert result.exit_code == 0, result.output
-    assert calls[0]["configuration"].target_events == []
+    assert calls[0]["configuration"] == {}

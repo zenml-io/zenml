@@ -64,7 +64,6 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.time_utils import utc_now
-from zenml.webhooks.providers.base import WebhookTriggerConfiguration
 
 # ----------- DISPATCH STATE MODELS ------------------ #
 
@@ -1125,7 +1124,7 @@ class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
     type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
     flavor: Literal[TriggerFlavor.WEBHOOK] = TriggerFlavor.WEBHOOK
     webhook_id: UUID
-    configuration: WebhookTriggerConfiguration
+    configuration: dict[str, Any]
 
     def get_config(self) -> str:
         """Return the serialized webhook trigger configuration.
@@ -1148,7 +1147,7 @@ class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
     """Class representing a webhook trigger update."""
 
     type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
-    configuration: WebhookTriggerConfiguration
+    configuration: dict[str, Any]
 
     @model_validator(mode="after")
     def validate_complete_update(self) -> "WebhookTriggerUpdate":

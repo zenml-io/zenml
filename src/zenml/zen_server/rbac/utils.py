@@ -585,8 +585,8 @@ def get_resource_type_for_model(
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
-        WebhookRequest: ResourceType.WEBHOOK_INTEGRATION,
-        WebhookResponse: ResourceType.WEBHOOK_INTEGRATION,
+        WebhookRequest: ResourceType.WEBHOOK,
+        WebhookResponse: ResourceType.WEBHOOK,
         WebhookTriggerRequest: ResourceType.TRIGGER,
         WebhookTriggerResponse: ResourceType.TRIGGER,
     }
@@ -751,7 +751,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
         ResourceType.TRIGGER: TriggerSchema,
-        ResourceType.WEBHOOK_INTEGRATION: WebhookSchema,
+        ResourceType.WEBHOOK: WebhookSchema,
         ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
     }
 

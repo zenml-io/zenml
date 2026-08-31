@@ -132,9 +132,11 @@ def create_trigger(
     elif isinstance(trigger, WebhookTriggerRequest):
         webhook = zen_store().get_webhook(trigger.webhook_id)
         verify_permission_for_model(model=webhook, action=Action.READ)
-        trigger.configuration = get_webhook_provider(
-            webhook.webhook_type
-        ).validate_configuration(trigger.configuration)
+        trigger.configuration = (
+            get_webhook_provider(webhook.webhook_type)
+            .validate_configuration(trigger.configuration)
+            .model_dump(mode="json")
+        )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
 
@@ -242,9 +244,11 @@ def update_trigger(
             cast(UUID, existing_trigger.webhook_id)
         )
         verify_permission_for_model(model=webhook, action=Action.READ)
-        trigger_update.configuration = get_webhook_provider(
-            webhook.webhook_type
-        ).validate_configuration(trigger_update.configuration)
+        trigger_update.configuration = (
+            get_webhook_provider(webhook.webhook_type)
+            .validate_configuration(trigger_update.configuration)
+            .model_dump(mode="json")
+        )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
     updated_trigger = zen_store().update_trigger(

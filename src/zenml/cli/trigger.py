@@ -35,8 +35,9 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.logger import get_logger
-from zenml.models import TriggerFilter, WebhookTriggerConfiguration
+from zenml.models import TriggerFilter
 from zenml.utils.time_utils import iso8601_to_utc_naive
+from zenml.utils.yaml_utils import read_yaml
 
 logger = get_logger(__name__)
 
@@ -811,8 +812,7 @@ def create_webhook_trigger(
 ) -> None:
     """Create a new webhook trigger from a generic configuration file.
 
-    The YAML file must contain a ``target_events`` list. The selected webhook's
-    provider validates the entries authoritatively.
+    The selected webhook's provider validates the YAML configuration.
 
     \f
 
@@ -830,7 +830,7 @@ def create_webhook_trigger(
         created = Client().create_webhook_trigger(
             name=name,
             webhook=webhook,
-            configuration=WebhookTriggerConfiguration.from_yaml(config_path),
+            configuration=read_yaml(config_path),
             concurrency=TriggerRunConcurrency(concurrency),
             active=active,
         )
@@ -890,9 +890,7 @@ def update_webhook_trigger(
 
     try:
         configuration = (
-            WebhookTriggerConfiguration.from_yaml(config_path)
-            if config_path is not None
-            else None
+            read_yaml(config_path) if config_path is not None else None
         )
         Client().update_webhook_trigger(
             trigger_name_id_or_prefix=trigger_name_or_id,

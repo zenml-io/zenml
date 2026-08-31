@@ -671,13 +671,16 @@ Via the SDK, use the typed GitHub configuration and event model:
 
 ```python
 from zenml.client import Client
-from zenml.models import GitHubWebhookTriggerConfiguration, PushEvent
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
 
 client = Client()
 trigger = client.create_webhook_trigger(
     name="on-main-push",
     webhook="github-ml-pipelines",
-    configuration=GitHubWebhookTriggerConfiguration(
+    configuration=GitHubWebhookConfiguration(
         target_events=[
             PushEvent(
                 repo="acme/ml-pipelines",
@@ -730,10 +733,10 @@ Every accepted delivery matches every active, non-archived custom webhook
 trigger owned by that webhook. Use separate custom webhooks when you need
 distinct routes.
 
-Create `custom-webhook.yaml` with the required empty event list:
+Create `custom-webhook.yaml` with an empty provider configuration:
 
 ```yaml
-target_events: []
+{}
 ```
 
 Create the trigger with the CLI:
@@ -748,13 +751,13 @@ Via the SDK:
 
 ```python
 from zenml.client import Client
-from zenml.models import WebhookTriggerConfiguration
+from zenml.webhooks.providers.custom import CustomWebhookConfiguration
 
 client = Client()
 trigger = client.create_webhook_trigger(
     name="on-custom-event",
     webhook="custom-events",
-    configuration=WebhookTriggerConfiguration(target_events=[]),
+    configuration=CustomWebhookConfiguration(),
 )
 ```
 
@@ -781,13 +784,16 @@ Via the SDK, provider configuration is also a complete replacement:
 
 ```python
 from zenml.enums import TriggerRunConcurrency
-from zenml.models import GitHubWebhookTriggerConfiguration, PushEvent
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
 
 trigger = client.update_webhook_trigger(
     trigger_name_id_or_prefix="on-main-push",
     active=True,
     concurrency=TriggerRunConcurrency.SKIP,
-    configuration=GitHubWebhookTriggerConfiguration(
+    configuration=GitHubWebhookConfiguration(
         target_events=[
             PushEvent(
                 repo="acme/ml-pipelines",

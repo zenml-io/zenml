@@ -65,7 +65,7 @@ def webhook_factory(clean_project):
             active=active,
             secret=secret,
         )
-        webhook_ids.append(result.webhook.id)
+        webhook_ids.append(result.id)
         return result
 
     yield create
@@ -79,7 +79,7 @@ def test_webhook_intake_accepts_valid_custom_delivery(
 ):
     _require_rest_store(clean_project)
     result = webhook_factory("webhook-intake-valid")
-    webhook = result.webhook
+    webhook = result
     assert result.secret is not None
     assert webhook.endpoint_url is not None
     secret = result.secret.get_secret_value()
@@ -139,7 +139,7 @@ def test_webhook_intake_failure_scenarios(
         f"webhook-intake-{scenario}",
         active=scenario != "inactive",
     )
-    webhook = result.webhook
+    webhook = result
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b"not-json" if scenario == "invalid-payload" else b'{"ok":true}'

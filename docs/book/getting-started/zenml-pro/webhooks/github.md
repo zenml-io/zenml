@@ -29,14 +29,15 @@ Via the SDK:
 
 ```python
 from zenml.client import Client
+from zenml.webhooks.providers import BuiltinWebhookType
 
 client = Client()
 result = client.create_webhook(
     name="github-ml-pipelines",
-    webhook_type="github",
+    webhook_type=BuiltinWebhookType.GITHUB,
 )
 
-endpoint_url = result.webhook.endpoint_url
+endpoint_url = result.endpoint_url
 signing_secret = result.secret.get_secret_value()
 ```
 

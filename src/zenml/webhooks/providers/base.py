@@ -124,10 +124,8 @@ class WebhookTargetEvent(BaseModel):
         return self
 
 
-class WebhookTriggerConfiguration(YAMLSerializationMixin):
-    """Provider-neutral webhook trigger configuration."""
-
-    target_events: list[Any]
+class WebhookConfiguration(YAMLSerializationMixin):
+    """Base class for provider-owned webhook configuration."""
 
 
 class ParsedWebhookEvent(BaseModel):
@@ -142,7 +140,7 @@ class BaseWebhookProvider(ABC):
     """Stateless provider behavior used by intake and trigger matching."""
 
     webhook_type: ClassVar[str]
-    configuration_class: ClassVar[type[WebhookTriggerConfiguration]]
+    configuration_class: ClassVar[type[WebhookConfiguration]]
 
     async def pre_validate(
         self, headers: Mapping[str, str]
@@ -239,8 +237,8 @@ class BaseWebhookProvider(ABC):
 
     def validate_configuration(
         self,
-        configuration: WebhookTriggerConfiguration | Mapping[str, Any],
-    ) -> WebhookTriggerConfiguration:
+        configuration: WebhookConfiguration | Mapping[str, Any],
+    ) -> WebhookConfiguration:
         """Strictly validate a configuration for persistence.
 
         Args:
@@ -257,10 +255,6 @@ class BaseWebhookProvider(ABC):
             return self.configuration_class.model_validate(configuration)
         if isinstance(configuration, self.configuration_class):
             return configuration
-        if type(configuration) is WebhookTriggerConfiguration:
-            return self.configuration_class.model_validate(
-                configuration.model_dump()
-            )
         raise TypeError(
             "Expected a mapping or an instance of "
             f"{self.configuration_class.__name__}, got "

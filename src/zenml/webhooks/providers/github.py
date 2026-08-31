@@ -21,12 +21,13 @@ from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
+    WebhookConfiguration,
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookTargetEvent,
-    WebhookTriggerConfiguration,
     authenticate_hmac_sha256,
 )
+from zenml.webhooks.providers.types import BuiltinWebhookType
 
 if TYPE_CHECKING:
     from zenml.models import WebhookTriggerResponse
@@ -151,16 +152,12 @@ GitHubWebhookTargetEvent: TypeAlias = Annotated[
     MergedPullRequest | WorkflowRunCompleted | PushEvent | ReleasePublished,
     Field(discriminator="type"),
 ]
-GitHubWebhookEventConfiguration = GitHubWebhookTargetEvent
 
 
-class GitHubWebhookTriggerConfiguration(WebhookTriggerConfiguration):
+class GitHubWebhookConfiguration(WebhookConfiguration):
     """Typed configuration for a GitHub webhook trigger."""
 
     target_events: list[GitHubWebhookTargetEvent] = Field(min_length=1)
-
-
-GitHubWebhookConfiguration = GitHubWebhookTriggerConfiguration
 
 
 StringFilter = str | list[str] | None
@@ -331,8 +328,8 @@ class GitHubReleasePublishedEvent(GitHubSemanticEvent):
 class GitHubWebhookProvider(BaseWebhookProvider):
     """Provider for authenticated and semantically matched GitHub webhooks."""
 
-    webhook_type = "github"
-    configuration_class = GitHubWebhookTriggerConfiguration
+    webhook_type = BuiltinWebhookType.GITHUB
+    configuration_class = GitHubWebhookConfiguration
 
     async def pre_validate(
         self, headers: Mapping[str, str]
@@ -388,9 +385,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
                 trigger.id,
             )
             return []
-        return cast(
-            GitHubWebhookTriggerConfiguration, configuration
-        ).target_events
+        return cast(GitHubWebhookConfiguration, configuration).target_events
 
     def match_triggers(
         self,

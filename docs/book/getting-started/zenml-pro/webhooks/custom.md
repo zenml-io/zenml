@@ -10,9 +10,8 @@ a dedicated ZenML webhook provider.
 
 Custom webhooks preserve the sender's event name and JSON payload for consumers.
 They do not define a ZenML semantic event catalog or provider-level payload
-filters. Currently, a [custom webhook trigger](../triggers.md#custom-webhook-triggers)
-uses an empty `target_events` list and matches every accepted delivery for its
-webhook.
+filters. A [custom webhook trigger](../triggers.md#custom-webhook-triggers)
+uses an empty configuration and matches every accepted delivery for its webhook.
 
 ## Create a custom webhook
 
@@ -27,14 +26,15 @@ Via the SDK:
 
 ```python
 from zenml.client import Client
+from zenml.webhooks.providers import BuiltinWebhookType
 
 client = Client()
 result = client.create_webhook(
     name="custom-events",
-    webhook_type="custom",
+    webhook_type=BuiltinWebhookType.CUSTOM,
 )
 
-endpoint_url = result.webhook.endpoint_url
+endpoint_url = result.endpoint_url
 signing_secret = result.secret.get_secret_value()
 ```
 

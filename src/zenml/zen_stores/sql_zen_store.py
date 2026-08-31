@@ -77,10 +77,8 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
-    SecretStr,
     SerializeAsAny,
     field_validator,
     model_validator,
@@ -403,6 +401,7 @@ from zenml.utils.string_utils import (
     validate_name,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.webhooks.intake import WebhookIntakeConfig
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -512,17 +511,6 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 _WEBHOOK_SECRET_VALUE_KEY = "secret"
-
-
-class _WebhookIntakeConfig(BaseModel):
-    """Internal webhook configuration required to authenticate one delivery."""
-
-    model_config = ConfigDict(frozen=True)
-
-    webhook_type: str
-    active: bool
-    project_id: UUID
-    secret: SecretStr
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
@@ -8320,9 +8308,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 raise
             return WebhookCreateResponse(
-                webhook=schema.to_model(
+                **schema.to_model(
                     include_metadata=True, include_resources=True
-                ),
+                ).model_dump(),
                 secret=(
                     PlainSerializedSecretStr(secret)
                     if generated_secret
@@ -8488,7 +8476,7 @@ class SqlZenStore(BaseZenStore):
         self,
         webhook_id: UUID,
         expected_webhook_type: str,
-    ) -> _WebhookIntakeConfig:
+    ) -> WebhookIntakeConfig:
         """Get the internal configuration required for webhook intake.
 
         Args:
@@ -8517,7 +8505,7 @@ class SqlZenStore(BaseZenStore):
         if webhook_type != expected_webhook_type:
             raise KeyError(f"Webhook {webhook_id} not found.")
         secret = self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
-        return _WebhookIntakeConfig(
+        return WebhookIntakeConfig(
             webhook_type=webhook_type,
             active=active,
             project_id=project_id,

@@ -221,7 +221,6 @@ from zenml.models import (
     WebhookResponse,
     WebhookRotateSecretRequest,
     WebhookSecretResponse,
-    WebhookTriggerConfiguration,
     WebhookTriggerRequest,
     WebhookTriggerResponse,
     WebhookTriggerUpdate,
@@ -240,7 +239,7 @@ from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
 from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
-from zenml.webhooks import get_webhook_provider
+from zenml.webhooks import WebhookConfiguration, get_webhook_provider
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
@@ -4729,7 +4728,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         webhook: str | UUID,
-        configuration: Mapping[str, Any] | WebhookTriggerConfiguration,
+        configuration: Mapping[str, Any] | WebhookConfiguration,
         project_id: str | UUID | None = None,
         active: bool = True,
         concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
@@ -4763,7 +4762,7 @@ class Client(metaclass=ClientMetaClass):
                 active=active,
                 concurrency=concurrency,
                 webhook_id=webhook_model.id,
-                configuration=validated_configuration,
+                configuration=validated_configuration.model_dump(mode="json"),
             )
         )
         assert isinstance(trigger, WebhookTriggerResponse)
@@ -4775,9 +4774,7 @@ class Client(metaclass=ClientMetaClass):
         name: str | None = None,
         active: bool | None = None,
         concurrency: TriggerRunConcurrency | None = None,
-        configuration: Mapping[str, Any]
-        | WebhookTriggerConfiguration
-        | None = None,
+        configuration: Mapping[str, Any] | WebhookConfiguration | None = None,
     ) -> WebhookTriggerResponse:
         """Update a webhook trigger.
 
@@ -4797,14 +4794,14 @@ class Client(metaclass=ClientMetaClass):
             trigger_name_id_or_prefix=trigger_name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        validated_configuration = WebhookTriggerConfiguration.model_validate(
-            trigger.configuration
-        )
+        validated_configuration = trigger.configuration
         if configuration is not None:
             webhook_model = self.get_webhook(cast(UUID, trigger.webhook_id))
-            validated_configuration = get_webhook_provider(
-                webhook_model.webhook_type
-            ).validate_configuration(configuration)
+            validated_configuration = (
+                get_webhook_provider(webhook_model.webhook_type)
+                .validate_configuration(configuration)
+                .model_dump(mode="json")
+            )
 
         response = self.zen_store.update_trigger(
             trigger_id=trigger.id,

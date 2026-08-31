@@ -65,7 +65,7 @@ result = client.create_webhook(
     webhook_type="github",
 )
 
-webhook = result.webhook
+webhook = result
 print(webhook.endpoint_url)
 ```
 

@@ -13,15 +13,10 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.models import (
-    GitHubWebhookConfiguration,
-    GitHubWebhookEvent,
-    MergedPullRequest,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
-    PushEvent,
-    ReleasePublished,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
@@ -31,6 +26,13 @@ from zenml.models import (
     TriggerSnapshotDispatchState,
     WebhookTriggerRequest,
     WebhookTriggerUpdate,
+)
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    GitHubWebhookEvent,
+    MergedPullRequest,
+    PushEvent,
+    ReleasePublished,
     WorkflowRunCompleted,
 )
 

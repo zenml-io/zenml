@@ -78,9 +78,7 @@ class ResourceType(StrEnum):
     # Deactivated for now
     # USER = "user"
     TRIGGER = "trigger"
-    # Cloud RBAC already exposes this resource under its original name. Keep
-    # that RBAC identity even though the core API calls the resource Webhook.
-    WEBHOOK_INTEGRATION = "webhook_integration"
+    WEBHOOK = "webhook"
 
     def is_project_scoped(self) -> bool:
         """Check if a resource type is project scoped.

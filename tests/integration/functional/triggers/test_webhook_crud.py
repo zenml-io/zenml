@@ -29,20 +29,21 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     """Store enforces immutable ownership and guarded webhook deletion."""
     store = clean_client.zen_store
     project_id = clean_client.active_project.id
-    webhook = store.create_webhook(
+    created_webhook = store.create_webhook(
         WebhookRequest(
             project=project_id,
             name=sample_name("custom-webhook"),
             webhook_type="custom",
             active=False,
         )
-    ).webhook
+    )
+    webhook = store.get_webhook(created_webhook.id)
     trigger = store.create_trigger(
         WebhookTriggerRequest(
             project=project_id,
             name=sample_name("webhook-trigger"),
             webhook_id=webhook.id,
-            configuration={"target_events": []},
+            configuration={},
             concurrency=TriggerRunConcurrency.SUBMIT,
             active=True,
         )
@@ -53,7 +54,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     assert trigger.webhook_id == webhook.id
     assert trigger.webhook == webhook
     assert trigger.active is True
-    assert trigger.configuration["target_events"] == []
+    assert trigger.configuration == {}
 
     updated = store.update_trigger(
         trigger_id=trigger.id,
@@ -61,7 +62,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
             name=sample_name("webhook-trigger-updated"),
             active=False,
             concurrency=TriggerRunConcurrency.SKIP,
-            configuration={"target_events": []},
+            configuration={},
         ),
     )
     assert updated.webhook_id == webhook.id
@@ -81,7 +82,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
                 project=other_project.id,
                 name=sample_name("cross-project-webhook-trigger"),
                 webhook_id=webhook.id,
-                configuration={"target_events": []},
+                configuration={},
             )
         )
 
@@ -106,10 +107,11 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     """The public client accepts generic full-replacement configuration."""
     _require_rest_store(clean_client)
 
-    webhook = clean_client.create_webhook(
+    created_webhook = clean_client.create_webhook(
         name=sample_name("github-webhook"),
         webhook_type="github",
-    ).webhook
+    )
+    webhook = clean_client.get_webhook(created_webhook.id)
     trigger = clean_client.create_webhook_trigger(
         name=sample_name("github-webhook-trigger"),
         webhook=webhook.id,
@@ -153,12 +155,13 @@ def test_webhook_trigger_rest_endpoint_validation(clean_client):
     """The REST API validates webhook configurations and trigger types."""
     store = _require_rest_store(clean_client)
     project_id = clean_client.active_project.id
-    webhook = clean_client.create_webhook(
+    created_webhook = clean_client.create_webhook(
         name=sample_name("github-validation-webhook"),
         webhook_type="github",
-    ).webhook
+    )
+    webhook = clean_client.get_webhook(created_webhook.id)
 
-    with pytest.raises(ValueError, match="at least one target event"):
+    with pytest.raises(ValueError, match="target_events"):
         store.create_trigger(
             WebhookTriggerRequest(
                 project=project_id,
