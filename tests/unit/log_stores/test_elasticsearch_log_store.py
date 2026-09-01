@@ -126,10 +126,39 @@ def search(mocker):
     return _install
 
 
-def test_first_page_reads_the_newest_entries(
+def test_first_page_reads_the_oldest_entries(
     log_store, logs_model_factory, search
 ):
-    """Without a cursor, the newest entries are returned oldest first."""
+    """When start is omitted, Elasticsearch reads from the oldest end."""
+    requests = search(
+        make_payload(
+            [
+                make_hit(at(1), "first"),
+                make_hit(at(2), "second"),
+                make_hit(at(3), "third"),
+            ]
+        )
+    )
+
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+    assert requests[0]["sort"] == [
+        {"timestamp_nanos": "asc"},
+        {"sequence_number": "asc"},
+    ]
+    assert requests[0]["size"] == log_store.default_query_size
+    assert "search_after" not in requests[0]
+    assert [entry.message for entry in page.items] == [
+        "first",
+        "second",
+        "third",
+    ]
+
+
+def test_a_read_from_the_newest_end_returns_its_page_chronologically(
+    log_store, logs_model_factory, search
+):
+    """The starting end picks where a read begins, not how a page is ordered."""
     requests = search(
         make_payload(
             [
@@ -140,14 +169,15 @@ def test_first_page_reads_the_newest_entries(
         )
     )
 
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    page = log_store.fetch(
+        logs_model_factory(log_store_id=log_store.id),
+        start="newest",
+    )
 
     assert requests[0]["sort"] == [
         {"timestamp_nanos": "desc"},
         {"sequence_number": "desc"},
     ]
-    assert requests[0]["size"] == log_store.default_query_size
-    assert "search_after" not in requests[0]
     assert [entry.message for entry in page.items] == [
         "first",
         "second",
@@ -165,8 +195,8 @@ def test_older_page_searches_after_the_oldest_entry_seen(
         make_payload([make_hit(at(1), "first")]),
     )
 
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, before=first.before)
+    first = log_store.fetch(logs, start="newest")
+    second = log_store.fetch(logs, start="newest", before=first.before)
 
     assert requests[1]["search_after"] == [at(2), 0]
     assert requests[1]["sort"][0] == {"timestamp_nanos": "desc"}
@@ -199,8 +229,8 @@ def test_entries_of_one_nanosecond_are_ordered_by_their_sequence(
     requests = search(
         make_payload(
             [
-                make_hit(at(2), "second", sequence_number=1),
                 make_hit(at(2), "first", sequence_number=0),
+                make_hit(at(2), "second", sequence_number=1),
             ]
         ),
         make_payload([]),
@@ -213,8 +243,10 @@ def test_entries_of_one_nanosecond_are_ordered_by_their_sequence(
     assert requests[1]["search_after"] == [at(2), 1]
 
 
-def test_empty_tail_keeps_its_cursor(log_store, logs_model_factory, search):
-    """A tail that finds nothing new can still be resumed later."""
+def test_an_empty_page_reports_no_cursor(
+    log_store, logs_model_factory, search
+):
+    """No hits means there is no sort value to continue from."""
     logs = logs_model_factory(log_store_id=log_store.id)
     search(
         make_payload([make_hit(at(2), "second")]),
@@ -225,26 +257,21 @@ def test_empty_tail_keeps_its_cursor(log_store, logs_model_factory, search):
     second = log_store.fetch(logs, after=first.after)
 
     assert second.items == []
-    assert second.after == first.after
+    assert second.after is None
+    assert second.before is None
 
 
-def test_empty_first_page_can_be_tailed_from_the_start(
+def test_an_empty_first_page_reports_no_cursor(
     log_store, logs_model_factory, search
 ):
-    """A pipeline that has not logged yet still gets a usable tail cursor."""
-    logs = logs_model_factory(
-        log_store_id=log_store.id,
-        created=datetime(2026, 1, 1, 12, tzinfo=timezone.utc),
-    )
-    requests = search(make_payload([]), make_payload([]))
+    """A stream with nothing in it has no page to continue from."""
+    search(make_payload([]))
 
-    page = log_store.fetch(logs)
-    log_store.fetch(logs, after=page.after)
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
-    assert page.after is not None
-    # `search_after` is exclusive, so the very first entry of the stream has to
-    # stay in range.
-    assert requests[1]["search_after"] == [NOON - 1, 0]
+    assert page.items == []
+    assert page.after is None
+    assert page.before is None
 
 
 def test_filters_are_pushed_into_the_query(
@@ -264,7 +291,14 @@ def test_filters_are_pushed_into_the_query(
     )
 
     clauses = requests[0]["query"]["bool"]["filter"]
-    assert {"match_phrase": {"message": "failed to connect"}} in clauses
+    assert {
+        "wildcard": {
+            "message": {
+                "value": "*failed to connect*",
+                "case_insensitive": True,
+            }
+        }
+    } in clauses
     assert {"range": {"severity_number": {"gte": 13}}} in clauses
     assert {
         "range": {
@@ -300,9 +334,9 @@ def test_severity_number_is_mapped_to_a_log_level(
     search(
         make_payload(
             [
-                make_hit(at(3), "c", severity_number=21),
-                make_hit(at(2), "b", severity_number=17),
                 make_hit(at(1), "a"),
+                make_hit(at(2), "b", severity_number=17),
+                make_hit(at(3), "c", severity_number=21),
             ]
         )
     )

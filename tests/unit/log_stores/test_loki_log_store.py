@@ -132,10 +132,35 @@ def query(mocker):
     return _install
 
 
-def test_first_page_reads_the_newest_entries(
+def test_first_page_reads_the_oldest_entries(
     log_store, logs_model_factory, query
 ):
-    """Without a cursor, the newest entries are returned oldest first."""
+    """When start is omitted, Loki reads from the oldest end."""
+    requests = query(
+        make_payload(
+            [
+                make_entry(at(1), "first"),
+                make_entry(at(2), "second"),
+                make_entry(at(3), "third"),
+            ]
+        )
+    )
+
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+    assert requests[0]["direction"] == "forward"
+    assert requests[0]["limit"] == str(log_store.default_query_size)
+    assert [entry.message for entry in page.items] == [
+        "first",
+        "second",
+        "third",
+    ]
+
+
+def test_a_read_from_the_newest_end_returns_its_page_chronologically(
+    log_store, logs_model_factory, query
+):
+    """The starting end picks where a read begins, not how a page is ordered."""
     requests = query(
         make_payload(
             [
@@ -146,10 +171,12 @@ def test_first_page_reads_the_newest_entries(
         )
     )
 
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    page = log_store.fetch(
+        logs_model_factory(log_store_id=log_store.id),
+        start="newest",
+    )
 
     assert requests[0]["direction"] == "backward"
-    assert requests[0]["limit"] == str(log_store.default_query_size)
     assert [entry.message for entry in page.items] == [
         "first",
         "second",
@@ -233,8 +260,10 @@ def test_newer_page_resumes_at_the_newest_entry(
     assert [entry.message for entry in second.items] == ["third"]
 
 
-def test_empty_tail_keeps_its_cursor(log_store, logs_model_factory, query):
-    """A tail that finds nothing new can still be resumed later."""
+def test_an_empty_page_reports_no_cursor(
+    log_store, logs_model_factory, query
+):
+    """No entries means there is no timestamp to continue from."""
     logs = logs_model_factory(log_store_id=log_store.id)
     query(
         make_payload([make_entry(at(2), "second")]),
@@ -245,24 +274,21 @@ def test_empty_tail_keeps_its_cursor(log_store, logs_model_factory, query):
     second = log_store.fetch(logs, after=first.after)
 
     assert second.items == []
-    assert second.after == first.after
+    assert second.after is None
+    assert second.before is None
 
 
-def test_empty_first_page_can_be_tailed_from_the_start(
+def test_an_empty_first_page_reports_no_cursor(
     log_store, logs_model_factory, query
 ):
-    """A pipeline that has not logged yet still gets a usable tail cursor."""
-    logs = logs_model_factory(
-        log_store_id=log_store.id,
-        created=datetime(2026, 1, 1, 12, tzinfo=timezone.utc),
-    )
-    requests = query(make_payload(), make_payload())
+    """A stream with nothing in it has no page to continue from."""
+    query(make_payload())
 
-    page = log_store.fetch(logs)
-    log_store.fetch(logs, after=page.after)
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
-    assert page.after is not None
-    assert requests[1]["start"] == requests[0]["start"]
+    assert page.items == []
+    assert page.after is None
+    assert page.before is None
 
 
 def test_filters_are_pushed_into_the_query(
@@ -405,5 +431,5 @@ def test_a_failed_query_with_a_fine_status_is_an_error(
         return_value=StubResponse({"status": "error", "error": "parse error"}),
     )
 
-    with pytest.raises(RuntimeError, match="parse error"):
+    with pytest.raises(RuntimeError, match="failed to run"):
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))

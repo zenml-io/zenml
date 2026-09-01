@@ -14,6 +14,7 @@
 """Grafana Loki log store implementation."""
 
 import base64
+import json
 from datetime import datetime, timezone
 from hashlib import blake2b
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -126,6 +127,7 @@ class LokiLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -133,28 +135,28 @@ class LokiLogStore(OtelLogStore):
     ) -> LogsEntriesResponse:
         """Fetch a page of log entries from Loki.
 
-        Every call issues exactly one range query. Loki has no continuation
-        token, so a page is bounded by a timestamp taken from the entry at the
-        edge of the previous page. That boundary is inclusive on the side the
-        scan resumes from, so the entries sharing it come back a second time and
-        are dropped by their keys, which the cursor carries.
-
-        Filters are pushed down into LogQL. `search` therefore follows Loki's
-        line filter, which matches a substring anywhere in the message.
+        Loki has no continuation token, so a page is bounded by a timestamp
+        taken from the entry at the edge of the previous page. That is the
+        query API's own capability: `start`/`end` plus `direction`. The
+        boundary is inclusive on the side the scan resumes from, so entries
+        sharing it come back a second time and are dropped by their keys.
 
         Args:
             logs_model: The logs model containing run and step metadata.
+            start: Which end of the stream to start reading from. Omit it
+                to read from the oldest end.
             limit: Maximum number of log entries to return.
-            before: Cursor pointing at entries older than a previous page.
-            after: Cursor pointing at entries newer than a previous page.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
             filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            A page of log entries, oldest first, with cursors for the adjacent
-            pages.
+            A page of log entries, oldest first.
 
         Raises:
-            ValueError: If the logs model does not belong to this log store.
+            ValueError: If the logs model does not belong to this log store,
+                or if both cursors are set.
+            RuntimeError: If Loki does not answer with a usable result.
         """
         if logs_model.log_store_id != self.id:
             raise ValueError(
@@ -163,24 +165,26 @@ class LokiLogStore(OtelLogStore):
                 "which is the one that can read them back."
             )
 
+        if before is not None and after is not None:
+            raise ValueError("Pass only one of `before` and `after`.")
+
+        if after is not None:
+            descending = False
+        elif before is not None:
+            descending = True
+        else:
+            descending = start == "newest"
+
         limit = min(self.resolve_limit(limit), LOKI_MAX_PAGE_SIZE)
         filter_ = filter_ or LogsEntriesFilter()
-
-        # Scanning forward in time is only useful when paging towards newer
-        # entries; a first page and a step back through history both want the
-        # newest matching entries first.
-        descending = after is None
         token = before or after
-        cursor = self.decode_cursor(token) if token else {}
+        cursor = json.loads(self.decode_cursor(token)) if token else {}
 
         start_ns = to_unix_nanos(
             filter_.since or to_utc_timezone(logs_model.created)
         )
         end_ns = to_unix_nanos(filter_.until or utc_now(tz_aware=True))
         if watermark := cursor.get("timestamp"):
-            # `start` is inclusive and `end` is exclusive, so resuming at a
-            # watermark means nudging the exclusive side past it to keep the
-            # boundary entries in range for deduplication.
             if descending:
                 end_ns = min(end_ns, int(watermark) + 1)
             else:
@@ -202,15 +206,6 @@ class LokiLogStore(OtelLogStore):
             ]
             entries.sort(key=lambda entry: entry[0])
 
-        # An empty page has no entry to anchor a cursor to, so paging stays
-        # where it was: the caller keeps the cursor it arrived with. A first
-        # page that is empty because the pipeline has not logged anything yet
-        # gets a cursor at the start of the window instead, so that a tail can
-        # pick the stream up as it fills.
-        newer_fallback = after or (
-            None if before else self.encode_cursor(timestamp=start_ns)
-        )
-
         return LogsEntriesResponse(
             items=[entry[2] for entry in entries],
             before=self._get_boundary_cursor(entries, oldest=True)
@@ -218,7 +213,7 @@ class LokiLogStore(OtelLogStore):
             else None,
             after=self._get_boundary_cursor(entries, oldest=False)
             if entries
-            else newer_fallback,
+            else None,
         )
 
     def _get_boundary_cursor(
@@ -236,12 +231,17 @@ class LokiLogStore(OtelLogStore):
         """
         timestamp = entries[0][0] if oldest else entries[-1][0]
         return self.encode_cursor(
-            timestamp=timestamp,
-            keys=[
-                key
-                for entry_timestamp, key, _ in entries
-                if entry_timestamp == timestamp
-            ][:BOUNDARY_KEY_LIMIT],
+            json.dumps(
+                {
+                    "timestamp": timestamp,
+                    "keys": [
+                        key
+                        for entry_timestamp, key, _ in entries
+                        if entry_timestamp == timestamp
+                    ][:BOUNDARY_KEY_LIMIT],
+                },
+                separators=(",", ":"),
+            )
         )
 
     def _build_query(
@@ -299,30 +299,47 @@ class LokiLogStore(OtelLogStore):
         Raises:
             RuntimeError: If Loki rejects or fails the query.
         """
-        response = requests.get(
-            f"{self.config.query_url}{LOKI_QUERY_RANGE_PATH}",
-            headers=self._get_headers(),
-            params={
-                "query": query,
-                "start": str(start_ns),
-                "end": str(end_ns),
-                "limit": str(limit),
-                "direction": "backward" if descending else "forward",
-            },
-            timeout=QUERY_TIMEOUT,
-        )
+        try:
+            response = requests.get(
+                f"{self.config.query_url}{LOKI_QUERY_RANGE_PATH}",
+                headers=self._get_headers(),
+                params={
+                    "query": query,
+                    "start": str(start_ns),
+                    "end": str(end_ns),
+                    "limit": str(limit),
+                    "direction": "backward" if descending else "forward",
+                },
+                timeout=QUERY_TIMEOUT,
+            )
+        except requests.RequestException as e:
+            logger.exception("Loki log query failed")
+            raise RuntimeError(
+                "Could not reach Loki to read these logs."
+            ) from e
 
         if response.status_code != 200:
+            logger.error(
+                "Loki rejected a log query with %s: %s",
+                response.status_code,
+                response.text[:500],
+            )
             raise RuntimeError(
-                f"Failed to fetch logs from Loki: {response.status_code} - "
-                f"{response.text[:200]}"
+                f"Loki rejected the log query with status "
+                f"{response.status_code}."
             )
 
-        payload = response.json()
-        # Loki reports a failed query in the body of an otherwise fine
-        # response, so the status code alone does not prove there are entries.
+        try:
+            payload = response.json()
+        except ValueError as e:
+            raise RuntimeError(
+                "Loki returned a response that could not be read as a log "
+                "query result."
+            ) from e
+
         if payload.get("status") != "success":
-            raise RuntimeError(f"Loki failed to run the query: {payload}")
+            logger.error("Loki failed to run a log query: %s", payload)
+            raise RuntimeError("Loki failed to run the query.")
 
         # A response stream is one combination of labels and structured
         # metadata, not one log stream, and OTLP ingestion puts enough per-entry

@@ -115,11 +115,11 @@ Documents are written with the bulk `create` action and no document ID, which a 
 
 #### In the ZenML dashboard
 
-Logs are fetched from Elasticsearch when viewing step details. Each fetch is a single search that returns one page and the cursors for the pages on either side of it. Pages are read newest first, since that is where a failure usually is.
+Logs are fetched from Elasticsearch when viewing step details. Each fetch is a single search. Omit `start` to read from the oldest end of the stream; pass `start=newest` for the last page. Entries on a page are always oldest to newest.
 
-Because the nanosecond timestamp and the sequence number together are a total order over a log stream, `search_after` walks it exactly: no page overlaps another and nothing has to be deduplicated.
+Because the nanosecond timestamp and the sequence number together are a total order over a log stream, paging uses Elasticsearch's `search_after` on those sort values — the cluster's own continuation, not a timestamp we invented. `before` and `after` both work. An empty page has no cursor.
 
-Searching and filtering by level or time is done by the cluster. A search term becomes a `match_phrase` on the message, which is analyzed, so it matches whole words rather than a fragment in the middle of one. A page holds at most 10000 entries, which is the default `index.max_result_window`.
+Searching and filtering by level or time is done by the cluster. A search term becomes a `wildcard` on the message, so it matches a substring. A page holds at most 10000 entries, which is the default `index.max_result_window`.
 
 #### In Kibana
 

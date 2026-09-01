@@ -14,6 +14,7 @@
 """Elasticsearch log store implementation."""
 
 import base64
+import json
 from typing import Any, Dict, List, Optional, cast
 
 import requests
@@ -38,11 +39,7 @@ from zenml.models import (
     LogsEntriesResponse,
     LogsResponse,
 )
-from zenml.utils.time_utils import (
-    from_unix_nanos,
-    to_unix_nanos,
-    to_utc_timezone,
-)
+from zenml.utils.time_utils import from_unix_nanos, to_unix_nanos
 
 logger = get_logger(__name__)
 
@@ -116,6 +113,7 @@ class ElasticsearchLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -123,29 +121,26 @@ class ElasticsearchLogStore(OtelLogStore):
     ) -> LogsEntriesResponse:
         """Fetch a page of log entries from Elasticsearch.
 
-        Every call issues exactly one search. Documents are written with a
-        nanosecond timestamp and a sequence number, which together are a total
-        order over a log stream, so `search_after` walks it exactly: no page
-        overlaps another and nothing has to be deduplicated.
-
-        Filters are pushed down into the search query. `search` becomes a phrase
-        match, which is analyzed, so it matches whole words rather than a
-        substring in the middle of one.
+        Documents are written with a nanosecond timestamp and a sequence
+        number, which together are a total order, so `search_after` on those
+        sort values is the cluster's own continuation.
 
         Args:
             logs_model: The logs model containing run and step metadata.
+            start: Which end of the stream to start reading from. Omit it
+                to read from the oldest end.
             limit: Maximum number of log entries to return.
-            before: Cursor pointing at entries older than a previous page.
-            after: Cursor pointing at entries newer than a previous page.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
             filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            A page of log entries, oldest first, with cursors for the adjacent
-            pages.
+            A page of log entries, oldest first.
 
         Raises:
-            ValueError: If the logs model does not belong to this log store.
-            RuntimeError: If the cluster rejects the search request.
+            ValueError: If the logs model does not belong to this log store,
+                or if both cursors are set.
+            RuntimeError: If the cluster does not answer with a usable result.
         """
         if logs_model.log_store_id != self.id:
             raise ValueError(
@@ -154,14 +149,20 @@ class ElasticsearchLogStore(OtelLogStore):
                 "which is the one that can read them back."
             )
 
+        if before is not None and after is not None:
+            raise ValueError("Pass only one of `before` and `after`.")
+
+        if after is not None:
+            descending = False
+        elif before is not None:
+            descending = True
+        else:
+            descending = start == "newest"
+
         limit = min(self.resolve_limit(limit), ELASTICSEARCH_MAX_PAGE_SIZE)
         filter_ = filter_ or LogsEntriesFilter()
-
-        # Sorting towards older entries is what a first page and a step back
-        # through history both want; only a tail scans the other way.
-        descending = after is None
         token = before or after
-        cursor = self.decode_cursor(token) if token else {}
+        sort_values = json.loads(self.decode_cursor(token)) if token else None
 
         order = "desc" if descending else "asc"
         body: Dict[str, Any] = {
@@ -171,27 +172,43 @@ class ElasticsearchLogStore(OtelLogStore):
                 {SEQUENCE_FIELD: order},
             ],
             "query": self._build_query(logs_model, filter_),
-            # Counting every match would cost a second pass over the index for
-            # a number the cursors make unnecessary.
             "track_total_hits": False,
         }
-        if sort_values := cursor.get("sort"):
+        if sort_values is not None:
             body["search_after"] = sort_values
 
-        response = requests.post(
-            f"{self.config.url.rstrip('/')}/{self.config.index}/_search",
-            headers=self._get_headers(),
-            json=body,
-            timeout=SEARCH_TIMEOUT,
-        )
+        try:
+            response = requests.post(
+                f"{self.config.url.rstrip('/')}/{self.config.index}/_search",
+                headers=self._get_headers(),
+                json=body,
+                timeout=SEARCH_TIMEOUT,
+            )
+        except requests.RequestException as e:
+            logger.exception("Elasticsearch log search failed")
+            raise RuntimeError(
+                "Could not reach Elasticsearch to read these logs."
+            ) from e
 
         if response.status_code != 200:
+            logger.error(
+                "Elasticsearch rejected a log search with %s: %s",
+                response.status_code,
+                response.text[:500],
+            )
             raise RuntimeError(
-                f"Failed to fetch logs from Elasticsearch: "
-                f"{response.status_code} - {response.text[:200]}"
+                f"Elasticsearch rejected the log search with status "
+                f"{response.status_code}."
             )
 
-        hits = response.json().get("hits", {}).get("hits", [])
+        try:
+            hits = response.json().get("hits", {}).get("hits", [])
+        except ValueError as e:
+            raise RuntimeError(
+                "Elasticsearch returned a response that could not be read "
+                "as a log search result."
+            ) from e
+
         if descending:
             hits.reverse()
 
@@ -201,25 +218,10 @@ class ElasticsearchLogStore(OtelLogStore):
             if entry is not None
         ]
 
-        # An empty page has no hit to anchor a cursor to, so paging stays where
-        # it was: the caller keeps the cursor it arrived with. A first page that
-        # is empty because the pipeline has not logged anything yet gets a
-        # cursor at the start of the window instead, so that a tail can pick the
-        # stream up as it fills. `search_after` is exclusive, hence the anchor
-        # one nanosecond short of the window.
-        window_start = filter_.since or to_utc_timezone(logs_model.created)
-        newer_fallback = after or (
-            None
-            if before
-            else self.encode_cursor(sort=[to_unix_nanos(window_start) - 1, 0])
-        )
-
         return LogsEntriesResponse(
             items=entries,
             before=self._get_cursor(hits, oldest=True) if hits else None,
-            after=self._get_cursor(hits, oldest=False)
-            if hits
-            else newer_fallback,
+            after=self._get_cursor(hits, oldest=False) if hits else None,
         )
 
     def _get_cursor(self, hits: List[Dict[str, Any]], oldest: bool) -> str:
@@ -234,7 +236,7 @@ class ElasticsearchLogStore(OtelLogStore):
         """
         hit = hits[0] if oldest else hits[-1]
 
-        return self.encode_cursor(sort=hit["sort"])
+        return self.encode_cursor(json.dumps(hit["sort"]))
 
     def _build_query(
         self, logs_model: "LogsResponse", filter_: LogsEntriesFilter
@@ -275,7 +277,21 @@ class ElasticsearchLogStore(OtelLogStore):
             )
 
         if filter_.search:
-            clauses.append({"match_phrase": {MESSAGE_FIELD: filter_.search}})
+            escaped = (
+                filter_.search.replace("\\", "\\\\")
+                .replace("*", "\\*")
+                .replace("?", "\\?")
+            )
+            clauses.append(
+                {
+                    "wildcard": {
+                        MESSAGE_FIELD: {
+                            "value": f"*{escaped}*",
+                            "case_insensitive": True,
+                        }
+                    }
+                }
+            )
 
         return {"bool": {"filter": clauses}}
 

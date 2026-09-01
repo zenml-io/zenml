@@ -102,11 +102,11 @@ Whichever credentials are configured authenticate both ingestion and queries, so
 
 #### In the ZenML dashboard
 
-Logs are fetched from Loki when viewing step details. Each fetch is a single range query that returns one page and the cursors for the pages on either side of it, so scrolling through a long step costs one query per page. Pages are read newest first, since that is where a failure usually is.
+Logs are fetched from Loki when viewing step details. Each fetch is a single range query that returns one page. Omit `start` to read from the oldest end of the stream; pass `start=newest` for the last page. Entries on a page are always oldest to newest.
 
-Loki has no continuation token, so a page is bounded by the timestamp of the entry at the edge of the previous page. That boundary is inclusive, which means the entries sitting exactly on it come back a second time and are dropped by their content, at nanosecond resolution.
+Loki has no continuation token, so the cursor is a timestamp watermark from the edge of the page — that is what LogQL can express. `before` continues towards older entries, `after` towards newer ones. An empty page has no cursor.
 
-Searching and filtering by level or time is done by Loki. A search term becomes a LogQL line filter, so unlike Datadog's token-based search it matches a substring anywhere in a message. A level filter becomes a comparison on the `severity_number` structured metadata. A page holds at most 5000 entries, which is Loki's default `max_entries_limit_per_query`.
+Searching and filtering by level or time is done by Loki. A search term becomes a LogQL line filter (`|=`), which matches a substring anywhere in a message. A level filter becomes a comparison on the `severity_number` structured metadata. A page holds at most 5000 entries, which is Loki's default `max_entries_limit_per_query`.
 
 {% hint style="info" %}
 Only the service name is an index label; the log ID that identifies a single step's logs is structured metadata. Loki therefore reads the whole `service_name` stream over the time window of the run and filters it. This is fine at the scale of one pipeline run, but a Loki instance shared with high-volume production traffic under the same service name will make those reads slower. Giving ZenML its own `service_name` keeps that stream small.
