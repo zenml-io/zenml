@@ -30,4 +30,8 @@ updates:
       timezone: Europe/Amsterdam
     reviewers: [strickvl]
     labels: [dependencies, internal, no-release-notes]
+    # Must exceed the 3-day `exclude-newer` window in pyproject.toml: uvx reads
+    # that config from the repo root, so a pin newer than 3 days is unresolvable.
+    cooldown:
+      default-days: 7
     target-branch: develop
