@@ -197,6 +197,15 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 - 🌐 **Real-time APIs**: Deploy agents as HTTP services instantly
 - 🚀 **Pipeline deployments**: Transform batch workflows into live services
 
+## 🔁 Recording Production Runs with Kitaru
+
+These pipelines run agents as batch or deployed workloads. Once an agent serves real traffic, [Kitaru](https://docs.zenml.io/kitaru) — ZenML's sibling project for agents — records each run as a session you can replay against your real code with one thing changed (a cheaper model, a different prompt) and diff against the original.
+
+There are two ways in, depending on your framework:
+
+- **Adapters** wrap the agent you already have. Kitaru ships Python adapters for [PydanticAI](https://docs.zenml.io/kitaru/adapters/pydantic-ai), [LangGraph](https://docs.zenml.io/kitaru/adapters/langgraph) (which also covers LangChain agents built with `create_agent`, since those factories return LangGraph runnables) and the [OpenAI Agents SDK](https://docs.zenml.io/kitaru/adapters/openai-agents). For anything else, see [writing a custom adapter](https://docs.zenml.io/kitaru/adapters/custom).
+- **Importers** need no adapter at all: if you already collect traces in Langfuse, LangSmith, Braintrust, Logfire or Arize Phoenix, [import them as sessions](https://docs.zenml.io/kitaru/getting-started/import-your-traces).
+
 ## 📖 Learn More
 
 | Resource | Description |
@@ -207,6 +216,7 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 | 📓 **[Documentation]** | Full ZenML documentation |
 | 📒 **[API Reference]** | Detailed API documentation |
 | ⚽ **[Examples]** | More ZenML examples |
+| 🔁 **[Kitaru Docs]** | Record, replay and evaluate agent runs in production |
 
 [ZenML 101]: https://docs.zenml.io/user-guides/starter-guide
 [Core Concepts]: https://docs.zenml.io/getting-started/core-concepts
@@ -214,6 +224,7 @@ ZenML is an extensible, open-source MLOps framework for creating production-read
 [Documentation]: https://docs.zenml.io/
 [SDK Reference]: https://sdkdocs.zenml.io/
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
+[Kitaru Docs]: https://docs.zenml.io/kitaru
 
 ---
 
