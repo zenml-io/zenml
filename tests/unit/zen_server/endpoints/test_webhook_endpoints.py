@@ -22,11 +22,12 @@ from fastapi import HTTPException, status
 from pydantic import SecretStr
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
+from zenml.dispatcher import EventDispatcher
 from zenml.webhooks import (
     WebhookAuthenticationError,
+    WebhookEvent,
+    WebhookEventHandler,
     WebhookPayloadError,
-    register_webhook_event_consumer,
-    unregister_webhook_event_consumer,
 )
 from zenml.webhooks.providers.github import GitHubWebhookProvider
 from zenml.zen_server.routers import webhook_endpoints as endpoints
@@ -175,11 +176,11 @@ class _Provider:
         )
 
 
-class _Consumer:
+class _Handler(WebhookEventHandler):
     def __init__(self) -> None:
         self.events = []
 
-    def consume(self, event):
+    def handle_webhook_event(self, event: WebhookEvent) -> None:
         self.events.append(event)
 
 
@@ -271,8 +272,9 @@ def test_receive_webhook_event_decision_table(
     )
     provider = _Provider(auth_error=auth_error, payload_error=payload_error)
     _install_dependencies(monkeypatch, store, provider)
-    consumer = _Consumer()
-    register_webhook_event_consumer(consumer)
+    handler = _Handler()
+    dispatcher = EventDispatcher()
+    dispatcher.register_event_handler(handler)
 
     try:
         if expected_status == status.HTTP_202_ACCEPTED:
@@ -284,7 +286,7 @@ def test_receive_webhook_event_decision_table(
             if auth_error is not None:
                 assert error.value.detail == "Invalid webhook authentication."
     finally:
-        unregister_webhook_event_consumer(consumer)
+        dispatcher.unregister_event_handler(handler)
 
     resolved = stored_type == "custom"
     parsed = expected_status in {
@@ -305,8 +307,8 @@ def test_receive_webhook_event_decision_table(
         assert update.error_summary == expected_error
 
     if expected_status == status.HTTP_202_ACCEPTED:
-        assert len(consumer.events) == 1
-        event = consumer.events[0]
+        assert len(handler.events) == 1
+        event = handler.events[0]
         assert event.project_id == store.project_id
         assert event.webhook_id == webhook_id
         assert event.webhook_type == "custom"
@@ -314,4 +316,4 @@ def test_receive_webhook_event_decision_table(
         assert event.delivery_id == "delivery-id"
         assert event.payload == {"event": "ready"}
     else:
-        assert consumer.events == []
+        assert handler.events == []

@@ -15,7 +15,7 @@
 
 from contextlib import nullcontext
 
-from zenml.dispatcher import EventDispatcher
+from zenml.dispatcher import EventDispatcher, PipelineRunStatusUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -13133,8 +13133,11 @@ class SqlZenStore(BaseZenStore):
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
-                dispatcher.handle_run_status_update(
-                    run=pipeline_run.to_model(include_metadata=True)
+                dispatcher.dispatch_event(
+                    PipelineRunStatusUpdate(
+                        run=pipeline_run.to_model(include_metadata=True),
+                        previous_status=previous_status,
+                    )
                 )
 
         if new_status.is_finished and pipeline_run.end_time:

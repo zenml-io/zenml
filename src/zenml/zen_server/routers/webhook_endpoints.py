@@ -32,6 +32,7 @@ from zenml.constants import (
     VERSION_1,
     WEBHOOKS,
 )
+from zenml.dispatcher import EventDispatcher
 from zenml.models import (
     Page,
     WebhookCreateResponse,
@@ -49,7 +50,6 @@ from zenml.webhooks import (
     WebhookPayloadError,
     WebhookPreValidationResult,
     get_webhook_provider,
-    notify_webhook_event_consumers,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -374,5 +374,5 @@ def _receive_webhook_event(
         delivery_id=parsed_event.delivery_id,
         payload=parsed_event.payload,
     )
-    notify_webhook_event_consumers(event)
+    EventDispatcher().dispatch_event(event)
     return Response(status_code=status.HTTP_202_ACCEPTED)

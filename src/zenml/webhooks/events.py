@@ -4,13 +4,11 @@
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from zenml.dispatcher import Event
 
 
-class WebhookEvent(BaseModel):
-    """Trusted immutable event handed to registered consumers."""
-
-    model_config = ConfigDict(frozen=True)
+class WebhookEvent(Event):
+    """Trusted immutable event handed to registered handlers."""
 
     project_id: UUID
     webhook_id: UUID

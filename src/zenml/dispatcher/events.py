@@ -11,15 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Process-wide event dispatch contracts."""
+"""Event envelopes dispatched to process-wide event handlers."""
 
-from zenml.dispatcher.dispatcher import EventDispatcher
-from zenml.dispatcher.events import Event, PipelineRunStatusUpdate
-from zenml.dispatcher.handler import EventHandler
+from pydantic import BaseModel, ConfigDict
 
-__all__ = [
-    "Event",
-    "EventDispatcher",
-    "EventHandler",
-    "PipelineRunStatusUpdate",
-]
+from zenml.enums import ExecutionStatus
+from zenml.models import PipelineRunResponse
+
+
+class Event(BaseModel):
+    """Base class for immutable dispatcher event envelopes."""
+
+    model_config = ConfigDict(frozen=True)
+
+
+class PipelineRunStatusUpdate(Event):
+    """A pipeline run status transition."""
+
+    run: PipelineRunResponse
+    previous_status: ExecutionStatus

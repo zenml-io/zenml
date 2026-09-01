@@ -444,7 +444,7 @@ class ServerConfiguration(BaseModel):
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
-    webhook_event_consumer_sources: list[str] = []
+    webhook_event_handler_sources: list[str] = []
 
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
@@ -653,7 +653,7 @@ class ServerConfiguration(BaseModel):
 
     @field_validator(
         "event_handler_sources",
-        "webhook_event_consumer_sources",
+        "webhook_event_handler_sources",
         mode="before",
     )
     @classmethod

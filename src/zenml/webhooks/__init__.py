@@ -13,13 +13,8 @@
 #  permissions and limitations under the License.
 """Webhook provider and trusted event contracts."""
 
-from zenml.webhooks.consumer import (
-    WebhookEventConsumer,
-    notify_webhook_event_consumers,
-    register_webhook_event_consumer,
-    unregister_webhook_event_consumer,
-)
 from zenml.webhooks.events import WebhookEvent
+from zenml.webhooks.handler import WebhookEventHandler
 from zenml.webhooks.intake import WebhookIntakeConfig
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
@@ -38,15 +33,12 @@ __all__ = [
     "WebhookConfiguration",
     "WebhookAuthenticationError",
     "WebhookEvent",
-    "WebhookEventConsumer",
+    "WebhookEventHandler",
     "WebhookIntakeConfig",
     "WebhookPayloadError",
     "WebhookPreValidationResult",
     "WebhookProviderRegistry",
     "WebhookTargetEvent",
     "get_webhook_provider",
-    "notify_webhook_event_consumers",
-    "register_webhook_event_consumer",
-    "unregister_webhook_event_consumer",
     "webhook_provider_registry",
 ]

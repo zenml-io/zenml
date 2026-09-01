@@ -59,14 +59,14 @@ def test_event_sources_accept_comma_separated_values() -> None:
     """Event extensions can be configured through comma-separated env vars."""
     config = ServerConfiguration(
         event_handler_sources="package.Handler, , package.OtherHandler",
-        webhook_event_consumer_sources="package.First, package.Second, ",
+        webhook_event_handler_sources="package.First, package.Second, ",
     )
 
     assert config.event_handler_sources == [
         "package.Handler",
         "package.OtherHandler",
     ]
-    assert config.webhook_event_consumer_sources == [
+    assert config.webhook_event_handler_sources == [
         "package.First",
         "package.Second",
     ]
@@ -75,4 +75,4 @@ def test_event_sources_accept_comma_separated_values() -> None:
 def test_event_sources_reject_invalid_values() -> None:
     """Invalid extension-source values are not silently discarded."""
     with pytest.raises(ValidationError):
-        ServerConfiguration(webhook_event_consumer_sources={"invalid": True})
+        ServerConfiguration(webhook_event_handler_sources={"invalid": True})

@@ -1152,28 +1152,26 @@ async def register_event_handlers() -> None:
                     )
 
 
-async def register_webhook_event_consumers() -> None:
-    """Load and register process-wide webhook event consumers."""
+async def register_webhook_event_handlers() -> None:
+    """Load and register process-wide webhook event handlers."""
+    from zenml.dispatcher import EventDispatcher
     from zenml.utils import source_utils
-    from zenml.webhooks import (
-        WebhookEventConsumer,
-        register_webhook_event_consumer,
-    )
+    from zenml.webhooks import WebhookEventHandler
 
-    for source in server_config().webhook_event_consumer_sources:
-        logger.info("Registering webhook event consumer %s", source)
+    for source in server_config().webhook_event_handler_sources:
+        logger.info("Registering webhook event handler %s", source)
         try:
-            consumer_cls: type[WebhookEventConsumer] = (
+            handler_cls: type[WebhookEventHandler] = (
                 source_utils.load_and_validate_class(
                     source=source,
-                    expected_class=WebhookEventConsumer,
+                    expected_class=WebhookEventHandler,
                 )
             )
-            consumer = await consumer_cls.create()
-            register_webhook_event_consumer(consumer)
+            handler = await handler_cls.create()
+            EventDispatcher().register_event_handler(handler)
         except Exception as exc:
             logger.exception(
-                "Failed to register webhook event consumer %s",
+                "Failed to register webhook event handler %s",
                 source,
                 exc_info=exc,
             )
