@@ -3,7 +3,10 @@ name: GitHub Actions Security Analysis
 on:
   push:
     branches: [main, develop]
-    paths: [.github/workflows/**, .github/zizmor.yml, .github/zizmor/requirements.txt]
+    paths:
+      - .github/workflows/**
+      - .github/zizmor.yml
+      - .github/zizmor/requirements.txt
   pull_request:
     branches: [main, develop]
     paths:
