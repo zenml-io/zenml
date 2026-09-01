@@ -92,9 +92,9 @@ use:
 - `startswith:` for branch-, tag-, and ref-like fields, such as
   `branch: startswith:release/`.
 
-Values configured for the same field are ORed; different populated fields are
-ANDed. Omitted fields match any value. If a configured field is absent from a
-delivery, it does not match.
+Values configured for the same field use OR logic; different populated fields
+use AND logic. Omitted fields match any value. If a configured field is absent
+from a delivery, it does not match.
 
 For example, this target matches pushes to `main` or any `release/` branch in
 one repository:

@@ -24,7 +24,7 @@ unauthenticated payload to handlers or perform provider side effects in intake.
 
 A successful `2XX` intake response means only that ZenML accepted the trusted
 delivery. The exact success status may vary by integration. It does not confirm
-trigger matching, queueing, or snapshot execution. Preserve this boundary:
+trigger matching, queuing, or snapshot execution. Preserve this boundary:
 return after intake and keep downstream handler failures isolated and
 observable through handler logs and dispatch state. A handler failure must not
 change an accepted delivery into an HTTP intake failure or cause the provider
