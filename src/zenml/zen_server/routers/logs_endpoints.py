@@ -58,7 +58,7 @@ router = APIRouter(
 )
 
 
-def verify_read_permission(logs: LogsResponse) -> None:
+def _verify_log_read_permission(logs: LogsResponse) -> None:
     """Verify that the authenticated user may read a log stream.
 
     A log stream has no permissions of its own: it is readable exactly when the
@@ -174,7 +174,7 @@ def get_logs(
         The requested log model.
     """
     logs = zen_store().get_logs(logs_id, hydrate=True)
-    verify_read_permission(logs)
+    _verify_log_read_permission(logs)
 
     if hydrate is False:
         logs.metadata = None
@@ -223,7 +223,7 @@ def get_logs_entries(
     """
     store = zen_store()
     logs = store.get_logs(logs_id, hydrate=False)
-    verify_read_permission(logs)
+    _verify_log_read_permission(logs)
 
     return fetch_logs(
         logs=logs,

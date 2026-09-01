@@ -29,7 +29,6 @@ from uuid import UUID
 from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
@@ -299,19 +298,6 @@ class ArtifactLogStore(OtelLogStore):
             The configuration.
         """
         return cast(ArtifactLogStoreConfig, self._config)
-
-    @property
-    def default_query_size(self) -> int:
-        """Number of entries a fetch returns when the caller sets no limit.
-
-        The artifact log store cannot paginate, so it serves a whole log stream
-        in one response and its default page is the hard ceiling on a single
-        fetch.
-
-        Returns:
-            The default number of entries per page.
-        """
-        return LOGS_MAX_ENTRIES_PER_REQUEST
 
     def get_exporter(self) -> "LogRecordExporter":
         """Get the artifact log exporter for this log store.

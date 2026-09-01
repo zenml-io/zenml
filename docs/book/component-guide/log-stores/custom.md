@@ -22,7 +22,7 @@ The log store is responsible for collecting, storing, and retrieving logs during
    - `flush()`: Ensure all pending logs are exported
    - `fetch()`: Retrieve one page of stored log entries
 
-3. **Page size**: `fetch()` returns a page rather than a whole log stream. Use `resolve_limit()` for the page size and its upper bound, and `default_query_size` when the caller asks for no limit.
+3. **Page size**: `fetch()` returns a page rather than a whole log stream. Use `resolve_limit()` so a missing `limit` becomes `LOGS_MAX_ENTRIES_PER_REQUEST` and a larger request is capped there. Cap again if your backend is smaller.
 
 4. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
 
@@ -34,7 +34,7 @@ from typing import Any, Dict, Optional, Type
 import logging
 import threading
 
-from zenml.constants import LOGS_DEFAULT_QUERY_SIZE
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import StackComponentType
 from zenml.models import (
     LogsEntriesFilter,
@@ -135,7 +135,7 @@ class BaseLogStore(StackComponent, ABC):
     @property
     def default_query_size(self) -> int:
         """Number of entries a fetch returns when the caller sets no limit."""
-        return LOGS_DEFAULT_QUERY_SIZE
+        return LOGS_MAX_ENTRIES_PER_REQUEST
 
     def resolve_limit(self, limit: Optional[int]) -> int:
         """Determine how many entries a single fetch may return."""
@@ -447,6 +447,6 @@ This separation allows you to register flavors even when their dependencies aren
 
 7. **Keep fetch() simple**: Remember that `fetch()` runs on the server with limited dependencies. Use only built-in Python libraries and HTTP APIs.
 
-8. **Spend one backend request per fetch**: Someone scrolling through a log stream produces a steady stream of fetches, and a `fetch()` that loops internally to fill a page multiplies each of them into several calls against a rate-limited API. Return a short page with a cursor instead. If your backend serves a different number of entries per request than the ZenML default, override the `default_query_size` property so that the default page and the default request line up. Only add a config field for it if the page size is something a user of your log store would need to tune, such as a page size that counts against a per-account quota.
+8. **Spend one backend request per fetch**: Someone scrolling through a log stream produces a steady stream of fetches, and a `fetch()` that loops internally to fill a page multiplies each of them into several calls against a rate-limited API. Return a short page with a cursor instead. If your backend's own page is smaller than `LOGS_MAX_ENTRIES_PER_REQUEST`, cap the request at that size. Only add a config field for the page size if a user of your log store would need to tune it.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

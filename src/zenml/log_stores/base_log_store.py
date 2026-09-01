@@ -20,10 +20,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
-from zenml.constants import (
-    LOGS_DEFAULT_QUERY_SIZE,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
-)
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import StackComponentType
 from zenml.models import (
     LogsEntriesFilter,
@@ -208,7 +205,7 @@ class BaseLogStore(StackComponent, ABC):
         Returns:
             The default number of entries per page.
         """
-        return LOGS_DEFAULT_QUERY_SIZE
+        return LOGS_MAX_ENTRIES_PER_REQUEST
 
     def resolve_limit(self, limit: Optional[int]) -> int:
         """Determine how many entries a single fetch may return.
