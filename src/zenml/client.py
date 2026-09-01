@@ -4746,8 +4746,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created webhook trigger.
 
-        Raises:
-            ValueError: If the provider configuration is invalid.
         """
         webhook_model = self.get_webhook(webhook, project=project_id)
         validated_configuration = get_webhook_provider(

@@ -166,7 +166,15 @@ StringFilter = str | list[str] | None
 def matches_string_filter(
     *, actual: str | None, configured: StringFilter
 ) -> bool:
-    """Match an extracted value against a supported string filter."""
+    """Match an extracted value against a supported string filter.
+
+    Args:
+        actual: The value extracted from the webhook event.
+        configured: The configured exact, prefix, or alternatives filter.
+
+    Returns:
+        Whether the extracted value matches the configured filter.
+    """
     if configured is None:
         return True
     if actual is None:
@@ -199,7 +207,14 @@ class GitHubSemanticEvent(BaseModel):
 
     @abstractmethod
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
-        """Return whether the semantic event matches its typed target."""
+        """Return whether the semantic event matches its typed target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether the semantic event matches the target.
+        """
 
 
 class GitHubCommit(BaseModel):
@@ -220,7 +235,14 @@ class GitHubMergedPullRequestEvent(GitHubSemanticEvent):
     commit: GitHubCommit | None = None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
-        """Return whether this event matches a merged-pull-request target."""
+        """Return whether this event matches a merged-pull-request target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
         if not isinstance(target, MergedPullRequest):
             return False
         return all(
@@ -250,7 +272,14 @@ class GitHubWorkflowRunCompletedEvent(GitHubSemanticEvent):
     actor: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
-        """Return whether this event matches a workflow-run target."""
+        """Return whether this event matches a workflow-run target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
         if not isinstance(target, WorkflowRunCompleted):
             return False
         return all(
@@ -278,7 +307,14 @@ class GitHubPushEvent(GitHubSemanticEvent):
     commit: GitHubCommit | None = None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
-        """Return whether this event matches a push target."""
+        """Return whether this event matches a push target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
         if not isinstance(target, PushEvent):
             return False
         return all(
@@ -306,7 +342,14 @@ class GitHubReleasePublishedEvent(GitHubSemanticEvent):
     actor: str | None
 
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
-        """Return whether this event matches a published-release target."""
+        """Return whether this event matches a published-release target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
         if not isinstance(target, ReleasePublished):
             return False
         return all(
@@ -334,7 +377,17 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     async def pre_validate(
         self, headers: Mapping[str, str]
     ) -> WebhookPreValidationResult:
-        """Reject malformed and ignore unsupported GitHub event families."""
+        """Reject malformed and ignore unsupported GitHub event families.
+
+        Args:
+            headers: The untrusted request headers.
+
+        Returns:
+            Whether generic intake should process or ignore the delivery.
+
+        Raises:
+            WebhookPayloadError: If the GitHub event header is missing.
+        """
         event_type = headers.get(GITHUB_EVENT_HEADER)
         if not event_type:
             raise WebhookPayloadError(
@@ -349,7 +402,13 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     def authenticate(
         self, body: bytes, headers: Mapping[str, str], secret: str
     ) -> None:
-        """Authenticate a GitHub delivery."""
+        """Authenticate a GitHub delivery.
+
+        Args:
+            body: The exact raw request body.
+            headers: The request headers.
+            secret: The webhook signing secret.
+        """
         authenticate_hmac_sha256(
             body=body,
             headers=headers,
@@ -360,7 +419,18 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     def get_event_type(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str:
-        """Extract the raw GitHub event family."""
+        """Extract the raw GitHub event family.
+
+        Args:
+            payload: The parsed GitHub payload.
+            headers: The request headers.
+
+        Returns:
+            The raw GitHub event family.
+
+        Raises:
+            WebhookPayloadError: If the GitHub event header is missing.
+        """
         event_type = headers.get(GITHUB_EVENT_HEADER)
         if not event_type:
             raise WebhookPayloadError(
@@ -371,7 +441,15 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     def get_delivery_id(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str | None:
-        """Extract the optional GitHub delivery ID."""
+        """Extract the optional GitHub delivery ID.
+
+        Args:
+            payload: The parsed GitHub payload.
+            headers: The request headers.
+
+        Returns:
+            The delivery ID, if present.
+        """
         return headers.get(GITHUB_DELIVERY_HEADER)
 
     def _cast_runtime_targets(
@@ -393,7 +471,15 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
     ) -> list["WebhookTriggerResponse"]:
-        """Match GitHub candidates while tolerating stale stored entries."""
+        """Match GitHub candidates while tolerating stale stored entries.
+
+        Args:
+            event: The trusted GitHub webhook event.
+            candidates: The candidate webhook triggers.
+
+        Returns:
+            The candidates matching the semantic event.
+        """
         semantic = self.parse_semantic_event(event)
         if semantic is None:
             return []

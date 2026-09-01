@@ -111,6 +111,9 @@ def create_webhook(
 
     Returns:
         The created webhook and any generated signing secret.
+
+    Raises:
+        HTTPException: If the webhook provider type is unsupported.
     """
     try:
         get_webhook_provider(webhook.webhook_type)

@@ -61,7 +61,19 @@ class WebhookTargetEvent(BaseModel):
         field_name: str,
         allow_startswith: bool,
     ) -> StringFilterOption:
-        """Validate one webhook event string filter."""
+        """Validate one webhook event string filter.
+
+        Args:
+            value: The filter value to validate.
+            field_name: The name of the filtered event field.
+            allow_startswith: Whether the field supports prefix matching.
+
+        Returns:
+            The validated filter value.
+
+        Raises:
+            ValueError: If the filter value or operator is invalid.
+        """
         if value is None:
             return None
         allowed = {"oneof"}
@@ -153,8 +165,6 @@ class BaseWebhookProvider(ABC):
         Returns:
             Whether generic intake should process or ignore the delivery.
 
-        Raises:
-            WebhookPayloadError: If required metadata is malformed.
         """
         return WebhookPreValidationResult.PROCESS
 
@@ -249,7 +259,6 @@ class BaseWebhookProvider(ABC):
 
         Raises:
             TypeError: If a configuration for another provider is supplied.
-            ValueError: If the configuration is invalid.
         """
         if isinstance(configuration, Mapping):
             return self.configuration_class.model_validate(configuration)

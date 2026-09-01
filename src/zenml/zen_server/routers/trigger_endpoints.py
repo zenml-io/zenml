@@ -222,6 +222,9 @@ def update_trigger(
 
     Returns:
         The updated trigger object.
+
+    Raises:
+        IllegalOperationError: If the update changes the trigger type.
     """
     existing_trigger = zen_store().get_trigger(trigger_id, hydrate=False)
     verify_permission_for_model(model=existing_trigger, action=Action.UPDATE)

@@ -8406,6 +8406,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             webhook_id: The webhook ID.
+
+        Raises:
+            IllegalOperationError: If a live trigger references the webhook.
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(

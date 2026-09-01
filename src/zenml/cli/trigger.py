@@ -823,8 +823,6 @@ def create_webhook_trigger(
         concurrency: The trigger run concurrency behavior.
         active: Whether the trigger should be active.
 
-    Raises:
-        ValueError: If the configuration is invalid for the webhook provider.
     """
     try:
         created = Client().create_webhook_trigger(
