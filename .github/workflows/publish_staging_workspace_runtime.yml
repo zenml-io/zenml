@@ -1,0 +1,24 @@
+---
+name: Publish staging workspace runtime
+on:
+  push:
+    branches: [develop]
+permissions:
+  contents: read
+jobs:
+  dispatch:
+    name: Request staging runtime build
+    # Forks have no secret and must not publish into the staging channel.
+    if: github.repository == 'zenml-io/zenml'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact ZenML revision
+        env:
+          GH_TOKEN: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
+          ZENML_SHA: ${{ github.sha }}
+        run: |-
+          gh api \
+            --method POST \
+            repos/zenml-io/zenml-cloud-plugins/dispatches \
+            -f event_type=zenml-develop-updated \
+            -F "client_payload[zenml_sha]=$ZENML_SHA"
