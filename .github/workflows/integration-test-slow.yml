@@ -201,7 +201,7 @@ jobs:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
       - name: Setup environment
-        uses: $/.github/actions/setup_environment
+        uses: ./.github/actions/setup_environment
         with:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}

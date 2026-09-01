@@ -119,7 +119,7 @@ jobs:
         if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
         run: brew install libomp
       - name: Setup environment
-        uses: $/.github/actions/setup_environment
+        uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: ${{ inputs.python-version }}

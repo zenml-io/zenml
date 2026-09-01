@@ -183,7 +183,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.10', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/linting.yml
+    uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -196,7 +196,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.10', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/unit-test.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -209,7 +209,7 @@ jobs:
         os: [windows-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/linting.yml
+    uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -222,7 +222,7 @@ jobs:
         os: [windows-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/unit-test.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -235,7 +235,7 @@ jobs:
         os: [macos-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/linting.yml
+    uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -248,7 +248,7 @@ jobs:
         os: [macos-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
-    uses: $/.github/workflows/unit-test.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -264,7 +264,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         test_environment: [default]
       fail-fast: false
-    uses: $/.github/workflows/integration-test-slow.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -279,7 +279,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         test_environment: [default]
       fail-fast: false
-    uses: $/.github/workflows/integration-test-slow.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -315,7 +315,7 @@ jobs:
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.14'
       fail-fast: false
-    uses: $/.github/workflows/integration-test-slow.yml
+    uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
@@ -324,7 +324,7 @@ jobs:
   vscode-tutorial-pipelines-test:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
-    uses: $/.github/workflows/vscode-tutorial-pipelines-test.yml
+    uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
     secrets: inherit
   ubuntu-base-package-functionality:
     needs: run-slow-ci-label-is-set
@@ -334,7 +334,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.11']
       fail-fast: false
-    uses: $/.github/workflows/base-package-functionality.yml
+    uses: ./.github/workflows/base-package-functionality.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}

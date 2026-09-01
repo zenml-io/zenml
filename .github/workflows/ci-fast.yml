@@ -73,7 +73,7 @@ jobs:
     # so we disable template updates for those PRs / branches
     if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
       == false
-    uses: $/.github/workflows/update-templates-to-examples.yml
+    uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.11'
       os: ubuntu-latest
@@ -85,7 +85,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.11']
       fail-fast: false
-    uses: $/.github/workflows/linting.yml
+    uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -102,7 +102,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ['3.11']
       fail-fast: false
-    uses: $/.github/workflows/unit-test.yml
+    uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
@@ -123,7 +123,7 @@ jobs:
         # Skip it there instead of burning six jobs per bot PR.
         test_environment: ${{ github.actor == 'dependabot[bot]' && fromJSON('["default"]') || fromJSON('["default", "docker-server-docker-orchestrator-mysql"]') }}
       fail-fast: false
-    uses: $/.github/workflows/integration-test-fast.yml
+    uses: ./.github/workflows/integration-test-fast.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}

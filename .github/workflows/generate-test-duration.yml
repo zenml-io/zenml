@@ -29,7 +29,7 @@ jobs:
         with:
           ref: develop
       - name: Setup environment
-        uses: $/.github/actions/setup_environment
+        uses: ./.github/actions/setup_environment
         with:
           python-version: '3.10'
           os: ubuntu-latest
