@@ -3,12 +3,13 @@ name: GitHub Actions Security Analysis
 on:
   push:
     branches: [main, develop]
-    paths: [.github/workflows/**, .github/zizmor.yml]
+    paths: [.github/workflows/**, .github/zizmor.yml, .github/zizmor/requirements.txt]
   pull_request:
     branches: [main, develop]
     paths:
       - .github/workflows/**
       - .github/zizmor.yml
+      - .github/zizmor/requirements.txt
   # Weekly safety net to catch drift (runs Monday 3am UTC)
   schedule:
     - cron: 0 3 * * 1
@@ -45,12 +46,12 @@ jobs:
           echo ""
           echo "📖 To run locally and see detailed output:"
           echo ""
-          echo "    GH_TOKEN=\$(gh auth token) uvx zizmor@1.30.0 --config=.github/zizmor.yml .github/workflows/"
+          echo "    GH_TOKEN=\$(gh auth token) uvx --constraints .github/zizmor/requirements.txt zizmor --config=.github/zizmor.yml .github/workflows/"
           echo ""
           echo "📖 Documentation: https://docs.zizmor.sh/"
           echo "📖 Config: .github/zizmor.yml"
           echo "============================================================"
           echo ""
-          uvx zizmor@1.30.0 --format=github --config=.github/zizmor.yml .github/workflows/
+          uvx --constraints .github/zizmor/requirements.txt zizmor --format=github --config=.github/zizmor.yml .github/workflows/
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

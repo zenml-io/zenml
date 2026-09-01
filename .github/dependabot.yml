@@ -19,3 +19,15 @@ updates:
     cooldown:
       default-days: 7
     target-branch: develop
+  # Only the zizmor pin lives here; scoping to this directory keeps Dependabot
+  # away from the root pyproject.toml dependency tree.
+  - package-ecosystem: pip
+    directory: /.github/zizmor
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "07:00"
+      timezone: Europe/Amsterdam
+    reviewers: [strickvl]
+    labels: [dependencies, internal, no-release-notes]
+    target-branch: develop
