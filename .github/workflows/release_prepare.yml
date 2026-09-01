@@ -198,7 +198,6 @@ jobs:
           - cloud: aws
           - cloud: azure
           - cloud: gcp
-          - cloud: kubernetes_aws
     steps:
       - name: Free disk space
         run: |
@@ -227,6 +226,32 @@ jobs:
         run: |
           scripts/qs_run_release_flow.sh \
             --cloud "${{ matrix.cloud }}" \
+            --new-version "${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
+        env:
+          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
+  run_kubernetes_aws_quickstart:
+    needs: [fetch-versions, setup-prep-release-tenant]
+    runs-on: codebuild-release-qs-${{ github.run_id }}-${{ github.run_attempt }}
+    permissions:
+      contents: read
+    env:
+      ZENML_STORE_URL: ${{ secrets.RELEASE_TENANT_URL }}
+      ZENML_STORE_API_KEY: ${{ secrets.RELEASE_TENANT_SERVICE_ACCOUNT_KEY }}
+      ZENML_ACTIVE_PROJECT_ID: ${{ secrets.RELEASE_TENANT_PROJECT_ID }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install ZenML
+        run: scripts/install-zenml-dev.sh --system --integrations "no"
+      - name: Run Quickstart release flow on kubernetes_aws
+        run: |
+          scripts/qs_run_release_flow.sh \
+            --cloud kubernetes_aws \
             --new-version "${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
         env:
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}

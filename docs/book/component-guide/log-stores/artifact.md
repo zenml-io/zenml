@@ -56,13 +56,11 @@ These defaults are optimized for most use cases. You typically only need to adju
 
 ### Reading logs
 
-Unlike log stores backed by a queryable API, the artifact log store hands back the whole log stream in one response instead of paging through it. Its log files carry no index, so resuming a read in the middle of one means scanning to that point again, and paging through a long run would turn a browsing session into a long series of increasingly expensive reads against object storage. Reading the file once and returning everything is both cheaper and simpler.
+Unlike log stores backed by a queryable API, the artifact log store does not page. Its log files carry no index, so resuming a read in the middle of one means scanning to that point again, and paging through a long run would turn a browsing session into a long series of increasingly expensive reads against object storage. Reading the file once and returning one response is both cheaper and simpler.
 
-A fetch reads the file from the beginning and stops once it has collected as many entries as the caller asked for, or `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` of them if the caller asked for no particular number. A stream longer than that is cut off at its end, so you keep the oldest entries and lose the newest.
+A fetch reads the file from the beginning and stops once it has collected as many entries as the caller asked for, or `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` of them if the caller asked for no particular number. A stream longer than that is cut off at its end, so you keep the oldest entries and lose the newest. `before` and `after` come back unset, which tells the caller that this one response is all they will get from the server.
 
-Search, level and time filters are ignored, and so are the pagination cursors. Applying a filter here would mean reading until enough entries match it, and a selective filter over a long stream matches too rarely for the limit to ever stop that read, so it would run to the end of the file however large the file is. Because the response already carries the log stream, the dashboard filters and pages through it on the client side instead, at no cost to the server. This is the one behavior that sets this log store apart from those backed by a queryable API, where the same filters are pushed down into the query.
-
-The limit counts stored entries rather than logged messages. A message larger than 5 KiB is stored as several entries that share an ID and carry a chunk index, and each of those counts towards the limit, which is what keeps the size of a response bounded no matter how large a single logged message was.
+Anything beyond that is refused rather than quietly dropped: a pagination cursor (`before` or `after`), `start=newest`, and the `search`, `level`, `since` and `until` filters all raise `ValueError`, which the REST API reports as `400`.
 
 ### Log format
 

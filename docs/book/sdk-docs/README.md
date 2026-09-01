@@ -1,13 +1,13 @@
 ---
-description: Reference for the ZenML and Kitaru Python SDKs and CLIs.
+description: Reference hub for the ZenML and Kitaru SDKs and CLIs.
 ---
 
 # Overview
 
-ZenML ships two Python SDKs, each with its own reference site:
+ZenML and Kitaru each provide SDKs for working with their APIs:
 
-* **ZenML** — build, manage, and deploy production-ready ML pipelines.
-* **Kitaru** — ZenML's sibling project for running, replaying, and improving AI agents (flows, checkpoints, replay, wait), published at [sdkdocs.kitaru.ai](https://sdkdocs.kitaru.ai).
+* **ZenML** provides a Python SDK and CLI for building, managing, and deploying production-ready ML pipelines.
+* **Kitaru** provides Python and TypeScript SDKs for recording, replaying, and improving AI agents. Its CLI ships with the Python package.
 
 ## ZenML SDK
 
@@ -17,8 +17,8 @@ The ZenML SDK provides Python tools and interfaces for building, managing, and d
 
 ## Kitaru SDK
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for running, replaying, and improving AI agents. Its Python SDK and CLI reference are generated from the Kitaru source and published on a dedicated site.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for recording, replaying, and improving AI agents: traces you can run, not just read. Its Python and TypeScript SDKs talk to the same Kitaru server over the same REST API. Framework adapters support [Python and TypeScript agents](https://docs.zenml.io/kitaru/adapters/adapters). The generated Python SDK and CLI reference is published on a dedicated site.
 
-<table data-card-size="large" data-view="cards" data-full-width="false"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>SDK &#x26; CLI Reference</strong></td><td>Complete API reference for the Kitaru Python SDK and command-line interface.</td><td><a href="https://sdkdocs.kitaru.ai">https://sdkdocs.kitaru.ai</a></td></tr><tr><td><strong>Kitaru Client</strong></td><td>Programmatic interface to a Kitaru server: executions, artifacts, deployments, and auth.</td><td><a href="kitaru/client.md">kitaru/client.md</a></td></tr></tbody></table>
+<table data-card-size="large" data-view="cards" data-full-width="false"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Python SDK &#x26; CLI Reference</strong></td><td>Complete generated API reference for the Kitaru Python SDK and command-line interface.</td><td><a href="https://sdkdocs.kitaru.ai">https://sdkdocs.kitaru.ai</a></td></tr><tr><td><strong>Python &#x26; TypeScript SDK Guide</strong></td><td>How both SDKs connect, authenticate, expose resources, and hand work to Kitaru workers.</td><td><a href="https://docs.zenml.io/kitaru/get-help/sdks">https://docs.zenml.io/kitaru/get-help/sdks</a></td></tr><tr><td><strong>Python Client</strong></td><td>Programmatic interface to a Kitaru server: sessions, replays, evaluators, cohorts, and experiments.</td><td><a href="kitaru/client.md">kitaru/client.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

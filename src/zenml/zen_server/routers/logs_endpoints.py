@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.constants import (
     API,
@@ -194,7 +194,8 @@ def get_logs(
 @async_fastapi_endpoint_wrapper
 def get_logs_entries(
     logs_id: UUID,
-    limit: Optional[int] = None,
+    start: Optional[Literal["oldest", "newest"]] = None,
+    limit: Optional[int] = Query(default=None, gt=0),
     before: Optional[str] = None,
     after: Optional[str] = None,
     filter_: LogsEntriesFilter = Depends(make_dependable(LogsEntriesFilter)),
@@ -204,28 +205,22 @@ def get_logs_entries(
 
     Args:
         logs_id: ID of the log stream to read.
+        start: Which end of the stream to start reading from. Omit to let
+            the log store pick. This picks where the read begins, not how
+            entries are ordered: a page runs from oldest to newest either
+            way, so a limit of ten gives the first ten entries from `oldest`
+            and the last ten from `newest`.
         limit: Maximum number of entries to return. Defaults to a page size
             chosen by the log store holding the entries.
-        before: Cursor from a previous response, to fetch older entries.
-        after: Cursor from a previous response, to fetch newer entries.
-        filter_: Filters to apply while retrieving the entries. Log stores
-            without a queryable index, such as the artifact log store, ignore
-            them and leave the filtering to the caller.
+        before: Cursor towards older entries, from a previous response.
+        after: Cursor towards newer entries, from a previous response. Pass
+            only one of `before` and `after`. A store that cannot go that
+            way answers 400.
+        filter_: Filters to apply while retrieving the entries.
 
     Returns:
-        A page of log entries, oldest first, with cursors for the adjacent
-        pages. Both cursors are null for log stores that cannot paginate, in
-        which case the response holds the whole log stream up to the limit.
-
-    Raises:
-        ValueError: If both `before` and `after` are given.
+        A page of log entries.
     """
-    if before and after:
-        raise ValueError(
-            "Only one of `before` and `after` may be set: a page is fetched "
-            "in one direction at a time."
-        )
-
     store = zen_store()
     logs = store.get_logs(logs_id, hydrate=False)
     verify_read_permission(logs)
@@ -233,6 +228,7 @@ def get_logs_entries(
     return fetch_logs(
         logs=logs,
         zen_store=store,
+        start=start,
         limit=limit,
         before=before,
         after=after,

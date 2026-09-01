@@ -364,6 +364,7 @@ class OtelLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -377,9 +378,11 @@ class OtelLogStore(BaseLogStore):
 
         Args:
             logs_model: The logs model containing run and step metadata.
+            start: Which end of the stream to start reading from. Omit to
+                let a subclass that implements fetch pick.
             limit: Maximum number of log entries to return.
-            before: Cursor pointing at entries older than a previous page.
-            after: Cursor pointing at entries newer than a previous page.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
             filter_: Filters to apply while retrieving the entries.
 
         Returns:

@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import pytest
+import requests
 
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
@@ -29,24 +30,36 @@ class StubResponse:
     """A canned Datadog search response."""
 
     def __init__(
-        self, payload: Dict[str, Any], status_code: int = 200
+        self,
+        payload: Optional[Dict[str, Any]] = None,
+        status_code: int = 200,
+        text: str = "the-upstream-body",
+        malformed: bool = False,
     ) -> None:
         """Store the payload to return.
 
         Args:
             payload: The response body.
             status_code: The response status.
+            text: The raw response body.
+            malformed: Whether decoding the body should fail.
         """
         self._payload = payload
+        self._malformed = malformed
         self.status_code = status_code
-        self.text = "error"
+        self.text = text
 
-    def json(self) -> Dict[str, Any]:
+    def json(self) -> Any:
         """Return the response body.
 
         Returns:
             The response body.
+
+        Raises:
+            ValueError: If the response was set up as malformed.
         """
+        if self._malformed:
+            raise ValueError("not json")
         return self._payload
 
 
@@ -66,7 +79,7 @@ def make_event(
 
 
 def make_payload(
-    events: List[Dict[str, Any]], next_cursor: Optional[str] = None
+    events: Optional[List[Dict[str, Any]]], next_cursor: Optional[str] = None
 ) -> Dict[str, Any]:
     """Build a Datadog search response body."""
     payload: Dict[str, Any] = {"data": events}
@@ -96,42 +109,70 @@ def log_store() -> DatadogLogStore:
 @pytest.fixture
 def search(mocker):
     """Capture search requests and answer them with canned payloads."""
-    requests: List[Dict[str, Any]] = []
+    requests_made: List[Dict[str, Any]] = []
 
     def _install(*payloads: Dict[str, Any]) -> List[Dict[str, Any]]:
-        responses = [StubResponse(payload) for payload in payloads]
+        responses = [
+            payload
+            if isinstance(payload, StubResponse)
+            else StubResponse(payload)
+            for payload in payloads
+        ]
 
         def _post(url, headers, json, timeout):
-            requests.append(json)
-            return responses[len(requests) - 1]
+            requests_made.append(json)
+            return responses[len(requests_made) - 1]
 
         mocker.patch(
             "zenml.log_stores.datadog.datadog_log_store.requests.post",
             side_effect=_post,
         )
-        return requests
+        return requests_made
 
     return _install
 
 
-def test_first_page_reads_the_newest_entries(
+def test_a_read_starts_at_the_oldest_entries_by_default(
     log_store, logs_model_factory, search
 ):
-    """Without a cursor, the newest entries are returned oldest first."""
-    requests = search(
+    """When start is omitted, Datadog reads from the oldest end."""
+    requests_made = search(
         make_payload(
             [
-                make_event("3", "third", "2026-01-01T12:00:03.000Z"),
-                make_event("2", "second", "2026-01-01T12:00:02.000Z"),
                 make_event("1", "first", "2026-01-01T12:00:01.000Z"),
-            ],
-            next_cursor="older-page",
+                make_event("2", "second", "2026-01-01T12:00:02.000Z"),
+            ]
         )
     )
 
     page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
-    assert requests[0]["sort"] == "-timestamp"
+    assert requests_made[0]["sort"] == "timestamp"
+    assert [entry.message for entry in page.items] == ["first", "second"]
+    assert page.before is None
+    assert page.after is None
+
+
+def test_a_read_from_the_newest_end_returns_its_page_chronologically(
+    log_store, logs_model_factory, search
+):
+    """The starting end picks where a read begins, not how a page is ordered."""
+    requests_made = search(
+        make_payload(
+            [
+                make_event("3", "third", "2026-01-01T12:00:03.000Z"),
+                make_event("2", "second", "2026-01-01T12:00:02.000Z"),
+                make_event("1", "first", "2026-01-01T12:00:01.000Z"),
+            ]
+        )
+    )
+
+    page = log_store.fetch(
+        logs_model_factory(log_store_id=log_store.id),
+        start="newest",
+    )
+
+    assert requests_made[0]["sort"] == "-timestamp"
     assert [entry.message for entry in page.items] == [
         "first",
         "second",
@@ -139,24 +180,34 @@ def test_first_page_reads_the_newest_entries(
     ]
 
 
-def test_first_page_asks_for_the_configured_page_size(
+def test_after_continues_on_datadog_s_cursor(
     log_store, logs_model_factory, search
 ):
-    """One fetch is one Datadog request of at most one page."""
-    requests = search(make_payload([]))
-
-    log_store.fetch(logs_model_factory(log_store_id=log_store.id))
-
-    assert requests[0]["page"]["limit"] == log_store.default_query_size
-    assert len(requests) == 1
-
-
-def test_older_page_uses_the_native_cursor(
-    log_store, logs_model_factory, search
-):
-    """Datadog's own continuation token is what walks back through history."""
+    """An oldest-end read pages with Datadog's own continuation token."""
     logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
+    requests_made = search(
+        make_payload(
+            [make_event("1", "first", "2026-01-01T12:00:01.000Z")],
+            next_cursor="next-page",
+        ),
+        make_payload([make_event("2", "second", "2026-01-01T12:00:02.000Z")]),
+    )
+
+    first = log_store.fetch(logs)
+    log_store.fetch(logs, after=first.after)
+
+    assert first.before is None
+    assert first.after is not None
+    assert requests_made[1]["page"]["cursor"] == "next-page"
+    assert requests_made[1]["sort"] == "timestamp"
+
+
+def test_before_continues_on_datadog_s_cursor(
+    log_store, logs_model_factory, search
+):
+    """A newest-end read pages with the same token, in the other slot."""
+    logs = logs_model_factory(log_store_id=log_store.id)
+    requests_made = search(
         make_payload(
             [make_event("2", "second", "2026-01-01T12:00:02.000Z")],
             next_cursor="older-page",
@@ -164,124 +215,91 @@ def test_older_page_uses_the_native_cursor(
         make_payload([make_event("1", "first", "2026-01-01T12:00:01.000Z")]),
     )
 
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, before=first.before)
+    first = log_store.fetch(logs, start="newest")
+    log_store.fetch(logs, start="newest", before=first.before)
 
-    assert requests[1]["page"]["cursor"] == "older-page"
-    assert requests[1]["sort"] == "-timestamp"
-    assert [entry.message for entry in second.items] == ["first"]
+    assert first.after is None
+    assert first.before is not None
+    assert requests_made[1]["page"]["cursor"] == "older-page"
+    assert requests_made[1]["sort"] == "-timestamp"
 
 
-def test_no_older_page_reports_no_cursor(
+def test_an_oldest_read_refuses_before(log_store, logs_model_factory, search):
+    """Datadog cannot walk backwards from a read that started at the oldest end."""
+    search(make_payload([]))
+
+    with pytest.raises(ValueError, match="before"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id),
+            start="oldest",
+            before="anything",
+        )
+
+
+def test_a_newest_read_refuses_after(log_store, logs_model_factory, search):
+    """Datadog cannot walk forwards from a read that started at the newest end."""
+    search(make_payload([]))
+
+    with pytest.raises(ValueError, match="after"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id),
+            start="newest",
+            after="anything",
+        )
+
+
+def test_both_cursors_are_refused(log_store, logs_model_factory, search):
+    """A page continues in one direction at a time."""
+    search(make_payload([]))
+
+    with pytest.raises(ValueError, match="only one"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id),
+            before="a",
+            after="b",
+        )
+
+
+def test_an_empty_page_reports_no_cursor(
     log_store, logs_model_factory, search
 ):
-    """Running out of continuation tokens means the stream starts here."""
-    search(
-        make_payload([make_event("1", "first", "2026-01-01T12:00:01.000Z")])
-    )
+    """No events means this scan is over, even if Datadog still sent a token."""
+    search(make_payload([], next_cursor="a-token-past-the-end"))
 
     page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
+    assert page.items == []
     assert page.before is None
+    assert page.after is None
 
 
-def test_a_full_page_without_a_cursor_can_still_be_continued(
+def test_a_null_data_field_is_the_end_of_the_results(
     log_store, logs_model_factory, search
 ):
-    """Only an unfilled page proves that a run's history has been read out."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
-        make_payload(
-            [
-                make_event("2", "second", "2026-01-01T12:00:02.000Z"),
-                make_event("1", "first", "2026-01-01T12:00:01.000Z"),
-            ]
-        ),
-        make_payload([make_event("0", "zeroth", "2026-01-01T12:00:00.000Z")]),
-    )
+    """Datadog documents `data: null` for a read that ran out of results."""
+    search(make_payload(None))
 
-    first = log_store.fetch(logs, limit=2)
-    second = log_store.fetch(logs, limit=2, before=first.before)
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
-    assert requests[1]["sort"] == "-timestamp"
-    assert requests[1]["filter"]["to"] == "2026-01-01T12:00:01+00:00"
-    assert [entry.message for entry in second.items] == ["zeroth"]
+    assert page.items == []
+    assert page.before is None
+    assert page.after is None
 
 
-def test_newer_page_resumes_at_the_newest_entry(
-    log_store, logs_model_factory, search
-):
-    """Tailing scans forward from the newest entry already seen."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
-        make_payload([make_event("2", "second", "2026-01-01T12:00:02.000Z")]),
-        make_payload([make_event("3", "third", "2026-01-01T12:00:03.000Z")]),
-    )
-
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, after=first.after)
-
-    assert requests[1]["sort"] == "timestamp"
-    assert requests[1]["filter"]["from"] == "2026-01-01T12:00:02+00:00"
-    assert [entry.message for entry in second.items] == ["third"]
-
-
-def test_newer_page_drops_entries_already_seen(
-    log_store, logs_model_factory, search
-):
-    """A timestamp boundary is inclusive, so its entries must be deduplicated."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    seen = make_event("2", "second", "2026-01-01T12:00:02.000Z")
-    search(
-        make_payload([seen]),
-        make_payload(
-            [seen, make_event("3", "third", "2026-01-01T12:00:02.000Z")]
-        ),
-    )
-
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, after=first.after)
-
-    assert [entry.message for entry in second.items] == ["third"]
-
-
-def test_empty_tail_keeps_its_cursor(log_store, logs_model_factory, search):
-    """A tail that finds nothing new can still be resumed later."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    search(
-        make_payload([make_event("2", "second", "2026-01-01T12:00:02.000Z")]),
-        make_payload([]),
-    )
-
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, after=first.after)
-
-    assert second.items == []
-    assert second.after == first.after
-
-
-def test_empty_first_page_can_be_tailed_from_the_start(
-    log_store, logs_model_factory, search
-):
-    """A pipeline that has not logged yet still gets a usable tail cursor."""
-    logs = logs_model_factory(
-        log_store_id=log_store.id,
-        created=datetime(2026, 1, 1, 12, tzinfo=timezone.utc),
-    )
-    requests = search(make_payload([]), make_payload([]))
-
-    page = log_store.fetch(logs)
-    log_store.fetch(logs, after=page.after)
-
-    assert page.after is not None
-    assert requests[1]["filter"]["from"] == "2026-01-01T12:00:00+00:00"
+def test_a_made_up_cursor_is_refused(log_store, logs_model_factory):
+    """A cursor that cannot be decoded is not sent to Datadog."""
+    with pytest.raises(ValueError, match="not one this server issued"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id),
+            after="not-base64",
+        )
 
 
 def test_filters_are_pushed_into_the_query(
     log_store, logs_model_factory, search
 ):
     """Datadog does the filtering, so the query has to express it."""
-    requests = search(make_payload([]))
+    requests_made = search(make_payload([]))
 
     log_store.fetch(
         logs_model_factory(log_store_id=log_store.id),
@@ -293,12 +311,12 @@ def test_filters_are_pushed_into_the_query(
         ),
     )
 
-    query = requests[0]["filter"]["query"]
-    assert 'say \\"hi\\"' in query
-    assert "status:(warn OR warning OR err OR error" in query
-    assert "debug" not in query
-    assert requests[0]["filter"]["from"] == "2026-01-02T00:00:00+00:00"
-    assert requests[0]["filter"]["to"] == "2026-01-03T00:00:00+00:00"
+    query = requests_made[0]["filter"]["query"]
+    assert '*say \\"hi\\"*' in query
+    assert "status:warn" in query
+    assert "status:debug" not in query
+    assert requests_made[0]["filter"]["from"] == "2026-01-02T00:00:00+00:00"
+    assert requests_made[0]["filter"]["to"] == "2026-01-03T00:00:00+00:00"
 
 
 def test_query_is_scoped_to_the_log_stream(
@@ -306,12 +324,12 @@ def test_query_is_scoped_to_the_log_stream(
 ):
     """Entries of other runs must never leak into a log stream."""
     logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(make_payload([]))
+    requests_made = search(make_payload([]))
 
     log_store.fetch(logs)
 
-    assert f"@zenml.log.id:{logs.id}" in requests[0]["filter"]["query"]
-    assert "service:zenml" in requests[0]["filter"]["query"]
+    assert f"@zenml.log.id:{logs.id}" in requests_made[0]["filter"]["query"]
+    assert "service:zenml" in requests_made[0]["filter"]["query"]
 
 
 def test_status_is_mapped_to_a_log_level(
@@ -322,13 +340,13 @@ def test_status_is_mapped_to_a_log_level(
         make_payload(
             [
                 make_event(
-                    "3", "c", "2026-01-01T12:00:03.000Z", status="unknown"
+                    "1", "a", "2026-01-01T12:00:01.000Z", status="warn"
                 ),
                 make_event(
                     "2", "b", "2026-01-01T12:00:02.000Z", status="emergency"
                 ),
                 make_event(
-                    "1", "a", "2026-01-01T12:00:01.000Z", status="warn"
+                    "3", "c", "2026-01-01T12:00:03.000Z", status="unknown"
                 ),
             ]
         )
@@ -349,12 +367,24 @@ def test_logs_of_another_log_store_are_rejected(log_store, logs_model_factory):
         log_store.fetch(logs_model_factory(log_store_id=uuid4()))
 
 
-def test_a_rejected_search_is_an_error(log_store, logs_model_factory, mocker):
+def test_a_rejected_search_is_an_error(log_store, logs_model_factory, search):
     """A failed search must not look like a log stream with no entries."""
+    search(StubResponse(status_code=403))
+
+    with pytest.raises(RuntimeError, match="403") as failure:
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+    assert "the-upstream-body" not in str(failure.value)
+
+
+def test_an_unreachable_datadog_is_an_error(
+    log_store, logs_model_factory, mocker
+):
+    """A network failure has to arrive as a log store failure."""
     mocker.patch(
         "zenml.log_stores.datadog.datadog_log_store.requests.post",
-        return_value=StubResponse({}, status_code=403),
+        side_effect=requests.ConnectionError("no route"),
     )
 
-    with pytest.raises(RuntimeError, match="403"):
+    with pytest.raises(RuntimeError, match="Could not reach Datadog"):
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))

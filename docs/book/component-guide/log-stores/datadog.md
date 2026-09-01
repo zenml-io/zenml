@@ -153,8 +153,6 @@ Datadog has a maximum batch size limit of 1000 logs per request. The `max_export
 
 Logs are automatically fetched from Datadog when viewing step details in the ZenML dashboard. The dashboard uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
 
-Each fetch reads one page and hands back a cursor for the pages on either side of it, so scrolling through a long step costs one Datadog search per page rather than one large search. Pages are read newest first, since that is where a failure usually is, and a page holds at most 1000 entries, which is Datadog's own limit for a single search. Searching and filtering by level or time is done by Datadog rather than by the ZenML server, which means a search term follows Datadog's full-text matching: it matches whole tokens of a message, not a fragment in the middle of a word.
-
 #### In Datadog
 
 Navigate to **Logs** in your Datadog dashboard and use these filters:

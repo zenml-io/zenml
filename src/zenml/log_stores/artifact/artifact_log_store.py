@@ -343,6 +343,7 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -350,32 +351,14 @@ class ArtifactLogStore(OtelLogStore):
     ) -> LogsEntriesResponse:
         """Fetch the entries of a log stream from the artifact store.
 
-        The artifact store holds plain log files with no index, so there is no
-        cheap way to resume a read from a boundary: every page would re-read the
-        file from one of its ends. Paging it would therefore turn one browsing
-        session into a long series of expensive requests, so this log store
-        serves a whole log stream at once and reports no cursors, and the
-        cursors it is given are ignored.
-
-        Filters are ignored for the same reason. Applying one while reading
-        would mean scanning until enough entries match, and a selective filter
-        over a long stream matches too rarely to ever reach the limit, so the
-        read would run to the end of the file however large it is. Since the
-        response already holds the stream, whoever displays it can filter it
-        there at no cost to the server.
-
-        A stream longer than the limit is cut off at its end, because the file
-        is read from the beginning. The limit counts stored entries, not
-        messages: a message larger than the exporter's chunk size occupies
-        several entries, and each of them counts. That is what keeps the size
-        of a response bounded no matter how large a single logged message was.
-
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
+            start: Which end of the stream to start reading from. Omit it,
+                or pass `"oldest"`. `"newest"` is refused.
             limit: Maximum number of log entries to return.
-            before: Ignored.
-            after: Ignored.
-            filter_: Ignored.
+            before: Not supported.
+            after: Not supported.
+            filter_: Not supported.
 
         Returns:
             The oldest entries of the stream, up to the limit, with no cursors.
@@ -400,12 +383,22 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        if any(
-            parameter is not None for parameter in [before, after, filter_]
-        ):
-            logger.warning(
-                "ArtifactLogStore.fetch() ignores pagination cursors and "
-                "filters. The corresponding parameters will be ignored."
+        unallowed = start not in (None, "oldest") or before or after
+        if filter_ is not None:
+            unallowed = unallowed or any(
+                (
+                    filter_.search,
+                    filter_.level,
+                    filter_.since,
+                    filter_.until,
+                )
+            )
+        if unallowed:
+            raise ValueError(
+                "The artifact log store only reads a log file from its start "
+                "and serves what fits in one response. Drop start, before, "
+                "after, and filters, and narrow the result down where it is "
+                "displayed."
             )
 
         return LogsEntriesResponse(

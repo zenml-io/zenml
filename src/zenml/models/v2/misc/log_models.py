@@ -116,11 +116,17 @@ class LogEntry(BaseModel):
 
 
 class LogsEntriesFilter(BaseModel):
-    """Filters applied while retrieving the entries of a log stream."""
+    """Filters applied while retrieving the entries of a log stream.
+
+    A log store pushes these down into its backend, so a filter it cannot
+    express is refused rather than dropped.
+    """
 
     search: Optional[str] = Field(
         default=None,
-        description="Only return entries whose message contains this string.",
+        description=(
+            "Only return entries whose message contains this string."
+        ),
     )
     level: Optional[NamedLoggingLevel] = Field(
         default=None,
@@ -169,13 +175,7 @@ class LogsEntriesFilter(BaseModel):
 
 
 class LogsEntriesResponse(BaseModel):
-    """A single page of log entries, with cursors to fetch adjacent pages.
-
-    A cursor is `None` when there is nothing more to fetch in that direction.
-    Log stores that cannot paginate at all (the artifact log store) always
-    return `None` for both, which tells the caller that `items` is everything
-    it is going to get.
-    """
+    """A single page of log entries, with cursors for the pages around it."""
 
     items: List[LogEntry] = Field(
         default_factory=list,
@@ -184,14 +184,14 @@ class LogsEntriesResponse(BaseModel):
     before: Optional[str] = Field(
         default=None,
         description=(
-            "Opaque token to fetch the entries immediately older than the "
-            "oldest entry in `items`."
+            "Opaque token that continues the read towards older entries. "
+            "`None` means this store cannot go that way from this page."
         ),
     )
     after: Optional[str] = Field(
         default=None,
         description=(
-            "Opaque token to fetch the entries immediately newer than the "
-            "newest entry in `items`."
+            "Opaque token that continues the read towards newer entries. "
+            "`None` means this store cannot go that way from this page."
         ),
     )

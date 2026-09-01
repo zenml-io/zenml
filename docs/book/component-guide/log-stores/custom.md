@@ -22,7 +22,7 @@ The log store is responsible for collecting, storing, and retrieving logs during
    - `flush()`: Ensure all pending logs are exported
    - `fetch()`: Retrieve one page of stored log entries
 
-3. **Pagination helpers**: `fetch()` returns a page rather than a whole log stream, so the base class provides `resolve_limit()` to apply the page size and its upper bound, `default_query_size` to say how large a page is when the caller asks for no limit, and `encode_cursor()` / `decode_cursor()` to turn whatever your backend needs to resume a scan into the opaque token that travels back and forth with the caller.
+3. **Page size**: `fetch()` returns a page rather than a whole log stream. Use `resolve_limit()` for the page size and its upper bound, and `default_query_size` when the caller asks for no limit.
 
 4. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
 
@@ -140,18 +140,11 @@ class BaseLogStore(StackComponent, ABC):
     def resolve_limit(self, limit: Optional[int]) -> int:
         """Determine how many entries a single fetch may return."""
 
-    @staticmethod
-    def encode_cursor(**payload: Any) -> str:
-        """Encode a pagination cursor into an opaque token."""
-
-    @staticmethod
-    def decode_cursor(token: str) -> Dict[str, Any]:
-        """Decode an opaque pagination token."""
-
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -319,16 +312,13 @@ class MyCustomLogExporter(LogRecordExporter):
 
 If your backend supports log retrieval, implement the `fetch()` method to enable log viewing in the ZenML dashboard.
 
-A fetch returns one page of a log stream, ordered from oldest to newest, together with the cursors that fetch the pages on either side of it. The caller passes exactly one of `before` (older entries) or `after` (newer entries) back to you, or neither to ask for the newest page. A cursor that comes back as `None` means there is nothing more to read in that direction.
-
-Cursors are opaque to everyone but the log store that issued them, so use `encode_cursor()` to carry whatever your backend needs to resume a scan. Backends that hand out their own continuation tokens can put that token straight into the cursor. Backends that don't can carry a timestamp watermark instead, and, because timestamps rarely have enough resolution to identify a single entry, the IDs already seen at that timestamp so that the next page can skip them.
-
-Push the filters down into your backend's query rather than fetching everything and discarding entries here, since the whole point of paging is to not move a log stream through the server. If your backend cannot express a filter at all, ignore it and let the caller apply it to what you return. Don't filter by reading until enough entries match: a selective filter matches too rarely for the page limit to end that read early, so it turns every request into a scan of the whole log stream. Ignoring a filter is always better than failing the request.
+A fetch returns one page of a log stream, ordered from oldest to newest, together with `before` and `after` for the pages around it. `start` tells you which end of the stream the first page is taken from: `"oldest"` gives the first entries, `"newest"` the last. It may be omitted, in which case pick the end you can serve (usually the oldest). It does not change the ordering of what you return — sort every page chronologically before handing it back. So for a stream of a hundred entries with a limit of ten, `"oldest"` returns entries one through ten and `"newest"` returns ninety-one through a hundred, both in that order. Refuse an explicit `start` you cannot honor rather than quietly substituting another end.
 
 ```python
 def fetch(
     self,
     logs_model: LogsResponse,
+    start: Optional[str] = None,
     limit: Optional[int] = None,
     before: Optional[str] = None,
     after: Optional[str] = None,
@@ -336,23 +326,30 @@ def fetch(
 ) -> LogsEntriesResponse:
     """Fetch a page of log entries from the backend."""
     filter_ = filter_ or LogsEntriesFilter()
-    cursor = self.decode_cursor(before or after) if before or after else {}
+
+    if before is not None and after is not None:
+        raise ValueError("Pass only one of `before` and `after`.")
 
     response = requests.get(
         f"{self.config.endpoint}/logs",
         params={
             "log_id": str(logs_model.id),
             "limit": self.resolve_limit(limit),
-            "order": "desc" if after is None else "asc",
-            "page_token": cursor.get("token"),
+            "start_at": start,
+            "page_token": self.decode_cursor(before or after)
+            if before or after
+            else None,
             "contains": filter_.search,
             "min_severity": filter_.level.name if filter_.level else None,
-            "start_time": (filter_.since or logs_model.created).isoformat(),
-            "end_time": filter_.until.isoformat() if filter_.until else None,
+            "start_time": (
+                filter_.since or logs_model.created
+            ).isoformat(),
+            "end_time": (filter_.until or utc_now()).isoformat(),
         },
         headers={"Authorization": f"Bearer {self.config.api_key}"},
     )
-    payload = response.json()
+
+    body = response.json()
 
     entries = [
         LogEntry(
@@ -362,23 +359,21 @@ def fetch(
             name=log.get("logger_name"),
             filename=log.get("filename"),
             lineno=log.get("line_number"),
+            id=uuid5(self.id, log["id"]),
         )
-        for log in payload["logs"]
+        for log in body["logs"] or []
     ]
-    if after is None:
-        entries.reverse()
 
-    next_token = payload.get("next_page_token")
     return LogsEntriesResponse(
         items=entries,
-        before=self.encode_cursor(token=next_token) if next_token else None,
-        after=self.encode_cursor(timestamp=entries[-1].timestamp.isoformat())
-        if entries
-        else after,
+        before=self.encode_cursor(body["prev_page_token"])
+        if entries and body.get("prev_page_token")
+        else None,
+        after=self.encode_cursor(body["next_page_token"])
+        if entries and body.get("next_page_token")
+        else None,
     )
 ```
-
-If your backend cannot page at all, return everything it will give you and leave both cursors unset. That is what the [artifact log store](artifact.md) does: its log files have no index, so every page would re-read the file from one of its ends, and a browsing session would turn into a long series of expensive reads. It ignores the filters too, for the reason above, and leaves both filtering and paging to whoever displays the entries.
 
 ### Build Your Own Custom Log Store
 

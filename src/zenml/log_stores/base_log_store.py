@@ -15,7 +15,6 @@
 
 import base64
 import binascii
-import json
 import logging
 import threading
 from abc import ABC, abstractmethod
@@ -232,56 +231,45 @@ class BaseLogStore(StackComponent, ABC):
         return min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
 
     @staticmethod
-    def encode_cursor(**payload: Any) -> str:
-        """Encode a pagination cursor into an opaque token.
-
-        Cursors are opaque to everything outside the log store that issued
-        them, which is what lets each log store carry whatever its backend
-        needs: a native continuation token for backends that have one, or a
-        timestamp watermark plus the IDs seen at that watermark for backends
-        that do not.
+    def encode_cursor(token: str) -> str:
+        """Encode a backend continuation token for the response.
 
         Args:
-            **payload: The values to carry in the cursor.
+            token: The backend's own continuation token.
 
         Returns:
             The encoded cursor.
         """
-        data = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        return base64.urlsafe_b64encode(data.encode("utf-8")).decode("ascii")
+        return base64.urlsafe_b64encode(token.encode("utf-8")).decode("ascii")
 
     @staticmethod
-    def decode_cursor(token: str) -> Dict[str, Any]:
-        """Decode an opaque pagination token.
+    def decode_cursor(token: str) -> str:
+        """Decode a cursor back to the backend continuation token.
 
         Args:
-            token: The token to decode.
+            token: The encoded cursor from a previous page.
 
         Returns:
-            The values carried in the cursor.
+            The backend's own continuation token.
 
         Raises:
-            ValueError: If the token was not produced by `encode_cursor`.
+            ValueError: If the token is not one this server issued.
         """
         try:
-            raw = base64.urlsafe_b64decode(token.encode("ascii"))
-            payload = json.loads(raw.decode("utf-8"))
-        except (
-            binascii.Error,
-            UnicodeDecodeError,
-            json.JSONDecodeError,
-        ) as e:
-            raise ValueError(f"Invalid pagination cursor: {token}") from e
-
-        if not isinstance(payload, dict):
-            raise ValueError(f"Invalid pagination cursor: {token}")
-
-        return payload
+            return base64.urlsafe_b64decode(token.encode("ascii")).decode(
+                "utf-8"
+            )
+        except (binascii.Error, UnicodeDecodeError, ValueError) as e:
+            raise ValueError(
+                "The pagination cursor is not one this server issued. Drop it "
+                "and read the stream again from one of its ends."
+            ) from e
 
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -293,22 +281,35 @@ class BaseLogStore(StackComponent, ABC):
         on the dashboard or via API. The implementation should not require
         any integration-specific SDKs that aren't available on the server.
 
-        At most one of `before` and `after` may be set. With neither, the
-        implementation returns the newest page. Implementations that cannot
-        paginate should return every entry they can, up to the limit, and leave
-        both cursors on the response unset.
+        `start` picks the end of the stream the first page is taken from. It
+        does not affect ordering: entries within a page always run from oldest
+        to newest. Reading a hundred entries ten at a time therefore gives the
+        first ten from `"oldest"` and the last ten from `"newest"`. Omit it
+        when the caller has no preference: the store then picks the end it can
+        serve, and refuses only an explicit value it cannot honor.
+
+        A page may carry `before`, `after`, both, or neither. Fill the
+        directions you can continue in from this page, and leave the rest
+        unset. A store that cannot page at all leaves both unset.
+
+        Pass at most one of `before` and `after` to continue from a previous
+        page. An implementation that cannot honor a parameter raises
+        `ValueError` rather than ignoring it, so that a caller is never
+        handed an unfiltered stream that looks like a filtered one.
 
         Args:
             logs_model: The logs model containing metadata about the logs.
+            start: Which end of the stream to start reading from. Omit to
+                let the store pick.
             limit: Maximum number of log entries to return. Defaults to the
                 log store's `default_query_size`.
-            before: Cursor pointing at entries older than a previous page.
-            after: Cursor pointing at entries newer than a previous page.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
             filter_: Filters to apply while retrieving the entries.
 
         Returns:
             A page of log entries ordered from oldest to newest, with cursors
-            for the adjacent pages.
+            for the pages around it that this store can serve.
         """
 
 
