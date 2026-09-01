@@ -299,7 +299,7 @@ def get_step_runtime(
     step_config: "StepConfiguration",
     pipeline_docker_settings: "DockerSettings",
     orchestrator: Optional["BaseOrchestrator"] = None,
-) -> StepRuntime:
+) -> Tuple[StepRuntime, Optional[str]]:
     """Determine if a step should be run in process.
 
     Args:
@@ -309,28 +309,44 @@ def get_step_runtime(
             orchestrator will be inferred from the active stack.
 
     Returns:
-        The runtime for the step.
+        The runtime for the step and an optional warning describing why the
+        configured runtime was overridden.
     """
     if step_config.step_operator:
-        return StepRuntime.ISOLATED
+        return StepRuntime.ISOLATED, None
 
     if not orchestrator:
         orchestrator = Client().active_stack.orchestrator
 
     if not orchestrator.can_run_isolated_steps:
-        return StepRuntime.INLINE
+        warning = None
+        if step_config.runtime == StepRuntime.ISOLATED:
+            warning = (
+                f"The {orchestrator.__class__.__name__} does not support "
+                "running steps in isolated runtimes. Running step "
+                f"`{step_config.name}` in inline runtime instead."
+            )
+        return StepRuntime.INLINE, warning
+
+    if step_config.resource_settings.has_basic_resource_demands:
+        warning = None
+        if step_config.runtime == StepRuntime.INLINE:
+            warning = (
+                f"Specifying compute resource settings for step "
+                f"`{step_config.name}` requires an isolated runtime, but the "
+                "step was configured to run inline. Running the step in "
+                "isolated runtime instead."
+            )
+        return StepRuntime.ISOLATED, warning
 
     runtime = step_config.runtime
-
     if runtime is None:
-        if not step_config.resource_settings.empty:
-            runtime = StepRuntime.ISOLATED
-        elif step_config.docker_settings != pipeline_docker_settings:
+        if step_config.docker_settings != pipeline_docker_settings:
             runtime = StepRuntime.ISOLATED
         else:
             runtime = StepRuntime.INLINE
 
-    return runtime
+    return runtime, None
 
 
 def get_config_template(

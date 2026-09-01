@@ -34,6 +34,7 @@ from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
     StepRunInputArtifactType,
+    StepRuntime,
     StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
@@ -182,6 +183,10 @@ class StepRunRequest(ProjectScopedRequest):
         "step run.",
         default=None,
     )
+    resource_request_runtime: Optional[StepRuntime] = Field(
+        title="The runtime mode used to decide resource request semantics.",
+        default=None,
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -253,6 +258,11 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",
+        default=None,
+    )
+    resource_request_id: Optional[UUID] = Field(
+        title="The ID of an externally managed resource request for the "
+        "step run.",
         default=None,
     )
     substitutions: Dict[str, str] = Field(
@@ -741,6 +751,15 @@ class StepRunResponse(
         return self.get_resources().model_version
 
     @property
+    def resource_request_id(self) -> Optional[UUID]:
+        """The `resource_request_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().resource_request_id
+
+    @property
     def resource_request(self) -> Optional["ResourceRequestResponse"]:
         """The `resource_request` property.
 
@@ -908,6 +927,19 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
 
 
 # ------------------ Heartbeat Model ---------------
+
+
+class StepHeartbeatRequest(BaseModel):
+    """Light-weight model for Step Heartbeat requests."""
+
+    heartbeat_liveness_timeout_seconds: Optional[int] = Field(
+        default=None,
+        gt=0,
+        title=(
+            "Seconds the server should wait before considering the "
+            "heartbeat client dead."
+        ),
+    )
 
 
 class StepHeartbeatResponse(BaseModel, use_enum_values=True):

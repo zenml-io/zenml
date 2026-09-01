@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Resource pools store interface."""
+"""Resource request store interface."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
@@ -19,17 +19,12 @@ from uuid import UUID
 
 from zenml.models import (
     Page,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
+)
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRenewalRequest,
 )
 
 if TYPE_CHECKING:
@@ -37,142 +32,7 @@ if TYPE_CHECKING:
 
 
 class ResourcePoolsStoreInterface(ABC):
-    """Resource pools store interface."""
-
-    # -------------------- Resource Pools -------------
-
-    @abstractmethod
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-
-    @abstractmethod
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-
-    @abstractmethod
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-
-    @abstractmethod
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-
-    @abstractmethod
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-
-    @abstractmethod
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            The requested policy.
-        """
-
-    @abstractmethod
-    def list_resource_pool_subject_policies(
-        self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            Matching policies.
-        """
-
-    @abstractmethod
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update model.
-
-        Returns:
-            The updated policy.
-        """
-
-    @abstractmethod
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-
-    # -------------------- Resource Requests -------------
+    """Resource request store interface."""
 
     @abstractmethod
     def get_resource_request(
@@ -182,8 +42,7 @@ class ResourcePoolsStoreInterface(ABC):
 
         Args:
             resource_request_id: The ID of the resource request to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            hydrate: Whether to hydrate metadata and resources.
 
         Returns:
             The resource request.
@@ -193,32 +52,52 @@ class ResourcePoolsStoreInterface(ABC):
     def list_resource_requests(
         self, filter_model: ResourceRequestFilter, hydrate: bool = False
     ) -> Page[ResourceRequestResponse]:
-        """List all resource requests matching the given filter criteria.
+        """List resource requests matching the given filter criteria.
 
         Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
+            filter_model: Filter and pagination parameters.
+            hydrate: Whether to hydrate metadata and resources.
 
         Returns:
-            A list of all resource requests matching the filter criteria.
+            Matching resource requests.
         """
 
     @abstractmethod
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
 
         Args:
-            resource_request_id: The ID of the resource request to delete.
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
+        """
+
+    @abstractmethod
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
         """
 
 
 class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
-    """Resource pools SQL store interface."""
+    """Resource request SQL store interface."""
 
     def __init__(self, store: "SqlZenStore") -> None:
-        """Initialize the resource pools SQL store.
+        """Initialize the resource request SQL store.
 
         Args:
             store: The store to use.
@@ -226,6 +105,22 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         super().__init__()
         self.store = store
         store.resource_pools = self
+
+    @abstractmethod
+    def create_resource_request(
+        self,
+        session: "Session",
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a step-run resource request with SQL session-backed metadata.
+
+        Args:
+            session: DB session used to enrich step-run metadata.
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
 
     @abstractmethod
     def release_step_run_resources(
@@ -236,18 +131,4 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         Args:
             session: DB session.
             step_run_id: The ID of the step run to release resources for.
-        """
-
-    @abstractmethod
-    def create_resource_request(
-        self, session: "Session", resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse | None:
-        """Create a resource request.
-
-        Args:
-            session: DB session.
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request or None if the feature is not enabled.
         """
