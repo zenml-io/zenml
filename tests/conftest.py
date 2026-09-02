@@ -54,6 +54,14 @@ from zenml.utils import source_utils
 DEFAULT_ENVIRONMENT_NAME = "default"
 
 
+def pytest_configure() -> None:
+    """Prevent the macOS OpenMP preload from reaching child processes."""
+    # macOS consumes this variable before Python starts. Child processes may
+    # use a different architecture or load a different native library stack.
+    if os.environ.get("PYTEST_DYLD_INSERT_LIBRARIES"):
+        os.environ.pop("DYLD_INSERT_LIBRARIES", None)
+
+
 def pytest_addoption(parser):
     """Fixture that gets called by pytest ahead of tests. Adds CLI options that
     can be used to configure the test deployment, environment, requirements and

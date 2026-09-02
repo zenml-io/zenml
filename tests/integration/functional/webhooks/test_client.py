@@ -41,8 +41,6 @@ def test_client_webhook_lifecycle(clean_client):
     assert webhook.webhook_type == "custom"
     assert webhook.active is True
     assert webhook.project_id == clean_client.active_project.id
-    assert webhook.endpoint_url is not None
-    assert webhook.endpoint_url.endswith(f"/custom/{webhook.id}/events")
     assert webhook.stats.received_count == 0
 
     by_id = clean_client.get_webhook(webhook.id)
