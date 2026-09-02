@@ -372,3 +372,25 @@ def authenticate_hmac_sha256(
     )
     if not hmac.compare_digest(signature, expected):
         raise WebhookAuthenticationError("Invalid webhook signature.")
+
+
+def authenticate_hmac_sha256_hex(
+    *, body: bytes, headers: Mapping[str, str], secret: str, header: str
+) -> None:
+    """Authenticate a raw hexadecimal HMAC-SHA256 signature.
+
+    Args:
+        body: The exact request body.
+        headers: The request headers.
+        secret: The signing secret.
+        header: The signature header name.
+
+    Raises:
+        WebhookAuthenticationError: If the signature is invalid.
+    """
+    signature = headers.get(header)
+    if not signature:
+        raise WebhookAuthenticationError(f"Missing {header} header.")
+    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature.lower(), expected.lower()):
+        raise WebhookAuthenticationError("Invalid webhook signature.")

@@ -93,4 +93,5 @@ for the shared response contract.
 
 - [Webhooks](../webhooks.md)
 - [GitHub webhooks](github.md)
+- [ClickUp webhooks](clickup.md)
 - [Custom webhook triggers](../triggers.md#custom-webhook-triggers)

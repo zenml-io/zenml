@@ -39,6 +39,7 @@
 * [Triggers](triggers.md)
 * [Webhooks](webhooks.md)
   * [GitHub](webhooks/github.md)
+  * [ClickUp](webhooks/clickup.md)
   * [Custom webhooks](webhooks/custom.md)
 * [Resource Pools](resource-pools.md)
   * [Core Concepts](resource-pools-core-concepts.md)
