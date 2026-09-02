@@ -94,7 +94,7 @@ def _matches_string_filter(
 
     if actual is None:
         return False
-    
+
     values = configured if isinstance(configured, list) else [configured]
     for value in values:
         if value.startswith("oneof:"):

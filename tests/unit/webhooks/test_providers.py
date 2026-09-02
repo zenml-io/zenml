@@ -711,9 +711,7 @@ def test_clickup_authentication_uses_raw_hex_signature() -> None:
     """ClickUp HMAC uses a raw hex digest in X-Signature."""
     provider = ClickUpWebhookProvider()
     secret = "clickup-secret"
-    body = (
-        b'{"event":"taskStatusUpdated","webhook_id":"wh-1","task_id":"abc"}'
-    )
+    body = b'{"event":"taskStatusUpdated","webhook_id":"wh-1","task_id":"abc"}'
     headers = {CLICKUP_SIGNATURE_HEADER: _clickup_signature(secret, body)}
 
     provider.authenticate(body=body, headers=headers, secret=secret)
@@ -721,7 +719,10 @@ def test_clickup_authentication_uses_raw_hex_signature() -> None:
     with pytest.raises(WebhookAuthenticationError):
         provider.authenticate(
             body=body,
-            headers={CLICKUP_SIGNATURE_HEADER: "sha256=" + headers[CLICKUP_SIGNATURE_HEADER]},
+            headers={
+                CLICKUP_SIGNATURE_HEADER: "sha256="
+                + headers[CLICKUP_SIGNATURE_HEADER]
+            },
             secret=secret,
         )
 
@@ -786,9 +787,7 @@ def test_clickup_match_filters_status_and_list() -> None:
     other_list = SimpleNamespace(
         id=uuid4(),
         configuration={
-            "target_events": [
-                {"type": "taskStatusUpdated", "list_id": "999"}
-            ]
+            "target_events": [{"type": "taskStatusUpdated", "list_id": "999"}]
         },
     )
     other_event = SimpleNamespace(
