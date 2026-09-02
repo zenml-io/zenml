@@ -57,7 +57,7 @@ if [ "$SKIP_ZIZMOR" = false ] && [ -d ".github/workflows" ]; then
 
     if [ -n "$GH_TOKEN" ]; then
         export GH_TOKEN
-        uvx zizmor --config=.github/zizmor.yml .github/workflows/
+        uvx --constraints .github/zizmor/requirements.txt zizmor --config=.github/zizmor.yml .github/workflows/
     else
         echo "⚠️  Skipping zizmor check: no GH_TOKEN and gh CLI not authenticated."
         echo "   Run: GH_TOKEN=\$(gh auth token) bash scripts/lint.sh"
