@@ -22,3 +22,4 @@ class BuiltinWebhookType(StrEnum):
     CUSTOM = "custom"
     GITHUB = "github"
     CLICKUP = "clickup"
+    SLACK = "slack"

@@ -752,6 +752,68 @@ for all fields and supported string-filter operators.
 Attach the trigger to a snapshot as shown below, then follow the
 [signed ClickUp mock request](webhooks/clickup.md#mock-a-signed-clickup-delivery)
 to test the intake path.
+### Slack webhook triggers
+
+Slack webhook triggers support a curated set of events suited to automation:
+app mentions, ordinary human messages, reactions being added or removed,
+message metadata being posted or updated, and files being shared. First,
+configure the Slack app, event subscriptions, and webhook by following
+[Slack webhooks](webhooks/slack.md).
+
+Create `slack-automation.yaml`:
+
+```yaml
+target_events:
+  - type: message_posted
+    channel_id: 'oneof:["C0123456789","C9876543210"]'
+    text: "startswith:deploy production"
+  - type: reaction_added
+    channel_id: C0123456789
+    reaction: rocket
+```
+
+Then create the trigger:
+
+```bash
+zenml trigger webhook create on-slack-automation \
+  --webhook slack-events \
+  --config slack-automation.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.slack import (
+    MessagePostedEventFilter,
+    ReactionAddedEventFilter,
+    SlackWebhookConfiguration,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-slack-automation",
+    webhook="slack-events",
+    configuration=SlackWebhookConfiguration(
+        target_events=[
+            MessagePostedEventFilter(
+                channel_id='oneof:["C0123456789","C9876543210"]',
+                text="startswith:deploy production",
+            ),
+            ReactionAddedEventFilter(
+                channel_id="C0123456789",
+                reaction="rocket",
+            ),
+        ]
+    ),
+)
+```
+
+Each event filter has event-specific optional fields. Exact, list, and
+`oneof:` string matching are supported throughout; `startswith:` is also
+available for message text and message-metadata event types. See the Slack
+provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
+for the complete event catalog, subscription scopes, and matching behavior.
 
 ### Attach the trigger to a snapshot
 

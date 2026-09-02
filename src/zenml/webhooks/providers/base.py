@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.exceptions import CredentialsNotValid
 from zenml.models.v2.base.filter import StringFilterOption
@@ -208,6 +208,23 @@ class WebhookTriggerMatch(BaseModel, Generic[WebhookTriggerT]):
     event: dict[str, Any] | None = None
 
 
+class WebhookIntakeResponse(BaseModel):
+    """Provider-owned successful webhook intake response."""
+
+    status_code: int = Field(default=202, ge=200, lt=300)
+    body: str | None = None
+    media_type: str | None = None
+
+
+class ParsedWebhookDelivery(BaseModel):
+    """A successful provider delivery and its intake response."""
+
+    event: ParsedWebhookEvent | None
+    response: WebhookIntakeResponse = Field(
+        default_factory=WebhookIntakeResponse
+    )
+
+
 class BaseWebhookProvider(ABC):
     """Stateless provider behavior used by intake and trigger matching."""
 
@@ -273,6 +290,23 @@ class BaseWebhookProvider(ABC):
             delivery_id=self.get_delivery_id(payload=payload, headers=headers),
             payload=payload,
         )
+
+    def parse_delivery(
+        self, body: bytes, headers: Mapping[str, str]
+    ) -> ParsedWebhookDelivery:
+        """Parse a successful delivery and select its intake response.
+
+        Existing providers can continue to implement :meth:`parse`; providers
+        with control deliveries or custom responses can override this method.
+
+        Args:
+            body: The raw request body.
+            headers: The request headers.
+
+        Returns:
+            The parsed delivery and provider-owned response.
+        """
+        return ParsedWebhookDelivery(event=self.parse(body, headers))
 
     @abstractmethod
     def get_event_type(

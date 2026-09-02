@@ -28,6 +28,7 @@ from zenml.webhooks.providers import (
     BuiltinWebhookType,
     WebhookAuthenticationError,
     WebhookConfiguration,
+    WebhookIntakeResponse,
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookProviderRegistry,

@@ -18,23 +18,27 @@ For every delivery, the webhook endpoint:
 1. verifies the request signature using the webhook's signing secret;
 2. validates the headers and JSON payload required by that webhook type;
 3. records intake statistics for accepted and rejected deliveries; and
-4. makes an accepted event available to configured consumers.
+4. sends the provider-selected successful response; and
+5. makes any accepted event available to configured consumers in a background
+   task after the response is sent.
 
 Consumers define how ZenML reacts to accepted events. For example, a
 [webhook trigger](triggers.md#webhook-triggers) can filter GitHub or ClickUp
 events and execute attached pipeline snapshots when a pull request is merged
 or a task status changes.
 
-The endpoint returns an HTTP response to the sender. A valid delivery normally
-returns `202 Accepted`; an invalid signature, invalid payload, missing webhook,
-or inactive webhook returns an appropriate `4xx` response. The response reports
-the result of webhook intake. Any work performed by consumers happens after
-that intake decision.
+The endpoint returns an HTTP response selected by the provider. GitHub and
+custom deliveries normally return `202 Accepted`; Slack returns `200 OK`. An
+invalid signature, invalid payload, missing webhook, or inactive webhook returns
+an appropriate `4xx` response. The response reports the result of webhook
+intake. Any work performed by consumers happens in an in-process background task
+after the response is sent.
 
 ## Available providers
 
 | Provider | Type | Authentication | Event model |
 |----------|------|----------------|-------------|
+| [Slack](webhooks/slack.md) | `slack` | Slack request signature and timestamp | Curated semantic Slack automation events and typed filters |
 | [GitHub](webhooks/github.md) | `github` | GitHub HMAC-SHA256 signature | Curated semantic GitHub events and string filters |
 | [ClickUp](webhooks/clickup.md) | `clickup` | ClickUp HMAC-SHA256 signature | Curated ClickUp task and list events and string filters |
 | [Custom webhooks](webhooks/custom.md) | `custom` | ZenML HMAC-SHA256 signature | User-supplied event name and JSON object |
@@ -70,7 +74,7 @@ webhook = result
 print(webhook.endpoint_url)
 ```
 
-Provider types are string identifiers. ZenML includes `github`, `clickup`, and
+Provider types are string identifiers. ZenML includes `github`, `clickup`, `slack`, and
 `custom`; servers may register additional provider implementations, and reject
 provider types that are not registered.
 
@@ -264,6 +268,7 @@ Webhook endpoints return intake-level responses:
 
 | Status | Meaning |
 |--------|---------|
+| `200 OK` | The provider accepted the delivery and selected an immediate success response. Slack uses this for event and control deliveries. |
 | `202 Accepted` | The delivery was accepted for processing, or the provider intentionally ignored an unsupported event before webhook lookup. |
 | `400 Bad Request` | Required provider metadata is missing, or the body is not a valid top-level JSON object. |
 | `401 Unauthorized` | The signature does not match the exact request body. |
@@ -278,6 +283,10 @@ Provider-specific early handling can refine this behavior. For example, GitHub
 deliveries with a non-empty but unsupported `X-GitHub-Event` value return `202`
 without resolving a webhook. See the [GitHub](webhooks/github.md) and
 [ClickUp](webhooks/clickup.md) providers for details.
+
+Successful intake schedules event handlers in an in-process background task.
+It does not guarantee that a handler starts or completes, and the handoff is not
+durable if the server process stops after sending the response.
 
 ## Inspect intake statistics
 
