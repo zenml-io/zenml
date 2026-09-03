@@ -27,6 +27,40 @@ from zenml.utils.time_utils import utc_now
 V = TypeVar("V", bound=Any)
 
 
+def append_random_suffix(
+    original_string: str,
+    suffix_length: int,
+    max_length: Optional[int] = None,
+    separator: str = "-",
+    charset: str = string.ascii_lowercase + string.digits
+) -> str:
+    """Appends a random suffix to a string, truncating the original if necessary.
+
+    Args:
+        original_string: The base string to modify.
+        suffix_length: The length of the random suffix to generate.
+        max_length: Maximum allowed length of the final merged string.
+        separator: The string used to join the original string and suffix.
+        charset: The pool of characters to use for generating the random suffix.
+
+    Returns:
+        The merged string with the random suffix appended.
+    """
+    suffix = "".join(random.choices(charset, k=suffix_length))
+    
+    if max_length is not None:
+        allowed_original_length = max_length - len(separator) - suffix_length
+        
+        if allowed_original_length > 0:
+            original_string = original_string[:allowed_original_length]
+        else:
+            return suffix[:max_length]
+            
+    if original_string:
+        return f"{original_string}{separator}{suffix}"
+    return suffix
+
+
 def get_human_readable_time(seconds: float) -> str:
     """Convert seconds into a human-readable string.
 
