@@ -87,11 +87,13 @@ class WebhookProviderRegistry:
             if self._builtins_registered:
                 return
 
+            from zenml.webhooks.providers.clickup import ClickUpWebhookProvider
             from zenml.webhooks.providers.custom import CustomWebhookProvider
             from zenml.webhooks.providers.github import GitHubWebhookProvider
 
             self.register(CustomWebhookProvider)
             self.register(GitHubWebhookProvider)
+            self.register(ClickUpWebhookProvider)
             self._builtins_registered = True
 
 

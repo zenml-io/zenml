@@ -7,8 +7,8 @@ icon: webhook
 
 Webhooks connect external systems to ZenML so that your ZenML deployment can
 react to events that happen outside the platform. For example, you can receive
-an event when a pull request is merged in GitHub, when a GitHub Actions workflow
-finishes, or when an internal service publishes a new model version.
+an event when a pull request is merged in GitHub, when a ClickUp task changes
+status, or when an internal service publishes a new model version.
 
 When you create a webhook, ZenML exposes a project-scoped intake URL. Configure
 the external system to send signed HTTP requests to that URL.
@@ -21,9 +21,9 @@ For every delivery, the webhook endpoint:
 4. makes an accepted event available to configured consumers.
 
 Consumers define how ZenML reacts to accepted events. For example, a
-[webhook trigger](triggers.md#webhook-triggers) can filter GitHub events and
-execute attached pipeline snapshots when a pull request is merged or a branch
-is pushed.
+[webhook trigger](triggers.md#webhook-triggers) can filter GitHub or ClickUp
+events and execute attached pipeline snapshots when a pull request is merged
+or a task status changes.
 
 The endpoint returns an HTTP response to the sender. A valid delivery normally
 returns `202 Accepted`; an invalid signature, invalid payload, missing webhook,
@@ -36,6 +36,7 @@ that intake decision.
 | Provider | Type | Authentication | Event model |
 |----------|------|----------------|-------------|
 | [GitHub](webhooks/github.md) | `github` | GitHub HMAC-SHA256 signature | Curated semantic GitHub events and string filters |
+| [ClickUp](webhooks/clickup.md) | `clickup` | ClickUp HMAC-SHA256 signature | Curated ClickUp task and list events and string filters |
 | [Custom webhooks](webhooks/custom.md) | `custom` | ZenML HMAC-SHA256 signature | User-supplied event name and JSON object |
 
 Provider pages describe the headers, event model, external setup, and manual
@@ -69,9 +70,9 @@ webhook = result
 print(webhook.endpoint_url)
 ```
 
-Provider types are string identifiers. ZenML includes `github` and `custom`;
-servers may register additional provider implementations, and reject provider
-types that are not registered.
+Provider types are string identifiers. ZenML includes `github`, `clickup`, and
+`custom`; servers may register additional provider implementations, and reject
+provider types that are not registered.
 
 The provider type determines how deliveries are authenticated and interpreted
 and cannot be changed after creation. By default, ZenML also generates a
@@ -275,8 +276,8 @@ the signature changes those bytes and causes authentication to fail.
 
 Provider-specific early handling can refine this behavior. For example, GitHub
 deliveries with a non-empty but unsupported `X-GitHub-Event` value return `202`
-without resolving a webhook. See the [GitHub provider](webhooks/github.md) for
-details.
+without resolving a webhook. See the [GitHub](webhooks/github.md) and
+[ClickUp](webhooks/clickup.md) providers for details.
 
 ## Inspect intake statistics
 
@@ -307,5 +308,6 @@ publication, pipeline run creation, or run outcomes.
 ## Next steps
 
 - [Configure a GitHub webhook](webhooks/github.md)
+- [Configure a ClickUp webhook](webhooks/clickup.md)
 - [Send custom webhook events](webhooks/custom.md)
 - [Execute snapshots with webhook triggers](triggers.md#webhook-triggers)

@@ -131,8 +131,8 @@ in the table, while `startswith:` is limited to `branch`, `target_branch`,
 `source_branch`, and `tag` fields. The issue title, number, and issue type are
 available in the propagated event but are not trigger filters.
 
-See [Webhook triggers](../triggers.md#webhook-triggers) for a complete example
-that uses this configuration to execute a pipeline snapshot.
+See [Webhook triggers](../triggers.md#github-webhook-triggers) for a complete
+example that uses this configuration to execute a pipeline snapshot.
 
 ## Mock a signed GitHub push
 
@@ -192,5 +192,6 @@ the digest; even a whitespace or newline change produces a different signature.
 ## Related pages
 
 - [Webhooks](../webhooks.md)
+- [ClickUp webhooks](clickup.md)
 - [Custom webhooks](custom.md)
-- [Webhook triggers](../triggers.md#webhook-triggers)
+- [Webhook triggers](../triggers.md#github-webhook-triggers)

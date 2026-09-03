@@ -697,6 +697,62 @@ GitHub supports `merged_pull_request`, `workflow_run_completed`, `push`,
 for all fields, supported string-filter operators, and another configuration
 example.
 
+### ClickUp webhook triggers
+
+This example executes a pipeline snapshot when ClickUp reports that a task in
+one list moved to `done`. First, create and configure the ClickUp webhook by
+following [ClickUp webhooks](webhooks/clickup.md).
+
+Create `clickup-status.yaml`:
+
+```yaml
+target_events:
+  - type: taskStatusUpdated
+    list_id: "162641285"
+    status: done
+```
+
+Then create the trigger and select the owning webhook:
+
+```bash
+zenml trigger webhook create on-task-done \
+  --webhook clickup-ops \
+  --config clickup-status.yaml
+```
+
+Via the SDK, use the typed ClickUp configuration and event model:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.clickup import (
+    ClickUpWebhookConfiguration,
+    TaskStatusUpdated,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-task-done",
+    webhook="clickup-ops",
+    configuration=ClickUpWebhookConfiguration(
+        target_events=[
+            TaskStatusUpdated(
+                list_id="162641285",
+                status="done",
+            )
+        ]
+    ),
+)
+```
+
+ClickUp supports task and list semantic events such as `taskCreated`,
+`taskStatusUpdated`, and `listUpdated`. See the provider's
+[supported events and filters](webhooks/clickup.md#supported-events-and-filters)
+for all fields and supported string-filter operators.
+
+Attach the trigger to a snapshot as shown below, then follow the
+[signed ClickUp mock request](webhooks/clickup.md#mock-a-signed-clickup-delivery)
+to test the intake path.
+
 ### Attach the trigger to a snapshot
 
 A matching webhook trigger dispatches only the snapshots attached to it. In

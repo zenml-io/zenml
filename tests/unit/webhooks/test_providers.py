@@ -34,6 +34,16 @@ from zenml.webhooks.providers import (
     WebhookTriggerMatch,
     get_webhook_provider,
 )
+from zenml.webhooks.providers.clickup import (
+    CLICKUP_SIGNATURE_HEADER,
+    ClickUpSemanticEvent,
+    ClickUpTaskStatusUpdatedEvent,
+    ClickUpWebhookConfiguration,
+    ClickUpWebhookProvider,
+    ListCreated,
+    TaskCreated,
+    TaskStatusUpdated,
+)
 from zenml.webhooks.providers.custom import (
     CUSTOM_DELIVERY_HEADER,
     CUSTOM_EVENT_HEADER,
@@ -322,6 +332,7 @@ def _signature(secret: str, body: bytes) -> str:
 @pytest.mark.parametrize(
     "webhook_type, provider_type",
     [
+        (BuiltinWebhookType.CLICKUP, ClickUpWebhookProvider),
         (BuiltinWebhookType.GITHUB, GitHubWebhookProvider),
         (BuiltinWebhookType.CUSTOM, CustomWebhookProvider),
     ],
@@ -693,3 +704,209 @@ def test_runtime_empty_target_events_are_rejected() -> None:
         provider.match_triggers(event=event, candidates=[trigger]).triggers
         == []
     )
+
+
+def _clickup_signature(secret: str, body: bytes) -> str:
+    return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+
+
+def test_clickup_authentication_uses_raw_hex_signature() -> None:
+    """ClickUp HMAC uses a raw hex digest in X-Signature."""
+    provider = ClickUpWebhookProvider()
+    secret = "clickup-secret"
+    body = b'{"event":"taskStatusUpdated","webhook_id":"wh-1","task_id":"abc"}'
+    headers = {CLICKUP_SIGNATURE_HEADER: _clickup_signature(secret, body)}
+
+    provider.authenticate(body=body, headers=headers, secret=secret)
+
+    with pytest.raises(WebhookAuthenticationError):
+        provider.authenticate(
+            body=body,
+            headers={
+                CLICKUP_SIGNATURE_HEADER: "sha256="
+                + headers[CLICKUP_SIGNATURE_HEADER]
+            },
+            secret=secret,
+        )
+
+
+def test_clickup_parse_extracts_event_and_history_delivery_id() -> None:
+    """ClickUp parsing reads event from the body and builds the idempotency key."""
+    provider = ClickUpWebhookProvider()
+    body = (
+        b'{"event":"taskStatusUpdated","webhook_id":"wh-1","task_id":"abc",'
+        b'"list_id":"162","history_items":[{"id":"hist-2"},{"id":"hist-1"}]}'
+    )
+
+    parsed = provider.parse(body=body, headers={})
+
+    assert parsed.event_type == "taskStatusUpdated"
+    assert parsed.delivery_id == "wh-1:hist-1,hist-2"
+    assert parsed.payload["task_id"] == "abc"
+
+
+def test_clickup_parse_rejects_missing_event_or_webhook_id() -> None:
+    """ClickUp parsing requires event and webhook_id in the JSON body."""
+    provider = ClickUpWebhookProvider()
+
+    with pytest.raises(WebhookPayloadError, match="event"):
+        provider.parse(
+            body=b'{"webhook_id":"wh-1","task_id":"abc"}', headers={}
+        )
+    with pytest.raises(WebhookPayloadError, match="webhook_id"):
+        provider.parse(
+            body=b'{"event":"taskCreated","task_id":"abc"}', headers={}
+        )
+
+
+def test_clickup_semantic_events_are_public_pydantic_models() -> None:
+    """Normalized ClickUp events are available through the public models API."""
+    event = ClickUpTaskStatusUpdatedEvent(
+        task_id="abc",
+        list_id="162641285",
+        space_id="space-1",
+        folder_id=None,
+        status="done",
+    )
+
+    assert isinstance(event, ClickUpSemanticEvent)
+    assert event.event_filter_type is TaskStatusUpdated
+    assert event.model_dump() == {
+        "type": "taskStatusUpdated",
+        "task_id": "abc",
+        "list_id": "162641285",
+        "space_id": "space-1",
+        "folder_id": None,
+        "status": "done",
+    }
+
+
+def test_clickup_match_filters_status_and_list() -> None:
+    """ClickUp matching uses typed target events and resource filters."""
+    provider = ClickUpWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="clickup",
+        event_type="taskStatusUpdated",
+        payload={
+            "event": "taskStatusUpdated",
+            "webhook_id": "wh-1",
+            "task_id": "abc",
+            "list_id": "162641285",
+            "history_items": [{"id": "hist-1", "after": "done"}],
+        },
+    )
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "taskStatusUpdated",
+                    "list_id": "162641285",
+                    "status": "done",
+                }
+            ]
+        },
+    )
+    other_list = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [{"type": "taskStatusUpdated", "list_id": "999"}]
+        },
+    )
+    other_event = SimpleNamespace(
+        id=uuid4(),
+        configuration={"target_events": [{"type": "taskCreated"}]},
+    )
+
+    result = provider.match_triggers(
+        event=event, candidates=[matching, other_list, other_event]
+    )
+    assert result.triggers == [matching]
+    assert result.event is not None
+    assert result.event["type"] == "taskStatusUpdated"
+    assert result.event["list_id"] == "162641285"
+    assert result.event["status"] == "done"
+
+
+def test_clickup_match_filters_list_events() -> None:
+    """List events match list filters and ignore task-only targets."""
+    provider = ClickUpWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="clickup",
+        event_type="listCreated",
+        payload={
+            "event": "listCreated",
+            "webhook_id": "wh-1",
+            "list_id": "162641285",
+            "space_id": "space-1",
+        },
+    )
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [{"type": "listCreated", "list_id": "162641285"}]
+        },
+    )
+    other_space = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [{"type": "listCreated", "space_id": "space-9"}]
+        },
+    )
+    task_target = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [{"type": "taskCreated", "list_id": "162641285"}]
+        },
+    )
+
+    result = provider.match_triggers(
+        event=event, candidates=[matching, other_space, task_target]
+    )
+    assert result.triggers == [matching]
+    assert result.event is not None
+    assert result.event["type"] == "listCreated"
+    assert result.event["list_id"] == "162641285"
+
+
+def test_clickup_configuration_accepts_typed_configuration() -> None:
+    """Strict ClickUp validation accepts its public typed configuration."""
+    provider = ClickUpWebhookProvider()
+    configuration = ClickUpWebhookConfiguration(
+        target_events=[
+            TaskStatusUpdated(
+                list_id="162641285",
+                status="done",
+            ),
+            ListCreated(list_id="162641285"),
+            TaskCreated(task_id="abc"),
+        ]
+    )
+
+    assert provider.validate_configuration(configuration) is configuration
+
+
+def test_clickup_configuration_rejects_filters_for_other_events() -> None:
+    """Each ClickUp event type only accepts its own filter fields."""
+    provider = ClickUpWebhookProvider()
+
+    with pytest.raises(ValueError):
+        provider.validate_configuration(
+            {
+                "target_events": [
+                    {"type": "taskCreated", "status": "done"},
+                ]
+            }
+        )
+    with pytest.raises(ValueError):
+        provider.validate_configuration(
+            {
+                "target_events": [
+                    {"type": "listCreated", "task_id": "abc"},
+                ]
+            }
+        )
