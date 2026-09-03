@@ -725,9 +725,8 @@ Via the SDK, use the typed ClickUp configuration and event model:
 ```python
 from zenml.client import Client
 from zenml.webhooks.providers.clickup import (
-    ClickUpTargetEvent,
     ClickUpWebhookConfiguration,
-    ClickUpWebhookEvent,
+    TaskStatusUpdated,
 )
 
 client = Client()
@@ -736,8 +735,7 @@ trigger = client.create_webhook_trigger(
     webhook="clickup-ops",
     configuration=ClickUpWebhookConfiguration(
         target_events=[
-            ClickUpTargetEvent(
-                type=ClickUpWebhookEvent.TASK_STATUS_UPDATED,
+            TaskStatusUpdated(
                 list_id="162641285",
                 status="done",
             )

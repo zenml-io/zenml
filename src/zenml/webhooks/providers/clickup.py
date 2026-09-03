@@ -3,10 +3,19 @@
 
 import json
 import logging
+from abc import abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, cast
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Literal,
+    TypeAlias,
+    cast,
+)
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
@@ -45,15 +54,12 @@ class ClickUpWebhookEvent(StrEnum):
     LIST_DELETED = "listDeleted"
 
 
-class ClickUpTargetEvent(WebhookTargetEvent):
-    """Filters for a ClickUp webhook event."""
+class _ClickUpListTarget(WebhookTargetEvent):
+    """Shared location filters for ClickUp list events."""
 
-    type: ClickUpWebhookEvent
     list_id: StringFilterOption = None
-    task_id: StringFilterOption = None
     space_id: StringFilterOption = None
     folder_id: StringFilterOption = None
-    status: StringFilterOption = None
 
     @classmethod
     def get_prefix_matching_support(cls) -> Mapping[str, bool]:
@@ -64,17 +70,146 @@ class ClickUpTargetEvent(WebhookTargetEvent):
         """
         return {
             "list_id": False,
-            "task_id": False,
             "space_id": False,
             "folder_id": False,
+        }
+
+
+class _ClickUpTaskTarget(_ClickUpListTarget):
+    """Shared location and task filters for ClickUp task events."""
+
+    task_id: StringFilterOption = None
+
+    @classmethod
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
+
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {
+            **super().get_prefix_matching_support(),
+            "task_id": False,
+        }
+
+
+class _ClickUpTaskStatusTarget(_ClickUpTaskTarget):
+    """Task filters plus the post-change status."""
+
+    status: StringFilterOption = None
+
+    @classmethod
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
+
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {
+            **super().get_prefix_matching_support(),
             "status": False,
         }
+
+
+class TaskCreated(_ClickUpTaskTarget):
+    """Filters for a created ClickUp task."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_CREATED] = (
+        ClickUpWebhookEvent.TASK_CREATED
+    )
+
+
+class TaskUpdated(_ClickUpTaskTarget):
+    """Filters for an updated ClickUp task."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_UPDATED] = (
+        ClickUpWebhookEvent.TASK_UPDATED
+    )
+
+
+class TaskDeleted(_ClickUpTaskTarget):
+    """Filters for a deleted ClickUp task."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_DELETED] = (
+        ClickUpWebhookEvent.TASK_DELETED
+    )
+
+
+class TaskStatusUpdated(_ClickUpTaskStatusTarget):
+    """Filters for a ClickUp task status change."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_STATUS_UPDATED] = (
+        ClickUpWebhookEvent.TASK_STATUS_UPDATED
+    )
+
+
+class TaskMoved(_ClickUpTaskTarget):
+    """Filters for a ClickUp task moved to another list."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_MOVED] = (
+        ClickUpWebhookEvent.TASK_MOVED
+    )
+
+
+class TaskAssigneeUpdated(_ClickUpTaskTarget):
+    """Filters for a ClickUp task assignee change."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED] = (
+        ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED
+    )
+
+
+class TaskCommentPosted(_ClickUpTaskTarget):
+    """Filters for a comment posted on a ClickUp task."""
+
+    type: Literal[ClickUpWebhookEvent.TASK_COMMENT_POSTED] = (
+        ClickUpWebhookEvent.TASK_COMMENT_POSTED
+    )
+
+
+class ListCreated(_ClickUpListTarget):
+    """Filters for a created ClickUp list."""
+
+    type: Literal[ClickUpWebhookEvent.LIST_CREATED] = (
+        ClickUpWebhookEvent.LIST_CREATED
+    )
+
+
+class ListUpdated(_ClickUpListTarget):
+    """Filters for an updated ClickUp list."""
+
+    type: Literal[ClickUpWebhookEvent.LIST_UPDATED] = (
+        ClickUpWebhookEvent.LIST_UPDATED
+    )
+
+
+class ListDeleted(_ClickUpListTarget):
+    """Filters for a deleted ClickUp list."""
+
+    type: Literal[ClickUpWebhookEvent.LIST_DELETED] = (
+        ClickUpWebhookEvent.LIST_DELETED
+    )
+
+
+ClickUpWebhookTargetEvent: TypeAlias = Annotated[
+    TaskCreated
+    | TaskUpdated
+    | TaskDeleted
+    | TaskStatusUpdated
+    | TaskMoved
+    | TaskAssigneeUpdated
+    | TaskCommentPosted
+    | ListCreated
+    | ListUpdated
+    | ListDeleted,
+    Field(discriminator="type"),
+]
 
 
 class ClickUpWebhookConfiguration(WebhookConfiguration):
     """Typed configuration for a ClickUp webhook trigger."""
 
-    target_events: list[ClickUpTargetEvent] = Field(min_length=1)
+    target_events: list[ClickUpWebhookTargetEvent] = Field(min_length=1)
 
 
 def _matches_string_filter(
@@ -105,6 +240,70 @@ def _matches_string_filter(
     return False
 
 
+def _matches_location_filters(
+    *,
+    list_id: str | None,
+    space_id: str | None,
+    folder_id: str | None,
+    target: _ClickUpListTarget,
+) -> bool:
+    """Match shared ClickUp location filters.
+
+    Args:
+        list_id: The list ID extracted from the payload.
+        space_id: The space ID extracted from the payload.
+        folder_id: The folder ID extracted from the payload.
+        target: The typed target event configuration.
+
+    Returns:
+        Whether the extracted location matches the target filters.
+    """
+    return all(
+        (
+            _matches_string_filter(actual=list_id, configured=target.list_id),
+            _matches_string_filter(
+                actual=space_id, configured=target.space_id
+            ),
+            _matches_string_filter(
+                actual=folder_id, configured=target.folder_id
+            ),
+        )
+    )
+
+
+def _matches_task_filters(
+    *,
+    task_id: str | None,
+    list_id: str | None,
+    space_id: str | None,
+    folder_id: str | None,
+    target: _ClickUpTaskTarget,
+) -> bool:
+    """Match shared ClickUp task and location filters.
+
+    Args:
+        task_id: The task ID extracted from the payload.
+        list_id: The list ID extracted from the payload.
+        space_id: The space ID extracted from the payload.
+        folder_id: The folder ID extracted from the payload.
+        target: The typed target event configuration.
+
+    Returns:
+        Whether the extracted task matches the target filters.
+    """
+    return all(
+        (
+            _matches_string_filter(actual=task_id, configured=target.task_id),
+            _matches_location_filters(
+                list_id=list_id,
+                space_id=space_id,
+                folder_id=folder_id,
+                target=target,
+            ),
+        )
+    )
+
+
 def _id_string(payload: Mapping[str, Any], key: str) -> str | None:
     """Extract an ID string from a ClickUp payload.
 
@@ -130,7 +329,7 @@ def _history_item_ids(payload: Mapping[str, Any]) -> list[str]:
         payload: The ClickUp payload.
 
     Returns:
-        The history item IDs, or an empty list if the history items are missing or empty.
+        The history item IDs, or an empty list if they are missing.
     """
     items = payload.get("history_items")
     if not isinstance(items, list):
@@ -152,7 +351,7 @@ def _status_after(payload: Mapping[str, Any]) -> str | None:
         payload: The ClickUp payload.
 
     Returns:
-        The status after the change, or `None` if the history items are missing or empty.
+        The status after the change, or `None` if it is missing.
     """
     items = payload.get("history_items")
     if not isinstance(items, list) or not items:
@@ -170,38 +369,34 @@ def _status_after(payload: Mapping[str, Any]) -> str | None:
     return None
 
 
-class ClickUpSemanticEvent:
+class ClickUpSemanticEvent(BaseModel):
     """Normalized ClickUp event used for trigger matching."""
 
-    def __init__(
-        self,
-        *,
-        event_type: ClickUpWebhookEvent,
-        list_id: str | None,
-        task_id: str | None,
-        space_id: str | None,
-        folder_id: str | None,
-        status: str | None,
-    ) -> None:
-        """Initialize one normalized ClickUp event.
+    event_filter_type: ClassVar[type[WebhookTargetEvent]]
+
+    @abstractmethod
+    def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
+        """Return whether the semantic event matches its typed target.
 
         Args:
-            event_type: The ClickUp event name.
-            list_id: The list ID, if present.
-            task_id: The task ID, if present.
-            space_id: The space ID, if present.
-            folder_id: The folder ID, if present.
-            status: The status after the change, if present.
-        """
-        self.event_type = event_type
-        self.list_id = list_id
-        self.task_id = task_id
-        self.space_id = space_id
-        self.folder_id = folder_id
-        self.status = status
+            target: The typed target event configuration.
 
-    def matches(self, target: ClickUpTargetEvent) -> bool:
-        """Return whether this event matches a typed target.
+        Returns:
+            Whether the semantic event matches the target.
+        """
+
+
+class ClickUpTaskSemanticEvent(ClickUpSemanticEvent):
+    """Normalized ClickUp task event with shared location filters."""
+
+    event_filter_type: ClassVar[type[_ClickUpTaskTarget]]
+    task_id: str | None = None
+    list_id: str | None = None
+    space_id: str | None = None
+    folder_id: str | None = None
+
+    def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
+        """Return whether this event matches a typed task target.
 
         Args:
             target: The typed target event configuration.
@@ -209,27 +404,150 @@ class ClickUpSemanticEvent:
         Returns:
             Whether this event matches the target.
         """
-        if self.event_type != target.type:
+        if not isinstance(target, self.event_filter_type):
+            return False
+        return _matches_task_filters(
+            task_id=self.task_id,
+            list_id=self.list_id,
+            space_id=self.space_id,
+            folder_id=self.folder_id,
+            target=target,
+        )
+
+
+class ClickUpListSemanticEvent(ClickUpSemanticEvent):
+    """Normalized ClickUp list event with shared location filters."""
+
+    event_filter_type: ClassVar[type[_ClickUpListTarget]]
+    list_id: str | None = None
+    space_id: str | None = None
+    folder_id: str | None = None
+
+    def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
+        """Return whether this event matches a typed list target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
+        if not isinstance(target, self.event_filter_type):
+            return False
+        return _matches_location_filters(
+            list_id=self.list_id,
+            space_id=self.space_id,
+            folder_id=self.folder_id,
+            target=target,
+        )
+
+
+class ClickUpTaskCreatedEvent(ClickUpTaskSemanticEvent):
+    """Normalized created-task event."""
+
+    event_filter_type = TaskCreated
+
+
+class ClickUpTaskUpdatedEvent(ClickUpTaskSemanticEvent):
+    """Normalized updated-task event."""
+
+    event_filter_type = TaskUpdated
+
+
+class ClickUpTaskDeletedEvent(ClickUpTaskSemanticEvent):
+    """Normalized deleted-task event."""
+
+    event_filter_type = TaskDeleted
+
+
+class ClickUpTaskStatusUpdatedEvent(ClickUpTaskSemanticEvent):
+    """Normalized task-status-updated event."""
+
+    event_filter_type = TaskStatusUpdated
+    status: str | None = None
+
+    def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
+        """Return whether this event matches a status-updated target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
+        if not isinstance(target, TaskStatusUpdated):
             return False
         return all(
             (
-                _matches_string_filter(
-                    actual=self.list_id, configured=target.list_id
-                ),
-                _matches_string_filter(
-                    actual=self.task_id, configured=target.task_id
-                ),
-                _matches_string_filter(
-                    actual=self.space_id, configured=target.space_id
-                ),
-                _matches_string_filter(
-                    actual=self.folder_id, configured=target.folder_id
+                _matches_task_filters(
+                    task_id=self.task_id,
+                    list_id=self.list_id,
+                    space_id=self.space_id,
+                    folder_id=self.folder_id,
+                    target=target,
                 ),
                 _matches_string_filter(
                     actual=self.status, configured=target.status
                 ),
             )
         )
+
+
+class ClickUpTaskMovedEvent(ClickUpTaskSemanticEvent):
+    """Normalized moved-task event."""
+
+    event_filter_type = TaskMoved
+
+
+class ClickUpTaskAssigneeUpdatedEvent(ClickUpTaskSemanticEvent):
+    """Normalized task-assignee-updated event."""
+
+    event_filter_type = TaskAssigneeUpdated
+
+
+class ClickUpTaskCommentPostedEvent(ClickUpTaskSemanticEvent):
+    """Normalized task-comment-posted event."""
+
+    event_filter_type = TaskCommentPosted
+
+
+class ClickUpListCreatedEvent(ClickUpListSemanticEvent):
+    """Normalized created-list event."""
+
+    event_filter_type = ListCreated
+
+
+class ClickUpListUpdatedEvent(ClickUpListSemanticEvent):
+    """Normalized updated-list event."""
+
+    event_filter_type = ListUpdated
+
+
+class ClickUpListDeletedEvent(ClickUpListSemanticEvent):
+    """Normalized deleted-list event."""
+
+    event_filter_type = ListDeleted
+
+
+_TASK_SEMANTIC_EVENTS: Mapping[
+    ClickUpWebhookEvent, type[ClickUpTaskSemanticEvent]
+] = {
+    ClickUpWebhookEvent.TASK_CREATED: ClickUpTaskCreatedEvent,
+    ClickUpWebhookEvent.TASK_UPDATED: ClickUpTaskUpdatedEvent,
+    ClickUpWebhookEvent.TASK_DELETED: ClickUpTaskDeletedEvent,
+    ClickUpWebhookEvent.TASK_STATUS_UPDATED: ClickUpTaskStatusUpdatedEvent,
+    ClickUpWebhookEvent.TASK_MOVED: ClickUpTaskMovedEvent,
+    ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED: ClickUpTaskAssigneeUpdatedEvent,
+    ClickUpWebhookEvent.TASK_COMMENT_POSTED: ClickUpTaskCommentPostedEvent,
+}
+
+_LIST_SEMANTIC_EVENTS: Mapping[
+    ClickUpWebhookEvent, type[ClickUpListSemanticEvent]
+] = {
+    ClickUpWebhookEvent.LIST_CREATED: ClickUpListCreatedEvent,
+    ClickUpWebhookEvent.LIST_UPDATED: ClickUpListUpdatedEvent,
+    ClickUpWebhookEvent.LIST_DELETED: ClickUpListDeletedEvent,
+}
 
 
 class ClickUpWebhookProvider(BaseWebhookProvider):
@@ -314,7 +632,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
 
     def _cast_runtime_targets(
         self, trigger: "WebhookTriggerResponse"
-    ) -> list[ClickUpTargetEvent]:
+    ) -> list[ClickUpWebhookTargetEvent]:
         """Cast a webhook trigger configuration to a list of target events.
 
         Args:
@@ -374,11 +692,30 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         except ValueError:
             return None
         payload = event.payload
-        return ClickUpSemanticEvent(
-            event_type=event_type,
-            list_id=_id_string(payload, "list_id"),
-            task_id=_id_string(payload, "task_id"),
-            space_id=_id_string(payload, "space_id"),
-            folder_id=_id_string(payload, "folder_id"),
-            status=_status_after(payload),
-        )
+        list_id = _id_string(payload, "list_id")
+        space_id = _id_string(payload, "space_id")
+        folder_id = _id_string(payload, "folder_id")
+        task_cls = _TASK_SEMANTIC_EVENTS.get(event_type)
+        if task_cls is ClickUpTaskStatusUpdatedEvent:
+            return ClickUpTaskStatusUpdatedEvent(
+                task_id=_id_string(payload, "task_id"),
+                list_id=list_id,
+                space_id=space_id,
+                folder_id=folder_id,
+                status=_status_after(payload),
+            )
+        if task_cls is not None:
+            return task_cls(
+                task_id=_id_string(payload, "task_id"),
+                list_id=list_id,
+                space_id=space_id,
+                folder_id=folder_id,
+            )
+        list_cls = _LIST_SEMANTIC_EVENTS.get(event_type)
+        if list_cls is not None:
+            return list_cls(
+                list_id=list_id,
+                space_id=space_id,
+                folder_id=folder_id,
+            )
+        return None

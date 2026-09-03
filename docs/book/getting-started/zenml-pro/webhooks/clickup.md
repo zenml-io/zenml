@@ -133,12 +133,15 @@ qualifying payloads to ZenML semantic events with the same names:
 
 Event names match ClickUp's camelCase identifiers. Resource IDs are compared
 as strings, even when ClickUp sends a numeric `list_id`, `space_id`, or
-`folder_id`.
+`folder_id`. Each event type has its own typed target class, such as
+`TaskStatusUpdated` or `ListCreated`, so filters that do not apply to that
+event are rejected at configuration time.
 
-`status` is the post-change value from the last `history_items` entry: a
-string `after` value, or `after.status` when `after` is an object. It is
-typically present for `taskStatusUpdated`. If you filter on `status` and the
-payload has no after-value, the event does not match.
+`status` is only available on `taskStatusUpdated`. It is the post-change value
+from the last `history_items` entry: a string `after` value, or `after.status`
+when `after` is an object. If you filter on `status` and the payload has no
+after-value, the event does not match. List events do not accept `task_id`,
+and task events other than `taskStatusUpdated` do not accept `status`.
 
 A ClickUp event that is missing from this catalog can still authenticate and
 return `202 Accepted`. It is not mapped to a semantic event, so webhook
