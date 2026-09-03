@@ -244,7 +244,7 @@ def _is_serializable(obj: Any) -> bool:
     if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
-        return _all_serializable(obj.keys()) and _all_serializable(
+        return all(isinstance(key, str) for key in obj) and _all_serializable(
             obj.values()
         )
     return False
