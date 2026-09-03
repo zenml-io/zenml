@@ -42,22 +42,22 @@ from zenml.webhooks.providers.slack import (
     SLACK_SIGNATURE_HEADER,
     AppMentionEventFilter,
     FileSharedEventFilter,
+    MessageEventFilter,
     MessageMetadataPostedEventFilter,
     MessageMetadataUpdatedEventFilter,
-    MessagePostedEventFilter,
     ReactionAddedEventFilter,
     ReactionRemovedEventFilter,
     SlackAppMentionEvent,
     SlackFileSharedEvent,
+    SlackMessageEvent,
     SlackMessageMetadata,
     SlackMessageMetadataPostedEvent,
     SlackMessageMetadataUpdatedEvent,
-    SlackMessagePostedEvent,
     SlackReactionAddedEvent,
     SlackReactionItem,
     SlackReactionRemovedEvent,
     SlackWebhookConfiguration,
-    SlackWebhookEvent,
+    SlackWebhookEventType,
     SlackWebhookProvider,
 )
 from zenml.zen_server.routers import webhook_endpoints as endpoints
@@ -120,6 +120,11 @@ def test_slack_provider_is_registered() -> None:
 
     assert isinstance(provider, SlackWebhookProvider)
     assert provider.webhook_type == BuiltinWebhookType.SLACK
+
+
+def test_slack_message_event_types_preserve_wire_and_semantic_names() -> None:
+    """Slack intake and ZenML triggers share the Slack message name."""
+    assert SlackWebhookEventType.MESSAGE == "message"
 
 
 def test_slack_pre_validation_always_processes() -> None:
@@ -355,12 +360,14 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                     "type": "app_mention",
                     "channel_id": ["C123", "C456"],
                     "user_id": 'oneof:["U123","U456"]',
+                    "text": "startswith:<@APP123> deploy ",
                     "threaded": True,
                 },
                 {
-                    "type": "message_posted",
+                    "type": "message",
                     "text": "startswith:deploy ",
                     "channel_type": "channel",
+                    "subtype": ["message_changed", "message_deleted"],
                 },
                 {"type": "reaction_added", "reaction": "rocket"},
                 {"type": "reaction_removed", "item_type": "message"},
@@ -383,10 +390,13 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
             AppMentionEventFilter(
                 channel_id=["C123", "C456"],
                 user_id='oneof:["U123","U456"]',
+                text="startswith:<@APP123> deploy ",
                 threaded=True,
             ),
-            MessagePostedEventFilter(
-                text="startswith:deploy ", channel_type="channel"
+            MessageEventFilter(
+                text="startswith:deploy ",
+                channel_type="channel",
+                subtype=["message_changed", "message_deleted"],
             ),
             ReactionAddedEventFilter(reaction="rocket"),
             ReactionRemovedEventFilter(item_type="message"),
@@ -411,8 +421,27 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                 {"type": "app_mention", "channel_id": "startswith:C"}
             ]
         },
+        {
+            "target_events": [
+                {"type": "app_mention", "text": "contains:deploy"}
+            ]
+        },
         {"target_events": [{"type": "app_mention", "user_id": "oneof:[]"}]},
         {"target_events": [{"type": "app_mention", "workspace_id": "T123"}]},
+        {
+            "target_events": [
+                {"type": "message", "subtype": "startswith:message_"}
+            ]
+        },
+        {
+            "target_events": [
+                {
+                    "type": "message",
+                    "subtype": "message_changed",
+                    "include_subtypes": True,
+                }
+            ]
+        },
         {
             "target_events": [
                 {"type": "reaction_added", "reaction": "startswith:approve"}
@@ -470,6 +499,7 @@ def test_slack_parses_semantic_app_mention() -> None:
             "type": "app_mention",
             "channel": "C123",
             "user": "U123",
+            "text": "<@APP123> investigate this",
             "ts": "1788300000.000002",
             "thread_ts": "1788300000.000001",
         }
@@ -484,21 +514,22 @@ def test_slack_parses_semantic_app_mention() -> None:
         event_ts=SLACK_EVENT_TS,
         channel_id="C123",
         user_id="U123",
+        text="<@APP123> investigate this",
         message_ts="1788300000.000002",
         thread_ts="1788300000.000001",
     )
     assert semantic.event_filter_type is AppMentionEventFilter
-    assert semantic.type == SlackWebhookEvent.APP_MENTION
+    assert semantic.type == SlackWebhookEventType.APP_MENTION
 
 
 @pytest.mark.parametrize(
     "missing_field",
     ["event_id", "team_id", "user_id", "event_time", "event_ts"],
 )
-def test_slack_ignores_events_missing_common_fields(
+def test_slack_app_mentions_require_common_and_user_fields(
     missing_field: str,
 ) -> None:
-    """Every semantic event requires the common Slack callback fields.
+    """App mentions require common Slack callback and user fields.
 
     Args:
         missing_field: The required common field to omit.
@@ -536,6 +567,7 @@ def test_slack_matches_app_mention_targets() -> None:
                     "type": "app_mention",
                     "channel_id": ["C999", "C123"],
                     "user_id": 'oneof:["U123","U456"]',
+                    "text": "startswith:<@APP123> investigate",
                 }
             ]
         },
@@ -567,6 +599,14 @@ def test_slack_matches_app_mention_targets() -> None:
             ]
         },
     )
+    wrong_text = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {"type": "app_mention", "text": "startswith:deploy "}
+            ]
+        },
+    )
     empty_channel_list = SimpleNamespace(
         id=uuid4(),
         configuration={
@@ -582,6 +622,7 @@ def test_slack_matches_app_mention_targets() -> None:
             matching_alternative,
             wrong_channel,
             wrong_user,
+            wrong_text,
             empty_channel_list,
         ],
     )
@@ -592,11 +633,12 @@ def test_slack_matches_app_mention_targets() -> None:
         matching_alternative,
     ]
     assert matches.event is not None
-    assert matches.event["type"] == SlackWebhookEvent.APP_MENTION
+    assert matches.event["type"] == SlackWebhookEventType.APP_MENTION
+    assert matches.event["text"] == "<@APP123> investigate this"
 
 
-def test_slack_parses_and_matches_human_message_posts() -> None:
-    """Ordinary root messages and replies support semantic filtering."""
+def test_slack_parses_and_matches_regular_messages() -> None:
+    """Regular root messages and replies support semantic filtering."""
     event = _slack_webhook_event(
         event_type="message",
         event_payload={
@@ -613,7 +655,7 @@ def test_slack_parses_and_matches_human_message_posts() -> None:
 
     semantic = SlackWebhookProvider().parse_semantic_event(event)
 
-    assert semantic == SlackMessagePostedEvent(
+    assert semantic == SlackMessageEvent(
         event_id="Ev123",
         team_id="T123",
         event_time=SLACK_EVENT_TIME,
@@ -622,11 +664,13 @@ def test_slack_parses_and_matches_human_message_posts() -> None:
         channel_type="channel",
         user_id="U123",
         text="deploy production",
+        subtype=None,
+        bot_authored=False,
         message_ts="1788300000.000002",
         thread_ts="1788300000.000001",
     )
     assert semantic.matches(
-        MessagePostedEventFilter(
+        MessageEventFilter(
             team_id="T123",
             channel_id="C123",
             channel_type="channel",
@@ -635,15 +679,13 @@ def test_slack_parses_and_matches_human_message_posts() -> None:
             threaded=True,
         )
     )
-    assert semantic.type == SlackWebhookEvent.MESSAGE_POSTED
-    assert not semantic.matches(MessagePostedEventFilter(threaded=False))
+    assert semantic.type == SlackWebhookEventType.MESSAGE
+    assert not semantic.matches(MessageEventFilter(threaded=False))
 
     matching = SimpleNamespace(
         id=uuid4(),
         configuration={
-            "target_events": [
-                {"type": "message_posted", "text": "deploy production"}
-            ]
+            "target_events": [{"type": "message", "text": "deploy production"}]
         },
     )
     wrong_event = SimpleNamespace(
@@ -655,41 +697,123 @@ def test_slack_parses_and_matches_human_message_posts() -> None:
     )
     assert match.triggers == [matching]
     assert match.event is not None
-    assert match.event["type"] == SlackWebhookEvent.MESSAGE_POSTED
+    assert match.event["type"] == SlackWebhookEventType.MESSAGE
 
 
 @pytest.mark.parametrize(
-    "payload",
+    "payload, expected_subtype, expected_bot_authored",
     [
-        {
-            "type": "message",
-            "channel": "C123",
-            "user": "U123",
-            "ts": "1.1",
-            "subtype": "message_changed",
-        },
-        {
-            "type": "message",
-            "channel": "C123",
-            "user": "U123",
-            "ts": "1.1",
-            "bot_id": "B123",
-        },
-        {
-            "type": "message",
-            "channel": "C123",
-            "user": "U123",
-            "ts": "1.1",
-            "bot_profile": {"id": "B123"},
-        },
-        {"type": "message", "channel": "C123", "user": "U123"},
+        (
+            {
+                "type": "message",
+                "subtype": "message_changed",
+                "channel": "C123",
+                "message": {
+                    "type": "message",
+                    "user": "U123",
+                    "text": "updated message",
+                    "ts": "1.1",
+                },
+            },
+            "message_changed",
+            False,
+        ),
+        (
+            {
+                "type": "message",
+                "channel": "C123",
+                "text": "bot message",
+                "ts": "1.1",
+                "bot_id": "B123",
+            },
+            None,
+            True,
+        ),
+        (
+            {
+                "type": "message",
+                "subtype": "bot_message",
+                "channel": "C123",
+                "text": "bot message",
+                "ts": "1.1",
+                "bot_profile": {"id": "B123"},
+            },
+            "bot_message",
+            True,
+        ),
     ],
-    ids=["subtype", "bot-id", "bot-profile", "missing-timestamp"],
+    ids=["message-changed", "bot-id", "bot-message-subtype"],
 )
-def test_slack_ignores_non_automation_message_variants(
+def test_slack_message_subtypes_require_explicit_filtering(
     payload: dict[str, object],
+    expected_subtype: str | None,
+    expected_bot_authored: bool,
 ) -> None:
-    """Bot, system, mutation, and malformed messages launch no trigger."""
+    """Subtype and bot messages are normalized but excluded by default."""
+    event = _slack_webhook_event(event_type="message", event_payload=payload)
+    semantic = SlackWebhookProvider().parse_semantic_event(event)
+
+    assert isinstance(semantic, SlackMessageEvent)
+    assert semantic.subtype == expected_subtype
+    assert semantic.bot_authored is expected_bot_authored
+    assert not semantic.matches(MessageEventFilter())
+    assert semantic.matches(MessageEventFilter(include_subtypes=True))
+    if expected_subtype is not None:
+        assert semantic.matches(MessageEventFilter(subtype=expected_subtype))
+
+
+def test_slack_matches_multiple_message_subtypes() -> None:
+    """Message subtype lists use the shared OR string-filter behavior."""
+    event = _slack_webhook_event(
+        event_type="message",
+        event_payload={
+            "type": "message",
+            "subtype": "message_deleted",
+            "channel": "C123",
+            "deleted_ts": "1.1",
+        },
+    )
+
+    semantic = SlackWebhookProvider().parse_semantic_event(event)
+
+    assert semantic == SlackMessageEvent(
+        event_id="Ev123",
+        team_id="T123",
+        event_time=SLACK_EVENT_TIME,
+        event_ts=SLACK_EVENT_TS,
+        channel_id="C123",
+        subtype="message_deleted",
+        bot_authored=False,
+        message_ts="1.1",
+    )
+    assert semantic.matches(
+        MessageEventFilter(subtype=["message_changed", "message_deleted"])
+    )
+    assert semantic.matches(
+        MessageEventFilter(
+            subtype='oneof:["message_changed","message_deleted"]'
+        )
+    )
+    assert not semantic.matches(MessageEventFilter(subtype="message_changed"))
+
+
+@pytest.mark.parametrize("missing_field", ["channel", "user", "ts"])
+def test_slack_ignores_malformed_regular_messages(
+    missing_field: str,
+) -> None:
+    """Regular messages require stable channel, user, and timestamp fields.
+
+    Args:
+        missing_field: The required regular-message field to omit.
+    """
+    payload = {
+        "type": "message",
+        "channel": "C123",
+        "user": "U123",
+        "text": "deploy production",
+        "ts": "1.1",
+    }
+    payload.pop(missing_field)
     event = _slack_webhook_event(event_type="message", event_payload=payload)
 
     assert SlackWebhookProvider().parse_semantic_event(event) is None
@@ -767,7 +891,7 @@ def test_slack_parses_all_documented_reaction_items(
             item_id=expected_item.id,
         )
     )
-    assert semantic.type == SlackWebhookEvent.REACTION_ADDED
+    assert semantic.type == SlackWebhookEventType.REACTION_ADDED
 
 
 def test_slack_parses_and_matches_removed_reactions() -> None:
@@ -789,7 +913,7 @@ def test_slack_parses_and_matches_removed_reactions() -> None:
     semantic = SlackWebhookProvider().parse_semantic_event(event)
 
     assert isinstance(semantic, SlackReactionRemovedEvent)
-    assert semantic.type == SlackWebhookEvent.REACTION_REMOVED
+    assert semantic.type == SlackWebhookEventType.REACTION_REMOVED
     assert semantic.matches(
         ReactionRemovedEventFilter(
             channel_id="C123", reaction="white_check_mark"
@@ -868,7 +992,7 @@ def test_slack_parses_and_matches_posted_message_metadata() -> None:
             metadata_event_type="startswith:zenml.",
         )
     )
-    assert semantic.type == SlackWebhookEvent.MESSAGE_METADATA_POSTED
+    assert semantic.type == SlackWebhookEventType.MESSAGE_METADATA_POSTED
 
 
 def test_slack_parses_and_matches_updated_message_metadata() -> None:
@@ -917,7 +1041,7 @@ def test_slack_parses_and_matches_updated_message_metadata() -> None:
             channel_id="C123", metadata_event_type="zenml.approval"
         )
     )
-    assert semantic.type == SlackWebhookEvent.MESSAGE_METADATA_UPDATED
+    assert semantic.type == SlackWebhookEventType.MESSAGE_METADATA_UPDATED
 
 
 @pytest.mark.parametrize(
@@ -986,7 +1110,7 @@ def test_slack_parses_and_matches_shared_files() -> None:
             team_id="T123", channel_id="C123", file_id="F123"
         )
     )
-    assert semantic.type == SlackWebhookEvent.FILE_SHARED
+    assert semantic.type == SlackWebhookEventType.FILE_SHARED
     assert not semantic.matches(FileSharedEventFilter(file_id="F999"))
 
 

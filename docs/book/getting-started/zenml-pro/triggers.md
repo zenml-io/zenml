@@ -755,7 +755,7 @@ to test the intake path.
 ### Slack webhook triggers
 
 Slack webhook triggers support seven semantic event types suited to automation:
-`app_mention`, `message_posted`, `reaction_added`, `reaction_removed`,
+`app_mention`, `message`, `reaction_added`, `reaction_removed`,
 `message_metadata_posted`, `message_metadata_updated`, and `file_shared`.
 First, configure the Slack app, event subscriptions, and webhook by following
 [Slack webhooks](webhooks/slack.md).
@@ -764,7 +764,10 @@ Create `slack-automation.yaml`:
 
 ```yaml
 target_events:
-  - type: message_posted
+  - type: app_mention
+    channel_id: C0123456789
+    text: "startswith:<@U0123456789> deploy production"
+  - type: message
     channel_id: 'oneof:["C0123456789","C9876543210"]'
     text: "startswith:deploy production"
   - type: reaction_added
@@ -785,7 +788,8 @@ Via the SDK:
 ```python
 from zenml.client import Client
 from zenml.webhooks.providers.slack import (
-    MessagePostedEventFilter,
+    AppMentionEventFilter,
+    MessageEventFilter,
     ReactionAddedEventFilter,
     SlackWebhookConfiguration,
 )
@@ -796,7 +800,11 @@ trigger = client.create_webhook_trigger(
     webhook="slack-events",
     configuration=SlackWebhookConfiguration(
         target_events=[
-            MessagePostedEventFilter(
+            AppMentionEventFilter(
+                channel_id="C0123456789",
+                text="startswith:<@U0123456789> deploy production",
+            ),
+            MessageEventFilter(
                 channel_id='oneof:["C0123456789","C9876543210"]',
                 text="startswith:deploy production",
             ),
@@ -811,8 +819,9 @@ trigger = client.create_webhook_trigger(
 
 Each event filter has event-specific optional fields. Exact, list, and
 `oneof:` string matching are supported throughout; `startswith:` is also
-available for message text and message-metadata event types. See the Slack
-provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
+available for app-mention text, message text, and message-metadata event types.
+See the Slack provider's
+[supported events and filters](webhooks/slack.md#supported-events-and-filters)
 for the complete event catalog, subscription scopes, and matching behavior.
 
 ### Attach the trigger to a snapshot

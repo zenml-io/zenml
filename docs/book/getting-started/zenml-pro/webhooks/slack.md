@@ -96,10 +96,10 @@ events needed by your automations:
 | Slack bot event subscription | ZenML semantic event | Required bot scope |
 |------------------------------|----------------------|--------------------|
 | `app_mention` | `app_mention` | `app_mentions:read` |
-| `message.channels` | `message_posted` in public channels | `channels:history` |
-| `message.groups` | `message_posted` in private channels | `groups:history` |
-| `message.im` | `message_posted` in direct messages | `im:history` |
-| `message.mpim` | `message_posted` in group direct messages | `mpim:history` |
+| `message.channels` | `message` in public channels | `channels:history` |
+| `message.groups` | `message` in private channels | `groups:history` |
+| `message.im` | `message` in direct messages | `im:history` |
+| `message.mpim` | `message` in group direct messages | `mpim:history` |
 | `reaction_added` | `reaction_added` | `reactions:read` |
 | `reaction_removed` | `reaction_removed` | `reactions:read` |
 | `message_metadata_posted` | `message_metadata_posted` | `metadata.message:read` |
@@ -107,8 +107,8 @@ events needed by your automations:
 | `file_shared` | `file_shared` | `files:read` |
 
 The four Slack message subscriptions all arrive with the raw inner event type
-`message`. ZenML exposes qualifying messages as the more precise semantic event
-`message_posted`.
+`message`. ZenML uses the same type for message trigger filters and exposes the
+optional Slack `subtype` for more precise matching.
 
 Message-metadata subscriptions have one additional source-side control. In the
 app manifest, add `settings.event_subscriptions.metadata_subscriptions` entries
@@ -137,14 +137,15 @@ message text, sender, channel, reaction name, or file ID.
 ZenML supports the following curated automation events. Every filter field is
 optional; populated fields on one event filter combine with AND. Every
 normalized event includes the non-null fields `type`, `event_id`, `team_id`,
-`user_id`, `event_time`, and `event_ts`. The event-specific `channel_id` is
-non-null except for reactions to files and file comments, where Slack does not
-include a channel.
+`event_time`, and `event_ts`. Message fields such as `user_id`, `channel_id`,
+`text`, and `message_ts` are optional because Slack message subtypes have
+different payload shapes. Other event-specific identifiers remain non-null
+except for reaction `channel_id`, which Slack omits for files and file comments.
 
 | Event filter `type` | Destination filter fields | Additional normalized event fields |
 |---------------------|---------------------------|------------------------------------|
-| `app_mention` | `team_id`, `channel_id`, `user_id`, `threaded` | `channel_id`, `message_ts`, `thread_ts` |
-| `message_posted` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `threaded` | `channel_id`, `channel_type`, `text`, `message_ts`, `thread_ts` |
+| `app_mention` | `team_id`, `channel_id`, `user_id`, `text`, `threaded` | `channel_id`, `text`, `message_ts`, `thread_ts` |
+| `message` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `subtype`, `include_subtypes`, `threaded` | `channel_id`, `channel_type`, `user_id`, `text`, `subtype`, `bot_authored`, `message_ts`, `thread_ts` |
 | `reaction_added` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `channel_id`, `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
 | `reaction_removed` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `channel_id`, `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
 | `message_metadata_posted` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `channel_id`, `app_id`, `bot_id`, `message_ts`, `metadata` (`event_type`, `event_payload`) |
@@ -152,15 +153,26 @@ include a channel.
 | `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` | `channel_id`, `file_id` |
 
 String filters support exact values, YAML lists, and the `oneof:` expression.
-`text` and `metadata_event_type` additionally support `startswith:`. Prefix
-matching is intentionally unavailable for opaque Slack IDs, reaction names,
-channel types, and reaction item types. `threaded` is a boolean filter.
+The `text` filters on `app_mention` and `message`, as well as
+`metadata_event_type`, additionally support `startswith:`. Prefix matching is
+intentionally unavailable for opaque Slack IDs, reaction names, channel types,
+message subtypes, and reaction item types. `threaded` and `include_subtypes`
+are boolean filters. Slack preserves the app mention in `text` as a user-ID
+token such as `<@U0123456789>`, so include that token when matching from the
+beginning of the complete message.
 
 ZenML applies a few semantic qualifications and normalizations:
 
-- `message_posted` accepts only ordinary human-authored messages. Message
-  subtypes, bot messages, and malformed messages are ignored. Root messages and
-  thread replies can be selected with `threaded`.
+- `message` matches regular, non-bot messages by default. Set
+  `include_subtypes: true` to include all message subtypes and bot-authored
+  messages, or configure `subtype` with an exact value, YAML list, or `oneof:`
+  expression to select named subtypes. `include_subtypes` and `subtype` cannot
+  be combined. Root messages and thread replies can be selected with
+  `threaded`.
+- Slack subtype payloads are not uniform. For example, message edits carry the
+  current content in a nested `message` object, while deletions may omit user
+  and text fields. ZenML normalizes nested content when available; a configured
+  filter does not match when its corresponding event field is unavailable.
 - Reactions can reference a `message`, `file`, or `file_comment`. `item_type`
   selects `item.type`, and `item_id` selects `item.id`. The normalized ID is
   respectively the message timestamp, file ID, or file-comment ID.
@@ -184,8 +196,9 @@ other filtered webhook providers. Multiple event filters combine with OR. Create
 target_events:
   - type: app_mention
     channel_id: C0123456789
+    text: "startswith:<@U0123456789> deploy production"
     threaded: false
-  - type: message_posted
+  - type: message
     channel_id: C0123456789
     text: "startswith:deploy production"
   - type: reaction_added
@@ -204,13 +217,25 @@ zenml trigger webhook create on-slack-automation \
   --config slack-automation.yaml
 ```
 
+The default `message` target above matches regular non-bot messages only. To
+match every message variant, use `include_subtypes: true`. To select particular
+subtypes instead, provide one value or a YAML list:
+
+```yaml
+target_events:
+  - type: message
+    subtype:
+      - message_changed
+      - message_deleted
+```
+
 Via the SDK, use the typed Slack configuration:
 
 ```python
 from zenml.client import Client
 from zenml.webhooks.providers.slack import (
     AppMentionEventFilter,
-    MessagePostedEventFilter,
+    MessageEventFilter,
     ReactionAddedEventFilter,
     SlackWebhookConfiguration,
 )
@@ -223,9 +248,10 @@ trigger = client.create_webhook_trigger(
         target_events=[
             AppMentionEventFilter(
                 channel_id="C0123456789",
+                text="startswith:<@U0123456789> deploy production",
                 threaded=False,
             ),
-            MessagePostedEventFilter(
+            MessageEventFilter(
                 channel_id="C0123456789",
                 text="startswith:deploy production",
             ),
