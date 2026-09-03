@@ -193,5 +193,6 @@ the digest; even a whitespace or newline change produces a different signature.
 
 - [Webhooks](../webhooks.md)
 - [ClickUp webhooks](clickup.md)
+- [Slack webhooks](slack.md)
 - [Custom webhooks](custom.md)
 - [Webhook triggers](../triggers.md#github-webhook-triggers)

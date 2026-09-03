@@ -15,9 +15,10 @@ the Slack app's signing secret to authenticate callbacks sent to ZenML.
 
 ## Create a Slack webhook
 
-Create a Slack app in the workspace you want to connect. A free Slack workspace
-is sufficient. In the app configuration, open **Basic Information**, find
-**App Credentials**, and copy the **Signing Secret**.
+Create a [Slack app](https://api.slack.com/apps) in the workspace you want to
+connect. A free Slack workspace is sufficient. In the app configuration, open
+**Basic Information**, find **App Credentials**, and copy the **Signing
+Secret**.
 
 Pass that Slack-owned secret when creating the ZenML webhook:
 
@@ -87,9 +88,10 @@ channel.
 
 ## Subscribe to automation events
 
-Slack controls which callbacks reach ZenML through the app's bot event
-subscriptions, OAuth scopes, and channel visibility. Under **Subscribe to bot
-events**, add only the source events needed by your automations:
+Slack controls which callbacks reach ZenML through the app's
+[event subscriptions](https://docs.slack.dev/apis/events-api/), OAuth scopes,
+and channel visibility. Under **Subscribe to bot events**, add only the source
+events needed by your automations:
 
 | Slack bot event subscription | ZenML semantic event | Required bot scope |
 |------------------------------|----------------------|--------------------|
@@ -111,7 +113,9 @@ The four Slack message subscriptions all arrive with the raw inner event type
 Message-metadata subscriptions have one additional source-side control. In the
 app manifest, add `settings.event_subscriptions.metadata_subscriptions` entries
 that select an `app_id` and metadata `event_type`. Slack permits one of those
-values, but not both, to be `*`; prefer explicit values when possible.
+values, but not both, to be `*`; prefer explicit values when possible. See
+Slack's [message metadata documentation](https://docs.slack.dev/messaging/message-metadata/)
+for the manifest format.
 
 Install or reinstall the app when Slack asks you to apply scope changes. Invite
 the app to any channel from which it should receive events, then perform one of
@@ -131,17 +135,20 @@ message text, sender, channel, reaction name, or file ID.
 ## Supported events and filters
 
 ZenML supports the following curated automation events. Every filter field is
-optional; populated fields on one event filter combine with AND.
+optional; populated fields on one event filter combine with AND. Every
+normalized event includes `type`, `event_id`, `team_id`, `channel_id`,
+`user_id`, `event_time`, and `event_ts`; fields unavailable in a particular
+Slack callback are `null`.
 
-| Event filter `type` | Available fields |
-|---------------------|-------------------|
-| `app_mention` | `team_id`, `channel_id`, `user_id`, `threaded` |
-| `message_posted` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `threaded` |
-| `reaction_added` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` |
-| `reaction_removed` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` |
-| `message_metadata_posted` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` |
-| `message_metadata_updated` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` |
-| `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` |
+| Event filter `type` | Destination filter fields | Additional normalized event fields |
+|---------------------|---------------------------|------------------------------------|
+| `app_mention` | `team_id`, `channel_id`, `user_id`, `threaded` | `message_ts`, `thread_ts` |
+| `message_posted` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `threaded` | `channel_type`, `text`, `message_ts`, `thread_ts` |
+| `reaction_added` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
+| `reaction_removed` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
+| `message_metadata_posted` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `app_id`, `bot_id`, `message_ts`, `metadata` (`event_type`, `event_payload`) |
+| `message_metadata_updated` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `app_id`, `bot_id`, `message_ts`, `metadata`, `previous_metadata` |
+| `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` | `file_id` |
 
 String filters support exact values, YAML lists, and the `oneof:` expression.
 `text` and `metadata_event_type` additionally support `startswith:`. Prefix
@@ -154,8 +161,9 @@ ZenML applies a few semantic qualifications and normalizations:
   subtypes, bot messages, and malformed messages are ignored. Root messages and
   thread replies can be selected with `threaded`.
 - Reactions can reference a `message`, `file`, or `file_comment`. `item_type`
-  selects that shape and `item_id` is respectively the message timestamp, file
-  ID, or file-comment ID. `channel_id` is only present when Slack includes it.
+  selects `item.type`, and `item_id` selects `item.id`. The normalized ID is
+  respectively the message timestamp, file ID, or file-comment ID.
+  `channel_id` is only present when Slack includes it.
 - Message-metadata events expose the metadata's declared event type for
   filtering. The complete metadata payload, and the previous metadata on
   updates, remain in the normalized event but are not JSON-path filters.
@@ -244,7 +252,9 @@ or matching.
 Slack signs the exact raw request body with the app signing secret. ZenML
 requires `X-Slack-Signature` with the `v0=` version and
 `X-Slack-Request-Timestamp`, rejects timestamps more than five minutes from the
-server time, and compares signatures in constant time.
+server time, and compares signatures in constant time. The implementation
+follows Slack's
+[request-signing procedure](https://docs.slack.dev/authentication/verifying-requests-from-slack/).
 
 The provider accepts these top-level envelopes:
 
@@ -263,10 +273,66 @@ authentication metadata returns `401 Unauthorized`.
 Slack may retry deliveries. The current intake path does not provide
 cross-delivery idempotency or a durable handoff to background handlers.
 
+## Mock a signed Slack message
+
+You can test the endpoint without asking Slack to send a delivery. This example
+uses a minimal Slack-like `message` callback and computes the `v0` signature
+over Slack's timestamp-prefixed signature base.
+
+Set the endpoint and the Slack signing secret used when you created the
+webhook:
+
+```bash
+export WEBHOOK_URL="<endpoint-url-from-zenml>"
+export WEBHOOK_SECRET="<slack-signing-secret>"
+export SLACK_TIMESTAMP="$(date +%s)"
+```
+
+Write the body without adding a trailing newline:
+
+```bash
+printf '%s' '{"type":"event_callback","team_id":"T0123456789","event":{"type":"message","channel":"C0123456789","channel_type":"channel","user":"U0123456789","text":"deploy production","ts":"1788300000.000100","event_ts":"1788300000.000100"},"event_id":"Ev0123456789","event_time":1788300000}' > slack-message.json
+```
+
+Calculate the signature over the exact body bytes and current timestamp:
+
+```bash
+export SIGNATURE="$(python -c 'import hashlib,hmac,os; body=open("slack-message.json","rb").read(); timestamp=os.environ["SLACK_TIMESTAMP"]; base=f"v0:{timestamp}:".encode()+body; print("v0="+hmac.new(os.environ["WEBHOOK_SECRET"].encode(),base,hashlib.sha256).hexdigest())')"
+```
+
+Send those same bytes with the Slack authentication headers:
+
+```bash
+curl -i -X POST "$WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -H "X-Slack-Request-Timestamp: $SLACK_TIMESTAMP" \
+  -H "X-Slack-Signature: $SIGNATURE" \
+  --data-binary @slack-message.json
+```
+
+A valid delivery returns `200 OK`. This confirms webhook intake, not that a
+trigger matched or a pipeline run started.
+
+To confirm that signature verification is active, resend the same body and
+timestamp with an invalid signature:
+
+```bash
+curl -i -X POST "$WEBHOOK_URL" \
+  -H "Content-Type: application/json" \
+  -H "X-Slack-Request-Timestamp: $SLACK_TIMESTAMP" \
+  -H "X-Slack-Signature: v0=invalid" \
+  --data-binary @slack-message.json
+```
+
+This request returns `401 Unauthorized`. Generate a new timestamp and signature
+if more than five minutes have passed. If a calculated signature fails, verify
+that the body passed to `--data-binary` is byte-for-byte identical to the body
+used to calculate the digest.
+
 ## Related pages
 
 - [Webhooks](../webhooks.md)
-- [Webhook triggers](../triggers.md#webhook-triggers)
+- [Slack webhook triggers](../triggers.md#slack-webhook-triggers)
 - [GitHub webhooks](github.md)
 - [Custom webhooks](custom.md)
 - [Slack alerter](../../../component-guide/alerters/slack.md)

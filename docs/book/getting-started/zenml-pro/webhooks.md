@@ -8,7 +8,8 @@ icon: webhook
 Webhooks connect external systems to ZenML so that your ZenML deployment can
 react to events that happen outside the platform. For example, you can receive
 an event when a pull request is merged in GitHub, when a ClickUp task changes
-status, or when an internal service publishes a new model version.
+status, when someone requests a deployment in Slack, or when an internal service
+publishes a new model version.
 
 When you create a webhook, ZenML exposes a project-scoped intake URL. Configure
 the external system to send signed HTTP requests to that URL.
@@ -23,9 +24,10 @@ For every delivery, the webhook endpoint:
    task after the response is sent.
 
 Consumers define how ZenML reacts to accepted events. For example, a
-[webhook trigger](triggers.md#webhook-triggers) can filter GitHub or ClickUp
+[webhook trigger](triggers.md#webhook-triggers) can filter GitHub, ClickUp or Slack
 events and execute attached pipeline snapshots when a pull request is merged
-or a task status changes.
+or a task status changes, a deployment message is posted, or an approval reaction
+is added.
 
 The endpoint returns an HTTP response selected by the provider. GitHub and
 custom deliveries normally return `202 Accepted`; Slack returns `200 OK`. An
@@ -283,6 +285,10 @@ Provider-specific early handling can refine this behavior. For example, GitHub
 deliveries with a non-empty but unsupported `X-GitHub-Event` value return `202`
 without resolving a webhook. See the [GitHub](webhooks/github.md) and
 [ClickUp](webhooks/clickup.md) providers for details.
+Slack authenticates and acknowledges URL-verification and rate-limit
+control deliveries with `200`, but does not create events for consumers. See
+the [Slack provider](webhooks/slack.md#authentication-and-accepted-envelopes)
+for its complete envelope behavior.
 
 Successful intake schedules event handlers in an in-process background task.
 It does not guarantee that a handler starts or completes, and the handoff is not
@@ -316,6 +322,7 @@ publication, pipeline run creation, or run outcomes.
 
 ## Next steps
 
+- [Configure a Slack webhook](webhooks/slack.md)
 - [Configure a GitHub webhook](webhooks/github.md)
 - [Configure a ClickUp webhook](webhooks/clickup.md)
 - [Send custom webhook events](webhooks/custom.md)

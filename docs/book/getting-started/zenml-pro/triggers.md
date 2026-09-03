@@ -754,10 +754,10 @@ Attach the trigger to a snapshot as shown below, then follow the
 to test the intake path.
 ### Slack webhook triggers
 
-Slack webhook triggers support a curated set of events suited to automation:
-app mentions, ordinary human messages, reactions being added or removed,
-message metadata being posted or updated, and files being shared. First,
-configure the Slack app, event subscriptions, and webhook by following
+Slack webhook triggers support seven semantic event types suited to automation:
+`app_mention`, `message_posted`, `reaction_added`, `reaction_removed`,
+`message_metadata_posted`, `message_metadata_updated`, and `file_shared`.
+First, configure the Slack app, event subscriptions, and webhook by following
 [Slack webhooks](webhooks/slack.md).
 
 Create `slack-automation.yaml`:
@@ -839,10 +839,11 @@ client.attach_trigger_to_snapshot(
 The trigger's `concurrency` setting controls what happens when another matching
 delivery arrives while a run for an attached snapshot is already active.
 
-Push to the configured branch in GitHub, or use the
-[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) to
-test the intake path. Remember that `202 Accepted` confirms webhook intake; use
-trigger dispatch state and pipeline runs to verify downstream execution.
+Send an event from the configured provider, or test the intake path with a
+[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) or
+[signed Slack mock request](webhooks/slack.md#mock-a-signed-slack-message).
+Remember that a successful `200` or `202` response confirms webhook intake;
+use trigger dispatch state and pipeline runs to verify downstream execution.
 
 ### Access the upstream webhook event
 
