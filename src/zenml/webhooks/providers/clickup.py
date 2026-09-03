@@ -24,6 +24,7 @@ from zenml.webhooks.providers.base import (
     WebhookConfiguration,
     WebhookPayloadError,
     WebhookTargetEvent,
+    WebhookTriggerMatch,
     authenticate_hmac_sha256,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
@@ -373,6 +374,7 @@ class ClickUpSemanticEvent(BaseModel):
     """Normalized ClickUp event used for trigger matching."""
 
     event_filter_type: ClassVar[type[WebhookTargetEvent]]
+    type: str
 
     @abstractmethod
     def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
@@ -446,24 +448,36 @@ class ClickUpTaskCreatedEvent(ClickUpTaskSemanticEvent):
     """Normalized created-task event."""
 
     event_filter_type = TaskCreated
+    type: Literal[ClickUpWebhookEvent.TASK_CREATED] = (
+        ClickUpWebhookEvent.TASK_CREATED
+    )
 
 
 class ClickUpTaskUpdatedEvent(ClickUpTaskSemanticEvent):
     """Normalized updated-task event."""
 
     event_filter_type = TaskUpdated
+    type: Literal[ClickUpWebhookEvent.TASK_UPDATED] = (
+        ClickUpWebhookEvent.TASK_UPDATED
+    )
 
 
 class ClickUpTaskDeletedEvent(ClickUpTaskSemanticEvent):
     """Normalized deleted-task event."""
 
     event_filter_type = TaskDeleted
+    type: Literal[ClickUpWebhookEvent.TASK_DELETED] = (
+        ClickUpWebhookEvent.TASK_DELETED
+    )
 
 
 class ClickUpTaskStatusUpdatedEvent(ClickUpTaskSemanticEvent):
     """Normalized task-status-updated event."""
 
     event_filter_type = TaskStatusUpdated
+    type: Literal[ClickUpWebhookEvent.TASK_STATUS_UPDATED] = (
+        ClickUpWebhookEvent.TASK_STATUS_UPDATED
+    )
     status: str | None = None
 
     def matches(self, target: ClickUpWebhookTargetEvent) -> bool:
@@ -497,36 +511,54 @@ class ClickUpTaskMovedEvent(ClickUpTaskSemanticEvent):
     """Normalized moved-task event."""
 
     event_filter_type = TaskMoved
+    type: Literal[ClickUpWebhookEvent.TASK_MOVED] = (
+        ClickUpWebhookEvent.TASK_MOVED
+    )
 
 
 class ClickUpTaskAssigneeUpdatedEvent(ClickUpTaskSemanticEvent):
     """Normalized task-assignee-updated event."""
 
     event_filter_type = TaskAssigneeUpdated
+    type: Literal[ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED] = (
+        ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED
+    )
 
 
 class ClickUpTaskCommentPostedEvent(ClickUpTaskSemanticEvent):
     """Normalized task-comment-posted event."""
 
     event_filter_type = TaskCommentPosted
+    type: Literal[ClickUpWebhookEvent.TASK_COMMENT_POSTED] = (
+        ClickUpWebhookEvent.TASK_COMMENT_POSTED
+    )
 
 
 class ClickUpListCreatedEvent(ClickUpListSemanticEvent):
     """Normalized created-list event."""
 
     event_filter_type = ListCreated
+    type: Literal[ClickUpWebhookEvent.LIST_CREATED] = (
+        ClickUpWebhookEvent.LIST_CREATED
+    )
 
 
 class ClickUpListUpdatedEvent(ClickUpListSemanticEvent):
     """Normalized updated-list event."""
 
     event_filter_type = ListUpdated
+    type: Literal[ClickUpWebhookEvent.LIST_UPDATED] = (
+        ClickUpWebhookEvent.LIST_UPDATED
+    )
 
 
 class ClickUpListDeletedEvent(ClickUpListSemanticEvent):
     """Normalized deleted-list event."""
 
     event_filter_type = ListDeleted
+    type: Literal[ClickUpWebhookEvent.LIST_DELETED] = (
+        ClickUpWebhookEvent.LIST_DELETED
+    )
 
 
 _TASK_SEMANTIC_EVENTS: Mapping[
@@ -657,25 +689,28 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         *,
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
-    ) -> list["WebhookTriggerResponse"]:
-        """Match ClickUp candidates while tolerating stale stored entries.
+    ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
+        """Match ClickUp triggers and return the parsed semantic event.
 
         Args:
             event: The trusted ClickUp webhook event.
             candidates: The candidate webhook triggers.
 
         Returns:
-            The candidates matching the semantic event.
+            Matching triggers and their shared semantic event.
         """
         semantic = self.parse_semantic_event(event)
         if semantic is None:
-            return []
+            return WebhookTriggerMatch(triggers=[])
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             targets = self._cast_runtime_targets(trigger)
             if any(semantic.matches(target) for target in targets):
                 matches.append(trigger)
-        return matches
+        return WebhookTriggerMatch(
+            triggers=matches,
+            event=semantic.model_dump(mode="json"),
+        )
 
     def parse_semantic_event(
         self, event: "WebhookEvent"
@@ -699,6 +734,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         task_cls = _TASK_SEMANTIC_EVENTS.get(event_type)
         if task_cls is ClickUpTaskStatusUpdatedEvent:
             return ClickUpTaskStatusUpdatedEvent(
+                type=event_type,
                 task_id=_id_string(payload, "task_id"),
                 list_id=list_id,
                 space_id=space_id,
@@ -707,6 +743,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
             )
         if task_cls is not None:
             return task_cls(
+                type=event_type,
                 task_id=_id_string(payload, "task_id"),
                 list_id=list_id,
                 space_id=space_id,
@@ -715,6 +752,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         list_cls = _LIST_SEMANTIC_EVENTS.get(event_type)
         if list_cls is not None:
             return list_cls(
+                type=event_type,
                 list_id=list_id,
                 space_id=space_id,
                 folder_id=folder_id,

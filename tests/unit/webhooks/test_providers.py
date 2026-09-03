@@ -772,6 +772,7 @@ def test_clickup_semantic_events_are_public_pydantic_models() -> None:
     assert isinstance(event, ClickUpSemanticEvent)
     assert event.event_filter_type is TaskStatusUpdated
     assert event.model_dump() == {
+        "type": "taskStatusUpdated",
         "task_id": "abc",
         "list_id": "162641285",
         "space_id": "space-1",
@@ -819,9 +820,14 @@ def test_clickup_match_filters_status_and_list() -> None:
         configuration={"target_events": [{"type": "taskCreated"}]},
     )
 
-    assert provider.match_triggers(
+    result = provider.match_triggers(
         event=event, candidates=[matching, other_list, other_event]
-    ) == [matching]
+    )
+    assert result.triggers == [matching]
+    assert result.event is not None
+    assert result.event["type"] == "taskStatusUpdated"
+    assert result.event["list_id"] == "162641285"
+    assert result.event["status"] == "done"
 
 
 def test_clickup_match_filters_list_events() -> None:
@@ -858,9 +864,13 @@ def test_clickup_match_filters_list_events() -> None:
         },
     )
 
-    assert provider.match_triggers(
+    result = provider.match_triggers(
         event=event, candidates=[matching, other_space, task_target]
-    ) == [matching]
+    )
+    assert result.triggers == [matching]
+    assert result.event is not None
+    assert result.event["type"] == "listCreated"
+    assert result.event["list_id"] == "162641285"
 
 
 def test_clickup_configuration_accepts_typed_configuration() -> None:
