@@ -152,23 +152,22 @@ except for reaction `channel_id`, which Slack omits for files and file comments.
 | `message_metadata_updated` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `channel_id`, `app_id`, `bot_id`, `message_ts`, `metadata`, `previous_metadata` |
 | `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` | `channel_id`, `file_id` |
 
-String filters support exact values, YAML lists, and the `oneof:` expression.
-The `text` filters on `app_mention` and `message`, as well as
-`metadata_event_type`, additionally support `startswith:`. Prefix matching is
-intentionally unavailable for opaque Slack IDs, reaction names, channel types,
-message subtypes, and reaction item types. `threaded` and `include_subtypes`
-are boolean filters. Slack preserves the app mention in `text` as a user-ID
-token such as `<@U0123456789>`, so include that token when matching from the
-beginning of the complete message.
+All string fields support exact values, YAML lists, `equals:`, `notequals:`,
+`contains:`, `notcontains:`, `startswith:`, `endswith:`, `oneof:`, and
+`notoneof:`. Matching is case-sensitive; see the complete
+[string filter operator reference](../triggers.md#string-filter-operators).
+`threaded` and `include_subtypes` are boolean filters. Slack preserves an app
+mention in `text` as a user-ID token such as `<@U0123456789>`, so
+`contains:deploy production` can match the command without requiring that app
+user ID in the filter.
 
 ZenML applies a few semantic qualifications and normalizations:
 
 - `message` matches regular, non-bot messages by default. Set
   `include_subtypes: true` to include all message subtypes and bot-authored
-  messages, or configure `subtype` with an exact value, YAML list, or `oneof:`
-  expression to select named subtypes. `include_subtypes` and `subtype` cannot
-  be combined. Root messages and thread replies can be selected with
-  `threaded`.
+  messages, or configure `subtype` with any string filter expression to select
+  named subtypes. `include_subtypes` and `subtype` cannot be combined. Root
+  messages and thread replies can be selected with `threaded`.
 - Slack subtype payloads are not uniform. For example, message edits carry the
   current content in a nested `message` object, while deletions may omit user
   and text fields. ZenML normalizes nested content when available; a configured
@@ -196,7 +195,7 @@ other filtered webhook providers. Multiple event filters combine with OR. Create
 target_events:
   - type: app_mention
     channel_id: C0123456789
-    text: "startswith:<@U0123456789> deploy production"
+    text: "contains:deploy production"
     threaded: false
   - type: message
     channel_id: C0123456789
@@ -248,7 +247,7 @@ trigger = client.create_webhook_trigger(
         target_events=[
             AppMentionEventFilter(
                 channel_id="C0123456789",
-                text="startswith:<@U0123456789> deploy production",
+                text="contains:deploy production",
                 threaded=False,
             ),
             MessageEventFilter(

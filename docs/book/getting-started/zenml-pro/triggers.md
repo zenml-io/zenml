@@ -644,6 +644,41 @@ fields. The SDK accepts a mapping or a typed provider configuration model; the
 typed models are recommended because they validate and document the available
 fields.
 
+### String filter operators
+
+Every provider-defined string field in a webhook event filter supports the same
+case-sensitive operators:
+
+| Syntax | Matches when |
+|--------|--------------|
+| `value` or `equals:value` | The field equals `value` |
+| `notequals:value` | The field does not equal `value` |
+| `contains:value` | The field contains `value` |
+| `notcontains:value` | The field does not contain `value` |
+| `startswith:value` | The field starts with `value` |
+| `endswith:value` | The field ends with `value` |
+| `oneof:["a","b"]` | The field equals one of the JSON-list values |
+| `notoneof:["a","b"]` | The field equals none of the JSON-list values |
+
+A YAML list combines multiple expressions for one field with OR. Use
+`notoneof:` instead of a list of `notequals:` expressions when excluding
+several exact values:
+
+```yaml
+target_events:
+  - type: push
+    branch:
+      - main
+      - "startswith:release/"
+    actor: 'notoneof:["dependabot[bot]","renovate[bot]"]'
+```
+
+Different populated fields on one target event combine with AND, while
+multiple target events combine with OR. An absent event field does not satisfy
+a configured filter, including a negative filter. For collection-valued event
+fields such as GitHub labels, positive operators match any item and negative
+operators require every item to satisfy the expression.
+
 ### GitHub webhook triggers
 
 This example executes a pipeline snapshot when GitHub reports a push to the
@@ -766,7 +801,7 @@ Create `slack-automation.yaml`:
 target_events:
   - type: app_mention
     channel_id: C0123456789
-    text: "startswith:<@U0123456789> deploy production"
+    text: "contains:deploy production"
   - type: message
     channel_id: 'oneof:["C0123456789","C9876543210"]'
     text: "startswith:deploy production"
@@ -802,7 +837,7 @@ trigger = client.create_webhook_trigger(
         target_events=[
             AppMentionEventFilter(
                 channel_id="C0123456789",
-                text="startswith:<@U0123456789> deploy production",
+                text="contains:deploy production",
             ),
             MessageEventFilter(
                 channel_id='oneof:["C0123456789","C9876543210"]',
@@ -817,11 +852,9 @@ trigger = client.create_webhook_trigger(
 )
 ```
 
-Each event filter has event-specific optional fields. Exact, list, and
-`oneof:` string matching are supported throughout; `startswith:` is also
-available for app-mention text, message text, and message-metadata event types.
-See the Slack provider's
-[supported events and filters](webhooks/slack.md#supported-events-and-filters)
+Each event filter has event-specific optional fields, and all string fields use
+the shared [string filter operators](#string-filter-operators). See the Slack
+provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
 for the complete event catalog, subscription scopes, and matching behavior.
 
 ### Attach the trigger to a snapshot

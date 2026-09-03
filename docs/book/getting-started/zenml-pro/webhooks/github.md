@@ -88,17 +88,21 @@ Semantic event fields use ZenML string filters (`StringFilterOption`). You can
 use:
 
 - a plain string for exact equality, such as `repo: acme/ml-pipelines`;
+- an explicit operator such as `notequals:dependabot[bot]`,
+  `contains:release`, `notcontains:draft`, `startswith:release/`, or
+  `endswith:-production`;
 - `oneof:` with a non-empty JSON list for exact alternatives, such as
   `conclusion: 'oneof:["success","neutral"]'`;
-- `startswith:` for branch-, tag-, and ref-like fields, such as
-  `branch: startswith:release/`.
+- `notoneof:` with a non-empty JSON list for exclusions; and
+- a YAML list to OR multiple expressions for one field.
 
 Values configured for the same field use OR logic; different populated fields
 use AND logic. Omitted fields match any value. If a configured field is absent
 from a delivery, it does not match.
 
-For the collection-valued `labels` and `assignees` fields, a filter matches if
-any value on the issue matches any configured value. For example, this target
+For the collection-valued `labels` and `assignees` fields, positive filters
+match if any value on the issue satisfies the expression. Negative filters
+match only if every value satisfies the expression. For example, this target
 matches an issue carrying either the `bug` or `priority-high` label:
 
 ```yaml
@@ -126,10 +130,10 @@ target_events:
       - "startswith:release/"
 ```
 
-Not every operator applies to every field. `oneof:` is supported by the fields
-in the table, while `startswith:` is limited to `branch`, `target_branch`,
-`source_branch`, and `tag` fields. The issue title, number, and issue type are
-available in the propagated event but are not trigger filters.
+All filter fields in the table support the generic webhook string operators.
+The issue title, number, and issue type are available in the propagated event
+but are not trigger filters. See the complete
+[string filter operator reference](../triggers.md#string-filter-operators).
 
 See [Webhook triggers](../triggers.md#github-webhook-triggers) for a complete
 example that uses this configuration to execute a pipeline snapshot.

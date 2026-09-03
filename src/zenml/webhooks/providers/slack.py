@@ -71,15 +71,6 @@ class SlackEventFilter(WebhookTargetEvent):
     channel_id: StringFilterOption = None
     user_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for shared Slack filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {"team_id": False, "channel_id": False, "user_id": False}
-
 
 class AppMentionEventFilter(SlackEventFilter):
     """Filters for a Slack app mention."""
@@ -89,15 +80,6 @@ class AppMentionEventFilter(SlackEventFilter):
     )
     text: StringFilterOption = None
     threaded: bool | None = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for app-mention filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {**super().get_prefix_matching_support(), "text": True}
 
 
 class MessageEventFilter(SlackEventFilter):
@@ -111,20 +93,6 @@ class MessageEventFilter(SlackEventFilter):
     subtype: StringFilterOption = None
     include_subtypes: bool = False
     threaded: bool | None = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for message filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "channel_type": False,
-            "text": True,
-            "subtype": False,
-        }
 
     @model_validator(mode="after")
     def validate_subtype_filters(self) -> "MessageEventFilter":
@@ -152,21 +120,6 @@ class _ReactionEventFilter(SlackEventFilter):
     item_type: StringFilterOption = None
     item_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for reaction filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "reaction": False,
-            "item_user_id": False,
-            "item_type": False,
-            "item_id": False,
-        }
-
 
 class ReactionAddedEventFilter(_ReactionEventFilter):
     """Filters for a Slack reaction being added."""
@@ -190,20 +143,6 @@ class _MessageMetadataEventFilter(SlackEventFilter):
     app_id: StringFilterOption = None
     bot_id: StringFilterOption = None
     metadata_event_type: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for message-metadata filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "app_id": False,
-            "bot_id": False,
-            "metadata_event_type": True,
-        }
 
 
 class MessageMetadataPostedEventFilter(_MessageMetadataEventFilter):
@@ -229,15 +168,6 @@ class FileSharedEventFilter(SlackEventFilter):
         SlackWebhookEventType.FILE_SHARED
     )
     file_id: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix-matching support for file-share filters.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {**super().get_prefix_matching_support(), "file_id": False}
 
 
 SlackWebhookEventFilter: TypeAlias = Annotated[

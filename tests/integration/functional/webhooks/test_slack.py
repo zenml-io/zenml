@@ -358,9 +358,9 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
             "target_events": [
                 {
                     "type": "app_mention",
-                    "channel_id": ["C123", "C456"],
+                    "channel_id": "startswith:C",
                     "user_id": 'oneof:["U123","U456"]',
-                    "text": "startswith:<@APP123> deploy ",
+                    "text": "contains:deploy",
                     "threaded": True,
                 },
                 {
@@ -369,7 +369,10 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                     "channel_type": "channel",
                     "subtype": ["message_changed", "message_deleted"],
                 },
-                {"type": "reaction_added", "reaction": "rocket"},
+                {
+                    "type": "reaction_added",
+                    "reaction": "notequals:thumbsdown",
+                },
                 {"type": "reaction_removed", "item_type": "message"},
                 {
                     "type": "message_metadata_posted",
@@ -379,7 +382,7 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                     "type": "message_metadata_updated",
                     "app_id": "A123",
                 },
-                {"type": "file_shared", "file_id": "F123"},
+                {"type": "file_shared", "file_id": "endswith:123"},
             ],
             "removed_provider_option": True,
         }
@@ -388,9 +391,9 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
     assert configuration == SlackWebhookConfiguration(
         target_events=[
             AppMentionEventFilter(
-                channel_id=["C123", "C456"],
+                channel_id="startswith:C",
                 user_id='oneof:["U123","U456"]',
-                text="startswith:<@APP123> deploy ",
+                text="contains:deploy",
                 threaded=True,
             ),
             MessageEventFilter(
@@ -398,13 +401,13 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                 channel_type="channel",
                 subtype=["message_changed", "message_deleted"],
             ),
-            ReactionAddedEventFilter(reaction="rocket"),
+            ReactionAddedEventFilter(reaction="notequals:thumbsdown"),
             ReactionRemovedEventFilter(item_type="message"),
             MessageMetadataPostedEventFilter(
                 metadata_event_type="startswith:zenml."
             ),
             MessageMetadataUpdatedEventFilter(app_id="A123"),
-            FileSharedEventFilter(file_id="F123"),
+            FileSharedEventFilter(file_id="endswith:123"),
         ]
     )
 
@@ -416,23 +419,8 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
         {"target_events": []},
         {"target_events": [{}]},
         {"target_events": [{"type": "unknown"}]},
-        {
-            "target_events": [
-                {"type": "app_mention", "channel_id": "startswith:C"}
-            ]
-        },
-        {
-            "target_events": [
-                {"type": "app_mention", "text": "contains:deploy"}
-            ]
-        },
         {"target_events": [{"type": "app_mention", "user_id": "oneof:[]"}]},
         {"target_events": [{"type": "app_mention", "workspace_id": "T123"}]},
-        {
-            "target_events": [
-                {"type": "message", "subtype": "startswith:message_"}
-            ]
-        },
         {
             "target_events": [
                 {
@@ -444,12 +432,7 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
         },
         {
             "target_events": [
-                {"type": "reaction_added", "reaction": "startswith:approve"}
-            ]
-        },
-        {
-            "target_events": [
-                {"type": "file_shared", "file_id": "contains:F123"}
+                {"type": "file_shared", "file_id": "matches:F123"}
             ]
         },
     ],
@@ -567,7 +550,7 @@ def test_slack_matches_app_mention_targets() -> None:
                     "type": "app_mention",
                     "channel_id": ["C999", "C123"],
                     "user_id": 'oneof:["U123","U456"]',
-                    "text": "startswith:<@APP123> investigate",
+                    "text": "contains:investigate",
                 }
             ]
         },
@@ -603,7 +586,7 @@ def test_slack_matches_app_mention_targets() -> None:
         id=uuid4(),
         configuration={
             "target_events": [
-                {"type": "app_mention", "text": "startswith:deploy "}
+                {"type": "app_mention", "text": "notcontains:investigate"}
             ]
         },
     )
