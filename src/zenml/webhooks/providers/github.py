@@ -239,6 +239,7 @@ class GitHubSemanticEvent(BaseModel):
     """Provider event normalized for semantic trigger matching."""
 
     event_filter_type: ClassVar[type[WebhookTargetEvent]]
+    type: str
 
     @abstractmethod
     def matches(self, target: GitHubWebhookTargetEvent) -> bool:
