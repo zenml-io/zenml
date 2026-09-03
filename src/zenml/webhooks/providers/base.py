@@ -349,48 +349,38 @@ class BaseWebhookProvider(ABC):
 
 
 def authenticate_hmac_sha256(
-    *, body: bytes, headers: Mapping[str, str], secret: str, header: str
+    *,
+    body: bytes,
+    headers: Mapping[str, str],
+    secret: str,
+    header: str,
+    prefixed: bool = True,
 ) -> None:
-    """Authenticate a sha256-prefixed HMAC signature.
+    """Authenticate an HMAC-SHA256 signature.
 
     Args:
         body: The exact request body.
         headers: The request headers.
         secret: The signing secret.
         header: The signature header name.
+        prefixed: If `True`, require a `sha256=` prefix (GitHub-style). If
+            `False`, compare the raw hexadecimal digest (ClickUp-style).
 
     Raises:
         WebhookAuthenticationError: If the signature is invalid.
     """
     signature = headers.get(header)
-    if not signature or not signature.startswith("sha256="):
-        raise WebhookAuthenticationError(
-            f"Missing or malformed {header} header."
-        )
-    expected = (
-        "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    )
-    if not hmac.compare_digest(signature, expected):
-        raise WebhookAuthenticationError("Invalid webhook signature.")
-
-
-def authenticate_hmac_sha256_hex(
-    *, body: bytes, headers: Mapping[str, str], secret: str, header: str
-) -> None:
-    """Authenticate a raw hexadecimal HMAC-SHA256 signature.
-
-    Args:
-        body: The exact request body.
-        headers: The request headers.
-        secret: The signing secret.
-        header: The signature header name.
-
-    Raises:
-        WebhookAuthenticationError: If the signature is invalid.
-    """
-    signature = headers.get(header)
+    digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    if prefixed:
+        if not signature or not signature.startswith("sha256="):
+            raise WebhookAuthenticationError(
+                f"Missing or malformed {header} header."
+            )
+        expected = "sha256=" + digest
+        if not hmac.compare_digest(signature, expected):
+            raise WebhookAuthenticationError("Invalid webhook signature.")
+        return
     if not signature:
         raise WebhookAuthenticationError(f"Missing {header} header.")
-    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(signature.lower(), expected.lower()):
+    if not hmac.compare_digest(signature.lower(), digest.lower()):
         raise WebhookAuthenticationError("Invalid webhook signature.")

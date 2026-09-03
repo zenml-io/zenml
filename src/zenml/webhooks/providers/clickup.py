@@ -24,7 +24,7 @@ from zenml.webhooks.providers.base import (
     WebhookConfiguration,
     WebhookPayloadError,
     WebhookTargetEvent,
-    authenticate_hmac_sha256_hex,
+    authenticate_hmac_sha256,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -566,11 +566,12 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
             headers: The request headers.
             secret: The webhook signing secret.
         """
-        authenticate_hmac_sha256_hex(
+        authenticate_hmac_sha256(
             body=body,
             headers=headers,
             secret=secret,
             header=CLICKUP_SIGNATURE_HEADER,
+            prefixed=False,
         )
 
     def get_event_type(
