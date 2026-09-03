@@ -52,18 +52,20 @@ secret-management and rotation options.
 
 ClickUp does not provide a repository-style webhook settings page. Create the
 subscription with the [Create Webhook](https://developer.clickup.com/reference/createwebhook)
-API using a personal API token and your Workspace ID (`team_id`).
+API using a personal API token and your ClickUp Workspace ID.
 
-1. In ClickUp, open **Settings** > **Apps** and create a personal API token.
-2. Copy the Workspace ID for the Workspace that should send events.
+1. In ClickUp, open **Settings** and create a personal API token.
+2. Copy the Workspace ID for the Workspace that should send events. You can
+   also list authorized Workspaces with `GET https://api.clickup.com/api/v2/team`
+   and use the `id` of the Workspace you want.
 3. Send a `POST` request that points ClickUp at the ZenML endpoint URL.
 
 ```bash
 export CLICKUP_TOKEN="<personal-api-token>"
-export CLICKUP_TEAM_ID="<workspace-id>"
+export CLICKUP_WORKSPACE_ID="<workspace-id>"
 export WEBHOOK_URL="<endpoint-url-from-zenml>"
 
-curl -s -X POST "https://api.clickup.com/api/v2/team/${CLICKUP_TEAM_ID}/webhook" \
+curl -s -X POST "https://api.clickup.com/api/v2/team/${CLICKUP_WORKSPACE_ID}/webhook" \
   -H "Authorization: $CLICKUP_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
