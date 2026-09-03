@@ -46,11 +46,13 @@ from zenml.webhooks.providers.github import (
     GITHUB_EVENT_HEADER,
     GITHUB_SIGNATURE_HEADER,
     GitHubCommit,
+    GitHubIssueOpenedEvent,
     GitHubMergedPullRequestEvent,
     GitHubPushEvent,
     GitHubSemanticEvent,
     GitHubWebhookConfiguration,
     GitHubWebhookProvider,
+    IssueOpened,
     PushEvent,
 )
 
@@ -127,7 +129,8 @@ def test_github_semantic_push_event_includes_head_commit() -> None:
         },
     )
 
-    parsed = GitHubWebhookProvider().parse_semantic_event(event)
+    provider = GitHubWebhookProvider()
+    parsed = provider.parse_semantic_event(event)
 
     assert isinstance(parsed, GitHubPushEvent)
     assert parsed.commit == GitHubCommit(
@@ -224,6 +227,96 @@ def test_github_semantic_merged_pr_includes_merge_commit() -> None:
     )
 
 
+def test_github_issue_opened_normalizes_and_matches_collections() -> None:
+    """Opened issues expose compact metadata and OR-match collections."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="issues",
+        payload={
+            "action": "opened",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "issue": {
+                "number": 42,
+                "title": "Support issue webhooks",
+                "body": "This intentionally does not enter the event.",
+                "user": {"login": "octocat"},
+                "author_association": "MEMBER",
+                "labels": [{"name": "bug"}, {"name": "priority-high"}],
+                "assignees": [
+                    {"login": "maintainer"},
+                    {"login": "reviewer"},
+                ],
+                "milestone": {"title": "v1.0"},
+                "type": {"name": "Bug"},
+            },
+        },
+    )
+
+    provider = GitHubWebhookProvider()
+    parsed = provider.parse_semantic_event(event)
+
+    assert parsed == GitHubIssueOpenedEvent(
+        repo="zenml-io/zenml",
+        number=42,
+        title="Support issue webhooks",
+        author="octocat",
+        author_association="MEMBER",
+        labels=["bug", "priority-high"],
+        assignees=["maintainer", "reviewer"],
+        milestone="v1.0",
+        issue_type="Bug",
+    )
+    assert parsed.matches(
+        IssueOpened(
+            repo="zenml-io/zenml",
+            author_association='oneof:["OWNER", "MEMBER"]',
+            labels='oneof:["feature", "priority-high"]',
+            assignees=["nobody", "maintainer"],
+            milestone="v1.0",
+        )
+    )
+    assert not parsed.matches(IssueOpened(labels="documentation"))
+
+    trigger = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "issue_opened",
+                    "repo": "zenml-io/zenml",
+                    "labels": 'oneof:["feature", "bug"]',
+                }
+            ]
+        },
+    )
+    result = provider.match_triggers_with_event(
+        event=event, candidates=[trigger]
+    )
+    assert result.triggers == [trigger]
+    assert result.event is not None
+    assert result.event["type"] == "issue_opened"
+    assert "body" not in result.event
+
+
+def test_github_issue_reopened_is_not_an_issue_opened_event() -> None:
+    """Reopened issues do not produce the opened-issue semantic event."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="issues",
+        payload={
+            "action": "reopened",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "issue": {"number": 42, "title": "Support issue webhooks"},
+        },
+    )
+
+    assert GitHubWebhookProvider().parse_semantic_event(event) is None
+
+
 def _signature(secret: str, body: bytes) -> str:
     return (
         "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
@@ -308,7 +401,7 @@ async def test_github_pre_validation_ignores_unsupported_event_type(
 
 @pytest.mark.parametrize(
     "event_type",
-    ["pull_request", "workflow_run", "push", "release"],
+    ["pull_request", "workflow_run", "push", "release", "issues"],
 )
 async def test_github_pre_validation_processes_supported_event_type(
     event_type: str,

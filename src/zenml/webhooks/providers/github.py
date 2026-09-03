@@ -1,7 +1,6 @@
 #  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """GitHub webhook provider and semantic target event catalog."""
 
-import json
 import logging
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
@@ -27,6 +26,8 @@ from zenml.webhooks.providers.base import (
     WebhookTargetEvent,
     WebhookTriggerMatch,
     authenticate_hmac_sha256,
+    matches_string_collection_filter,
+    matches_string_filter,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -48,6 +49,7 @@ class GitHubWebhookEventType(StrEnum):
     WORKFLOW_RUN = "workflow_run"
     PUSH = "push"
     RELEASE = "release"
+    ISSUES = "issues"
 
 
 class GitHubWebhookEvent(StrEnum):
@@ -57,6 +59,7 @@ class GitHubWebhookEvent(StrEnum):
     WORKFLOW_RUN_COMPLETED = "workflow_run_completed"
     PUSH = "push"
     RELEASE_PUBLISHED = "release_published"
+    ISSUE_OPENED = "issue_opened"
 
 
 class MergedPullRequest(WebhookTargetEvent):
@@ -149,8 +152,42 @@ class ReleasePublished(WebhookTargetEvent):
         }
 
 
+class IssueOpened(WebhookTargetEvent):
+    """Filters for a newly opened GitHub issue."""
+
+    type: Literal[GitHubWebhookEvent.ISSUE_OPENED] = (
+        GitHubWebhookEvent.ISSUE_OPENED
+    )
+    repo: StringFilterOption = None
+    author: StringFilterOption = None
+    author_association: StringFilterOption = None
+    labels: StringFilterOption = None
+    assignees: StringFilterOption = None
+    milestone: StringFilterOption = None
+
+    @classmethod
+    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
+        """Get prefix matching support for string filter fields.
+
+        Returns:
+            Filter fields mapped to whether they allow `startswith`.
+        """
+        return {
+            "repo": False,
+            "author": False,
+            "author_association": False,
+            "labels": False,
+            "assignees": False,
+            "milestone": False,
+        }
+
+
 GitHubWebhookTargetEvent: TypeAlias = Annotated[
-    MergedPullRequest | WorkflowRunCompleted | PushEvent | ReleasePublished,
+    MergedPullRequest
+    | WorkflowRunCompleted
+    | PushEvent
+    | ReleasePublished
+    | IssueOpened,
     Field(discriminator="type"),
 ]
 
@@ -161,37 +198,6 @@ class GitHubWebhookConfiguration(WebhookConfiguration):
     target_events: list[GitHubWebhookTargetEvent] = Field(min_length=1)
 
 
-StringFilter = str | list[str] | None
-
-
-def matches_string_filter(
-    *, actual: str | None, configured: StringFilter
-) -> bool:
-    """Match an extracted value against a supported string filter.
-
-    Args:
-        actual: The value extracted from the webhook event.
-        configured: The configured exact, prefix, or alternatives filter.
-
-    Returns:
-        Whether the extracted value matches the configured filter.
-    """
-    if configured is None:
-        return True
-    if actual is None:
-        return False
-    for value in configured if isinstance(configured, list) else [configured]:
-        if value.startswith("oneof:"):
-            if actual in json.loads(value.removeprefix("oneof:")):
-                return True
-        elif value.startswith("startswith:"):
-            if actual.startswith(value.removeprefix("startswith:")):
-                return True
-        elif actual == value:
-            return True
-    return False
-
-
 def _string_at(payload: Mapping[str, Any], *path: str) -> str | None:
     value: Any = payload
     for key in path:
@@ -199,6 +205,34 @@ def _string_at(payload: Mapping[str, Any], *path: str) -> str | None:
             return None
         value = value.get(key)
     return value if isinstance(value, str) and value else None
+
+
+def _object_strings_at(
+    payload: Mapping[str, Any], *path: str, item_field: str
+) -> list[str]:
+    """Extract non-empty strings from objects in a nested list.
+
+    Args:
+        payload: The payload containing the nested list.
+        path: Keys identifying the nested list.
+        item_field: Field to extract from each object in the list.
+
+    Returns:
+        The extracted non-empty string values.
+    """
+    value: Any = payload
+    for key in path:
+        if not isinstance(value, Mapping):
+            return []
+        value = value.get(key)
+    if not isinstance(value, list):
+        return []
+    return [
+        item_value
+        for item in value
+        if isinstance(item, Mapping)
+        and (item_value := _string_at(item, item_field)) is not None
+    ]
 
 
 class GitHubSemanticEvent(BaseModel):
@@ -374,6 +408,59 @@ class GitHubReleasePublishedEvent(GitHubSemanticEvent):
                 ),
                 matches_string_filter(
                     actual=self.actor, configured=target.actor
+                ),
+            )
+        )
+
+
+class GitHubIssueOpenedEvent(GitHubSemanticEvent):
+    """Normalized newly opened issue event."""
+
+    event_filter_type = IssueOpened
+    type: Literal[GitHubWebhookEvent.ISSUE_OPENED] = (
+        GitHubWebhookEvent.ISSUE_OPENED
+    )
+    repo: str
+    number: int
+    title: str
+    author: str | None
+    author_association: str | None
+    labels: list[str]
+    assignees: list[str]
+    milestone: str | None
+    issue_type: str | None
+
+    def matches(self, target: GitHubWebhookTargetEvent) -> bool:
+        """Return whether this event matches an opened-issue target.
+
+        Args:
+            target: The typed target event configuration.
+
+        Returns:
+            Whether this event matches the target.
+        """
+        if not isinstance(target, IssueOpened):
+            return False
+        return all(
+            (
+                matches_string_filter(
+                    actual=self.repo, configured=target.repo
+                ),
+                matches_string_filter(
+                    actual=self.author, configured=target.author
+                ),
+                matches_string_filter(
+                    actual=self.author_association,
+                    configured=target.author_association,
+                ),
+                matches_string_collection_filter(
+                    actual=self.labels, configured=target.labels
+                ),
+                matches_string_collection_filter(
+                    actual=self.assignees, configured=target.assignees
+                ),
+                matches_string_filter(
+                    actual=self.milestone, configured=target.milestone
                 ),
             )
         )
@@ -611,5 +698,38 @@ class GitHubWebhookProvider(BaseWebhookProvider):
                     payload, "release", "target_commitish"
                 ),
                 actor=_string_at(payload, "release", "author", "login"),
+            )
+        if event.event_type == "issues":
+            issue = payload.get("issue")
+            if payload.get("action") != "opened" or not isinstance(
+                issue, Mapping
+            ):
+                return None
+            repo = _string_at(payload, "repository", "full_name")
+            title = _string_at(payload, "issue", "title")
+            number = issue.get("number")
+            if (
+                repo is None
+                or title is None
+                or not isinstance(number, int)
+                or isinstance(number, bool)
+            ):
+                return None
+            return GitHubIssueOpenedEvent(
+                repo=repo,
+                number=number,
+                title=title,
+                author=_string_at(payload, "issue", "user", "login"),
+                author_association=_string_at(
+                    payload, "issue", "author_association"
+                ),
+                labels=_object_strings_at(
+                    payload, "issue", "labels", item_field="name"
+                ),
+                assignees=_object_strings_at(
+                    payload, "issue", "assignees", item_field="login"
+                ),
+                milestone=_string_at(payload, "issue", "milestone", "title"),
+                issue_type=_string_at(payload, "issue", "type", "name"),
             )
         return None

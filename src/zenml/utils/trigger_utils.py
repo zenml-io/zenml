@@ -394,7 +394,10 @@ def get_webhook_upstream_event(
     if pipeline_run is None:
         from zenml.steps.step_context import get_step_context
 
-        pipeline_run = get_step_context().pipeline_run
+        try:
+            pipeline_run = get_step_context().pipeline_run
+        except RuntimeError:
+            raise
 
     info = pipeline_run.trigger_execution_info
     if info is None or info.webhook_upstream_event is None:

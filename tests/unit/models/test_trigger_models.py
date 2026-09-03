@@ -31,6 +31,7 @@ from zenml.models import (
 from zenml.webhooks.providers.github import (
     GitHubWebhookConfiguration,
     GitHubWebhookEvent,
+    IssueOpened,
     MergedPullRequest,
     PushEvent,
     ReleasePublished,
@@ -115,6 +116,11 @@ def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
             conclusion='oneof:["success", "failure"]',
             actor="george",
         ),
+        IssueOpened(
+            repo="zenml-io/zenml",
+            labels='oneof:["bug", "priority-high"]',
+            author_association='oneof:["OWNER", "MEMBER"]',
+        ),
     ]
     request = WebhookTriggerRequest(
         project=uuid4(),
@@ -157,6 +163,12 @@ def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
                     "workflow": "CI",
                     "conclusion": 'oneof:["success", "failure"]',
                     "actor": "george",
+                },
+                {
+                    "type": "issue_opened",
+                    "repo": "zenml-io/zenml",
+                    "author_association": 'oneof:["OWNER", "MEMBER"]',
+                    "labels": 'oneof:["bug", "priority-high"]',
                 },
             ]
         }
@@ -217,6 +229,23 @@ def test_pull_request_merged_rejects_unsupported_filters(
     """Semantic event fields enforce their operator allowlists."""
     with pytest.raises(ValidationError):
         MergedPullRequest(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "repo",
+        "author",
+        "author_association",
+        "labels",
+        "assignees",
+        "milestone",
+    ],
+)
+def test_issue_opened_rejects_prefix_filters(field: str) -> None:
+    """Opened-issue filters support exact values and alternatives only."""
+    with pytest.raises(ValidationError):
+        IssueOpened(**{field: "startswith:prefix"})
 
 
 def test_schedule_trigger_valid_and_inheritance():

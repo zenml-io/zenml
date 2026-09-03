@@ -691,8 +691,8 @@ trigger = client.create_webhook_trigger(
 )
 ```
 
-GitHub supports `merged_pull_request`, `workflow_run_completed`, `push`, and
-`release_published` semantic events. See the provider's
+GitHub supports `merged_pull_request`, `workflow_run_completed`, `push`,
+`release_published`, and `issue_opened` semantic events. See the provider's
 [supported events and filters](webhooks/github.md#supported-events-and-filters)
 for all fields, supported string-filter operators, and another configuration
 example.

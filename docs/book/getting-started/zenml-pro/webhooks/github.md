@@ -55,7 +55,7 @@ You need repository administrator access to add the webhook.
 4. Set **Content type** to `application/json`.
 5. Set **Secret** to the signing secret returned by ZenML.
 6. Choose individual events and select **Pull requests**, **Workflow runs**,
-   **Pushes**, and **Releases** as needed by your consumers.
+   **Pushes**, **Releases**, and **Issues** as needed by your consumers.
 7. Leave the webhook active and select **Add webhook**.
 
 GitHub sends an `X-Hub-Signature-256` header containing an HMAC-SHA256
@@ -64,7 +64,7 @@ parses or forwards the delivery.
 
 ## Supported events and filters
 
-The provider recognizes four raw GitHub event families and maps qualifying
+The provider recognizes five raw GitHub event families and maps qualifying
 payloads to ZenML semantic events:
 
 | GitHub repository event | Raw `X-GitHub-Event` | ZenML semantic event | Required payload condition | Available filter fields |
@@ -73,6 +73,7 @@ payloads to ZenML semantic events:
 | Workflow runs | `workflow_run` | `workflow_run_completed` | Action is `completed` | `workflow`, `conclusion`, `actor` |
 | Pushes | `push` | `push` | Ref is a branch under `refs/heads/` | `repo`, `branch`, `actor` |
 | Releases | `release` | `release_published` | Action is `published` | `repo`, `tag`, `target_branch`, `actor` |
+| Issues | `issues` | `issue_opened` | Action is `opened` | `repo`, `author`, `author_association`, `labels`, `assignees`, `milestone` |
 
 `repo` is the full GitHub repository name, such as `acme/ml-pipelines`. Branch
 and tag values do not include Git ref prefixes such as `refs/heads/`.
@@ -96,6 +97,23 @@ Values configured for the same field use OR logic; different populated fields
 use AND logic. Omitted fields match any value. If a configured field is absent
 from a delivery, it does not match.
 
+For the collection-valued `labels` and `assignees` fields, a filter matches if
+any value on the issue matches any configured value. For example, this target
+matches an issue carrying either the `bug` or `priority-high` label:
+
+```yaml
+target_events:
+  - type: issue_opened
+    repo: acme/ml-pipelines
+    labels: 'oneof:["bug","priority-high"]'
+```
+
+The propagated `issue_opened` event includes the repository, issue number,
+title, author, author association, label names, assignee login names, milestone
+title, and issue type name when available. It intentionally omits the issue
+body. A downstream pipeline can retrieve the complete issue from GitHub using
+the repository and issue number.
+
 For example, this target matches pushes to `main` or any `release/` branch in
 one repository:
 
@@ -110,7 +128,8 @@ target_events:
 
 Not every operator applies to every field. `oneof:` is supported by the fields
 in the table, while `startswith:` is limited to `branch`, `target_branch`,
-`source_branch`, and `tag` fields.
+`source_branch`, and `tag` fields. The issue title, number, and issue type are
+available in the propagated event but are not trigger filters.
 
 See [Webhook triggers](../triggers.md#webhook-triggers) for a complete example
 that uses this configuration to execute a pipeline snapshot.
