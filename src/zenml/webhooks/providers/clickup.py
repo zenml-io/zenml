@@ -1,7 +1,6 @@
 #  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """ClickUp webhook provider and semantic target event catalog."""
 
-import json
 import logging
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
@@ -26,6 +25,7 @@ from zenml.webhooks.providers.base import (
     WebhookTargetEvent,
     WebhookTriggerMatch,
     authenticate_hmac_sha256,
+    matches_string_filter,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -213,34 +213,6 @@ class ClickUpWebhookConfiguration(WebhookConfiguration):
     target_events: list[ClickUpWebhookTargetEvent] = Field(min_length=1)
 
 
-def _matches_string_filter(
-    *, actual: str | None, configured: str | list[str] | None
-) -> bool:
-    """Match an extracted value against a supported string filter.
-
-    Args:
-        actual: The value extracted from the webhook event.
-        configured: The configured exact, prefix, or alternatives filter.
-
-    Returns:
-        Whether the extracted value matches the configured filter.
-    """
-    if configured is None:
-        return True
-
-    if actual is None:
-        return False
-
-    values = configured if isinstance(configured, list) else [configured]
-    for value in values:
-        if value.startswith("oneof:"):
-            if actual in json.loads(value.removeprefix("oneof:")):
-                return True
-        elif actual == value:
-            return True
-    return False
-
-
 def _matches_location_filters(
     *,
     list_id: str | None,
@@ -261,11 +233,9 @@ def _matches_location_filters(
     """
     return all(
         (
-            _matches_string_filter(actual=list_id, configured=target.list_id),
-            _matches_string_filter(
-                actual=space_id, configured=target.space_id
-            ),
-            _matches_string_filter(
+            matches_string_filter(actual=list_id, configured=target.list_id),
+            matches_string_filter(actual=space_id, configured=target.space_id),
+            matches_string_filter(
                 actual=folder_id, configured=target.folder_id
             ),
         )
@@ -294,7 +264,7 @@ def _matches_task_filters(
     """
     return all(
         (
-            _matches_string_filter(actual=task_id, configured=target.task_id),
+            matches_string_filter(actual=task_id, configured=target.task_id),
             _matches_location_filters(
                 list_id=list_id,
                 space_id=space_id,
@@ -500,7 +470,7 @@ class ClickUpTaskStatusUpdatedEvent(ClickUpTaskSemanticEvent):
                     folder_id=self.folder_id,
                     target=target,
                 ),
-                _matches_string_filter(
+                matches_string_filter(
                     actual=self.status, configured=target.status
                 ),
             )
@@ -561,25 +531,18 @@ class ClickUpListDeletedEvent(ClickUpListSemanticEvent):
     )
 
 
-_TASK_SEMANTIC_EVENTS: Mapping[
-    ClickUpWebhookEvent, type[ClickUpTaskSemanticEvent]
-] = {
-    ClickUpWebhookEvent.TASK_CREATED: ClickUpTaskCreatedEvent,
-    ClickUpWebhookEvent.TASK_UPDATED: ClickUpTaskUpdatedEvent,
-    ClickUpWebhookEvent.TASK_DELETED: ClickUpTaskDeletedEvent,
-    ClickUpWebhookEvent.TASK_STATUS_UPDATED: ClickUpTaskStatusUpdatedEvent,
-    ClickUpWebhookEvent.TASK_MOVED: ClickUpTaskMovedEvent,
-    ClickUpWebhookEvent.TASK_ASSIGNEE_UPDATED: ClickUpTaskAssigneeUpdatedEvent,
-    ClickUpWebhookEvent.TASK_COMMENT_POSTED: ClickUpTaskCommentPostedEvent,
-}
-
-_LIST_SEMANTIC_EVENTS: Mapping[
-    ClickUpWebhookEvent, type[ClickUpListSemanticEvent]
-] = {
-    ClickUpWebhookEvent.LIST_CREATED: ClickUpListCreatedEvent,
-    ClickUpWebhookEvent.LIST_UPDATED: ClickUpListUpdatedEvent,
-    ClickUpWebhookEvent.LIST_DELETED: ClickUpListDeletedEvent,
-}
+_SEMANTIC_EVENTS: list[type[ClickUpSemanticEvent]] = [
+    ClickUpTaskCreatedEvent,
+    ClickUpTaskUpdatedEvent,
+    ClickUpTaskDeletedEvent,
+    ClickUpTaskStatusUpdatedEvent,
+    ClickUpTaskMovedEvent,
+    ClickUpTaskAssigneeUpdatedEvent,
+    ClickUpTaskCommentPostedEvent,
+    ClickUpListCreatedEvent,
+    ClickUpListUpdatedEvent,
+    ClickUpListDeletedEvent,
+]
 
 
 class ClickUpWebhookProvider(BaseWebhookProvider):
@@ -731,8 +694,17 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         list_id = _id_string(payload, "list_id")
         space_id = _id_string(payload, "space_id")
         folder_id = _id_string(payload, "folder_id")
-        task_cls = _TASK_SEMANTIC_EVENTS.get(event_type)
-        if task_cls is ClickUpTaskStatusUpdatedEvent:
+        semantic_cls = next(
+            (
+                candidate
+                for candidate in _SEMANTIC_EVENTS
+                if candidate.model_fields["type"].default == event_type
+            ),
+            None,
+        )
+        if semantic_cls is None:
+            return None
+        if semantic_cls is ClickUpTaskStatusUpdatedEvent:
             return ClickUpTaskStatusUpdatedEvent(
                 type=event_type,
                 task_id=_id_string(payload, "task_id"),
@@ -741,20 +713,17 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
                 folder_id=folder_id,
                 status=_status_after(payload),
             )
-        if task_cls is not None:
-            return task_cls(
+        if issubclass(semantic_cls, ClickUpTaskSemanticEvent):
+            return semantic_cls(
                 type=event_type,
                 task_id=_id_string(payload, "task_id"),
                 list_id=list_id,
                 space_id=space_id,
                 folder_id=folder_id,
             )
-        list_cls = _LIST_SEMANTIC_EVENTS.get(event_type)
-        if list_cls is not None:
-            return list_cls(
-                type=event_type,
-                list_id=list_id,
-                space_id=space_id,
-                folder_id=folder_id,
-            )
-        return None
+        return semantic_cls(
+            type=event_type,
+            list_id=list_id,
+            space_id=space_id,
+            folder_id=folder_id,
+        )
