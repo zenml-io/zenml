@@ -9,7 +9,7 @@ import hmac
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -21,6 +21,9 @@ from zenml.utils.pydantic_utils import YAMLSerializationMixin
 if TYPE_CHECKING:
     from zenml.models import WebhookTriggerResponse
     from zenml.webhooks.events import WebhookEvent
+
+
+WebhookTriggerT = TypeVar("WebhookTriggerT")
 
 
 class WebhookAuthenticationError(CredentialsNotValid):
@@ -136,6 +139,54 @@ class WebhookTargetEvent(BaseModel):
         return self
 
 
+def matches_string_filter(
+    *, actual: str | None, configured: StringFilterOption
+) -> bool:
+    """Match an extracted value against a supported string filter.
+
+    Args:
+        actual: The value extracted from the webhook event.
+        configured: The configured exact, prefix, or alternatives filter.
+
+    Returns:
+        Whether the extracted value matches the configured filter.
+    """
+    if configured is None:
+        return True
+    if actual is None:
+        return False
+    for value in configured if isinstance(configured, list) else [configured]:
+        if value.startswith("oneof:"):
+            if actual in json.loads(value.removeprefix("oneof:")):
+                return True
+        elif value.startswith("startswith:"):
+            if actual.startswith(value.removeprefix("startswith:")):
+                return True
+        elif actual == value:
+            return True
+    return False
+
+
+def matches_string_collection_filter(
+    *, actual: Sequence[str], configured: StringFilterOption
+) -> bool:
+    """Match when any actual collection item satisfies a string filter.
+
+    Args:
+        actual: Values extracted from the webhook event.
+        configured: The configured exact value or alternatives.
+
+    Returns:
+        Whether at least one actual value matches the configured filter.
+    """
+    if configured is None:
+        return True
+    return any(
+        matches_string_filter(actual=value, configured=configured)
+        for value in actual
+    )
+
+
 class WebhookConfiguration(YAMLSerializationMixin):
     """Base class for provider-owned webhook configuration."""
 
@@ -146,6 +197,15 @@ class ParsedWebhookEvent(BaseModel):
     event_type: str
     delivery_id: str | None = None
     payload: dict[str, Any]
+
+
+class WebhookTriggerMatch(BaseModel, Generic[WebhookTriggerT]):
+    """Result of matching one trusted event to webhook triggers."""
+
+    model_config = ConfigDict(frozen=True)
+
+    triggers: list[WebhookTriggerT]
+    event: dict[str, Any] | None = None
 
 
 class BaseWebhookProvider(ABC):
@@ -276,15 +336,15 @@ class BaseWebhookProvider(ABC):
         *,
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
-    ) -> list["WebhookTriggerResponse"]:
-        """Return candidates that match one trusted event.
+    ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
+        """Match candidates and return the parsed semantic event.
 
         Args:
             event: The trusted webhook event.
             candidates: Triggers selected by generic orchestration.
 
         Returns:
-            The matching triggers.
+            The matching triggers and any parsed semantic event.
         """
 
 

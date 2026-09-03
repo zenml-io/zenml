@@ -24,12 +24,14 @@ from zenml.models import (
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerExecutionInfo,
     WebhookTriggerRequest,
     WebhookTriggerUpdate,
 )
 from zenml.webhooks.providers.github import (
     GitHubWebhookConfiguration,
     GitHubWebhookEvent,
+    IssueOpened,
     MergedPullRequest,
     PushEvent,
     ReleasePublished,
@@ -48,6 +50,35 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
     assert info.upstream_run_id == upstream_run_id
     assert info.upstream_pipeline_ids == []
     assert "upstream_pipeline_ids" in info.model_dump()
+
+
+def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
+    """Webhook trigger execution metadata keeps a dynamic provider event."""
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "github": {
+                    "delivery_id": "delivery-001",
+                    "event": {
+                        "type": "push",
+                        "repo": "zenml-io/zenml",
+                        "commit": None,
+                    },
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "github": WebhookTriggerExecutionInfo(
+            delivery_id="delivery-001",
+            event={
+                "type": "push",
+                "repo": "zenml-io/zenml",
+                "commit": None,
+            },
+        )
+    }
 
 
 def test_webhook_trigger_update_requires_complete_payload() -> None:
@@ -84,6 +115,11 @@ def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
             workflow="CI",
             conclusion='oneof:["success", "failure"]',
             actor="george",
+        ),
+        IssueOpened(
+            repo="zenml-io/zenml",
+            labels='oneof:["bug", "priority-high"]',
+            author_association='oneof:["OWNER", "MEMBER"]',
         ),
     ]
     request = WebhookTriggerRequest(
@@ -127,6 +163,12 @@ def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
                     "workflow": "CI",
                     "conclusion": 'oneof:["success", "failure"]',
                     "actor": "george",
+                },
+                {
+                    "type": "issue_opened",
+                    "repo": "zenml-io/zenml",
+                    "author_association": 'oneof:["OWNER", "MEMBER"]',
+                    "labels": 'oneof:["bug", "priority-high"]',
                 },
             ]
         }
@@ -187,6 +229,23 @@ def test_pull_request_merged_rejects_unsupported_filters(
     """Semantic event fields enforce their operator allowlists."""
     with pytest.raises(ValidationError):
         MergedPullRequest(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "repo",
+        "author",
+        "author_association",
+        "labels",
+        "assignees",
+        "milestone",
+    ],
+)
+def test_issue_opened_rejects_prefix_filters(field: str) -> None:
+    """Opened-issue filters support exact values and alternatives only."""
+    with pytest.raises(ValidationError):
+        IssueOpened(**{field: "startswith:prefix"})
 
 
 def test_schedule_trigger_valid_and_inheritance():

@@ -31,6 +31,7 @@ from zenml.webhooks.providers import (
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookProviderRegistry,
+    WebhookTriggerMatch,
     get_webhook_provider,
 )
 from zenml.webhooks.providers.custom import (
@@ -45,11 +46,13 @@ from zenml.webhooks.providers.github import (
     GITHUB_EVENT_HEADER,
     GITHUB_SIGNATURE_HEADER,
     GitHubCommit,
+    GitHubIssueOpenedEvent,
     GitHubMergedPullRequestEvent,
     GitHubPushEvent,
     GitHubSemanticEvent,
     GitHubWebhookConfiguration,
     GitHubWebhookProvider,
+    IssueOpened,
     PushEvent,
 )
 
@@ -85,7 +88,7 @@ class _BodyMetadataBearerProvider(BaseWebhookProvider):
         return delivery_id if isinstance(delivery_id, str) else None
 
     def match_triggers(self, *, event, candidates):
-        return list(candidates)
+        return WebhookTriggerMatch(triggers=list(candidates))
 
 
 def test_github_semantic_events_are_public_pydantic_models() -> None:
@@ -100,6 +103,7 @@ def test_github_semantic_events_are_public_pydantic_models() -> None:
     assert isinstance(event, GitHubSemanticEvent)
     assert event.event_filter_type is PushEvent
     assert event.model_dump() == {
+        "type": "push",
         "repo": "zenml-io/zenml",
         "branch": "main",
         "actor": "octocat",
@@ -125,12 +129,71 @@ def test_github_semantic_push_event_includes_head_commit() -> None:
         },
     )
 
-    parsed = GitHubWebhookProvider().parse_semantic_event(event)
+    provider = GitHubWebhookProvider()
+    parsed = provider.parse_semantic_event(event)
 
     assert isinstance(parsed, GitHubPushEvent)
     assert parsed.commit == GitHubCommit(
         name="Add webhook triggers", sha="abc123"
     )
+
+
+def test_github_matching_returns_serialized_semantic_event() -> None:
+    """GitHub matching returns the event used to match the triggers."""
+    provider = GitHubWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="push",
+        delivery_id="delivery-001",
+        payload={
+            "ref": "refs/heads/main",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "sender": {"login": "octocat"},
+        },
+    )
+    trigger = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                }
+            ]
+        },
+    )
+
+    result = provider.match_triggers(event=event, candidates=[trigger])
+
+    assert result.triggers == [trigger]
+    assert result.event == {
+        "type": "push",
+        "repo": "zenml-io/zenml",
+        "branch": "main",
+        "actor": "octocat",
+        "commit": None,
+    }
+
+
+def test_provider_match_envelope_can_omit_semantic_event() -> None:
+    """Providers can match triggers without exposing event metadata."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="custom",
+        event_type="monitor.page",
+        payload={},
+    )
+    trigger = SimpleNamespace(id=uuid4())
+
+    result = _BodyMetadataBearerProvider().match_triggers(
+        event=event, candidates=[trigger]
+    )
+
+    assert result == WebhookTriggerMatch(triggers=[trigger])
 
 
 def test_github_semantic_merged_pr_includes_merge_commit() -> None:
@@ -160,6 +223,94 @@ def test_github_semantic_merged_pr_includes_merge_commit() -> None:
     assert parsed.commit == GitHubCommit(
         name="Add webhook triggers", sha="def456"
     )
+
+
+def test_github_issue_opened_normalizes_and_matches_collections() -> None:
+    """Opened issues expose compact metadata and OR-match collections."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="issues",
+        payload={
+            "action": "opened",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "issue": {
+                "number": 42,
+                "title": "Support issue webhooks",
+                "body": "This intentionally does not enter the event.",
+                "user": {"login": "octocat"},
+                "author_association": "MEMBER",
+                "labels": [{"name": "bug"}, {"name": "priority-high"}],
+                "assignees": [
+                    {"login": "maintainer"},
+                    {"login": "reviewer"},
+                ],
+                "milestone": {"title": "v1.0"},
+                "type": {"name": "Bug"},
+            },
+        },
+    )
+
+    provider = GitHubWebhookProvider()
+    parsed = provider.parse_semantic_event(event)
+
+    assert parsed == GitHubIssueOpenedEvent(
+        repo="zenml-io/zenml",
+        number=42,
+        title="Support issue webhooks",
+        author="octocat",
+        author_association="MEMBER",
+        labels=["bug", "priority-high"],
+        assignees=["maintainer", "reviewer"],
+        milestone="v1.0",
+        issue_type="Bug",
+    )
+    assert parsed.matches(
+        IssueOpened(
+            repo="zenml-io/zenml",
+            author_association='oneof:["OWNER", "MEMBER"]',
+            labels='oneof:["feature", "priority-high"]',
+            assignees=["nobody", "maintainer"],
+            milestone="v1.0",
+        )
+    )
+    assert not parsed.matches(IssueOpened(labels="documentation"))
+
+    trigger = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "issue_opened",
+                    "repo": "zenml-io/zenml",
+                    "labels": 'oneof:["feature", "bug"]',
+                }
+            ]
+        },
+    )
+    result = provider.match_triggers(event=event, candidates=[trigger])
+    assert result.triggers == [trigger]
+    assert result.event is not None
+    assert result.event["type"] == "issue_opened"
+    assert "body" not in result.event
+
+
+def test_github_issue_reopened_is_not_an_issue_opened_event() -> None:
+    """Reopened issues do not produce the opened-issue semantic event."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="issues",
+        payload={
+            "action": "reopened",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "issue": {"number": 42, "title": "Support issue webhooks"},
+        },
+    )
+
+    assert GitHubWebhookProvider().parse_semantic_event(event) is None
 
 
 def _signature(secret: str, body: bytes) -> str:
@@ -246,7 +397,7 @@ async def test_github_pre_validation_ignores_unsupported_event_type(
 
 @pytest.mark.parametrize(
     "event_type",
-    ["pull_request", "workflow_run", "push", "release"],
+    ["pull_request", "workflow_run", "push", "release", "issues"],
 )
 async def test_github_pre_validation_processes_supported_event_type(
     event_type: str,
@@ -518,7 +669,7 @@ def test_runtime_matching_rejects_stale_github_configuration() -> None:
     assert (
         provider.match_triggers(
             event=event, candidates=[partially_stale, entirely_stale]
-        )
+        ).triggers
         == []
     )
 
@@ -538,4 +689,7 @@ def test_runtime_empty_target_events_are_rejected() -> None:
     )
     trigger = SimpleNamespace(id=uuid4(), configuration={"target_events": []})
 
-    assert provider.match_triggers(event=event, candidates=[trigger]) == []
+    assert (
+        provider.match_triggers(event=event, candidates=[trigger]).triggers
+        == []
+    )

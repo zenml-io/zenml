@@ -1236,11 +1236,21 @@ class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
         return self.get_body().configuration
 
 
+class WebhookTriggerExecutionInfo(BaseModel):
+    """Information about the webhook event that triggered a pipeline run."""
+
+    delivery_id: str | None = None
+    event: dict[str, Any]
+
+
 class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
     upstream_run_id: UUID | None = None
     upstream_pipeline_ids: list[UUID] = Field(default_factory=list)
+    webhook_upstream_event: dict[str, WebhookTriggerExecutionInfo] | None = (
+        None
+    )
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[

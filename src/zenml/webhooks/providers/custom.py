@@ -9,6 +9,7 @@ from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
     WebhookConfiguration,
     WebhookPayloadError,
+    WebhookTriggerMatch,
     authenticate_hmac_sha256,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
@@ -92,7 +93,7 @@ class CustomWebhookProvider(BaseWebhookProvider):
         *,
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
-    ) -> list["WebhookTriggerResponse"]:
+    ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
         """Match candidates with valid unfiltered custom configuration.
 
         Args:
@@ -100,7 +101,7 @@ class CustomWebhookProvider(BaseWebhookProvider):
             candidates: The associated candidate triggers.
 
         Returns:
-            Candidates whose stored configuration remains unfiltered.
+            Matching candidates without semantic event metadata.
         """
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
@@ -113,4 +114,4 @@ class CustomWebhookProvider(BaseWebhookProvider):
                 )
                 continue
             matches.append(trigger)
-        return matches
+        return WebhookTriggerMatch(triggers=matches)
