@@ -24,6 +24,7 @@ from zenml.models import (
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerExecutionInfo,
     WebhookTriggerRequest,
     WebhookTriggerUpdate,
 )
@@ -48,6 +49,35 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
     assert info.upstream_run_id == upstream_run_id
     assert info.upstream_pipeline_ids == []
     assert "upstream_pipeline_ids" in info.model_dump()
+
+
+def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
+    """Webhook trigger execution metadata keeps a dynamic provider event."""
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "github": {
+                    "delivery_id": "delivery-001",
+                    "event": {
+                        "type": "push",
+                        "repo": "zenml-io/zenml",
+                        "commit": None,
+                    },
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "github": WebhookTriggerExecutionInfo(
+            delivery_id="delivery-001",
+            event={
+                "type": "push",
+                "repo": "zenml-io/zenml",
+                "commit": None,
+            },
+        )
+    }
 
 
 def test_webhook_trigger_update_requires_complete_payload() -> None:

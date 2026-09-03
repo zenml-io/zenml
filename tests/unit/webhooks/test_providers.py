@@ -31,6 +31,7 @@ from zenml.webhooks.providers import (
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookProviderRegistry,
+    WebhookTriggerMatch,
     get_webhook_provider,
 )
 from zenml.webhooks.providers.custom import (
@@ -100,6 +101,7 @@ def test_github_semantic_events_are_public_pydantic_models() -> None:
     assert isinstance(event, GitHubSemanticEvent)
     assert event.event_filter_type is PushEvent
     assert event.model_dump() == {
+        "type": "push",
         "repo": "zenml-io/zenml",
         "branch": "main",
         "actor": "octocat",
@@ -131,6 +133,66 @@ def test_github_semantic_push_event_includes_head_commit() -> None:
     assert parsed.commit == GitHubCommit(
         name="Add webhook triggers", sha="abc123"
     )
+
+
+def test_github_matching_returns_serialized_semantic_event() -> None:
+    """GitHub matching returns the event used to match the triggers."""
+    provider = GitHubWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="push",
+        delivery_id="delivery-001",
+        payload={
+            "ref": "refs/heads/main",
+            "repository": {"full_name": "zenml-io/zenml"},
+            "sender": {"login": "octocat"},
+        },
+    )
+    trigger = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                }
+            ]
+        },
+    )
+
+    result = provider.match_triggers_with_event(
+        event=event, candidates=[trigger]
+    )
+
+    assert result.triggers == [trigger]
+    assert result.event == {
+        "type": "push",
+        "repo": "zenml-io/zenml",
+        "branch": "main",
+        "actor": "octocat",
+        "commit": None,
+    }
+
+
+def test_default_match_envelope_preserves_provider_compatibility() -> None:
+    """Legacy providers match normally without exposing event metadata."""
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="custom",
+        event_type="monitor.page",
+        payload={},
+    )
+    trigger = SimpleNamespace(id=uuid4())
+
+    result = _BodyMetadataBearerProvider().match_triggers_with_event(
+        event=event, candidates=[trigger]
+    )
+
+    assert result == WebhookTriggerMatch(triggers=[trigger])
 
 
 def test_github_semantic_merged_pr_includes_merge_commit() -> None:

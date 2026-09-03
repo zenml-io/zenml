@@ -9,7 +9,7 @@ import hmac
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -21,6 +21,9 @@ from zenml.utils.pydantic_utils import YAMLSerializationMixin
 if TYPE_CHECKING:
     from zenml.models import WebhookTriggerResponse
     from zenml.webhooks.events import WebhookEvent
+
+
+WebhookTriggerT = TypeVar("WebhookTriggerT")
 
 
 class WebhookAuthenticationError(CredentialsNotValid):
@@ -146,6 +149,15 @@ class ParsedWebhookEvent(BaseModel):
     event_type: str
     delivery_id: str | None = None
     payload: dict[str, Any]
+
+
+class WebhookTriggerMatch(BaseModel, Generic[WebhookTriggerT]):
+    """Result of matching one trusted event to webhook triggers."""
+
+    model_config = ConfigDict(frozen=True)
+
+    triggers: list[WebhookTriggerT]
+    event: dict[str, Any] | None = None
 
 
 class BaseWebhookProvider(ABC):
@@ -286,6 +298,29 @@ class BaseWebhookProvider(ABC):
         Returns:
             The matching triggers.
         """
+
+    def match_triggers_with_event(
+        self,
+        *,
+        event: "WebhookEvent",
+        candidates: Sequence["WebhookTriggerResponse"],
+    ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
+        """Match triggers and include any parsed semantic event.
+
+        Providers that expose a semantic event should override this method.
+        The default preserves compatibility with providers that only implement
+        trigger matching.
+
+        Args:
+            event: The trusted webhook event.
+            candidates: Triggers selected by generic orchestration.
+
+        Returns:
+            The matching triggers without semantic event metadata.
+        """
+        return WebhookTriggerMatch(
+            triggers=self.match_triggers(event=event, candidates=candidates)
+        )
 
 
 def authenticate_hmac_sha256(

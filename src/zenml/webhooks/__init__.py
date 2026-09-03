@@ -24,6 +24,7 @@ from zenml.webhooks.providers import (
     WebhookPreValidationResult,
     WebhookProviderRegistry,
     WebhookTargetEvent,
+    WebhookTriggerMatch,
     get_webhook_provider,
     webhook_provider_registry,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "WebhookPreValidationResult",
     "WebhookProviderRegistry",
     "WebhookTargetEvent",
+    "WebhookTriggerMatch",
     "get_webhook_provider",
     "webhook_provider_registry",
 ]

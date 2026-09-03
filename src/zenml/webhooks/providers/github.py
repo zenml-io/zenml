@@ -25,6 +25,7 @@ from zenml.webhooks.providers.base import (
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookTargetEvent,
+    WebhookTriggerMatch,
     authenticate_hmac_sha256,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
@@ -228,6 +229,9 @@ class GitHubMergedPullRequestEvent(GitHubSemanticEvent):
     """Normalized merged pull request event."""
 
     event_filter_type = MergedPullRequest
+    type: Literal[GitHubWebhookEvent.MERGED_PULL_REQUEST] = (
+        GitHubWebhookEvent.MERGED_PULL_REQUEST
+    )
     repo: str
     target_branch: str
     source_branch: str | None
@@ -267,6 +271,9 @@ class GitHubWorkflowRunCompletedEvent(GitHubSemanticEvent):
     """Normalized completed workflow run event."""
 
     event_filter_type = WorkflowRunCompleted
+    type: Literal[GitHubWebhookEvent.WORKFLOW_RUN_COMPLETED] = (
+        GitHubWebhookEvent.WORKFLOW_RUN_COMPLETED
+    )
     workflow: str
     conclusion: str | None
     actor: str | None
@@ -301,6 +308,7 @@ class GitHubPushEvent(GitHubSemanticEvent):
     """Normalized branch push event."""
 
     event_filter_type = PushEvent
+    type: Literal[GitHubWebhookEvent.PUSH] = GitHubWebhookEvent.PUSH
     repo: str
     branch: str
     actor: str | None
@@ -336,6 +344,9 @@ class GitHubReleasePublishedEvent(GitHubSemanticEvent):
     """Normalized published release event."""
 
     event_filter_type = ReleasePublished
+    type: Literal[GitHubWebhookEvent.RELEASE_PUBLISHED] = (
+        GitHubWebhookEvent.RELEASE_PUBLISHED
+    )
     repo: str
     tag: str
     target_branch: str | None
@@ -480,15 +491,37 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         Returns:
             The candidates matching the semantic event.
         """
+        return self.match_triggers_with_event(
+            event=event, candidates=candidates
+        ).triggers
+
+    def match_triggers_with_event(
+        self,
+        *,
+        event: "WebhookEvent",
+        candidates: Sequence["WebhookTriggerResponse"],
+    ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
+        """Match GitHub triggers and return the parsed semantic event.
+
+        Args:
+            event: The trusted GitHub webhook event.
+            candidates: The candidate webhook triggers.
+
+        Returns:
+            Matching triggers and their shared semantic event.
+        """
         semantic = self.parse_semantic_event(event)
         if semantic is None:
-            return []
+            return WebhookTriggerMatch(triggers=[])
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             targets = self._cast_runtime_targets(trigger)
             if any(semantic.matches(target) for target in targets):
                 matches.append(trigger)
-        return matches
+        return WebhookTriggerMatch(
+            triggers=matches,
+            event=semantic.model_dump(mode="json"),
+        )
 
     def parse_semantic_event(
         self, event: "WebhookEvent"

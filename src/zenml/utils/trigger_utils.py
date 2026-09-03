@@ -372,3 +372,35 @@ def get_upstream_run(
             exc_info=exc,
         )
         return None
+
+
+def get_webhook_upstream_event(
+    pipeline_run: PipelineRunResponse | None = None,
+) -> dict[str, Any] | None:
+    """Get the upstream webhook event for a pipeline run.
+
+    When no run is provided, the current step's pipeline run is used.
+
+    Args:
+        pipeline_run: Pipeline run to inspect. If omitted, the current run is
+            resolved from the active step context.
+
+    Returns:
+        Plain provider-keyed webhook event metadata, or `None` if unavailable.
+
+    Raises:
+        RuntimeError: If no run is provided outside a running step.
+    """
+    if pipeline_run is None:
+        from zenml.steps.step_context import get_step_context
+
+        pipeline_run = get_step_context().pipeline_run
+
+    info = pipeline_run.trigger_execution_info
+    if info is None or info.webhook_upstream_event is None:
+        return None
+
+    return {
+        provider: provider_info.model_dump(mode="json")
+        for provider, provider_info in info.webhook_upstream_event.items()
+    }

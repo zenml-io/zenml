@@ -726,6 +726,60 @@ Push to the configured branch in GitHub, or use the
 test the intake path. Remember that `202 Accepted` confirms webhook intake; use
 trigger dispatch state and pipeline runs to verify downstream execution.
 
+### Access the upstream webhook event
+
+A pipeline run started directly by a webhook trigger stores the provider's
+parsed semantic event in its trigger execution information. Use
+`get_webhook_upstream_event` inside a step to retrieve it as a plain dictionary:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_webhook_upstream_event
+
+
+@step
+def inspect_webhook_event() -> None:
+    upstream_event = get_webhook_upstream_event()
+    if upstream_event is None:
+        print("This run was not started by a supported webhook event.")
+        return
+
+    github_event = upstream_event.get("github")
+    if github_event is not None:
+        event = github_event["event"]
+        print(f"Event type: {event['type']}")
+        print(f"Delivery ID: {github_event['delivery_id']}")
+```
+
+For example, a GitHub push event has this shape:
+
+```json
+{
+  "github": {
+    "delivery_id": "delivery-001",
+    "event": {
+      "type": "push",
+      "repo": "acme/ml-pipelines",
+      "branch": "main",
+      "actor": "octocat",
+      "commit": {
+        "name": "Update model pipeline",
+        "sha": "abc123"
+      }
+    }
+  }
+}
+```
+
+The event `type` is the semantic type used by the webhook trigger, not
+necessarily the provider's raw event family. Optional semantic fields are
+included with `null` values when unavailable. You can also pass an existing
+pipeline run response to `get_webhook_upstream_event(pipeline_run=run)`.
+
+Only runs started directly by a provider with semantic event support contain
+this metadata. It is not propagated through later platform event triggers, and
+custom webhook triggers do not currently persist their arbitrary payloads.
+
 ### Custom webhook triggers
 
 Custom webhooks do not currently provide semantic event or payload filtering.
