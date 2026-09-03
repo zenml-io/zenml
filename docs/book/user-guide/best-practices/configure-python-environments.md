@@ -74,7 +74,7 @@ requirements. We try to keep these dependency requirements ranges as wide as
 possible for the integrations developed by ZenML, but it is not always possible
 to make this work completely smoothly. Here is one of the known issues:
 
-* `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on account of another dependency of ZenML. Using versions of `click` in your own project that are greater than 8.0.3 may cause unanticipated behaviors.
+* `click`: ZenML pins Click to a tested range for CLI compatibility and security. If your project declares Click directly, ensure that its constraint overlaps with ZenML's current requirement in `pyproject.toml`.
 
 ### Manually bypassing ZenML's integration installation
 
