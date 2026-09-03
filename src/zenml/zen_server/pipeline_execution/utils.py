@@ -591,19 +591,19 @@ def execute_snapshot_run(
         return True
 
 
-def resume_run(run: PipelineRunResponse) -> Future[None]:
-    """Resume a run from the server.
+def prepare_run_resume(
+    run: PipelineRunResponse,
+) -> Callable[[], None]:
+    """Prepare a callable that resumes a run through the workload manager.
 
     Args:
-        run: The pipeline run that should be resumed
+        run: The pipeline run that should be resumed.
 
     Raises:
-        MaxConcurrentTasksError: If workload submission exceeds concurrency
-            limits.
         IllegalOperationError: If the run is not resuming.
 
     Returns:
-        A future that resolves when the run is resumed.
+        A callable that submits the resume workload.
     """
     if run.status != ExecutionStatus.RESUMING:
         raise IllegalOperationError(
@@ -672,8 +672,25 @@ def resume_run(run: PipelineRunResponse) -> Future[None]:
             wait_for_completion=True,
         )
 
+    return _task
+
+
+def resume_run(run: PipelineRunResponse) -> Future[None]:
+    """Resume a run from the server.
+
+    Args:
+        run: The pipeline run that should be resumed.
+
+    Raises:
+        MaxConcurrentTasksError: If workload submission exceeds concurrency
+            limits.
+
+    Returns:
+        A future that resolves when the run is resumed.
+    """
+    task = prepare_run_resume(run=run)
     try:
-        future = snapshot_executor().submit(_task)
+        future = snapshot_executor().submit(task)
     except MaxConcurrentTasksError:
         raise MaxConcurrentTasksError(
             "Maximum number of concurrent snapshot tasks reached."

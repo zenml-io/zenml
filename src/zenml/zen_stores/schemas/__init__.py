@@ -105,6 +105,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 )
 from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema, TagSchema
 from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerActionSchema,
     TriggerExecutionSchema,
     TriggerSnapshotSchema,
 )
@@ -175,6 +176,7 @@ __all__ = [
     "ResourceRequestSchema",
     "ResourceRequestResourceSchema",
     "TriggerSchema",
+    "TriggerActionSchema",
     "TriggerSnapshotSchema",
     "TriggerExecutionSchema",
     "WebhookEventPayloadSchema",

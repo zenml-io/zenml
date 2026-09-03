@@ -122,6 +122,7 @@ from zenml.constants import (
     STEPS,
     TAG_RESOURCES,
     TAGS,
+    TRIGGER_ACTIONS,
     TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     USERS,
@@ -301,6 +302,8 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerActionRequest,
+    TriggerActionResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
@@ -2870,6 +2873,41 @@ class RestZenStore(BaseZenStore):
         """
         self.delete(
             path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+        )
+
+    def attach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action: TriggerActionRequest,
+    ) -> TriggerActionResponse:
+        """Create and attach an action to a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action: The action to create.
+
+        Returns:
+            The created trigger action.
+        """
+        response = self.post(
+            path=f"{TRIGGERS}/{trigger_id}{TRIGGER_ACTIONS}",
+            body=action,
+        )
+        return TriggerActionResponse.model_validate(response)
+
+    def detach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action_id: UUID,
+    ) -> None:
+        """Detach and delete an action from a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action_id: The action to delete.
+        """
+        self.delete(
+            path=(f"{TRIGGERS}/{trigger_id}{TRIGGER_ACTIONS}/{action_id}"),
         )
 
     def clear_trigger_dispatch_error(

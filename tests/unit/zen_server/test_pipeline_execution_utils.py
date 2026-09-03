@@ -374,3 +374,43 @@ def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
     assert executed is False
     store.update_run.assert_not_called()
     build_and_run.assert_not_called()
+
+
+def test_prepare_run_resume_returns_direct_workload_task(monkeypatch) -> None:
+    """Resume workloads can run without the server snapshot executor."""
+    snapshot = SimpleNamespace(
+        id=uuid4(),
+        runnable=True,
+        is_dynamic=True,
+    )
+    run = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.RESUMING,
+        snapshot=snapshot,
+        log_collection=[
+            SimpleNamespace(source=utils.LOGS_RUNNER_SOURCE),
+        ],
+    )
+    build_and_run = MagicMock()
+    monkeypatch.setattr(
+        utils,
+        "server_config",
+        lambda: SimpleNamespace(workload_manager_enabled=True),
+    )
+    monkeypatch.setattr(utils, "get_auth_context", MagicMock())
+    monkeypatch.setattr(
+        utils,
+        "validate_snapshot_for_server_execution",
+        MagicMock(return_value=(MagicMock(), MagicMock(), "1.0.0")),
+    )
+    monkeypatch.setattr(utils, "build_runner_environment", MagicMock())
+    monkeypatch.setattr(utils, "build_runner_dockerfile", MagicMock())
+    monkeypatch.setattr(utils, "_build_and_run", build_and_run)
+
+    task = utils.prepare_run_resume(run=run)
+
+    build_and_run.assert_not_called()
+    task()
+    build_and_run.assert_called_once()
+    assert build_and_run.call_args.kwargs["workload_id"] == run.id
+    assert build_and_run.call_args.kwargs["wait_for_completion"] is True

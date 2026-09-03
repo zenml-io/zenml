@@ -23,6 +23,7 @@ from zenml.constants import (
     API,
     PIPELINE_SNAPSHOTS,
     SCHEDULE_FEATURE,
+    TRIGGER_ACTIONS,
     TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     VERSION_1,
@@ -36,6 +37,8 @@ from zenml.models import (
     Page,
     PlatformEventTriggerRequest,
     PlatformEventTriggerUpdate,
+    TriggerActionRequest,
+    TriggerActionResponse,
     TriggerFilter,
     WebhookTriggerRequest,
     WebhookTriggerResponse,
@@ -411,6 +414,72 @@ def detach_trigger_from_snapshot(
     zen_store().detach_trigger_from_snapshot(
         trigger_id=trigger_id,
         snapshot_id=snapshot_id,
+    )
+
+
+@router.post(
+    TRIGGERS + "/{trigger_id}" + TRIGGER_ACTIONS,
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def attach_trigger_action(
+    trigger_id: UUID,
+    action: TriggerActionRequest,
+    _: AuthContext = Security(authorize),
+) -> TriggerActionResponse:
+    """Create and attach an action to a trigger.
+
+    Args:
+        trigger_id: The target trigger ID.
+        action: The action to create.
+
+    Returns:
+        The created trigger action.
+
+    Raises:
+        KeyError: If the target run belongs to another project.
+    """
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
+    run = zen_store().get_run(run_id=action.entity_id, hydrate=True)
+    if trigger.project_id != run.project_id:
+        raise KeyError(f"Pipeline run {action.entity_id} not found.")
+
+    check_entitlement(feature=SCHEDULE_FEATURE)
+    verify_permission_for_model(model=trigger, action=Action.UPDATE)
+    verify_permission_for_model(model=run, action=Action.UPDATE)
+
+    return zen_store().attach_trigger_action(
+        trigger_id=trigger_id,
+        action=action,
+    )
+
+
+@router.delete(
+    TRIGGERS + "/{trigger_id}" + TRIGGER_ACTIONS + "/{action_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def detach_trigger_action(
+    trigger_id: UUID,
+    action_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> None:
+    """Detach and delete an action from a trigger.
+
+    Args:
+        trigger_id: The target trigger ID.
+        action_id: The action to delete.
+    """
+    trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
+    verify_permission_for_model(model=trigger, action=Action.UPDATE)
+    zen_store().detach_trigger_action(
+        trigger_id=trigger_id,
+        action_id=action_id,
     )
 
 

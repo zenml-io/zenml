@@ -49,6 +49,7 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.trigger_assoc import (
+    TriggerActionSchema,
     TriggerExecutionSchema,
     TriggerSnapshotSchema,
 )
@@ -153,6 +154,10 @@ class TriggerSchema(NamedSchema, table=True):
     snapshot_links: list[TriggerSnapshotSchema] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
     )
+    actions: list[TriggerActionSchema] = Relationship(
+        back_populates="trigger",
+        sa_relationship_kwargs={"cascade": "delete"},
+    )
 
     user: UserSchema | None = Relationship(back_populates="triggers")
 
@@ -245,6 +250,7 @@ class TriggerSchema(NamedSchema, table=True):
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
                     ),
                     selectinload(jl_arg(TriggerSchema.snapshot_links)),
+                    selectinload(jl_arg(TriggerSchema.actions)),
                     selectinload(jl_arg(TriggerSchema.webhook)),
                 ]
             )
@@ -382,6 +388,7 @@ class TriggerSchema(NamedSchema, table=True):
                 user=self.user.to_model() if self.user else None,
                 snapshots=snapshots,
                 executable_snapshots=executable_snapshots,
+                actions=[action.to_model() for action in self.actions],
                 latest_run=latest_run.to_model()
                 if latest_run is not None
                 else None,

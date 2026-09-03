@@ -363,6 +363,8 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerActionRequest,
+    TriggerActionResponse,
     TriggerDispatchStatusCode,
     TriggerFilter,
     TriggerRequest,
@@ -465,6 +467,7 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TagResourceSchema,
     TagSchema,
+    TriggerActionSchema,
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
@@ -8866,6 +8869,11 @@ class SqlZenStore(BaseZenStore):
                         col(TriggerSnapshotSchema.trigger_id) == trigger_id
                     )
                 )  # type: ignore[call-overload, unused-ignore]
+                session.exec(
+                    delete(TriggerActionSchema).where(
+                        col(TriggerActionSchema.trigger_id) == trigger_id
+                    )
+                )  # type: ignore[call-overload, unused-ignore]
 
             session.commit()
 
@@ -8954,6 +8962,104 @@ class SqlZenStore(BaseZenStore):
                 assoc = session.get(TriggerSnapshotSchema, (trigger_id, sid))
                 session.delete(assoc)
 
+            session.commit()
+
+    def attach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action: TriggerActionRequest,
+    ) -> TriggerActionResponse:
+        """Create and attach an action to a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action: The action to create.
+
+        Returns:
+            The created action.
+
+        Raises:
+            EntityExistsError: If the action name is already used.
+            IllegalOperationError: If the trigger or run is not eligible.
+        """
+        with Session(self.engine) as session:
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+            if trigger.is_archived:
+                raise IllegalOperationError(
+                    f"Can not attach an action to archived trigger {trigger_id}."
+                )
+
+            run = self._get_schema_by_id(
+                resource_id=action.entity_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+                project_id=trigger.project_id,
+            )
+            if run.parent_run_id is not None:
+                raise IllegalOperationError(
+                    "Trigger resume actions can only target root pipeline runs."
+                )
+            if run.snapshot is None or not run.snapshot.is_runnable:
+                raise IllegalOperationError(
+                    "Trigger resume actions require a runnable pipeline snapshot."
+                )
+            if not run.snapshot.is_dynamic:
+                raise IllegalOperationError(
+                    "Trigger resume actions can only target dynamic pipeline runs."
+                )
+
+            existing = session.exec(
+                select(TriggerActionSchema).where(
+                    TriggerActionSchema.trigger_id == trigger_id,
+                    TriggerActionSchema.name == action.name,
+                )
+            ).first()
+            if existing is not None:
+                raise EntityExistsError(
+                    f"Trigger {trigger_id} already has an action named "
+                    f"'{action.name}'."
+                )
+
+            schema = TriggerActionSchema.from_request(
+                request=action,
+                trigger_id=trigger_id,
+                project_id=trigger.project_id,
+            )
+            session.add(schema)
+            session.commit()
+            session.refresh(schema)
+            return schema.to_model()
+
+    def detach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action_id: UUID,
+    ) -> None:
+        """Detach and delete an action from a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action_id: The action to delete.
+
+        Raises:
+            KeyError: If the trigger or action does not exist.
+        """
+        with Session(self.engine) as session:
+            self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+            action = session.get(TriggerActionSchema, action_id)
+            if action is None or action.trigger_id != trigger_id:
+                raise KeyError(
+                    f"Action {action_id} is not attached to trigger {trigger_id}."
+                )
+            session.delete(action)
             session.commit()
 
     @staticmethod

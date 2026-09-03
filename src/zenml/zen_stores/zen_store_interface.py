@@ -160,6 +160,8 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerActionRequest,
+    TriggerActionResponse,
     TriggerFilter,
     TriggerRequest,
     TriggerUpdate,
@@ -2045,6 +2047,38 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Raises:
             KeyError: if the entities don't exist.
+        """
+
+    @abstractmethod
+    def attach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action: TriggerActionRequest,
+    ) -> TriggerActionResponse:
+        """Create and attach an action to a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action: The action to create.
+
+        Returns:
+            The created trigger action.
+        """
+
+    @abstractmethod
+    def detach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action_id: UUID,
+    ) -> None:
+        """Detach and delete an action from a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action_id: The action to delete.
+
+        Raises:
+            KeyError: If the action is not attached to the trigger.
         """
 
     @abstractmethod

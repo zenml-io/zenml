@@ -74,6 +74,8 @@ from zenml.enums import (
     StackComponentType,
     StoreType,
     TaggableResourceTypes,
+    TriggerActionEntity,
+    TriggerActionOperation,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
@@ -210,6 +212,8 @@ from zenml.models import (
     TagResourceRequest,
     TagResponse,
     TagUpdate,
+    TriggerActionRequest,
+    TriggerActionResponse,
     TriggerFilter,
     UserFilter,
     UserRequest,
@@ -5026,6 +5030,53 @@ class Client(metaclass=ClientMetaClass):
         """
         self.zen_store.detach_trigger_from_snapshot(
             trigger_id=trigger_id, snapshot_id=pipeline_snapshot_id
+        )
+
+    @_fail_for_sql_zen_store
+    def attach_trigger_action(
+        self,
+        trigger_id: UUID,
+        name: str,
+        entity: TriggerActionEntity,
+        entity_id: UUID,
+        operation: TriggerActionOperation,
+    ) -> TriggerActionResponse:
+        """Create and attach an action to a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            name: A name unique within the trigger.
+            entity: The type of entity targeted by the action.
+            entity_id: The target entity ID.
+            operation: The operation to perform.
+
+        Returns:
+            The created trigger action.
+        """
+        return self.zen_store.attach_trigger_action(
+            trigger_id=trigger_id,
+            action=TriggerActionRequest(
+                name=name,
+                entity=entity,
+                entity_id=entity_id,
+                operation=operation,
+            ),
+        )
+
+    def detach_trigger_action(
+        self,
+        trigger_id: UUID,
+        action_id: UUID,
+    ) -> None:
+        """Detach and delete an action from a trigger.
+
+        Args:
+            trigger_id: The target trigger ID.
+            action_id: The action to delete.
+        """
+        self.zen_store.detach_trigger_action(
+            trigger_id=trigger_id,
+            action_id=action_id,
         )
 
     def clear_trigger_dispatch_error(

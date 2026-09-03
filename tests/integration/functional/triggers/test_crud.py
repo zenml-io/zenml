@@ -16,10 +16,12 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import (
     ExecutionStatus,
     LogicalOperators,
+    TriggerActionEntity,
+    TriggerActionOperation,
     TriggerFlavor,
     TriggerType,
 )
-from zenml.exceptions import IllegalOperationError
+from zenml.exceptions import EntityExistsError, IllegalOperationError
 from zenml.models import (
     PipelineBuildRequest,
     PipelineRequest,
@@ -29,12 +31,15 @@ from zenml.models import (
     PipelineSnapshotResponse,
     ScheduleTriggerRequest,
     ScheduleTriggerUpdate,
+    TriggerActionRequest,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 def _create_runnable_snapshot(
-    client: Client, pipeline_id: uuid.UUID
+    client: Client,
+    pipeline_id: uuid.UUID,
+    is_dynamic: bool = False,
 ) -> PipelineSnapshotResponse:
     project_id = client.active_project.id
     build = client.zen_store.create_build(
@@ -59,7 +64,7 @@ def _create_runnable_snapshot(
             build=build.id,
             client_version="0.1.0",
             server_version="0.1.0",
-            is_dynamic=False,
+            is_dynamic=is_dynamic,
         )
     )
 
@@ -302,6 +307,62 @@ def test_snapshot_associations(clean_client):
             trigger_id=trigger_response.id,
             snapshot_id=snapshot.id,
         )
+
+
+def test_trigger_action_associations(clean_client):
+    """Trigger actions can be attached, hydrated, detached, and archived."""
+    project = clean_client.active_project
+    store = clean_client.zen_store
+    pipeline = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("trigger-action-pipeline"),
+            project=project.id,
+        )
+    )
+    snapshot = _create_runnable_snapshot(
+        clean_client,
+        pipeline.id,
+        is_dynamic=True,
+    )
+    run, _ = store.get_or_create_run(
+        pipeline_run=PipelineRunRequest(
+            project=project.id,
+            snapshot=snapshot.id,
+            name=sample_name("trigger-action-run"),
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    trigger = store.create_trigger(
+        ScheduleTriggerRequest(
+            project=project.id,
+            name=sample_name("trigger-action"),
+            cron_expression="* * * * *",
+        )
+    )
+    request = TriggerActionRequest(
+        name="resume-run",
+        entity=TriggerActionEntity.PIPELINE_RUN,
+        entity_id=run.id,
+        operation=TriggerActionOperation.RESUME,
+    )
+
+    action = store.attach_trigger_action(
+        trigger_id=trigger.id,
+        action=request,
+    )
+
+    hydrated = store.get_trigger(trigger.id)
+    assert hydrated.actions == [action]
+
+    with pytest.raises(EntityExistsError):
+        store.attach_trigger_action(trigger_id=trigger.id, action=request)
+
+    store.detach_trigger_action(trigger_id=trigger.id, action_id=action.id)
+    assert store.get_trigger(trigger.id).actions == []
+
+    store.attach_trigger_action(trigger_id=trigger.id, action=request)
+    store.delete_trigger(trigger.id, soft=True)
+    assert store.get_trigger(trigger.id).actions == []
 
 
 def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):

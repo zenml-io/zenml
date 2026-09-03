@@ -701,6 +701,18 @@ class TriggerRunConcurrency(StrEnum):
     SUBMIT = "submit"
 
 
+class TriggerActionEntity(StrEnum):
+    """Entity types supported by trigger actions."""
+
+    PIPELINE_RUN = "pipeline_run"
+
+
+class TriggerActionOperation(StrEnum):
+    """Operations supported by trigger actions."""
+
+    RESUME = "resume"
+
+
 class ContainerEngineType(StrEnum):
     """Container engine types."""
 

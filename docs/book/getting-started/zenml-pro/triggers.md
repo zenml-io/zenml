@@ -142,6 +142,67 @@ Via the CLI:
 zenml trigger schedule detach "<TRIGGER_NAME_OR_ID>" "<SNAPSHOT_NAME_OR_ID>"
 ~~~
 
+### Attach a resume action
+
+Triggers can also resume a paused dynamic pipeline run. This action is useful
+for a result-free external gate:
+
+```python
+from zenml import pipeline, wait
+
+
+@pipeline(dynamic=True)
+def gated_pipeline() -> None:
+    wait(
+        name="release_gate",
+        question="Continue this run?",
+        timeout=30,
+    )
+    print("The release gate was opened.")
+```
+
+Attach the targeted run to a trigger through the SDK. The run does not need to
+be paused when the action is attached:
+
+```python
+from zenml.client import Client
+from zenml.enums import TriggerActionEntity, TriggerActionOperation
+
+client = Client()
+action = client.attach_trigger_action(
+    trigger_id=trigger.id,
+    name="continue-release-gate",
+    entity=TriggerActionEntity.PIPELINE_RUN,
+    entity_id=paused_run.id,
+    operation=TriggerActionOperation.RESUME,
+)
+```
+
+When the trigger fires, ZenML resumes only that run. It resolves a result-free
+wait condition with `continue` and resumes through the workload manager. If the
+target is not paused at firing time, the action is acknowledged without doing
+anything. Only root dynamic runs are supported; wait conditions that require a
+result and conditions owned by child runs are not supported.
+
+Actions are included when a trigger is hydrated:
+
+```python
+trigger = client.get_schedule_trigger("my-schedule")
+for action in trigger.actions:
+    print(action.id, action.name, action.entity_id)
+```
+
+Detach and delete an action by ID:
+
+```python
+client.detach_trigger_action(
+    trigger_id=trigger.id,
+    action_id=action.id,
+)
+```
+
+Trigger actions do not currently have CLI commands or standalone CRUD APIs.
+
 The ability to detach and attach snapshots is particularly useful as pipelines evolve. When a new pipeline 
 version becomes available, you can update the schedule to use it by detaching the previous 
 snapshot and attaching the new one.

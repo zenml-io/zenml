@@ -41,11 +41,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     PLATFORM_EVENT_REGISTRY,
     SourceType,
+    TriggerActionEntity,
+    TriggerActionOperation,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
 )
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseRequest, BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
@@ -64,6 +66,30 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.time_utils import utc_now
+
+
+class TriggerActionRequest(BaseRequest):
+    """Request to create and attach an action to a trigger."""
+
+    name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
+    entity: TriggerActionEntity
+    entity_id: UUID
+    operation: TriggerActionOperation
+
+
+class TriggerActionResponse(BaseZenModel):
+    """An action attached to a trigger."""
+
+    id: UUID
+    name: str
+    entity: TriggerActionEntity
+    entity_id: UUID
+    operation: TriggerActionOperation
+    project_id: UUID
+    trigger_id: UUID
+    created: datetime
+    updated: datetime
+
 
 # ----------- DISPATCH STATE MODELS ------------------ #
 
@@ -362,6 +388,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
 
     snapshots: list["PipelineSnapshotResponse"] = []
     executable_snapshots: list["PipelineSnapshotResponse"] = []
+    actions: list[TriggerActionResponse] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
     webhook: Optional["WebhookResponse"] = None
@@ -861,6 +888,15 @@ class TriggerResponse(
             A list of snapshots the triggers is attached to.
         """
         return self.get_resources().executable_snapshots
+
+    @property
+    def actions(self) -> list[TriggerActionResponse]:
+        """Get the actions attached to this trigger.
+
+        Returns:
+            The attached trigger actions.
+        """
+        return self.get_resources().actions
 
     @property
     def snapshot_dispatch_states(
