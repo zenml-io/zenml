@@ -58,6 +58,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    LogEntry,
     LogsResponse,
     Page,
     PipelineRunDAG,
@@ -74,7 +75,6 @@ from zenml.models import (
 )
 from zenml.utils import run_utils
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_id,
     search_logs_by_source,
@@ -558,9 +558,7 @@ def run_logs(
     logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
-    """Get log entries for efficient pagination.
-
-    This endpoint returns the log entries.
+    """Get the log entries of a pipeline run.
 
     Args:
         run_id: ID of the pipeline run.
@@ -662,11 +660,7 @@ def run_logs(
         )
 
     if logs:
-        return fetch_logs(
-            logs=logs,
-            zen_store=store,
-            limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-        )
+        return fetch_logs(logs=logs, zen_store=store).items
 
     raise KeyError(f"No logs found in run {run_id}.")
 

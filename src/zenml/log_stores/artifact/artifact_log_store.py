@@ -15,7 +15,6 @@
 
 import os
 import re
-from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -40,9 +39,13 @@ from zenml.log_stores.otel.otel_log_store import (
     OtelLogStoreOrigin,
 )
 from zenml.logger import get_logger
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.utils.io_utils import sanitize_remote_path
-from zenml.utils.logging_utils import LogEntry
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
@@ -326,23 +329,28 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List["LogEntry"]:
-        """Fetch logs from the artifact store.
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch the entries of a log stream from the artifact store.
 
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
+            start: Which end of the stream to start reading from. Omit it,
+                or pass `"oldest"`. `"newest"` is refused.
             limit: Maximum number of log entries to return.
+            before: Not supported.
+            after: Not supported.
+            filter_: Not supported.
 
         Returns:
-            List of log entries from the artifact store.
+            The oldest entries of the stream, up to the limit, with no cursors.
 
         Raises:
-            ValueError: If logs_model.uri is not provided.
+            ValueError: If the logs model does not belong to this log store.
         """
         if not logs_model.uri:
             raise ValueError(
@@ -361,19 +369,31 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        if start_time or end_time:
-            logger.warning(
-                "start_time and end_time are not supported for "
-                "ArtifactLogStore.fetch(). Both parameters will be ignored."
+        unallowed = start not in (None, "oldest") or before or after
+        if filter_ is not None:
+            unallowed = unallowed or any(
+                (
+                    filter_.search,
+                    filter_.level,
+                    filter_.since,
+                    filter_.until,
+                )
+            )
+        if unallowed:
+            raise ValueError(
+                "The artifact log store only reads a log file from its start "
+                "and serves what fits in one response. Drop start, before, "
+                "after, and filters, and narrow the result down where it is "
+                "displayed."
             )
 
-        log_entries = fetch_log_records(
-            artifact_store=self._artifact_store,
-            logs_uri=logs_model.uri,
-            limit=limit,
+        return LogsEntriesResponse(
+            items=fetch_log_records(
+                artifact_store=self._artifact_store,
+                logs_uri=logs_model.uri,
+                limit=self.resolve_limit(limit),
+            )
         )
-
-        return log_entries
 
     def cleanup(self) -> None:
         """Cleanup the artifact log store.

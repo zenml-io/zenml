@@ -13,16 +13,21 @@
 #  permissions and limitations under the License.
 """Base class for log stores."""
 
+import base64
+import binascii
 import logging
 import threading
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, Optional, Type, cast
 
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import StackComponentType
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -188,28 +193,120 @@ class BaseLogStore(StackComponent, ABC):
             blocking: Whether to block until the flush is complete.
         """
 
+    @property
+    def default_query_size(self) -> int:
+        """Number of entries a fetch returns when the caller sets no limit.
+
+        Subclasses that serve a whole log stream at once, or whose backend
+        imposes its own page size, override this. A subclass that wants the
+        page size to be tunable declares a config field of its own and returns
+        it from here.
+
+        Returns:
+            The default number of entries per page.
+        """
+        return LOGS_MAX_ENTRIES_PER_REQUEST
+
+    def resolve_limit(self, limit: Optional[int]) -> int:
+        """Determine how many entries a single fetch may return.
+
+        Args:
+            limit: The limit requested by the caller, if any.
+
+        Returns:
+            The number of entries to fetch, never above
+            `LOGS_MAX_ENTRIES_PER_REQUEST`.
+
+        Raises:
+            ValueError: If the requested limit is not positive.
+        """
+        if limit is None:
+            limit = self.default_query_size
+        elif limit <= 0:
+            raise ValueError("`limit` must be a positive integer.")
+
+        return min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
+
+    @staticmethod
+    def encode_cursor(token: str) -> str:
+        """Encode a backend continuation token for the response.
+
+        Args:
+            token: The backend's own continuation token.
+
+        Returns:
+            The encoded cursor.
+        """
+        return base64.urlsafe_b64encode(token.encode("utf-8")).decode("ascii")
+
+    @staticmethod
+    def decode_cursor(token: str) -> str:
+        """Decode a cursor back to the backend continuation token.
+
+        Args:
+            token: The encoded cursor from a previous page.
+
+        Returns:
+            The backend's own continuation token.
+
+        Raises:
+            ValueError: If the token is not one this server issued.
+        """
+        try:
+            return base64.urlsafe_b64decode(token.encode("ascii")).decode(
+                "utf-8"
+            )
+        except (binascii.Error, UnicodeDecodeError, ValueError) as e:
+            raise ValueError(
+                "The pagination cursor is not one this server issued. Drop it "
+                "and read the stream again from one of its ends."
+            ) from e
+
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[LogEntry]:
-        """Fetch logs from the log store.
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries.
 
         This method is called from the server to retrieve logs for display
         on the dashboard or via API. The implementation should not require
         any integration-specific SDKs that aren't available on the server.
 
+        `start` picks the end of the stream the first page is taken from. It
+        does not affect ordering: entries within a page always run from oldest
+        to newest. Reading a hundred entries ten at a time therefore gives the
+        first ten from `"oldest"` and the last ten from `"newest"`. Omit it
+        when the caller has no preference: the store then picks the end it can
+        serve, and refuses only an explicit value it cannot honor.
+
+        A page may carry `before`, `after`, both, or neither. Fill the
+        directions you can continue in from this page, and leave the rest
+        unset. A store that cannot page at all leaves both unset.
+
+        Pass at most one of `before` and `after` to continue from a previous
+        page. An implementation that cannot honor a parameter raises
+        `ValueError` rather than ignoring it, so that a caller is never
+        handed an unfiltered stream that looks like a filtered one.
+
         Args:
             logs_model: The logs model containing metadata about the logs.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
-            limit: Maximum number of log entries to return.
+            start: Which end of the stream to start reading from. Omit to
+                let the store pick.
+            limit: Maximum number of log entries to return. Defaults to the
+                log store's `default_query_size`.
+            before: Cursor towards older entries, from a previous page.
+            after: Cursor towards newer entries, from a previous page.
+            filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            List of log entries matching the query.
+            A page of log entries ordered from oldest to newest, with cursors
+            for the pages around it that this store can serve.
         """
 
 

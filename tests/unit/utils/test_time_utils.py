@@ -1,3 +1,5 @@
+"""Tests for the time helpers."""
+
 from datetime import datetime
 
 import pytest
