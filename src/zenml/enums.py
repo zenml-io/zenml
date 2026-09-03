@@ -683,6 +683,7 @@ class TriggerType(StrEnum):
 
     SCHEDULE = "schedule"
     PLATFORM_EVENT = "platform_event"
+    WEBHOOK = "webhook"
 
 
 class TriggerFlavor(StrEnum):
@@ -690,6 +691,7 @@ class TriggerFlavor(StrEnum):
 
     NATIVE_SCHEDULE = "native schedule"
     PLATFORM_EVENT = "platform event"
+    WEBHOOK = "webhook"
 
 
 class TriggerRunConcurrency(StrEnum):

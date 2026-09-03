@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility functions to manage platform event triggers."""
+"""Utility functions to manage triggers."""
 
 import logging
-from typing import overload
+from collections.abc import Mapping
+from typing import Any, overload
 from uuid import UUID
 
 from pydantic import validate_call
@@ -28,7 +29,12 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
 )
-from zenml.models import PipelineRunResponse, PlatformEventTriggerResponse
+from zenml.models import (
+    PipelineRunResponse,
+    PlatformEventTriggerResponse,
+    WebhookTriggerResponse,
+)
+from zenml.webhooks import WebhookConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +262,68 @@ def update_platform_event_trigger(
         if target_events is not None
         else None,
         concurrency=concurrency,
+    )
+
+
+def create_webhook_trigger(
+    *,
+    name: str,
+    webhook: str | UUID,
+    configuration: Mapping[str, Any] | WebhookConfiguration,
+    project_id: str | UUID | None = None,
+    active: bool = True,
+    concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+) -> WebhookTriggerResponse:
+    """Create a webhook trigger owned by a webhook.
+
+    Args:
+        name: The trigger name.
+        webhook: The owning webhook name, ID, or ID prefix.
+        configuration: The complete webhook trigger configuration.
+        project_id: The project ID.
+        active: Whether the trigger should be active.
+        concurrency: The trigger run concurrency behavior.
+
+    Returns:
+        The created webhook trigger.
+    """
+    return Client().create_webhook_trigger(
+        name=name,
+        webhook=webhook,
+        configuration=configuration,
+        project_id=project_id,
+        active=active,
+        concurrency=concurrency,
+    )
+
+
+def update_webhook_trigger(
+    *,
+    trigger_name_id_or_prefix: str | UUID,
+    name: str | None = None,
+    active: bool | None = None,
+    concurrency: TriggerRunConcurrency | None = None,
+    configuration: Mapping[str, Any] | WebhookConfiguration | None = None,
+) -> WebhookTriggerResponse:
+    """Update a webhook trigger and optionally replace its configuration.
+
+    Args:
+        trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+        name: The new trigger name.
+        active: The new active state.
+        concurrency: The new trigger run concurrency behavior.
+        configuration: Complete replacement configuration. Omitting this
+            preserves the existing configuration.
+
+    Returns:
+        The updated webhook trigger.
+    """
+    return Client().update_webhook_trigger(
+        trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+        name=name,
+        active=active,
+        concurrency=concurrency,
+        configuration=configuration,
     )
 
 
