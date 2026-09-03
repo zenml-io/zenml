@@ -423,10 +423,9 @@ def connect_to_pro_server(
             "your session expires."
         )
 
-        workspace_id: Optional[str] = None
-        if token.device_metadata:
-            # TODO: is this still correct?
-            workspace_id = token.device_metadata.get("tenant_id")
+        workspace_id = _resolve_workspace_id_from_device_metadata(
+            token.device_metadata
+        )
 
         if workspace_id is None and pro_server is None:
             # This is not really supposed to happen, because the implementation
@@ -545,6 +544,38 @@ def connect_to_pro_server(
     credentials_store.update_server_info(server.url, server)
 
     cli_utils.success(f"✔ Connected to ZenML Pro server: {server.name}.")
+
+
+def _resolve_workspace_id_from_device_metadata(
+    device_metadata: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    """Resolve the workspace id out of the web login device metadata.
+
+    `workspace_id` is the current key name; `tenant_id` is kept as a
+    fallback in case an older Pro auth server still sends the legacy key,
+    so a mismatch does not silently drop the workspace selection.
+
+    Args:
+        device_metadata: The device metadata dict returned by the web login
+            flow.
+
+    Returns:
+        The workspace id if present in the device metadata, `None`
+        otherwise.
+    """
+    if not device_metadata:
+        return None
+
+    workspace_id = device_metadata.get("workspace_id") or device_metadata.get(
+        "tenant_id"
+    )
+    if workspace_id is None:
+        logger.debug(
+            "Could not find a workspace id in the device metadata "
+            "returned by the login flow. Available keys: %s",
+            list(device_metadata),
+        )
+    return workspace_id
 
 
 def is_pro_server(
