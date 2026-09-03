@@ -136,19 +136,20 @@ message text, sender, channel, reaction name, or file ID.
 
 ZenML supports the following curated automation events. Every filter field is
 optional; populated fields on one event filter combine with AND. Every
-normalized event includes `type`, `event_id`, `team_id`, `channel_id`,
-`user_id`, `event_time`, and `event_ts`; fields unavailable in a particular
-Slack callback are `null`.
+normalized event includes the non-null fields `type`, `event_id`, `team_id`,
+`user_id`, `event_time`, and `event_ts`. The event-specific `channel_id` is
+non-null except for reactions to files and file comments, where Slack does not
+include a channel.
 
 | Event filter `type` | Destination filter fields | Additional normalized event fields |
 |---------------------|---------------------------|------------------------------------|
-| `app_mention` | `team_id`, `channel_id`, `user_id`, `threaded` | `message_ts`, `thread_ts` |
-| `message_posted` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `threaded` | `channel_type`, `text`, `message_ts`, `thread_ts` |
-| `reaction_added` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
-| `reaction_removed` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
-| `message_metadata_posted` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `app_id`, `bot_id`, `message_ts`, `metadata` (`event_type`, `event_payload`) |
-| `message_metadata_updated` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `app_id`, `bot_id`, `message_ts`, `metadata`, `previous_metadata` |
-| `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` | `file_id` |
+| `app_mention` | `team_id`, `channel_id`, `user_id`, `threaded` | `channel_id`, `message_ts`, `thread_ts` |
+| `message_posted` | `team_id`, `channel_id`, `user_id`, `channel_type`, `text`, `threaded` | `channel_id`, `channel_type`, `text`, `message_ts`, `thread_ts` |
+| `reaction_added` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `channel_id`, `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
+| `reaction_removed` | `team_id`, `channel_id`, `reaction`, `user_id`, `item_user_id`, `item_type`, `item_id` | `channel_id`, `reaction`, `item_user_id`, `item` (`type`, `id`, `channel_id`, `file_id`) |
+| `message_metadata_posted` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `channel_id`, `app_id`, `bot_id`, `message_ts`, `metadata` (`event_type`, `event_payload`) |
+| `message_metadata_updated` | `team_id`, `channel_id`, `app_id`, `user_id`, `bot_id`, `metadata_event_type` | `channel_id`, `app_id`, `bot_id`, `message_ts`, `metadata`, `previous_metadata` |
+| `file_shared` | `team_id`, `channel_id`, `user_id`, `file_id` | `channel_id`, `file_id` |
 
 String filters support exact values, YAML lists, and the `oneof:` expression.
 `text` and `metadata_event_type` additionally support `startswith:`. Prefix

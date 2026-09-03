@@ -14,6 +14,7 @@ from typing import (
     ClassVar,
     Literal,
     TypeAlias,
+    TypedDict,
     cast,
 )
 
@@ -239,6 +240,16 @@ class SlackWebhookConfiguration(WebhookConfiguration):
     target_events: list[SlackWebhookEventFilter] = Field(min_length=1)
 
 
+class _SlackCommonEventFields(TypedDict):
+    """Required fields shared by every supported Slack semantic event."""
+
+    event_id: str
+    team_id: str
+    user_id: str
+    event_time: int
+    event_ts: str
+
+
 def _matches_bool(*, actual: bool, configured: bool | None) -> bool:
     """Match a boolean value against an optional configured filter.
 
@@ -257,12 +268,11 @@ class SlackSemanticEvent(BaseModel):
 
     event_filter_type: ClassVar[type[SlackEventFilter]]
 
-    event_id: str | None = None
-    team_id: str | None = None
-    channel_id: str | None = None
-    user_id: str | None = None
-    event_time: int | None = None
-    event_ts: str | None = None
+    event_id: str
+    team_id: str
+    user_id: str
+    event_time: int
+    event_ts: str
 
     def matches(self, target: SlackWebhookEventFilter) -> bool:
         """Match identifiers shared by all Slack semantic events.
@@ -271,15 +281,12 @@ class SlackSemanticEvent(BaseModel):
             target: The typed Slack target event.
 
         Returns:
-            Whether the event's team, channel, and user match the target.
+            Whether the event's team and user match the target.
         """
         return all(
             (
                 matches_string_filter(
                     actual=self.team_id, configured=target.team_id
-                ),
-                matches_string_filter(
-                    actual=self.channel_id, configured=target.channel_id
                 ),
                 matches_string_filter(
                     actual=self.user_id, configured=target.user_id
@@ -288,15 +295,37 @@ class SlackSemanticEvent(BaseModel):
         )
 
 
-class SlackAppMentionEvent(SlackSemanticEvent):
+class SlackChannelEvent(SlackSemanticEvent):
+    """Base event with a required Slack channel identifier."""
+
+    channel_id: str
+
+    def matches(self, target: SlackWebhookEventFilter) -> bool:
+        """Match the required channel identifier.
+
+        Args:
+            target: The typed Slack target event.
+
+        Returns:
+            Whether the event's team, user, and channel match the target.
+        """
+        return all(
+            (
+                super().matches(target),
+                matches_string_filter(
+                    actual=self.channel_id, configured=target.channel_id
+                ),
+            )
+        )
+
+
+class SlackAppMentionEvent(SlackChannelEvent):
     """Normalized Slack app mention."""
 
     event_filter_type = AppMentionEventFilter
     type: Literal[SlackWebhookEvent.APP_MENTION] = (
         SlackWebhookEvent.APP_MENTION
     )
-    channel_id: str
-    user_id: str
     message_ts: str | None = None
     thread_ts: str | None = None
 
@@ -322,15 +351,13 @@ class SlackAppMentionEvent(SlackSemanticEvent):
         )
 
 
-class SlackMessagePostedEvent(SlackSemanticEvent):
+class SlackMessagePostedEvent(SlackChannelEvent):
     """Normalized ordinary human-authored Slack message."""
 
     event_filter_type = MessagePostedEventFilter
     type: Literal[SlackWebhookEvent.MESSAGE_POSTED] = (
         SlackWebhookEvent.MESSAGE_POSTED
     )
-    channel_id: str
-    user_id: str
     channel_type: str | None = None
     text: str | None = None
     message_ts: str
@@ -376,8 +403,8 @@ class SlackReactionItem(BaseModel):
 class SlackReactionEvent(SlackSemanticEvent):
     """Shared normalized fields for a Slack reaction event."""
 
+    channel_id: str | None = None
     reaction: str
-    user_id: str
     item_user_id: str | None = None
     item: SlackReactionItem
 
@@ -396,6 +423,9 @@ class SlackReactionEvent(SlackSemanticEvent):
         return all(
             (
                 super().matches(target),
+                matches_string_filter(
+                    actual=self.channel_id, configured=target.channel_id
+                ),
                 matches_string_filter(
                     actual=self.reaction, configured=reaction_target.reaction
                 ),
@@ -439,12 +469,10 @@ class SlackMessageMetadata(BaseModel):
     event_payload: dict[str, Any]
 
 
-class SlackMessageMetadataEvent(SlackSemanticEvent):
+class SlackMessageMetadataEvent(SlackChannelEvent):
     """Shared normalized fields for a Slack message-metadata event."""
 
-    channel_id: str
     app_id: str
-    user_id: str | None = None
     bot_id: str | None = None
     message_ts: str
     metadata: SlackMessageMetadata
@@ -497,15 +525,13 @@ class SlackMessageMetadataUpdatedEvent(SlackMessageMetadataEvent):
     previous_metadata: SlackMessageMetadata
 
 
-class SlackFileSharedEvent(SlackSemanticEvent):
+class SlackFileSharedEvent(SlackChannelEvent):
     """Normalized Slack file-shared event."""
 
     event_filter_type = FileSharedEventFilter
     type: Literal[SlackWebhookEvent.FILE_SHARED] = (
         SlackWebhookEvent.FILE_SHARED
     )
-    channel_id: str
-    user_id: str
     file_id: str
 
     def matches(self, target: SlackWebhookEventFilter) -> bool:
@@ -798,65 +824,72 @@ class SlackWebhookProvider(BaseWebhookProvider):
         payload = event.payload.get("event")
         if not isinstance(payload, Mapping):
             return None
+        common_fields = self._common_event_fields(event, payload)
+        if common_fields is None:
+            return None
         if event.event_type == SlackWebhookEventType.APP_MENTION:
-            return self._parse_app_mention(event, payload)
+            return self._parse_app_mention(payload, common_fields)
         if event.event_type == SlackWebhookEventType.MESSAGE:
-            return self._parse_message_posted(event, payload)
+            return self._parse_message_posted(payload, common_fields)
         if event.event_type == SlackWebhookEventType.REACTION_ADDED:
             return self._parse_reaction(
-                event, payload, SlackReactionAddedEvent
+                payload, common_fields, SlackReactionAddedEvent
             )
         if event.event_type == SlackWebhookEventType.REACTION_REMOVED:
             return self._parse_reaction(
-                event, payload, SlackReactionRemovedEvent
+                payload, common_fields, SlackReactionRemovedEvent
             )
         if event.event_type == SlackWebhookEventType.MESSAGE_METADATA_POSTED:
-            fields = self._parse_message_metadata_fields(event, payload)
+            fields = self._parse_message_metadata_fields(
+                payload, common_fields
+            )
             return (
                 SlackMessageMetadataPostedEvent(**fields)
                 if fields is not None
                 else None
             )
         if event.event_type == SlackWebhookEventType.MESSAGE_METADATA_UPDATED:
-            return self._parse_message_metadata_updated(event, payload)
+            return self._parse_message_metadata_updated(payload, common_fields)
         if event.event_type == SlackWebhookEventType.FILE_SHARED:
-            return self._parse_file_shared(event, payload)
+            return self._parse_file_shared(payload, common_fields)
         return None
 
     def _parse_app_mention(
-        self, event: "WebhookEvent", payload: Mapping[str, Any]
+        self,
+        payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
     ) -> SlackAppMentionEvent | None:
         """Normalize an app-mention callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
 
         Returns:
             The normalized mention, or `None` if it is not matchable.
         """
         channel_id = self._optional_string(payload.get("channel"))
-        user_id = self._optional_string(payload.get("user"))
-        if channel_id is None or user_id is None:
+        if channel_id is None:
             return None
         if self._is_bot_message(payload):
             return None
         return SlackAppMentionEvent(
-            **self._common_event_fields(event, payload),
+            **common_fields,
             channel_id=channel_id,
-            user_id=user_id,
             message_ts=self._optional_string(payload.get("ts")),
             thread_ts=self._optional_string(payload.get("thread_ts")),
         )
 
     def _parse_message_posted(
-        self, event: "WebhookEvent", payload: Mapping[str, Any]
+        self,
+        payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
     ) -> SlackMessagePostedEvent | None:
         """Normalize an ordinary human-authored message callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
 
         Returns:
             The normalized message, or `None` for bot and subtype variants.
@@ -864,14 +897,12 @@ class SlackWebhookProvider(BaseWebhookProvider):
         if payload.get("subtype") is not None or self._is_bot_message(payload):
             return None
         channel_id = self._optional_string(payload.get("channel"))
-        user_id = self._optional_string(payload.get("user"))
         message_ts = self._optional_string(payload.get("ts"))
-        if channel_id is None or user_id is None or message_ts is None:
+        if channel_id is None or message_ts is None:
             return None
         return SlackMessagePostedEvent(
-            **self._common_event_fields(event, payload),
+            **common_fields,
             channel_id=channel_id,
-            user_id=user_id,
             channel_type=self._optional_string(payload.get("channel_type")),
             text=self._optional_string(payload.get("text")),
             message_ts=message_ts,
@@ -880,37 +911,31 @@ class SlackWebhookProvider(BaseWebhookProvider):
 
     def _parse_reaction(
         self,
-        event: "WebhookEvent",
         payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
         event_class: type[SlackReactionEvent],
     ) -> SlackReactionEvent | None:
         """Normalize a reaction callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
             event_class: The reaction semantic model to instantiate.
 
         Returns:
             The normalized reaction, or `None` if required fields are missing.
         """
         reaction = self._optional_string(payload.get("reaction"))
-        user_id = self._optional_string(payload.get("user"))
         item_payload = payload.get("item")
-        if (
-            reaction is None
-            or user_id is None
-            or not isinstance(item_payload, Mapping)
-        ):
+        if reaction is None or not isinstance(item_payload, Mapping):
             return None
         item = self._parse_reaction_item(item_payload)
         if item is None:
             return None
         return event_class(
-            **self._common_event_fields(event, payload),
+            **common_fields,
             channel_id=item.channel_id,
             reaction=reaction,
-            user_id=user_id,
             item_user_id=self._optional_string(payload.get("item_user")),
             item=item,
         )
@@ -945,13 +970,15 @@ class SlackWebhookProvider(BaseWebhookProvider):
         )
 
     def _parse_message_metadata_fields(
-        self, event: "WebhookEvent", payload: Mapping[str, Any]
+        self,
+        payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
     ) -> dict[str, Any] | None:
         """Extract normalized fields from a message-metadata callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
 
         Returns:
             Semantic model fields, or `None` if required fields are missing.
@@ -971,28 +998,29 @@ class SlackWebhookProvider(BaseWebhookProvider):
         if metadata is None:
             return None
         return {
-            **self._common_event_fields(event, payload),
+            **common_fields,
             "channel_id": channel_id,
             "app_id": app_id,
-            "user_id": self._optional_string(payload.get("user_id")),
             "bot_id": self._optional_string(payload.get("bot_id")),
             "message_ts": message_ts,
             "metadata": metadata,
         }
 
     def _parse_message_metadata_updated(
-        self, event: "WebhookEvent", payload: Mapping[str, Any]
+        self,
+        payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
     ) -> SlackMessageMetadataUpdatedEvent | None:
         """Normalize a message-metadata-updated callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
 
         Returns:
             The normalized update, or `None` if either metadata value is invalid.
         """
-        fields = self._parse_message_metadata_fields(event, payload)
+        fields = self._parse_message_metadata_fields(payload, common_fields)
         previous_payload = payload.get("previous_metadata")
         if fields is None or not isinstance(previous_payload, Mapping):
             return None
@@ -1004,32 +1032,32 @@ class SlackWebhookProvider(BaseWebhookProvider):
         )
 
     def _parse_file_shared(
-        self, event: "WebhookEvent", payload: Mapping[str, Any]
+        self,
+        payload: Mapping[str, Any],
+        common_fields: _SlackCommonEventFields,
     ) -> SlackFileSharedEvent | None:
         """Normalize a file-shared callback.
 
         Args:
-            event: The trusted Slack webhook event.
             payload: The inner Slack event payload.
+            common_fields: Validated fields shared by all semantic events.
 
         Returns:
             The normalized file share, or `None` if required fields are missing.
         """
         channel_id = self._optional_string(payload.get("channel_id"))
-        user_id = self._optional_string(payload.get("user_id"))
         file_id = self._optional_string(payload.get("file_id"))
-        if channel_id is None or user_id is None or file_id is None:
+        if channel_id is None or file_id is None:
             return None
         return SlackFileSharedEvent(
-            **self._common_event_fields(event, payload),
+            **common_fields,
             channel_id=channel_id,
-            user_id=user_id,
             file_id=file_id,
         )
 
     def _common_event_fields(
         self, event: "WebhookEvent", payload: Mapping[str, Any]
-    ) -> dict[str, Any]:
+    ) -> _SlackCommonEventFields | None:
         """Extract metadata shared by normalized Slack events.
 
         Args:
@@ -1037,14 +1065,31 @@ class SlackWebhookProvider(BaseWebhookProvider):
             payload: The inner Slack event payload.
 
         Returns:
-            Keyword arguments for a `SlackSemanticEvent` model.
+            Required common fields, or `None` if any field is missing.
         """
+        event_id = self._optional_string(event.delivery_id)
+        team_id = self._optional_string(
+            event.payload.get("team_id")
+        ) or self._optional_string(payload.get("team_id"))
+        user_id = self._optional_string(
+            payload.get("user")
+        ) or self._optional_string(payload.get("user_id"))
+        event_time = self._optional_int(event.payload.get("event_time"))
+        event_ts = self._optional_string(payload.get("event_ts"))
+        if (
+            event_id is None
+            or team_id is None
+            or user_id is None
+            or event_time is None
+            or event_ts is None
+        ):
+            return None
         return {
-            "event_id": event.delivery_id,
-            "team_id": self._optional_string(event.payload.get("team_id"))
-            or self._optional_string(payload.get("team_id")),
-            "event_time": self._optional_int(event.payload.get("event_time")),
-            "event_ts": self._optional_string(payload.get("event_ts")),
+            "event_id": event_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "event_time": event_time,
+            "event_ts": event_ts,
         }
 
     @staticmethod

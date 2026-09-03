@@ -62,6 +62,9 @@ from zenml.webhooks.providers.slack import (
 )
 from zenml.zen_server.routers import webhook_endpoints as endpoints
 
+SLACK_EVENT_TIME = 1788300000
+SLACK_EVENT_TS = "1788300000.000000"
+
 
 def _slack_signature(secret: str, timestamp: str, body: bytes) -> str:
     signature_base = f"v0:{timestamp}:".encode() + body
@@ -442,7 +445,8 @@ def _slack_webhook_event(
         "text": "<@APP123> investigate this",
     }
     if event_payload is not None:
-        inner_event = event_payload
+        inner_event = dict(event_payload)
+    inner_event.setdefault("event_ts", SLACK_EVENT_TS)
     return WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
@@ -453,6 +457,7 @@ def _slack_webhook_event(
             "type": "event_callback",
             "team_id": "T123",
             "event_id": "Ev123",
+            "event_time": SLACK_EVENT_TIME,
             "event": inner_event,
         },
     )
@@ -475,6 +480,8 @@ def test_slack_parses_semantic_app_mention() -> None:
     assert semantic == SlackAppMentionEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
+        event_ts=SLACK_EVENT_TS,
         channel_id="C123",
         user_id="U123",
         message_ts="1788300000.000002",
@@ -482,6 +489,36 @@ def test_slack_parses_semantic_app_mention() -> None:
     )
     assert semantic.event_filter_type is AppMentionEventFilter
     assert semantic.type == SlackWebhookEvent.APP_MENTION
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ["event_id", "team_id", "user_id", "event_time", "event_ts"],
+)
+def test_slack_ignores_events_missing_common_fields(
+    missing_field: str,
+) -> None:
+    """Every semantic event requires the common Slack callback fields.
+
+    Args:
+        missing_field: The required common field to omit.
+    """
+    event = _slack_webhook_event()
+    if missing_field == "event_id":
+        event = event.model_copy(update={"delivery_id": None})
+    else:
+        payload = dict(event.payload)
+        if missing_field in {"user_id", "event_ts"}:
+            inner_event = dict(payload["event"])
+            inner_event.pop(
+                "user" if missing_field == "user_id" else missing_field
+            )
+            payload["event"] = inner_event
+        else:
+            payload.pop(missing_field)
+        event = event.model_copy(update={"payload": payload})
+
+    assert SlackWebhookProvider().parse_semantic_event(event) is None
 
 
 def test_slack_matches_app_mention_targets() -> None:
@@ -579,6 +616,7 @@ def test_slack_parses_and_matches_human_message_posts() -> None:
     assert semantic == SlackMessagePostedEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
         event_ts="1788300000.000003",
         channel_id="C123",
         channel_type="channel",
@@ -712,6 +750,7 @@ def test_slack_parses_all_documented_reaction_items(
     assert semantic == SlackReactionAddedEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
         channel_id=expected_item.channel_id,
         event_ts="1788300000.000002",
         reaction="rocket",
@@ -811,6 +850,8 @@ def test_slack_parses_and_matches_posted_message_metadata() -> None:
     assert semantic == SlackMessageMetadataPostedEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
+        event_ts=SLACK_EVENT_TS,
         channel_id="C123",
         app_id="A123",
         bot_id="B123",
@@ -856,6 +897,8 @@ def test_slack_parses_and_matches_updated_message_metadata() -> None:
     assert semantic == SlackMessageMetadataUpdatedEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
+        event_ts=SLACK_EVENT_TS,
         channel_id="C123",
         app_id="A123",
         user_id="U123",
@@ -932,6 +975,7 @@ def test_slack_parses_and_matches_shared_files() -> None:
     assert semantic == SlackFileSharedEvent(
         event_id="Ev123",
         team_id="T123",
+        event_time=SLACK_EVENT_TIME,
         event_ts="1788300000.000001",
         channel_id="C123",
         user_id="U123",
