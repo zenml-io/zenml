@@ -11,15 +11,53 @@ icon: cauldron
 
 ZenML currently supports **Python 3.10, 3.11, 3.12, 3.13, and 3.14**. Please make sure that you are using a supported Python version.
 
-The quickest way to install ZenML on macOS or Linux is the one-line installer:
+Open a terminal and run:
 
 ```shell
 curl -fsSL https://zenml.io/install | bash
 ```
 
-It installs [uv](https://docs.astral.sh/uv/) if you do not have it, then installs `zenml` into the Python project in your current directory (when a `pyproject.toml` or `uv.lock` is present) or into an isolated environment with the `zenml` CLI on your PATH. It also installs the [ZenML coding-agent skills](https://github.com/zenml-io/skills). Pass options after `bash -s --`: for example `curl -fsSL https://zenml.io/install | bash -s -- --server` adds the `server` extra for the local dashboard, and `--help` lists every option.
+That one command:
 
-If you prefer to manage the installation yourself, use `pip` or another Python package manager:
+1. Installs [uv](https://docs.astral.sh/uv/) if you do not have it. No system Python and no `sudo` are needed.
+2. Installs `zenml[local]`. Run inside a Python project (a `pyproject.toml` or `uv.lock` in the current directory) it adds ZenML to that project's environment with `uv add`, so your pipelines and ZenML share one set of dependencies. Run anywhere else it installs an isolated `zenml` CLI on your PATH.
+3. Installs the [ZenML coding-agent skills](https://github.com/zenml-io/skills) into `~/.agents/skills`, plus `~/.claude/skills` and `~/.codex/skills` when Claude Code or Codex is installed.
+4. Prints what to do next and stops:
+
+```
+zenml init             mark this directory as a ZenML repository
+zenml login --local    local server and dashboard on this machine
+zenml login            managed cloud. 14-day free trial
+```
+
+(Inside a project ZenML is not on your PATH, hence the printed commands read `uv run zenml ...`. The isolated install uses plain `zenml`.)
+
+Works on macOS, Linux, WSL, and Git Bash on Windows. Running it again upgrades.
+
+{% hint style="info" %}
+**Want the local dashboard?** `zenml login --local` needs the `server` extra. Add `--server` to the installer (`curl -fsSL https://zenml.io/install | bash -s -- --server`) and it installs `zenml[server]` instead of `zenml[local]`. On Apple Silicon also set `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` before starting the server (see the Local Dashboard tab below).
+{% endhint %}
+
+| Option | Effect |
+| --- | --- |
+| `--server` | Install `zenml[server]` so `zenml login --local` can run the server and dashboard here |
+| `--version 0.96.3` | Pin a ZenML release (`--pre` allows pre-releases) |
+| `--with PKG` | Also install a package into the same environment (repeatable), e.g. an integration |
+| `--project` / `--global` | Force the in-project or the isolated install |
+| `--no-skills` | Skip the coding-agent skills |
+| `--no-modify-path` | Leave your shell rc files alone (isolated install) |
+
+Options go after `bash -s --`, so `curl -fsSL https://zenml.io/install | bash -s -- --help` lists everything, with environment-variable equivalents.
+
+**Prefer to do it by hand?** Inside your project, the installer is equivalent to:
+
+```shell
+uv add "zenml[local]"                  # or "zenml[server]" for the local dashboard
+npx skills add zenml-io/skills         # the coding-agent skills
+uv run zenml init
+```
+
+If you prefer to manage the installation yourself with `pip` or another Python package manager:
 
 {% tabs %}
 {% tab title="Base package" %}
