@@ -8,6 +8,7 @@ from zenml.webhooks.providers.base import (
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookTargetEvent,
+    WebhookTriggerMatch,
 )
 from zenml.webhooks.providers.registry import (
     WebhookProviderRegistry,
@@ -25,6 +26,7 @@ __all__ = [
     "WebhookPreValidationResult",
     "WebhookProviderRegistry",
     "WebhookTargetEvent",
+    "WebhookTriggerMatch",
     "get_webhook_provider",
     "webhook_provider_registry",
 ]

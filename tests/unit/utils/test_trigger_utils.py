@@ -11,6 +11,7 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
 )
+from zenml.models import TriggerExecutionInfo, WebhookTriggerExecutionInfo
 from zenml.utils import trigger_utils
 
 
@@ -38,6 +39,50 @@ def test_list_supported_events():
 
     with pytest.raises(ValidationError):
         trigger_utils.list_supported_events(source_type="snapshot")
+
+
+def test_get_webhook_upstream_event_returns_plain_dict() -> None:
+    """Webhook event helper hides the typed trigger execution structure."""
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo(
+        webhook_upstream_event={
+            "github": WebhookTriggerExecutionInfo(
+                delivery_id="delivery-001",
+                event={"type": "push", "commit": None},
+            )
+        }
+    )
+
+    result = trigger_utils.get_webhook_upstream_event(pipeline_run=run)
+
+    assert result == {
+        "github": {
+            "delivery_id": "delivery-001",
+            "event": {"type": "push", "commit": None},
+        }
+    }
+
+
+def test_get_webhook_upstream_event_uses_current_run() -> None:
+    """The helper resolves the current run when one is not provided."""
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo()
+
+    with patch(
+        "zenml.steps.step_context.get_step_context",
+        return_value=Mock(pipeline_run=run),
+    ):
+        assert trigger_utils.get_webhook_upstream_event() is None
+
+
+def test_get_webhook_upstream_event_requires_run_context() -> None:
+    """Calling without a run outside a step surfaces the context error."""
+    with patch(
+        "zenml.steps.step_context.get_step_context",
+        side_effect=RuntimeError("no step context"),
+    ):
+        with pytest.raises(RuntimeError, match="no step context"):
+            trigger_utils.get_webhook_upstream_event()
 
 
 def test_create_platform_event_trigger_happy_path():
