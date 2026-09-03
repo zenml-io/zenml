@@ -336,39 +336,16 @@ class BaseWebhookProvider(ABC):
         *,
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
-    ) -> list["WebhookTriggerResponse"]:
-        """Return candidates that match one trusted event.
-
-        Args:
-            event: The trusted webhook event.
-            candidates: Triggers selected by generic orchestration.
-
-        Returns:
-            The matching triggers.
-        """
-
-    def match_triggers_with_event(
-        self,
-        *,
-        event: "WebhookEvent",
-        candidates: Sequence["WebhookTriggerResponse"],
     ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
-        """Match triggers and include any parsed semantic event.
-
-        Providers that expose a semantic event should override this method.
-        The default preserves compatibility with providers that only implement
-        trigger matching.
+        """Match candidates and return the parsed semantic event.
 
         Args:
             event: The trusted webhook event.
             candidates: Triggers selected by generic orchestration.
 
         Returns:
-            The matching triggers without semantic event metadata.
+            The matching triggers and any parsed semantic event.
         """
-        return WebhookTriggerMatch(
-            triggers=self.match_triggers(event=event, candidates=candidates)
-        )
 
 
 def authenticate_hmac_sha256(

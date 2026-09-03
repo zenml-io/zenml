@@ -568,25 +568,6 @@ class GitHubWebhookProvider(BaseWebhookProvider):
         *,
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
-    ) -> list["WebhookTriggerResponse"]:
-        """Match GitHub candidates while tolerating stale stored entries.
-
-        Args:
-            event: The trusted GitHub webhook event.
-            candidates: The candidate webhook triggers.
-
-        Returns:
-            The candidates matching the semantic event.
-        """
-        return self.match_triggers_with_event(
-            event=event, candidates=candidates
-        ).triggers
-
-    def match_triggers_with_event(
-        self,
-        *,
-        event: "WebhookEvent",
-        candidates: Sequence["WebhookTriggerResponse"],
     ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
         """Match GitHub triggers and return the parsed semantic event.
 

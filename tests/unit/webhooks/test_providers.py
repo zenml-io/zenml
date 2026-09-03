@@ -88,7 +88,7 @@ class _BodyMetadataBearerProvider(BaseWebhookProvider):
         return delivery_id if isinstance(delivery_id, str) else None
 
     def match_triggers(self, *, event, candidates):
-        return list(candidates)
+        return WebhookTriggerMatch(triggers=list(candidates))
 
 
 def test_github_semantic_events_are_public_pydantic_models() -> None:
@@ -166,9 +166,7 @@ def test_github_matching_returns_serialized_semantic_event() -> None:
         },
     )
 
-    result = provider.match_triggers_with_event(
-        event=event, candidates=[trigger]
-    )
+    result = provider.match_triggers(event=event, candidates=[trigger])
 
     assert result.triggers == [trigger]
     assert result.event == {
@@ -180,8 +178,8 @@ def test_github_matching_returns_serialized_semantic_event() -> None:
     }
 
 
-def test_default_match_envelope_preserves_provider_compatibility() -> None:
-    """Legacy providers match normally without exposing event metadata."""
+def test_provider_match_envelope_can_omit_semantic_event() -> None:
+    """Providers can match triggers without exposing event metadata."""
     event = WebhookEvent(
         project_id=uuid4(),
         webhook_id=uuid4(),
@@ -191,7 +189,7 @@ def test_default_match_envelope_preserves_provider_compatibility() -> None:
     )
     trigger = SimpleNamespace(id=uuid4())
 
-    result = _BodyMetadataBearerProvider().match_triggers_with_event(
+    result = _BodyMetadataBearerProvider().match_triggers(
         event=event, candidates=[trigger]
     )
 
@@ -291,9 +289,7 @@ def test_github_issue_opened_normalizes_and_matches_collections() -> None:
             ]
         },
     )
-    result = provider.match_triggers_with_event(
-        event=event, candidates=[trigger]
-    )
+    result = provider.match_triggers(event=event, candidates=[trigger])
     assert result.triggers == [trigger]
     assert result.event is not None
     assert result.event["type"] == "issue_opened"
@@ -673,7 +669,7 @@ def test_runtime_matching_rejects_stale_github_configuration() -> None:
     assert (
         provider.match_triggers(
             event=event, candidates=[partially_stale, entirely_stale]
-        )
+        ).triggers
         == []
     )
 
@@ -693,4 +689,7 @@ def test_runtime_empty_target_events_are_rejected() -> None:
     )
     trigger = SimpleNamespace(id=uuid4(), configuration={"target_events": []})
 
-    assert provider.match_triggers(event=event, candidates=[trigger]) == []
+    assert (
+        provider.match_triggers(event=event, candidates=[trigger]).triggers
+        == []
+    )
