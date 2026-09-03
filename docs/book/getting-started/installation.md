@@ -11,6 +11,16 @@ icon: cauldron
 
 ZenML currently supports **Python 3.10, 3.11, 3.12, 3.13, and 3.14**. Please make sure that you are using a supported Python version.
 
+The quickest way to install ZenML on macOS or Linux is the one-line installer:
+
+```shell
+curl -fsSL https://zenml.io/install | bash
+```
+
+It installs [uv](https://docs.astral.sh/uv/) if you do not have it, then installs `zenml` into the Python project in your current directory (when a `pyproject.toml` or `uv.lock` is present) or into an isolated environment with the `zenml` CLI on your PATH. It also installs the [ZenML coding-agent skills](https://github.com/zenml-io/skills). Pass options after `bash -s --`: for example `curl -fsSL https://zenml.io/install | bash -s -- --server` adds the `server` extra for the local dashboard, and `--help` lists every option.
+
+If you prefer to manage the installation yourself, use `pip` or another Python package manager:
+
 {% tabs %}
 {% tab title="Base package" %}
 **ZenML** is a Python package that can be installed using `pip` or other Python package managers:
