@@ -386,6 +386,12 @@ def software_factory(
     if not plan_review.approved:
         return
 
+    if max_fix_iterations < 1:
+        raise ValueError(
+            "`max_fix_iterations` must be at least 1, got "
+            f"{max_fix_iterations}."
+        )
+
     workspace, base_branch = open_workspace(
         repo=repo, branch=target_branch, plan=plan, base_branch=base_branch
     )
@@ -398,6 +404,7 @@ def software_factory(
         base_branch=base_branch,
     )
     verdict = None
+    tests = None
     for attempt in range(max_fix_iterations):
         tests = run_tests(
             workspace=workspace,
@@ -429,6 +436,18 @@ def software_factory(
             base_branch=base_branch,
             verdict=verdict,
             id=f"fix_{attempt}",
+        )
+    else:
+        # The loop only reaches here without a `break`, i.e. the last action
+        # taken on the branch was an untested `fix`. Re-run tests so
+        # `deploy_approval` reflects the branch's actual final state instead
+        # of the pre-fix report.
+        tests = run_tests(
+            workspace=workspace,
+            repo=repo,
+            branch=target_branch,
+            test_command=test_command,
+            id="run_tests_final",
         )
     close_workspace(workspace=workspace)
 
