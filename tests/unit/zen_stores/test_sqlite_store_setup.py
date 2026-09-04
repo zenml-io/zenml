@@ -13,20 +13,52 @@
 #  permissions and limitations under the License.
 """Tests for the journal mode and cascade indexes of a local SQLite store."""
 
-from typing import List, Tuple
+import importlib.util
+from pathlib import Path
+from types import ModuleType
+from typing import List, Set, Tuple
 
 import pytest
+from sqlalchemy import create_engine, inspect
+from sqlmodel import SQLModel
 
+import zenml.zen_stores.migrations.versions as migration_versions
+import zenml.zen_stores.schemas  # noqa: F401
+from zenml.zen_stores.migrations.alembic import Alembic
 from zenml.zen_stores.sql_zen_store import (
     SqlZenStore,
 )
 
+MIGRATION_FILE_NAME = "4f2b8c1d9a37_index_run_cascade_foreign_keys.py"
+
+
+def _load_cascade_index_migration() -> ModuleType:
+    """Load the migration that adds the cascade indexes.
+
+    The file name is not a valid module name, so the module cannot be
+    imported directly.
+
+    Returns:
+        The migration module.
+    """
+    path = Path(migration_versions.__file__).parent / MIGRATION_FILE_NAME
+    spec = importlib.util.spec_from_file_location("cascade_indexes", path)
+    assert spec is not None and spec.loader is not None
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+MIGRATION = _load_cascade_index_migration()
+
 # Foreign key child columns that a pipeline run deletion cascades along. SQLite
 # does not index foreign keys by itself and scans the child table once per
 # deleted parent row without an index, which made deleting a run cost time
-# proportional to the size of the whole store. Kept in sync with the
-# `__table_args__` of the corresponding schemas and with the migration that
-# adds them to existing databases.
+# proportional to the size of the whole store. The tests below hold this list
+# against both paths into the schema -- the `__table_args__` declarations a
+# fresh store is built from, and the migration an existing store is upgraded
+# with -- so a column indexed in only one of them cannot pass.
 CASCADE_INDEXES: List[Tuple[str, str]] = [
     ("step_run", "pipeline_run_id"),
     ("step_run", "original_step_run_id"),
@@ -44,6 +76,29 @@ CASCADE_INDEXES: List[Tuple[str, str]] = [
     ("pipeline_run", "root_run_id"),
     ("pipeline_run", "original_run_id"),
 ]
+
+
+def index_name(table_name: str, column_name: str) -> str:
+    """Build the name of a single column index.
+
+    Args:
+        table_name: Table holding the column.
+        column_name: The indexed column.
+
+    Returns:
+        The index name, matching `build_index` and the migration.
+    """
+    return f"ix_{table_name}_{column_name}"
+
+
+def test_migration_covers_every_cascade_index() -> None:
+    """Test that the migration indexes the same columns as the schema.
+
+    An index declared in only one of the two places leaves new and upgraded
+    stores with different schemas, and the store that is missing it keeps
+    scanning the table on every run deletion.
+    """
+    assert MIGRATION.INDEXED_COLUMNS == CASCADE_INDEXES
 
 
 def test_sqlite_store_uses_wal_journal_mode(sql_store: SqlZenStore) -> None:
@@ -105,9 +160,7 @@ def test_run_cascade_foreign_key_is_indexed(
     """Test that the cascade can find child rows without a table scan.
 
     A fresh store is built from the schema declarations rather than by replaying
-    the migrations, so this also pins the two together: an index added to one
-    and not the other would leave new and upgraded stores with different
-    schemas.
+    the migrations, so this covers the `__table_args__` half of the change.
 
     Args:
         sql_store: The store to check.
@@ -124,4 +177,54 @@ def test_run_cascade_foreign_key_is_indexed(
     assert detail.strip().startswith("SEARCH"), (
         f"{table_name}.{column_name} is not indexed, so deleting a pipeline "
         f"run scans `{table_name}`: {detail}"
+    )
+
+
+@pytest.mark.parametrize(
+    "existing_indexes",
+    [set(), {"ix_pipeline_run_root_run_id"}],
+    ids=["never_migrated", "migrated_through_c2f8d07a91b4"],
+)
+def test_migration_creates_every_cascade_index(
+    tmp_path: Path, existing_indexes: Set[str]
+) -> None:
+    """Test that upgrading a database reaches the same indexes as a fresh one.
+
+    Covers the migration half of the change, which the test above cannot: a
+    store created by `create_all` is stamped at head and never replays the
+    migrations. The two parameters are the two shapes an existing database
+    comes in, and they disagree about `ix_pipeline_run_root_run_id`.
+    `c2f8d07a91b4` creates it, so a database old enough to have run that
+    migration has it, while one created from the schema afterwards does not,
+    because `PipelineRunSchema` did not declare it until this revision. Both
+    have to end up fully indexed.
+
+    Args:
+        tmp_path: Directory to hold the database.
+        existing_indexes: Cascade indexes the database has before the upgrade.
+    """
+    engine = create_engine(f"sqlite:///{tmp_path / 'upgrade.db'}")
+    SQLModel.metadata.create_all(engine)
+
+    with engine.begin() as connection:
+        for table_name, column_name in CASCADE_INDEXES:
+            name = index_name(table_name, column_name)
+            if name not in existing_indexes:
+                connection.exec_driver_sql(f"DROP INDEX `{name}`")
+
+    alembic = Alembic(engine)
+    alembic.stamp(MIGRATION.down_revision)
+    alembic.upgrade(MIGRATION.revision)
+
+    inspector = inspect(engine)
+    missing = [
+        index_name(table_name, column_name)
+        for table_name, column_name in CASCADE_INDEXES
+        if index_name(table_name, column_name)
+        not in {index["name"] for index in inspector.get_indexes(table_name)}
+    ]
+
+    assert not missing, (
+        f"the upgrade left an upgraded store without {missing}, so deleting a "
+        f"pipeline run there still scans those tables"
     )
