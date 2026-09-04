@@ -2,6 +2,11 @@
 description: Run custom code on pipeline and step lifecycle events and record hook invocations.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hooks
 
 Hooks let you run custom code at lifecycle points of a run or a step, and record
