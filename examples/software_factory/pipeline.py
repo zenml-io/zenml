@@ -374,7 +374,16 @@ def software_factory(
             Tests are skipped if unset.
         max_fix_iterations: The maximum number of test and review fix
             iterations.
+
+    Raises:
+        ValueError: If `max_fix_iterations` is less than 1.
     """
+    if max_fix_iterations < 1:
+        raise ValueError(
+            "max_fix_iterations must be at least 1, got "
+            f"{max_fix_iterations}."
+        )
+
     plan = write_plan(repo=repo, issue=issue, base_branch=base_branch)
     plan_review = wait(
         schema=Review,
@@ -429,6 +438,18 @@ def software_factory(
             base_branch=base_branch,
             verdict=verdict,
             id=f"fix_{attempt}",
+        )
+    else:
+        # The loop ran out of attempts without an approved review, so the
+        # last action taken was `fix`. Re-run tests so `deploy_approval`
+        # reflects the branch's actual final state instead of the report
+        # from before that last fix.
+        tests = run_tests(
+            workspace=workspace,
+            repo=repo,
+            branch=target_branch,
+            test_command=test_command,
+            id="run_tests_final",
         )
     close_workspace(workspace=workspace)
 
