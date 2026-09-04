@@ -192,6 +192,14 @@ class TagResponse(
         """
         return self.get_metadata().tagged_count
 
+    def __repr__(self) -> str:
+        """String representation of the tag.
+
+        Returns:
+            A string representation of the tag.
+        """
+        return f"Tag(name={self.name}, color={self.color.value})"
+
 
 # ------------------ Filter Model ------------------
 
