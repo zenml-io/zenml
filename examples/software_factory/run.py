@@ -63,6 +63,12 @@ def main() -> None:
         default="sonnet",
         help="Model alias or id for the agent, for example sonnet or opus.",
     )
+    parser.add_argument(
+        "--gate-timeout",
+        type=int,
+        default=600,
+        help="Seconds each approval gate waits before the run is paused.",
+    )
     args = parser.parse_args()
 
     if args.issue_file:
@@ -89,6 +95,7 @@ def main() -> None:
         test_command=args.test_command,
         max_fix_iterations=args.max_fix_iterations,
         agent_model=args.agent_model,
+        gate_timeout=args.gate_timeout,
     )
 
 

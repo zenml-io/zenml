@@ -128,12 +128,13 @@ Only the repository, the issue and the sandbox image are required. Everything el
 | `--test-command` | Shell command run in the checkout after each implementation. Tests are skipped if omitted |
 | `--max-fix-iterations` | Upper bound for fix rounds, 2 by default. Zero means test and review only |
 | `--agent-model` | Model alias or id for the agent, `sonnet` by default. Try `opus` or a full model id |
+| `--gate-timeout` | Seconds each approval gate waits for an answer before the run is paused, 10 minutes by default |
 | `--sandbox-image` | Container image for the sandbox sessions of this run. Ignored by the local flavor |
 
 The run prints a dashboard URL. It stops twice for you:
 
 1. `plan_review` after the plan is written. The plan is attached to the wait condition, and the `plan_preview` artifact of `write_plan` shows it rendered. Answer with `{"approved": true, "feedback": ""}` to continue, `approved: false` ends the run.
-2. `deploy_approval` after the loop settles. The wait condition carries the pull request URL, the last test report and the last review verdict. Answer `true` to mark the pull request ready for review.
+2. `deploy_approval` after the loop settles. The question states what the agent cost across the run, and the wait condition carries the pull request URL, the last test report, the last review verdict and the summed agent usage. Answer `true` to mark the pull request ready for review.
 
 Resolve them in the dashboard or from the CLI:
 
@@ -141,7 +142,7 @@ Resolve them in the dashboard or from the CLI:
 zenml pipeline runs wait-conditions resolve --run <RUN_ID_OR_NAME> --interactive
 ```
 
-Each gate polls for 60 seconds and then pauses the run. ZenML Pro resumes a paused run when the condition is resolved, on an OSS server run `zenml pipeline runs resume <RUN_ID_OR_NAME>` afterwards. With the local orchestrator there is no process left to resume, so answer the gates within the 60 seconds or raise `timeout` in `pipeline.py`.
+Each gate polls for `gate_timeout` seconds and then pauses the run. ZenML Pro resumes a paused run when the condition is resolved, on an OSS server run `zenml pipeline runs resume <RUN_ID_OR_NAME>` afterwards. With the local orchestrator there is no process left to resume, so answer the gates within the 60 seconds or raise `timeout` in `pipeline.py`.
 
 ## 📸 Trigger It From the Server
 
@@ -265,7 +266,7 @@ plan = read_repo_file(session, ".factory/plan.md")
 
 ### Streaming agent output and usage metadata
 
-The agent runs with `--output-format stream-json`, and `run_agent` renders each event into the step log as it happens. The final `result` event carries the model, turn count, token counts, cost and duration, which `run_agent` logs as step metadata under `agent`, visible on the step's Metadata tab in the dashboard:
+The agent runs with `--output-format stream-json`, and `run_agent` renders each event into the step log as it happens. The final `result` event carries the model, turn count, token counts, cost and duration, which `run_agent` logs as step metadata under `agent`, visible on the step's Metadata tab in the dashboard. Before the deploy gate, the pipeline sums these across all steps and logs the result on the run under `agent_total`:
 
 ```
 [tool] Read examples/software_factory/pipeline.py

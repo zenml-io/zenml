@@ -12,6 +12,7 @@ parameters:
   test_command: null
   max_fix_iterations: 2
   agent_model: sonnet
+  gate_timeout: 600
 # Sandbox image for the sessions of this pipeline. The key is
 # `sandbox:<name of your sandbox component>`.
 settings:

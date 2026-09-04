@@ -25,6 +25,7 @@ from factory_utils import (
     commit_all,
     destroy_workspace_hook,
     github_token,
+    log_agent_totals,
     markdown_to_html,
     open_pr,
     plan_path,
@@ -42,6 +43,9 @@ from models import PRRef, Review, ReviewVerdict, TestReport
 from zenml import pipeline, step, wait
 from zenml.config import DockerSettings
 from zenml.config.retry_config import StepRetryConfig
+from zenml.execution.pipeline.dynamic.run_context import (
+    DynamicPipelineRunContext,
+)
 from zenml.logger import get_logger
 from zenml.types import HTMLString, MarkdownString
 
@@ -376,6 +380,7 @@ def software_factory(
     test_command: Optional[str] = None,
     max_fix_iterations: int = 2,
     agent_model: str = "sonnet",
+    gate_timeout: int = 600,
 ) -> None:
     """Drive a GitHub issue through plan, implement, test and review.
 
@@ -396,6 +401,8 @@ def software_factory(
             tested. Zero means test and review only.
         agent_model: The model alias or id the agent uses, for example
             `sonnet`, `opus` or a full model id.
+        gate_timeout: Seconds each approval gate polls for an answer before
+            the run is paused.
     """
     target_branch = target_branch or branch_for_issue(issue)
     plan, _ = write_plan(
@@ -409,7 +416,7 @@ def software_factory(
         question="Approve plan?",
         metadata={"plan": plan.load()},
         name="plan_review",
-        timeout=60,
+        timeout=gate_timeout,
     )
     if not plan_review.approved:
         return
@@ -467,15 +474,25 @@ def software_factory(
     close_workspace(workspace=workspace)
 
     pr_result = pr.load()
-    metadata = {"pr_url": pr_result.url, "tests": tests.load().model_dump()}
+    context = DynamicPipelineRunContext.get()
+    assert context is not None
+    totals = log_agent_totals(context.run.id)
+    metadata = {
+        "pr_url": pr_result.url,
+        "tests": tests.load().model_dump(),
+        "agent_total": totals,
+    }
     if verdict is not None:
         metadata["verdict"] = verdict.load().model_dump()
     deploy_approval = wait(
         schema=bool,
-        question=f"Deploy {pr_result.url}?",
+        question=(
+            f"Deploy {pr_result.url}? The agent used {totals['turns']} turns "
+            f"and ${totals['cost_usd']} across {totals['invocations']} calls."
+        ),
         metadata=metadata,
         name="deploy_approval",
-        timeout=60,
+        timeout=gate_timeout,
     )
     if deploy_approval:
         deploy(pr=pr, repo=repo)

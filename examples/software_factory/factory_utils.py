@@ -20,6 +20,7 @@ import re
 import tempfile
 import threading
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
 import markdown
 from models import PRRef
@@ -428,6 +429,42 @@ def run_agent(
             metadata["duration_s"],
         )
         log_metadata(metadata={"agent": metadata})
+
+
+def log_agent_totals(run_id: UUID) -> Dict[str, Any]:
+    """Sum the agent usage of all steps of a run and log it on the run.
+
+    Args:
+        run_id: The pipeline run.
+
+    Returns:
+        The summed cost, tokens, turns and duration under the `agent_total`
+        key, plus the number of agent invocations.
+    """
+    totals = {
+        "cost_usd": 0.0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "turns": 0,
+        "duration_s": 0.0,
+        "invocations": 0,
+    }
+    for step in Client().get_pipeline_run(run_id).steps.values():
+        usage = step.run_metadata.get("agent")
+        if not isinstance(usage, dict):
+            continue
+        totals["invocations"] += 1
+        for key in totals:
+            if key in usage:
+                totals[key] += usage[key]
+    totals["cost_usd"] = round(totals["cost_usd"], 4)
+    totals["duration_s"] = round(totals["duration_s"], 1)
+    log_metadata(
+        metadata={"agent_total": totals}, run_id_name_or_prefix=run_id
+    )
+    return totals
 
 
 def markdown_to_html(text: str, title: str) -> HTMLString:
