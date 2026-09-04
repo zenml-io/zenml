@@ -232,7 +232,7 @@ Every mutating step commits and pushes before returning, so the branch on GitHub
 
 ### Bounded fix loop with deterministic step ids
 
-Each invocation inside the loop carries an explicit `id=`, so a resumed run matches the same step runs:
+Each invocation inside the loop carries an explicit `id=`, so a resumed run matches the same step runs. `max_fix_iterations` must be at least 1, which the pipeline validates up front so `deploy_approval`'s metadata always has a test report to show. If the loop exhausts its iterations without a `break` (its last action was a `fix`), the `else` branch re-runs tests once more with the distinct id `run_tests_final`, so the deploy approval reflects the final state of the branch rather than a stale pre-fix report:
 
 ```python
 for attempt in range(max_fix_iterations):
@@ -243,6 +243,8 @@ for attempt in range(max_fix_iterations):
         if verdict.load().approved:
             break
     pr = fix(..., tests=tests, verdict=verdict, id=f"fix_{attempt}")
+else:
+    tests = run_tests(..., id="run_tests_final")
 ```
 
 ### The agent result-file contract
