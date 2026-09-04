@@ -475,6 +475,9 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
+from zenml.zen_stores.schemas.compressed_text import (
+    set_compressed_writes,
+)
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_assoc import TriggerExecutionSchema
@@ -676,6 +679,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         pool_pre_ping: Enable emitting a test statement on the SQL connection
             at the start of each connection pool checkout, to test that the
             database connection is still viable.
+        compress_text_payloads: Store pipeline snapshot and step
+            configuration payloads compressed when that is smaller than the
+            plain text. Only enable this once every server sharing the database runs a version newer than 0.96.3: once compressed rows exist, the server can no longer be rolled back to a version without the compressed-payload reader. Switching the option off again only stops compressing new rows; already compressed rows stay readable. It affects rows written from then on, not existing ones.
     """
 
     type: StoreType = StoreType.SQL
@@ -700,6 +706,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+    compress_text_payloads: bool = False
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -1566,6 +1573,17 @@ class SqlZenStore(BaseZenStore):
         )
         self.config.configure_engine_auth(self._engine)
         self._db_backup_engine = self.initialize_database_backup_engine()
+        # The column types are shared by every engine in the process, so the
+        # setting is registered against this engine's dialect.
+        set_compressed_writes(
+            self._engine.dialect, self.config.compress_text_payloads
+        )
+        if self.config.compress_text_payloads:
+            logger.info(
+                "Compressed text payloads are enabled. Rows written from now "
+                "on cannot be read by server versions without the compressed "
+                "payload reader."
+            )
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
         # automatically create the database.

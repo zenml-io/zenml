@@ -53,3 +53,12 @@ notes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 Schema changes typically require migrations and matching domain model updates.
 Check store behavior, client methods, CLI commands, tests, and docs when the
 schema backs a user-visible feature.
+
+## Compressed text columns
+
+Columns typed `CompressedText` / `CompressedMediumText`
+(`schemas/compressed_text.py`) store their values compressed when the engine
+has compressed writes enabled. Always read and write them through the ORM
+column, never through reflected tables or raw SQL: the decoder and the
+"compress when smaller" writer live in the column type, and writing a raw
+stored value back through the column is rejected.
