@@ -20,10 +20,14 @@ from factory_utils import (
     attach_or_recreate,
     attach_sandbox,
     branch_exists,
+    branch_for_issue,
     clone_repo,
     commit_all,
     destroy_workspace_hook,
     github_token,
+    issue_from_webhook_body,
+    log_agent_totals,
+    markdown_to_html,
     open_pr,
     plan_path,
     pr_body,
@@ -37,13 +41,49 @@ from factory_utils import (
 )
 from models import PRRef, Review, ReviewVerdict, TestReport
 
-from zenml import pipeline, step, wait
+from zenml import add_tags, pipeline, step, wait
 from zenml.config import DockerSettings
 from zenml.config.retry_config import StepRetryConfig
+from zenml.execution.pipeline.dynamic.run_context import (
+    DynamicPipelineRunContext,
+)
 from zenml.logger import get_logger
-from zenml.types import MarkdownString
+from zenml.types import HTMLString, MarkdownString
 
 logger = get_logger(__name__)
+
+
+@step
+def issue_from_event(
+    repo: str,
+) -> Tuple[Annotated[str, "repo"], Annotated[str, "issue"]]:
+    """Read the issue from the webhook delivery that started this run.
+
+    Used when the run was started by a webhook trigger instead of with an
+    explicit `issue` parameter, for example from a GitHub issue, a Slack
+    message or an emoji reaction on one. Needs a ZenML Pro server with
+    webhooks.
+
+    Args:
+        repo: The repository configured on the snapshot, used when the
+            delivery names none.
+
+    Raises:
+        RuntimeError: If the run was not started by a webhook trigger.
+
+    Returns:
+        The repository and the issue text.
+    """
+    # Imported here so the example also imports on servers without webhooks.
+    from zenml.utils.trigger_utils import get_raw_webhook_event
+
+    delivery = get_raw_webhook_event()
+    if delivery is None:
+        raise RuntimeError(
+            "No issue was given and this run was not started by a webhook "
+            "trigger. Pass the `issue` parameter."
+        )
+    return issue_from_webhook_body(delivery["body"], default_repo=repo)
 
 
 @step(
@@ -51,17 +91,24 @@ logger = get_logger(__name__)
     retry=StepRetryConfig(max_retries=2, delay=5),
 )
 def write_plan(
-    repo: str, issue: str, base_branch: Optional[str] = None
-) -> Annotated[MarkdownString, "plan"]:
+    repo: str,
+    issue: str,
+    agent_model: str,
+    base_branch: Optional[str] = None,
+) -> Tuple[
+    Annotated[MarkdownString, "plan"],
+    Annotated[HTMLString, "plan_preview"],
+]:
     """Draft a fix plan for a GitHub issue in a fresh sandbox session.
 
     Args:
         repo: The repository to work in, `owner/name`.
         issue: The issue description.
+        agent_model: The model the agent uses.
         base_branch: The branch to plan against, the default branch if unset.
 
     Returns:
-        The plan written by the agent.
+        The plan written by the agent and an HTML rendering of it.
     """
     session = active_sandbox().create_session()
     try:
@@ -75,8 +122,9 @@ def write_plan(
             "Write your result to the file .factory/plan.md relative to the "
             "repository root."
         )
-        run_agent(session, prompt)
-        return MarkdownString(read_repo_file(session, ".factory/plan.md"))
+        run_agent(session, prompt, model=agent_model)
+        plan = read_repo_file(session, ".factory/plan.md")
+        return MarkdownString(plan), markdown_to_html(plan, title="Plan")
     finally:
         session.destroy()
 
@@ -126,6 +174,7 @@ def implement(
     issue: str,
     plan: MarkdownString,
     base_branch: str,
+    agent_model: str,
 ) -> Annotated[PRRef, "pr"]:
     """Implement the plan and open a draft pull request.
 
@@ -136,6 +185,7 @@ def implement(
         issue: The issue description.
         plan: The plan for the issue.
         base_branch: The pull request base.
+        agent_model: The model the agent uses.
 
     Returns:
         A reference to the opened pull request.
@@ -152,7 +202,7 @@ def implement(
             "made, as bullet points without headings, to the file "
             ".factory/summary.md relative to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         summary = read_repo_file(session, ".factory/summary.md")
         commit_all(session, f"Implement: {issue.splitlines()[0]}")
         push_branch(session, branch)
@@ -208,6 +258,7 @@ def review(
     plan: MarkdownString,
     tests: TestReport,
     base_branch: str,
+    agent_model: str,
 ) -> Annotated[ReviewVerdict, "verdict"]:
     """Review the diff on the branch against the issue, plan and test report.
 
@@ -219,6 +270,7 @@ def review(
         plan: The plan for the issue.
         tests: The result of the latest test run.
         base_branch: The branch to diff against.
+        agent_model: The model the agent uses.
 
     Returns:
         The verdict of the review.
@@ -240,7 +292,7 @@ def review(
             "Write your result to the file .factory/review.json relative "
             "to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         result = read_repo_file(session, ".factory/review.json")
         return ReviewVerdict.model_validate_json(result)
 
@@ -256,6 +308,7 @@ def fix(
     issue: str,
     tests: TestReport,
     base_branch: str,
+    agent_model: str,
     verdict: Optional[ReviewVerdict] = None,
 ) -> Annotated[PRRef, "pr"]:
     """Address review and test feedback and update the pull request.
@@ -267,6 +320,7 @@ def fix(
         issue: The issue description.
         tests: The result of the latest test run.
         base_branch: The pull request base.
+        agent_model: The model the agent uses.
         verdict: The verdict of the latest review, unset if the tests failed.
 
     Returns:
@@ -290,7 +344,7 @@ def fix(
             "this branch, as bullet points without headings, to the file "
             ".factory/summary.md relative to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         summary = read_repo_file(session, ".factory/summary.md")
         commit_all(session, "Fix: address review and test feedback")
         push_branch(session, branch)
@@ -354,34 +408,58 @@ def deploy(pr: PRRef, repo: str) -> None:
 )
 def software_factory(
     repo: str,
-    issue: str,
-    target_branch: str,
+    issue: Optional[str] = None,
+    target_branch: Optional[str] = None,
     base_branch: Optional[str] = None,
     test_command: Optional[str] = None,
-    max_fix_iterations: int = 3,
+    max_fix_iterations: int = 2,
+    agent_model: str = "sonnet",
+    gate_timeout: int = 600,
 ) -> None:
     """Drive a GitHub issue through plan, implement, test and review.
 
     Args:
-        repo: The repository to work in, `owner/name`.
-        issue: The issue description.
+        repo: The repository to work in, `owner/name`. A GitHub issue
+            delivery overrides it with the issue's repository.
+        issue: The issue description. The first line is the title. Read
+            from the webhook delivery that started the run if unset.
         target_branch: The branch to work on. Created from the base branch
-            if it does not exist, checked out if it does.
+            if it does not exist, checked out if it does. Derived from the
+            issue title if unset, for example
+            `factory/add-health-check-endpoint`.
         base_branch: The branch to create `target_branch` from and to open
             the pull request against. The repository's default branch if
             unset.
         test_command: Shell command that runs the tests in the checkout.
             Tests are skipped if unset.
-        max_fix_iterations: The maximum number of test and review fix
-            iterations.
+        max_fix_iterations: The maximum number of fix rounds. Tests and
+            review run once more than this, so the last fix is always
+            tested. Zero means test and review only.
+        agent_model: The model alias or id the agent uses, for example
+            `sonnet`, `opus` or a full model id.
+        gate_timeout: Seconds each approval gate polls for an answer before
+            the run is paused.
     """
-    plan = write_plan(repo=repo, issue=issue, base_branch=base_branch)
+    context = DynamicPipelineRunContext.get()
+    assert context is not None
+    if not issue:
+        repo_output, issue_output = issue_from_event(repo=repo)
+        repo, issue = repo_output.load(), issue_output.load()
+    target_branch = target_branch or branch_for_issue(issue)
+    add_tags(tags=[repo, target_branch], run=context.run.id)
+
+    plan, _ = write_plan(
+        repo=repo,
+        issue=issue,
+        agent_model=agent_model,
+        base_branch=base_branch,
+    )
     plan_review = wait(
         schema=Review,
         question="Approve plan?",
         metadata={"plan": plan.load()},
         name="plan_review",
-        timeout=60,
+        timeout=gate_timeout,
     )
     if not plan_review.approved:
         return
@@ -396,9 +474,11 @@ def software_factory(
         issue=issue,
         plan=plan,
         base_branch=base_branch,
+        agent_model=agent_model,
     )
-    verdict = None
-    for attempt in range(max_fix_iterations):
+    # One more test and review round than fixes, so the loop never ends
+    # on an untested fix.
+    for attempt in range(max_fix_iterations + 1):
         tests = run_tests(
             workspace=workspace,
             repo=repo,
@@ -416,10 +496,13 @@ def software_factory(
                 plan=plan,
                 tests=tests,
                 base_branch=base_branch,
+                agent_model=agent_model,
                 id=f"review_{attempt}",
             )
             if verdict.load().approved:
                 break
+        if attempt == max_fix_iterations:
+            break
         pr = fix(
             workspace=workspace,
             repo=repo,
@@ -427,21 +510,30 @@ def software_factory(
             issue=issue,
             tests=tests,
             base_branch=base_branch,
+            agent_model=agent_model,
             verdict=verdict,
             id=f"fix_{attempt}",
         )
     close_workspace(workspace=workspace)
 
     pr_result = pr.load()
-    metadata = {"pr_url": pr_result.url, "tests": tests.load().model_dump()}
+    totals = log_agent_totals(context.run.id)
+    metadata = {
+        "pr_url": pr_result.url,
+        "tests": tests.load().model_dump(),
+        "agent_total": totals,
+    }
     if verdict is not None:
         metadata["verdict"] = verdict.load().model_dump()
     deploy_approval = wait(
         schema=bool,
-        question=f"Deploy {pr_result.url}?",
+        question=(
+            f"Deploy {pr_result.url}? The agent used {totals['turns']} turns "
+            f"and ${totals['cost_usd']} across {totals['invocations']} calls."
+        ),
         metadata=metadata,
         name="deploy_approval",
-        timeout=60,
+        timeout=gate_timeout,
     )
     if deploy_approval:
         deploy(pr=pr, repo=repo)

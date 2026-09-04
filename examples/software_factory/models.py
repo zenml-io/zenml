@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Structured data models for the software factory pipeline."""
 
-from typing import List
+import os
+from typing import Any, Dict, List
 
 from pydantic import BaseModel
+
+from zenml.enums import VisualizationType
+from zenml.materializers.pydantic_materializer import PydanticMaterializer
 
 
 class PRRef(BaseModel):
@@ -31,12 +35,55 @@ class TestReport(BaseModel):
     passed: bool
     summary: str
 
+    def to_markdown(self) -> str:
+        """Render the report for the dashboard.
+
+        Returns:
+            The report as Markdown.
+        """
+        status = "passed" if self.passed else "failed"
+        return f"## Tests {status}\n\n```\n{self.summary.strip()}\n```\n"
+
 
 class ReviewVerdict(BaseModel):
     """Review verdict."""
 
     approved: bool
     comments: List[str]
+
+    def to_markdown(self) -> str:
+        """Render the verdict for the dashboard.
+
+        Returns:
+            The verdict as Markdown.
+        """
+        status = "approved" if self.approved else "changes requested"
+        comments = "\n".join(f"- {c}" for c in self.comments) or "No comments."
+        return f"## Review {status}\n\n{comments}\n"
+
+
+class ReportMaterializer(PydanticMaterializer):
+    """Stores test reports and review verdicts with a Markdown visualization.
+
+    The dashboard shows the JSON of a Pydantic artifact by default. The
+    visualization makes test output and review comments readable at a glance.
+    """
+
+    ASSOCIATED_TYPES = (TestReport, ReviewVerdict)
+
+    def save_visualizations(self, data: Any) -> Dict[str, VisualizationType]:
+        """Write the Markdown rendering next to the artifact.
+
+        Args:
+            data: The test report or review verdict.
+
+        Returns:
+            The visualization path and its type.
+        """
+        path = os.path.join(self.uri, "report.md").replace("\\", "/")
+        with self.artifact_store.open(path, "w") as f:
+            f.write(data.to_markdown())
+        return {path: VisualizationType.MARKDOWN}
 
 
 class Review(BaseModel):

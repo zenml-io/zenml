@@ -16,19 +16,25 @@
 import base64
 import json
 import os
+import re
 import tempfile
 import threading
-from typing import Any, Dict, List, Optional
+import urllib.parse
+import urllib.request
+from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID
 
+import markdown
 from models import PRRef
 
-from zenml import get_step_context
+from zenml import get_step_context, log_metadata
 from zenml.client import Client
 from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
 from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandbox, SandboxOutput, SandboxSession
+from zenml.types import HTMLString
 from zenml.utils.dashboard_utils import get_run_url
 
 logger = get_logger(__name__)
@@ -38,16 +44,8 @@ RESULT_DIR = ".factory"
 PLAN_DIR = "spec/plans"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 AGENT_AUTH_ENV_VARS = ["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]
-AGENT_COMMAND = [
-    "claude",
-    "-p",
-    "--model",
-    "sonnet",
-    "--dangerously-skip-permissions",
-    "--output-format",
-    "stream-json",
-    "--verbose",
-]
+SLACK_SECRET_NAME = "slack"
+SLACK_TOKEN_KEY = "SLACK_BOT_TOKEN"
 
 
 def active_sandbox() -> BaseSandbox:
@@ -288,20 +286,15 @@ def attach_or_recreate(
     return session
 
 
-def render_agent_event(line: str) -> List[str]:
-    """Render one stream-json line of the agent CLI as log lines.
+def render_agent_event(event: Dict[str, Any]) -> List[str]:
+    """Render one stream-json event of the agent CLI as log lines.
 
     Args:
-        line: The raw stdout line.
+        event: The decoded event.
 
     Returns:
         Log lines for the event.
     """
-    try:
-        event = json.loads(line)
-    except ValueError:
-        return [line.rstrip("\n")]
-
     event_type = event.get("type")
     if event_type == "assistant":
         rendered = []
@@ -340,26 +333,63 @@ def _summarize_tool_input(tool_input: Dict[str, Any]) -> str:
     return json.dumps(tool_input)[:200]
 
 
+def agent_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract model, token and cost figures from the agent's result event.
+
+    Args:
+        result: The `result` event emitted by the agent CLI.
+
+    Returns:
+        Metadata describing the agent invocation.
+    """
+    usage = result.get("usage", {})
+    # The CLI also bills small helper calls to a cheaper model. Report the
+    # model that did the actual work.
+    model_usage: Dict[str, Dict[str, Any]] = result.get("modelUsage", {})
+    model = max(
+        model_usage, key=lambda m: model_usage[m]["costUSD"], default="unknown"
+    )
+    return {
+        "model": model,
+        "turns": result.get("num_turns", 0),
+        "duration_s": round(result.get("duration_ms", 0) / 1000, 1),
+        "cost_usd": round(result.get("total_cost_usd", 0.0), 4),
+        "input_tokens": usage.get("input_tokens", 0),
+        "output_tokens": usage.get("output_tokens", 0),
+        "cache_read_tokens": usage.get("cache_read_input_tokens", 0),
+        "cache_write_tokens": usage.get("cache_creation_input_tokens", 0),
+    }
+
+
 def run_agent(
-    session: SandboxSession, prompt: str, cwd: str = REPO_DIR
-) -> str:
-    """Run the agent CLI non-interactively and stream its output.
+    session: SandboxSession, prompt: str, model: str, cwd: str = REPO_DIR
+) -> None:
+    """Run the agent CLI non-interactively, stream its output, log its usage.
+
+    Model, turn count, token counts, cost and duration are attached to the
+    calling step run as metadata under the `agent` key. Results are read
+    from files the agent writes, see the prompts in `pipeline.py`.
 
     Args:
         session: The sandbox session to run the agent in.
         prompt: The prompt to pass to the agent.
+        model: The model alias or id the agent should use.
         cwd: Working directory for the agent, relative to the session.
 
     Raises:
         RuntimeError: If the agent exits with a non-zero code.
-
-    Returns:
-        The final answer of the agent.
     """
-    insert_index = AGENT_COMMAND.index("-p") + 1
-    command = (
-        AGENT_COMMAND[:insert_index] + [prompt] + AGENT_COMMAND[insert_index:]
-    )
+    command = [
+        "claude",
+        "-p",
+        prompt,
+        "--model",
+        model,
+        "--dangerously-skip-permissions",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+    ]
     env = {
         name: os.environ[name]
         for name in AGENT_AUTH_ENV_VARS
@@ -373,22 +403,105 @@ def run_agent(
         target=lambda: stderr_lines.extend(process.stderr()), daemon=True
     )
     stderr_thread.start()
-    result = ""
+    result: Dict[str, Any] = {}
     for line in process.stdout():
-        for rendered in render_agent_event(line):
-            logger.info(rendered)
         try:
             event = json.loads(line)
         except ValueError:
+            logger.info(line.rstrip("\n"))
             continue
+        for rendered in render_agent_event(event):
+            logger.info(rendered)
         if event.get("type") == "result":
-            result = event.get("result") or ""
+            result = event
     stderr_thread.join()
     exit_code = process.wait()
     if exit_code != 0:
         stderr = "".join(stderr_lines)
         raise RuntimeError(f"Agent failed (exit {exit_code}): {stderr}")
-    return result
+
+    if result:
+        metadata = agent_metadata(result)
+        logger.info(
+            "Agent used %s for %s turns, %s input / %s output tokens, "
+            "$%s, %ss.",
+            metadata["model"],
+            metadata["turns"],
+            metadata["input_tokens"],
+            metadata["output_tokens"],
+            metadata["cost_usd"],
+            metadata["duration_s"],
+        )
+        log_metadata(metadata={"agent": metadata})
+
+
+def log_agent_totals(run_id: UUID) -> Dict[str, Any]:
+    """Sum the agent usage of all steps of a run and log it on the run.
+
+    Args:
+        run_id: The pipeline run.
+
+    Returns:
+        The summed cost, tokens, turns and duration under the `agent_total`
+        key, plus the number of agent invocations.
+    """
+    totals = {
+        "cost_usd": 0.0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "turns": 0,
+        "duration_s": 0.0,
+        "invocations": 0,
+    }
+    for step in Client().get_pipeline_run(run_id).steps.values():
+        usage = step.run_metadata.get("agent")
+        if not isinstance(usage, dict):
+            continue
+        totals["invocations"] += 1
+        for key in totals:
+            if key in usage:
+                totals[key] += usage[key]
+    totals["cost_usd"] = round(totals["cost_usd"], 4)
+    totals["duration_s"] = round(totals["duration_s"], 1)
+    log_metadata(
+        metadata={"agent_total": totals}, run_id_name_or_prefix=run_id
+    )
+    return totals
+
+
+def markdown_to_html(text: str, title: str) -> HTMLString:
+    """Render Markdown as a self-contained HTML page for the dashboard.
+
+    The dashboard's own Markdown view styles fenced code blocks poorly, so
+    plan-like artifacts are also stored as HTML with explicit code styling.
+
+    Args:
+        text: The Markdown source.
+        title: The page title.
+
+    Returns:
+        The rendered page.
+    """
+    body = markdown.markdown(text, extensions=["fenced_code", "tables"])
+    style = (
+        "body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;"
+        "max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.5;"
+        "color:#1f2933}"
+        "pre{background:#f4f6f8;border:1px solid #d9dee3;border-radius:6px;"
+        "padding:12px;overflow-x:auto}"
+        "code{font-family:SFMono-Regular,Consolas,Menlo,monospace;"
+        "font-size:0.9em}"
+        ":not(pre)>code{background:#f4f6f8;padding:1px 4px;border-radius:4px}"
+        "table{border-collapse:collapse}td,th{border:1px solid #d9dee3;"
+        "padding:4px 8px}"
+    )
+    return HTMLString(
+        f"<!doctype html><html><head><meta charset='utf-8'>"
+        f"<title>{title}</title><style>{style}</style></head>"
+        f"<body>{body}</body></html>"
+    )
 
 
 def read_repo_file(session: SandboxSession, path: str) -> str:
@@ -462,6 +575,103 @@ def push_branch(session: SandboxSession, branch: str) -> None:
     """
     run_command(
         session, ["git", "push", "-u", "origin", branch], env=git_auth_env()
+    )
+
+
+def branch_for_issue(issue: str) -> str:
+    """Derive a work branch name from the first line of an issue.
+
+    Args:
+        issue: The issue description.
+
+    Returns:
+        A branch name like `factory/add-health-check-endpoint`.
+    """
+    title = issue.strip().splitlines()[0].lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", title).strip("-")[:50].rstrip("-")
+    return f"factory/{slug or 'issue'}"
+
+
+def slack_message_text(channel: str, ts: str) -> str:
+    """Fetch the text of one Slack message through the Web API.
+
+    Needs a ZenML secret named `slack` with the key `SLACK_BOT_TOKEN`, a bot
+    token whose app has the `channels:history` scope (and `groups:history`
+    for private channels) and is a member of the channel.
+
+    Args:
+        channel: The channel id.
+        ts: The message timestamp, which is the message id in Slack.
+
+    Raises:
+        RuntimeError: If Slack does not return the message.
+
+    Returns:
+        The message text.
+    """
+    token = (
+        Client().get_secret(SLACK_SECRET_NAME).secret_values[SLACK_TOKEN_KEY]
+    )
+    # `conversations.replies` resolves both top-level messages and thread
+    # replies by their timestamp, `conversations.history` only the former.
+    query = urllib.parse.urlencode({"channel": channel, "ts": ts})
+    request = urllib.request.Request(
+        f"https://slack.com/api/conversations.replies?{query}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.load(response)
+    messages = payload.get("messages") or []
+    match = next((m for m in messages if m.get("ts") == ts), None)
+    if not payload.get("ok") or match is None:
+        raise RuntimeError(
+            f"Slack did not return message {ts} in {channel}: "
+            f"{payload.get('error', 'no matching message')}"
+        )
+    return str(match.get("text", ""))
+
+
+def issue_from_webhook_body(
+    body: Dict[str, Any], default_repo: str
+) -> Tuple[str, str]:
+    """Turn the raw payload of a webhook delivery into repository and issue.
+
+    Supports GitHub `issues` deliveries and the Slack events `message`,
+    `app_mention` and `reaction_added` on a message. ClickUp task events
+    only carry ids and would need a ClickUp API call in the same way as the
+    Slack reaction.
+
+    Args:
+        body: The JSON body of the delivery.
+        default_repo: The repository to use when the payload names none.
+
+    Raises:
+        ValueError: If the payload is not supported.
+
+    Returns:
+        The repository, `owner/name`, and the issue text.
+    """
+    if "issue" in body:
+        issue = body["issue"]
+        text = issue["title"].strip()
+        if issue.get("body"):
+            text += "\n\n" + issue["body"].strip()
+        return body["repository"]["full_name"], text
+
+    event = body.get("event") or {}
+    text = event.get("text")
+    if event.get("type") == "reaction_added":
+        item = event.get("item") or {}
+        if item.get("type") != "message":
+            raise ValueError("Only reactions on messages are supported.")
+        text = slack_message_text(item["channel"], item["ts"])
+    if text:
+        # Slack keeps app mentions in the text as `<@U0123456789>`.
+        return default_repo, re.sub(r"<@[A-Z0-9]+>", "", text).strip()
+
+    raise ValueError(
+        "The webhook payload carries no issue text. Supported are GitHub "
+        "issue deliveries and Slack messages, app mentions and reactions."
     )
 
 
@@ -596,11 +806,11 @@ def destroy_workspace_hook(exception: Optional[BaseException] = None) -> None:
         if step_run is None:
             return
 
-        outputs = step_run.regular_outputs
-        if not outputs:
+        output = step_run.regular_outputs.get("workspace")
+        if output is None:
             return
 
-        workspace = next(iter(outputs.values())).load()
+        workspace = output.load()
         try:
             session = attach_sandbox(workspace)
         except (KeyError, RuntimeError):

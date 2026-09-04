@@ -15,10 +15,11 @@
 
 import argparse
 
+from factory_utils import active_sandbox
 from pipeline import software_factory
 
-from zenml.client import Client
 from zenml.sandboxes import ContainerizedSandboxSettings
+from zenml.utils.settings_utils import get_stack_component_name_setting_key
 
 
 def main() -> None:
@@ -32,7 +33,8 @@ def main() -> None:
         "--issue-file", help="Path to a file containing the issue description."
     )
     parser.add_argument(
-        "--target-branch", required=True, help="The branch to work on."
+        "--target-branch",
+        help="The branch to work on. Derived from the issue title if not set.",
     )
     parser.add_argument(
         "--base-branch",
@@ -47,13 +49,25 @@ def main() -> None:
     parser.add_argument(
         "--max-fix-iterations",
         type=int,
-        default=3,
-        help="The maximum number of test and review fix iterations.",
+        default=2,
+        help="The maximum number of fix rounds. Zero means test and review "
+        "only.",
     )
     parser.add_argument(
         "--sandbox-image",
         required=True,
         help="Container image for the sandbox sessions of this run.",
+    )
+    parser.add_argument(
+        "--agent-model",
+        default="sonnet",
+        help="Model alias or id for the agent, for example sonnet or opus.",
+    )
+    parser.add_argument(
+        "--gate-timeout",
+        type=int,
+        default=600,
+        help="Seconds each approval gate waits before the run is paused.",
     )
     args = parser.parse_args()
 
@@ -65,15 +79,12 @@ def main() -> None:
     else:
         parser.error("One of --issue or --issue-file is required.")
 
-    sandbox = Client().active_stack.sandbox
-    if sandbox is None:
-        parser.error("The active stack has no sandbox component.")
-
+    sandbox = active_sandbox()
     pipeline = software_factory.with_options(
         settings={
-            f"sandbox:{sandbox.name}": ContainerizedSandboxSettings(
-                image=args.sandbox_image
-            )
+            get_stack_component_name_setting_key(
+                sandbox
+            ): ContainerizedSandboxSettings(image=args.sandbox_image)
         }
     )
     pipeline(
@@ -83,6 +94,8 @@ def main() -> None:
         base_branch=args.base_branch,
         test_command=args.test_command,
         max_fix_iterations=args.max_fix_iterations,
+        agent_model=args.agent_model,
+        gate_timeout=args.gate_timeout,
     )
 
 
