@@ -1,6 +1,6 @@
-# Parameters shown in the run dialog. Only `repo` and `issue` are
-# required, the rest are sensible defaults you can override per run.
-# Leave `issue` empty on a snapshot attached to a webhook trigger, the run
+# Only `repo` and `issue` need a real value. `target_branch`, `base_branch`
+# and `test_command` are left out so they keep their defaults. Set `issue`
+# to an empty string on a snapshot attached to a webhook trigger, the run
 # then reads the issue from the GitHub or Slack delivery.
 parameters:
   repo: owner/name
@@ -9,9 +9,6 @@ parameters:
 
     Add a `GET /health` route that returns HTTP 200 and the JSON body
     `{"status": "ok"}`, plus a test for it.
-  target_branch: null
-  base_branch: null
-  test_command: null
   max_fix_iterations: 2
   agent_model: sonnet
   gate_timeout: 600
