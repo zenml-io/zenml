@@ -192,6 +192,25 @@ class TagResponse(
         """
         return self.get_metadata().tagged_count
 
+    def __repr__(self) -> str:
+        """String representation of the tag.
+
+        Returns:
+            A string representation of the tag.
+        """
+        return f"Tag(name={self.name}, color={self.color.value})"
+
+    def __str__(self) -> str:
+        """String representation of the tag.
+
+        Pydantic's `BaseModel` defines its own `__str__`, so it does not
+        fall back to `__repr__` like a plain Python object would.
+
+        Returns:
+            A string representation of the tag.
+        """
+        return repr(self)
+
 
 # ------------------ Filter Model ------------------
 
