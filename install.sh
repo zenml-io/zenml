@@ -24,10 +24,9 @@
 #
 # Nothing here needs sudo. Everything lands under $HOME. Re-running upgrades.
 #
-# Design borrowed from the Kitaru installer (zenml-io/kitaru), which in turn
-# borrows from raindrop.sh/install and astral.sh/uv/install.sh. ZenML ships as
-# a Python package, not a binary, so uv is the one dependency this script will
-# install for you.
+# Design shared with the Kitaru installer (zenml-io/kitaru) and follows
+# astral.sh/uv/install.sh. ZenML ships as a Python package, not a binary, so uv
+# is the one dependency this script will install for you.
 
 # Bash-only, but fail politely under sh/dash/zsh-as-sh. This line is POSIX so
 # it runs before the shell reaches any bash syntax below.
