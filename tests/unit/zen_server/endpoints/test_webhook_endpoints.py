@@ -24,9 +24,12 @@ from pydantic import SecretStr
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.dispatcher import EventDispatcher
 from zenml.webhooks import (
+    ParsedWebhookDelivery,
+    ParsedWebhookEvent,
     WebhookAuthenticationError,
     WebhookEvent,
     WebhookEventHandler,
+    WebhookIntakeResponse,
     WebhookPayloadError,
 )
 from zenml.webhooks.providers.github import GitHubWebhookProvider
@@ -153,9 +156,13 @@ class _Provider:
         self,
         auth_error: Exception | None = None,
         payload_error: Exception | None = None,
+        parsed_event: bool = True,
+        response: WebhookIntakeResponse | None = None,
     ) -> None:
         self.auth_error = auth_error
         self.payload_error = payload_error
+        self.parsed_event = parsed_event
+        self.response = response or WebhookIntakeResponse()
         self.authenticate_calls = 0
         self.parse_calls = 0
 
@@ -164,15 +171,21 @@ class _Provider:
         if self.auth_error:
             raise self.auth_error
 
-    def parse(self, body, headers):
+    def parse_delivery(self, body, headers):
         self.parse_calls += 1
         if self.payload_error:
             raise self.payload_error
-        return SimpleNamespace(
-            webhook_type="custom",
-            event_type="pipeline.ready",
-            delivery_id="delivery-id",
-            payload={"event": "ready"},
+        return ParsedWebhookDelivery(
+            event=(
+                ParsedWebhookEvent(
+                    event_type="pipeline.ready",
+                    delivery_id="delivery-id",
+                    payload={"event": "ready"},
+                )
+                if self.parsed_event
+                else None
+            ),
+            response=self.response,
         )
 
 
@@ -276,44 +289,83 @@ def test_receive_webhook_event_decision_table(
     dispatcher = EventDispatcher()
     dispatcher.register_event_handler(handler)
 
+    response = None
     try:
         if expected_status == status.HTTP_202_ACCEPTED:
-            assert _receive(webhook_id).status_code == expected_status
+            response = _receive(webhook_id)
+            assert response.status_code == expected_status
         else:
             with pytest.raises(HTTPException) as error:
                 _receive(webhook_id)
             assert error.value.status_code == expected_status
             if auth_error is not None:
                 assert error.value.detail == "Invalid webhook authentication."
+
+        resolved = stored_type == "custom"
+        parsed = expected_status in {
+            status.HTTP_202_ACCEPTED,
+            status.HTTP_400_BAD_REQUEST,
+        }
+        assert store.secret_requests == int(resolved)
+        assert provider.authenticate_calls == int(resolved)
+        assert provider.parse_calls == int(parsed)
+
+        if expected_outcome is None:
+            assert store.records == []
+        else:
+            assert len(store.records) == 1
+            recorded_id, update = store.records[0]
+            assert recorded_id == webhook_id
+            assert getattr(update, expected_outcome) is True
+            assert update.error_summary == expected_error
+
+        if expected_status == status.HTTP_202_ACCEPTED:
+            assert response is not None
+            assert handler.events == []
+            assert response.background is not None
+            asyncio.run(response.background())
+            assert len(handler.events) == 1
+            event = handler.events[0]
+            assert event.project_id == store.project_id
+            assert event.webhook_id == webhook_id
+            assert event.webhook_type == "custom"
+            assert event.event_type == "pipeline.ready"
+            assert event.delivery_id == "delivery-id"
+            assert event.payload == {"event": "ready"}
+        else:
+            assert handler.events == []
     finally:
         dispatcher.unregister_event_handler(handler)
 
-    resolved = stored_type == "custom"
-    parsed = expected_status in {
-        status.HTTP_202_ACCEPTED,
-        status.HTTP_400_BAD_REQUEST,
-    }
-    assert store.secret_requests == int(resolved)
-    assert provider.authenticate_calls == int(resolved)
-    assert provider.parse_calls == int(parsed)
 
-    if expected_outcome is None:
-        assert store.records == []
-    else:
-        assert len(store.records) == 1
-        recorded_id, update = store.records[0]
-        assert recorded_id == webhook_id
-        assert getattr(update, expected_outcome) is True
-        assert update.error_summary == expected_error
+def test_control_delivery_returns_provider_response_without_dispatch(
+    monkeypatch,
+) -> None:
+    """Accepted control deliveries can return a body without an event."""
+    webhook_id = uuid4()
+    store = _Store(
+        webhook=SimpleNamespace(webhook_type="control", active=True)
+    )
+    provider = _Provider(
+        parsed_event=False,
+        response=WebhookIntakeResponse(
+            status_code=200,
+            body="challenge-value",
+            media_type="text/plain",
+        ),
+    )
+    _install_dependencies(monkeypatch, store, provider)
 
-    if expected_status == status.HTTP_202_ACCEPTED:
-        assert len(handler.events) == 1
-        event = handler.events[0]
-        assert event.project_id == store.project_id
-        assert event.webhook_id == webhook_id
-        assert event.webhook_type == "custom"
-        assert event.event_type == "pipeline.ready"
-        assert event.delivery_id == "delivery-id"
-        assert event.payload == {"event": "ready"}
-    else:
-        assert handler.events == []
+    response = endpoints._receive_webhook_event(
+        webhook_type="control",
+        webhook_id=webhook_id,
+        body=b'{"type":"url_verification"}',
+        headers={},
+    )
+
+    assert response.status_code == 200
+    assert response.body == b"challenge-value"
+    assert response.media_type == "text/plain"
+    assert response.background is None
+    assert len(store.records) == 1
+    assert store.records[0][1].accepted is True

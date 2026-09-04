@@ -9,10 +9,11 @@ import hmac
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from zenml.enums import GenericFilterOps
 from zenml.exceptions import CredentialsNotValid
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
@@ -24,6 +25,22 @@ if TYPE_CHECKING:
 
 
 WebhookTriggerT = TypeVar("WebhookTriggerT")
+
+_WEBHOOK_STRING_FILTER_OPERATORS = {
+    GenericFilterOps.EQUALS,
+    GenericFilterOps.NOT_EQUALS,
+    GenericFilterOps.CONTAINS,
+    GenericFilterOps.NOT_CONTAINS,
+    GenericFilterOps.STARTSWITH,
+    GenericFilterOps.ENDSWITH,
+    GenericFilterOps.ONEOF,
+    GenericFilterOps.NOT_ONEOF,
+}
+_WEBHOOK_NEGATIVE_STRING_FILTER_OPERATORS = {
+    GenericFilterOps.NOT_EQUALS,
+    GenericFilterOps.NOT_CONTAINS,
+    GenericFilterOps.NOT_ONEOF,
+}
 
 
 class WebhookAuthenticationError(CredentialsNotValid):
@@ -48,28 +65,17 @@ class WebhookTargetEvent(BaseModel):
 
     type: str
 
-    @classmethod
-    @abstractmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-
     @staticmethod
     def _validate_filter(
         value: StringFilterOption,
         *,
         field_name: str,
-        allow_startswith: bool,
     ) -> StringFilterOption:
         """Validate one webhook event string filter.
 
         Args:
             value: The filter value to validate.
             field_name: The name of the filtered event field.
-            allow_startswith: Whether the field supports prefix matching.
 
         Returns:
             The validated filter value.
@@ -79,9 +85,6 @@ class WebhookTargetEvent(BaseModel):
         """
         if value is None:
             return None
-        allowed = {"oneof"}
-        if allow_startswith:
-            allowed.add("startswith")
         for item in value if isinstance(value, list) else [value]:
             if not item:
                 raise ValueError(
@@ -90,7 +93,7 @@ class WebhookTargetEvent(BaseModel):
             if ":" not in item:
                 continue
             operator, operand = item.split(":", 1)
-            if operator not in allowed:
+            if operator not in _WEBHOOK_STRING_FILTER_OPERATORS:
                 raise ValueError(
                     f"Webhook event filter '{field_name}' does not support "
                     f"the '{operator}' operator."
@@ -100,13 +103,16 @@ class WebhookTargetEvent(BaseModel):
                     f"Webhook event filter '{field_name}' has an empty "
                     "operand."
                 )
-            if operator == "oneof":
+            if operator in {
+                GenericFilterOps.ONEOF,
+                GenericFilterOps.NOT_ONEOF,
+            }:
                 try:
                     choices = json.loads(operand)
                 except json.JSONDecodeError as error:
                     raise ValueError(
                         f"Webhook event filter '{field_name}' requires a "
-                        "JSON-formatted list for 'oneof'."
+                        f"JSON-formatted list for '{operator}'."
                     ) from error
                 if (
                     not isinstance(choices, list)
@@ -118,7 +124,7 @@ class WebhookTargetEvent(BaseModel):
                 ):
                     raise ValueError(
                         f"Webhook event filter '{field_name}' requires a "
-                        "non-empty JSON list of strings for 'oneof'."
+                        f"non-empty JSON list of strings for '{operator}'."
                     )
         return value
 
@@ -129,14 +135,61 @@ class WebhookTargetEvent(BaseModel):
         Returns:
             The validated target event.
         """
-        prefix_matching_support = self.get_prefix_matching_support()
-        for field_name, allow_startswith in prefix_matching_support.items():
+        for field_name, field in type(self).model_fields.items():
+            if cast(Any, field.annotation) != StringFilterOption:
+                continue
             self._validate_filter(
                 getattr(self, field_name),
                 field_name=field_name,
-                allow_startswith=allow_startswith,
             )
         return self
+
+
+def _matches_string_filter_value(*, actual: str, configured: str) -> bool:
+    """Match one actual string against one configured filter expression.
+
+    Args:
+        actual: The value extracted from the webhook event.
+        configured: One validated string filter expression.
+
+    Returns:
+        Whether the actual value satisfies the expression.
+    """
+    if ":" not in configured:
+        return actual == configured
+    operator, operand = configured.split(":", 1)
+    if operator == GenericFilterOps.EQUALS:
+        return actual == operand
+    if operator == GenericFilterOps.NOT_EQUALS:
+        return actual != operand
+    if operator == GenericFilterOps.CONTAINS:
+        return operand in actual
+    if operator == GenericFilterOps.NOT_CONTAINS:
+        return operand not in actual
+    if operator == GenericFilterOps.STARTSWITH:
+        return actual.startswith(operand)
+    if operator == GenericFilterOps.ENDSWITH:
+        return actual.endswith(operand)
+    if operator == GenericFilterOps.ONEOF:
+        return actual in json.loads(operand)
+    if operator == GenericFilterOps.NOT_ONEOF:
+        return actual not in json.loads(operand)
+    return False
+
+
+def _is_negative_string_filter(configured: str) -> bool:
+    """Return whether a string filter expression uses a negative operator.
+
+    Args:
+        configured: One validated string filter expression.
+
+    Returns:
+        Whether the expression negates a match.
+    """
+    operator, separator, _ = configured.partition(":")
+    return bool(
+        separator and operator in _WEBHOOK_NEGATIVE_STRING_FILTER_OPERATORS
+    )
 
 
 def matches_string_filter(
@@ -146,7 +199,7 @@ def matches_string_filter(
 
     Args:
         actual: The value extracted from the webhook event.
-        configured: The configured exact, prefix, or alternatives filter.
+        configured: The configured string filter or OR-list of filters.
 
     Returns:
         Whether the extracted value matches the configured filter.
@@ -155,36 +208,46 @@ def matches_string_filter(
         return True
     if actual is None:
         return False
-    for value in configured if isinstance(configured, list) else [configured]:
-        if value.startswith("oneof:"):
-            if actual in json.loads(value.removeprefix("oneof:")):
-                return True
-        elif value.startswith("startswith:"):
-            if actual.startswith(value.removeprefix("startswith:")):
-                return True
-        elif actual == value:
-            return True
-    return False
+    configured_values = (
+        configured if isinstance(configured, list) else [configured]
+    )
+    return any(
+        _matches_string_filter_value(actual=actual, configured=value)
+        for value in configured_values
+    )
 
 
 def matches_string_collection_filter(
     *, actual: Sequence[str], configured: StringFilterOption
 ) -> bool:
-    """Match when any actual collection item satisfies a string filter.
+    """Match a collection against a configured string filter.
 
     Args:
         actual: Values extracted from the webhook event.
-        configured: The configured exact value or alternatives.
+        configured: The configured string filter or OR-list of filters.
 
     Returns:
-        Whether at least one actual value matches the configured filter.
+        Whether any value satisfies a positive filter or every value satisfies
+        a negative filter.
     """
     if configured is None:
         return True
-    return any(
-        matches_string_filter(actual=value, configured=configured)
-        for value in actual
-    )
+    if not actual:
+        return False
+    for configured_value in (
+        configured if isinstance(configured, list) else [configured]
+    ):
+        aggregate = (
+            all if _is_negative_string_filter(configured_value) else any
+        )
+        if aggregate(
+            _matches_string_filter_value(
+                actual=actual_value, configured=configured_value
+            )
+            for actual_value in actual
+        ):
+            return True
+    return False
 
 
 class WebhookConfiguration(YAMLSerializationMixin):
@@ -206,6 +269,23 @@ class WebhookTriggerMatch(BaseModel, Generic[WebhookTriggerT]):
 
     triggers: list[WebhookTriggerT]
     event: dict[str, Any] | None = None
+
+
+class WebhookIntakeResponse(BaseModel):
+    """Provider-owned successful webhook intake response."""
+
+    status_code: int = Field(default=202, ge=200, lt=300)
+    body: str | None = None
+    media_type: str | None = None
+
+
+class ParsedWebhookDelivery(BaseModel):
+    """A successful provider delivery and its intake response."""
+
+    event: ParsedWebhookEvent | None
+    response: WebhookIntakeResponse = Field(
+        default_factory=WebhookIntakeResponse
+    )
 
 
 class BaseWebhookProvider(ABC):
@@ -273,6 +353,23 @@ class BaseWebhookProvider(ABC):
             delivery_id=self.get_delivery_id(payload=payload, headers=headers),
             payload=payload,
         )
+
+    def parse_delivery(
+        self, body: bytes, headers: Mapping[str, str]
+    ) -> ParsedWebhookDelivery:
+        """Parse a successful delivery and select its intake response.
+
+        Existing providers can continue to implement :meth:`parse`; providers
+        with control deliveries or custom responses can override this method.
+
+        Args:
+            body: The raw request body.
+            headers: The request headers.
+
+        Returns:
+            The parsed delivery and provider-owned response.
+        """
+        return ParsedWebhookDelivery(event=self.parse(body, headers))
 
     @abstractmethod
     def get_event_type(

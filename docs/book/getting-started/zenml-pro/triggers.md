@@ -644,6 +644,41 @@ fields. The SDK accepts a mapping or a typed provider configuration model; the
 typed models are recommended because they validate and document the available
 fields.
 
+### String filter operators
+
+Every provider-defined string field in a webhook event filter supports the same
+case-sensitive operators:
+
+| Syntax | Matches when |
+|--------|--------------|
+| `value` or `equals:value` | The field equals `value` |
+| `notequals:value` | The field does not equal `value` |
+| `contains:value` | The field contains `value` |
+| `notcontains:value` | The field does not contain `value` |
+| `startswith:value` | The field starts with `value` |
+| `endswith:value` | The field ends with `value` |
+| `oneof:["a","b"]` | The field equals one of the JSON-list values |
+| `notoneof:["a","b"]` | The field equals none of the JSON-list values |
+
+A YAML list combines multiple expressions for one field with OR. Use
+`notoneof:` instead of a list of `notequals:` expressions when excluding
+several exact values:
+
+```yaml
+target_events:
+  - type: push
+    branch:
+      - main
+      - "startswith:release/"
+    actor: 'notoneof:["dependabot[bot]","renovate[bot]"]'
+```
+
+Different populated fields on one target event combine with AND, while
+multiple target events combine with OR. An absent event field does not satisfy
+a configured filter, including a negative filter. For collection-valued event
+fields such as GitHub labels, positive operators match any item and negative
+operators require every item to satisfy the expression.
+
 ### GitHub webhook triggers
 
 This example executes a pipeline snapshot when GitHub reports a push to the
@@ -752,6 +787,75 @@ for all fields and supported string-filter operators.
 Attach the trigger to a snapshot as shown below, then follow the
 [signed ClickUp mock request](webhooks/clickup.md#mock-a-signed-clickup-delivery)
 to test the intake path.
+### Slack webhook triggers
+
+Slack webhook triggers support seven semantic event types suited to automation:
+`app_mention`, `message`, `reaction_added`, `reaction_removed`,
+`message_metadata_posted`, `message_metadata_updated`, and `file_shared`.
+First, configure the Slack app, event subscriptions, and webhook by following
+[Slack webhooks](webhooks/slack.md).
+
+Create `slack-automation.yaml`:
+
+```yaml
+target_events:
+  - type: app_mention
+    channel_id: C0123456789
+    text: "contains:deploy production"
+  - type: message
+    channel_id: 'oneof:["C0123456789","C9876543210"]'
+    text: "startswith:deploy production"
+  - type: reaction_added
+    channel_id: C0123456789
+    reaction: rocket
+```
+
+Then create the trigger:
+
+```bash
+zenml trigger webhook create on-slack-automation \
+  --webhook slack-events \
+  --config slack-automation.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.slack import (
+    AppMentionEventFilter,
+    MessageEventFilter,
+    ReactionAddedEventFilter,
+    SlackWebhookConfiguration,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-slack-automation",
+    webhook="slack-events",
+    configuration=SlackWebhookConfiguration(
+        target_events=[
+            AppMentionEventFilter(
+                channel_id="C0123456789",
+                text="contains:deploy production",
+            ),
+            MessageEventFilter(
+                channel_id='oneof:["C0123456789","C9876543210"]',
+                text="startswith:deploy production",
+            ),
+            ReactionAddedEventFilter(
+                channel_id="C0123456789",
+                reaction="rocket",
+            ),
+        ]
+    ),
+)
+```
+
+Each event filter has event-specific optional fields, and all string fields use
+the shared [string filter operators](#string-filter-operators). See the Slack
+provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
+for the complete event catalog, subscription scopes, and matching behavior.
 
 ### Attach the trigger to a snapshot
 
@@ -777,10 +881,11 @@ client.attach_trigger_to_snapshot(
 The trigger's `concurrency` setting controls what happens when another matching
 delivery arrives while a run for an attached snapshot is already active.
 
-Push to the configured branch in GitHub, or use the
-[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) to
-test the intake path. Remember that `202 Accepted` confirms webhook intake; use
-trigger dispatch state and pipeline runs to verify downstream execution.
+Send an event from the configured provider, or test the intake path with a
+[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) or
+[signed Slack mock request](webhooks/slack.md#mock-a-signed-slack-message).
+Remember that a successful `200` or `202` response confirms webhook intake;
+use trigger dispatch state and pipeline runs to verify downstream execution.
 
 ### Access the upstream webhook event
 

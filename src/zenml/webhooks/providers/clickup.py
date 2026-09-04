@@ -62,54 +62,17 @@ class _ClickUpListTarget(WebhookTargetEvent):
     space_id: StringFilterOption = None
     folder_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            "list_id": False,
-            "space_id": False,
-            "folder_id": False,
-        }
-
 
 class _ClickUpTaskTarget(_ClickUpListTarget):
     """Shared location and task filters for ClickUp task events."""
 
     task_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "task_id": False,
-        }
-
 
 class _ClickUpTaskStatusTarget(_ClickUpTaskTarget):
     """Task filters plus the post-change status."""
 
     status: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "status": False,
-        }
 
 
 class TaskCreated(_ClickUpTaskTarget):

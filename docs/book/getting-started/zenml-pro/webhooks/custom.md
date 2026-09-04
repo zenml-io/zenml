@@ -92,6 +92,7 @@ for the shared response contract.
 ## Related pages
 
 - [Webhooks](../webhooks.md)
+- [Slack webhooks](slack.md)
 - [GitHub webhooks](github.md)
 - [ClickUp webhooks](clickup.md)
 - [Custom webhook triggers](../triggers.md#custom-webhook-triggers)

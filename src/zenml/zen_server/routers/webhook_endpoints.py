@@ -24,6 +24,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import Response
+from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import Headers
 
@@ -353,7 +354,7 @@ def _receive_webhook_event(
         )
 
     try:
-        parsed_event = provider.parse(body=body, headers=headers)
+        parsed_delivery = provider.parse_delivery(body=body, headers=headers)
     except WebhookPayloadError as error:
         zen_store().record_webhook_event(
             webhook_id,
@@ -369,13 +370,25 @@ def _receive_webhook_event(
     zen_store().record_webhook_event(
         webhook_id, WebhookEventStatsUpdate(accepted=True)
     )
-    event = WebhookEvent(
-        project_id=config.project_id,
-        webhook_id=webhook_id,
-        webhook_type=webhook_type,
-        event_type=parsed_event.event_type,
-        delivery_id=parsed_event.delivery_id,
-        payload=parsed_event.payload,
+    background_task = None
+    if parsed_delivery.event is not None:
+        parsed_event = parsed_delivery.event
+        event = WebhookEvent(
+            project_id=config.project_id,
+            webhook_id=webhook_id,
+            webhook_type=webhook_type,
+            event_type=parsed_event.event_type,
+            delivery_id=parsed_event.delivery_id,
+            payload=parsed_event.payload,
+        )
+        background_task = BackgroundTask(
+            EventDispatcher().dispatch_event, event
+        )
+
+    intake_response = parsed_delivery.response
+    return Response(
+        content=intake_response.body,
+        status_code=intake_response.status_code,
+        media_type=intake_response.media_type,
+        background=background_task,
     )
-    EventDispatcher().dispatch_event(event)
-    return Response(status_code=status.HTTP_202_ACCEPTED)

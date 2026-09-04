@@ -34,6 +34,10 @@ from zenml.webhooks.providers import (
     WebhookTriggerMatch,
     get_webhook_provider,
 )
+from zenml.webhooks.providers.base import (
+    matches_string_collection_filter,
+    matches_string_filter,
+)
 from zenml.webhooks.providers.clickup import (
     CLICKUP_SIGNATURE_HEADER,
     ClickUpSemanticEvent,
@@ -67,6 +71,108 @@ from zenml.webhooks.providers.github import (
 )
 
 pytestmark = pytest.mark.anyio
+
+
+@pytest.mark.parametrize(
+    ("configured", "matching", "non_matching"),
+    [
+        ("main", "main", "develop"),
+        ("equals:main", "main", "develop"),
+        ("notequals:develop", "main", "develop"),
+        ("contains:deploy", "please deploy production", "run training"),
+        ("notcontains:draft", "deploy production", "draft deployment"),
+        ("startswith:release/", "release/v1", "feature/release/v1"),
+        ("endswith:-prod", "model-prod", "model-stage"),
+        ('oneof:["main","develop"]', "main", "release"),
+        ('notoneof:["draft","closed"]', "open", "closed"),
+        (["main", "startswith:release/"], "release/v1", "develop"),
+    ],
+)
+def test_generic_webhook_string_filter_operators(
+    configured: str | list[str], matching: str, non_matching: str
+) -> None:
+    """Every generic webhook string operator has consistent semantics.
+
+    Args:
+        configured: The filter expression under test.
+        matching: A value that should match.
+        non_matching: A value that should not match.
+    """
+    assert matches_string_filter(actual=matching, configured=configured)
+    assert not matches_string_filter(
+        actual=non_matching, configured=configured
+    )
+
+
+@pytest.mark.parametrize(
+    "configured",
+    [
+        "equals:main",
+        "notequals:develop",
+        "contains:zenml",
+        "notcontains:legacy",
+        "startswith:zenml-io/",
+        "endswith:/zenml",
+        'oneof:["zenml-io/zenml","zenml-io/cloud"]',
+        'notoneof:["other/repo","other/cloud"]',
+    ],
+)
+def test_filtered_providers_accept_all_generic_string_operators(
+    configured: str,
+) -> None:
+    """GitHub and ClickUp target fields accept the generic operators.
+
+    Args:
+        configured: The filter expression under test.
+    """
+    assert PushEvent(repo=configured).repo == configured
+    assert TaskCreated(task_id=configured).task_id == configured
+
+
+@pytest.mark.parametrize(
+    "configured",
+    ["matches:main", "equals:", "oneof:not-json", "notoneof:[]"],
+)
+def test_generic_webhook_string_filters_reject_invalid_expressions(
+    configured: str,
+) -> None:
+    """Unknown, empty, and malformed expressions fail validation.
+
+    Args:
+        configured: The invalid filter expression under test.
+    """
+    with pytest.raises(ValidationError):
+        PushEvent(branch=configured)
+
+
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        ("contains:priority", True),
+        ("contains:documentation", False),
+        ("notcontains:documentation", True),
+        ("notcontains:priority", False),
+        ("notequals:documentation", True),
+        ("notequals:bug", False),
+        ('notoneof:["documentation","chore"]', True),
+        ('notoneof:["bug","documentation"]', False),
+    ],
+)
+def test_generic_webhook_collection_string_filter_operators(
+    configured: str, expected: bool
+) -> None:
+    """Negative collection filters require every value to satisfy them.
+
+    Args:
+        configured: The filter expression under test.
+        expected: Whether the collection should match.
+    """
+    assert (
+        matches_string_collection_filter(
+            actual=["bug", "priority-high"], configured=configured
+        )
+        is expected
+    )
 
 
 class _BodyMetadataBearerConfiguration(WebhookConfiguration):
@@ -593,7 +699,7 @@ def test_github_configuration_reports_all_invalid_target_events() -> None:
                     {"type": "unknown"},
                     {
                         "type": "merged_pull_request",
-                        "repo": "startswith:zenml-io/",
+                        "repo": "oneof:[]",
                     },
                 ]
             }
