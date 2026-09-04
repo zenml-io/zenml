@@ -317,7 +317,7 @@ export SLACK_TIMESTAMP="$(date +%s)"
 Write the body without adding a trailing newline:
 
 ```bash
-printf '%s' '{"type":"event_callback","team_id":"T0123456789","event":{"type":"message","channel":"C0123456789","channel_type":"channel","user":"U0123456789","text":"deploy production","ts":"1788300000.000100","event_ts":"1788300000.000100"},"event_id":"Ev0123456789","event_time":1788300000}' > slack-message.json
+printf '%s' '{"type":"event_callback","team_id":"T0123456789","event":{"type":"message","channel":"C0123456789","channel_type":"channel","user":"U0123456789","text":"deploy production","ts":"1788300000.000100","event_ts":"1788300000.000100"},"event_id":"Ev0123456788","event_time":1788300000}' > slack-message.json
 ```
 
 Calculate the signature over the exact body bytes and current timestamp:

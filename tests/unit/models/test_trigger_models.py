@@ -217,16 +217,14 @@ def test_github_webhook_configuration_rejects_empty_event_list() -> None:
 @pytest.mark.parametrize(
     "field, value",
     [
-        ("repo", "startswith:zenml-io/"),
-        ("author", "contains:george"),
         ("source_branch", "oneof:not-json"),
         ("target_branch", 'oneof:["develop", 42]'),
     ],
 )
-def test_pull_request_merged_rejects_unsupported_filters(
+def test_pull_request_merged_rejects_invalid_filters(
     field: str, value: str
 ) -> None:
-    """Semantic event fields enforce their operator allowlists."""
+    """Semantic event fields reject malformed filter expressions."""
     with pytest.raises(ValidationError):
         MergedPullRequest(**{field: value})
 
@@ -242,10 +240,11 @@ def test_pull_request_merged_rejects_unsupported_filters(
         "milestone",
     ],
 )
-def test_issue_opened_rejects_prefix_filters(field: str) -> None:
-    """Opened-issue filters support exact values and alternatives only."""
-    with pytest.raises(ValidationError):
-        IssueOpened(**{field: "startswith:prefix"})
+def test_issue_opened_accepts_prefix_filters(field: str) -> None:
+    """All opened-issue string filter fields support prefix matching."""
+    event = IssueOpened(**{field: "startswith:prefix"})
+
+    assert getattr(event, field) == "startswith:prefix"
 
 
 def test_schedule_trigger_valid_and_inheritance():
