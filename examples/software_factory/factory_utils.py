@@ -612,21 +612,23 @@ def slack_message_text(channel: str, ts: str) -> str:
     token = (
         Client().get_secret(SLACK_SECRET_NAME).secret_values[SLACK_TOKEN_KEY]
     )
-    query = urllib.parse.urlencode(
-        {"channel": channel, "latest": ts, "inclusive": "true", "limit": 1}
-    )
+    # `conversations.replies` resolves both top-level messages and thread
+    # replies by their timestamp, `conversations.history` only the former.
+    query = urllib.parse.urlencode({"channel": channel, "ts": ts})
     request = urllib.request.Request(
-        f"https://slack.com/api/conversations.history?{query}",
+        f"https://slack.com/api/conversations.replies?{query}",
         headers={"Authorization": f"Bearer {token}"},
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         payload = json.load(response)
-    if not payload.get("ok") or not payload.get("messages"):
+    messages = payload.get("messages") or []
+    match = next((m for m in messages if m.get("ts") == ts), None)
+    if not payload.get("ok") or match is None:
         raise RuntimeError(
             f"Slack did not return message {ts} in {channel}: "
-            f"{payload.get('error', 'no messages')}"
+            f"{payload.get('error', 'no matching message')}"
         )
-    return str(payload["messages"][0].get("text", ""))
+    return str(match.get("text", ""))
 
 
 def issue_from_webhook_body(
