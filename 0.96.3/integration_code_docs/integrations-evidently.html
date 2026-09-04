@@ -4846,7 +4846,7 @@ file.</p>
 
 
 <h4 id="zenml.integrations.evidently.EVIDENTLY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">EVIDENTLY</span> <span class="o">=</span> <span class="s1">&#39;evidently&#39;</span></code>
+            <code class="highlight language-python"><span class="n">EVIDENTLY</span> <span class="o">=</span> <span class="s1">'evidently'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4866,7 +4866,7 @@ file.</p>
 
 
 <h4 id="zenml.integrations.evidently.EVIDENTLY_DATA_VALIDATOR_FLAVOR" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">EVIDENTLY_DATA_VALIDATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">&#39;evidently&#39;</span></code>
+            <code class="highlight language-python"><span class="n">EVIDENTLY_DATA_VALIDATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">'evidently'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4886,7 +4886,7 @@ file.</p>
 
 
 <h4 id="zenml.integrations.evidently.numba_logger" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">numba_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;numba&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">numba_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'numba'</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4999,11 +4999,11 @@ file.</p>
 <span class="normal">91</span>
 <span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
+<span class="w">    </span><span class="sd">"""Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">EvidentlyDataValidatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
@@ -5126,7 +5126,7 @@ file.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -5134,7 +5134,7 @@ file.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span>
@@ -5808,19 +5808,19 @@ service connector types that are compatible with this flavor.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Flavor"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a flavor from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        flavor_model: The model to load from.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        CustomFlavorImportError: If the custom flavor can&#39;t be imported.</span>
-<span class="sd">        ImportError: If the flavor can&#39;t be imported.</span>
+<span class="sd">        CustomFlavorImportError: If the custom flavor can't be imported.</span>
+<span class="sd">        ImportError: If the flavor can't be imported.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded flavor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">flavor</span> <span class="o">=</span> <span class="n">validate_flavor_source</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
@@ -5829,22 +5829,22 @@ service connector types that are compatible with this flavor.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">is_custom</span><span class="p">:</span>
-            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
             <span class="n">expected_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="n">source_utils</span><span class="o">.</span><span class="n">get_source_root</span><span class="p">(),</span>
-                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
+                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">CustomFlavorImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of &quot;</span>
-                <span class="s2">&quot;a library, make sure it is installed. If &quot;</span>
-                <span class="s2">&quot;it is a local code file, make sure it exists at &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of "</span>
+                <span class="s2">"a library, make sure it is installed. If "</span>
+                <span class="s2">"it is a local code file, make sure it exists at "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`."</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
     <span class="k">return</span> <span class="n">flavor</span>
 </code></pre></div></td></tr></table></div>
@@ -5908,19 +5908,19 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate the doc urls for all inbuilt and integration flavors.</span>
+<span class="w">    </span><span class="sd">"""Generate the doc urls for all inbuilt and integration flavors.</span>
 
 <span class="sd">    Note that this method is not going to be useful for custom flavors,</span>
 <span class="sd">    which do not have any docs in the main zenml docs.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml documentation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="s2">&quot;https://docs.zenml.io&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">"https://docs.zenml.io"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5999,37 +5999,37 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate SDK docs url for a flavor.</span>
+<span class="w">    </span><span class="sd">"""Generate SDK docs url for a flavor.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml SDK docs</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span>
 
-    <span class="k">if</span> <span class="s2">&quot;zenml.integrations&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"zenml.integrations"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
         <span class="c1"># Get integration name out of module path which will look something</span>
-        <span class="c1">#  like this &quot;zenml.integrations.&lt;integration&gt;....</span>
+        <span class="c1">#  like this "zenml.integrations.&lt;integration&gt;....</span>
         <span class="n">integration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
-            <span class="s2">&quot;zenml.integrations.&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="s2">"zenml.integrations."</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Get the config class name to point to the specific class</span>
         <span class="n">config_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs"</span>
+            <span class="sa">f</span><span class="s2">"/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/"</span>
+            <span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6174,7 +6174,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">    </span><span class="sd">"""Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
@@ -6182,7 +6182,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">connector_requirements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_requirements</span>
     <span class="n">connector_type</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">connector_requirements</span><span class="o">.</span><span class="n">connector_type</span>
@@ -6292,7 +6292,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6379,18 +6379,18 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -6401,16 +6401,16 @@ which do not have any docs in the main zenml docs.</p>
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -6471,11 +6471,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6594,7 +6594,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -6602,7 +6602,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6709,14 +6709,14 @@ which do not have any docs in the main zenml docs.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -7024,11 +7024,11 @@ ColumnMapping data type that can be used as a step configuration field
 <span class="normal">93</span>
 <span class="normal">94</span>
 <span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_column_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnMapping</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert this Pydantic object to an Evidently ColumnMapping object.</span>
+<span class="w">    </span><span class="sd">"""Convert this Pydantic object to an Evidently ColumnMapping object.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An Evidently column mapping converted from this Pydantic object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">column_mapping</span> <span class="o">=</span> <span class="n">ColumnMapping</span><span class="p">()</span>
 
     <span class="c1"># preserve the Evidently defaults where possible</span>
@@ -7221,7 +7221,7 @@ ColumnMapping data type that can be used as a step configuration field
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -7246,11 +7246,11 @@ ColumnMapping data type that can be used as a step configuration field
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -7550,13 +7550,13 @@ Defaults to False.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ColumnMapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">"EvidentlyMetricConfig"</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ColumnMapping"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">report_options</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Report&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data report with Evidently.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Report"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Analyze a dataset and generate a data report with Evidently.</span>
 
 <span class="sd">    The method takes in an optional list of Evidently options to be passed</span>
 <span class="sd">    to the report constructor (`report_options`). Each element in the list must be</span>
@@ -7567,12 +7567,12 @@ Defaults to False.</p>
 <span class="sd">    ```python</span>
 <span class="sd">    options = [</span>
 <span class="sd">        (</span>
-<span class="sd">            &quot;evidently.legacy.options.ColorOptions&quot;,{</span>
-<span class="sd">                &quot;primary_color&quot;: &quot;#5a86ad&quot;,</span>
-<span class="sd">                &quot;fill_color&quot;: &quot;#fff4f2&quot;,</span>
-<span class="sd">                &quot;zero_line_color&quot;: &quot;#016795&quot;,</span>
-<span class="sd">                &quot;current_data_color&quot;: &quot;#c292a1&quot;,</span>
-<span class="sd">                &quot;reference_data_color&quot;: &quot;#017b92&quot;,</span>
+<span class="sd">            "evidently.legacy.options.ColorOptions",{</span>
+<span class="sd">                "primary_color": "#5a86ad",</span>
+<span class="sd">                "fill_color": "#fff4f2",</span>
+<span class="sd">                "zero_line_color": "#016795",</span>
+<span class="sd">                "current_data_color": "#c292a1",</span>
+<span class="sd">                "reference_data_color": "#017b92",</span>
 <span class="sd">            }</span>
 <span class="sd">        ),</span>
 <span class="sd">    ]</span>
@@ -7596,7 +7596,7 @@ Defaults to False.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Evidently Report as JSON object and as HTML.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">evidently.legacy.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">Report</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentlyMetricConfig</span>
@@ -7850,13 +7850,13 @@ Defaults to False.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">"EvidentlyTestConfig"</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">test_options</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
-    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ColumnMapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ColumnMapping"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TestSuite&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a dataset with Evidently.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"TestSuite"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Validate a dataset with Evidently.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: Target dataset to be validated.</span>
@@ -7875,7 +7875,7 @@ Defaults to False.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Evidently Test Suite as JSON object and as HTML.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">evidently.legacy.test_suite</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestSuite</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.tests</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentlyTestConfig</span>
@@ -8056,7 +8056,7 @@ Defaults to False.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -8081,11 +8081,11 @@ Defaults to False.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -8385,13 +8385,13 @@ Defaults to False.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ColumnMapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">profile_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">"EvidentlyMetricConfig"</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ColumnMapping"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">report_options</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Report&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze a dataset and generate a data report with Evidently.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Report"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Analyze a dataset and generate a data report with Evidently.</span>
 
 <span class="sd">    The method takes in an optional list of Evidently options to be passed</span>
 <span class="sd">    to the report constructor (`report_options`). Each element in the list must be</span>
@@ -8402,12 +8402,12 @@ Defaults to False.</p>
 <span class="sd">    ```python</span>
 <span class="sd">    options = [</span>
 <span class="sd">        (</span>
-<span class="sd">            &quot;evidently.legacy.options.ColorOptions&quot;,{</span>
-<span class="sd">                &quot;primary_color&quot;: &quot;#5a86ad&quot;,</span>
-<span class="sd">                &quot;fill_color&quot;: &quot;#fff4f2&quot;,</span>
-<span class="sd">                &quot;zero_line_color&quot;: &quot;#016795&quot;,</span>
-<span class="sd">                &quot;current_data_color&quot;: &quot;#c292a1&quot;,</span>
-<span class="sd">                &quot;reference_data_color&quot;: &quot;#017b92&quot;,</span>
+<span class="sd">            "evidently.legacy.options.ColorOptions",{</span>
+<span class="sd">                "primary_color": "#5a86ad",</span>
+<span class="sd">                "fill_color": "#fff4f2",</span>
+<span class="sd">                "zero_line_color": "#016795",</span>
+<span class="sd">                "current_data_color": "#c292a1",</span>
+<span class="sd">                "reference_data_color": "#017b92",</span>
 <span class="sd">            }</span>
 <span class="sd">        ),</span>
 <span class="sd">    ]</span>
@@ -8431,7 +8431,7 @@ Defaults to False.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Evidently Report as JSON object and as HTML.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">evidently.legacy.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">Report</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentlyMetricConfig</span>
@@ -8685,13 +8685,13 @@ Defaults to False.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">"EvidentlyTestConfig"</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">test_options</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
-    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ColumnMapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">column_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ColumnMapping"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TestSuite&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a dataset with Evidently.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"TestSuite"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Validate a dataset with Evidently.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: Target dataset to be validated.</span>
@@ -8710,7 +8710,7 @@ Defaults to False.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Evidently Test Suite as JSON object and as HTML.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">evidently.legacy.test_suite</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestSuite</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.tests</span><span class="w"> </span><span class="kn">import</span> <span class="n">EvidentlyTestConfig</span>
@@ -9619,24 +9619,24 @@ by default.</p>
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default Evidently metric configurations.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">"EvidentlyMetricConfig"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Default Evidently metric configurations.</span>
 
 <span class="sd">    Call this to fetch a default list of Evidently metrics to use in cases</span>
 <span class="sd">    where no metrics are explicitly configured for a data validator.</span>
 <span class="sd">    All available Evidently MetricPreset classes are used, except for the</span>
-<span class="sd">    `TextOverviewPreset` which requires a text column, which we don&#39;t have</span>
+<span class="sd">    `TextOverviewPreset` which requires a text column, which we don't have</span>
 <span class="sd">    by default.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of EvidentlyMetricConfig objects to use as default metrics.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">metric</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="n">metric_preset_class_name</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">metric_preset_class_name</span> <span class="ow">in</span> <span class="n">metric_preset</span><span class="o">.</span><span class="n">__all__</span>
-        <span class="c1"># TextOverviewPreset requires a text column, which we don&#39;t</span>
+        <span class="c1"># TextOverviewPreset requires a text column, which we don't</span>
         <span class="c1"># have by default</span>
-        <span class="k">if</span> <span class="n">metric_preset_class_name</span> <span class="o">!=</span> <span class="s2">&quot;TextOverviewPreset&quot;</span>
+        <span class="k">if</span> <span class="n">metric_preset_class_name</span> <span class="o">!=</span> <span class="s2">"TextOverviewPreset"</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9789,7 +9789,7 @@ metric or metric preset class.</p>
 <span class="normal">129</span>
 <span class="normal">130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_metric_class</span><span class="p">(</span><span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Evidently metric or metric preset class from a string.</span>
+<span class="w">    </span><span class="sd">"""Get the Evidently metric or metric preset class from a string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        metric_name: The metric or metric preset class or full class</span>
@@ -9801,15 +9801,15 @@ metric or metric preset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the name cannot be converted into a valid Evidently</span>
 <span class="sd">            metric or metric preset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># First, try to interpret the metric name as a full class path.</span>
-    <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">metric_name</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"."</span> <span class="ow">in</span> <span class="n">metric_name</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">metric_class</span> <span class="o">=</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">metric_name</span><span class="p">)</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Evidently Metric or MetricPreset &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Evidently Metric or MetricPreset "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
@@ -9821,14 +9821,14 @@ metric or metric preset class.</p>
             <span class="n">metric_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">metric_preset</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Evidently Metric or MetricPreset &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">`&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Evidently Metric or MetricPreset "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">`"</span>
             <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">metric_class</span><span class="p">,</span> <span class="p">(</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Class `</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">` is not a valid Evidently &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Metric or MetricPreset.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Class `</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">` is not a valid Evidently "</span>
+            <span class="sa">f</span><span class="s2">"Metric or MetricPreset."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">metric_class</span>
@@ -10065,8 +10065,8 @@ or MetricPreset class.</p>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Metric</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">MetricPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a declarative configuration for an Evidently Metric.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EvidentlyMetricConfig"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a declarative configuration for an Evidently Metric.</span>
 
 <span class="sd">    Call this method to get a declarative representation for the</span>
 <span class="sd">    configuration of an Evidently Metric.</span>
@@ -10078,7 +10078,7 @@ or MetricPreset class.</p>
 <span class="sd">    from zenml.integrations.evidently.data_validators import EvidentlyMetric</span>
 
 <span class="sd">    # Configure an Evidently MetricPreset using its class name</span>
-<span class="sd">    config = EvidentlyMetric.metric(&quot;DataDriftPreset&quot;)</span>
+<span class="sd">    config = EvidentlyMetric.metric("DataDriftPreset")</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    ```python</span>
@@ -10086,7 +10086,7 @@ or MetricPreset class.</p>
 
 <span class="sd">    # Configure an Evidently MetricPreset using its full class path</span>
 <span class="sd">    config = EvidentlyMetric.metric(</span>
-<span class="sd">        &quot;evidently.legacy.metric_preset.DataDriftPreset&quot;</span>
+<span class="sd">        "evidently.legacy.metric_preset.DataDriftPreset"</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -10097,7 +10097,7 @@ or MetricPreset class.</p>
 <span class="sd">    # parameters</span>
 <span class="sd">    from evidently.legacy.metrics import ColumnSummaryMetric</span>
 <span class="sd">    config = EvidentlyMetric.metric(</span>
-<span class="sd">        ColumnSummaryMetric, column_name=&quot;age&quot;</span>
+<span class="sd">        ColumnSummaryMetric, column_name="age"</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -10114,17 +10114,17 @@ or MetricPreset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If `metric` does not point to a valid Evidently Metric</span>
 <span class="sd">            or MetricPreset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">metric_class</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_metric_class</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="p">(</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">)):</span>
         <span class="n">metric_class</span> <span class="o">=</span> <span class="n">metric</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Invalid Evidently Metric or MetricPreset class: </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Invalid Evidently Metric or MetricPreset class: </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
-    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">class_path</span><span class="o">=</span><span class="n">class_path</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">)</span>
 
@@ -10448,8 +10448,8 @@ or MetricPreset class.</p>
     <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">skip_id_column</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a declarative configuration for an Evidently column Metric generator.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EvidentlyMetricConfig"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a declarative configuration for an Evidently column Metric generator.</span>
 
 <span class="sd">    Call this method to get a declarative representation for the</span>
 <span class="sd">    configuration of an Evidently column Metric generator.</span>
@@ -10459,12 +10459,12 @@ or MetricPreset class.</p>
 
 <span class="sd">    - if `columns` is a list, it is interpreted as a list of column names.</span>
 <span class="sd">    - if `columns` is a string, it can be one of values:</span>
-<span class="sd">        - &quot;all&quot; - use all columns, including target/prediction columns</span>
-<span class="sd">        - &quot;num&quot; - for numeric features</span>
-<span class="sd">        - &quot;cat&quot; - for category features</span>
-<span class="sd">        - &quot;text&quot; - for text features</span>
-<span class="sd">        - &quot;features&quot; - for all features, not target/prediction columns.</span>
-<span class="sd">    - a None value is the same as &quot;all&quot;.</span>
+<span class="sd">        - "all" - use all columns, including target/prediction columns</span>
+<span class="sd">        - "num" - for numeric features</span>
+<span class="sd">        - "cat" - for category features</span>
+<span class="sd">        - "text" - for text features</span>
+<span class="sd">        - "features" - for all features, not target/prediction columns.</span>
+<span class="sd">    - a None value is the same as "all".</span>
 
 <span class="sd">    Some examples</span>
 <span class="sd">    -------------</span>
@@ -10475,7 +10475,7 @@ or MetricPreset class.</p>
 <span class="sd">    # Configure an Evidently Metric generator using a Metric class name</span>
 <span class="sd">    # and pass additional parameters</span>
 <span class="sd">    config = EvidentlyMetric.metric_generator(</span>
-<span class="sd">        &quot;ColumnQuantileMetric&quot;, columns=&quot;num&quot;, quantile=0.5</span>
+<span class="sd">        "ColumnQuantileMetric", columns="num", quantile=0.5</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -10485,7 +10485,7 @@ or MetricPreset class.</p>
 <span class="sd">    # Configure an Evidently Metric generator using a full Metric class</span>
 <span class="sd">    # path</span>
 <span class="sd">    config = EvidentlyMetric.metric_generator(</span>
-<span class="sd">        &quot;evidently.legacy.metrics.ColumnSummaryMetric&quot;, columns=[&quot;age&quot;, &quot;name&quot;]</span>
+<span class="sd">        "evidently.legacy.metrics.ColumnSummaryMetric", columns=["age", "name"]</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -10495,7 +10495,7 @@ or MetricPreset class.</p>
 <span class="sd">    # Configure an Evidently Metric generator using a Metric class</span>
 <span class="sd">    from evidently.legacy.metrics import ColumnDriftMetric</span>
 <span class="sd">    config = EvidentlyMetric.metric_generator(</span>
-<span class="sd">        ColumnDriftMetric, columns=&quot;all&quot;, skip_id_column=True</span>
+<span class="sd">        ColumnDriftMetric, columns="all", skip_id_column=True</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -10518,15 +10518,15 @@ or MetricPreset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If `metric` does not point to a valid Evidently Metric</span>
 <span class="sd">            or MetricPreset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">metric_class</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_metric_class</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="p">(</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">)):</span>
         <span class="n">metric_class</span> <span class="o">=</span> <span class="n">metric</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid Evidently Metric class: </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid Evidently Metric class: </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">metric_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
         <span class="n">class_path</span><span class="o">=</span><span class="n">class_path</span><span class="p">,</span>
@@ -10652,7 +10652,7 @@ generator could not be instantiated.</p>
 <span class="normal">365</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_metric</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Evidently Metric, MetricPreset or metric generator object.</span>
+<span class="w">    </span><span class="sd">"""Create an Evidently Metric, MetricPreset or metric generator object.</span>
 
 <span class="sd">    Call this method to create an Evidently Metric, MetricPreset or metric</span>
 <span class="sd">    generator instance from its declarative representation.</span>
@@ -10663,7 +10663,7 @@ generator could not be instantiated.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the Evidently Metric, MetricPreset or column metric</span>
 <span class="sd">            generator could not be instantiated.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">metric_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metric_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_generator</span><span class="p">:</span>
@@ -10676,16 +10676,16 @@ generator could not be instantiated.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not instantiate Evidently column Metric generator &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not instantiate Evidently column Metric generator "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">metric_class</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not instantiate Evidently Metric or MetricPreset &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Could not instantiate Evidently Metric or MetricPreset "</span>
+            <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -11049,9 +11049,9 @@ step. Defaults to False.</p>
     <span class="n">report_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
-    <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;report_json&quot;</span><span class="p">],</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTMLString</span><span class="p">,</span> <span class="s2">&quot;report_html&quot;</span><span class="p">]</span>
+    <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"report_json"</span><span class="p">],</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTMLString</span><span class="p">,</span> <span class="s2">"report_html"</span><span class="p">]</span>
 <span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate an Evidently report on one or two pandas datasets.</span>
+<span class="w">    </span><span class="sd">"""Generate an Evidently report on one or two pandas datasets.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: a Pandas DataFrame</span>
@@ -11069,7 +11069,7 @@ step. Defaults to False.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple containing the Evidently report in JSON and HTML</span>
 <span class="sd">        formats.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">metrics</span><span class="p">:</span>
         <span class="n">metrics</span> <span class="o">=</span> <span class="n">EvidentlyMetricConfig</span><span class="o">.</span><span class="n">default_metrics</span><span class="p">()</span>
 
@@ -11080,14 +11080,14 @@ step. Defaults to False.</p>
 
     <span class="k">if</span> <span class="n">ignored_cols</span><span class="p">:</span>
         <span class="n">exception_msg</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;Columns </span><span class="si">{extra_cols}</span><span class="s2"> configured in the `ignored_cols` &quot;</span>
-            <span class="s2">&quot;parameter are not found in the </span><span class="si">{dataset}</span><span class="s2"> dataset. &quot;</span>
+            <span class="s2">"Columns </span><span class="si">{extra_cols}</span><span class="s2"> configured in the `ignored_cols` "</span>
+            <span class="s2">"parameter are not found in the </span><span class="si">{dataset}</span><span class="s2"> dataset. "</span>
         <span class="p">)</span>
         <span class="n">extra_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ignored_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">reference_dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">extra_cols</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="n">exception_msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">extra_cols</span><span class="o">=</span><span class="n">extra_cols</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">&quot;reference&quot;</span>
+                    <span class="n">extra_cols</span><span class="o">=</span><span class="n">extra_cols</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"reference"</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="n">reference_dataset</span> <span class="o">=</span> <span class="n">reference_dataset</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
@@ -11099,7 +11099,7 @@ step. Defaults to False.</p>
             <span class="k">if</span> <span class="n">extra_cols</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="n">exception_msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">extra_cols</span><span class="o">=</span><span class="n">extra_cols</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">&quot;comparison&quot;</span>
+                        <span class="n">extra_cols</span><span class="o">=</span><span class="n">extra_cols</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">"comparison"</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
 
@@ -11447,8 +11447,8 @@ not found in reference or comparison dataset</p>
     <span class="n">tests</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">EvidentlyTestConfig</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">test_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">download_nltk_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;test_json&quot;</span><span class="p">],</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTMLString</span><span class="p">,</span> <span class="s2">&quot;test_html&quot;</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run an Evidently test suite on one or two pandas datasets.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"test_json"</span><span class="p">],</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTMLString</span><span class="p">,</span> <span class="s2">"test_html"</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Run an Evidently test suite on one or two pandas datasets.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: a Pandas DataFrame</span>
@@ -11468,7 +11468,7 @@ not found in reference or comparison dataset</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If ignored_cols is an empty list or if a column is</span>
 <span class="sd">            not found in reference or comparison dataset</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">tests</span><span class="p">:</span>
         <span class="n">tests</span> <span class="o">=</span> <span class="n">EvidentlyTestConfig</span><span class="o">.</span><span class="n">default_tests</span><span class="p">()</span>
 
@@ -11481,8 +11481,8 @@ not found in reference or comparison dataset</p>
         <span class="n">extra_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ignored_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">reference_dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">extra_cols</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Columns </span><span class="si">{</span><span class="n">extra_cols</span><span class="si">}</span><span class="s2"> configured in the ignored_cols &quot;</span>
-                <span class="s2">&quot;parameter are not found in the reference dataset.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Columns </span><span class="si">{</span><span class="n">extra_cols</span><span class="si">}</span><span class="s2"> configured in the ignored_cols "</span>
+                <span class="s2">"parameter are not found in the reference dataset."</span>
             <span class="p">)</span>
         <span class="n">reference_dataset</span> <span class="o">=</span> <span class="n">reference_dataset</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
             <span class="n">labels</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ignored_cols</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
@@ -11492,8 +11492,8 @@ not found in reference or comparison dataset</p>
             <span class="n">extra_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ignored_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">comparison_dataset</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">extra_cols</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Columns </span><span class="si">{</span><span class="n">extra_cols</span><span class="si">}</span><span class="s2"> configured in the ignored_cols &quot;</span>
-                    <span class="s2">&quot;parameter are not found in the comparison dataset.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Columns </span><span class="si">{</span><span class="n">extra_cols</span><span class="si">}</span><span class="s2"> configured in the ignored_cols "</span>
+                    <span class="s2">"parameter are not found in the comparison dataset."</span>
                 <span class="p">)</span>
 
             <span class="n">comparison_dataset</span> <span class="o">=</span> <span class="n">comparison_dataset</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
@@ -11746,8 +11746,8 @@ All available Evidently TestPreset classes are used.</p>
 <span class="normal">308</span>
 <span class="normal">309</span>
 <span class="normal">310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default Evidently test configurations.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">"EvidentlyTestConfig"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Default Evidently test configurations.</span>
 
 <span class="sd">    Call this to fetch a default list of Evidently tests to use in cases</span>
 <span class="sd">    where no tests are explicitly configured for a data validator.</span>
@@ -11755,7 +11755,7 @@ All available Evidently TestPreset classes are used.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of EvidentlyTestConfig objects to use as default tests.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span>
         <span class="bp">cls</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="n">test_preset_class_name</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">test_preset_class_name</span> <span class="ow">in</span> <span class="n">test_preset</span><span class="o">.</span><span class="n">__all__</span>
@@ -11911,7 +11911,7 @@ test or test preset class.</p>
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_test_class</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Evidently test or test preset class from a string.</span>
+<span class="w">    </span><span class="sd">"""Get the Evidently test or test preset class from a string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        test_name: The test or test preset class or full class</span>
@@ -11923,15 +11923,15 @@ test or test preset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the name cannot be converted into a valid Evidently</span>
 <span class="sd">            test or test preset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># First, try to interpret the test name as a full class path.</span>
-    <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">test_name</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"."</span> <span class="ow">in</span> <span class="n">test_name</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">test_class</span> <span class="o">=</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">test_name</span><span class="p">)</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Evidently Test or TestPreset &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Evidently Test or TestPreset "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
@@ -11943,14 +11943,14 @@ test or test preset class.</p>
             <span class="n">test_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">test_preset</span><span class="p">,</span> <span class="n">test_name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Evidently Test or TestPreset &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">`&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Evidently Test or TestPreset "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">`"</span>
             <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">test_class</span><span class="p">,</span> <span class="p">(</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">)):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Class `</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">` is not a valid Evidently &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Test or TestPreset.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Class `</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2">` is not a valid Evidently "</span>
+            <span class="sa">f</span><span class="s2">"Test or TestPreset."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">test_class</span>
@@ -12186,8 +12186,8 @@ or TestPreset class.</p>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">TestPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a declarative configuration for an Evidently Test.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EvidentlyTestConfig"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a declarative configuration for an Evidently Test.</span>
 
 <span class="sd">    Call this method to get a declarative representation for the</span>
 <span class="sd">    configuration of an Evidently Test.</span>
@@ -12199,7 +12199,7 @@ or TestPreset class.</p>
 <span class="sd">    from zenml.integrations.evidently.data_validators import EvidentlyTest</span>
 
 <span class="sd">    # Configure an Evidently TestPreset using its class name</span>
-<span class="sd">    config = EvidentlyTest.test(&quot;DataDriftPreset&quot;)</span>
+<span class="sd">    config = EvidentlyTest.test("DataDriftPreset")</span>
 <span class="sd">    ```</span>
 
 <span class="sd">    ```python</span>
@@ -12207,7 +12207,7 @@ or TestPreset class.</p>
 
 <span class="sd">    # Configure an Evidently TestPreset using its full class path</span>
 <span class="sd">    config = EvidentlyTest.test(</span>
-<span class="sd">        &quot;evidently.legacy.test_preset.DataDriftPreset&quot;</span>
+<span class="sd">        "evidently.legacy.test_preset.DataDriftPreset"</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -12218,7 +12218,7 @@ or TestPreset class.</p>
 <span class="sd">    # parameters</span>
 <span class="sd">    from evidently.legacy.tests import ColumnSummaryTest</span>
 <span class="sd">    config = EvidentlyTest.test(</span>
-<span class="sd">        ColumnSummaryTest, column_name=&quot;age&quot;</span>
+<span class="sd">        ColumnSummaryTest, column_name="age"</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -12235,17 +12235,17 @@ or TestPreset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If `test` does not point to a valid Evidently Test</span>
 <span class="sd">            or TestPreset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">test_class</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_test_class</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="p">(</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">)):</span>
         <span class="n">test_class</span> <span class="o">=</span> <span class="n">test</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Invalid Evidently Test or TestPreset class: </span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Invalid Evidently Test or TestPreset class: </span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
-    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">class_path</span><span class="o">=</span><span class="n">class_path</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">)</span>
 
     <span class="c1"># Try to instantiate the configuration to check if the parameters are</span>
@@ -12546,8 +12546,8 @@ or TestPreset class.</p>
     <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a declarative configuration for an Evidently column Test generator.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EvidentlyTestConfig"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a declarative configuration for an Evidently column Test generator.</span>
 
 <span class="sd">    Call this method to get a declarative representation for the</span>
 <span class="sd">    configuration of an Evidently column Test generator.</span>
@@ -12557,12 +12557,12 @@ or TestPreset class.</p>
 
 <span class="sd">    - if `columns` is a list, it is interpreted as a list of column names.</span>
 <span class="sd">    - if `columns` is a string, it can be one of values:</span>
-<span class="sd">        - &quot;all&quot; - use all columns, including target/prediction columns</span>
-<span class="sd">        - &quot;num&quot; - for numeric features</span>
-<span class="sd">        - &quot;cat&quot; - for category features</span>
-<span class="sd">        - &quot;text&quot; - for text features</span>
-<span class="sd">        - &quot;features&quot; - for all features, not target/prediction columns.</span>
-<span class="sd">    - a None value is the same as &quot;all&quot;.</span>
+<span class="sd">        - "all" - use all columns, including target/prediction columns</span>
+<span class="sd">        - "num" - for numeric features</span>
+<span class="sd">        - "cat" - for category features</span>
+<span class="sd">        - "text" - for text features</span>
+<span class="sd">        - "features" - for all features, not target/prediction columns.</span>
+<span class="sd">    - a None value is the same as "all".</span>
 
 <span class="sd">    Some examples</span>
 <span class="sd">    -------------</span>
@@ -12573,7 +12573,7 @@ or TestPreset class.</p>
 <span class="sd">    # Configure an Evidently Test generator using a Test class name</span>
 <span class="sd">    # and pass additional parameters</span>
 <span class="sd">    config = EvidentlyTest.test_generator(</span>
-<span class="sd">        &quot;TestColumnValueMin&quot;, columns=&quot;num&quot;, gt=0.5</span>
+<span class="sd">        "TestColumnValueMin", columns="num", gt=0.5</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -12583,7 +12583,7 @@ or TestPreset class.</p>
 <span class="sd">    # Configure an Evidently Test generator using a full Test class</span>
 <span class="sd">    # path</span>
 <span class="sd">    config = EvidentlyTest.test_generator(</span>
-<span class="sd">        &quot;evidently.legacy.tests.TestColumnShareOfMissingValues&quot;, columns=[&quot;age&quot;, &quot;name&quot;]</span>
+<span class="sd">        "evidently.legacy.tests.TestColumnShareOfMissingValues", columns=["age", "name"]</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -12593,7 +12593,7 @@ or TestPreset class.</p>
 <span class="sd">    # Configure an Evidently Test generator using a Test class</span>
 <span class="sd">    from evidently.legacy.tests import TestColumnQuantile</span>
 <span class="sd">    config = EvidentlyTest.test_generator(</span>
-<span class="sd">        TestColumnQuantile, columns=&quot;all&quot;, quantile=0.5</span>
+<span class="sd">        TestColumnQuantile, columns="all", quantile=0.5</span>
 <span class="sd">    )</span>
 <span class="sd">    ```</span>
 
@@ -12614,15 +12614,15 @@ or TestPreset class.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If `test` does not point to a valid Evidently Test</span>
 <span class="sd">            or TestPreset class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">test_class</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_test_class</span><span class="p">(</span><span class="n">test</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="p">(</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">)):</span>
         <span class="n">test_class</span> <span class="o">=</span> <span class="n">test</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid Evidently Test class: </span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid Evidently Test class: </span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">class_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">test_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
         <span class="n">class_path</span><span class="o">=</span><span class="n">class_path</span><span class="p">,</span>
@@ -12742,7 +12742,7 @@ generator could not be instantiated.</p>
 <span class="normal">344</span>
 <span class="normal">345</span>
 <span class="normal">346</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_test</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Evidently Test, TestPreset or test generator object.</span>
+<span class="w">    </span><span class="sd">"""Create an Evidently Test, TestPreset or test generator object.</span>
 
 <span class="sd">    Call this method to create an Evidently Test, TestPreset or test</span>
 <span class="sd">    generator instance from its declarative representation.</span>
@@ -12753,7 +12753,7 @@ generator could not be instantiated.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the Evidently Test, TestPreset or column test</span>
 <span class="sd">            generator could not be instantiated.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">test_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_test_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_generator</span><span class="p">:</span>
@@ -12765,16 +12765,16 @@ generator could not be instantiated.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not instantiate Evidently column Test generator &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not instantiate Evidently column Test generator "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">test_class</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not instantiate Evidently Test or TestPreset &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Could not instantiate Evidently Test or TestPreset "</span>
+            <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_path</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

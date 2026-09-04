@@ -3778,7 +3778,7 @@
 
 
 <h4 id="zenml.integrations.numpy.NUMPY" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">NUMPY</span> <span class="o">=</span> <span class="s1">&#39;numpy&#39;</span></code>
+            <code class="highlight language-python"><span class="n">NUMPY</span> <span class="o">=</span> <span class="s1">'numpy'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -3857,7 +3857,7 @@
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3944,18 +3944,18 @@
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -3966,16 +3966,16 @@
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -4036,11 +4036,11 @@
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4159,7 +4159,7 @@
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -4167,7 +4167,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4274,14 +4274,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -4371,7 +4371,7 @@
 <span class="normal">31</span>
 <span class="normal">32</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Activates the integration."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4500,12 +4500,12 @@
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseArtifactStore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
+<span class="w">    </span><span class="sd">"""Initializes a materializer with the given URI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data will be stored.</span>
 <span class="sd">        artifact_store: The artifact store used to store this artifact.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_artifact_store</span> <span class="o">=</span> <span class="n">artifact_store</span>
     <span class="c1"># Content hash recorded for the artifact version, set by the loading</span>
@@ -4620,16 +4620,16 @@
 <span class="normal">250</span>
 <span class="normal">251</span>
 <span class="normal">252</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given numpy array.</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">"NDArray[Any]"</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract metadata from the given numpy array.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arr: The numpy array to extract metadata from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted metadata as a dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_numeric_metadata</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">str_</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span>
@@ -4724,14 +4724,14 @@
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_item_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the number of items for the given data.</span>
+<span class="w">    </span><span class="sd">"""Get the number of items for the given data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data to get the number of items for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The number of items for the given data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4886,8 +4886,8 @@
 <span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
-<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
+<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">"Any"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Reads a numpy array from a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -4898,20 +4898,20 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The numpy array.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">numpy_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">NUMPY_FILENAME</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">numpy_file</span><span class="p">):</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">numpy_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">numpy_file</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="c1"># Ensure consistent dtype handling</span>
             <span class="k">return</span> <span class="n">_ensure_dtype_compatibility</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
     <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DATA_FILENAME</span><span class="p">)):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;A legacy artifact was found. &quot;</span>
-            <span class="s2">&quot;This artifact was created with an older version of &quot;</span>
-            <span class="s2">&quot;ZenML. You can still use it, but it will be &quot;</span>
-            <span class="s2">&quot;converted to the new format on the next materialization.&quot;</span>
+            <span class="s2">"A legacy artifact was found. "</span>
+            <span class="s2">"This artifact was created with an older version of "</span>
+            <span class="s2">"ZenML. You can still use it, but it will be "</span>
+            <span class="s2">"converted to the new format on the next materialization."</span>
         <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Import old materializer dependencies</span>
@@ -4926,7 +4926,7 @@
             <span class="p">)</span>
             <span class="n">shape_tuple</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">shape_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DATA_FILENAME</span><span class="p">),</span> <span class="s2">&quot;rb&quot;</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DATA_FILENAME</span><span class="p">),</span> <span class="s2">"rb"</span>
             <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">input_stream</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">input_stream</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
                 <span class="n">data</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="n">input_stream</span><span class="p">)</span>
@@ -4936,10 +4936,10 @@
             <span class="k">return</span> <span class="n">_ensure_dtype_compatibility</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="s2">&quot;You have an old version of a `NumpyMaterializer` &quot;</span><span class="p">,</span>
-                <span class="s2">&quot;data artifact stored in the artifact store &quot;</span><span class="p">,</span>
-                <span class="s2">&quot;as a `.parquet` file, which requires `pyarrow` for reading. &quot;</span><span class="p">,</span>
-                <span class="s2">&quot;You can install `pyarrow` by running `pip install pyarrow`.&quot;</span><span class="p">,</span>
+                <span class="s2">"You have an old version of a `NumpyMaterializer` "</span><span class="p">,</span>
+                <span class="s2">"data artifact stored in the artifact store "</span><span class="p">,</span>
+                <span class="s2">"as a `.parquet` file, which requires `pyarrow` for reading. "</span><span class="p">,</span>
+                <span class="s2">"You can install `pyarrow` by running `pip install pyarrow`."</span><span class="p">,</span>
             <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5062,7 +5062,7 @@
 <span class="normal">354</span>
 <span class="normal">355</span>
 <span class="normal">356</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a specific item of the data.</span>
+<span class="w">    </span><span class="sd">"""Load a specific item of the data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to load.</span>
@@ -5070,7 +5070,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded item.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_type</span><span class="p">)</span>
     <span class="n">item</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
@@ -5081,9 +5081,9 @@
             <span class="c1"># We only log an error here, potentially pydantic can handle the</span>
             <span class="c1"># conversion when validating step function inputs.</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;Failed to convert item `</span><span class="si">%s</span><span class="s2">` to expected type `</span><span class="si">%s</span><span class="s2">`. This &quot;</span>
-                <span class="s2">&quot;is most likely due to a mismatching type annotation on &quot;</span>
-                <span class="s2">&quot;your step function input. Error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">"Failed to convert item `</span><span class="si">%s</span><span class="s2">` to expected type `</span><span class="si">%s</span><span class="s2">`. This "</span>
+                <span class="s2">"is most likely due to a mismatching type annotation on "</span>
+                <span class="s2">"your step function input. Error: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">item</span><span class="p">,</span>
                 <span class="n">data_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">e</span><span class="p">,</span>
@@ -5155,17 +5155,17 @@
 <span class="normal">162</span>
 <span class="normal">163</span>
 <span class="normal">164</span>
-<span class="normal">165</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
+<span class="normal">165</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">"NDArray[Any]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Writes a np.ndarray to the artifact store as a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arr: The numpy array to write.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Ensure consistent dtype handling before saving</span>
     <span class="n">arr</span> <span class="o">=</span> <span class="n">_ensure_dtype_compatibility</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">NUMPY_FILENAME</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">NUMPY_FILENAME</span><span class="p">),</span> <span class="s2">"wb"</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5286,9 +5286,9 @@
 <span class="normal">204</span>
 <span class="normal">205</span>
 <span class="normal">206</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">"NDArray[Any]"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves visualizations for a numpy array.</span>
+<span class="w">    </span><span class="sd">"""Saves visualizations for a numpy array.</span>
 
 <span class="sd">    If the array is 1D, a histogram is saved. If the array is 2D or 3D with</span>
 <span class="sd">    3 or 4 channels, an image is saved.</span>
@@ -5298,30 +5298,30 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of visualization URIs and their types.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Save histogram for 1D arrays</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">histogram_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">&quot;histogram.png&quot;</span><span class="p">)</span>
-            <span class="n">histogram_path</span> <span class="o">=</span> <span class="n">histogram_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+            <span class="n">histogram_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">"histogram.png"</span><span class="p">)</span>
+            <span class="n">histogram_path</span> <span class="o">=</span> <span class="n">histogram_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_save_histogram</span><span class="p">(</span><span class="n">histogram_path</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">histogram_path</span><span class="p">:</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">}</span>
 
         <span class="c1"># Save as image for 3D arrays with 3 or 4 channels</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]:</span>
-            <span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">&quot;image.png&quot;</span><span class="p">)</span>
-            <span class="n">image_path</span> <span class="o">=</span> <span class="n">image_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
+            <span class="n">image_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">"image.png"</span><span class="p">)</span>
+            <span class="n">image_path</span> <span class="o">=</span> <span class="n">image_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_save_image</span><span class="p">(</span><span class="n">image_path</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span><span class="n">image_path</span><span class="p">:</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">}</span>
 
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Skipping visualization of numpy array because matplotlib &quot;</span>
-            <span class="s2">&quot;is not installed. To install matplotlib, run &quot;</span>
-            <span class="s2">&quot;`pip install matplotlib`.&quot;</span>
+            <span class="s2">"Skipping visualization of numpy array because matplotlib "</span>
+            <span class="s2">"is not installed. To install matplotlib, run "</span>
+            <span class="s2">"`pip install matplotlib`."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{}</span>

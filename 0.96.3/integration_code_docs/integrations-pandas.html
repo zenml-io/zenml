@@ -3778,7 +3778,7 @@
 
 
 <h4 id="zenml.integrations.pandas.PANDAS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">PANDAS</span> <span class="o">=</span> <span class="s1">&#39;pandas&#39;</span></code>
+            <code class="highlight language-python"><span class="n">PANDAS</span> <span class="o">=</span> <span class="s1">'pandas'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -3857,7 +3857,7 @@
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3944,18 +3944,18 @@
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -3966,16 +3966,16 @@
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -4036,11 +4036,11 @@
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4159,7 +4159,7 @@
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -4167,7 +4167,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4274,14 +4274,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -4371,7 +4371,7 @@
 <span class="normal">28</span>
 <span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Activates the integration."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4577,12 +4577,12 @@
 <span class="normal">110</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseArtifactStore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">    </span><span class="sd">"""Define `self.data_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
 <span class="sd">        artifact_store: The artifact store where the artifact data is stored.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span>  <span class="c1"># noqa</span>
@@ -4591,11 +4591,11 @@
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pyarrow_exists</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;By default, the `PandasMaterializer` stores data as a &quot;</span>
-            <span class="s2">&quot;`.csv` file. If you want to store data more efficiently, &quot;</span>
-            <span class="s2">&quot;you can install `pyarrow` by running &quot;</span>
-            <span class="s2">&quot;&#39;`pip install pyarrow`&#39;. This will allow `PandasMaterializer` &quot;</span>
-            <span class="s2">&quot;to automatically store the data as a `.parquet` file instead.&quot;</span>
+            <span class="s2">"By default, the `PandasMaterializer` stores data as a "</span>
+            <span class="s2">"`.csv` file. If you want to store data more efficiently, "</span>
+            <span class="s2">"you can install `pyarrow` by running "</span>
+            <span class="s2">"'`pip install pyarrow`'. This will allow `PandasMaterializer` "</span>
+            <span class="s2">"to automatically store the data as a `.parquet` file instead."</span>
         <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">PARQUET_FILENAME</span><span class="p">)</span>
@@ -4759,16 +4759,16 @@
 <span class="normal">326</span>
 <span class="normal">327</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given pandas dataframe or series.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract metadata from the given pandas dataframe or series.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df: The pandas dataframe or series to extract metadata from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted metadata as a dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Store whether it&#39;s a Series for later reference</span>
+<span class="sd">    """</span>
+    <span class="c1"># Store whether it's a Series for later reference</span>
     <span class="n">is_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span>
 
     <span class="c1"># Store original shape before conversion</span>
@@ -4777,9 +4777,9 @@
     <span class="c1"># Convert Series to DataFrame for consistent handling of dtypes</span>
     <span class="k">if</span> <span class="n">is_series</span><span class="p">:</span>
         <span class="n">series_obj</span> <span class="o">=</span> <span class="n">df</span>  <span class="c1"># Keep original Series for some calculations</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"series"</span><span class="p">)</span>
 
-    <span class="n">pandas_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="n">original_shape</span><span class="p">}</span>
+    <span class="n">pandas_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"shape"</span><span class="p">:</span> <span class="n">original_shape</span><span class="p">}</span>
 
     <span class="c1"># Add information about custom data types to metadata</span>
     <span class="n">custom_types</span> <span class="o">=</span> <span class="p">{}</span>
@@ -4787,37 +4787,37 @@
         <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">dtype_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_standard_dtype</span><span class="p">(</span><span class="n">dtype_str</span><span class="p">):</span>
-                <span class="n">col_name</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span> <span class="k">if</span> <span class="n">is_series</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+                <span class="n">col_name</span> <span class="o">=</span> <span class="s2">"series"</span> <span class="k">if</span> <span class="n">is_series</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
                 <span class="n">custom_types</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">dtype_str</span>
                 <span class="c1"># Try to get module information if available</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">module_name</span> <span class="o">=</span> <span class="n">dtype</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="vm">__module__</span>
-                    <span class="n">custom_types</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col_name</span><span class="si">}</span><span class="s2">_module&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_name</span>
+                    <span class="n">custom_types</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col_name</span><span class="si">}</span><span class="s2">_module"</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_name</span>
                 <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
                     <span class="k">pass</span>
 
         <span class="k">if</span> <span class="n">custom_types</span><span class="p">:</span>
-            <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;custom_types&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">custom_types</span>
+            <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"custom_types"</span><span class="p">]</span> <span class="o">=</span> <span class="n">custom_types</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error extracting custom type metadata: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error extracting custom type metadata: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">is_series</span><span class="p">:</span>
         <span class="c1"># For Series, use the original series object for statistics</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">DType</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;std&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="o">=</span> <span class="n">DType</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"mean"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"std"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"min"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"max"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">series_obj</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
 
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">pandas_metadata</span><span class="p">[</span><span class="s2">"dtype"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">DType</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
         <span class="k">for</span> <span class="n">stat_name</span><span class="p">,</span> <span class="n">stat</span> <span class="ow">in</span> <span class="p">{</span>
-            <span class="s2">&quot;mean&quot;</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
-            <span class="s2">&quot;std&quot;</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">std</span><span class="p">,</span>
-            <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
-            <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">max</span><span class="p">,</span>
+            <span class="s2">"mean"</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+            <span class="s2">"std"</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">std</span><span class="p">,</span>
+            <span class="s2">"min"</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">min</span><span class="p">,</span>
+            <span class="s2">"max"</span><span class="p">:</span> <span class="n">df</span><span class="o">.</span><span class="n">max</span><span class="p">,</span>
         <span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">pandas_metadata</span><span class="p">[</span><span class="n">stat_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -4915,14 +4915,14 @@
 <span class="normal">340</span>
 <span class="normal">341</span>
 <span class="normal">342</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_item_count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the number of items for the given data.</span>
+<span class="w">    </span><span class="sd">"""Get the number of items for the given data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: The data to get the number of items for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The number of items for the given data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
@@ -5132,7 +5132,7 @@
 <span class="normal">194</span>
 <span class="normal">195</span>
 <span class="normal">196</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
+<span class="w">    </span><span class="sd">"""Reads `pd.DataFrame` or `pd.Series` from a `.parquet` or `.csv` file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -5144,34 +5144,34 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The pandas dataframe or series.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># First try normal loading</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span><span class="p">):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pyarrow_exists</span><span class="p">:</span>
                 <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span>
                 <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                    <span class="s2">&quot;You have an old version of a `PandasMaterializer` &quot;</span>
-                    <span class="s2">&quot;data artifact stored in the artifact store &quot;</span>
-                    <span class="s2">&quot;as a `.parquet` file, which requires `pyarrow` &quot;</span>
-                    <span class="s2">&quot;for reading, You can install `pyarrow` by running &quot;</span>
-                    <span class="s2">&quot;&#39;`pip install pyarrow fastparquet`&#39;.&quot;</span>
+                    <span class="s2">"You have an old version of a `PandasMaterializer` "</span>
+                    <span class="s2">"data artifact stored in the artifact store "</span>
+                    <span class="s2">"as a `.parquet` file, which requires `pyarrow` "</span>
+                    <span class="s2">"for reading, You can install `pyarrow` by running "</span>
+                    <span class="s2">"'`pip install pyarrow fastparquet`'."</span>
                 <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="c1"># Check for common data type error patterns</span>
         <span class="n">error_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="n">is_dtype_error</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;not understood&quot;</span> <span class="ow">in</span> <span class="n">error_str</span>
-            <span class="ow">or</span> <span class="s2">&quot;no type&quot;</span> <span class="ow">in</span> <span class="n">error_str</span>
-            <span class="ow">or</span> <span class="s2">&quot;cannot deserialize&quot;</span> <span class="ow">in</span> <span class="n">error_str</span>
-            <span class="ow">or</span> <span class="s2">&quot;data type&quot;</span> <span class="ow">in</span> <span class="n">error_str</span>
+            <span class="s2">"not understood"</span> <span class="ow">in</span> <span class="n">error_str</span>
+            <span class="ow">or</span> <span class="s2">"no type"</span> <span class="ow">in</span> <span class="n">error_str</span>
+            <span class="ow">or</span> <span class="s2">"cannot deserialize"</span> <span class="ow">in</span> <span class="n">error_str</span>
+            <span class="ow">or</span> <span class="s2">"data type"</span> <span class="ow">in</span> <span class="n">error_str</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">is_dtype_error</span><span class="p">:</span>
@@ -5179,33 +5179,33 @@
             <span class="c1"># This is to avoid the original error from being swallowed</span>
             <span class="c1"># and to provide a more helpful error message</span>
             <span class="n">zenml_type_error</span> <span class="o">=</span> <span class="ne">TypeError</span><span class="p">(</span>
-                <span class="s2">&quot;Encountered an error with custom data types. This may be due to &quot;</span>
-                <span class="s2">&quot;missing libraries that were used when the data was originally created. &quot;</span>
-                <span class="s2">&quot;For example, you might need to install libraries like &#39;geopandas&#39; for &quot;</span>
-                <span class="s2">&quot;GeoPandas data types, &#39;pandas-gbq&#39; for BigQuery data types, or &quot;</span>
-                <span class="s2">&quot;&#39;pyarrow&#39; for Arrow data types. Make sure to import these libraries &quot;</span>
-                <span class="s2">&quot;in your step code as well as adding them to your step requirements, &quot;</span>
-                <span class="s2">&quot;even if you&#39;re not directly using them in your code. Pandas needs &quot;</span>
-                <span class="s2">&quot;these libraries to be imported to properly load the custom data types. &quot;</span>
-                <span class="s2">&quot;Try installing any packages that were used in previous pipeline steps &quot;</span>
-                <span class="s2">&quot;but might not be available in the current environment.&quot;</span>
+                <span class="s2">"Encountered an error with custom data types. This may be due to "</span>
+                <span class="s2">"missing libraries that were used when the data was originally created. "</span>
+                <span class="s2">"For example, you might need to install libraries like 'geopandas' for "</span>
+                <span class="s2">"GeoPandas data types, 'pandas-gbq' for BigQuery data types, or "</span>
+                <span class="s2">"'pyarrow' for Arrow data types. Make sure to import these libraries "</span>
+                <span class="s2">"in your step code as well as adding them to your step requirements, "</span>
+                <span class="s2">"even if you're not directly using them in your code. Pandas needs "</span>
+                <span class="s2">"these libraries to be imported to properly load the custom data types. "</span>
+                <span class="s2">"Try installing any packages that were used in previous pipeline steps "</span>
+                <span class="s2">"but might not be available in the current environment."</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">zenml_type_error</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-        <span class="c1"># We don&#39;t know how to handle this error, so re-raise the original error</span>
+        <span class="c1"># We don't know how to handle this error, so re-raise the original error</span>
         <span class="k">raise</span> <span class="n">e</span>
 
     <span class="c1"># validate the type of the data.</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_dataframe_or_series</span><span class="p">(</span>
         <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
+<span class="w">        </span><span class="sd">"""Checks if the data is a `pd.DataFrame` or `pd.Series`.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df: The data to check.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The data if it is a `pd.DataFrame` or `pd.Series`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">data_type</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
             <span class="c1"># Taking the first column if its a series as the assumption</span>
             <span class="c1"># is that there will only be one</span>
@@ -5337,7 +5337,7 @@
 <span class="normal">370</span>
 <span class="normal">371</span>
 <span class="normal">372</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a specific item of the data.</span>
+<span class="w">    </span><span class="sd">"""Load a specific item of the data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to load.</span>
@@ -5345,7 +5345,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded item.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_type</span><span class="p">)</span>
     <span class="n">item</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
@@ -5356,9 +5356,9 @@
             <span class="c1"># We only log an error here, potentially pydantic can handle the</span>
             <span class="c1"># conversion when validating step function inputs.</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;Failed to convert item `</span><span class="si">%s</span><span class="s2">` to expected type `</span><span class="si">%s</span><span class="s2">`. This &quot;</span>
-                <span class="s2">&quot;is most likely due to a mismatching type annotation on &quot;</span>
-                <span class="s2">&quot;your step function input. Error: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">"Failed to convert item `</span><span class="si">%s</span><span class="s2">` to expected type `</span><span class="si">%s</span><span class="s2">`. This "</span>
+                <span class="s2">"is most likely due to a mismatching type annotation on "</span>
+                <span class="s2">"your step function input. Error: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">item</span><span class="p">,</span>
                 <span class="n">data_type</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">e</span><span class="p">,</span>
@@ -5433,19 +5433,19 @@
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a pandas dataframe or series to the specified filename.</span>
+<span class="w">    </span><span class="sd">"""Writes a pandas dataframe or series to the specified filename.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df: The pandas dataframe or series to write.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"series"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pyarrow_exists</span><span class="p">:</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">COMPRESSION_TYPE</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5579,7 +5579,7 @@ ZENML_PANDAS_SAMPLE_ROWS environment variable.</p>
 <span class="normal">258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save visualizations of the given pandas dataframe or series.</span>
+<span class="w">    </span><span class="sd">"""Save visualizations of the given pandas dataframe or series.</span>
 
 <span class="sd">    Creates two visualizations:</span>
 <span class="sd">    1. A statistical description of the data (using df.describe())</span>
@@ -5594,17 +5594,17 @@ ZENML_PANDAS_SAMPLE_ROWS environment variable.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of visualization URIs and their types.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">visualizations</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">describe_uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">&quot;describe.csv&quot;</span><span class="p">)</span>
-    <span class="n">describe_uri</span> <span class="o">=</span> <span class="n">describe_uri</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">describe_uri</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">describe_uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">"describe.csv"</span><span class="p">)</span>
+    <span class="n">describe_uri</span> <span class="o">=</span> <span class="n">describe_uri</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">describe_uri</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="n">visualizations</span><span class="p">[</span><span class="n">describe_uri</span><span class="p">]</span> <span class="o">=</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">CSV</span>
 
     <span class="c1"># Get the number of sample rows from environment variable or use default</span>
     <span class="n">sample_rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ZENML_PANDAS_SAMPLE_ROWS&quot;</span><span class="p">,</span> <span class="n">DEFAULT_SAMPLE_ROWS</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ZENML_PANDAS_SAMPLE_ROWS"</span><span class="p">,</span> <span class="n">DEFAULT_SAMPLE_ROWS</span><span class="p">)</span>
     <span class="p">)</span>
 
     <span class="c1"># Add our sample visualization (with configurable number of rows)</span>
@@ -5613,9 +5613,9 @@ ZENML_PANDAS_SAMPLE_ROWS environment variable.</p>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">sample_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">sample_rows</span><span class="p">)</span>
 
-    <span class="n">sample_uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">&quot;sample.csv&quot;</span><span class="p">)</span>
-    <span class="n">sample_uri</span> <span class="o">=</span> <span class="n">sample_uri</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">sample_uri</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">sample_uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="s2">"sample.csv"</span><span class="p">)</span>
+    <span class="n">sample_uri</span> <span class="o">=</span> <span class="n">sample_uri</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
+    <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">sample_uri</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">sample_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
     <span class="n">visualizations</span><span class="p">[</span><span class="n">sample_uri</span><span class="p">]</span> <span class="o">=</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">CSV</span>
@@ -5717,14 +5717,14 @@ ZENML_PANDAS_SAMPLE_ROWS environment variable.</p>
 <span class="normal">71</span>
 <span class="normal">72</span>
 <span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_standard_dtype</span><span class="p">(</span><span class="n">dtype_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a dtype string represents a standard pandas/numpy dtype.</span>
+<span class="w">    </span><span class="sd">"""Check if a dtype string represents a standard pandas/numpy dtype.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dtype_str: String representation of the dtype</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        bool: True if it&#39;s a standard dtype, False otherwise</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        bool: True if it's a standard dtype, False otherwise</span>
+<span class="sd">    """</span>
     <span class="n">dtype_str</span> <span class="o">=</span> <span class="n">dtype_str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">prefix</span> <span class="ow">in</span> <span class="n">dtype_str</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">STANDARD_DTYPE_PREFIXES</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>

@@ -4018,7 +4018,7 @@
 
 
 <h4 id="zenml.hooks.__all__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;alerter_success_hook&#39;</span><span class="p">,</span> <span class="s1">&#39;alerter_failure_hook&#39;</span><span class="p">,</span> <span class="s1">&#39;run_hook&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'alerter_success_hook'</span><span class="p">,</span> <span class="s1">'alerter_failure_hook'</span><span class="p">,</span> <span class="s1">'run_hook'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4117,13 +4117,13 @@
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_failure_hook</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard failure hook that executes after step fails.</span>
+<span class="w">    </span><span class="sd">"""Standard failure hook that executes after step fails.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        exception: Original exception that lead to step failing.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
     <span class="n">alerter</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">alerter</span>
     <span class="k">if</span> <span class="n">alerter</span><span class="p">:</span>
@@ -4136,18 +4136,18 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">original_stdout</span>
         <span class="n">rich_traceback</span> <span class="o">=</span> <span class="n">output_captured</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
 
-        <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;*Failure Hook Notification! Step failed!*&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s2">"*Failure Hook Notification! Step failed!*"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
         <span class="n">message</span> <span class="o">+=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Exception: `(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">rich_traceback</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Exception: `(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">rich_traceback</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="n">alerter</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Specified standard failure hook but no alerter configured in the stack. Skipping..&quot;</span>
+            <span class="s2">"Specified standard failure hook but no alerter configured in the stack. Skipping.."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4192,24 +4192,24 @@
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_success_hook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard success hook that executes after step finishes successfully.</span>
+<span class="w">    </span><span class="sd">"""Standard success hook that executes after step finishes successfully.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
     <span class="n">alerter</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">alerter</span>
     <span class="k">if</span> <span class="n">alerter</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;*Success Hook Notification! Step completed successfully*&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">"*Success Hook Notification! Step completed successfully*"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
         <span class="p">)</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
         <span class="n">alerter</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Specified standard success hook but no alerter configured in the stack. Skipping..&quot;</span>
+            <span class="s2">"Specified standard success hook but no alerter configured in the stack. Skipping.."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4502,7 +4502,7 @@
     <span class="n">store_return</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">track</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a hook, optionally recording the invocation.</span>
+<span class="w">    </span><span class="sd">"""Run a hook, optionally recording the invocation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        func: The hook function or a source to load it from.</span>
@@ -4518,7 +4518,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The return value of the hook function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
         <span class="n">loaded_func</span> <span class="o">=</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="n">import_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">import_path</span>
@@ -4556,7 +4556,7 @@
                 <span class="p">)</span>
                 <span class="k">raise</span>
             <span class="c1"># Output parsing runs after the hook succeeded, so a parsing error</span>
-            <span class="c1"># does not mark the invocation as FAILED or discard the hook&#39;s</span>
+            <span class="c1"># does not mark the invocation as FAILED or discard the hook's</span>
             <span class="c1"># status.</span>
             <span class="k">if</span> <span class="n">store_return</span><span class="p">:</span>
                 <span class="n">outputs</span> <span class="o">=</span> <span class="n">_parse_hook_outputs</span><span class="p">(</span><span class="n">loaded_func</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
@@ -4577,7 +4577,7 @@
                     <span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="s2">&quot;Failed to record `</span><span class="si">%s</span><span class="s2">` hook invocation: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">"Failed to record `</span><span class="si">%s</span><span class="s2">` hook invocation: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                         <span class="n">hook_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
                         <span class="n">e</span><span class="p">,</span>
                     <span class="p">)</span>
@@ -4703,13 +4703,13 @@
 <span class="normal">58</span>
 <span class="normal">59</span>
 <span class="normal">60</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_failure_hook</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard failure hook that executes after step fails.</span>
+<span class="w">    </span><span class="sd">"""Standard failure hook that executes after step fails.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        exception: Original exception that lead to step failing.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
     <span class="n">alerter</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">alerter</span>
     <span class="k">if</span> <span class="n">alerter</span><span class="p">:</span>
@@ -4722,18 +4722,18 @@
         <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">original_stdout</span>
         <span class="n">rich_traceback</span> <span class="o">=</span> <span class="n">output_captured</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
 
-        <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;*Failure Hook Notification! Step failed!*&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="s2">"*Failure Hook Notification! Step failed!*"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
         <span class="n">message</span> <span class="o">+=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Exception: `(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">rich_traceback</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Exception: `(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">rich_traceback</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="n">alerter</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Specified standard failure hook but no alerter configured in the stack. Skipping..&quot;</span>
+            <span class="s2">"Specified standard failure hook but no alerter configured in the stack. Skipping.."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4778,24 +4778,24 @@
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_success_hook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard success hook that executes after step finishes successfully.</span>
+<span class="w">    </span><span class="sd">"""Standard success hook that executes after step finishes successfully.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">context</span> <span class="o">=</span> <span class="n">get_step_context</span><span class="p">()</span>
     <span class="n">alerter</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">alerter</span>
     <span class="k">if</span> <span class="n">alerter</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;*Success Hook Notification! Step completed successfully*&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="s2">"*Success Hook Notification! Step completed successfully*"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span>
         <span class="p">)</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Pipeline name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Run name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Step name: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"Parameters: `</span><span class="si">{</span><span class="n">context</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">`"</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
         <span class="n">alerter</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Specified standard success hook but no alerter configured in the stack. Skipping..&quot;</span>
+            <span class="s2">"Specified standard success hook but no alerter configured in the stack. Skipping.."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5130,7 +5130,7 @@
     <span class="n">store_return</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">track</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a hook, optionally recording the invocation.</span>
+<span class="w">    </span><span class="sd">"""Run a hook, optionally recording the invocation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        func: The hook function or a source to load it from.</span>
@@ -5146,7 +5146,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The return value of the hook function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">Source</span><span class="p">):</span>
         <span class="n">loaded_func</span> <span class="o">=</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="n">import_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">import_path</span>
@@ -5184,7 +5184,7 @@
                 <span class="p">)</span>
                 <span class="k">raise</span>
             <span class="c1"># Output parsing runs after the hook succeeded, so a parsing error</span>
-            <span class="c1"># does not mark the invocation as FAILED or discard the hook&#39;s</span>
+            <span class="c1"># does not mark the invocation as FAILED or discard the hook's</span>
             <span class="c1"># status.</span>
             <span class="k">if</span> <span class="n">store_return</span><span class="p">:</span>
                 <span class="n">outputs</span> <span class="o">=</span> <span class="n">_parse_hook_outputs</span><span class="p">(</span><span class="n">loaded_func</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
@@ -5205,7 +5205,7 @@
                     <span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="s2">&quot;Failed to record `</span><span class="si">%s</span><span class="s2">` hook invocation: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">"Failed to record `</span><span class="si">%s</span><span class="s2">` hook invocation: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                         <span class="n">hook_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
                         <span class="n">e</span><span class="p">,</span>
                     <span class="p">)</span>
@@ -5333,14 +5333,14 @@ many leading arguments as the hook signature accepts are bound.</p>
     <span class="n">hook_type</span><span class="p">:</span> <span class="n">HookType</span><span class="p">,</span>
     <span class="n">optional_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a configured lifecycle hook, recording it and swallowing errors.</span>
+<span class="w">    </span><span class="sd">"""Run a configured lifecycle hook, recording it and swallowing errors.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        hook_source: The source of the hook function, or None to do nothing.</span>
 <span class="sd">        hook_type: The type of the lifecycle hook.</span>
 <span class="sd">        optional_args: Candidate arguments offered to the hook in order. As</span>
 <span class="sd">            many leading arguments as the hook signature accepts are bound.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">hook_source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span>
 
@@ -5357,7 +5357,7 @@ many leading arguments as the hook signature accepts are bound.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-            <span class="s2">&quot;Failed to run `</span><span class="si">%s</span><span class="s2">` hook from source `</span><span class="si">%s</span><span class="s2">`: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">"Failed to run `</span><span class="si">%s</span><span class="s2">` hook from source `</span><span class="si">%s</span><span class="s2">`: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
             <span class="n">hook_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="n">hook_source</span><span class="p">,</span>
             <span class="n">e</span><span class="p">,</span>
@@ -5506,8 +5506,8 @@ many leading arguments as the hook signature accepts are bound.</p>
 <span class="normal">189</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">setup_hook_logging_context</span><span class="p">(</span>
     <span class="n">hook_type</span><span class="p">:</span> <span class="n">HookType</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LoggingContext&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Setup a logging context that captures a hook&#39;s output.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"LoggingContext"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Setup a logging context that captures a hook's output.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        hook_type: The type of the hook invocation.</span>
@@ -5515,7 +5515,7 @@ many leading arguments as the hook signature accepts are bound.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The logging context.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.execution.pipeline.dynamic.run_context</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">DynamicPipelineRunContext</span><span class="p">,</span>
     <span class="p">)</span>
@@ -5551,7 +5551,7 @@ many leading arguments as the hook signature accepts are bound.</p>
                     <span class="n">block_on_exit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to set up hook logging context: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Failed to set up hook logging context: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5864,7 +5864,7 @@ many leading arguments as the hook signature accepts are bound.</p>
     <span class="n">exception_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExceptionInfo</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">logs_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HookInvocationResponse</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Record a hook invocation for an already-completed event.</span>
+<span class="w">    </span><span class="sd">"""Record a hook invocation for an already-completed event.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Custom event name for the invocation.</span>
@@ -5879,7 +5879,7 @@ many leading arguments as the hook signature accepts are bound.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The recorded hook invocation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">pipeline_run_id</span><span class="p">,</span> <span class="n">step_run_id</span> <span class="o">=</span> <span class="n">_resolve_hook_context</span><span class="p">()</span>
 
     <span class="n">hook_invocation_id</span> <span class="o">=</span> <span class="n">uuid4</span><span class="p">()</span>
@@ -6071,7 +6071,7 @@ many leading arguments as the hook signature accepts are bound.</p>
 <span class="normal">64</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bind_optional_hook_args</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">candidate_args</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Binds as many leading candidate arguments as the signature accepts.</span>
+<span class="w">    </span><span class="sd">"""Binds as many leading candidate arguments as the signature accepts.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        func: The hook function.</span>
@@ -6079,7 +6079,7 @@ many leading arguments as the hook signature accepts are bound.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The leading candidate arguments the signature can accept.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.steps.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_resolved_signature</span>
 
     <span class="n">signature</span> <span class="o">=</span> <span class="n">get_resolved_signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
@@ -6295,11 +6295,11 @@ arguments the signature accepts are bound and validated.</p>
 <span class="normal">114</span>
 <span class="normal">115</span>
 <span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_and_validate_hook</span><span class="p">(</span>
-    <span class="n">hook</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;HookSpecification&quot;</span><span class="p">,</span> <span class="s2">&quot;InitHookSpecification&quot;</span><span class="p">],</span>
+    <span class="n">hook</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">"HookSpecification"</span><span class="p">,</span> <span class="s2">"InitHookSpecification"</span><span class="p">],</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve a hook and validate it can be called with the given arguments.</span>
+<span class="w">    </span><span class="sd">"""Resolve a hook and validate it can be called with the given arguments.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        hook: Hook function or source.</span>
@@ -6313,10 +6313,10 @@ arguments the signature accepts are bound and validated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The hook source and the validated, JSON-safe keyword arguments.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">func</span> <span class="o">=</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">hook</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hook</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Source</span><span class="p">))</span> <span class="k">else</span> <span class="n">hook</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> is not a valid function.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> is not a valid function."</span><span class="p">)</span>
 
     <span class="n">bound_args</span> <span class="o">=</span> <span class="n">bind_optional_hook_args</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
     <span class="c1"># Allow arbitrary types if an exception arg is provided. If validating an</span>
@@ -6329,18 +6329,18 @@ arguments the signature accepts are bound and validated.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="n">ValidationError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">HookValidationException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Failed to validate hook arguments for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;Please observe the following guidelines:</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the success hook takes no arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the failure hook optionally takes a single `BaseException`&quot;</span>
-            <span class="s2">&quot; argument</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the on_start hook takes no arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the on_end hook optionally takes a single `BaseException`&quot;</span>
-            <span class="s2">&quot; argument</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the on_pause hook takes no arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the on_resume hook takes no arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the init hook takes any number of JSON-safe arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="s2">&quot;- the cleanup hook takes no arguments</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Failed to validate hook arguments for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"Please observe the following guidelines:</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the success hook takes no arguments</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the failure hook optionally takes a single `BaseException`"</span>
+            <span class="s2">" argument</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the on_start hook takes no arguments</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the on_end hook optionally takes a single `BaseException`"</span>
+            <span class="s2">" argument</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the on_pause hook takes no arguments</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the on_resume hook takes no arguments</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the init hook takes any number of JSON-safe arguments</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"- the cleanup hook takes no arguments</span><span class="se">\n</span><span class="s2">"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">return</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">func</span><span class="p">),</span> <span class="n">validated_kwargs</span>

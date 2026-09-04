@@ -4252,7 +4252,7 @@
 
 
 <h4 id="zenml.analytics.source_context" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">source_context</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="n">SourceContextTypes</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s1">&#39;Source-Context&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="n">SourceContextTypes</span><span class="o">.</span><span class="n">PYTHON</span><span class="p">))</span></code>
+            <code class="highlight language-python"><span class="n">source_context</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="n">SourceContextTypes</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s1">'Source-Context'</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">SourceContextTypes</span><span class="o">.</span><span class="n">PYTHON</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4466,7 +4466,7 @@
 <span class="normal">60</span>
 <span class="normal">61</span>
 <span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># type: ignore[return]</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias user IDs.</span>
+<span class="w">    </span><span class="sd">"""Alias user IDs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -4474,7 +4474,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False is not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">with</span> <span class="n">AnalyticsContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">analytics</span><span class="p">:</span>
@@ -4591,7 +4591,7 @@
     <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">group_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach metadata to a segment group.</span>
+<span class="w">    </span><span class="sd">"""Attach metadata to a segment group.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        group_id: ID of the group.</span>
@@ -4599,7 +4599,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False if not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">with</span> <span class="n">AnalyticsContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">analytics</span><span class="p">:</span>
@@ -4700,14 +4700,14 @@
 <span class="normal">46</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach metadata to user directly.</span>
+<span class="w">    </span><span class="sd">"""Attach metadata to user directly.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        metadata: Dict of metadata to attach to the user.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False is not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -4833,10 +4833,10 @@ enum member or an arbitrary string for downstream consumers
 <span class="normal">105</span>
 <span class="normal">106</span>
 <span class="normal">107</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
-    <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;Union[AnalyticsEvent, str]&quot;</span><span class="p">,</span>
+    <span class="n">event</span><span class="p">:</span> <span class="s2">"Union[AnalyticsEvent, str]"</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track segment event if user opted-in.</span>
+<span class="w">    </span><span class="sd">"""Track segment event if user opted-in.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event: Name of event to track in segment. Can be an AnalyticsEvent</span>
@@ -4846,13 +4846,13 @@ enum member or an arbitrary string for downstream consumers
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False if not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="n">metadata</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;event_success&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"event_success"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">AnalyticsContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">analytics</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">analytics</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
@@ -4981,12 +4981,12 @@ enum member or an arbitrary string for downstream consumers
 <span class="normal">38</span>
 <span class="normal">39</span>
 <span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the client.</span>
+<span class="w">    </span><span class="sd">"""Initialization of the client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        send: Flag to determine whether to send the message.</span>
 <span class="sd">        timeout: Timeout in seconds.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">send</span> <span class="o">=</span> <span class="n">send</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
 </code></pre></div></td></tr></table></div>
@@ -5108,7 +5108,7 @@ enum member or an arbitrary string for downstream consumers
 <span class="normal">76</span>
 <span class="normal">77</span>
 <span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to alias user IDs.</span>
+<span class="w">    </span><span class="sd">"""Method to alias user IDs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -5116,12 +5116,12 @@ enum member or an arbitrary string for downstream consumers
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple (success flag, the original message).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-        <span class="s2">&quot;previous_id&quot;</span><span class="p">:</span> <span class="n">previous_id</span><span class="p">,</span>
-        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;alias&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+        <span class="s2">"previous_id"</span><span class="p">:</span> <span class="n">previous_id</span><span class="p">,</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"alias"</span><span class="p">,</span>
+        <span class="s2">"debug"</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -5255,7 +5255,7 @@ enum member or an arbitrary string for downstream consumers
 <span class="normal">126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to group users.</span>
+<span class="w">    </span><span class="sd">"""Method to group users.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -5264,13 +5264,13 @@ enum member or an arbitrary string for downstream consumers
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple (success flag, the original message).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-        <span class="s2">&quot;group_id&quot;</span><span class="p">:</span> <span class="n">group_id</span><span class="p">,</span>
-        <span class="s2">&quot;traits&quot;</span><span class="p">:</span> <span class="n">traits</span> <span class="ow">or</span> <span class="p">{},</span>
-        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;group&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+        <span class="s2">"group_id"</span><span class="p">:</span> <span class="n">group_id</span><span class="p">,</span>
+        <span class="s2">"traits"</span><span class="p">:</span> <span class="n">traits</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"group"</span><span class="p">,</span>
+        <span class="s2">"debug"</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -5386,7 +5386,7 @@ enum member or an arbitrary string for downstream consumers
 <span class="normal">60</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to identify a user with given traits.</span>
+<span class="w">    </span><span class="sd">"""Method to identify a user with given traits.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -5394,12 +5394,12 @@ enum member or an arbitrary string for downstream consumers
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple (success flag, the original message).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-        <span class="s2">&quot;traits&quot;</span><span class="p">:</span> <span class="n">traits</span> <span class="ow">or</span> <span class="p">{},</span>
-        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;identify&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+        <span class="s2">"traits"</span><span class="p">:</span> <span class="n">traits</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"identify"</span><span class="p">,</span>
+        <span class="s2">"debug"</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -5538,10 +5538,10 @@ member or an arbitrary string.</p>
 <span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
-    <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;Union[AnalyticsEvent, str]&quot;</span><span class="p">,</span>
+    <span class="n">event</span><span class="p">:</span> <span class="s2">"Union[AnalyticsEvent, str]"</span><span class="p">,</span>
     <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to track events.</span>
+<span class="w">    </span><span class="sd">"""Method to track events.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -5551,13 +5551,13 @@ member or an arbitrary string.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple (success flag, the original message).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">msg</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-        <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="n">event</span><span class="p">,</span>
-        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">properties</span> <span class="ow">or</span> <span class="p">{},</span>
-        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;track&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+        <span class="s2">"event"</span><span class="p">:</span> <span class="n">event</span><span class="p">,</span>
+        <span class="s2">"properties"</span><span class="p">:</span> <span class="n">properties</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"track"</span><span class="p">,</span>
+        <span class="s2">"debug"</span><span class="p">:</span> <span class="n">IS_DEBUG_ENV</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
@@ -5667,12 +5667,12 @@ are handled gracefully.</p>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
+<span class="w">    </span><span class="sd">"""Initialization.</span>
 
 <span class="sd">    Use this as a context manager to ensure that analytics are initialized</span>
 <span class="sd">    properly, only tracked when configured to do so and that any errors</span>
 <span class="sd">    are handled gracefully.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5683,8 +5683,8 @@ are handled gracefully.</p>
     <span class="bp">self</span><span class="o">.</span><span class="n">external_server_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">server_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="bp">self</span><span class="o">.</span><span class="n">database_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ServerDatabaseType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ServerDeploymentType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">database_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ServerDatabaseType"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ServerDeploymentType"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -5850,7 +5850,7 @@ are handled gracefully.</p>
 <span class="normal">217</span>
 <span class="normal">218</span>
 <span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias user IDs.</span>
+<span class="w">    </span><span class="sd">"""Alias user IDs.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: The user ID.</span>
@@ -5858,7 +5858,7 @@ are handled gracefully.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if alias information was sent, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span><span class="p">:</span>
         <span class="n">success</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">default_client</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span>
@@ -5986,7 +5986,7 @@ are handled gracefully.</p>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Group the user.</span>
+<span class="w">    </span><span class="sd">"""Group the user.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        group_id: Group ID.</span>
@@ -5994,7 +5994,7 @@ are handled gracefully.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if tracking information was sent, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">success</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">default_client</span><span class="o">.</span><span class="n">group</span><span class="p">(</span>
@@ -6097,14 +6097,14 @@ are handled gracefully.</p>
 <span class="normal">198</span>
 <span class="normal">199</span>
 <span class="normal">200</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Identify the user through segment.</span>
+<span class="w">    </span><span class="sd">"""Identify the user through segment.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        traits: Traits of the user.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if tracking information was sent, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics_opt_in</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">success</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">default_client</span><span class="o">.</span><span class="n">identify</span><span class="p">(</span>
@@ -6300,10 +6300,10 @@ define their own event names.</p>
 <span class="normal">335</span>
 <span class="normal">336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;Union[AnalyticsEvent, str]&quot;</span><span class="p">,</span>
+    <span class="n">event</span><span class="p">:</span> <span class="s2">"Union[AnalyticsEvent, str]"</span><span class="p">,</span>
     <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track an event.</span>
+<span class="w">    </span><span class="sd">"""Track an event.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event: Event to track. Can be an AnalyticsEvent enum member</span>
@@ -6313,7 +6313,7 @@ define their own event names.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if tracking information was sent, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
     <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -6337,15 +6337,15 @@ define their own event names.</p>
     <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">Environment</span><span class="o">.</span><span class="n">get_system_info</span><span class="p">())</span>
     <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
         <span class="p">{</span>
-            <span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="n">get_environment</span><span class="p">(),</span>
-            <span class="s2">&quot;python_version&quot;</span><span class="p">:</span> <span class="n">Environment</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span>
-            <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
-            <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">),</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span>
-            <span class="s2">&quot;server_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_id</span><span class="p">),</span>
-            <span class="s2">&quot;deployment_type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">),</span>
-            <span class="s2">&quot;database_type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">database_type</span><span class="p">),</span>
-            <span class="s2">&quot;executed_by_service_account&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed_by_service_account</span><span class="p">,</span>
+            <span class="s2">"environment"</span><span class="p">:</span> <span class="n">get_environment</span><span class="p">(),</span>
+            <span class="s2">"python_version"</span><span class="p">:</span> <span class="n">Environment</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span>
+            <span class="s2">"version"</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+            <span class="s2">"client_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">),</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span>
+            <span class="s2">"server_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_id</span><span class="p">),</span>
+            <span class="s2">"deployment_type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">),</span>
+            <span class="s2">"database_type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">database_type</span><span class="p">),</span>
+            <span class="s2">"executed_by_service_account"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed_by_service_account</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
@@ -6353,26 +6353,26 @@ define their own event names.</p>
         <span class="c1"># Timezone as tzdata</span>
         <span class="n">tz</span> <span class="o">=</span> <span class="n">utc_now_tz_aware</span><span class="p">()</span><span class="o">.</span><span class="n">astimezone</span><span class="p">()</span><span class="o">.</span><span class="n">tzname</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">tz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;timezone&quot;</span><span class="p">:</span> <span class="n">tz</span><span class="p">})</span>
+            <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"timezone"</span><span class="p">:</span> <span class="n">tz</span><span class="p">})</span>
 
-        <span class="c1"># Language code such as &quot;en_DE&quot;</span>
+        <span class="c1"># Language code such as "en_DE"</span>
         <span class="n">language_code</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="n">locale</span><span class="o">.</span><span class="n">getlocale</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">language_code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;locale&quot;</span><span class="p">:</span> <span class="n">language_code</span><span class="p">})</span>
+            <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"locale"</span><span class="p">:</span> <span class="n">language_code</span><span class="p">})</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="k">pass</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_user_id</span><span class="p">:</span>
-        <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;external_user_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_user_id</span>
+        <span class="n">properties</span><span class="p">[</span><span class="s2">"external_user_id"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_user_id</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_server_id</span><span class="p">:</span>
-        <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;external_server_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_server_id</span>
+        <span class="n">properties</span><span class="p">[</span><span class="s2">"external_server_id"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">external_server_id</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">server_metadata</span><span class="p">:</span>
         <span class="n">properties</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_metadata</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_id</span><span class="p">:</span>
-        <span class="n">properties</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;project_id&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">project_id</span><span class="p">))</span>
+        <span class="n">properties</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"project_id"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">project_id</span><span class="p">))</span>
 
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">UUID</span><span class="p">):</span>
@@ -6385,8 +6385,8 @@ define their own event names.</p>
     <span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Sending analytics: User: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">, Event: </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">, &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Metadata: </span><span class="si">{</span><span class="n">properties</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"Sending analytics: User: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">, Event: </span><span class="si">{</span><span class="n">event</span><span class="si">}</span><span class="s2">, "</span>
+        <span class="sa">f</span><span class="s2">"Metadata: </span><span class="si">{</span><span class="n">properties</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">success</span>
@@ -6630,11 +6630,11 @@ tracking metadata.</p>
 <span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the analytics metadata for the model.</span>
+<span class="w">    </span><span class="sd">"""Get the analytics metadata for the model.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dict of analytics metadata.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ANALYTICS_FIELDS</span><span class="p">:</span>
         <span class="n">metadata</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -6839,7 +6839,7 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 <span class="normal">60</span>
 <span class="normal">61</span>
 <span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a batch of messages to the ZenML analytics server.</span>
+<span class="w">    </span><span class="sd">"""Post a batch of messages to the ZenML analytics server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        batch: The messages to send.</span>
@@ -6850,23 +6850,23 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 
 <span class="sd">    Raises:</span>
 <span class="sd">        AnalyticsAPIError: If the post request has failed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_context</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;content-type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="s2">"accept"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">,</span>
+        <span class="s2">"content-type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">,</span>
         <span class="n">source_context</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">source_context</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="n">url</span><span class="o">=</span><span class="n">ANALYTICS_SERVER_URL</span> <span class="o">+</span> <span class="s2">&quot;/batch&quot;</span><span class="p">,</span>
+        <span class="n">url</span><span class="o">=</span><span class="n">ANALYTICS_SERVER_URL</span> <span class="o">+</span> <span class="s2">"/batch"</span><span class="p">,</span>
         <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
-        <span class="n">data</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;data uploaded successfully&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"data uploaded successfully"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">response</span>
 
     <span class="k">raise</span> <span class="n">AnalyticsAPIError</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
@@ -7002,12 +7002,12 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
+<span class="w">    </span><span class="sd">"""Initialization.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        status: The status code of the response.</span>
 <span class="sd">        message: The text of the response.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
 </code></pre></div></td></tr></table></div>
@@ -7164,14 +7164,14 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The default method to handle UUID and &#39;AnalyticsEvent&#39; objects.</span>
+<span class="w">    </span><span class="sd">"""The default method to handle UUID and 'AnalyticsEvent' objects.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        obj: The object to encode.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The encoded object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
     <span class="c1"># If the object is UUID, we simply return the value of UUID</span>
@@ -7227,7 +7227,7 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
                     <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">103</span>
 <span class="normal">104</span>
 <span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the context manager.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialization of the context manager."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">original_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -7345,16 +7345,16 @@ AnalyticsEvent enum member or an arbitrary string.</p>
 <span class="normal">225</span>
 <span class="normal">226</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;Union[AnalyticsEvent, str]&quot;</span><span class="p">,</span>
+    <span class="n">event</span><span class="p">:</span> <span class="s2">"Union[AnalyticsEvent, str]"</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the context manager.</span>
+<span class="w">    </span><span class="sd">"""Initialization of the context manager.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event: The type of the analytics event. Can be an</span>
 <span class="sd">            AnalyticsEvent enum member or an arbitrary string.</span>
 <span class="sd">        metadata: The metadata of the event.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AnalyticsEvent</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}</span>
 </code></pre></div></td></tr></table></div>
@@ -7478,21 +7478,21 @@ AnalyticsEvent enum member or an arbitrary string.</p>
 <span class="normal">95</span>
 <span class="normal">96</span>
 <span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">email_opt_int</span><span class="p">(</span><span class="n">opted_in</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track the event of the users response to the email prompt, identify them.</span>
+<span class="w">    </span><span class="sd">"""Track the event of the users response to the email prompt, identify them.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        opted_in: Did the user decide to opt-in</span>
 <span class="sd">        email: The email the user optionally provided</span>
-<span class="sd">        source: Location when the user replied [&quot;zenml go&quot;, &quot;zenml server&quot;]</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        source: Location when the user replied ["zenml go", "zenml server"]</span>
+<span class="sd">    """</span>
     <span class="c1"># If the user opted in, associate email with the anonymous distinct ID</span>
-    <span class="k">if</span> <span class="n">opted_in</span> <span class="ow">and</span> <span class="n">email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">email</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-        <span class="n">identify</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">})</span>
+    <span class="k">if</span> <span class="n">opted_in</span> <span class="ow">and</span> <span class="n">email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">email</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+        <span class="n">identify</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">})</span>
 
     <span class="c1"># Track that the user answered the prompt</span>
     <span class="n">track</span><span class="p">(</span>
         <span class="n">AnalyticsEvent</span><span class="o">.</span><span class="n">OPT_IN_OUT_EMAIL</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;opted_in&quot;</span><span class="p">:</span> <span class="n">opted_in</span><span class="p">,</span> <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"opted_in"</span><span class="p">:</span> <span class="n">opted_in</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">},</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7546,11 +7546,11 @@ AnalyticsEvent enum member or an arbitrary string.</p>
 <span class="normal">135</span>
 <span class="normal">136</span>
 <span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_analytics_disabled_internally</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether analytics are disabled by an internal helper function.</span>
+<span class="w">    </span><span class="sd">"""Whether analytics are disabled by an internal helper function.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether analytics are disabled by an internal helper function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_INTERNAL_DISABLE_ANALYTICS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7704,8 +7704,8 @@ define their own event names.</p>
 <span class="normal">204</span>
 <span class="normal">205</span>
 <span class="normal">206</span>
-<span class="normal">207</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track_decorator</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="s2">&quot;Union[AnalyticsEvent, str]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator to track event.</span>
+<span class="normal">207</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track_decorator</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="s2">"Union[AnalyticsEvent, str]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Decorator to track event.</span>
 
 <span class="sd">    If the decorated function takes in a `AnalyticsTrackedModelMixin` object as</span>
 <span class="sd">    an argument or returns one, it will be called to track the event. The return</span>
@@ -7723,21 +7723,21 @@ define their own event names.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A decorator that applies the analytics tracking to a function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
+<span class="w">        </span><span class="sd">"""Inner decorator function.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            func: Function to decorate.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Decorated function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Inner function.</span>
+<span class="w">            </span><span class="sd">"""Inner function.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                *args: Arguments to be passed to the function.</span>
@@ -7745,7 +7745,7 @@ define their own event names.</p>
 
 <span class="sd">            Returns:</span>
 <span class="sd">                Result of the function.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
+<span class="sd">            """</span>
             <span class="k">with</span> <span class="n">track_handler</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span> <span class="k">as</span> <span class="n">handler</span><span class="p">:</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
@@ -7755,7 +7755,7 @@ define their own event names.</p>
                             <span class="p">)</span>
                             <span class="k">break</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analytics tracking failure for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Analytics tracking failure for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
                 <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -7765,7 +7765,7 @@ define their own event names.</p>
                             <span class="n">result</span><span class="o">.</span><span class="n">get_analytics_metadata</span><span class="p">()</span>
                         <span class="p">)</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analytics tracking failure for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Analytics tracking failure for </span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
                 <span class="k">return</span> <span class="n">result</span>
 

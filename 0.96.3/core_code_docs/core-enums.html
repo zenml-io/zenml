@@ -5790,15 +5790,15 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">79</span>
 <span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">described_values</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper - returns a list of dictionaries describing the enum values.</span>
+<span class="w">    </span><span class="sd">"""Helper - returns a list of dictionaries describing the enum values.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dictionary objects with descriptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">idx</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">value_description_index</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="p">[</span>
-        <span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">value</span><span class="p">)}</span>
+        <span class="p">{</span><span class="s2">"value"</span><span class="p">:</span> <span class="n">value</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="n">idx</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">value</span><span class="p">)}</span>
         <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -5862,11 +5862,11 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">value_description_index</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper utility to describe enum values.</span>
+<span class="w">    </span><span class="sd">"""Helper utility to describe enum values.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An dictionary with descriptions for each enum value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6880,14 +6880,14 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">725</span>
 <span class="normal">726</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">value_description_index</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper utility to describe enum values.</span>
+<span class="w">    </span><span class="sd">"""Helper utility to describe enum values.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An dictionary with descriptions for each enum value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_COMPLETED</span><span class="p">:</span> <span class="s2">&quot;A pipeline run of the source pipeline has completed successfully.&quot;</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_FAILED</span><span class="p">:</span> <span class="s2">&quot;A pipeline run of the source pipeline has failed.&quot;</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_COMPLETED</span><span class="p">:</span> <span class="s2">"A pipeline run of the source pipeline has completed successfully."</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_FAILED</span><span class="p">:</span> <span class="s2">"A pipeline run of the source pipeline has failed."</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6998,14 +6998,14 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">744</span>
 <span class="normal">745</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">value_description_index</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper utility to describe enum values.</span>
+<span class="w">    </span><span class="sd">"""Helper utility to describe enum values.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An dictionary with descriptions for each enum value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">:</span> <span class="s2">&quot;Source pipeline run completed successfully.&quot;</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span> <span class="s2">&quot;Source pipeline run failed.&quot;</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">:</span> <span class="s2">"Source pipeline run completed successfully."</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span> <span class="s2">"Source pipeline run failed."</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7164,14 +7164,14 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">763</span>
 <span class="normal">764</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">value_description_index</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper utility to describe enum values.</span>
+<span class="w">    </span><span class="sd">"""Helper utility to describe enum values.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary with descriptions for each value.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_COMPLETED</span><span class="p">:</span> <span class="s2">&quot;A pipeline run of the source snapshot has completed successfully.&quot;</span><span class="p">,</span>
-        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_FAILED</span><span class="p">:</span> <span class="s2">&quot;A pipeline run of the source snapshot has failed.&quot;</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_COMPLETED</span><span class="p">:</span> <span class="s2">"A pipeline run of the source snapshot has completed successfully."</span><span class="p">,</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">RUN_FAILED</span><span class="p">:</span> <span class="s2">"A pipeline run of the source snapshot has failed."</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8329,11 +8329,11 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">38</span>
 <span class="normal">39</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all enum names as a list of strings.</span>
+<span class="w">    </span><span class="sd">"""Get all enum names as a list of strings.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all enum names.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8393,11 +8393,11 @@ order is used to sort the commands in the CLI help output.</p>
 <span class="normal">47</span>
 <span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">values</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all enum values as a list of strings.</span>
+<span class="w">    </span><span class="sd">"""Get all enum values as a list of strings.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all enum values.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>

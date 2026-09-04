@@ -3971,19 +3971,19 @@ the ZenML stack.</p>
 <span class="normal">52</span>
 <span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
+<span class="w">        </span><span class="sd">"""Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
 <span class="sd">        the ZenML stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A MarkDown description of the ZenML Cloud Stack Deployment.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">Provision and register a basic AWS ZenML stack authenticated and connected to</span>
 <span class="s2">all the necessary cloud infrastructure resources required to run pipelines in</span>
 <span class="s2">AWS.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4141,7 +4141,7 @@ script etc.).</li>
 <span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        The configuration should include:</span>
 
@@ -4161,66 +4161,66 @@ script etc.).</li>
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration or script to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">stackName</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="p">,</span>
-            <span class="n">templateURL</span><span class="o">=</span><span class="s2">&quot;https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml&quot;</span><span class="p">,</span>
-            <span class="n">param_ResourceName</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="n">random_str</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">templateURL</span><span class="o">=</span><span class="s2">"https://zenml-cf-templates.s3.eu-central-1.amazonaws.com/aws-ecr-s3-sagemaker.yaml"</span><span class="p">,</span>
+            <span class="n">param_ResourceName</span><span class="o">=</span><span class="sa">f</span><span class="s2">"zenml-</span><span class="si">{</span><span class="n">random_str</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="n">param_ZenMLServerURL</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="p">,</span>
             <span class="n">param_ZenMLServerAPIToken</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="p">,</span>
-            <span class="n">param_CodeBuild</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="n">param_CodeBuild</span><span class="o">=</span><span class="s2">"true"</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Encode the parameters as URL query parameters</span>
-        <span class="n">query_params</span> <span class="o">=</span> <span class="s2">&quot;&amp;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="n">query_params</span> <span class="o">=</span> <span class="s2">"&amp;"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
 
-        <span class="n">region</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">:</span>
-            <span class="n">region</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;region=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"region=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="n">url</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;https://console.aws.amazon.com/cloudformation/home?&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2">#/stacks/create/review?</span><span class="si">{</span><span class="n">query_params</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"https://console.aws.amazon.com/cloudformation/home?"</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2">#/stacks/create/review?</span><span class="si">{</span><span class="n">query_params</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
         <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span> <span class="o">==</span> <span class="n">STACK_DEPLOYMENT_TERRAFORM</span><span class="p">:</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;terraform </span><span class="se">{{</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""terraform </span><span class="se">{{</span>
 <span class="s2">    required_providers </span><span class="se">{{</span>
 <span class="s2">        aws = </span><span class="se">{{</span>
-<span class="s2">            source  = &quot;hashicorp/aws&quot;</span>
+<span class="s2">            source  = "hashicorp/aws"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">        zenml = </span><span class="se">{{</span>
-<span class="s2">            source = &quot;zenml-io/zenml&quot;</span>
-<span class="s2">            version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">            source = "zenml-io/zenml"</span>
+<span class="s2">            version = "</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">    </span><span class="se">}}</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;aws&quot; </span><span class="se">{{</span>
-<span class="s2">    region = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;eu-central-1&quot;</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">provider "aws" </span><span class="se">{{</span>
+<span class="s2">    region = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"eu-central-1"</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;zenml&quot; </span><span class="se">{{</span>
-<span class="s2">    server_url = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    api_token = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">provider "zenml" </span><span class="se">{{</span>
+<span class="s2">    server_url = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    api_token = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
 
-<span class="s2">module &quot;zenml_stack&quot; </span><span class="se">{{</span>
-<span class="s2">    source  = &quot;zenml-io/zenml-stack/aws&quot;</span>
-<span class="s2">    version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_AWS_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    zenml_stack_name = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    zenml_stack_deployment = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">module "zenml_stack" </span><span class="se">{{</span>
+<span class="s2">    source  = "zenml-io/zenml-stack/aws"</span>
+<span class="s2">    version = "</span><span class="si">{</span><span class="n">TERRAFORM_AWS_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    zenml_stack_name = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    zenml_stack_deployment = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_id&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_id" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_id</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_name&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_name" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_name</span>
-<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="se">}}</span><span class="s2">"""</span>
 
         <span class="k">return</span> <span class="n">StackDeploymentConfig</span><span class="p">(</span>
             <span class="n">deployment_url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
-            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">&quot;AWS CloudFormation Console&quot;</span><span class="p">,</span>
+            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">"AWS CloudFormation Console"</span><span class="p">,</span>
             <span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4333,7 +4333,7 @@ stack.</p>
 <span class="normal">101</span>
 <span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
 <span class="sd">        stack.</span>
@@ -4341,9 +4341,9 @@ stack.</p>
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on how to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">You will be redirected to the AWS console in your browser where you&#39;ll be asked</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
+<span class="s2">You will be redirected to the AWS console in your browser where you'll be asked</span>
 <span class="s2">to log into your AWS account and create a CloudFormation ZenML stack. The stack</span>
 <span class="s2">parameters will be pre-filled with the necessary information to connect ZenML to</span>
 <span class="s2">your AWS account, so you should only need to review and confirm the stack.</span>
@@ -4378,7 +4378,7 @@ stack.</p>
 <span class="s2">💡 **After the CloudFormation stack is deployed, you can return to the CLI to</span>
 <span class="s2">view details about the associated ZenML stack automatically registered with</span>
 <span class="s2">ZenML.**</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4451,15 +4451,15 @@ stack.</p>
 <span class="normal">131</span>
 <span class="normal">132</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
+<span class="w">    </span><span class="sd">"""Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of ZenML integrations that need to be installed for the</span>
 <span class="sd">        stack to be usable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span>
-        <span class="s2">&quot;aws&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+        <span class="s2">"aws"</span><span class="p">,</span>
+        <span class="s2">"s3"</span><span class="p">,</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4564,46 +4564,46 @@ stack.</p>
 <span class="normal">238</span>
 <span class="normal">239</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
+<span class="w">    </span><span class="sd">"""Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions where the ZenML stack can be deployed as a map of region</span>
 <span class="sd">        names to region descriptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Return a list of all possible AWS regions</span>
 
     <span class="c1"># Based on the AWS regions listed at</span>
     <span class="c1"># https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;Africa (Cape Town)&quot;</span><span class="p">:</span> <span class="s2">&quot;af-south-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Hong Kong)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-east-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Hyderabad)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-south-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Jakarta)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-southeast-3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Melbourne)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-southeast-4&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Mumbai)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-south-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Osaka)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-northeast-3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Seoul)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-northeast-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Singapore)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-southeast-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Sydney)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-southeast-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Tokyo)&quot;</span><span class="p">:</span> <span class="s2">&quot;ap-northeast-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Canada (Central)&quot;</span><span class="p">:</span> <span class="s2">&quot;ca-central-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Canada West (Calgary)&quot;</span><span class="p">:</span> <span class="s2">&quot;ca-west-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Frankfurt)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-central-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Ireland)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-west-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (London)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-west-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Milan)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-south-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Paris)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-west-3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Spain)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-south-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Stockholm)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-north-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Zurich)&quot;</span><span class="p">:</span> <span class="s2">&quot;eu-central-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Israel (Tel Aviv)&quot;</span><span class="p">:</span> <span class="s2">&quot;il-central-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Middle East (Bahrain)&quot;</span><span class="p">:</span> <span class="s2">&quot;me-south-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Middle East (UAE)&quot;</span><span class="p">:</span> <span class="s2">&quot;me-central-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;South America (São Paulo)&quot;</span><span class="p">:</span> <span class="s2">&quot;sa-east-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US East (Ohio)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east-2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US East (N. Virginia)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (N. California)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west-1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (Oregon)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west-2&quot;</span><span class="p">,</span>
+        <span class="s2">"Africa (Cape Town)"</span><span class="p">:</span> <span class="s2">"af-south-1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Hong Kong)"</span><span class="p">:</span> <span class="s2">"ap-east-1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Hyderabad)"</span><span class="p">:</span> <span class="s2">"ap-south-2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Jakarta)"</span><span class="p">:</span> <span class="s2">"ap-southeast-3"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Melbourne)"</span><span class="p">:</span> <span class="s2">"ap-southeast-4"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Mumbai)"</span><span class="p">:</span> <span class="s2">"ap-south-1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Osaka)"</span><span class="p">:</span> <span class="s2">"ap-northeast-3"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Seoul)"</span><span class="p">:</span> <span class="s2">"ap-northeast-2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Singapore)"</span><span class="p">:</span> <span class="s2">"ap-southeast-1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Sydney)"</span><span class="p">:</span> <span class="s2">"ap-southeast-2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Tokyo)"</span><span class="p">:</span> <span class="s2">"ap-northeast-1"</span><span class="p">,</span>
+        <span class="s2">"Canada (Central)"</span><span class="p">:</span> <span class="s2">"ca-central-1"</span><span class="p">,</span>
+        <span class="s2">"Canada West (Calgary)"</span><span class="p">:</span> <span class="s2">"ca-west-1"</span><span class="p">,</span>
+        <span class="s2">"Europe (Frankfurt)"</span><span class="p">:</span> <span class="s2">"eu-central-1"</span><span class="p">,</span>
+        <span class="s2">"Europe (Ireland)"</span><span class="p">:</span> <span class="s2">"eu-west-1"</span><span class="p">,</span>
+        <span class="s2">"Europe (London)"</span><span class="p">:</span> <span class="s2">"eu-west-2"</span><span class="p">,</span>
+        <span class="s2">"Europe (Milan)"</span><span class="p">:</span> <span class="s2">"eu-south-1"</span><span class="p">,</span>
+        <span class="s2">"Europe (Paris)"</span><span class="p">:</span> <span class="s2">"eu-west-3"</span><span class="p">,</span>
+        <span class="s2">"Europe (Spain)"</span><span class="p">:</span> <span class="s2">"eu-south-2"</span><span class="p">,</span>
+        <span class="s2">"Europe (Stockholm)"</span><span class="p">:</span> <span class="s2">"eu-north-1"</span><span class="p">,</span>
+        <span class="s2">"Europe (Zurich)"</span><span class="p">:</span> <span class="s2">"eu-central-2"</span><span class="p">,</span>
+        <span class="s2">"Israel (Tel Aviv)"</span><span class="p">:</span> <span class="s2">"il-central-1"</span><span class="p">,</span>
+        <span class="s2">"Middle East (Bahrain)"</span><span class="p">:</span> <span class="s2">"me-south-1"</span><span class="p">,</span>
+        <span class="s2">"Middle East (UAE)"</span><span class="p">:</span> <span class="s2">"me-central-1"</span><span class="p">,</span>
+        <span class="s2">"South America (São Paulo)"</span><span class="p">:</span> <span class="s2">"sa-east-1"</span><span class="p">,</span>
+        <span class="s2">"US East (Ohio)"</span><span class="p">:</span> <span class="s2">"us-east-2"</span><span class="p">,</span>
+        <span class="s2">"US East (N. Virginia)"</span><span class="p">:</span> <span class="s2">"us-east-1"</span><span class="p">,</span>
+        <span class="s2">"US West (N. California)"</span><span class="p">:</span> <span class="s2">"us-west-1"</span><span class="p">,</span>
+        <span class="s2">"US West (Oregon)"</span><span class="p">:</span> <span class="s2">"us-west-2"</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4727,64 +4727,64 @@ stack.</p>
 <span class="normal">194</span>
 <span class="normal">195</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
+<span class="w">    </span><span class="sd">"""Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The permissions granted to ZenML to access the cloud resources, as</span>
 <span class="sd">        a dictionary grouping permissions by resource.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;S3 Bucket&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;s3:ListBucket&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:GetObject&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:PutObject&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:DeleteObject&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:GetBucketVersioning&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:ListBucketVersions&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:DeleteObjectVersion&quot;</span><span class="p">,</span>
+        <span class="s2">"S3 Bucket"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"s3:ListBucket"</span><span class="p">,</span>
+            <span class="s2">"s3:GetObject"</span><span class="p">,</span>
+            <span class="s2">"s3:PutObject"</span><span class="p">,</span>
+            <span class="s2">"s3:DeleteObject"</span><span class="p">,</span>
+            <span class="s2">"s3:GetBucketVersioning"</span><span class="p">,</span>
+            <span class="s2">"s3:ListBucketVersions"</span><span class="p">,</span>
+            <span class="s2">"s3:DeleteObjectVersion"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;ECR Repository&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;ecr:DescribeRepositories&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:ListRepositories&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:DescribeRegistry&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:BatchGetImage&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:DescribeImages&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:BatchCheckLayerAvailability&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:GetDownloadUrlForLayer&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:InitiateLayerUpload&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:UploadLayerPart&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:CompleteLayerUpload&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:PutImage&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:GetAuthorizationToken&quot;</span><span class="p">,</span>
+        <span class="s2">"ECR Repository"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"ecr:DescribeRepositories"</span><span class="p">,</span>
+            <span class="s2">"ecr:ListRepositories"</span><span class="p">,</span>
+            <span class="s2">"ecr:DescribeRegistry"</span><span class="p">,</span>
+            <span class="s2">"ecr:BatchGetImage"</span><span class="p">,</span>
+            <span class="s2">"ecr:DescribeImages"</span><span class="p">,</span>
+            <span class="s2">"ecr:BatchCheckLayerAvailability"</span><span class="p">,</span>
+            <span class="s2">"ecr:GetDownloadUrlForLayer"</span><span class="p">,</span>
+            <span class="s2">"ecr:InitiateLayerUpload"</span><span class="p">,</span>
+            <span class="s2">"ecr:UploadLayerPart"</span><span class="p">,</span>
+            <span class="s2">"ecr:CompleteLayerUpload"</span><span class="p">,</span>
+            <span class="s2">"ecr:PutImage"</span><span class="p">,</span>
+            <span class="s2">"ecr:GetAuthorizationToken"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;CloudBuild (Client)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;codebuild:CreateProject&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;codebuild:BatchGetBuilds&quot;</span><span class="p">,</span>
+        <span class="s2">"CloudBuild (Client)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"codebuild:CreateProject"</span><span class="p">,</span>
+            <span class="s2">"codebuild:BatchGetBuilds"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;CloudBuild (Service)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;s3:GetObject&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;s3:GetObjectVersion&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;logs:CreateLogGroup&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;logs:CreateLogStream&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;logs:PutLogEvents&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:BatchGetImage&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:DescribeImages&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:BatchCheckLayerAvailability&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:GetDownloadUrlForLayer&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:InitiateLayerUpload&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:UploadLayerPart&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:CompleteLayerUpload&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:PutImage&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ecr:GetAuthorizationToken&quot;</span><span class="p">,</span>
+        <span class="s2">"CloudBuild (Service)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"s3:GetObject"</span><span class="p">,</span>
+            <span class="s2">"s3:GetObjectVersion"</span><span class="p">,</span>
+            <span class="s2">"logs:CreateLogGroup"</span><span class="p">,</span>
+            <span class="s2">"logs:CreateLogStream"</span><span class="p">,</span>
+            <span class="s2">"logs:PutLogEvents"</span><span class="p">,</span>
+            <span class="s2">"ecr:BatchGetImage"</span><span class="p">,</span>
+            <span class="s2">"ecr:DescribeImages"</span><span class="p">,</span>
+            <span class="s2">"ecr:BatchCheckLayerAvailability"</span><span class="p">,</span>
+            <span class="s2">"ecr:GetDownloadUrlForLayer"</span><span class="p">,</span>
+            <span class="s2">"ecr:InitiateLayerUpload"</span><span class="p">,</span>
+            <span class="s2">"ecr:UploadLayerPart"</span><span class="p">,</span>
+            <span class="s2">"ecr:CompleteLayerUpload"</span><span class="p">,</span>
+            <span class="s2">"ecr:PutImage"</span><span class="p">,</span>
+            <span class="s2">"ecr:GetAuthorizationToken"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;SageMaker (Client)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;sagemaker:CreatePipeline&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;sagemaker:StartPipelineExecution&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;sagemaker:DescribePipeline&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;sagemaker:DescribePipelineExecution&quot;</span><span class="p">,</span>
+        <span class="s2">"SageMaker (Client)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"sagemaker:CreatePipeline"</span><span class="p">,</span>
+            <span class="s2">"sagemaker:StartPipelineExecution"</span><span class="p">,</span>
+            <span class="s2">"sagemaker:DescribePipeline"</span><span class="p">,</span>
+            <span class="s2">"sagemaker:DescribePipelineExecution"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;SageMaker (Jobs)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;AmazonSageMakerFullAccess&quot;</span><span class="p">,</span>
+        <span class="s2">"SageMaker (Jobs)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"AmazonSageMakerFullAccess"</span><span class="p">,</span>
         <span class="p">],</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
@@ -4864,20 +4864,20 @@ stack.</p>
 <span class="normal">118</span>
 <span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on what to do after the deployment is</span>
 <span class="sd">            complete.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">The ZenML stack has been successfully deployed and registered. You can delete</span>
-<span class="s2">the CloudFormation at any time to revoke ZenML&#39;s access to your AWS account and</span>
+<span class="s2">the CloudFormation at any time to revoke ZenML's access to your AWS account and</span>
 <span class="s2">to clean up the resources created by the stack by using the AWS CloudFormation</span>
 <span class="s2">console.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5035,19 +5035,19 @@ the ZenML stack.</p>
 <span class="normal">49</span>
 <span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
+<span class="w">        </span><span class="sd">"""Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
 <span class="sd">        the ZenML stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A MarkDown description of the ZenML Cloud Stack Deployment.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">Provision and register a basic Azure ZenML stack authenticated and connected to</span>
 <span class="s2">all the necessary cloud infrastructure resources required to run pipelines in</span>
 <span class="s2">Azure.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5198,7 +5198,7 @@ script etc.).</li>
 <span class="normal">321</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        The configuration should include:</span>
 
@@ -5217,23 +5217,23 @@ script etc.).</li>
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration or script to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;terraform </span><span class="se">{{</span>
+<span class="sd">        """</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""terraform </span><span class="se">{{</span>
 <span class="s2">    required_providers </span><span class="se">{{</span>
 <span class="s2">        azurerm = </span><span class="se">{{</span>
-<span class="s2">            source  = &quot;hashicorp/azurerm&quot;</span>
+<span class="s2">            source  = "hashicorp/azurerm"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">        azuread = </span><span class="se">{{</span>
-<span class="s2">            source  = &quot;hashicorp/azuread&quot;</span>
+<span class="s2">            source  = "hashicorp/azuread"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">        zenml = </span><span class="se">{{</span>
-<span class="s2">            source = &quot;zenml-io/zenml&quot;</span>
-<span class="s2">            version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">            source = "zenml-io/zenml"</span>
+<span class="s2">            version = "</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">    </span><span class="se">}}</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;azurerm&quot; </span><span class="se">{{</span>
+<span class="s2">provider "azurerm" </span><span class="se">{{</span>
 <span class="s2">    features </span><span class="se">{{</span>
 <span class="s2">        resource_group </span><span class="se">{{</span>
 <span class="s2">            prevent_deletion_if_contains_resources = false</span>
@@ -5241,36 +5241,36 @@ script etc.).</li>
 <span class="s2">    </span><span class="se">}}</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;zenml&quot; </span><span class="se">{{</span>
-<span class="s2">    server_url = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    api_token = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">provider "zenml" </span><span class="se">{{</span>
+<span class="s2">    server_url = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    api_token = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
 
-<span class="s2">module &quot;zenml_stack&quot; </span><span class="se">{{</span>
-<span class="s2">    source  = &quot;zenml-io/zenml-stack/azure&quot;</span>
-<span class="s2">    version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_AZURE_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">module "zenml_stack" </span><span class="se">{{</span>
+<span class="s2">    source  = "zenml-io/zenml-stack/azure"</span>
+<span class="s2">    version = "</span><span class="si">{</span><span class="n">TERRAFORM_AZURE_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
 
-<span class="s2">    location = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;eastus&quot;</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    zenml_stack_name = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    zenml_stack_deployment = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">    location = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"eastus"</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    zenml_stack_name = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    zenml_stack_deployment = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_id&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_id" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_id</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_name&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_name" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_name</span>
-<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span>
-        <span class="n">instructions</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="se">}}</span><span class="s2">"""</span>
+        <span class="n">instructions</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">1. The Azure Cloud Shell console will open in your browser.</span>
 <span class="s2">2. Create a file named `main.tf` in the Cloud Shell and copy and paste the</span>
 <span class="s2">Terraform configuration below into it.</span>
 <span class="s2">3. Run `terraform init --upgrade` to initialize the Terraform configuration.</span>
 <span class="s2">4. Run `terraform apply` to deploy the ZenML stack to Azure.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
         <span class="k">return</span> <span class="n">StackDeploymentConfig</span><span class="p">(</span>
-            <span class="n">deployment_url</span><span class="o">=</span><span class="s2">&quot;https://shell.azure.com&quot;</span><span class="p">,</span>
-            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">&quot;Azure Cloud Shell Console&quot;</span><span class="p">,</span>
+            <span class="n">deployment_url</span><span class="o">=</span><span class="s2">"https://shell.azure.com"</span><span class="p">,</span>
+            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">"Azure Cloud Shell Console"</span><span class="p">,</span>
             <span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
             <span class="n">instructions</span><span class="o">=</span><span class="n">instructions</span><span class="p">,</span>
         <span class="p">)</span>
@@ -5387,7 +5387,7 @@ stack.</p>
 <span class="normal">101</span>
 <span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
 <span class="sd">        stack.</span>
@@ -5395,10 +5395,10 @@ stack.</p>
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on how to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">You will be redirected to an Azure Cloud Shell console in your browser where</span>
-<span class="s2">you&#39;ll be asked to log into your Azure project and then use</span>
+<span class="s2">you'll be asked to log into your Azure project and then use</span>
 <span class="s2">[the Azure ZenML Stack Terraform module](https://registry.terraform.io/modules/zenml-io/zenml-stack/azure)</span>
 <span class="s2">to provision the necessary cloud resources for ZenML.</span>
 
@@ -5435,7 +5435,7 @@ stack.</p>
 <span class="s2">💡 **After the Terraform deployment is complete, you can close the Cloud</span>
 <span class="s2">Shell session and return to the CLI to view details about the associated ZenML</span>
 <span class="s2">stack automatically registered with ZenML.**</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5505,13 +5505,13 @@ stack.</p>
 <span class="normal">127</span>
 <span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
+<span class="w">    </span><span class="sd">"""Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of ZenML integrations that need to be installed for the</span>
 <span class="sd">        stack to be usable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;azure&quot;</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s2">"azure"</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5647,78 +5647,78 @@ stack.</p>
 <span class="normal">226</span>
 <span class="normal">227</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
+<span class="w">    </span><span class="sd">"""Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions where the ZenML stack can be deployed as a map of region</span>
 <span class="sd">        names to region descriptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Based on `az account list-locations -o table` on 16.07.2024</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;(Africa) South Africa North&quot;</span><span class="p">:</span> <span class="s2">&quot;southafricanorth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Africa) South Africa West&quot;</span><span class="p">:</span> <span class="s2">&quot;southafricawest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Australia Central&quot;</span><span class="p">:</span> <span class="s2">&quot;australiacentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Australia Central 2&quot;</span><span class="p">:</span> <span class="s2">&quot;australiacentral2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Australia East&quot;</span><span class="p">:</span> <span class="s2">&quot;australiaeast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Australia Southeast&quot;</span><span class="p">:</span> <span class="s2">&quot;australiasoutheast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Central India&quot;</span><span class="p">:</span> <span class="s2">&quot;centralindia&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) East Asia&quot;</span><span class="p">:</span> <span class="s2">&quot;eastasia&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) East Asia (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;eastasiastage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Japan East&quot;</span><span class="p">:</span> <span class="s2">&quot;japaneast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Japan West&quot;</span><span class="p">:</span> <span class="s2">&quot;japanwest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Jio India Central&quot;</span><span class="p">:</span> <span class="s2">&quot;jioindiacentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Jio India West&quot;</span><span class="p">:</span> <span class="s2">&quot;jioindiawest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Korea Central&quot;</span><span class="p">:</span> <span class="s2">&quot;koreacentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Korea South&quot;</span><span class="p">:</span> <span class="s2">&quot;koreasouth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) South India&quot;</span><span class="p">:</span> <span class="s2">&quot;southindia&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Southeast Asia&quot;</span><span class="p">:</span> <span class="s2">&quot;southeastasia&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) Southeast Asia (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;southeastasiastage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Asia Pacific) West India&quot;</span><span class="p">:</span> <span class="s2">&quot;westindia&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Canada) Canada Central&quot;</span><span class="p">:</span> <span class="s2">&quot;canadacentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Canada) Canada East&quot;</span><span class="p">:</span> <span class="s2">&quot;canadaeast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) France Central&quot;</span><span class="p">:</span> <span class="s2">&quot;francecentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) France South&quot;</span><span class="p">:</span> <span class="s2">&quot;francesouth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Germany North&quot;</span><span class="p">:</span> <span class="s2">&quot;germanynorth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Germany West Central&quot;</span><span class="p">:</span> <span class="s2">&quot;germanywestcentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Italy North&quot;</span><span class="p">:</span> <span class="s2">&quot;italynorth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) North Europe&quot;</span><span class="p">:</span> <span class="s2">&quot;northeurope&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Norway East&quot;</span><span class="p">:</span> <span class="s2">&quot;norwayeast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Norway West&quot;</span><span class="p">:</span> <span class="s2">&quot;norwaywest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Poland Central&quot;</span><span class="p">:</span> <span class="s2">&quot;polandcentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Spain Central&quot;</span><span class="p">:</span> <span class="s2">&quot;spaincentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Sweden Central&quot;</span><span class="p">:</span> <span class="s2">&quot;swedencentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Switzerland North&quot;</span><span class="p">:</span> <span class="s2">&quot;switzerlandnorth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) Switzerland West&quot;</span><span class="p">:</span> <span class="s2">&quot;switzerlandwest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) UK South&quot;</span><span class="p">:</span> <span class="s2">&quot;uksouth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) UK West&quot;</span><span class="p">:</span> <span class="s2">&quot;ukwest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Europe) West Europe&quot;</span><span class="p">:</span> <span class="s2">&quot;westeurope&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Mexico) Mexico Central&quot;</span><span class="p">:</span> <span class="s2">&quot;mexicocentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Middle East) Israel Central&quot;</span><span class="p">:</span> <span class="s2">&quot;israelcentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Middle East) Qatar Central&quot;</span><span class="p">:</span> <span class="s2">&quot;qatarcentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Middle East) UAE Central&quot;</span><span class="p">:</span> <span class="s2">&quot;uaecentral&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(Middle East) UAE North&quot;</span><span class="p">:</span> <span class="s2">&quot;uaenorth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(South America) Brazil South&quot;</span><span class="p">:</span> <span class="s2">&quot;brazilsouth&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(South America) Brazil Southeast&quot;</span><span class="p">:</span> <span class="s2">&quot;brazilsoutheast&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(South America) Brazil US&quot;</span><span class="p">:</span> <span class="s2">&quot;brazilus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) Central US&quot;</span><span class="p">:</span> <span class="s2">&quot;centralus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) Central US (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;centralusstage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) Central US EUAP&quot;</span><span class="p">:</span> <span class="s2">&quot;centraluseuap&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US&quot;</span><span class="p">:</span> <span class="s2">&quot;eastus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;eastusstage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US 2&quot;</span><span class="p">:</span> <span class="s2">&quot;eastus2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US 2 (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;eastus2stage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US 2 EUAP&quot;</span><span class="p">:</span> <span class="s2">&quot;eastus2euap&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) East US STG&quot;</span><span class="p">:</span> <span class="s2">&quot;eastusstg&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) North Central US&quot;</span><span class="p">:</span> <span class="s2">&quot;northcentralus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) North Central US (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;northcentralusstage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) South Central US&quot;</span><span class="p">:</span> <span class="s2">&quot;southcentralus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) South Central US (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;southcentralusstage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West Central US&quot;</span><span class="p">:</span> <span class="s2">&quot;westcentralus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West US&quot;</span><span class="p">:</span> <span class="s2">&quot;westus&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West US (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;westusstage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West US 2&quot;</span><span class="p">:</span> <span class="s2">&quot;westus2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West US 2 (Stage)&quot;</span><span class="p">:</span> <span class="s2">&quot;westus2stage&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;(US) West US 3&quot;</span><span class="p">:</span> <span class="s2">&quot;westus3&quot;</span><span class="p">,</span>
+        <span class="s2">"(Africa) South Africa North"</span><span class="p">:</span> <span class="s2">"southafricanorth"</span><span class="p">,</span>
+        <span class="s2">"(Africa) South Africa West"</span><span class="p">:</span> <span class="s2">"southafricawest"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Australia Central"</span><span class="p">:</span> <span class="s2">"australiacentral"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Australia Central 2"</span><span class="p">:</span> <span class="s2">"australiacentral2"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Australia East"</span><span class="p">:</span> <span class="s2">"australiaeast"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Australia Southeast"</span><span class="p">:</span> <span class="s2">"australiasoutheast"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Central India"</span><span class="p">:</span> <span class="s2">"centralindia"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) East Asia"</span><span class="p">:</span> <span class="s2">"eastasia"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) East Asia (Stage)"</span><span class="p">:</span> <span class="s2">"eastasiastage"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Japan East"</span><span class="p">:</span> <span class="s2">"japaneast"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Japan West"</span><span class="p">:</span> <span class="s2">"japanwest"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Jio India Central"</span><span class="p">:</span> <span class="s2">"jioindiacentral"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Jio India West"</span><span class="p">:</span> <span class="s2">"jioindiawest"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Korea Central"</span><span class="p">:</span> <span class="s2">"koreacentral"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Korea South"</span><span class="p">:</span> <span class="s2">"koreasouth"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) South India"</span><span class="p">:</span> <span class="s2">"southindia"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Southeast Asia"</span><span class="p">:</span> <span class="s2">"southeastasia"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) Southeast Asia (Stage)"</span><span class="p">:</span> <span class="s2">"southeastasiastage"</span><span class="p">,</span>
+        <span class="s2">"(Asia Pacific) West India"</span><span class="p">:</span> <span class="s2">"westindia"</span><span class="p">,</span>
+        <span class="s2">"(Canada) Canada Central"</span><span class="p">:</span> <span class="s2">"canadacentral"</span><span class="p">,</span>
+        <span class="s2">"(Canada) Canada East"</span><span class="p">:</span> <span class="s2">"canadaeast"</span><span class="p">,</span>
+        <span class="s2">"(Europe) France Central"</span><span class="p">:</span> <span class="s2">"francecentral"</span><span class="p">,</span>
+        <span class="s2">"(Europe) France South"</span><span class="p">:</span> <span class="s2">"francesouth"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Germany North"</span><span class="p">:</span> <span class="s2">"germanynorth"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Germany West Central"</span><span class="p">:</span> <span class="s2">"germanywestcentral"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Italy North"</span><span class="p">:</span> <span class="s2">"italynorth"</span><span class="p">,</span>
+        <span class="s2">"(Europe) North Europe"</span><span class="p">:</span> <span class="s2">"northeurope"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Norway East"</span><span class="p">:</span> <span class="s2">"norwayeast"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Norway West"</span><span class="p">:</span> <span class="s2">"norwaywest"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Poland Central"</span><span class="p">:</span> <span class="s2">"polandcentral"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Spain Central"</span><span class="p">:</span> <span class="s2">"spaincentral"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Sweden Central"</span><span class="p">:</span> <span class="s2">"swedencentral"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Switzerland North"</span><span class="p">:</span> <span class="s2">"switzerlandnorth"</span><span class="p">,</span>
+        <span class="s2">"(Europe) Switzerland West"</span><span class="p">:</span> <span class="s2">"switzerlandwest"</span><span class="p">,</span>
+        <span class="s2">"(Europe) UK South"</span><span class="p">:</span> <span class="s2">"uksouth"</span><span class="p">,</span>
+        <span class="s2">"(Europe) UK West"</span><span class="p">:</span> <span class="s2">"ukwest"</span><span class="p">,</span>
+        <span class="s2">"(Europe) West Europe"</span><span class="p">:</span> <span class="s2">"westeurope"</span><span class="p">,</span>
+        <span class="s2">"(Mexico) Mexico Central"</span><span class="p">:</span> <span class="s2">"mexicocentral"</span><span class="p">,</span>
+        <span class="s2">"(Middle East) Israel Central"</span><span class="p">:</span> <span class="s2">"israelcentral"</span><span class="p">,</span>
+        <span class="s2">"(Middle East) Qatar Central"</span><span class="p">:</span> <span class="s2">"qatarcentral"</span><span class="p">,</span>
+        <span class="s2">"(Middle East) UAE Central"</span><span class="p">:</span> <span class="s2">"uaecentral"</span><span class="p">,</span>
+        <span class="s2">"(Middle East) UAE North"</span><span class="p">:</span> <span class="s2">"uaenorth"</span><span class="p">,</span>
+        <span class="s2">"(South America) Brazil South"</span><span class="p">:</span> <span class="s2">"brazilsouth"</span><span class="p">,</span>
+        <span class="s2">"(South America) Brazil Southeast"</span><span class="p">:</span> <span class="s2">"brazilsoutheast"</span><span class="p">,</span>
+        <span class="s2">"(South America) Brazil US"</span><span class="p">:</span> <span class="s2">"brazilus"</span><span class="p">,</span>
+        <span class="s2">"(US) Central US"</span><span class="p">:</span> <span class="s2">"centralus"</span><span class="p">,</span>
+        <span class="s2">"(US) Central US (Stage)"</span><span class="p">:</span> <span class="s2">"centralusstage"</span><span class="p">,</span>
+        <span class="s2">"(US) Central US EUAP"</span><span class="p">:</span> <span class="s2">"centraluseuap"</span><span class="p">,</span>
+        <span class="s2">"(US) East US"</span><span class="p">:</span> <span class="s2">"eastus"</span><span class="p">,</span>
+        <span class="s2">"(US) East US (Stage)"</span><span class="p">:</span> <span class="s2">"eastusstage"</span><span class="p">,</span>
+        <span class="s2">"(US) East US 2"</span><span class="p">:</span> <span class="s2">"eastus2"</span><span class="p">,</span>
+        <span class="s2">"(US) East US 2 (Stage)"</span><span class="p">:</span> <span class="s2">"eastus2stage"</span><span class="p">,</span>
+        <span class="s2">"(US) East US 2 EUAP"</span><span class="p">:</span> <span class="s2">"eastus2euap"</span><span class="p">,</span>
+        <span class="s2">"(US) East US STG"</span><span class="p">:</span> <span class="s2">"eastusstg"</span><span class="p">,</span>
+        <span class="s2">"(US) North Central US"</span><span class="p">:</span> <span class="s2">"northcentralus"</span><span class="p">,</span>
+        <span class="s2">"(US) North Central US (Stage)"</span><span class="p">:</span> <span class="s2">"northcentralusstage"</span><span class="p">,</span>
+        <span class="s2">"(US) South Central US"</span><span class="p">:</span> <span class="s2">"southcentralus"</span><span class="p">,</span>
+        <span class="s2">"(US) South Central US (Stage)"</span><span class="p">:</span> <span class="s2">"southcentralusstage"</span><span class="p">,</span>
+        <span class="s2">"(US) West Central US"</span><span class="p">:</span> <span class="s2">"westcentralus"</span><span class="p">,</span>
+        <span class="s2">"(US) West US"</span><span class="p">:</span> <span class="s2">"westus"</span><span class="p">,</span>
+        <span class="s2">"(US) West US (Stage)"</span><span class="p">:</span> <span class="s2">"westusstage"</span><span class="p">,</span>
+        <span class="s2">"(US) West US 2"</span><span class="p">:</span> <span class="s2">"westus2"</span><span class="p">,</span>
+        <span class="s2">"(US) West US 2 (Stage)"</span><span class="p">:</span> <span class="s2">"westus2stage"</span><span class="p">,</span>
+        <span class="s2">"(US) West US 3"</span><span class="p">:</span> <span class="s2">"westus3"</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5802,24 +5802,24 @@ stack.</p>
 <span class="normal">150</span>
 <span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
+<span class="w">    </span><span class="sd">"""Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The permissions granted to ZenML to access the cloud resources, as</span>
 <span class="sd">        a dictionary grouping permissions by resource.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;Storage Account&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;Storage Blob Data Contributor&quot;</span><span class="p">,</span>
+        <span class="s2">"Storage Account"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"Storage Blob Data Contributor"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;Container Registry&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;AcrPull&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;AcrPush&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Contributor&quot;</span><span class="p">,</span>
+        <span class="s2">"Container Registry"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"AcrPull"</span><span class="p">,</span>
+            <span class="s2">"AcrPush"</span><span class="p">,</span>
+            <span class="s2">"Contributor"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;AzureML Workspace&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;AzureML Compute Operator&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;AzureML Data Scientist&quot;</span><span class="p">,</span>
+        <span class="s2">"AzureML Workspace"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"AzureML Compute Operator"</span><span class="p">,</span>
+            <span class="s2">"AzureML Data Scientist"</span><span class="p">,</span>
         <span class="p">],</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
@@ -5898,19 +5898,19 @@ stack.</p>
 <span class="normal">117</span>
 <span class="normal">118</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on what to do after the deployment is</span>
 <span class="sd">            complete.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">The ZenML stack has been successfully deployed and registered. You can delete</span>
 <span class="s2">the provisioned Service Principal and Resource Group at any time to revoke</span>
-<span class="s2">ZenML&#39;s access to your Azure subscription.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">ZenML's access to your Azure subscription.</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5974,16 +5974,16 @@ stack.</p>
 <span class="normal">240</span>
 <span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
+<span class="w">    </span><span class="sd">"""Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions supported by default for the Skypilot.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">matcher</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*us\d*( |$)&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">matcher</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">".*us\d*( |$)"</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">locations</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="k">if</span> <span class="s2">&quot;(US)&quot;</span> <span class="ow">in</span> <span class="n">k</span> <span class="ow">and</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"(US)"</span> <span class="ow">in</span> <span class="n">k</span> <span class="ow">and</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6184,19 +6184,19 @@ the ZenML stack.</p>
 <span class="normal">52</span>
 <span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
+<span class="w">        </span><span class="sd">"""Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
 <span class="sd">        the ZenML stack.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A MarkDown description of the ZenML Cloud Stack Deployment.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">Provision and register a basic GCP ZenML stack authenticated and connected to</span>
 <span class="s2">all the necessary cloud infrastructure resources required to run pipelines in</span>
 <span class="s2">GCP.</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6360,7 +6360,7 @@ script etc.).</li>
 <span class="normal">321</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        The configuration should include:</span>
 
@@ -6379,73 +6379,73 @@ script etc.).</li>
 <span class="sd">        Returns:</span>
 <span class="sd">            The configuration or script to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">cloudshell_git_repo</span><span class="o">=</span><span class="s2">&quot;https://github.com/zenml-io/zenml&quot;</span><span class="p">,</span>
-            <span class="n">cloudshell_workspace</span><span class="o">=</span><span class="s2">&quot;infra/gcp&quot;</span><span class="p">,</span>
-            <span class="n">cloudshell_open_in_editor</span><span class="o">=</span><span class="s2">&quot;gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-deploy.sh&quot;</span><span class="p">,</span>
-            <span class="n">cloudshell_tutorial</span><span class="o">=</span><span class="s2">&quot;gcp-gar-gcs-vertex.md&quot;</span><span class="p">,</span>
-            <span class="n">ephemeral</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+            <span class="n">cloudshell_git_repo</span><span class="o">=</span><span class="s2">"https://github.com/zenml-io/zenml"</span><span class="p">,</span>
+            <span class="n">cloudshell_workspace</span><span class="o">=</span><span class="s2">"infra/gcp"</span><span class="p">,</span>
+            <span class="n">cloudshell_open_in_editor</span><span class="o">=</span><span class="s2">"gcp-gar-gcs-vertex.jinja,gcp-gar-gcs-vertex-deploy.sh"</span><span class="p">,</span>
+            <span class="n">cloudshell_tutorial</span><span class="o">=</span><span class="s2">"gcp-gar-gcs-vertex.md"</span><span class="p">,</span>
+            <span class="n">ephemeral</span><span class="o">=</span><span class="s2">"true"</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Encode the parameters as URL query parameters</span>
-        <span class="n">query_params</span> <span class="o">=</span> <span class="s2">&quot;&amp;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+        <span class="n">query_params</span> <span class="o">=</span> <span class="s2">"&amp;"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
         <span class="n">url</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;https://shell.cloud.google.com/cloudshell/editor?</span><span class="si">{</span><span class="n">query_params</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"https://shell.cloud.google.com/cloudshell/editor?</span><span class="si">{</span><span class="n">query_params</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span> <span class="o">==</span> <span class="n">STACK_DEPLOYMENT_TERRAFORM</span><span class="p">:</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;terraform </span><span class="se">{{</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""terraform </span><span class="se">{{</span>
 <span class="s2">    required_providers </span><span class="se">{{</span>
 <span class="s2">        google = </span><span class="se">{{</span>
-<span class="s2">            source  = &quot;hashicorp/google&quot;</span>
+<span class="s2">            source  = "hashicorp/google"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">        zenml = </span><span class="se">{{</span>
-<span class="s2">            source = &quot;zenml-io/zenml&quot;</span>
-<span class="s2">            version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">            source = "zenml-io/zenml"</span>
+<span class="s2">            version = "</span><span class="si">{</span><span class="n">TERRAFORM_PROVIDER_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
 <span class="s2">        </span><span class="se">}}</span>
 <span class="s2">    </span><span class="se">}}</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;google&quot; </span><span class="se">{{</span>
-<span class="s2">    region  = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;europe-west3&quot;</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">provider "google" </span><span class="se">{{</span>
+<span class="s2">    region  = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"europe-west3"</span><span class="si">}</span><span class="s2">"</span>
 <span class="s2">    project = your GCP project name</span>
 <span class="se">}}</span>
 
-<span class="s2">provider &quot;zenml&quot; </span><span class="se">{{</span>
-<span class="s2">    server_url = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    api_token = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">provider "zenml" </span><span class="se">{{</span>
+<span class="s2">    server_url = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    api_token = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
 
-<span class="s2">module &quot;zenml_stack&quot; </span><span class="se">{{</span>
-<span class="s2">    source  = &quot;zenml-io/zenml-stack/gcp&quot;</span>
-<span class="s2">    version = &quot;</span><span class="si">{</span><span class="n">TERRAFORM_GCP_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">module "zenml_stack" </span><span class="se">{{</span>
+<span class="s2">    source  = "zenml-io/zenml-stack/gcp"</span>
+<span class="s2">    version = "</span><span class="si">{</span><span class="n">TERRAFORM_GCP_MODULE_VERSION_SPEC</span><span class="si">}</span><span class="s2">"</span>
 
-<span class="s2">    zenml_stack_name = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="s2">    zenml_stack_deployment = &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="s2">    zenml_stack_name = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span><span class="s2">"</span>
+<span class="s2">    zenml_stack_deployment = "</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="si">}</span><span class="s2">"</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_id&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_id" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_id</span>
 <span class="se">}}</span>
-<span class="s2">output &quot;zenml_stack_name&quot; </span><span class="se">{{</span>
+<span class="s2">output "zenml_stack_name" </span><span class="se">{{</span>
 <span class="s2">    value = module.zenml_stack.zenml_stack_name</span>
-<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="se">}}</span><span class="s2">"""</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
 <span class="s2">### BEGIN CONFIGURATION ###</span>
 <span class="s2">ZENML_STACK_NAME=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_name</span><span class="si">}</span>
-<span class="s2">ZENML_STACK_REGION=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">&quot;europe-west3&quot;</span><span class="si">}</span>
+<span class="s2">ZENML_STACK_REGION=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s2">"europe-west3"</span><span class="si">}</span>
 <span class="s2">ZENML_SERVER_URL=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_url</span><span class="si">}</span>
 <span class="s2">ZENML_SERVER_API_TOKEN=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zenml_server_api_token</span><span class="si">}</span>
-<span class="s2">### END CONFIGURATION ###&quot;&quot;&quot;</span>
+<span class="s2">### END CONFIGURATION ###"""</span>
 
         <span class="n">instructions</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;You will be asked to provide the following configuration values &quot;</span>
-            <span class="s2">&quot;during the deployment process:&quot;</span>
+            <span class="s2">"You will be asked to provide the following configuration values "</span>
+            <span class="s2">"during the deployment process:"</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">StackDeploymentConfig</span><span class="p">(</span>
             <span class="n">deployment_url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
-            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">&quot;GCP Cloud Shell Console&quot;</span><span class="p">,</span>
+            <span class="n">deployment_url_text</span><span class="o">=</span><span class="s2">"GCP Cloud Shell Console"</span><span class="p">,</span>
             <span class="n">configuration</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
             <span class="n">instructions</span><span class="o">=</span><span class="n">instructions</span><span class="p">,</span>
         <span class="p">)</span>
@@ -6565,7 +6565,7 @@ stack.</p>
 <span class="normal">107</span>
 <span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
 <span class="sd">        stack.</span>
@@ -6573,9 +6573,9 @@ stack.</p>
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on how to deploy the ZenML stack to the</span>
 <span class="sd">            specified cloud provider.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">You will be redirected to a GCP Cloud Shell console in your browser where you&#39;ll</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
+<span class="s2">You will be redirected to a GCP Cloud Shell console in your browser where you'll</span>
 <span class="s2">be asked to log into your GCP project and then create a Deployment Manager</span>
 <span class="s2">deployment to provision the necessary cloud resources for ZenML.</span>
 
@@ -6616,7 +6616,7 @@ stack.</p>
 <span class="s2">💡 **After the Deployment Manager deployment is complete, you can close the Cloud</span>
 <span class="s2">Shell session and return to the CLI to view details about the associated ZenML</span>
 <span class="s2">stack automatically registered with ZenML.**</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6688,14 +6688,14 @@ stack.</p>
 <span class="normal">136</span>
 <span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
+<span class="w">    </span><span class="sd">"""Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of ZenML integrations that need to be installed for the</span>
 <span class="sd">        stack to be usable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span>
-        <span class="s2">&quot;gcp&quot;</span><span class="p">,</span>
+        <span class="s2">"gcp"</span><span class="p">,</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6811,57 +6811,57 @@ stack.</p>
 <span class="normal">217</span>
 <span class="normal">218</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
+<span class="w">    </span><span class="sd">"""Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions where the ZenML stack can be deployed as a map of region</span>
 <span class="sd">        names to region descriptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Return a list of all possible GCP regions</span>
 
     <span class="c1"># Based on the AWS regions listed at</span>
     <span class="c1"># https://cloud.google.com/about/locations</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;Africa (Johannesburg)&quot;</span><span class="p">:</span> <span class="s2">&quot;africa-south1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Taiwan)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-east1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Hong Kong)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-east2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Tokyo)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-northeast1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Osaka)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-northeast2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Seoul)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-northeast3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Mumbai)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-south1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Delhi)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-south2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Singapore)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-southeast1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Asia Pacific (Jakarta)&quot;</span><span class="p">:</span> <span class="s2">&quot;asia-southeast2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Australia (Sydney)&quot;</span><span class="p">:</span> <span class="s2">&quot;australia-southeast1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Australia (Melbourne)&quot;</span><span class="p">:</span> <span class="s2">&quot;australia-southeast2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Belgium)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (London)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Frankfurt)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Netherlands)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west4&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Zurich)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west6&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Milan)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west8&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Paris)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west9&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Berlin)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west10&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Turin)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-west12&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Warsaw)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-central2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Finland)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-north1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Europe (Madrid)&quot;</span><span class="p">:</span> <span class="s2">&quot;europe-southwest1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Middle East (Doha)&quot;</span><span class="p">:</span> <span class="s2">&quot;me-central1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Middle East (Dubai)&quot;</span><span class="p">:</span> <span class="s2">&quot;me-central2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Middle East (Tel Aviv)&quot;</span><span class="p">:</span> <span class="s2">&quot;me-west1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;North America (Montreal)&quot;</span><span class="p">:</span> <span class="s2">&quot;northamerica-northeast1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;North America (Toronto)&quot;</span><span class="p">:</span> <span class="s2">&quot;northamerica-northeast2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;South America (Sao Paulo)&quot;</span><span class="p">:</span> <span class="s2">&quot;southamerica-east1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;South America (Santiago)&quot;</span><span class="p">:</span> <span class="s2">&quot;southamerica-west1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US Central (Iowa)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-central1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US East (South Carolina)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US East (Northern Virginia)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east4&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US East (Columbus)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-east5&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US South (Dallas)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-south1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (Oregon)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west1&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (Los Angeles)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west2&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (Salt Lake City)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west3&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;US West (Las Vegas)&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west4&quot;</span><span class="p">,</span>
+        <span class="s2">"Africa (Johannesburg)"</span><span class="p">:</span> <span class="s2">"africa-south1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Taiwan)"</span><span class="p">:</span> <span class="s2">"asia-east1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Hong Kong)"</span><span class="p">:</span> <span class="s2">"asia-east2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Tokyo)"</span><span class="p">:</span> <span class="s2">"asia-northeast1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Osaka)"</span><span class="p">:</span> <span class="s2">"asia-northeast2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Seoul)"</span><span class="p">:</span> <span class="s2">"asia-northeast3"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Mumbai)"</span><span class="p">:</span> <span class="s2">"asia-south1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Delhi)"</span><span class="p">:</span> <span class="s2">"asia-south2"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Singapore)"</span><span class="p">:</span> <span class="s2">"asia-southeast1"</span><span class="p">,</span>
+        <span class="s2">"Asia Pacific (Jakarta)"</span><span class="p">:</span> <span class="s2">"asia-southeast2"</span><span class="p">,</span>
+        <span class="s2">"Australia (Sydney)"</span><span class="p">:</span> <span class="s2">"australia-southeast1"</span><span class="p">,</span>
+        <span class="s2">"Australia (Melbourne)"</span><span class="p">:</span> <span class="s2">"australia-southeast2"</span><span class="p">,</span>
+        <span class="s2">"Europe (Belgium)"</span><span class="p">:</span> <span class="s2">"europe-west1"</span><span class="p">,</span>
+        <span class="s2">"Europe (London)"</span><span class="p">:</span> <span class="s2">"europe-west2"</span><span class="p">,</span>
+        <span class="s2">"Europe (Frankfurt)"</span><span class="p">:</span> <span class="s2">"europe-west3"</span><span class="p">,</span>
+        <span class="s2">"Europe (Netherlands)"</span><span class="p">:</span> <span class="s2">"europe-west4"</span><span class="p">,</span>
+        <span class="s2">"Europe (Zurich)"</span><span class="p">:</span> <span class="s2">"europe-west6"</span><span class="p">,</span>
+        <span class="s2">"Europe (Milan)"</span><span class="p">:</span> <span class="s2">"europe-west8"</span><span class="p">,</span>
+        <span class="s2">"Europe (Paris)"</span><span class="p">:</span> <span class="s2">"europe-west9"</span><span class="p">,</span>
+        <span class="s2">"Europe (Berlin)"</span><span class="p">:</span> <span class="s2">"europe-west10"</span><span class="p">,</span>
+        <span class="s2">"Europe (Turin)"</span><span class="p">:</span> <span class="s2">"europe-west12"</span><span class="p">,</span>
+        <span class="s2">"Europe (Warsaw)"</span><span class="p">:</span> <span class="s2">"europe-central2"</span><span class="p">,</span>
+        <span class="s2">"Europe (Finland)"</span><span class="p">:</span> <span class="s2">"europe-north1"</span><span class="p">,</span>
+        <span class="s2">"Europe (Madrid)"</span><span class="p">:</span> <span class="s2">"europe-southwest1"</span><span class="p">,</span>
+        <span class="s2">"Middle East (Doha)"</span><span class="p">:</span> <span class="s2">"me-central1"</span><span class="p">,</span>
+        <span class="s2">"Middle East (Dubai)"</span><span class="p">:</span> <span class="s2">"me-central2"</span><span class="p">,</span>
+        <span class="s2">"Middle East (Tel Aviv)"</span><span class="p">:</span> <span class="s2">"me-west1"</span><span class="p">,</span>
+        <span class="s2">"North America (Montreal)"</span><span class="p">:</span> <span class="s2">"northamerica-northeast1"</span><span class="p">,</span>
+        <span class="s2">"North America (Toronto)"</span><span class="p">:</span> <span class="s2">"northamerica-northeast2"</span><span class="p">,</span>
+        <span class="s2">"South America (Sao Paulo)"</span><span class="p">:</span> <span class="s2">"southamerica-east1"</span><span class="p">,</span>
+        <span class="s2">"South America (Santiago)"</span><span class="p">:</span> <span class="s2">"southamerica-west1"</span><span class="p">,</span>
+        <span class="s2">"US Central (Iowa)"</span><span class="p">:</span> <span class="s2">"us-central1"</span><span class="p">,</span>
+        <span class="s2">"US East (South Carolina)"</span><span class="p">:</span> <span class="s2">"us-east1"</span><span class="p">,</span>
+        <span class="s2">"US East (Northern Virginia)"</span><span class="p">:</span> <span class="s2">"us-east4"</span><span class="p">,</span>
+        <span class="s2">"US East (Columbus)"</span><span class="p">:</span> <span class="s2">"us-east5"</span><span class="p">,</span>
+        <span class="s2">"US South (Dallas)"</span><span class="p">:</span> <span class="s2">"us-south1"</span><span class="p">,</span>
+        <span class="s2">"US West (Oregon)"</span><span class="p">:</span> <span class="s2">"us-west1"</span><span class="p">,</span>
+        <span class="s2">"US West (Los Angeles)"</span><span class="p">:</span> <span class="s2">"us-west2"</span><span class="p">,</span>
+        <span class="s2">"US West (Salt Lake City)"</span><span class="p">:</span> <span class="s2">"us-west3"</span><span class="p">,</span>
+        <span class="s2">"US West (Las Vegas)"</span><span class="p">:</span> <span class="s2">"us-west4"</span><span class="p">,</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6948,27 +6948,27 @@ stack.</p>
 <span class="normal">162</span>
 <span class="normal">163</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
+<span class="w">    </span><span class="sd">"""Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The permissions granted to ZenML to access the cloud resources, as</span>
 <span class="sd">        a dictionary grouping permissions by resource.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;GCS Bucket&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;roles/storage.objectUser&quot;</span><span class="p">,</span>
+        <span class="s2">"GCS Bucket"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"roles/storage.objectUser"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;GCP Artifact Registry&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;roles/artifactregistry.createOnPushWriter&quot;</span><span class="p">,</span>
+        <span class="s2">"GCP Artifact Registry"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"roles/artifactregistry.createOnPushWriter"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;Vertex AI (Client)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;roles/aiplatform.user&quot;</span><span class="p">,</span>
+        <span class="s2">"Vertex AI (Client)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"roles/aiplatform.user"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;Vertex AI (Jobs)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;roles/aiplatform.serviceAgent&quot;</span><span class="p">,</span>
+        <span class="s2">"Vertex AI (Jobs)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"roles/aiplatform.serviceAgent"</span><span class="p">,</span>
         <span class="p">],</span>
-        <span class="s2">&quot;Cloud Build (Client)&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="s2">&quot;roles/cloudbuild.builds.editor&quot;</span><span class="p">,</span>
+        <span class="s2">"Cloud Build (Client)"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"roles/cloudbuild.builds.editor"</span><span class="p">,</span>
         <span class="p">],</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
@@ -7048,20 +7048,20 @@ stack.</p>
 <span class="normal">124</span>
 <span class="normal">125</span></pre></div></td><td class="code"><div><pre><span></span><code>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
+<span class="w">        </span><span class="sd">"""Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            MarkDown instructions on what to do after the deployment is</span>
 <span class="sd">            complete.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="s2">"""</span>
 <span class="s2">The ZenML stack has been successfully deployed and registered. You can delete</span>
-<span class="s2">the Deployment Manager deployment at any time to revoke ZenML&#39;s access to your</span>
+<span class="s2">the Deployment Manager deployment at any time to revoke ZenML's access to your</span>
 <span class="s2">GCP project and to clean up the resources created by the stack by using</span>
 <span class="s2">[the GCP Cloud Console](https://console.cloud.google.com/dm/deployments).</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7121,12 +7121,12 @@ stack.</p>
 <span class="normal">227</span>
 <span class="normal">228</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
+<span class="w">    </span><span class="sd">"""Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions supported by default for the Skypilot.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">matcher</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;us-.*&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">matcher</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"us-.*"</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">locations</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7328,14 +7328,14 @@ the ZenML stack.</p>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
+<span class="w">    </span><span class="sd">"""Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">    This will be displayed when the user is prompted to deploy</span>
 <span class="sd">    the ZenML stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A MarkDown description of the ZenML Cloud Stack Deployment.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7436,7 +7436,7 @@ script etc.).</li>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">    </span><span class="sd">"""Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">    The configuration should include:</span>
 
@@ -7455,7 +7455,7 @@ script etc.).</li>
 <span class="sd">    Returns:</span>
 <span class="sd">        The configuration or script to deploy the ZenML stack to the</span>
 <span class="sd">        specified cloud provider.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7523,11 +7523,11 @@ script etc.).</li>
 <span class="normal">147</span>
 <span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentInfo</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return information about the ZenML Cloud Stack Deployment.</span>
+<span class="w">    </span><span class="sd">"""Return information about the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Information about the ZenML Cloud Stack Deployment.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">StackDeploymentInfo</span><span class="p">(</span>
         <span class="n">provider</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">description</span><span class="p">(),</span>
@@ -7691,7 +7691,7 @@ provider.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">date_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DeployedStack</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML stack that was deployed and registered.</span>
+<span class="w">    </span><span class="sd">"""Return the ZenML stack that was deployed and registered.</span>
 
 <span class="sd">    This method is called to retrieve a ZenML stack matching the deployment</span>
 <span class="sd">    provider.</span>
@@ -7702,10 +7702,10 @@ provider.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The ZenML stack that was deployed and registered or None if a</span>
 <span class="sd">        matching stack was not found.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
-    <span class="c1"># It&#39;s difficult to find a stack that matches the CloudFormation</span>
+    <span class="c1"># It's difficult to find a stack that matches the CloudFormation</span>
     <span class="c1"># deployment 100% because the user can change the stack name before they</span>
     <span class="c1"># deploy the stack in GCP.</span>
     <span class="c1">#</span>
@@ -7717,10 +7717,10 @@ provider.</p>
     <span class="k">if</span> <span class="n">date_start</span> <span class="ow">and</span> <span class="n">date_start</span><span class="o">.</span><span class="n">tzinfo</span><span class="p">:</span>
         <span class="n">date_start</span> <span class="o">=</span> <span class="n">to_utc_timezone</span><span class="p">(</span><span class="n">date_start</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">stacks</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_stacks</span><span class="p">(</span>
-        <span class="n">created</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;gt:</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">date_start</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">created</span><span class="o">=</span><span class="sa">f</span><span class="s2">"gt:</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">date_start</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">if</span> <span class="n">date_start</span>
         <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">sort_by</span><span class="o">=</span><span class="s2">&quot;desc:created&quot;</span><span class="p">,</span>
+        <span class="n">sort_by</span><span class="o">=</span><span class="s2">"desc:created"</span><span class="p">,</span>
         <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -7732,10 +7732,10 @@ provider.</p>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">stack</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
             <span class="k">continue</span>
 
-        <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;zenml:provider&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"zenml:provider"</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
             <span class="k">continue</span>
 
-        <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;zenml:deployment&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"zenml:deployment"</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">:</span>
             <span class="k">continue</span>
 
         <span class="n">orchestrator</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -7825,7 +7825,7 @@ stack.</p>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
+<span class="w">    </span><span class="sd">"""Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">    This will be displayed before the user is prompted to deploy the ZenML</span>
 <span class="sd">    stack.</span>
@@ -7833,7 +7833,7 @@ stack.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        MarkDown instructions on how to deploy the ZenML stack to the</span>
 <span class="sd">        specified cloud provider.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7905,12 +7905,12 @@ stack.</p>
 <span class="normal">90</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
+<span class="w">    </span><span class="sd">"""Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of ZenML integrations that need to be installed for the</span>
 <span class="sd">        stack to be usable.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7982,12 +7982,12 @@ stack.</p>
 <span class="normal">110</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
+<span class="w">    </span><span class="sd">"""Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions where the ZenML stack can be deployed as a map of region</span>
 <span class="sd">        names to region descriptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8059,12 +8059,12 @@ stack.</p>
 <span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
+<span class="w">    </span><span class="sd">"""Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The permissions granted to ZenML to access the cloud resources, as</span>
 <span class="sd">        a dictionary grouping permissions by resource.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8139,14 +8139,14 @@ stack.</p>
 <span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
+<span class="w">    </span><span class="sd">"""Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">    This will be displayed after the deployment is complete.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        MarkDown instructions on what to do after the deployment is</span>
 <span class="sd">        complete.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8205,11 +8205,11 @@ stack.</p>
 <span class="normal">129</span>
 <span class="normal">130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
+<span class="w">    </span><span class="sd">"""Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The regions supported by default for the Skypilot.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">locations</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8352,14 +8352,14 @@ stack.</p>
 <span class="normal">48</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_stack_deployment_class</span><span class="p">(</span>
     <span class="n">provider</span><span class="p">:</span> <span class="n">StackDeploymentProvider</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the ZenML Cloud Stack Deployment class for the specified provider.</span>
+<span class="w">    </span><span class="sd">"""Get the ZenML Cloud Stack Deployment class for the specified provider.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        provider: The stack deployment provider.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The ZenML Cloud Stack Deployment class for the specified provider.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">STACK_DEPLOYMENT_PROVIDERS</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
             </details>

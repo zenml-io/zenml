@@ -4730,7 +4730,7 @@ modules, such as the <code>GCPArtifactStore</code> in the <code>gcp</code> integ
 
 
 <h4 id="zenml.artifact_stores.__all__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BaseArtifactStore&#39;</span><span class="p">,</span> <span class="s1">&#39;BaseArtifactStoreConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;BaseArtifactStoreFlavor&#39;</span><span class="p">,</span> <span class="s1">&#39;LocalArtifactStore&#39;</span><span class="p">,</span> <span class="s1">&#39;LocalArtifactStoreConfig&#39;</span><span class="p">,</span> <span class="s1">&#39;LocalArtifactStoreFlavor&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'BaseArtifactStore'</span><span class="p">,</span> <span class="s1">'BaseArtifactStoreConfig'</span><span class="p">,</span> <span class="s1">'BaseArtifactStoreFlavor'</span><span class="p">,</span> <span class="s1">'LocalArtifactStore'</span><span class="p">,</span> <span class="s1">'LocalArtifactStoreConfig'</span><span class="p">,</span> <span class="s1">'LocalArtifactStoreFlavor'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4838,17 +4838,17 @@ modules, such as the <code>GCPArtifactStore</code> in the <code>gcp</code> integ
 <span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">    </span><span class="sd">"""Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
 <span class="sd">        **kwargs: The keyword arguments to pass to the Pydantic object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_path_sanitization</span><span class="p">()</span>
 
-    <span class="c1"># If running in a ZenML server environment, we don&#39;t register</span>
+    <span class="c1"># If running in a ZenML server environment, we don't register</span>
     <span class="c1"># the filesystems. We always use the artifact stores directly.</span>
     <span class="k">if</span> <span class="n">ENV_ZENML_SERVER</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
@@ -5102,13 +5102,13 @@ additional control over the caching behavior.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">"""Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
 <span class="sd">        dst: The destination path.</span>
 <span class="sd">        overwrite: Whether to overwrite the destination file if it exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5200,14 +5200,14 @@ additional control over the caching behavior.</p>
 <span class="normal">329</span>
 <span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
+<span class="w">    </span><span class="sd">"""Checks if a path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the path exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5299,14 +5299,14 @@ additional control over the caching behavior.</p>
 <span class="normal">340</span>
 <span class="normal">341</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
+<span class="w">    </span><span class="sd">"""Gets the paths that match a glob pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The glob pattern.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of paths that match the pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5398,14 +5398,14 @@ additional control over the caching behavior.</p>
 <span class="normal">351</span>
 <span class="normal">352</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">    </span><span class="sd">"""Returns whether the given path points to a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the path points to a directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5497,14 +5497,14 @@ additional control over the caching behavior.</p>
 <span class="normal">362</span>
 <span class="normal">363</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">    </span><span class="sd">"""Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to list.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of files under the given path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5570,11 +5570,11 @@ additional control over the caching behavior.</p>
 <span class="normal">370</span>
 <span class="normal">371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5640,11 +5640,11 @@ additional control over the caching behavior.</p>
 <span class="normal">378</span>
 <span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5655,7 +5655,7 @@ additional control over the caching behavior.</p>
 
 
 <h6 id="zenml.artifact_stores.BaseArtifactStore.open" class="doc doc-heading">
-            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -5752,8 +5752,8 @@ additional control over the caching behavior.</p>
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"r"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the file to open.</span>
@@ -5761,7 +5761,7 @@ additional control over the caching behavior.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The file object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5827,11 +5827,11 @@ additional control over the caching behavior.</p>
 <span class="normal">386</span>
 <span class="normal">387</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5935,13 +5935,13 @@ additional control over the caching behavior.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">"""Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
 <span class="sd">        dst: The destination path.</span>
 <span class="sd">        overwrite: Whether to overwrite the destination file if it exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6007,11 +6007,11 @@ additional control over the caching behavior.</p>
 <span class="normal">406</span>
 <span class="normal">407</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to delete.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6121,7 +6121,7 @@ additional control over the caching behavior.</p>
 <span class="normal">436</span>
 <span class="normal">437</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
+<span class="w">    </span><span class="sd">"""Get the size of a file in bytes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -6129,10 +6129,10 @@ additional control over the caching behavior.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The size of the file in bytes or `None` if the artifact store</span>
 <span class="sd">        does not implement the `size` method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-        <span class="s2">&quot;Cannot get size of file &#39;</span><span class="si">%s</span><span class="s2">&#39; since the artifact store </span><span class="si">%s</span><span class="s2"> does not &quot;</span>
-        <span class="s2">&quot;implement the `size` method.&quot;</span><span class="p">,</span>
+        <span class="s2">"Cannot get size of file '</span><span class="si">%s</span><span class="s2">' since the artifact store </span><span class="si">%s</span><span class="s2"> does not "</span>
+        <span class="s2">"implement the `size` method."</span><span class="p">,</span>
         <span class="n">path</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
     <span class="p">)</span>
@@ -6228,14 +6228,14 @@ additional control over the caching behavior.</p>
 <span class="normal">417</span>
 <span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">"""Return the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stat descriptor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6371,7 +6371,7 @@ additional control over the caching behavior.</p>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">"""Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path to walk.</span>
@@ -6380,7 +6380,7 @@ additional control over the caching behavior.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The iterator that walks the contents of the given directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6488,7 +6488,7 @@ Field descriptions are defined inline using Field() descriptors.</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -6508,7 +6508,7 @@ Field descriptions are defined inline using Field() descriptors.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -6526,14 +6526,14 @@ Field descriptions are defined inline using Field() descriptors.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -6541,9 +6541,9 @@ Field descriptions are defined inline using Field() descriptors.</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -6798,17 +6798,17 @@ Field descriptions are defined inline using Field() descriptors.</p>
 <span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">    </span><span class="sd">"""Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
 <span class="sd">        **kwargs: The keyword arguments to pass to the Pydantic object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_path_sanitization</span><span class="p">()</span>
 
-    <span class="c1"># If running in a ZenML server environment, we don&#39;t register</span>
+    <span class="c1"># If running in a ZenML server environment, we don't register</span>
     <span class="c1"># the filesystems. We always use the artifact stores directly.</span>
     <span class="k">if</span> <span class="n">ENV_ZENML_SERVER</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
@@ -7055,15 +7055,15 @@ sub-folder in the global config directory.</p>
 <span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">"UUID"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Returns the default local path for a local artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_: The id of the local artifact store.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: The default local path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">local_stores_path</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">id_</span><span class="p">),</span>
@@ -7198,7 +7198,7 @@ sub-folder in the global config directory.</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -7218,7 +7218,7 @@ sub-folder in the global config directory.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -7236,14 +7236,14 @@ sub-folder in the global config directory.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -7251,9 +7251,9 @@ sub-folder in the global config directory.</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -7435,10 +7435,10 @@ sub-folder in the global config directory.</p>
 <span class="normal">70</span>
 <span class="normal">71</span>
 <span class="normal">72</span>
-<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"path"</span><span class="p">)</span>
 <span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ensure_path_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
+<span class="w">    </span><span class="sd">"""Pydantic validator which ensures that the given path is a local path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to validate.</span>
@@ -7448,12 +7448,12 @@ sub-folder in the global config directory.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ArtifactStoreInterfaceError: If the given path is not a local path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">remote_prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gs://&quot;</span><span class="p">,</span> <span class="s2">&quot;hdfs://&quot;</span><span class="p">,</span> <span class="s2">&quot;s3://&quot;</span><span class="p">,</span> <span class="s2">&quot;az://&quot;</span><span class="p">,</span> <span class="s2">&quot;abfs://&quot;</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="n">remote_prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"gs://"</span><span class="p">,</span> <span class="s2">"hdfs://"</span><span class="p">,</span> <span class="s2">"s3://"</span><span class="p">,</span> <span class="s2">"az://"</span><span class="p">,</span> <span class="s2">"abfs://"</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">remote_prefixes</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">ArtifactStoreInterfaceError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; you defined for your local artifact store &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;starts with a remote prefix.&quot;</span>
+            <span class="sa">f</span><span class="s2">"The path '</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">' you defined for your local artifact store "</span>
+            <span class="sa">f</span><span class="s2">"starts with a remote prefix."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">path</span>
 </code></pre></div></td></tr></table></div>
@@ -7914,17 +7914,17 @@ sub-folder in the global config directory.</p>
 <span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">    </span><span class="sd">"""Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
 <span class="sd">        **kwargs: The keyword arguments to pass to the Pydantic object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_path_sanitization</span><span class="p">()</span>
 
-    <span class="c1"># If running in a ZenML server environment, we don&#39;t register</span>
+    <span class="c1"># If running in a ZenML server environment, we don't register</span>
     <span class="c1"># the filesystems. We always use the artifact stores directly.</span>
     <span class="k">if</span> <span class="n">ENV_ZENML_SERVER</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
@@ -8178,13 +8178,13 @@ additional control over the caching behavior.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">"""Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
 <span class="sd">        dst: The destination path.</span>
 <span class="sd">        overwrite: Whether to overwrite the destination file if it exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8276,14 +8276,14 @@ additional control over the caching behavior.</p>
 <span class="normal">329</span>
 <span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if a path exists.</span>
+<span class="w">    </span><span class="sd">"""Checks if a path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the path exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8375,14 +8375,14 @@ additional control over the caching behavior.</p>
 <span class="normal">340</span>
 <span class="normal">341</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the paths that match a glob pattern.</span>
+<span class="w">    </span><span class="sd">"""Gets the paths that match a glob pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The glob pattern.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of paths that match the pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8474,14 +8474,14 @@ additional control over the caching behavior.</p>
 <span class="normal">351</span>
 <span class="normal">352</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">    </span><span class="sd">"""Returns whether the given path points to a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the path points to a directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8573,14 +8573,14 @@ additional control over the caching behavior.</p>
 <span class="normal">362</span>
 <span class="normal">363</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">    </span><span class="sd">"""Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to list.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The list of files under the given path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8646,11 +8646,11 @@ additional control over the caching behavior.</p>
 <span class="normal">370</span>
 <span class="normal">371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8716,11 +8716,11 @@ additional control over the caching behavior.</p>
 <span class="normal">378</span>
 <span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to create.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8731,7 +8731,7 @@ additional control over the caching behavior.</p>
 
 
 <h8 id="zenml.artifact_stores.base_artifact_store.BaseArtifactStore.open" class="doc doc-heading">
-            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -8828,8 +8828,8 @@ additional control over the caching behavior.</p>
 <span class="normal">305</span>
 <span class="normal">306</span>
 <span class="normal">307</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"r"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path of the file to open.</span>
@@ -8837,7 +8837,7 @@ additional control over the caching behavior.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The file object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -8903,11 +8903,11 @@ additional control over the caching behavior.</p>
 <span class="normal">386</span>
 <span class="normal">387</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9011,13 +9011,13 @@ additional control over the caching behavior.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">"""Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
 <span class="sd">        dst: The destination path.</span>
 <span class="sd">        overwrite: Whether to overwrite the destination file if it exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9083,11 +9083,11 @@ additional control over the caching behavior.</p>
 <span class="normal">406</span>
 <span class="normal">407</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to delete.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9197,7 +9197,7 @@ additional control over the caching behavior.</p>
 <span class="normal">436</span>
 <span class="normal">437</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
+<span class="w">    </span><span class="sd">"""Get the size of a file in bytes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -9205,10 +9205,10 @@ additional control over the caching behavior.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The size of the file in bytes or `None` if the artifact store</span>
 <span class="sd">        does not implement the `size` method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-        <span class="s2">&quot;Cannot get size of file &#39;</span><span class="si">%s</span><span class="s2">&#39; since the artifact store </span><span class="si">%s</span><span class="s2"> does not &quot;</span>
-        <span class="s2">&quot;implement the `size` method.&quot;</span><span class="p">,</span>
+        <span class="s2">"Cannot get size of file '</span><span class="si">%s</span><span class="s2">' since the artifact store </span><span class="si">%s</span><span class="s2"> does not "</span>
+        <span class="s2">"implement the `size` method."</span><span class="p">,</span>
         <span class="n">path</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
     <span class="p">)</span>
@@ -9304,14 +9304,14 @@ additional control over the caching behavior.</p>
 <span class="normal">417</span>
 <span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">"""Return the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stat descriptor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9447,7 +9447,7 @@ additional control over the caching behavior.</p>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">"""Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path to walk.</span>
@@ -9456,7 +9456,7 @@ additional control over the caching behavior.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The iterator that walks the contents of the given directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9564,7 +9564,7 @@ Field descriptions are defined inline using Field() descriptors.</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -9584,7 +9584,7 @@ Field descriptions are defined inline using Field() descriptors.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -9602,14 +9602,14 @@ Field descriptions are defined inline using Field() descriptors.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -9617,9 +9617,9 @@ Field descriptions are defined inline using Field() descriptors.</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -9919,17 +9919,17 @@ artifacts get stored.</p>
 <span class="normal">470</span>
 <span class="normal">471</span>
 <span class="normal">472</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initiate the Pydantic object and register the corresponding filesystem.</span>
+<span class="w">    </span><span class="sd">"""Initiate the Pydantic object and register the corresponding filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: The positional arguments to pass to the Pydantic object.</span>
 <span class="sd">        **kwargs: The keyword arguments to pass to the Pydantic object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_add_path_sanitization</span><span class="p">()</span>
 
-    <span class="c1"># If running in a ZenML server environment, we don&#39;t register</span>
+    <span class="c1"># If running in a ZenML server environment, we don't register</span>
     <span class="c1"># the filesystems. We always use the artifact stores directly.</span>
     <span class="k">if</span> <span class="n">ENV_ZENML_SERVER</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
@@ -10176,15 +10176,15 @@ sub-folder in the global config directory.</p>
 <span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the default local path for a local artifact store.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_default_local_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="s2">"UUID"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Returns the default local path for a local artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_: The id of the local artifact store.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: The default local path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">local_stores_path</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">id_</span><span class="p">),</span>
@@ -10319,7 +10319,7 @@ sub-folder in the global config directory.</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -10339,7 +10339,7 @@ sub-folder in the global config directory.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -10357,14 +10357,14 @@ sub-folder in the global config directory.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -10372,9 +10372,9 @@ sub-folder in the global config directory.</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -10556,10 +10556,10 @@ sub-folder in the global config directory.</p>
 <span class="normal">70</span>
 <span class="normal">71</span>
 <span class="normal">72</span>
-<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">)</span>
+<span class="normal">73</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"path"</span><span class="p">)</span>
 <span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">ensure_path_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic validator which ensures that the given path is a local path.</span>
+<span class="w">    </span><span class="sd">"""Pydantic validator which ensures that the given path is a local path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to validate.</span>
@@ -10569,12 +10569,12 @@ sub-folder in the global config directory.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ArtifactStoreInterfaceError: If the given path is not a local path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">remote_prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gs://&quot;</span><span class="p">,</span> <span class="s2">&quot;hdfs://&quot;</span><span class="p">,</span> <span class="s2">&quot;s3://&quot;</span><span class="p">,</span> <span class="s2">&quot;az://&quot;</span><span class="p">,</span> <span class="s2">&quot;abfs://&quot;</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="n">remote_prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"gs://"</span><span class="p">,</span> <span class="s2">"hdfs://"</span><span class="p">,</span> <span class="s2">"s3://"</span><span class="p">,</span> <span class="s2">"az://"</span><span class="p">,</span> <span class="s2">"abfs://"</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">remote_prefixes</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">ArtifactStoreInterfaceError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; you defined for your local artifact store &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;starts with a remote prefix.&quot;</span>
+            <span class="sa">f</span><span class="s2">"The path '</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">' you defined for your local artifact store "</span>
+            <span class="sa">f</span><span class="s2">"starts with a remote prefix."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">path</span>
 </code></pre></div></td></tr></table></div>

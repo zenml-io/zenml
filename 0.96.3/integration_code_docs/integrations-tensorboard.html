@@ -3910,7 +3910,7 @@
 
 
 <h4 id="zenml.integrations.tensorboard.TENSORBOARD" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">TENSORBOARD</span> <span class="o">=</span> <span class="s1">&#39;tensorboard&#39;</span></code>
+            <code class="highlight language-python"><span class="n">TENSORBOARD</span> <span class="o">=</span> <span class="s1">'tensorboard'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -3989,7 +3989,7 @@
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4076,18 +4076,18 @@
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -4098,16 +4098,16 @@
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -4168,11 +4168,11 @@
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4291,7 +4291,7 @@
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -4299,7 +4299,7 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4406,14 +4406,14 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -4503,7 +4503,7 @@
 <span class="normal">44</span>
 <span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Activates the integration."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.tensorboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4617,7 +4617,7 @@
 <span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines platform specific requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Defines platform specific requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system.</span>
@@ -4625,8 +4625,8 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tensorboard&gt;=2.12,&lt;2.15&quot;</span><span class="p">,</span> <span class="s2">&quot;standard-imghdr&quot;</span><span class="p">]</span>
+<span class="sd">    """</span>
+    <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"tensorboard&gt;=2.12,&lt;2.15"</span><span class="p">,</span> <span class="s2">"standard-imghdr"</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">requirements</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4873,18 +4873,18 @@ the TensorBoard service class</p>
     <span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TensorboardServiceConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization for TensorBoard service.</span>
+<span class="w">    </span><span class="sd">"""Initialization for TensorBoard service.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: service configuration</span>
 <span class="sd">        **attrs: additional attributes</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># ensure that the endpoint is created before the service is initialized</span>
     <span class="c1"># TODO [ENG-697]: implement a service factory or builder for TensorBoard</span>
     <span class="c1">#   deployment services</span>
     <span class="k">if</span> <span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">TensorboardServiceConfig</span><span class="p">)</span>
-        <span class="ow">and</span> <span class="s2">&quot;endpoint&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span>
+        <span class="ow">and</span> <span class="s2">"endpoint"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span>
     <span class="p">):</span>
         <span class="n">endpoint</span> <span class="o">=</span> <span class="n">LocalDaemonServiceEndpoint</span><span class="p">(</span>
             <span class="n">config</span><span class="o">=</span><span class="n">LocalDaemonServiceEndpointConfig</span><span class="p">(</span>
@@ -4892,14 +4892,14 @@ the TensorBoard service class</p>
             <span class="p">),</span>
             <span class="n">monitor</span><span class="o">=</span><span class="n">HTTPEndpointHealthMonitor</span><span class="p">(</span>
                 <span class="n">config</span><span class="o">=</span><span class="n">HTTPEndpointHealthMonitorConfig</span><span class="p">(</span>
-                    <span class="n">healthcheck_uri_path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">healthcheck_uri_path</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
                     <span class="n">use_head_request</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">),</span>
         <span class="p">)</span>
-        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
-    <span class="k">if</span> <span class="s2">&quot;uuid&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
-        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;uuid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">"endpoint"</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
+    <span class="k">if</span> <span class="s2">"uuid"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">"uuid"</span><span class="p">]</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -4963,15 +4963,15 @@ the TensorBoard service class</p>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialize and run the TensorBoard server."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">tensorboard</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># type: ignore [import-untyped]</span>
         <span class="n">default</span><span class="p">,</span>
         <span class="n">program</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="s2">&quot;Starting TensorBoard service as blocking &quot;</span>
-        <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
+        <span class="s2">"Starting TensorBoard service as blocking "</span>
+        <span class="s2">"process... press CTRL+C once to stop it."</span>
     <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prepare_for_start</span><span class="p">()</span>
@@ -4983,14 +4983,14 @@ the TensorBoard service class</p>
         <span class="n">tensorboard</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
             <span class="n">logdir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">logdir</span><span class="p">,</span>
             <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
-            <span class="n">host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+            <span class="n">host</span><span class="o">=</span><span class="s2">"localhost"</span><span class="p">,</span>
             <span class="n">max_reload_threads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_reload_threads</span><span class="p">,</span>
             <span class="n">reload_interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reload_interval</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">tensorboard</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
     <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;TensorBoard service stopped. Resuming normal execution.&quot;</span>
+            <span class="s2">"TensorBoard service stopped. Resuming normal execution."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5099,22 +5099,22 @@ seconds. Set to 0 to load just once at startup.</p>
 <span class="normal">145</span>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service configuration.</span>
+<span class="w">    </span><span class="sd">"""Initialize the service configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **data: keyword arguments.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        ValueError: if neither &#39;name&#39; nor &#39;model_name&#39; is set.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        ValueError: if neither 'name' nor 'model_name' is set.</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">service_name</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">&quot;service_name&quot;</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ZENM_ENDPOINT_PREFIX</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">"service_name"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ZENM_ENDPOINT_PREFIX</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;name&#39; or &#39;model_name&#39; must be set.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Either 'name' or 'model_name' must be set."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -5375,8 +5375,8 @@ TCP port.</p>
 <span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">logdir</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;TensorBoardInfo&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"TensorBoardInfo"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Find a local TensorBoard server instance.</span>
 
 <span class="sd">    Finds when it is running for the supplied logdir location and return its</span>
 <span class="sd">    TCP port.</span>
@@ -5387,7 +5387,7 @@ TCP port.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The TensorBoardInfo describing the running TensorBoard server or</span>
 <span class="sd">        None if no server is running for the supplied logdir location.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">tensorboard.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all</span>
 
     <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">get_all</span><span class="p">():</span>
@@ -5489,13 +5489,13 @@ TCP port.</p>
 <span class="normal">189</span>
 <span class="normal">190</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
+    <span class="nb">object</span><span class="p">:</span> <span class="s2">"StepRunResponse"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
+<span class="w">    </span><span class="sd">"""Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object: StepRunResponseModel fetched from get_step().</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">object</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">artifact_view</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
             <span class="c1"># filter out anything but model artifacts</span>
@@ -5511,14 +5511,14 @@ TCP port.</p>
                     <span class="k">return</span>
 
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Stopping tensorboard server with PID &#39;</span><span class="si">%d</span><span class="s2">&#39; ...&quot;</span><span class="p">,</span>
+                    <span class="s2">"Stopping tensorboard server with PID '</span><span class="si">%d</span><span class="s2">' ..."</span><span class="p">,</span>
                     <span class="n">running_server</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">p</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">running_server</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                        <span class="s2">&quot;Could not find process for PID &#39;</span><span class="si">%d</span><span class="s2">&#39; ...&quot;</span><span class="p">,</span>
+                        <span class="s2">"Could not find process for PID '</span><span class="si">%d</span><span class="s2">' ..."</span><span class="p">,</span>
                         <span class="n">running_server</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="k">continue</span>
@@ -5686,12 +5686,12 @@ logged by past and future step runs.</p>
 <span class="normal">127</span>
 <span class="normal">128</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
+    <span class="nb">object</span><span class="p">:</span> <span class="s2">"StepRunResponse"</span><span class="p">,</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">800</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
+<span class="w">    </span><span class="sd">"""Start a TensorBoard server.</span>
 
 <span class="sd">    Allows for the visualization of all models logged as artifacts by the</span>
 <span class="sd">    indicated step. The server will monitor and display all the models</span>
@@ -5702,7 +5702,7 @@ logged by past and future step runs.</p>
 <span class="sd">        height: Height of the generated visualization.</span>
 <span class="sd">        *args: Additional arguments.</span>
 <span class="sd">        **kwargs: Additional keyword arguments.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">object</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">artifact_view</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
             <span class="c1"># filter out anything but model artifacts</span>
@@ -5718,21 +5718,21 @@ logged by past and future step runs.</p>
                     <span class="bp">self</span><span class="o">.</span><span class="n">visualize_tensorboard</span><span class="p">(</span><span class="n">running_server</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
                     <span class="k">return</span>
 
-                <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"win32"</span><span class="p">:</span>
                     <span class="c1"># Daemon service functionality is currently not supported</span>
                     <span class="c1"># on Windows</span>
                     <span class="nb">print</span><span class="p">(</span>
-                        <span class="s2">&quot;You can run:</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;[italic green]    tensorboard --logdir </span><span class="si">{</span><span class="n">logdir</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;[/italic green]</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;...to visualize the TensorBoard logs for your trained model.&quot;</span>
+                        <span class="s2">"You can run:</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="sa">f</span><span class="s2">"[italic green]    tensorboard --logdir </span><span class="si">{</span><span class="n">logdir</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="s2">"[/italic green]</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="s2">"...to visualize the TensorBoard logs for your trained model."</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1"># start a new TensorBoard server</span>
                     <span class="n">service</span> <span class="o">=</span> <span class="n">TensorboardService</span><span class="p">(</span>
                         <span class="n">TensorboardServiceConfig</span><span class="p">(</span>
                             <span class="n">logdir</span><span class="o">=</span><span class="n">logdir</span><span class="p">,</span>
-                            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;zenml-tensorboard-</span><span class="si">{</span><span class="n">logdir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"zenml-tensorboard-</span><span class="si">{</span><span class="n">logdir</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                     <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
@@ -5838,13 +5838,13 @@ requests.</p>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a visualization of a TensorBoard.</span>
+<span class="w">    </span><span class="sd">"""Generate a visualization of a TensorBoard.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        port: the TCP port where the TensorBoard server is listening for</span>
 <span class="sd">            requests.</span>
 <span class="sd">        height: Height of the generated visualization.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">tensorboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">notebook</span>  <span class="c1"># type:ignore[import-untyped]</span>
 
     <span class="k">if</span> <span class="n">Environment</span><span class="o">.</span><span class="n">in_notebook</span><span class="p">():</span>
@@ -5852,9 +5852,9 @@ requests.</p>
         <span class="k">return</span>
 
     <span class="nb">print</span><span class="p">(</span>
-        <span class="s2">&quot;You can visit:</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;[italic green]    http://localhost:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">/[/italic green]</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="s2">&quot;...to visualize the TensorBoard logs for your trained model.&quot;</span>
+        <span class="s2">"You can visit:</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"[italic green]    http://localhost:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">/[/italic green]</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"...to visualize the TensorBoard logs for your trained model."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6006,8 +6006,8 @@ requests.</p>
 <span class="normal">216</span>
 <span class="normal">217</span>
 <span class="normal">218</span>
-<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the StepRunResponseModel for the specified pipeline and step name.</span>
+<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StepRunResponse"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get the StepRunResponseModel for the specified pipeline and step name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_name: The name of the pipeline.</span>
@@ -6018,18 +6018,18 @@ requests.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the step is not found.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">runs</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_pipeline_runs</span><span class="p">(</span><span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline_name</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">runs</span><span class="o">.</span><span class="n">total</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;No pipeline runs for pipeline `</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">` were found&quot;</span>
+            <span class="sa">f</span><span class="s2">"No pipeline runs for pipeline `</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">` were found"</span>
         <span class="p">)</span>
 
     <span class="n">last_run</span> <span class="o">=</span> <span class="n">runs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">step_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">last_run</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;No pipeline step with name `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` was found in &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;pipeline `</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">`&quot;</span>
+            <span class="sa">f</span><span class="s2">"No pipeline step with name `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` was found in "</span>
+            <span class="sa">f</span><span class="s2">"pipeline `</span><span class="si">{</span><span class="n">pipeline_name</span><span class="si">}</span><span class="s2">`"</span>
         <span class="p">)</span>
     <span class="n">step</span> <span class="o">=</span> <span class="n">last_run</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="n">step_name</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">step</span>
@@ -6111,12 +6111,12 @@ requests.</p>
 <span class="normal">243</span>
 <span class="normal">244</span>
 <span class="normal">245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_tensorboard_server</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
+<span class="w">    </span><span class="sd">"""Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_name: the name of the pipeline</span>
 <span class="sd">        step_name: pipeline step name</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">step</span> <span class="o">=</span> <span class="n">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">,</span> <span class="n">step_name</span><span class="p">)</span>
     <span class="n">TensorboardVisualizer</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -6204,7 +6204,7 @@ past and future step runs.</p>
 <span class="normal">232</span>
 <span class="normal">233</span>
 <span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visualize_tensorboard</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
+<span class="w">    </span><span class="sd">"""Start a TensorBoard server.</span>
 
 <span class="sd">    Allows for the visualization of all models logged as output by the named</span>
 <span class="sd">    pipeline step. The server will monitor and display all the models logged by</span>
@@ -6213,7 +6213,7 @@ past and future step runs.</p>
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_name: the name of the pipeline</span>
 <span class="sd">        step_name: pipeline step name</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">step</span> <span class="o">=</span> <span class="n">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">,</span> <span class="n">step_name</span><span class="p">)</span>
     <span class="n">TensorboardVisualizer</span><span class="p">()</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>

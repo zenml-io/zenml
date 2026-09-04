@@ -3856,7 +3856,7 @@
 
 
 <h4 id="zenml.dispatcher.__all__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;EventDispatcher&#39;</span><span class="p">,</span> <span class="s1">&#39;EventHandler&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'EventDispatcher'</span><span class="p">,</span> <span class="s1">'EventHandler'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -3904,7 +3904,7 @@
 <span class="normal">31</span>
 <span class="normal">32</span>
 <span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the dispatcher with an empty handler list.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialize the dispatcher with an empty handler list."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EventHandler</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4000,18 +4000,18 @@
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle a status update on a pipeline run.</span>
+<span class="w">    </span><span class="sd">"""Handle a status update on a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run: The pipeline run whose status has changed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="n">handlers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">event_handler</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Event handler: </span><span class="si">%s</span><span class="s2"> picking up </span><span class="si">%s</span><span class="s2"> status change to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">"Event handler: </span><span class="si">%s</span><span class="s2"> picking up </span><span class="si">%s</span><span class="s2"> status change to </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">event_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">run</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
@@ -4019,7 +4019,7 @@
             <span class="n">event_handler</span><span class="o">.</span><span class="n">handle_run_status_update</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> failed to handle update&quot;</span><span class="p">,</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> failed to handle update"</span><span class="p">,</span>
                 <span class="n">event_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
             <span class="p">)</span>
@@ -4076,11 +4076,11 @@
 <span class="normal">63</span>
 <span class="normal">64</span>
 <span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True if any handlers are registered.</span>
+<span class="w">    </span><span class="sd">"""Return True if any handlers are registered.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether the dispatcher would fan out to at least one handler.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4144,11 +4144,11 @@
 <span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_event_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">EventHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register an event handler.</span>
+<span class="w">    </span><span class="sd">"""Register an event handler.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event_handler: An event handler to register.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event_handler</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4218,13 +4218,13 @@
 <span class="normal">54</span>
 <span class="normal">55</span>
 <span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">unregister_event_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">EventHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unregister a previously-registered event handler.</span>
+<span class="w">    </span><span class="sd">"""Unregister a previously-registered event handler.</span>
 
-<span class="sd">    No-op if the handler isn&#39;t registered.</span>
+<span class="sd">    No-op if the handler isn't registered.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event_handler: The event handler instance to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">event_handler</span><span class="p">)</span>
@@ -4369,8 +4369,8 @@
 <span class="normal">48</span>
 <span class="normal">49</span>
 <span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EventHandler&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory used by the source loader.</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EventHandler"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Factory used by the source loader.</span>
 
 <span class="sd">    Needs to be implemented if a handler is specified via</span>
 <span class="sd">    `server_config.event_handler_sources`.</span>
@@ -4380,9 +4380,9 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Handler instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.create() is not implemented.&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.create() is not implemented."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4455,11 +4455,11 @@
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle a status update on a pipeline run.</span>
+<span class="w">    </span><span class="sd">"""Handle a status update on a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run: The pipeline run whose status has changed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4540,7 +4540,7 @@
 <span class="normal">31</span>
 <span class="normal">32</span>
 <span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the dispatcher with an empty handler list.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialize the dispatcher with an empty handler list."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EventHandler</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -4636,18 +4636,18 @@
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle a status update on a pipeline run.</span>
+<span class="w">    </span><span class="sd">"""Handle a status update on a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run: The pipeline run whose status has changed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="n">handlers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">event_handler</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Event handler: </span><span class="si">%s</span><span class="s2"> picking up </span><span class="si">%s</span><span class="s2"> status change to </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">"Event handler: </span><span class="si">%s</span><span class="s2"> picking up </span><span class="si">%s</span><span class="s2"> status change to </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">event_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">run</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
@@ -4655,7 +4655,7 @@
             <span class="n">event_handler</span><span class="o">.</span><span class="n">handle_run_status_update</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> failed to handle update&quot;</span><span class="p">,</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> failed to handle update"</span><span class="p">,</span>
                 <span class="n">event_handler</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                 <span class="n">exc_info</span><span class="o">=</span><span class="n">exc</span><span class="p">,</span>
             <span class="p">)</span>
@@ -4712,11 +4712,11 @@
 <span class="normal">63</span>
 <span class="normal">64</span>
 <span class="normal">65</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return True if any handlers are registered.</span>
+<span class="w">    </span><span class="sd">"""Return True if any handlers are registered.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether the dispatcher would fan out to at least one handler.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4780,11 +4780,11 @@
 <span class="normal">40</span>
 <span class="normal">41</span>
 <span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_event_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">EventHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register an event handler.</span>
+<span class="w">    </span><span class="sd">"""Register an event handler.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event_handler: An event handler to register.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event_handler</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -4854,13 +4854,13 @@
 <span class="normal">54</span>
 <span class="normal">55</span>
 <span class="normal">56</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">unregister_event_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_handler</span><span class="p">:</span> <span class="n">EventHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unregister a previously-registered event handler.</span>
+<span class="w">    </span><span class="sd">"""Unregister a previously-registered event handler.</span>
 
-<span class="sd">    No-op if the handler isn&#39;t registered.</span>
+<span class="sd">    No-op if the handler isn't registered.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        event_handler: The event handler instance to remove.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handlers_lock</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_event_handlers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">event_handler</span><span class="p">)</span>
@@ -5047,8 +5047,8 @@
 <span class="normal">48</span>
 <span class="normal">49</span>
 <span class="normal">50</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;EventHandler&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Factory used by the source loader.</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EventHandler"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Factory used by the source loader.</span>
 
 <span class="sd">    Needs to be implemented if a handler is specified via</span>
 <span class="sd">    `server_config.event_handler_sources`.</span>
@@ -5058,9 +5058,9 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Handler instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.create() is not implemented.&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.create() is not implemented."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5133,11 +5133,11 @@
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">run</span><span class="p">:</span> <span class="n">PipelineRunResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle a status update on a pipeline run.</span>
+<span class="w">    </span><span class="sd">"""Handle a status update on a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run: The pipeline run whose status has changed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

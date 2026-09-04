@@ -4310,16 +4310,16 @@
 <span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a new service connector instance.</span>
+<span class="w">    </span><span class="sd">"""Initialize a new service connector instance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kwargs: Additional keyword arguments to pass to the base class</span>
 <span class="sd">            constructor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># Convert the resource ID to its canonical form. For resource types</span>
-    <span class="c1"># that don&#39;t support multiple instances:</span>
+    <span class="c1"># that don't support multiple instances:</span>
     <span class="c1"># - if a resource ID is not provided, we use the default resource ID for</span>
     <span class="c1"># the resource type</span>
     <span class="c1"># - if a resource ID is provided, we verify that it matches the default</span>
@@ -4331,9 +4331,9 @@
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">AuthorizationException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Authorization error validating resource ID &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Authorization error validating resource ID "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="c1"># Log an exception if debug logging is enabled</span>
             <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
@@ -4756,16 +4756,16 @@
 <span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a new service connector instance.</span>
+<span class="w">    </span><span class="sd">"""Initialize a new service connector instance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kwargs: Additional keyword arguments to pass to the base class</span>
 <span class="sd">            constructor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># Convert the resource ID to its canonical form. For resource types</span>
-    <span class="c1"># that don&#39;t support multiple instances:</span>
+    <span class="c1"># that don't support multiple instances:</span>
     <span class="c1"># - if a resource ID is not provided, we use the default resource ID for</span>
     <span class="c1"># the resource type</span>
     <span class="c1"># - if a resource ID is provided, we verify that it matches the default</span>
@@ -4777,9 +4777,9 @@
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">AuthorizationException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Authorization error validating resource ID &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Authorization error validating resource ID "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="c1"># Log an exception if debug logging is enabled</span>
             <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
@@ -5121,16 +5121,16 @@ constructor.</p>
 <span class="normal">192</span>
 <span class="normal">193</span>
 <span class="normal">194</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a new service connector instance.</span>
+<span class="w">    </span><span class="sd">"""Initialize a new service connector instance.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        kwargs: Additional keyword arguments to pass to the base class</span>
 <span class="sd">            constructor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># Convert the resource ID to its canonical form. For resource types</span>
-    <span class="c1"># that don&#39;t support multiple instances:</span>
+    <span class="c1"># that don't support multiple instances:</span>
     <span class="c1"># - if a resource ID is not provided, we use the default resource ID for</span>
     <span class="c1"># the resource type</span>
     <span class="c1"># - if a resource ID is provided, we verify that it matches the default</span>
@@ -5142,9 +5142,9 @@ constructor.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">AuthorizationException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Authorization error validating resource ID &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Authorization error validating resource ID "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2"> for resource type "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="c1"># Log an exception if debug logging is enabled</span>
             <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
@@ -5531,8 +5531,8 @@ credentials have expired.</p>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ServiceConnector&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Auto-configure a connector instance.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ServiceConnector"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Auto-configure a connector instance.</span>
 
 <span class="sd">    Instantiate a connector with a configuration extracted from the</span>
 <span class="sd">    authentication configuration available in the environment (e.g.</span>
@@ -5546,7 +5546,7 @@ credentials have expired.</p>
 <span class="sd">            the method returns a connector instance configured to access any</span>
 <span class="sd">            of the supported resource types (multi-type connector) or</span>
 <span class="sd">            configured to use a default resource type. If the connector</span>
-<span class="sd">            doesn&#39;t support multi-type configurations or if it cannot decide</span>
+<span class="sd">            doesn't support multi-type configurations or if it cannot decide</span>
 <span class="sd">            which resource type to use, it may raise an exception.</span>
 <span class="sd">        resource_id: The ID of the resource instance to configure. The</span>
 <span class="sd">            connector implementation may choose to either require or ignore</span>
@@ -5562,9 +5562,9 @@ credentials have expired.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the connector does not support the requested</span>
 <span class="sd">            authentication method or resource type.</span>
-<span class="sd">        AuthorizationException: If the connector&#39;s authentication</span>
+<span class="sd">        AuthorizationException: If the connector's authentication</span>
 <span class="sd">            credentials have expired.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">spec</span><span class="o">.</span><span class="n">supports_auto_configuration</span><span class="p">:</span>
@@ -5572,14 +5572,14 @@ credentials have expired.</p>
 
     <span class="k">if</span> <span class="n">auth_method</span> <span class="ow">and</span> <span class="n">auth_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">auth_method_dict</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;connector type </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not support authentication &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;method: &#39;</span><span class="si">{</span><span class="n">auth_method</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+            <span class="sa">f</span><span class="s2">"connector type </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not support authentication "</span>
+            <span class="sa">f</span><span class="s2">"method: '</span><span class="si">{</span><span class="n">auth_method</span><span class="si">}</span><span class="s2">'"</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">resource_type</span> <span class="ow">and</span> <span class="n">resource_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">resource_type_dict</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;connector type </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not support resource type: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+            <span class="sa">f</span><span class="s2">"connector type </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not support resource type: "</span>
+            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">'"</span>
         <span class="p">)</span>
 
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_auto_configure</span><span class="p">(</span>
@@ -5591,8 +5591,8 @@ credentials have expired.</p>
 
     <span class="k">if</span> <span class="n">connector</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;the connector&#39;s auto-configured authentication credentials &quot;</span>
-            <span class="s2">&quot;have expired.&quot;</span>
+            <span class="s2">"the connector's auto-configured authentication credentials "</span>
+            <span class="s2">"have expired."</span>
         <span class="p">)</span>
 
     <span class="n">connector</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span>
@@ -5735,14 +5735,14 @@ credentials have expired.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configure a local client to authenticate and connect to a resource.</span>
+<span class="w">    </span><span class="sd">"""Configure a local client to authenticate and connect to a resource.</span>
 
-<span class="sd">    This method uses the connector&#39;s configuration to configure a local</span>
+<span class="sd">    This method uses the connector's configuration to configure a local</span>
 <span class="sd">    client or SDK installed on the localhost so that it can authenticate</span>
 <span class="sd">    and connect to the resource that the connector is configured to access.</span>
 
 <span class="sd">    The connector has to be fully configured for this method to succeed</span>
-<span class="sd">    (i.e. the connector&#39;s configuration must be valid, a resource type must</span>
+<span class="sd">    (i.e. the connector's configuration must be valid, a resource type must</span>
 <span class="sd">    be specified and the resource ID must be specified if the resource type</span>
 <span class="sd">    supports multiple instances). This method should only be called on a</span>
 <span class="sd">    connector client retrieved by calling `get_connector_client` on the</span>
@@ -5753,9 +5753,9 @@ credentials have expired.</p>
 <span class="sd">            to configure the client.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        AuthorizationException: If the connector&#39;s authentication</span>
+<span class="sd">        AuthorizationException: If the connector's authentication</span>
 <span class="sd">            credentials have expired.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_runtime_args</span><span class="p">(</span>
         <span class="n">resource_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="p">,</span>
@@ -5765,7 +5765,7 @@ credentials have expired.</p>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;the connector&#39;s authentication credentials have expired.&quot;</span>
+            <span class="s2">"the connector's authentication credentials have expired."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span>
@@ -5968,14 +5968,14 @@ credentials have expired.</p>
     <span class="n">verify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Authenticate and connect to a resource.</span>
+<span class="w">    </span><span class="sd">"""Authenticate and connect to a resource.</span>
 
 <span class="sd">    Initialize and return an implementation specific object representing an</span>
 <span class="sd">    authenticated service client, connection or session that can be used</span>
 <span class="sd">    to access the resource that the connector is configured to access.</span>
 
 <span class="sd">    The connector has to be fully configured for this method to succeed</span>
-<span class="sd">    (i.e. the connector&#39;s configuration must be valid, a resource type and</span>
+<span class="sd">    (i.e. the connector's configuration must be valid, a resource type and</span>
 <span class="sd">    a resource ID must be configured). This method should only be called on</span>
 <span class="sd">    a connector client retrieved by calling `get_connector_client` on the</span>
 <span class="sd">    main service connector.</span>
@@ -5991,9 +5991,9 @@ credentials have expired.</p>
 <span class="sd">        service client, connection or session.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        AuthorizationException: If the connector&#39;s authentication</span>
+<span class="sd">        AuthorizationException: If the connector's authentication</span>
 <span class="sd">            credentials have expired.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">verify</span><span class="p">:</span>
         <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_runtime_args</span><span class="p">(</span>
             <span class="n">resource_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="p">,</span>
@@ -6004,7 +6004,7 @@ credentials have expired.</p>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
             <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                <span class="s2">&quot;the connector&#39;s authentication credentials have expired.&quot;</span>
+                <span class="s2">"the connector's authentication credentials have expired."</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span>
@@ -6202,9 +6202,9 @@ credentials have expired.</p>
 <span class="normal">660</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a service connector instance from a service connector model.</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">"ServiceConnectorRequest"</span><span class="p">,</span> <span class="s2">"ServiceConnectorResponse"</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnector"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates a service connector instance from a service connector model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: The service connector model.</span>
@@ -6214,7 +6214,7 @@ credentials have expired.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the connector configuration is invalid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Validate the connector configuration model</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
@@ -6237,7 +6237,7 @@ credentials have expired.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="c1"># Unpack the authentication configuration</span>
@@ -6245,24 +6245,24 @@ credentials have expired.</p>
 
     <span class="k">if</span> <span class="n">method_spec</span><span class="o">.</span><span class="n">config_class</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;the implementation of the </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> connector type is &quot;</span>
-            <span class="s2">&quot;not available in the environment. Please check that you &quot;</span>
-            <span class="s2">&quot;have installed the required dependencies.&quot;</span>
+            <span class="sa">f</span><span class="s2">"the implementation of the </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> connector type is "</span>
+            <span class="s2">"not available in the environment. Please check that you "</span>
+            <span class="s2">"have installed the required dependencies."</span>
         <span class="p">)</span>
 
     <span class="c1"># Validate the authentication configuration</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">auth_config</span> <span class="o">=</span> <span class="n">method_spec</span><span class="o">.</span><span class="n">config_class</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">hint</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">hint</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">ServiceConnectorResponse</span><span class="p">):</span>
             <span class="n">hint</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;If the error is related to missing secret attributes, &quot;</span>
-                <span class="s2">&quot;you might be missing permissions to access the service &quot;</span>
-                <span class="s2">&quot;connector&#39;s secret values.&quot;</span>
+                <span class="s2">"If the error is related to missing secret attributes, "</span>
+                <span class="s2">"you might be missing permissions to access the service "</span>
+                <span class="s2">"connector's secret values."</span>
             <span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_config</span><span class="p">,</span> <span class="n">AuthenticationConfig</span><span class="p">)</span>
@@ -6483,8 +6483,8 @@ even of a different connector type.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a connector client that can be used to connect to a resource.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnector"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get a connector client that can be used to connect to a resource.</span>
 
 <span class="sd">    The connector client can be used by consumers to connect to a resource</span>
 <span class="sd">    (i.e. make calls to `connect` and `configure_local_client`).</span>
@@ -6503,7 +6503,7 @@ even of a different connector type.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        AuthorizationException: If authentication failed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_runtime_args</span><span class="p">(</span>
         <span class="n">resource_type</span><span class="o">=</span><span class="n">resource_type</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="o">=</span><span class="n">resource_id</span><span class="p">,</span>
@@ -6513,7 +6513,7 @@ even of a different connector type.</p>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;the connector&#39;s authentication credentials have expired.&quot;</span>
+            <span class="s2">"the connector's authentication credentials have expired."</span>
         <span class="p">)</span>
 
     <span class="c1"># Verify if the connector allows access to the requested resource type</span>
@@ -6539,7 +6539,7 @@ even of a different connector type.</p>
 
     <span class="k">if</span> <span class="n">connector_client</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;the connector&#39;s authentication credentials have expired.&quot;</span>
+            <span class="s2">"the connector's authentication credentials have expired."</span>
         <span class="p">)</span>
 
     <span class="n">connector_client</span><span class="o">.</span><span class="n">_verify</span><span class="p">(</span>
@@ -6612,11 +6612,11 @@ even of a different connector type.</p>
 <span class="normal">547</span>
 <span class="normal">548</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the connector type specification.</span>
+<span class="w">    </span><span class="sd">"""Get the connector type specification.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The connector type specification.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_TYPE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_TYPE</span>
 
@@ -6706,7 +6706,7 @@ time.</p>
 <span class="normal">808</span>
 <span class="normal">809</span>
 <span class="normal">810</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the connector authentication credentials have expired.</span>
+<span class="w">    </span><span class="sd">"""Check if the connector authentication credentials have expired.</span>
 
 <span class="sd">    Verify that the authentication credentials associated with the connector</span>
 <span class="sd">    have not expired by checking the expiration time against the current</span>
@@ -6714,7 +6714,7 @@ time.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the connector has expired, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
@@ -6730,12 +6730,12 @@ time.</p>
     <span class="n">result</span> <span class="o">=</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Checking if connector </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has expired.</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Expires at: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Expires at (+skew): </span><span class="si">{</span><span class="n">expires_at</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Current UTC time: </span><span class="si">{</span><span class="n">now</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Delta: </span><span class="si">{</span><span class="n">delta</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"Checking if connector </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has expired.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Expires at: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Expires at (+skew): </span><span class="si">{</span><span class="n">expires_at</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Current UTC time: </span><span class="si">{</span><span class="n">now</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Delta: </span><span class="si">{</span><span class="n">delta</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">result</span>
@@ -6749,7 +6749,7 @@ time.</p>
 
 
 <h8 id="zenml.service_connectors.service_connector.ServiceConnector.to_model" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorRequest</span></code>
+            <code class="highlight language-python"><span class="n">to_model</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorRequest</span></code>
 
 </h8>
 
@@ -6930,10 +6930,10 @@ time.</p>
 <span class="normal">709</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the connector instance to a service connector model.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnectorRequest"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Convert the connector instance to a service connector model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the connector.</span>
@@ -6946,13 +6946,13 @@ time.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the connector configuration is not valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
     <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;connector configuration is not valid: name must be set&quot;</span>
+            <span class="s2">"connector configuration is not valid: name must be set"</span>
         <span class="p">)</span>
 
     <span class="n">model</span> <span class="o">=</span> <span class="n">ServiceConnectorRequest</span><span class="p">(</span>
@@ -6985,7 +6985,7 @@ time.</p>
 
 
 <h8 id="zenml.service_connectors.service_connector.ServiceConnector.to_response_model" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_response_model</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorResponse</span></code>
+            <code class="highlight language-python"><span class="n">to_response_model</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorResponse</span></code>
 
 </h8>
 
@@ -7217,10 +7217,10 @@ time.</p>
     <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the connector instance to a service connector response model.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnectorResponse"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Convert the connector instance to a service connector response model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user: The user that created the connector.</span>
@@ -7235,14 +7235,14 @@ time.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the connector configuration is not valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
     <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
     <span class="nb">id</span> <span class="o">=</span> <span class="nb">id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;connector configuration is not valid: name and ID must be set&quot;</span>
+            <span class="s2">"connector configuration is not valid: name and ID must be set"</span>
         <span class="p">)</span>
 
     <span class="n">now</span> <span class="o">=</span> <span class="n">utc_now</span><span class="p">()</span>
@@ -7564,7 +7564,7 @@ canonical form.</p>
     <span class="n">require_resource_id</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate the runtime arguments against the connector configuration.</span>
+<span class="w">    </span><span class="sd">"""Validate the runtime arguments against the connector configuration.</span>
 
 <span class="sd">    Validate that the supplied runtime arguments are compatible with the</span>
 <span class="sd">    connector configuration and its specification. This includes validating</span>
@@ -7573,10 +7573,10 @@ canonical form.</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">        resource_type: The type of the resource supplied at runtime by the</span>
-<span class="sd">            connector&#39;s consumer. Must be the same as the resource type that</span>
+<span class="sd">            connector's consumer. Must be the same as the resource type that</span>
 <span class="sd">            the connector is configured to access, unless the connector is</span>
 <span class="sd">            configured to access any resource type.</span>
-<span class="sd">        resource_id: The ID of the resource requested by the connector&#39;s</span>
+<span class="sd">        resource_id: The ID of the resource requested by the connector's</span>
 <span class="sd">            consumer. Can be different than the resource ID that the</span>
 <span class="sd">            connector is configured to access, e.g. if it is not in the</span>
 <span class="sd">            canonical form.</span>
@@ -7589,16 +7589,16 @@ canonical form.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the runtime arguments are not valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span>
         <span class="ow">and</span> <span class="n">resource_type</span>
         <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">!=</span> <span class="n">resource_type</span><span class="p">)</span>
     <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;the connector is configured to provide access to a &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39; resource type, but a different &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;resource type was requested: &#39;</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="sa">f</span><span class="s2">"the connector is configured to provide access to a "</span>
+            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">' resource type, but a different "</span>
+            <span class="sa">f</span><span class="s2">"resource type was requested: '</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">'."</span>
         <span class="p">)</span>
 
     <span class="n">resource_type</span> <span class="o">=</span> <span class="n">resource_type</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_type</span>
@@ -7606,9 +7606,9 @@ canonical form.</p>
 
     <span class="k">if</span> <span class="n">require_resource_type</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">resource_type</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;the connector is configured to provide access to multiple &quot;</span>
-            <span class="s2">&quot;resource types. A resource type must be specified when &quot;</span>
-            <span class="s2">&quot;requesting access to a resource.&quot;</span>
+            <span class="s2">"the connector is configured to provide access to multiple "</span>
+            <span class="s2">"resource types. A resource type must be specified when "</span>
+            <span class="s2">"requesting access to a resource."</span>
         <span class="p">)</span>
 
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
@@ -7622,16 +7622,16 @@ canonical form.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">resource_spec</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">resource_id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;the connector is configured to provide access to multiple &quot;</span>
-                <span class="s2">&quot;resource types, but only a resource name was specified. A &quot;</span>
-                <span class="s2">&quot;resource type must also be specified when &quot;</span>
-                <span class="s2">&quot;requesting access to a resource.&quot;</span>
+                <span class="s2">"the connector is configured to provide access to multiple "</span>
+                <span class="s2">"resource types, but only a resource name was specified. A "</span>
+                <span class="s2">"resource type must also be specified when "</span>
+                <span class="s2">"requesting access to a resource."</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span>
@@ -7647,19 +7647,19 @@ canonical form.</p>
     <span class="k">if</span> <span class="n">resource_id</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span> <span class="o">!=</span> <span class="n">resource_id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;the connector is configured to provide access to a &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;single </span><span class="si">{</span><span class="n">resource_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resource with a &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;resource name of &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">&#39;, but a &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;different resource name was requested: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                <span class="sa">f</span><span class="s2">"the connector is configured to provide access to a "</span>
+                <span class="sa">f</span><span class="s2">"single </span><span class="si">{</span><span class="n">resource_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resource with a "</span>
+                <span class="sa">f</span><span class="s2">"resource name of '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">', but a "</span>
+                <span class="sa">f</span><span class="s2">"different resource name was requested: "</span>
+                <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">'."</span>
             <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span> <span class="ow">and</span> <span class="n">require_resource_id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;the connector is configured to provide access to &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;multiple </span><span class="si">{</span><span class="n">resource_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resources. A resource name &quot;</span>
-                <span class="s2">&quot;must be specified when requesting access to a resource.&quot;</span>
+                <span class="sa">f</span><span class="s2">"the connector is configured to provide access to "</span>
+                <span class="sa">f</span><span class="s2">"multiple </span><span class="si">{</span><span class="n">resource_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resources. A resource name "</span>
+                <span class="s2">"must be specified when requesting access to a resource."</span>
             <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span>
@@ -8002,15 +8002,15 @@ not valid.</p>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">list_resources</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorResourcesModel</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify and optionally list all the resources that the connector can access.</span>
+<span class="w">    </span><span class="sd">"""Verify and optionally list all the resources that the connector can access.</span>
 
-<span class="sd">    This method uses the connector&#39;s configuration to verify that it can</span>
+<span class="sd">    This method uses the connector's configuration to verify that it can</span>
 <span class="sd">    authenticate and access the indicated resource(s).</span>
 
 <span class="sd">    If `list_resources` is set, the list of resources that the connector can</span>
 <span class="sd">    access, scoped to the supplied resource type and resource ID is included</span>
 <span class="sd">    in the response, otherwise the connector only verifies that it can</span>
-<span class="sd">    globally authenticate and doesn&#39;t verify or return resource information</span>
+<span class="sd">    globally authenticate and doesn't verify or return resource information</span>
 <span class="sd">    (i.e. the `resource_ids` fields in the response are empty).</span>
 
 <span class="sd">    Args:</span>
@@ -8031,7 +8031,7 @@ not valid.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the arguments or the connector configuration are</span>
 <span class="sd">            not valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
     <span class="n">resources</span> <span class="o">=</span> <span class="n">ServiceConnectorResourcesModel</span><span class="p">(</span>
@@ -8040,15 +8040,15 @@ not valid.</p>
         <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">name_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">name_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">'"</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="k">else</span> <span class="s2">""</span>
 
     <span class="n">resource_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">supported_resource_types</span>
     <span class="k">if</span> <span class="n">resource_type</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">resource_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">resource_types</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> does not support resource type: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39;. Supported resource types are: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resource_types</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> does not support resource type: "</span>
+                <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">'. Supported resource types are: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">resource_types</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="n">resource_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">resource_type</span><span class="p">]</span>
 
@@ -8062,7 +8062,7 @@ not valid.</p>
     <span class="p">]</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_expired</span><span class="p">():</span>
-        <span class="n">error</span> <span class="o">=</span> <span class="s2">&quot;the connector&#39;s authentication credentials have expired.&quot;</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="s2">"the connector's authentication credentials have expired."</span>
         <span class="c1"># Log the error in the resources object</span>
         <span class="n">resources</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">resources</span>
@@ -8070,7 +8070,7 @@ not valid.</p>
     <span class="n">verify_resource_types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">verify_resource_id</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">list_resources</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">resource_id</span><span class="p">:</span>
-        <span class="c1"># If we&#39;re not listing resources, we&#39;re only verifying that the</span>
+        <span class="c1"># If we're not listing resources, we're only verifying that the</span>
         <span class="c1"># connector can authenticate globally (i.e. without supplying a</span>
         <span class="c1"># resource type or resource ID). This is the same as if no resource</span>
         <span class="c1"># type or resource ID was supplied. The only exception is when the</span>
@@ -8109,11 +8109,11 @@ not valid.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The connector configuration is incomplete or invalid: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"The connector configuration is incomplete or invalid: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">AuthorizationException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> authorization failure: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> authorization failure: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span>
             <span class="c1"># Log an exception if debug logging is enabled</span>
             <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
@@ -8129,8 +8129,8 @@ not valid.</p>
                 <span class="k">break</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> verification failed with &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;unexpected error: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> verification failed with "</span>
+                <span class="sa">f</span><span class="s2">"unexpected error: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="c1"># Log an exception if debug logging is enabled</span>
             <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
@@ -8138,8 +8138,8 @@ not valid.</p>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;an unexpected error occurred while verifying the &quot;</span>
-                <span class="s2">&quot;connector.&quot;</span>
+                <span class="s2">"an unexpected error occurred while verifying the "</span>
+                <span class="s2">"connector."</span>
             <span class="p">)</span>
             <span class="c1"># Log the error in the resources object</span>
             <span class="n">resources</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">resource_type</span><span class="o">=</span><span class="n">resource_type</span><span class="p">)</span>
@@ -8150,7 +8150,7 @@ not valid.</p>
                 <span class="k">break</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span><span class="p">:</span>
-            <span class="c1"># If a resource type is not provided as argument, we don&#39;t</span>
+            <span class="c1"># If a resource type is not provided as argument, we don't</span>
             <span class="c1"># expect any resources to be listed</span>
             <span class="k">continue</span>
 
@@ -8161,22 +8161,22 @@ not valid.</p>
             <span class="c1"># resource to be listed</span>
             <span class="k">if</span> <span class="p">[</span><span class="n">resource_id</span><span class="p">]</span> <span class="o">!=</span> <span class="n">resource_ids</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;a different resource ID &#39;</span><span class="si">{</span><span class="n">resource_ids</span><span class="si">}</span><span class="s2">&#39; was &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;returned than the one requested: </span><span class="si">{</span><span class="n">resource_ids</span><span class="si">}</span><span class="s2">. &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;This is likely a bug in the </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2"> &quot;</span>
-                    <span class="s2">&quot;connector implementation.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"a different resource ID '</span><span class="si">{</span><span class="n">resource_ids</span><span class="si">}</span><span class="s2">' was "</span>
+                    <span class="sa">f</span><span class="s2">"returned than the one requested: </span><span class="si">{</span><span class="n">resource_ids</span><span class="si">}</span><span class="s2">. "</span>
+                    <span class="sa">f</span><span class="s2">"This is likely a bug in the </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="s2">"connector implementation."</span>
                 <span class="p">)</span>
             <span class="n">resources</span><span class="o">.</span><span class="n">set_resource_ids</span><span class="p">(</span><span class="n">resource_type</span><span class="p">,</span> <span class="p">[</span><span class="n">resource_id</span><span class="p">])</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="n">resource_ids</span><span class="p">:</span>
             <span class="c1"># If no resources were listed, signal this as an error that the</span>
             <span class="c1"># connector cannot access any resources.</span>
             <span class="n">error</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> didn&#39;t list any &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">resource_type_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resources. This is likely &quot;</span>
-                <span class="s2">&quot;caused by the connector credentials not being valid or &quot;</span>
-                <span class="s2">&quot;not having sufficient permissions to list or access &quot;</span>
-                <span class="s2">&quot;resources of this type. Please check the connector &quot;</span>
-                <span class="s2">&quot;configuration and its credentials and try again.&quot;</span>
+                <span class="sa">f</span><span class="s2">"connector</span><span class="si">{</span><span class="n">name_msg</span><span class="si">}</span><span class="s2"> didn't list any "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">resource_type_spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> resources. This is likely "</span>
+                <span class="s2">"caused by the connector credentials not being valid or "</span>
+                <span class="s2">"not having sufficient permissions to list or access "</span>
+                <span class="s2">"resources of this type. Please check the connector "</span>
+                <span class="s2">"configuration and its credentials and try again."</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
             <span class="n">resources</span><span class="o">.</span><span class="n">set_error</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">resource_type</span><span class="o">=</span><span class="n">resource_type</span><span class="p">)</span>
@@ -8373,8 +8373,8 @@ not valid.</p>
 <span class="normal">107</span>
 <span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorMeta&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a new ServiceConnector class and registers it.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnectorMeta"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates a new ServiceConnector class and registers it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the class.</span>
@@ -8383,13 +8383,13 @@ not valid.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The ServiceConnectorMeta class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">cls</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
-        <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;ServiceConnector&quot;</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+        <span class="n">Type</span><span class="p">[</span><span class="s2">"ServiceConnector"</span><span class="p">],</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
     <span class="p">)</span>
 
     <span class="c1"># Skip the following validation and registration for the base class.</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"ServiceConnector"</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">cls</span>
 
     <span class="k">else</span><span class="p">:</span>
@@ -8491,7 +8491,7 @@ not valid.</p>
 <span class="normal">36</span>
 <span class="normal">37</span>
 <span class="normal">38</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service connector registry.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialize the service connector registry."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
@@ -8644,7 +8644,7 @@ identifier.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a service connector type by its connector type identifier.</span>
+<span class="w">    </span><span class="sd">"""Get a service connector type by its connector type identifier.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        connector_type: The service connector type identifier.</span>
@@ -8656,14 +8656,14 @@ identifier.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        KeyError: If no service connector was registered for the given type</span>
 <span class="sd">            identifier.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">register_builtin_service_connectors</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">connector_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Service connector type </span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2"> is not available. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Please make sure the corresponding packages and/or ZenML &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;integration are installed and try again.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Service connector type </span><span class="si">{</span><span class="n">connector_type</span><span class="si">}</span><span class="s2"> is not available. "</span>
+            <span class="sa">f</span><span class="s2">"Please make sure the corresponding packages and/or ZenML "</span>
+            <span class="sa">f</span><span class="s2">"integration are installed and try again."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">[</span><span class="n">connector_type</span><span class="p">]</span><span class="o">.</span><span class="n">model_copy</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -8817,11 +8817,11 @@ given type identifier.</p>
 <span class="normal">203</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">instantiate_connector</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
-        <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">,</span>
+        <span class="s2">"ServiceConnectorRequest"</span><span class="p">,</span>
+        <span class="s2">"ServiceConnectorResponse"</span><span class="p">,</span>
     <span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a service connector model and create an instance from it.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ServiceConnector"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Validate a service connector model and create an instance from it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: The service connector model to validate and instantiate.</span>
@@ -8833,16 +8833,16 @@ given type identifier.</p>
 <span class="sd">        NotImplementedError: If no service connector is registered for the</span>
 <span class="sd">            given type identifier.</span>
 <span class="sd">        ValueError: If the service connector model is not valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">service_connector_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_service_connector_type</span><span class="p">(</span>
             <span class="n">model</span><span class="o">.</span><span class="n">type</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Service connector type </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2"> is not available &quot;</span>
-            <span class="s2">&quot;locally. Please make sure the corresponding packages and/or &quot;</span>
-            <span class="s2">&quot;ZenML integration are installed and try again.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Service connector type </span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2"> is not available "</span>
+            <span class="s2">"locally. Please make sure the corresponding packages and/or "</span>
+            <span class="s2">"ZenML integration are installed and try again."</span>
         <span class="p">)</span>
 
     <span class="k">assert</span> <span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_class</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -8851,7 +8851,7 @@ given type identifier.</p>
         <span class="k">return</span> <span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_class</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The service connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"The service connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8951,7 +8951,7 @@ given type identifier.</p>
 <span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns if a service connector is registered for the given type identifier.</span>
+<span class="w">    </span><span class="sd">"""Returns if a service connector is registered for the given type identifier.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        connector_type: The service connector type identifier.</span>
@@ -8959,7 +8959,7 @@ given type identifier.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if a service connector is registered for the given type</span>
 <span class="sd">        identifier, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">register_builtin_service_connectors</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">connector_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span>
 </code></pre></div></td></tr></table></div>
@@ -9128,7 +9128,7 @@ uses to authenticate with the resource provider.</p>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ServiceConnectorTypeModel</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find one or more service connector types that match the given criteria.</span>
+<span class="w">    </span><span class="sd">"""Find one or more service connector types that match the given criteria.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        connector_type: Filter by service connector type identifier.</span>
@@ -9140,7 +9140,7 @@ uses to authenticate with the resource provider.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of service connector type models that match the given</span>
 <span class="sd">        criteria.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">register_builtin_service_connectors</span><span class="p">()</span>
 
     <span class="n">matches</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ServiceConnectorTypeModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -9250,7 +9250,7 @@ uses to authenticate with the resource provider.</p>
 <span class="normal">267</span>
 <span class="normal">268</span>
 <span class="normal">269</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_builtin_service_connectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers the default built-in service connectors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Registers the default built-in service connectors."""</span>
     <span class="c1"># Only register built-in service connectors once</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span><span class="p">:</span>
@@ -9263,21 +9263,21 @@ uses to authenticate with the resource provider.</p>
                 <span class="n">AWSServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import AWS service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not import AWS service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.service_connectors.gcp_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">GCPServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import GCP service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not import GCP service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.service_connectors.azure_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">AzureServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import Azure service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not import Azure service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
@@ -9285,7 +9285,7 @@ uses to authenticate with the resource provider.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Kubernetes service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Kubernetes service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -9294,7 +9294,7 @@ uses to authenticate with the resource provider.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import Docker service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import Docker service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -9303,7 +9303,7 @@ uses to authenticate with the resource provider.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import OAuth2 service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import OAuth2 service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -9312,7 +9312,7 @@ uses to authenticate with the resource provider.</p>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not import HyperAI service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not import HyperAI service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9417,12 +9417,12 @@ uses to authenticate with the resource provider.</p>
     <span class="n">service_connector_type</span><span class="p">:</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">,</span>
     <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a service connector type.</span>
+<span class="w">    </span><span class="sd">"""Registers a service connector type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service_connector_type: Service connector type.</span>
 <span class="sd">        overwrite: Whether to overwrite an existing service connector type.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span>
@@ -9433,14 +9433,14 @@ uses to authenticate with the resource provider.</p>
                 <span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span>
             <span class="p">]</span> <span class="o">=</span> <span class="n">service_connector_type</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Registered service connector type &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="s2">"Registered service connector type "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Found existing service connector for type &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">: Skipping &quot;</span>
-                <span class="s2">&quot;registration.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Found existing service connector for type "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">service_connector_type</span><span class="o">.</span><span class="n">connector_type</span><span class="si">}</span><span class="s2">: Skipping "</span>
+                <span class="s2">"registration."</span>
             <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9824,14 +9824,14 @@ uses to authenticate with the resource provider.</p>
 <span class="normal">418</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_resources_options_from_resource_model_for_full_stack</span><span class="p">(</span>
     <span class="n">connector_details</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">ServiceConnectorInfo</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorResourcesInfo</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the resource options from the resource model for the full stack.</span>
+<span class="w">    </span><span class="sd">"""Get the resource options from the resource model for the full stack.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        connector_details: The service connector details (UUID or Info).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        All available service connector resource options.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
     <span class="n">zen_store</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">zen_store</span>
 
@@ -9843,7 +9843,7 @@ uses to authenticate with the resource provider.</p>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">resource_model</span> <span class="o">=</span> <span class="n">zen_store</span><span class="o">.</span><span class="n">verify_service_connector_config</span><span class="p">(</span>
             <span class="n">service_connector</span><span class="o">=</span><span class="n">ServiceConnectorRequest</span><span class="p">(</span>
-                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fake&quot;</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">"fake"</span><span class="p">,</span>
                 <span class="n">connector_type</span><span class="o">=</span><span class="n">connector_details</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
                 <span class="n">auth_method</span><span class="o">=</span><span class="n">connector_details</span><span class="o">.</span><span class="n">auth_method</span><span class="p">,</span>
                 <span class="n">configuration</span><span class="o">=</span><span class="n">ServiceConnectorConfiguration</span><span class="p">(</span>
@@ -9868,32 +9868,32 @@ uses to authenticate with the resource provider.</p>
     <span class="n">orchestrators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResourcesInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">container_registries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ResourcesInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">if</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">&quot;aws&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">"aws"</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;s3-bucket&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"s3-bucket"</span><span class="p">:</span>
                     <span class="n">artifact_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ARTIFACT_STORE</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;Path&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"s3"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"Path"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;S3 Bucket&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"S3 Bucket"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;aws-generic&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"aws-generic"</span><span class="p">:</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;sagemaker&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"sagemaker"</span><span class="p">,</span>
                             <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span>
-                                <span class="s2">&quot;execution_role&quot;</span><span class="p">:</span> <span class="s2">&quot;execution role ARN&quot;</span>
+                                <span class="s2">"execution_role"</span><span class="p">:</span> <span class="s2">"execution role ARN"</span>
                             <span class="p">},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;AWS Sagemaker&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"AWS Sagemaker"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -9901,61 +9901,61 @@ uses to authenticate with the resource provider.</p>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;vm_aws&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;region&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"vm_aws"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"region"</span><span class="p">:</span> <span class="s2">"region"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Skypilot (EC2)&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Skypilot (EC2)"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;kubernetes-cluster&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"kubernetes-cluster"</span><span class="p">:</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"kubernetes"</span><span class="p">,</span>
                             <span class="n">required_configuration</span><span class="o">=</span><span class="p">{},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Kubernetes"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;docker-registry&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"docker-registry"</span><span class="p">:</span>
                     <span class="n">container_registries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">CONTAINER_REGISTRY</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;aws&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;URI&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"aws"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"uri"</span><span class="p">:</span> <span class="s2">"URI"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;ECR&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"ECR"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 
-    <span class="k">elif</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">&quot;gcp&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">"gcp"</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;gcs-bucket&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"gcs-bucket"</span><span class="p">:</span>
                     <span class="n">artifact_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ARTIFACT_STORE</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;gcp&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;Path&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"gcp"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"Path"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;GCS Bucket&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"GCS Bucket"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;gcp-generic&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"gcp-generic"</span><span class="p">:</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;vertex&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;region name&quot;</span><span class="p">},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Vertex AI&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"vertex"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="s2">"region name"</span><span class="p">},</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Vertex AI"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -9963,61 +9963,61 @@ uses to authenticate with the resource provider.</p>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;vm_gcp&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;region name&quot;</span><span class="p">},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Skypilot (Compute)&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"vm_gcp"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"region"</span><span class="p">:</span> <span class="s2">"region name"</span><span class="p">},</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Skypilot (Compute)"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;kubernetes-cluster&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"kubernetes-cluster"</span><span class="p">:</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"kubernetes"</span><span class="p">,</span>
                             <span class="n">required_configuration</span><span class="o">=</span><span class="p">{},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Kubernetes"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;docker-registry&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"docker-registry"</span><span class="p">:</span>
                     <span class="n">container_registries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">CONTAINER_REGISTRY</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;gcp&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;URI&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"gcp"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"uri"</span><span class="p">:</span> <span class="s2">"URI"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;GCR&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"GCR"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 
-    <span class="k">elif</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">&quot;azure&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">connector_type</span> <span class="o">==</span> <span class="s2">"azure"</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;blob-container&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"blob-container"</span><span class="p">:</span>
                     <span class="n">artifact_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ARTIFACT_STORE</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;azure&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;Path&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"azure"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"Path"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Blob container&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Blob container"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;azure-generic&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"azure-generic"</span><span class="p">:</span>
                     <span class="c1"># No native orchestrator ATM</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;vm_azure&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;region name&quot;</span><span class="p">},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Skypilot (VM)&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"vm_azure"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"region"</span><span class="p">:</span> <span class="s2">"region name"</span><span class="p">},</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Skypilot (VM)"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -10025,37 +10025,37 @@ uses to authenticate with the resource provider.</p>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;azureml&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"azureml"</span><span class="p">,</span>
                             <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span>
-                                <span class="s2">&quot;subscription_id&quot;</span><span class="p">:</span> <span class="s2">&quot;subscription ID&quot;</span><span class="p">,</span>
-                                <span class="s2">&quot;resource_group&quot;</span><span class="p">:</span> <span class="s2">&quot;resource group&quot;</span><span class="p">,</span>
-                                <span class="s2">&quot;workspace&quot;</span><span class="p">:</span> <span class="s2">&quot;workspace&quot;</span><span class="p">,</span>
+                                <span class="s2">"subscription_id"</span><span class="p">:</span> <span class="s2">"subscription ID"</span><span class="p">,</span>
+                                <span class="s2">"resource_group"</span><span class="p">:</span> <span class="s2">"resource group"</span><span class="p">,</span>
+                                <span class="s2">"workspace"</span><span class="p">:</span> <span class="s2">"workspace"</span><span class="p">,</span>
                             <span class="p">},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;AzureML&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"AzureML"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;kubernetes-cluster&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"kubernetes-cluster"</span><span class="p">:</span>
                     <span class="n">orchestrators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">ORCHESTRATOR</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"kubernetes"</span><span class="p">,</span>
                             <span class="n">required_configuration</span><span class="o">=</span><span class="p">{},</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;Kubernetes&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"Kubernetes"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
-                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">&quot;docker-registry&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">each</span><span class="o">.</span><span class="n">resource_type</span> <span class="o">==</span> <span class="s2">"docker-registry"</span><span class="p">:</span>
                     <span class="n">container_registries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                         <span class="n">_prepare_resource_info</span><span class="p">(</span>
                             <span class="n">connector_details</span><span class="o">=</span><span class="n">connector_details</span><span class="p">,</span>
                             <span class="n">resource_ids</span><span class="o">=</span><span class="n">each</span><span class="o">.</span><span class="n">resource_ids</span><span class="p">,</span>
                             <span class="n">stack_component_type</span><span class="o">=</span><span class="n">StackComponentType</span><span class="o">.</span><span class="n">CONTAINER_REGISTRY</span><span class="p">,</span>
-                            <span class="n">flavor</span><span class="o">=</span><span class="s2">&quot;azure&quot;</span><span class="p">,</span>
-                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;URI&quot;</span><span class="p">},</span>
+                            <span class="n">flavor</span><span class="o">=</span><span class="s2">"azure"</span><span class="p">,</span>
+                            <span class="n">required_configuration</span><span class="o">=</span><span class="p">{</span><span class="s2">"uri"</span><span class="p">:</span> <span class="s2">"URI"</span><span class="p">},</span>
                             <span class="n">use_resource_value_as_fixed_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">&quot;ACR&quot;</span><span class="p">,</span>
+                            <span class="n">flavor_display_name</span><span class="o">=</span><span class="s2">"ACR"</span><span class="p">,</span>
                         <span class="p">)</span>
                     <span class="p">)</span>
 

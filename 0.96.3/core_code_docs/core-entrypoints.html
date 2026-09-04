@@ -4204,7 +4204,7 @@
 
 
 <h4 id="zenml.entrypoints.__all__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;StepEntrypointConfiguration&#39;</span><span class="p">,</span> <span class="s1">&#39;PipelineEntrypointConfiguration&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'StepEntrypointConfiguration'</span><span class="p">,</span> <span class="s1">'PipelineEntrypointConfiguration'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4256,13 +4256,13 @@
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">"""Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineSnapshotResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -4310,7 +4310,7 @@
 <span class="normal">38</span>
 <span class="normal">39</span>
 <span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prepares the environment and runs the configured pipeline."""</span>
     <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot</span>
 
     <span class="c1"># Activate all the integrations. This makes sure that all materializers</span>
@@ -4425,13 +4425,13 @@ class MyOrchestrator(BaseOrchestrator):
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">"""Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineSnapshotResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -4655,11 +4655,11 @@ It needs to provide values for all options returned by the
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">    </span><span class="sd">"""Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    The argument list should be something that</span>
 <span class="sd">    `argparse.ArgumentParser.parse_args(...)` can handle (e.g.</span>
-<span class="sd">    `[&quot;--some_option&quot;, &quot;some_value&quot;]` or `[&quot;--some_option=some_value&quot;]`).</span>
+<span class="sd">    `["--some_option", "some_value"]` or `["--some_option=some_value"]`).</span>
 <span class="sd">    It needs to provide values for all options returned by the</span>
 <span class="sd">    `get_entrypoint_options()` method of this class.</span>
 
@@ -4669,9 +4669,9 @@ It needs to provide values for all options returned by the
 <span class="sd">    Returns:</span>
 <span class="sd">        The superclass arguments as well as arguments for the name of the</span>
 <span class="sd">        step to run.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_arguments</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">STEP_NAME_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">STEP_NAME_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="n">STEP_NAME_OPTION</span><span class="p">],</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -4743,12 +4743,12 @@ It needs to provide values for all options returned by the
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
+<span class="w">    </span><span class="sd">"""Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The superclass options as well as an option for the name of the</span>
 <span class="sd">        step to run.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_options</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">STEP_NAME_OPTION</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4841,7 +4841,7 @@ executed.</p>
     <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Does cleanup or post-processing after the step finished running.</span>
+<span class="w">    </span><span class="sd">"""Does cleanup or post-processing after the step finished running.</span>
 
 <span class="sd">    Subclasses should overwrite this method if they need to run any</span>
 <span class="sd">    additional code after the step execution.</span>
@@ -4850,7 +4850,7 @@ executed.</p>
 <span class="sd">        pipeline_name: Name of the parent pipeline of the step that was</span>
 <span class="sd">            executed.</span>
 <span class="sd">        step_name: Name of the step that was executed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4893,7 +4893,7 @@ executed.</p>
 <span class="normal">199</span>
 <span class="normal">200</span>
 <span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prepares the environment and runs the configured step."""</span>
     <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot</span>
 
     <span class="c1"># Activate all the integrations. This makes sure that all materializers</span>
@@ -5055,13 +5055,13 @@ to the entrypoint and what is running inside the entrypoint.</p>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">"""Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineSnapshotResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -5293,22 +5293,22 @@ to the entrypoint and what is running inside the entrypoint.</p>
 <span class="normal">331</span>
 <span class="normal">332</span>
 <span class="normal">333</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_code_from_code_repository</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">code_reference</span><span class="p">:</span> <span class="s2">&quot;CodeReferenceResponse&quot;</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">code_reference</span><span class="p">:</span> <span class="s2">"CodeReferenceResponse"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Download code from a code repository.</span>
+<span class="w">    </span><span class="sd">"""Download code from a code repository.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        code_reference: The reference to the code.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="s2">&quot;Downloading code from code repository `</span><span class="si">%s</span><span class="s2">` (commit `</span><span class="si">%s</span><span class="s2">`).&quot;</span><span class="p">,</span>
+        <span class="s2">"Downloading code from code repository `</span><span class="si">%s</span><span class="s2">` (commit `</span><span class="si">%s</span><span class="s2">`)."</span><span class="p">,</span>
         <span class="n">code_reference</span><span class="o">.</span><span class="n">code_repository</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="n">code_reference</span><span class="o">.</span><span class="n">commit</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">model</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_code_repository</span><span class="p">(</span><span class="n">code_reference</span><span class="o">.</span><span class="n">code_repository</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">BaseCodeRepository</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-    <span class="n">code_repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">)</span>
+    <span class="n">code_repo_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">"code"</span><span class="p">)</span>
     <span class="n">download_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="n">code_repo_root</span><span class="p">,</span> <span class="n">code_reference</span><span class="o">.</span><span class="n">subdirectory</span>
     <span class="p">)</span>
@@ -5482,11 +5482,11 @@ It needs to provide values for all options returned by the
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">    </span><span class="sd">"""Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    The argument list should be something that</span>
 <span class="sd">    `argparse.ArgumentParser.parse_args(...)` can handle (e.g.</span>
-<span class="sd">    `[&quot;--some_option&quot;, &quot;some_value&quot;]` or `[&quot;--some_option=some_value&quot;]`).</span>
+<span class="sd">    `["--some_option", "some_value"]` or `["--some_option=some_value"]`).</span>
 <span class="sd">    It needs to provide values for all options returned by the</span>
 <span class="sd">    `get_entrypoint_options()` method of this class.</span>
 
@@ -5498,9 +5498,9 @@ It needs to provide values for all options returned by the
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If no valid snapshot ID is passed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">arguments</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">ENTRYPOINT_CONFIG_SOURCE_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">ENTRYPOINT_CONFIG_SOURCE_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">import_path</span><span class="p">,</span>
     <span class="p">]</span>
 
@@ -5508,15 +5508,15 @@ It needs to provide values for all options returned by the
         <span class="n">snapshot_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">uuid_utils</span><span class="o">.</span><span class="n">is_valid_uuid</span><span class="p">(</span><span class="n">snapshot_id</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Missing or invalid snapshot ID as argument for entrypoint &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;configuration. Please make sure to pass a valid UUID to &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_entrypoint_arguments</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">=&lt;UUID&gt;)`.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Missing or invalid snapshot ID as argument for entrypoint "</span>
+                <span class="sa">f</span><span class="s2">"configuration. Please make sure to pass a valid UUID to "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_entrypoint_arguments</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">=&lt;UUID&gt;)`."</span>
             <span class="p">)</span>
 
         <span class="n">arguments</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
             <span class="p">[</span>
-                <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="nb">str</span><span class="p">(</span><span class="n">snapshot_id</span><span class="p">),</span>
             <span class="p">]</span>
         <span class="p">)</span>
@@ -5594,19 +5594,19 @@ configuration when called. Defaults to running the
 <span class="normal">84</span>
 <span class="normal">85</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
+<span class="w">    </span><span class="sd">"""Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">    This entrypoint module is responsible for running the entrypoint</span>
 <span class="sd">    configuration when called. Defaults to running the</span>
 <span class="sd">    `zenml.entrypoints.entrypoint` module.</span>
 
-<span class="sd">    **Note**: This command won&#39;t work on its own but needs to be called with</span>
+<span class="sd">    **Note**: This command won't work on its own but needs to be called with</span>
 <span class="sd">        the arguments returned by the `get_entrypoint_arguments(...)`</span>
 <span class="sd">        method of this class.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of strings with the command.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">DEFAULT_ENTRYPOINT_COMMAND</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5672,11 +5672,11 @@ configuration when called. Defaults to running the
 <span class="normal"> 99</span>
 <span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
+<span class="w">    </span><span class="sd">"""Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of options and whether they are required.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="c1"># Importable source pointing to the entrypoint configuration class</span>
         <span class="c1"># that should be used inside the entrypoint.</span>
@@ -5798,20 +5798,20 @@ but the snapshot does not have a reference to any code.</p>
 <span class="normal">297</span>
 <span class="normal">298</span>
 <span class="normal">299</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_code_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the code environment.</span>
+<span class="w">    </span><span class="sd">"""Prepares the code environment.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        CustomFlavorImportError: If the artifact store flavor can&#39;t be</span>
+<span class="sd">        CustomFlavorImportError: If the artifact store flavor can't be</span>
 <span class="sd">            imported.</span>
 <span class="sd">        RuntimeError: If the current environment requires code download</span>
 <span class="sd">            but the snapshot does not have a reference to any code.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Change the working directory to make sure we&#39;re in the correct</span>
+<span class="sd">    """</span>
+    <span class="c1"># Change the working directory to make sure we're in the correct</span>
     <span class="c1"># directory where the files in the Docker image should be included.</span>
     <span class="c1"># This is necessary as some services overwrite the working directory</span>
     <span class="c1"># configured in the Docker image itself.</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;/app&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s2">&quot;/app&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">"/app"</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s2">"/app"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_download_code</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">code_path</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot</span><span class="o">.</span><span class="n">code_path</span><span class="p">:</span>
@@ -5823,15 +5823,15 @@ but the snapshot does not have a reference to any code.</p>
                 <span class="n">artifact_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_active_artifact_store</span><span class="p">()</span>
             <span class="k">except</span> <span class="n">CustomFlavorImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">CustomFlavorImportError</span><span class="p">(</span>
-                    <span class="s2">&quot;Failed to import custom artifact store flavor. The &quot;</span>
-                    <span class="s2">&quot;artifact store flavor is needed to download your code, &quot;</span>
-                    <span class="s2">&quot;but it looks like it might be part of the files &quot;</span>
-                    <span class="s2">&quot;that we&#39;re trying to download. If this is the case, you &quot;</span>
-                    <span class="s2">&quot;should disable downloading code from the artifact store &quot;</span>
-                    <span class="s2">&quot;using `DockerSettings(allow_download_from_artifact_store=False)` &quot;</span>
-                    <span class="s2">&quot;or make sure the artifact flavor files are included in &quot;</span>
-                    <span class="s2">&quot;Docker image by using a custom parent image or installing &quot;</span>
-                    <span class="s2">&quot;them as part of a pip dependency.&quot;</span>
+                    <span class="s2">"Failed to import custom artifact store flavor. The "</span>
+                    <span class="s2">"artifact store flavor is needed to download your code, "</span>
+                    <span class="s2">"but it looks like it might be part of the files "</span>
+                    <span class="s2">"that we're trying to download. If this is the case, you "</span>
+                    <span class="s2">"should disable downloading code from the artifact store "</span>
+                    <span class="s2">"using `DockerSettings(allow_download_from_artifact_store=False)` "</span>
+                    <span class="s2">"or make sure the artifact flavor files are included in "</span>
+                    <span class="s2">"Docker image by using a custom parent image or installing "</span>
+                    <span class="s2">"them as part of a pip dependency."</span>
                 <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="n">code_utils</span><span class="o">.</span><span class="n">download_code_from_artifact_store</span><span class="p">(</span>
                 <span class="n">code_path</span><span class="o">=</span><span class="n">code_path</span><span class="p">,</span> <span class="n">artifact_store</span><span class="o">=</span><span class="n">artifact_store</span>
@@ -5844,10 +5844,10 @@ but the snapshot does not have a reference to any code.</p>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;Code download required but no code reference or path provided.&quot;</span>
+                <span class="s2">"Code download required but no code reference or path provided."</span>
             <span class="p">)</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Code download finished.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Code download finished."</span><span class="p">)</span>
 
     <span class="c1"># If the working directory is not in the sys.path, we include it to make</span>
     <span class="c1"># sure user code gets correctly imported.</span>
@@ -5884,7 +5884,7 @@ but the snapshot does not have a reference to any code.</p>
 <span class="normal">352</span>
 <span class="normal">353</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Runs the entrypoint configuration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5977,14 +5977,14 @@ but the snapshot does not have a reference to any code.</p>
 <span class="normal">42</span>
 <span class="normal">43</span>
 <span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration given by the command line arguments.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Runs the entrypoint configuration given by the command line arguments."""</span>
     <span class="c1"># Make sure this entrypoint does not run an entire pipeline when</span>
     <span class="c1"># importing user modules. This could happen if a pipeline is called in a</span>
-    <span class="c1"># module without an `if __name__== &quot;__main__&quot;:` check)</span>
+    <span class="c1"># module without an `if __name__== "__main__":` check)</span>
     <span class="k">with</span> <span class="n">prevent_pipeline_execution</span><span class="p">():</span>
         <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
         <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">ENTRYPOINT_CONFIG_SOURCE_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span>
+            <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">ENTRYPOINT_CONFIG_SOURCE_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">)</span>
         <span class="n">args</span><span class="p">,</span> <span class="n">remaining_args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">()</span>
 
@@ -6077,13 +6077,13 @@ but the snapshot does not have a reference to any code.</p>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">"""Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineSnapshotResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -6131,7 +6131,7 @@ but the snapshot does not have a reference to any code.</p>
 <span class="normal">38</span>
 <span class="normal">39</span>
 <span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prepares the environment and runs the configured pipeline."""</span>
     <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot</span>
 
     <span class="c1"># Activate all the integrations. This makes sure that all materializers</span>
@@ -6288,13 +6288,13 @@ class MyOrchestrator(BaseOrchestrator):
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
+<span class="w">    </span><span class="sd">"""Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        arguments: Command line arguments to configure this object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineSnapshotResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -6518,11 +6518,11 @@ It needs to provide values for all options returned by the
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">    </span><span class="sd">"""Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    The argument list should be something that</span>
 <span class="sd">    `argparse.ArgumentParser.parse_args(...)` can handle (e.g.</span>
-<span class="sd">    `[&quot;--some_option&quot;, &quot;some_value&quot;]` or `[&quot;--some_option=some_value&quot;]`).</span>
+<span class="sd">    `["--some_option", "some_value"]` or `["--some_option=some_value"]`).</span>
 <span class="sd">    It needs to provide values for all options returned by the</span>
 <span class="sd">    `get_entrypoint_options()` method of this class.</span>
 
@@ -6532,9 +6532,9 @@ It needs to provide values for all options returned by the
 <span class="sd">    Returns:</span>
 <span class="sd">        The superclass arguments as well as arguments for the name of the</span>
 <span class="sd">        step to run.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_arguments</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">STEP_NAME_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">STEP_NAME_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="n">STEP_NAME_OPTION</span><span class="p">],</span>
     <span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -6606,12 +6606,12 @@ It needs to provide values for all options returned by the
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
+<span class="w">    </span><span class="sd">"""Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The superclass options as well as an option for the name of the</span>
 <span class="sd">        step to run.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_options</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">STEP_NAME_OPTION</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6704,7 +6704,7 @@ executed.</p>
     <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Does cleanup or post-processing after the step finished running.</span>
+<span class="w">    </span><span class="sd">"""Does cleanup or post-processing after the step finished running.</span>
 
 <span class="sd">    Subclasses should overwrite this method if they need to run any</span>
 <span class="sd">    additional code after the step execution.</span>
@@ -6713,7 +6713,7 @@ executed.</p>
 <span class="sd">        pipeline_name: Name of the parent pipeline of the step that was</span>
 <span class="sd">            executed.</span>
 <span class="sd">        step_name: Name of the step that was executed.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6756,7 +6756,7 @@ executed.</p>
 <span class="normal">199</span>
 <span class="normal">200</span>
 <span class="normal">201</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured step.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prepares the environment and runs the configured step."""</span>
     <span class="n">snapshot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">snapshot</span>
 
     <span class="c1"># Activate all the integrations. This makes sure that all materializers</span>

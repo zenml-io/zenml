@@ -4492,7 +4492,7 @@
 
 
 <h4 id="zenml.integrations.vllm.VLLM" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">VLLM</span> <span class="o">=</span> <span class="s1">&#39;vllm&#39;</span></code>
+            <code class="highlight language-python"><span class="n">VLLM</span> <span class="o">=</span> <span class="s1">'vllm'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4512,7 +4512,7 @@
 
 
 <h4 id="zenml.integrations.vllm.VLLM_MODEL_DEPLOYER" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">VLLM_MODEL_DEPLOYER</span> <span class="o">=</span> <span class="s1">&#39;vllm&#39;</span></code>
+            <code class="highlight language-python"><span class="n">VLLM_MODEL_DEPLOYER</span> <span class="o">=</span> <span class="s1">'vllm'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -5203,19 +5203,19 @@ service connector types that are compatible with this flavor.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Flavor"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a flavor from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        flavor_model: The model to load from.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        CustomFlavorImportError: If the custom flavor can&#39;t be imported.</span>
-<span class="sd">        ImportError: If the flavor can&#39;t be imported.</span>
+<span class="sd">        CustomFlavorImportError: If the custom flavor can't be imported.</span>
+<span class="sd">        ImportError: If the flavor can't be imported.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded flavor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">flavor</span> <span class="o">=</span> <span class="n">validate_flavor_source</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
@@ -5224,22 +5224,22 @@ service connector types that are compatible with this flavor.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">is_custom</span><span class="p">:</span>
-            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
             <span class="n">expected_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="n">source_utils</span><span class="o">.</span><span class="n">get_source_root</span><span class="p">(),</span>
-                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
+                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">CustomFlavorImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of &quot;</span>
-                <span class="s2">&quot;a library, make sure it is installed. If &quot;</span>
-                <span class="s2">&quot;it is a local code file, make sure it exists at &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of "</span>
+                <span class="s2">"a library, make sure it is installed. If "</span>
+                <span class="s2">"it is a local code file, make sure it exists at "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`."</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
     <span class="k">return</span> <span class="n">flavor</span>
 </code></pre></div></td></tr></table></div>
@@ -5303,19 +5303,19 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate the doc urls for all inbuilt and integration flavors.</span>
+<span class="w">    </span><span class="sd">"""Generate the doc urls for all inbuilt and integration flavors.</span>
 
 <span class="sd">    Note that this method is not going to be useful for custom flavors,</span>
 <span class="sd">    which do not have any docs in the main zenml docs.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml documentation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="s2">&quot;https://docs.zenml.io&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">"https://docs.zenml.io"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5394,37 +5394,37 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate SDK docs url for a flavor.</span>
+<span class="w">    </span><span class="sd">"""Generate SDK docs url for a flavor.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml SDK docs</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span>
 
-    <span class="k">if</span> <span class="s2">&quot;zenml.integrations&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"zenml.integrations"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
         <span class="c1"># Get integration name out of module path which will look something</span>
-        <span class="c1">#  like this &quot;zenml.integrations.&lt;integration&gt;....</span>
+        <span class="c1">#  like this "zenml.integrations.&lt;integration&gt;....</span>
         <span class="n">integration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
-            <span class="s2">&quot;zenml.integrations.&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="s2">"zenml.integrations."</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Get the config class name to point to the specific class</span>
         <span class="n">config_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs"</span>
+            <span class="sa">f</span><span class="s2">"/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/"</span>
+            <span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5569,7 +5569,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">    </span><span class="sd">"""Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
@@ -5577,7 +5577,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">connector_requirements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_requirements</span>
     <span class="n">connector_type</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">connector_requirements</span><span class="o">.</span><span class="n">connector_type</span>
@@ -5687,7 +5687,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5774,18 +5774,18 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -5796,16 +5796,16 @@ which do not have any docs in the main zenml docs.</p>
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -5866,11 +5866,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5989,7 +5989,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -5997,7 +5997,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6104,14 +6104,14 @@ which do not have any docs in the main zenml docs.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -6201,7 +6201,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">35</span>
 <span class="normal">36</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Activates the integration."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6263,11 +6263,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">46</span>
 <span class="normal">47</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the vLLM integration.</span>
+<span class="w">    </span><span class="sd">"""Declare the stack component flavors for the vLLM integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModelDeployerFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">VLLMModelDeployerFlavor</span><span class="p">]</span>
@@ -6375,19 +6375,19 @@ use the stdlib pattern:</p>
 <span class="normal">102</span>
 <span class="normal">103</span>
 <span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a stdlib logger by name.</span>
+<span class="w">    </span><span class="sd">"""Return a stdlib logger by name.</span>
 
 <span class="sd">    To attach structured fields to a log record,</span>
 <span class="sd">    use the stdlib pattern:</span>
 
-<span class="sd">        ``logger.info(&quot;event&quot;, extra={&quot;key&quot;: &quot;value&quot;})``</span>
+<span class="sd">        ``logger.info("event", extra={"key": "value"})``</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        logger_name: Name of the logger to retrieve.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The requested standard library logger.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6520,7 +6520,7 @@ use the stdlib pattern:</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -6540,7 +6540,7 @@ use the stdlib pattern:</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -6558,14 +6558,14 @@ use the stdlib pattern:</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -6573,9 +6573,9 @@ use the stdlib pattern:</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -7047,7 +7047,7 @@ use the stdlib pattern:</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -7067,7 +7067,7 @@ use the stdlib pattern:</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -7085,14 +7085,14 @@ use the stdlib pattern:</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -7100,9 +7100,9 @@ use the stdlib pattern:</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -7608,7 +7608,7 @@ use the stdlib pattern:</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -7633,11 +7633,11 @@ use the stdlib pattern:</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -7858,21 +7858,21 @@ set to a local default path according to the component ID.</p>
 <span class="normal">116</span>
 <span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
-    <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;VLLMDeploymentService&quot;</span><span class="p">,</span>
+    <span class="n">service_instance</span><span class="p">:</span> <span class="s2">"VLLMDeploymentService"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return implementation specific information on the model server.</span>
+<span class="w">    </span><span class="sd">"""Return implementation specific information on the model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service_instance: vLLM deployment service object</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing the model server information.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;HEALTH_CHECK_URL&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_healthcheck_url</span><span class="p">(),</span>
-        <span class="s2">&quot;PREDICTION_URL&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_prediction_url</span><span class="p">(),</span>
-        <span class="s2">&quot;SERVICE_PATH&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span>
-        <span class="s2">&quot;DAEMON_PID&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span><span class="p">),</span>
+        <span class="s2">"HEALTH_CHECK_URL"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_healthcheck_url</span><span class="p">(),</span>
+        <span class="s2">"PREDICTION_URL"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_prediction_url</span><span class="p">(),</span>
+        <span class="s2">"SERVICE_PATH"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span>
+        <span class="s2">"DAEMON_PID"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span><span class="p">),</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7976,7 +7976,7 @@ are stored.</p>
 <span class="normal">73</span>
 <span class="normal">74</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the path where local vLLM service information is stored.</span>
+<span class="w">    </span><span class="sd">"""Get the path where local vLLM service information is stored.</span>
 
 <span class="sd">    This includes the deployment service configuration, PID and log files</span>
 <span class="sd">    are stored.</span>
@@ -7986,7 +7986,7 @@ are stored.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The service path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">local_stores_path</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">id_</span><span class="p">),</span>
@@ -8104,13 +8104,13 @@ are stored.</p>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to delete all configuration of a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to delete all configuration of a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to delete.</span>
 <span class="sd">        timeout: Timeout in seconds to wait for the service to stop.</span>
 <span class="sd">        force: If True, force the service to stop.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VLLMDeploymentService</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_clean_up_existing_service</span><span class="p">(</span>
         <span class="n">existing_service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span>
@@ -8324,7 +8324,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new vLLM deployment service or update an existing one.</span>
+<span class="w">    </span><span class="sd">"""Create a new vLLM deployment service or update an existing one.</span>
 
 <span class="sd">    This should serve the supplied model and deployment configuration.</span>
 
@@ -8347,7 +8347,7 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="sd">        parameters.</span>
 
 <span class="sd">    Callers should set `replace` to True if they want a continuous model</span>
-<span class="sd">    deployment workflow that doesn&#39;t spin up a new vLLM deployment</span>
+<span class="sd">    deployment workflow that doesn't spin up a new vLLM deployment</span>
 <span class="sd">    server for each new model version. If multiple equivalent vLLM</span>
 <span class="sd">    deployment servers are found, one is selected at random to be updated</span>
 <span class="sd">    and the others are deleted.</span>
@@ -8363,12 +8363,12 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The ZenML vLLM deployment service object that can be used to</span>
 <span class="sd">        interact with the vLLM model http server.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
     <span class="n">service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_service</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span>
     <span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created a new vLLM deployment service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Created a new vLLM deployment service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8486,7 +8486,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to start a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to start a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to start.</span>
@@ -8494,7 +8494,7 @@ server is provisioned, without waiting for it to fully start.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The started service.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
@@ -8632,7 +8632,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to stop a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to stop a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to stop.</span>
@@ -8641,7 +8641,7 @@ server is provisioned, without waiting for it to fully start.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stopped service.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
@@ -8804,7 +8804,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -8829,11 +8829,11 @@ server is provisioned, without waiting for it to fully start.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -9054,21 +9054,21 @@ set to a local default path according to the component ID.</p>
 <span class="normal">116</span>
 <span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
-    <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;VLLMDeploymentService&quot;</span><span class="p">,</span>
+    <span class="n">service_instance</span><span class="p">:</span> <span class="s2">"VLLMDeploymentService"</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return implementation specific information on the model server.</span>
+<span class="w">    </span><span class="sd">"""Return implementation specific information on the model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service_instance: vLLM deployment service object</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary containing the model server information.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;HEALTH_CHECK_URL&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_healthcheck_url</span><span class="p">(),</span>
-        <span class="s2">&quot;PREDICTION_URL&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_prediction_url</span><span class="p">(),</span>
-        <span class="s2">&quot;SERVICE_PATH&quot;</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span>
-        <span class="s2">&quot;DAEMON_PID&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span><span class="p">),</span>
+        <span class="s2">"HEALTH_CHECK_URL"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_healthcheck_url</span><span class="p">(),</span>
+        <span class="s2">"PREDICTION_URL"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">get_prediction_url</span><span class="p">(),</span>
+        <span class="s2">"SERVICE_PATH"</span><span class="p">:</span> <span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span>
+        <span class="s2">"DAEMON_PID"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span><span class="p">),</span>
     <span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9172,7 +9172,7 @@ are stored.</p>
 <span class="normal">73</span>
 <span class="normal">74</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the path where local vLLM service information is stored.</span>
+<span class="w">    </span><span class="sd">"""Get the path where local vLLM service information is stored.</span>
 
 <span class="sd">    This includes the deployment service configuration, PID and log files</span>
 <span class="sd">    are stored.</span>
@@ -9182,7 +9182,7 @@ are stored.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The service path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">local_stores_path</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">id_</span><span class="p">),</span>
@@ -9300,13 +9300,13 @@ are stored.</p>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to delete all configuration of a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to delete all configuration of a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to delete.</span>
 <span class="sd">        timeout: Timeout in seconds to wait for the service to stop.</span>
 <span class="sd">        force: If True, force the service to stop.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VLLMDeploymentService</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_clean_up_existing_service</span><span class="p">(</span>
         <span class="n">existing_service</span><span class="o">=</span><span class="n">service</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span>
@@ -9520,7 +9520,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new vLLM deployment service or update an existing one.</span>
+<span class="w">    </span><span class="sd">"""Create a new vLLM deployment service or update an existing one.</span>
 
 <span class="sd">    This should serve the supplied model and deployment configuration.</span>
 
@@ -9543,7 +9543,7 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="sd">        parameters.</span>
 
 <span class="sd">    Callers should set `replace` to True if they want a continuous model</span>
-<span class="sd">    deployment workflow that doesn&#39;t spin up a new vLLM deployment</span>
+<span class="sd">    deployment workflow that doesn't spin up a new vLLM deployment</span>
 <span class="sd">    server for each new model version. If multiple equivalent vLLM</span>
 <span class="sd">    deployment servers are found, one is selected at random to be updated</span>
 <span class="sd">    and the others are deleted.</span>
@@ -9559,12 +9559,12 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The ZenML vLLM deployment service object that can be used to</span>
 <span class="sd">        interact with the vLLM model http server.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
     <span class="n">service</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_service</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span>
     <span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created a new vLLM deployment service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Created a new vLLM deployment service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9682,7 +9682,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to start a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to start a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to start.</span>
@@ -9690,7 +9690,7 @@ server is provisioned, without waiting for it to fully start.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The started service.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
@@ -9828,7 +9828,7 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to stop a model server.</span>
+<span class="w">    </span><span class="sd">"""Method to stop a model server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service: The service to stop.</span>
@@ -9837,7 +9837,7 @@ server is provisioned, without waiting for it to fully start.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stopped service.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">service</span>
 </code></pre></div></td></tr></table></div>
@@ -10007,12 +10007,12 @@ server is provisioned, without waiting for it to fully start.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service endpoint.</span>
+<span class="w">    </span><span class="sd">"""Initialize the service endpoint.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        *args: positional arguments.</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 </code></pre></div></td></tr></table></div>
@@ -10256,13 +10256,13 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="normal">127</span>
 <span class="normal">128</span>
 <span class="normal">129</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the vLLM deployment service.</span>
+<span class="w">    </span><span class="sd">"""Initialize the vLLM deployment service.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: service configuration</span>
 <span class="sd">        attrs: additional attributes to set on the service</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">VLLMServiceConfig</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;endpoint&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">VLLMServiceConfig</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"endpoint"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
         <span class="n">endpoint</span> <span class="o">=</span> <span class="n">VLLMDeploymentEndpoint</span><span class="p">(</span>
             <span class="n">config</span><span class="o">=</span><span class="n">VLLMDeploymentEndpointConfig</span><span class="p">(</span>
                 <span class="n">protocol</span><span class="o">=</span><span class="n">ServiceEndpointProtocol</span><span class="o">.</span><span class="n">HTTP</span><span class="p">,</span>
@@ -10276,7 +10276,7 @@ server is provisioned, without waiting for it to fully start.</p>
                 <span class="p">)</span>
             <span class="p">),</span>
         <span class="p">)</span>
-        <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
+        <span class="n">attrs</span><span class="p">[</span><span class="s2">"endpoint"</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -10473,8 +10473,8 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="normal">208</span>
 <span class="normal">209</span>
 <span class="normal">210</span>
-<span class="normal">211</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Any&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
+<span class="normal">211</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">"Any"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Any"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Make a prediction using the service.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: data to make a prediction on</span>
@@ -10485,17 +10485,17 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        Exception: if the service is not running</span>
 <span class="sd">        ValueError: if the prediction endpoint is unknown.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_running</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-            <span class="s2">&quot;vLLM Inference service is not running. &quot;</span>
-            <span class="s2">&quot;Please start the service before making predictions.&quot;</span>
+            <span class="s2">"vLLM Inference service is not running. "</span>
+            <span class="s2">"Please start the service before making predictions."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prediction_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
-            <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;EMPTY&quot;</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="s2">"EMPTY"</span><span class="p">,</span>
             <span class="n">base_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prediction_url</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">models</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
@@ -10503,7 +10503,7 @@ server is provisioned, without waiting for it to fully start.</p>
         <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
         <span class="c1"># TODO: We can add support for client.chat.completions.create</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No endpoint known for prediction.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"No endpoint known for prediction."</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -10564,10 +10564,10 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="normal">165</span>
 <span class="normal">166</span>
 <span class="normal">167</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Start the service."""</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="s2">&quot;Starting vLLM inference server service as blocking &quot;</span>
-        <span class="s2">&quot;process... press CTRL+C once to stop it.&quot;</span>
+        <span class="s2">"Starting vLLM inference server service as blocking "</span>
+        <span class="s2">"process... press CTRL+C once to stop it."</span>
     <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prepare_for_start</span><span class="p">()</span>
@@ -10589,7 +10589,7 @@ server is provisioned, without waiting for it to fully start.</p>
         <span class="p">)</span>
         <span class="c1"># pass in empty list to get default args</span>
         <span class="c1"># otherwise it will try to get the args from sys.argv</span>
-        <span class="c1"># and if there&#39;s a --config in there, it will want to use</span>
+        <span class="c1"># and if there's a --config in there, it will want to use</span>
         <span class="c1"># that file for vLLM configuration, which is not what we want</span>
         <span class="n">args</span><span class="p">:</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[])</span>
         <span class="c1"># Override port with the available port</span>
@@ -10599,7 +10599,7 @@ server is provisioned, without waiting for it to fully start.</p>
         <span class="n">args</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
         <span class="n">uvloop</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_server</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">))</span>
     <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopping vLLM prediction service...&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Stopping vLLM prediction service..."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -10658,22 +10658,22 @@ server is provisioned, without waiting for it to fully start.</p>
 <span class="normal">145</span>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service configuration.</span>
+<span class="w">    </span><span class="sd">"""Initialize the service configuration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **data: keyword arguments.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        ValueError: if neither &#39;name&#39; nor &#39;model_name&#39; is set.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        ValueError: if neither 'name' nor 'model_name' is set.</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">service_name</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">&quot;service_name&quot;</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ZENM_ENDPOINT_PREFIX</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">"service_name"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ZENM_ENDPOINT_PREFIX</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;name&#39; or &#39;model_name&#39; must be set.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Either 'name' or 'model_name' must be set."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 

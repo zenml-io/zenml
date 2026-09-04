@@ -4312,7 +4312,7 @@
 
 
 <h4 id="zenml.integrations.pigeon.PIGEON" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">PIGEON</span> <span class="o">=</span> <span class="s1">&#39;pigeon&#39;</span></code>
+            <code class="highlight language-python"><span class="n">PIGEON</span> <span class="o">=</span> <span class="s1">'pigeon'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4332,7 +4332,7 @@
 
 
 <h4 id="zenml.integrations.pigeon.PIGEON_ANNOTATOR_FLAVOR" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">PIGEON_ANNOTATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">&#39;pigeon&#39;</span></code>
+            <code class="highlight language-python"><span class="n">PIGEON_ANNOTATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">'pigeon'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -5003,19 +5003,19 @@ service connector types that are compatible with this flavor.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Flavor"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a flavor from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        flavor_model: The model to load from.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        CustomFlavorImportError: If the custom flavor can&#39;t be imported.</span>
-<span class="sd">        ImportError: If the flavor can&#39;t be imported.</span>
+<span class="sd">        CustomFlavorImportError: If the custom flavor can't be imported.</span>
+<span class="sd">        ImportError: If the flavor can't be imported.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded flavor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">flavor</span> <span class="o">=</span> <span class="n">validate_flavor_source</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
@@ -5024,22 +5024,22 @@ service connector types that are compatible with this flavor.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">is_custom</span><span class="p">:</span>
-            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
             <span class="n">expected_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="n">source_utils</span><span class="o">.</span><span class="n">get_source_root</span><span class="p">(),</span>
-                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
+                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">CustomFlavorImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of &quot;</span>
-                <span class="s2">&quot;a library, make sure it is installed. If &quot;</span>
-                <span class="s2">&quot;it is a local code file, make sure it exists at &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of "</span>
+                <span class="s2">"a library, make sure it is installed. If "</span>
+                <span class="s2">"it is a local code file, make sure it exists at "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`."</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
     <span class="k">return</span> <span class="n">flavor</span>
 </code></pre></div></td></tr></table></div>
@@ -5103,19 +5103,19 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate the doc urls for all inbuilt and integration flavors.</span>
+<span class="w">    </span><span class="sd">"""Generate the doc urls for all inbuilt and integration flavors.</span>
 
 <span class="sd">    Note that this method is not going to be useful for custom flavors,</span>
 <span class="sd">    which do not have any docs in the main zenml docs.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml documentation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="s2">&quot;https://docs.zenml.io&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">"https://docs.zenml.io"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5194,37 +5194,37 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate SDK docs url for a flavor.</span>
+<span class="w">    </span><span class="sd">"""Generate SDK docs url for a flavor.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml SDK docs</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span>
 
-    <span class="k">if</span> <span class="s2">&quot;zenml.integrations&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"zenml.integrations"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
         <span class="c1"># Get integration name out of module path which will look something</span>
-        <span class="c1">#  like this &quot;zenml.integrations.&lt;integration&gt;....</span>
+        <span class="c1">#  like this "zenml.integrations.&lt;integration&gt;....</span>
         <span class="n">integration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
-            <span class="s2">&quot;zenml.integrations.&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="s2">"zenml.integrations."</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Get the config class name to point to the specific class</span>
         <span class="n">config_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs"</span>
+            <span class="sa">f</span><span class="s2">"/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/"</span>
+            <span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5369,7 +5369,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">    </span><span class="sd">"""Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
@@ -5377,7 +5377,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">connector_requirements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_requirements</span>
     <span class="n">connector_type</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">connector_requirements</span><span class="o">.</span><span class="n">connector_type</span>
@@ -5487,7 +5487,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5574,18 +5574,18 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -5596,16 +5596,16 @@ which do not have any docs in the main zenml docs.</p>
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -5666,11 +5666,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5789,7 +5789,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -5797,7 +5797,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5904,14 +5904,14 @@ which do not have any docs in the main zenml docs.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -6032,11 +6032,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">40</span>
 <span class="normal">41</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Pigeon integration.</span>
+<span class="w">    </span><span class="sd">"""Declare the stack component flavors for the Pigeon integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pigeon.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">PigeonAnnotatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
@@ -6202,7 +6202,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -6227,11 +6227,11 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -6418,7 +6418,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">258</span>
 <span class="normal">259</span>
 <span class="normal">260</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a dataset (annotation file) to the Pigeon annotator.</span>
+<span class="w">    </span><span class="sd">"""Add a dataset (annotation file) to the Pigeon annotator.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -6428,9 +6428,9 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support adding datasets.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support adding datasets.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support adding datasets."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6563,7 +6563,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">options</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">display_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotate with the Pigeon annotator in the Jupyter notebook.</span>
+<span class="w">    </span><span class="sd">"""Annotate with the Pigeon annotator in the Jupyter notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: List of examples to annotate.</span>
@@ -6572,7 +6572,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of tuples containing (example, label) for each annotated example.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_annotate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">display_fn</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">annotations</span>
 </code></pre></div></td></tr></table></div>
@@ -6670,7 +6670,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Delete a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -6679,11 +6679,11 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to delete a dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to delete a dataset.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to delete a dataset."</span>
         <span class="p">)</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span>
@@ -6821,7 +6821,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">302</span>
 <span class="normal">303</span>
 <span class="normal">304</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the annotated examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the annotated examples from a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -6834,14 +6834,14 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to retrieve a dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to retrieve a dataset.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to retrieve a dataset."</span>
         <span class="p">)</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">annotations</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">annotations</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -6896,11 +6896,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">95</span>
 <span class="normal">96</span>
 <span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List dataset names (annotation file names) in the output directory.</span>
+<span class="w">    </span><span class="sd">"""List dataset names (annotation file names) in the output directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dataset names (annotation file names).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_datasets</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6999,24 +6999,24 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List labeled and unlabeled examples in a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""List labeled and unlabeled examples in a dataset (annotation file).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: Name of the dataset (annotation file).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple containing (num_labeled_examples, num_unlabeled_examples).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
     <span class="n">num_labeled_examples</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="c1"># Placeholder as logic to determine this is not implemented</span>
     <span class="n">num_unlabeled_examples</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
             <span class="n">num_labeled_examples</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">file</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">dataset_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File not found: </span><span class="si">{</span><span class="n">dataset_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">num_labeled_examples</span><span class="p">,</span> <span class="n">num_unlabeled_examples</span>
 </code></pre></div></td></tr></table></div>
@@ -7075,14 +7075,14 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">87</span>
 <span class="normal">88</span>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a list of datasets (annotation files) in the output directory.</span>
+<span class="w">    </span><span class="sd">"""Get a list of datasets (annotation files) in the output directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dataset names (annotation file names) (or empty list when no datasets are present).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">output_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.txt&quot;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".txt"</span><span class="p">)]</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
@@ -7216,7 +7216,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the labeled examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the labeled examples from a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -7229,12 +7229,12 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to retrieve labeled data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">dataset_name</span> <span class="o">:=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">):</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">dataset_name</span> <span class="o">:=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="o">=</span><span class="n">dataset_name</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to retrieve labeled data.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to retrieve labeled data."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7350,7 +7350,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">340</span>
 <span class="normal">341</span>
 <span class="normal">342</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the unlabeled examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the unlabeled examples from a dataset (annotation file).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -7360,9 +7360,9 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support retrieving unlabeled data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support retrieving unlabeled data.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support retrieving unlabeled data."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7442,15 +7442,15 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">61</span>
 <span class="normal">62</span>
 <span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the URL of the Pigeon annotator.</span>
+<span class="w">    </span><span class="sd">"""Get the URL of the Pigeon annotator.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The URL of the Pigeon annotator.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not have a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Pigeon annotator does not have a URL.&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Pigeon annotator does not have a URL."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7563,7 +7563,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the URL of the Pigeon annotator for a specific dataset.</span>
+<span class="w">    </span><span class="sd">"""Get the URL of the Pigeon annotator for a specific dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: Name of the dataset (annotation file).</span>
@@ -7573,8 +7573,8 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not have a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Pigeon annotator does not have a URL.&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Pigeon annotator does not have a URL."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7663,16 +7663,16 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launch the Pigeon annotator in the Jupyter notebook.</span>
+<span class="w">    </span><span class="sd">"""Launch the Pigeon annotator in the Jupyter notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Additional keyword arguments to pass to the annotation client.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support launching with a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support launching with a URL.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support launching with a URL."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7840,7 +7840,7 @@ versions of ipywidgets.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -7865,11 +7865,11 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -8056,7 +8056,7 @@ versions of ipywidgets.</p>
 <span class="normal">258</span>
 <span class="normal">259</span>
 <span class="normal">260</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a dataset (annotation file) to the Pigeon annotator.</span>
+<span class="w">    </span><span class="sd">"""Add a dataset (annotation file) to the Pigeon annotator.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -8066,9 +8066,9 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support adding datasets.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support adding datasets.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support adding datasets."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8201,7 +8201,7 @@ versions of ipywidgets.</p>
     <span class="n">options</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">display_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Annotate with the Pigeon annotator in the Jupyter notebook.</span>
+<span class="w">    </span><span class="sd">"""Annotate with the Pigeon annotator in the Jupyter notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: List of examples to annotate.</span>
@@ -8210,7 +8210,7 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of tuples containing (example, label) for each annotated example.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">annotations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_annotate</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">display_fn</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">annotations</span>
 </code></pre></div></td></tr></table></div>
@@ -8308,7 +8308,7 @@ versions of ipywidgets.</p>
 <span class="normal">277</span>
 <span class="normal">278</span>
 <span class="normal">279</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Delete a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -8317,11 +8317,11 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to delete a dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to delete a dataset.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to delete a dataset."</span>
         <span class="p">)</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span>
@@ -8459,7 +8459,7 @@ versions of ipywidgets.</p>
 <span class="normal">302</span>
 <span class="normal">303</span>
 <span class="normal">304</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the annotated examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the annotated examples from a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -8472,14 +8472,14 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to retrieve a dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">dataset_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_name</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to retrieve a dataset.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to retrieve a dataset."</span>
         <span class="p">)</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">annotations</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">annotations</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -8534,11 +8534,11 @@ versions of ipywidgets.</p>
 <span class="normal">95</span>
 <span class="normal">96</span>
 <span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List dataset names (annotation file names) in the output directory.</span>
+<span class="w">    </span><span class="sd">"""List dataset names (annotation file names) in the output directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dataset names (annotation file names).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_datasets</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8637,24 +8637,24 @@ versions of ipywidgets.</p>
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List labeled and unlabeled examples in a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""List labeled and unlabeled examples in a dataset (annotation file).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: Name of the dataset (annotation file).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A tuple containing (num_labeled_examples, num_unlabeled_examples).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dataset_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
     <span class="n">num_labeled_examples</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="c1"># Placeholder as logic to determine this is not implemented</span>
     <span class="n">num_unlabeled_examples</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
             <span class="n">num_labeled_examples</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">file</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">dataset_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File not found: </span><span class="si">{</span><span class="n">dataset_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">num_labeled_examples</span><span class="p">,</span> <span class="n">num_unlabeled_examples</span>
 </code></pre></div></td></tr></table></div>
@@ -8713,14 +8713,14 @@ versions of ipywidgets.</p>
 <span class="normal">87</span>
 <span class="normal">88</span>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a list of datasets (annotation files) in the output directory.</span>
+<span class="w">    </span><span class="sd">"""Get a list of datasets (annotation files) in the output directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dataset names (annotation file names) (or empty list when no datasets are present).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">output_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">output_dir</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.txt&quot;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".txt"</span><span class="p">)]</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
@@ -8854,7 +8854,7 @@ versions of ipywidgets.</p>
 <span class="normal">324</span>
 <span class="normal">325</span>
 <span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the labeled examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the labeled examples from a dataset (annotation file).</span>
 
 <span class="sd">    Takes the `dataset_name` argument from the kwargs.</span>
 
@@ -8867,12 +8867,12 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: Dataset name is required to retrieve labeled data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">dataset_name</span> <span class="o">:=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_name&quot;</span><span class="p">):</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">dataset_name</span> <span class="o">:=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataset_name"</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="o">=</span><span class="n">dataset_name</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Dataset name (`dataset_name`) is required to retrieve labeled data.&quot;</span>
+            <span class="s2">"Dataset name (`dataset_name`) is required to retrieve labeled data."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8988,7 +8988,7 @@ versions of ipywidgets.</p>
 <span class="normal">340</span>
 <span class="normal">341</span>
 <span class="normal">342</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the unlabeled examples from a dataset (annotation file).</span>
+<span class="w">    </span><span class="sd">"""Get the unlabeled examples from a dataset (annotation file).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: keyword arguments.</span>
@@ -8998,9 +8998,9 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support retrieving unlabeled data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support retrieving unlabeled data.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support retrieving unlabeled data."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9080,15 +9080,15 @@ versions of ipywidgets.</p>
 <span class="normal">61</span>
 <span class="normal">62</span>
 <span class="normal">63</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the URL of the Pigeon annotator.</span>
+<span class="w">    </span><span class="sd">"""Get the URL of the Pigeon annotator.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The URL of the Pigeon annotator.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not have a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Pigeon annotator does not have a URL.&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Pigeon annotator does not have a URL."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9201,7 +9201,7 @@ versions of ipywidgets.</p>
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the URL of the Pigeon annotator for a specific dataset.</span>
+<span class="w">    </span><span class="sd">"""Get the URL of the Pigeon annotator for a specific dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_name: Name of the dataset (annotation file).</span>
@@ -9211,8 +9211,8 @@ versions of ipywidgets.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not have a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Pigeon annotator does not have a URL.&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Pigeon annotator does not have a URL."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -9301,16 +9301,16 @@ versions of ipywidgets.</p>
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Launch the Pigeon annotator in the Jupyter notebook.</span>
+<span class="w">    </span><span class="sd">"""Launch the Pigeon annotator in the Jupyter notebook.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Additional keyword arguments to pass to the annotation client.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Pigeon annotator does not support launching with a URL.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;Pigeon annotator does not support launching with a URL.&quot;</span>
+        <span class="s2">"Pigeon annotator does not support launching with a URL."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9500,7 +9500,7 @@ versions of ipywidgets.</p>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -9513,7 +9513,7 @@ versions of ipywidgets.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            or an attribute which explicitly disallows secret references</span>
 <span class="sd">            is passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -9531,19 +9531,19 @@ versions of ipywidgets.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure values with secrets "</span>
+                    <span class="s2">"here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_clear_text_field</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is "</span>
+                <span class="s2">"not allowed."</span>
             <span class="p">)</span>
 
         <span class="n">requires_validation</span> <span class="o">=</span> <span class="n">has_validators</span><span class="p">(</span>
@@ -9551,9 +9551,9 @@ versions of ipywidgets.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">requires_validation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed as additional validation is required for &quot;</span>
-                <span class="s2">&quot;this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is "</span>
+                <span class="s2">"not allowed as additional validation is required for "</span>
+                <span class="s2">"this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -10059,7 +10059,7 @@ versions of ipywidgets.</p>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -10072,7 +10072,7 @@ versions of ipywidgets.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            or an attribute which explicitly disallows secret references</span>
 <span class="sd">            is passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -10090,19 +10090,19 @@ versions of ipywidgets.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure values with secrets "</span>
+                    <span class="s2">"here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_clear_text_field</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is "</span>
+                <span class="s2">"not allowed."</span>
             <span class="p">)</span>
 
         <span class="n">requires_validation</span> <span class="o">=</span> <span class="n">has_validators</span><span class="p">(</span>
@@ -10110,9 +10110,9 @@ versions of ipywidgets.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">requires_validation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed as additional validation is required for &quot;</span>
-                <span class="s2">&quot;this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is "</span>
+                <span class="s2">"not allowed as additional validation is required for "</span>
+                <span class="s2">"this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -10547,7 +10547,7 @@ versions of ipywidgets.</p>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -10560,7 +10560,7 @@ versions of ipywidgets.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            or an attribute which explicitly disallows secret references</span>
 <span class="sd">            is passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -10578,19 +10578,19 @@ versions of ipywidgets.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure values with secrets "</span>
+                    <span class="s2">"here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_clear_text_field</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is "</span>
+                <span class="s2">"not allowed."</span>
             <span class="p">)</span>
 
         <span class="n">requires_validation</span> <span class="o">=</span> <span class="n">has_validators</span><span class="p">(</span>
@@ -10598,9 +10598,9 @@ versions of ipywidgets.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">requires_validation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed as additional validation is required for &quot;</span>
-                <span class="s2">&quot;this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is "</span>
+                <span class="s2">"not allowed as additional validation is required for "</span>
+                <span class="s2">"this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>

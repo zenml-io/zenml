@@ -4002,7 +4002,7 @@ each step with its own settings in separate VMs if provided.</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references don&#39;t clash with pydantic validation.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references don't clash with pydantic validation.</span>
 
 <span class="sd">    StackComponents allow the specification of all their string attributes</span>
 <span class="sd">    using secret references of the form `{{secret_name.key}}`. This however</span>
@@ -4022,7 +4022,7 @@ each step with its own settings in separate VMs if provided.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            is passed as a secret reference, or if the `name` attribute</span>
 <span class="sd">            was passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -4040,14 +4040,14 @@ each step with its own settings in separate VMs if provided.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` &quot;</span>
-                    <span class="s2">&quot;stack component. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure your stack &quot;</span>
-                    <span class="s2">&quot;components with secrets here: &quot;</span>
-                    <span class="s2">&quot;https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` for a `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">` "</span>
+                    <span class="s2">"stack component. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure your stack "</span>
+                    <span class="s2">"components with secrets here: "</span>
+                    <span class="s2">"https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -4055,9 +4055,9 @@ each step with its own settings in separate VMs if provided.</p>
             <span class="n">pydantic_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="n">key</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a &quot;</span>
-                <span class="s2">&quot;secret reference is not allowed as additional validation &quot;</span>
-                <span class="s2">&quot;is required for this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the stack component attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a "</span>
+                <span class="s2">"secret reference is not allowed as additional validation "</span>
+                <span class="s2">"is required for this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -4680,7 +4680,7 @@ by SkyPilot without requiring updates to ZenML.</p>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -4693,7 +4693,7 @@ by SkyPilot without requiring updates to ZenML.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            or an attribute which explicitly disallows secret references</span>
 <span class="sd">            is passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -4711,19 +4711,19 @@ by SkyPilot without requiring updates to ZenML.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure values with secrets "</span>
+                    <span class="s2">"here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_clear_text_field</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is "</span>
+                <span class="s2">"not allowed."</span>
             <span class="p">)</span>
 
         <span class="n">requires_validation</span> <span class="o">=</span> <span class="n">has_validators</span><span class="p">(</span>
@@ -4731,9 +4731,9 @@ by SkyPilot without requiring updates to ZenML.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">requires_validation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed as additional validation is required for &quot;</span>
-                <span class="s2">&quot;this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is "</span>
+                <span class="s2">"not allowed as additional validation is required for "</span>
+                <span class="s2">"this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -4922,7 +4922,7 @@ by SkyPilot without requiring updates to ZenML.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -4947,11 +4947,11 @@ by SkyPilot without requiring updates to ZenML.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -5203,7 +5203,7 @@ is not set.</p>
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">"""Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -5211,13 +5211,13 @@ is not set.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The orchestrator run id.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Unable to read run id from environment variable &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="s2">"Unable to read run id from environment variable "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5284,11 +5284,11 @@ is not set.</p>
 <span class="normal">155</span>
 <span class="normal">156</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
+<span class="w">    </span><span class="sd">"""Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        set: Whether to set the environment variables or not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5316,7 +5316,7 @@ is not set.</p>
 <span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Set up credentials for the orchestrator."""</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="n">connector</span><span class="o">.</span><span class="n">configure_local_client</span><span class="p">()</span>
@@ -5800,13 +5800,13 @@ specific steps.</p>
 <span class="normal">445</span>
 <span class="normal">446</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">submit_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">snapshot</span><span class="p">:</span> <span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">,</span>
-    <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="n">snapshot</span><span class="p">:</span> <span class="s2">"PipelineSnapshotResponse"</span><span class="p">,</span>
+    <span class="n">stack</span><span class="p">:</span> <span class="s2">"Stack"</span><span class="p">,</span>
     <span class="n">base_environment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">step_environments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-    <span class="n">placeholder_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">placeholder_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineRunResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SubmissionResult</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submits a pipeline to the orchestrator.</span>
+<span class="w">    </span><span class="sd">"""Submits a pipeline to the orchestrator.</span>
 
 <span class="sd">    This method should only submit the pipeline and not wait for it to</span>
 <span class="sd">    complete. If the orchestrator is configured to wait for the pipeline run</span>
@@ -5830,22 +5830,22 @@ specific steps.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Optional submission result.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># First check whether the code is running in a notebook.</span>
     <span class="k">if</span> <span class="n">Environment</span><span class="o">.</span><span class="n">in_notebook</span><span class="p">():</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;The Skypilot orchestrator cannot run pipelines in a notebook &quot;</span>
-            <span class="s2">&quot;environment. The reason is that it is non-trivial to create &quot;</span>
-            <span class="s2">&quot;a Docker image of a notebook. Please consider refactoring &quot;</span>
-            <span class="s2">&quot;your notebook cells into separate scripts in a Python module &quot;</span>
-            <span class="s2">&quot;and run the code outside of a notebook when using this &quot;</span>
-            <span class="s2">&quot;orchestrator.&quot;</span>
+            <span class="s2">"The Skypilot orchestrator cannot run pipelines in a notebook "</span>
+            <span class="s2">"environment. The reason is that it is non-trivial to create "</span>
+            <span class="s2">"a Docker image of a notebook. Please consider refactoring "</span>
+            <span class="s2">"your notebook cells into separate scripts in a Python module "</span>
+            <span class="s2">"and run the code outside of a notebook when using this "</span>
+            <span class="s2">"orchestrator."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">schedule</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Skypilot Orchestrator currently does not support the &quot;</span>
-            <span class="s2">&quot;use of schedules. The `schedule` will be ignored &quot;</span>
-            <span class="s2">&quot;and the pipeline will be run immediately.&quot;</span>
+            <span class="s2">"Skypilot Orchestrator currently does not support the "</span>
+            <span class="s2">"use of schedules. The `schedule` will be ignored "</span>
+            <span class="s2">"and the pipeline will be run immediately."</span>
         <span class="p">)</span>
 
     <span class="c1"># Set up some variables for configuration</span>
@@ -5887,14 +5887,14 @@ specific steps.</p>
             <span class="k">if</span> <span class="n">step_settings</span> <span class="o">!=</span> <span class="n">settings</span><span class="p">:</span>
                 <span class="n">different_settings_found</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;At least one step has different settings than the &quot;</span>
-                    <span class="s2">&quot;pipeline. The step with different settings will be &quot;</span>
-                    <span class="s2">&quot;run in a separate VM.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;You can configure the orchestrator to disable this &quot;</span>
-                    <span class="s2">&quot;behavior by updating the `disable_step_based_settings` &quot;</span>
-                    <span class="s2">&quot;in your orchestrator configuration &quot;</span>
-                    <span class="s2">&quot;by running the following command: &quot;</span>
-                    <span class="s2">&quot;`zenml orchestrator update --disable-step-based-settings=True`&quot;</span>
+                    <span class="s2">"At least one step has different settings than the "</span>
+                    <span class="s2">"pipeline. The step with different settings will be "</span>
+                    <span class="s2">"run in a separate VM.</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="s2">"You can configure the orchestrator to disable this "</span>
+                    <span class="s2">"behavior by updating the `disable_step_based_settings` "</span>
+                    <span class="s2">"in your orchestrator configuration "</span>
+                    <span class="s2">"by running the following command: "</span>
+                    <span class="s2">"`zenml orchestrator update --disable-step-based-settings=True`"</span>
                 <span class="p">)</span>
                 <span class="k">break</span>
 
@@ -5917,8 +5917,8 @@ specific steps.</p>
             <span class="n">snapshot_id</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">id</span>
         <span class="p">)</span>
 
-    <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">command</span><span class="p">)</span>
-    <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+    <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">command</span><span class="p">)</span>
+    <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
 
     <span class="n">task_envs</span> <span class="o">=</span> <span class="n">base_environment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -5945,7 +5945,7 @@ specific steps.</p>
         <span class="n">down</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">down</span>
         <span class="n">idle_minutes_to_autostop</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">idle_minutes_to_autostop</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cloud</span><span class="p">,</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Kubernetes</span><span class="p">):</span>
-            <span class="n">run_command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="se">{{</span><span class="s2">VIRTUAL_ENV:+$VIRTUAL_ENV/bin/</span><span class="se">}}</span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">run_command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"$</span><span class="se">{{</span><span class="s2">VIRTUAL_ENV:+$VIRTUAL_ENV/bin/</span><span class="se">}}</span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">"</span>
             <span class="n">setup</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">run_command</span> <span class="o">=</span> <span class="n">create_docker_run_command</span><span class="p">(</span>
@@ -5963,11 +5963,11 @@ specific steps.</p>
             <span class="n">run_command</span><span class="o">=</span><span class="n">run_command</span><span class="p">,</span>
             <span class="n">setup</span><span class="o">=</span><span class="n">setup</span><span class="p">,</span>
             <span class="n">task_envs</span><span class="o">=</span><span class="n">task_envs</span><span class="p">,</span>
-            <span class="n">task_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">task_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">task</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running run: </span><span class="si">{</span><span class="n">run_command</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Running run: </span><span class="si">{</span><span class="n">run_command</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># Set resources with all parameters and resource settings</span>
         <span class="n">resources_kwargs</span> <span class="o">=</span> <span class="n">prepare_resources_kwargs</span><span class="p">(</span>
@@ -5990,20 +5990,20 @@ specific steps.</p>
             <span class="n">cluster_status</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">status_request_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cluster_status</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Found existing cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">. Reusing...&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Found existing cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">. Reusing..."</span>
                 <span class="p">)</span>
                 <span class="n">launch_new_cluster</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> not found. Launching a new one...&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> not found. Launching a new one..."</span>
                 <span class="p">)</span>
                 <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">sanitize_cluster_name</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;No cluster name provided. Launching a new cluster with name </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">...&quot;</span>
+                <span class="sa">f</span><span class="s2">"No cluster name provided. Launching a new cluster with name </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">..."</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">launch_new_cluster</span><span class="p">:</span>
@@ -6014,7 +6014,7 @@ specific steps.</p>
                 <span class="n">idle_minutes_to_autostop</span><span class="o">=</span><span class="n">idle_minutes_to_autostop</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Launching the task on a new cluster: </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Launching the task on a new cluster: </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">launch_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span>
                 <span class="n">task</span><span class="p">,</span>
@@ -6027,8 +6027,8 @@ specific steps.</p>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="n">exec_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;down&quot;</span><span class="p">:</span> <span class="n">down</span><span class="p">,</span>
-                <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"down"</span><span class="p">:</span> <span class="n">down</span><span class="p">,</span>
+                <span class="s2">"backend"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="p">}</span>
 
             <span class="n">filtered_launch_settings</span> <span class="o">=</span> <span class="p">[]</span>
@@ -6040,13 +6040,13 @@ specific steps.</p>
                     <span class="n">exec_kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">if</span> <span class="n">filtered_launch_settings</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Ignoring launch_settings keys for `sky.exec`: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">filtered_launch_settings</span><span class="p">))),</span>
+                    <span class="s2">"Ignoring launch_settings keys for `sky.exec`: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">filtered_launch_settings</span><span class="p">))),</span>
                 <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Cluster name is required when reusing an existing cluster.&quot;</span>
+                    <span class="s2">"Cluster name is required when reusing an existing cluster."</span>
                 <span class="p">)</span>
             <span class="n">start_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">start</span><span class="p">(</span>
                 <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="p">,</span>
@@ -6063,11 +6063,11 @@ specific steps.</p>
             <span class="n">cluster_status</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">status_request_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cluster_status</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> was not found after start.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> was not found after start."</span>
                 <span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Executing the task on the cluster: </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Executing the task on the cluster: </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">exec_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
                 <span class="n">task</span><span class="p">,</span>
@@ -6081,7 +6081,7 @@ specific steps.</p>
             <span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline run failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline run failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">raise</span>
 
     <span class="k">finally</span><span class="p">:</span>
@@ -6248,7 +6248,7 @@ specific steps.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -6273,11 +6273,11 @@ specific steps.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -6529,7 +6529,7 @@ is not set.</p>
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
+<span class="w">    </span><span class="sd">"""Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the environment variable specifying the run id</span>
@@ -6537,13 +6537,13 @@ is not set.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The orchestrator run id.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Unable to read run id from environment variable &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="s2">"Unable to read run id from environment variable "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6610,11 +6610,11 @@ is not set.</p>
 <span class="normal">155</span>
 <span class="normal">156</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
+<span class="w">    </span><span class="sd">"""Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        set: Whether to set the environment variables or not.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6642,7 +6642,7 @@ is not set.</p>
 <span class="normal">146</span>
 <span class="normal">147</span>
 <span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Set up credentials for the orchestrator."""</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="n">connector</span><span class="o">.</span><span class="n">configure_local_client</span><span class="p">()</span>
@@ -7126,13 +7126,13 @@ specific steps.</p>
 <span class="normal">445</span>
 <span class="normal">446</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">submit_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">snapshot</span><span class="p">:</span> <span class="s2">&quot;PipelineSnapshotResponse&quot;</span><span class="p">,</span>
-    <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="n">snapshot</span><span class="p">:</span> <span class="s2">"PipelineSnapshotResponse"</span><span class="p">,</span>
+    <span class="n">stack</span><span class="p">:</span> <span class="s2">"Stack"</span><span class="p">,</span>
     <span class="n">base_environment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">step_environments</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
-    <span class="n">placeholder_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">placeholder_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"PipelineRunResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SubmissionResult</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submits a pipeline to the orchestrator.</span>
+<span class="w">    </span><span class="sd">"""Submits a pipeline to the orchestrator.</span>
 
 <span class="sd">    This method should only submit the pipeline and not wait for it to</span>
 <span class="sd">    complete. If the orchestrator is configured to wait for the pipeline run</span>
@@ -7156,22 +7156,22 @@ specific steps.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Optional submission result.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># First check whether the code is running in a notebook.</span>
     <span class="k">if</span> <span class="n">Environment</span><span class="o">.</span><span class="n">in_notebook</span><span class="p">():</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;The Skypilot orchestrator cannot run pipelines in a notebook &quot;</span>
-            <span class="s2">&quot;environment. The reason is that it is non-trivial to create &quot;</span>
-            <span class="s2">&quot;a Docker image of a notebook. Please consider refactoring &quot;</span>
-            <span class="s2">&quot;your notebook cells into separate scripts in a Python module &quot;</span>
-            <span class="s2">&quot;and run the code outside of a notebook when using this &quot;</span>
-            <span class="s2">&quot;orchestrator.&quot;</span>
+            <span class="s2">"The Skypilot orchestrator cannot run pipelines in a notebook "</span>
+            <span class="s2">"environment. The reason is that it is non-trivial to create "</span>
+            <span class="s2">"a Docker image of a notebook. Please consider refactoring "</span>
+            <span class="s2">"your notebook cells into separate scripts in a Python module "</span>
+            <span class="s2">"and run the code outside of a notebook when using this "</span>
+            <span class="s2">"orchestrator."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">schedule</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Skypilot Orchestrator currently does not support the &quot;</span>
-            <span class="s2">&quot;use of schedules. The `schedule` will be ignored &quot;</span>
-            <span class="s2">&quot;and the pipeline will be run immediately.&quot;</span>
+            <span class="s2">"Skypilot Orchestrator currently does not support the "</span>
+            <span class="s2">"use of schedules. The `schedule` will be ignored "</span>
+            <span class="s2">"and the pipeline will be run immediately."</span>
         <span class="p">)</span>
 
     <span class="c1"># Set up some variables for configuration</span>
@@ -7213,14 +7213,14 @@ specific steps.</p>
             <span class="k">if</span> <span class="n">step_settings</span> <span class="o">!=</span> <span class="n">settings</span><span class="p">:</span>
                 <span class="n">different_settings_found</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;At least one step has different settings than the &quot;</span>
-                    <span class="s2">&quot;pipeline. The step with different settings will be &quot;</span>
-                    <span class="s2">&quot;run in a separate VM.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                    <span class="s2">&quot;You can configure the orchestrator to disable this &quot;</span>
-                    <span class="s2">&quot;behavior by updating the `disable_step_based_settings` &quot;</span>
-                    <span class="s2">&quot;in your orchestrator configuration &quot;</span>
-                    <span class="s2">&quot;by running the following command: &quot;</span>
-                    <span class="s2">&quot;`zenml orchestrator update --disable-step-based-settings=True`&quot;</span>
+                    <span class="s2">"At least one step has different settings than the "</span>
+                    <span class="s2">"pipeline. The step with different settings will be "</span>
+                    <span class="s2">"run in a separate VM.</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="s2">"You can configure the orchestrator to disable this "</span>
+                    <span class="s2">"behavior by updating the `disable_step_based_settings` "</span>
+                    <span class="s2">"in your orchestrator configuration "</span>
+                    <span class="s2">"by running the following command: "</span>
+                    <span class="s2">"`zenml orchestrator update --disable-step-based-settings=True`"</span>
                 <span class="p">)</span>
                 <span class="k">break</span>
 
@@ -7243,8 +7243,8 @@ specific steps.</p>
             <span class="n">snapshot_id</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">id</span>
         <span class="p">)</span>
 
-    <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">command</span><span class="p">)</span>
-    <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+    <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">command</span><span class="p">)</span>
+    <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
 
     <span class="n">task_envs</span> <span class="o">=</span> <span class="n">base_environment</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -7271,7 +7271,7 @@ specific steps.</p>
         <span class="n">down</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">down</span>
         <span class="n">idle_minutes_to_autostop</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">idle_minutes_to_autostop</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cloud</span><span class="p">,</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Kubernetes</span><span class="p">):</span>
-            <span class="n">run_command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="se">{{</span><span class="s2">VIRTUAL_ENV:+$VIRTUAL_ENV/bin/</span><span class="se">}}</span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">run_command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"$</span><span class="se">{{</span><span class="s2">VIRTUAL_ENV:+$VIRTUAL_ENV/bin/</span><span class="se">}}</span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">"</span>
             <span class="n">setup</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">run_command</span> <span class="o">=</span> <span class="n">create_docker_run_command</span><span class="p">(</span>
@@ -7289,11 +7289,11 @@ specific steps.</p>
             <span class="n">run_command</span><span class="o">=</span><span class="n">run_command</span><span class="p">,</span>
             <span class="n">setup</span><span class="o">=</span><span class="n">setup</span><span class="p">,</span>
             <span class="n">task_envs</span><span class="o">=</span><span class="n">task_envs</span><span class="p">,</span>
-            <span class="n">task_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">task_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">task</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">task_kwargs</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running run: </span><span class="si">{</span><span class="n">run_command</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Running run: </span><span class="si">{</span><span class="n">run_command</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># Set resources with all parameters and resource settings</span>
         <span class="n">resources_kwargs</span> <span class="o">=</span> <span class="n">prepare_resources_kwargs</span><span class="p">(</span>
@@ -7316,20 +7316,20 @@ specific steps.</p>
             <span class="n">cluster_status</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">status_request_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cluster_status</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Found existing cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">. Reusing...&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Found existing cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">. Reusing..."</span>
                 <span class="p">)</span>
                 <span class="n">launch_new_cluster</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> not found. Launching a new one...&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> not found. Launching a new one..."</span>
                 <span class="p">)</span>
                 <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">sanitize_cluster_name</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">orchestrator_run_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;No cluster name provided. Launching a new cluster with name </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">...&quot;</span>
+                <span class="sa">f</span><span class="s2">"No cluster name provided. Launching a new cluster with name </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">..."</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">launch_new_cluster</span><span class="p">:</span>
@@ -7340,7 +7340,7 @@ specific steps.</p>
                 <span class="n">idle_minutes_to_autostop</span><span class="o">=</span><span class="n">idle_minutes_to_autostop</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Launching the task on a new cluster: </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Launching the task on a new cluster: </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">launch_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">launch</span><span class="p">(</span>
                 <span class="n">task</span><span class="p">,</span>
@@ -7353,8 +7353,8 @@ specific steps.</p>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="n">exec_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;down&quot;</span><span class="p">:</span> <span class="n">down</span><span class="p">,</span>
-                <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"down"</span><span class="p">:</span> <span class="n">down</span><span class="p">,</span>
+                <span class="s2">"backend"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="p">}</span>
 
             <span class="n">filtered_launch_settings</span> <span class="o">=</span> <span class="p">[]</span>
@@ -7366,13 +7366,13 @@ specific steps.</p>
                     <span class="n">exec_kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">if</span> <span class="n">filtered_launch_settings</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Ignoring launch_settings keys for `sky.exec`: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">filtered_launch_settings</span><span class="p">))),</span>
+                    <span class="s2">"Ignoring launch_settings keys for `sky.exec`: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">filtered_launch_settings</span><span class="p">))),</span>
                 <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Cluster name is required when reusing an existing cluster.&quot;</span>
+                    <span class="s2">"Cluster name is required when reusing an existing cluster."</span>
                 <span class="p">)</span>
             <span class="n">start_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">start</span><span class="p">(</span>
                 <span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="p">,</span>
@@ -7389,11 +7389,11 @@ specific steps.</p>
             <span class="n">cluster_status</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">status_request_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cluster_status</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> was not found after start.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Cluster </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2"> was not found after start."</span>
                 <span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Executing the task on the cluster: </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Executing the task on the cluster: </span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="n">exec_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
                 <span class="n">task</span><span class="p">,</span>
@@ -7407,7 +7407,7 @@ specific steps.</p>
             <span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline run failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline run failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">raise</span>
 
     <span class="k">finally</span><span class="p">:</span>
@@ -7755,7 +7755,7 @@ SkypilotBaseOrchestrator.</p>
 <span class="normal">435</span>
 <span class="normal">436</span>
 <span class="normal">437</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint of the Skypilot master/orchestrator VM.</span>
+<span class="w">    </span><span class="sd">"""Entrypoint of the Skypilot master/orchestrator VM.</span>
 
 <span class="sd">    This is the entrypoint of the Skypilot master/orchestrator VM. It is</span>
 <span class="sd">    responsible for provisioning the VM and running the pipeline steps in</span>
@@ -7765,12 +7765,12 @@ SkypilotBaseOrchestrator.</p>
 <span class="sd">    using the `sky` library as well.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If the active stack&#39;s orchestrator is not an instance of</span>
+<span class="sd">        TypeError: If the active stack's orchestrator is not an instance of</span>
 <span class="sd">            SkypilotBaseOrchestrator.</span>
-<span class="sd">        ValueError: If the active stack&#39;s container registry is None.</span>
+<span class="sd">        ValueError: If the active stack's container registry is None.</span>
 <span class="sd">        Exception: If the orchestration or one of the steps fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Skypilot orchestrator VM started.&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Skypilot orchestrator VM started."</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">()</span>
     <span class="n">orchestrator_run_id</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
@@ -7786,14 +7786,14 @@ SkypilotBaseOrchestrator.</p>
             <span class="k">for</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">snapshot</span><span class="o">.</span><span class="n">step_configurations</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
         <span class="p">}</span>
         <span class="n">step_command</span> <span class="o">=</span> <span class="n">StepEntrypointConfiguration</span><span class="o">.</span><span class="n">get_entrypoint_command</span><span class="p">()</span>
-        <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">step_command</span><span class="p">)</span>
+        <span class="n">entrypoint_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">step_command</span><span class="p">)</span>
 
         <span class="n">active_stack</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span>
 
         <span class="n">orchestrator</span> <span class="o">=</span> <span class="n">active_stack</span><span class="o">.</span><span class="n">orchestrator</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">orchestrator</span><span class="p">,</span> <span class="n">SkypilotBaseOrchestrator</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                <span class="s2">&quot;The active stack&#39;s orchestrator is not an instance of SkypilotBaseOrchestrator.&quot;</span>
+                <span class="s2">"The active stack's orchestrator is not an instance of SkypilotBaseOrchestrator."</span>
             <span class="p">)</span>
 
         <span class="n">orchestrator</span><span class="o">.</span><span class="n">setup_credentials</span><span class="p">()</span>
@@ -7802,12 +7802,12 @@ SkypilotBaseOrchestrator.</p>
 
         <span class="n">container_registry</span> <span class="o">=</span> <span class="n">active_stack</span><span class="o">.</span><span class="n">container_registry</span>
         <span class="k">if</span> <span class="n">container_registry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Container registry cannot be None.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Container registry cannot be None."</span><span class="p">)</span>
 
         <span class="n">setup</span><span class="p">,</span> <span class="n">task_envs</span> <span class="o">=</span> <span class="n">prepare_docker_setup</span><span class="p">(</span>
             <span class="n">container_registry_uri</span><span class="o">=</span><span class="n">container_registry</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span>
             <span class="n">credentials</span><span class="o">=</span><span class="n">container_registry</span><span class="o">.</span><span class="n">credentials</span><span class="p">,</span>
-            <span class="n">use_sudo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Entrypoint doesn&#39;t use sudo</span>
+            <span class="n">use_sudo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Entrypoint doesn't use sudo</span>
         <span class="p">)</span>
 
         <span class="n">unique_resource_configs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -7830,7 +7830,7 @@ SkypilotBaseOrchestrator.</p>
             <span class="n">run_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fetching pipeline run: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Fetching pipeline run: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
         <span class="n">shared_env</span><span class="p">,</span> <span class="n">secrets</span> <span class="o">=</span> <span class="n">get_config_environment_vars</span><span class="p">()</span>
         <span class="n">shared_env</span><span class="p">[</span><span class="n">ENV_ZENML_SKYPILOT_ORCHESTRATOR_RUN_ID</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
@@ -7838,15 +7838,15 @@ SkypilotBaseOrchestrator.</p>
         <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">run_step_on_skypilot_vm</span><span class="p">(</span><span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Run a pipeline step in a separate Skypilot VM.</span>
+<span class="w">            </span><span class="sd">"""Run a pipeline step in a separate Skypilot VM.</span>
 
 <span class="sd">            Args:</span>
 <span class="sd">                step_name: Name of the step.</span>
 
 <span class="sd">            Raises:</span>
 <span class="sd">                Exception: If the step execution fails.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` on a VM...&quot;</span><span class="p">)</span>
+<span class="sd">            """</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Running step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` on a VM..."</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">cluster_name</span> <span class="o">=</span> <span class="n">unique_resource_configs</span><span class="p">[</span><span class="n">step_name</span><span class="p">]</span>
 
@@ -7859,7 +7859,7 @@ SkypilotBaseOrchestrator.</p>
                         <span class="n">step_name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span> <span class="n">snapshot_id</span><span class="o">=</span><span class="n">snapshot</span><span class="o">.</span><span class="n">id</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
-                <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">arguments_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                     <span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">step_args</span>
                 <span class="p">)</span>
 
@@ -7882,10 +7882,10 @@ SkypilotBaseOrchestrator.</p>
                     <span class="n">arguments_str</span><span class="o">=</span><span class="n">arguments_str</span><span class="p">,</span>
                     <span class="n">environment</span><span class="o">=</span><span class="n">step_env</span><span class="p">,</span>
                     <span class="n">docker_run_args</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">docker_run_args</span><span class="p">,</span>
-                    <span class="n">use_sudo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Entrypoint doesn&#39;t use sudo</span>
+                    <span class="n">use_sudo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Entrypoint doesn't use sudo</span>
                 <span class="p">)</span>
 
-                <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">snapshot</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">snapshot</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
 
                 <span class="n">step_task_envs</span> <span class="o">=</span> <span class="n">step_env</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="n">step_task_envs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_envs</span><span class="p">)</span>
@@ -7925,32 +7925,32 @@ SkypilotBaseOrchestrator.</p>
 
                 <span class="k">if</span> <span class="n">cluster_name</span> <span class="ow">in</span> <span class="n">unique_resource_configs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Resource configuration for cluster &#39;</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-                        <span class="s2">&quot;is used by subsequent steps. Skipping the deprovisioning of &quot;</span>
-                        <span class="s2">&quot;the cluster.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"Resource configuration for cluster '</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">' "</span>
+                        <span class="s2">"is used by subsequent steps. Skipping the deprovisioning of "</span>
+                        <span class="s2">"the cluster."</span>
                     <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Resource configuration for cluster &#39;</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
-                        <span class="s2">&quot;is not used by subsequent steps. deprovisioning the cluster.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"Resource configuration for cluster '</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">' "</span>
+                        <span class="s2">"is not used by subsequent steps. deprovisioning the cluster."</span>
                     <span class="p">)</span>
                     <span class="k">try</span><span class="p">:</span>
                         <span class="n">down_request_id</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">down</span><span class="p">(</span><span class="n">cluster_name</span><span class="p">)</span>
                         <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">down_request_id</span><span class="p">)</span>
                     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">cleanup_error</span><span class="p">:</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                            <span class="s2">&quot;Failed to deprovision cluster &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">cleanup_error</span><span class="si">}</span><span class="s2">. &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;Resources may still be running. Run `sky down &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">` manually to clean up.&quot;</span>
+                            <span class="s2">"Failed to deprovision cluster "</span>
+                            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">cleanup_error</span><span class="si">}</span><span class="s2">. "</span>
+                            <span class="sa">f</span><span class="s2">"Resources may still be running. Run `sky down "</span>
+                            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">` manually to clean up."</span>
                         <span class="p">)</span>
 
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Running step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` on a VM is completed.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Running step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">` on a VM is completed."</span>
                 <span class="p">)</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed while launching step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed while launching step `</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
                 <span class="k">raise</span>
 
         <span class="n">dag_runner</span> <span class="o">=</span> <span class="n">ThreadedDagRunner</span><span class="p">(</span>
@@ -7964,15 +7964,15 @@ SkypilotBaseOrchestrator.</p>
                 <span class="n">failed_nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">failed_nodes</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;One or more steps failed: </span><span class="si">{</span><span class="n">failed_nodes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">"One or more steps failed: </span><span class="si">{</span><span class="n">failed_nodes</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Orchestrator failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Orchestrator failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># Try to mark the pipeline run as failed</span>
         <span class="k">if</span> <span class="n">run</span><span class="p">:</span>
             <span class="n">publish_failed_pipeline_run</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Marked pipeline run as failed in ZenML.&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Marked pipeline run as failed in ZenML."</span><span class="p">)</span>
         <span class="k">raise</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8030,15 +8030,15 @@ SkypilotBaseOrchestrator.</p>
 <span class="normal">70</span>
 <span class="normal">71</span>
 <span class="normal">72</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse entrypoint arguments.</span>
+<span class="w">    </span><span class="sd">"""Parse entrypoint arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Parsed args.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--run_name&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--snapshot_id&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--run_id&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--run_name"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--snapshot_id"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--run_id"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8261,10 +8261,10 @@ SkypilotBaseOrchestrator.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">snapshot_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
-    <span class="n">run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;UUID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">snapshot_id</span><span class="p">:</span> <span class="s2">"UUID"</span><span class="p">,</span>
+    <span class="n">run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"UUID"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
+<span class="w">    </span><span class="sd">"""Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        run_name: Name of the ZenML run.</span>
@@ -8273,15 +8273,15 @@ SkypilotBaseOrchestrator.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of entrypoint arguments.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">args</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">RUN_NAME_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">RUN_NAME_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">SNAPSHOT_ID_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">snapshot_id</span><span class="p">),</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">run_id</span><span class="p">:</span>
-        <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">RUN_ID_OPTION</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run_id</span><span class="p">)])</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">RUN_ID_OPTION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">run_id</span><span class="p">)])</span>
 
     <span class="k">return</span> <span class="n">args</span>
 </code></pre></div></td></tr></table></div>
@@ -8347,15 +8347,15 @@ SkypilotBaseOrchestrator.</p>
 <span class="normal">54</span>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
+<span class="w">    </span><span class="sd">"""Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Entrypoint command.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">command</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;python&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;-m&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint&quot;</span><span class="p">,</span>
+        <span class="s2">"python"</span><span class="p">,</span>
+        <span class="s2">"-m"</span><span class="p">,</span>
+        <span class="s2">"zenml.integrations.skypilot.orchestrators.skypilot_orchestrator_entrypoint"</span><span class="p">,</span>
     <span class="p">]</span>
     <span class="k">return</span> <span class="n">command</span>
 </code></pre></div></td></tr></table></div>
@@ -8421,11 +8421,11 @@ SkypilotBaseOrchestrator.</p>
 <span class="normal">40</span>
 <span class="normal">41</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
+<span class="w">    </span><span class="sd">"""Gets all the options required for running this entrypoint.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Entrypoint options.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">options</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">RUN_NAME_OPTION</span><span class="p">,</span>
         <span class="n">SNAPSHOT_ID_OPTION</span><span class="p">,</span>
@@ -8735,7 +8735,7 @@ Docker's supported environment variable name pattern.</p>
     <span class="n">docker_run_args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">use_sudo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Docker run command string.</span>
+<span class="w">    </span><span class="sd">"""Create a Docker run command string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        image: Docker image to run.</span>
@@ -8750,40 +8750,40 @@ Docker's supported environment variable name pattern.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If any environment variable key does not match</span>
-<span class="sd">            Docker&#39;s supported environment variable name pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">            Docker's supported environment variable name pattern.</span>
+<span class="sd">    """</span>
     <span class="n">invalid_env_keys</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">environment</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_ENV_VAR_PATTERN</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">invalid_env_keys</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Invalid environment variable name(s) for docker run: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">invalid_env_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="s2">"Invalid environment variable name(s) for docker run: "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">invalid_env_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 
-    <span class="n">docker_environment_str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;-e </span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">environment</span>
+    <span class="n">docker_environment_str</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"-e </span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">environment</span>
     <span class="p">)</span>
-    <span class="n">custom_run_args</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">docker_run_args</span><span class="p">)</span>
+    <span class="n">custom_run_args</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">docker_run_args</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">custom_run_args</span><span class="p">:</span>
-        <span class="n">custom_run_args</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span>
+        <span class="n">custom_run_args</span> <span class="o">+=</span> <span class="s2">" "</span>
 
-    <span class="c1"># sudo resets the calling shell&#39;s environment by default, which would</span>
-    <span class="c1"># cause docker&#39;s `-e KEY` (inherit-from-shell) form to arrive with empty</span>
+    <span class="c1"># sudo resets the calling shell's environment by default, which would</span>
+    <span class="c1"># cause docker's `-e KEY` (inherit-from-shell) form to arrive with empty</span>
     <span class="c1"># values. --preserve-env propagates the listed names across the sudo</span>
     <span class="c1"># boundary without inlining their values onto the command line.</span>
     <span class="k">if</span> <span class="n">use_sudo</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">environment</span><span class="p">:</span>
-            <span class="n">preserved</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;sudo --preserve-env=</span><span class="si">{</span><span class="n">preserved</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="n">preserved</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">environment</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"sudo --preserve-env=</span><span class="si">{</span><span class="n">preserved</span><span class="si">}</span><span class="s2"> "</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">&quot;sudo &quot;</span>
+            <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">"sudo "</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">""</span>
 
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">sudo_prefix</span><span class="si">}</span><span class="s2">docker run --rm </span><span class="si">{</span><span class="n">custom_run_args</span><span class="si">}{</span><span class="n">docker_environment_str</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sudo_prefix</span><span class="si">}</span><span class="s2">docker run --rm </span><span class="si">{</span><span class="n">custom_run_args</span><span class="si">}{</span><span class="n">docker_environment_str</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">entrypoint_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">arguments_str</span><span class="si">}</span><span class="s2">"</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8930,7 +8930,7 @@ Docker's supported environment variable name pattern.</p>
     <span class="n">credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">use_sudo</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare Docker login setup command and environment variables.</span>
+<span class="w">    </span><span class="sd">"""Prepare Docker login setup command and environment variables.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        container_registry_uri: URI of the container registry.</span>
@@ -8939,19 +8939,19 @@ Docker's supported environment variable name pattern.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Tuple of (setup command, environment variables)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">credentials</span><span class="p">:</span>
         <span class="n">docker_username</span><span class="p">,</span> <span class="n">docker_password</span> <span class="o">=</span> <span class="n">credentials</span>
-        <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">&quot;sudo &quot;</span> <span class="k">if</span> <span class="n">use_sudo</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">sudo_prefix</span> <span class="o">=</span> <span class="s2">"sudo "</span> <span class="k">if</span> <span class="n">use_sudo</span> <span class="k">else</span> <span class="s2">""</span>
         <span class="n">quoted_registry_uri</span> <span class="o">=</span> <span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">container_registry_uri</span><span class="p">)</span>
         <span class="n">setup</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s1">&#39;echo &quot;$DOCKER_PASSWORD&quot; | </span><span class="si">{</span><span class="n">sudo_prefix</span><span class="si">}</span><span class="s1">docker login &#39;</span>
-            <span class="sa">f</span><span class="s1">&#39;--username &quot;$DOCKER_USERNAME&quot; &#39;</span>
-            <span class="sa">f</span><span class="s2">&quot;--password-stdin </span><span class="si">{</span><span class="n">quoted_registry_uri</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s1">'echo "$DOCKER_PASSWORD" | </span><span class="si">{</span><span class="n">sudo_prefix</span><span class="si">}</span><span class="s1">docker login '</span>
+            <span class="sa">f</span><span class="s1">'--username "$DOCKER_USERNAME" '</span>
+            <span class="sa">f</span><span class="s2">"--password-stdin </span><span class="si">{</span><span class="n">quoted_registry_uri</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
         <span class="n">task_envs</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;DOCKER_USERNAME&quot;</span><span class="p">:</span> <span class="n">docker_username</span><span class="p">,</span>
-            <span class="s2">&quot;DOCKER_PASSWORD&quot;</span><span class="p">:</span> <span class="n">docker_password</span><span class="p">,</span>
+            <span class="s2">"DOCKER_USERNAME"</span><span class="p">:</span> <span class="n">docker_username</span><span class="p">,</span>
+            <span class="s2">"DOCKER_PASSWORD"</span><span class="p">:</span> <span class="n">docker_password</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">setup</span> <span class="o">=</span> <span class="kc">None</span>
@@ -9106,7 +9106,7 @@ Docker's supported environment variable name pattern.</p>
     <span class="n">down</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">idle_minutes_to_autostop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare launch keyword arguments for sky.launch.</span>
+<span class="w">    </span><span class="sd">"""Prepare launch keyword arguments for sky.launch.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        settings: Skypilot orchestrator settings.</span>
@@ -9115,7 +9115,7 @@ Docker's supported environment variable name pattern.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Launch keyword arguments dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">down_value</span> <span class="o">=</span> <span class="n">down</span> <span class="k">if</span> <span class="n">down</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">down</span>
     <span class="n">idle_value</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">idle_minutes_to_autostop</span>
@@ -9126,10 +9126,10 @@ Docker's supported environment variable name pattern.</p>
     <span class="c1"># SkyPilot ≥0.11 made launch/exec async and removed stream/log flags.</span>
     <span class="c1"># Keep only supported keys here; exec should use its own kwargs.</span>
     <span class="n">launch_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;retry_until_up&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">retry_until_up</span><span class="p">,</span>
-        <span class="s2">&quot;idle_minutes_to_autostop&quot;</span><span class="p">:</span> <span class="n">idle_value</span><span class="p">,</span>
-        <span class="s2">&quot;down&quot;</span><span class="p">:</span> <span class="n">down_value</span><span class="p">,</span>
-        <span class="s2">&quot;backend&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"retry_until_up"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">retry_until_up</span><span class="p">,</span>
+        <span class="s2">"idle_minutes_to_autostop"</span><span class="p">:</span> <span class="n">idle_value</span><span class="p">,</span>
+        <span class="s2">"down"</span><span class="p">:</span> <span class="n">down_value</span><span class="p">,</span>
+        <span class="s2">"backend"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">settings</span><span class="o">.</span><span class="n">launch_settings</span><span class="p">,</span>  <span class="c1"># Keep user-provided extras</span>
     <span class="p">}</span>
 
@@ -9345,12 +9345,12 @@ Docker's supported environment variable name pattern.</p>
 <span class="normal">239</span>
 <span class="normal">240</span>
 <span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_resources_kwargs</span><span class="p">(</span>
-    <span class="n">cloud</span><span class="p">:</span> <span class="s2">&quot;Cloud&quot;</span><span class="p">,</span>
+    <span class="n">cloud</span><span class="p">:</span> <span class="s2">"Cloud"</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">SkypilotBaseOrchestratorSettings</span><span class="p">,</span>
     <span class="n">default_instance_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">kubernetes_image</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare resources keyword arguments for sky.Resources.</span>
+<span class="w">    </span><span class="sd">"""Prepare resources keyword arguments for sky.Resources.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        cloud: Skypilot cloud.</span>
@@ -9364,41 +9364,41 @@ Docker's supported environment variable name pattern.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If `infra` is combined with any of the</span>
 <span class="sd">            `resources_settings` keys `cloud`, `region`, or `zone`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span><span class="p">:</span>
         <span class="n">invalid_resource_keys</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">key</span>
-            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;cloud&quot;</span><span class="p">,</span> <span class="s2">&quot;region&quot;</span><span class="p">,</span> <span class="s2">&quot;zone&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"cloud"</span><span class="p">,</span> <span class="s2">"region"</span><span class="p">,</span> <span class="s2">"zone"</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">resources_settings</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="n">invalid_resource_keys</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;The `infra` setting cannot be combined with &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`resources_settings` keys </span><span class="si">{</span><span class="n">invalid_resource_keys</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="s2">"The `infra` setting cannot be combined with "</span>
+                <span class="sa">f</span><span class="s2">"`resources_settings` keys </span><span class="si">{</span><span class="n">invalid_resource_keys</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
     <span class="n">resources_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;cloud&quot;</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">cloud</span><span class="p">,</span>
-        <span class="s2">&quot;instance_type&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">instance_type</span> <span class="ow">or</span> <span class="n">default_instance_type</span><span class="p">,</span>
-        <span class="s2">&quot;cpus&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">cpus</span><span class="p">,</span>
-        <span class="s2">&quot;memory&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">memory</span><span class="p">,</span>
-        <span class="s2">&quot;accelerators&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">accelerators</span><span class="p">,</span>
-        <span class="s2">&quot;accelerator_args&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">accelerator_args</span><span class="p">,</span>
-        <span class="s2">&quot;use_spot&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
-        <span class="s2">&quot;job_recovery&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">job_recovery</span><span class="p">,</span>
-        <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
-        <span class="s2">&quot;zone&quot;</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">zone</span><span class="p">,</span>
-        <span class="s2">&quot;image_id&quot;</span><span class="p">:</span> <span class="n">kubernetes_image</span>
+        <span class="s2">"cloud"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">cloud</span><span class="p">,</span>
+        <span class="s2">"instance_type"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">instance_type</span> <span class="ow">or</span> <span class="n">default_instance_type</span><span class="p">,</span>
+        <span class="s2">"cpus"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">cpus</span><span class="p">,</span>
+        <span class="s2">"memory"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">memory</span><span class="p">,</span>
+        <span class="s2">"accelerators"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">accelerators</span><span class="p">,</span>
+        <span class="s2">"accelerator_args"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">accelerator_args</span><span class="p">,</span>
+        <span class="s2">"use_spot"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
+        <span class="s2">"job_recovery"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">job_recovery</span><span class="p">,</span>
+        <span class="s2">"region"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">region</span><span class="p">,</span>
+        <span class="s2">"zone"</span><span class="p">:</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span> <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">zone</span><span class="p">,</span>
+        <span class="s2">"image_id"</span><span class="p">:</span> <span class="n">kubernetes_image</span>
         <span class="k">if</span> <span class="n">kubernetes_image</span>
         <span class="k">else</span> <span class="n">settings</span><span class="o">.</span><span class="n">image_id</span><span class="p">,</span>
-        <span class="s2">&quot;disk_size&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">disk_size</span><span class="p">,</span>
-        <span class="s2">&quot;disk_tier&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">disk_tier</span><span class="p">,</span>
-        <span class="s2">&quot;network_tier&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">network_tier</span><span class="p">,</span>
-        <span class="s2">&quot;ports&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">ports</span><span class="p">,</span>
-        <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
-        <span class="s2">&quot;any_of&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">any_of</span><span class="p">,</span>
-        <span class="s2">&quot;ordered&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">ordered</span><span class="p">,</span>
-        <span class="s2">&quot;infra&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span><span class="p">,</span>
+        <span class="s2">"disk_size"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">disk_size</span><span class="p">,</span>
+        <span class="s2">"disk_tier"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">disk_tier</span><span class="p">,</span>
+        <span class="s2">"network_tier"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">network_tier</span><span class="p">,</span>
+        <span class="s2">"ports"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">ports</span><span class="p">,</span>
+        <span class="s2">"labels"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
+        <span class="s2">"any_of"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">any_of</span><span class="p">,</span>
+        <span class="s2">"ordered"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">ordered</span><span class="p">,</span>
+        <span class="s2">"infra"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">infra</span><span class="p">,</span>
         <span class="o">**</span><span class="n">settings</span><span class="o">.</span><span class="n">resources_settings</span><span class="p">,</span>  <span class="c1"># Add any arbitrary resource settings</span>
     <span class="p">}</span>
 
@@ -9588,7 +9588,7 @@ Docker's supported environment variable name pattern.</p>
     <span class="n">task_envs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare task keyword arguments for sky.Task.</span>
+<span class="w">    </span><span class="sd">"""Prepare task keyword arguments for sky.Task.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        settings: Skypilot orchestrator settings.</span>
@@ -9599,7 +9599,7 @@ Docker's supported environment variable name pattern.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Task keyword arguments dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">merged_envs</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">envs</span><span class="p">:</span>
         <span class="n">merged_envs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">envs</span><span class="p">)</span>
@@ -9607,13 +9607,13 @@ Docker's supported environment variable name pattern.</p>
         <span class="n">merged_envs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_envs</span><span class="p">)</span>
 
     <span class="n">task_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="n">run_command</span><span class="p">,</span>
-        <span class="s2">&quot;setup&quot;</span><span class="p">:</span> <span class="n">setup</span><span class="p">,</span>
-        <span class="s2">&quot;envs&quot;</span><span class="p">:</span> <span class="n">merged_envs</span><span class="p">,</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">task_name</span> <span class="ow">or</span> <span class="n">task_name</span><span class="p">,</span>
-        <span class="s2">&quot;num_nodes&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span>
-        <span class="s2">&quot;workdir&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
-        <span class="s2">&quot;file_mounts_mapping&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">file_mounts</span><span class="p">,</span>
+        <span class="s2">"run"</span><span class="p">:</span> <span class="n">run_command</span><span class="p">,</span>
+        <span class="s2">"setup"</span><span class="p">:</span> <span class="n">setup</span><span class="p">,</span>
+        <span class="s2">"envs"</span><span class="p">:</span> <span class="n">merged_envs</span><span class="p">,</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">task_name</span> <span class="ow">or</span> <span class="n">task_name</span><span class="p">,</span>
+        <span class="s2">"num_nodes"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span>
+        <span class="s2">"workdir"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
+        <span class="s2">"file_mounts_mapping"</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">file_mounts</span><span class="p">,</span>
         <span class="o">**</span><span class="n">settings</span><span class="o">.</span><span class="n">task_settings</span><span class="p">,</span>  <span class="c1"># Add any arbitrary task settings</span>
     <span class="p">}</span>
 
@@ -9710,19 +9710,19 @@ Docker's supported environment variable name pattern.</p>
 <span class="normal">42</span>
 <span class="normal">43</span>
 <span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sanitize_cluster_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sanitize the value to be used in a cluster name.</span>
+<span class="w">    </span><span class="sd">"""Sanitize the value to be used in a cluster name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Arbitrary input cluster name.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Sanitized cluster name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
-        <span class="sa">r</span><span class="s2">&quot;[^a-z0-9-]&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="sa">r</span><span class="s2">"[^a-z0-9-]"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="p">)</span>  <span class="c1"># replaces any character that is not a lowercase letter, digit, or hyphen with a hyphen</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[-]+&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># trim leading hyphens</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[-]+$&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># trim trailing hyphens</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[-]+"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># trim leading hyphens</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[-]+$"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>  <span class="c1"># trim trailing hyphens</span>
     <span class="k">return</span> <span class="n">name</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9914,7 +9914,7 @@ contain an integer job ID.</p>
 <span class="normal">333</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sky_job_get</span><span class="p">(</span>
     <span class="n">request_id</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">stream_logs</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">cluster_name</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SubmissionResult</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle SkyPilot request results based on stream_logs setting.</span>
+<span class="w">    </span><span class="sd">"""Handle SkyPilot request results based on stream_logs setting.</span>
 
 <span class="sd">    SkyPilot API exec and launch methods are asynchronous and return a request ID.</span>
 <span class="sd">    This method waits for the operation to complete and returns the result.</span>
@@ -9932,7 +9932,7 @@ contain an integer job ID.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the SkyPilot request result is malformed or does not</span>
 <span class="sd">            contain an integer job ID.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">stream_logs</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">sky</span><span class="o">.</span><span class="n">stream_and_get</span><span class="p">(</span><span class="n">request_id</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
@@ -9940,15 +9940,15 @@ contain an integer job ID.</p>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Failed to get SkyPilot job result for request &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">request_id</span><span class="si">!r}</span><span class="s2">: expected a non-empty tuple, got </span><span class="si">{</span><span class="n">result</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="s2">"Failed to get SkyPilot job result for request "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">request_id</span><span class="si">!r}</span><span class="s2">: expected a non-empty tuple, got </span><span class="si">{</span><span class="n">result</span><span class="si">!r}</span><span class="s2">."</span>
         <span class="p">)</span>
 
     <span class="n">job_id</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;Failed to parse SkyPilot job ID for request &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">request_id</span><span class="si">!r}</span><span class="s2">: expected int, got </span><span class="si">{</span><span class="n">job_id</span><span class="si">!r}</span><span class="s2">.&quot;</span>
+            <span class="s2">"Failed to parse SkyPilot job ID for request "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">request_id</span><span class="si">!r}</span><span class="s2">: expected int, got </span><span class="si">{</span><span class="n">job_id</span><span class="si">!r}</span><span class="s2">."</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_wait_for_completion</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -9957,7 +9957,7 @@ contain an integer job ID.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SkyPilot job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> failed with status </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"SkyPilot job </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2"> failed with status </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">SubmissionResult</span><span class="p">(</span>

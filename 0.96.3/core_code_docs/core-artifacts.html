@@ -4775,19 +4775,19 @@ def my_pipeline():
 <span class="normal">94</span>
 <span class="normal">95</span>
 <span class="normal">96</span>
-<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExternalArtifact&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Model validator for the external artifact.</span>
+<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ExternalArtifact"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Model validator for the external artifact.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If an ID was set.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The validated instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;External artifacts can only be initialized with a value.&quot;</span>
+            <span class="s2">"External artifacts can only be initialized with a value."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span>
@@ -4905,22 +4905,22 @@ If not provided, the active stack's artifact store will be used.</p>
 <span class="normal">133</span>
 <span class="normal">134</span>
 <span class="normal">135</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">upload_by_value</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"BaseArtifactStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Uploads the artifact by value.</span>
+<span class="w">    </span><span class="sd">"""Uploads the artifact by value.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_store: The artifact store in which to store the artifact.</span>
-<span class="sd">            If not provided, the active stack&#39;s artifact store will be used.</span>
+<span class="sd">            If not provided, the active stack's artifact store will be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The uploaded artifact ID.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_artifact</span>
 
-    <span class="n">artifact_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;external_</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;external_artifacts&quot;</span><span class="p">,</span> <span class="n">artifact_name</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Uploading external artifact to &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="n">uri</span><span class="p">)</span>
+    <span class="n">artifact_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"external_</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"external_artifacts"</span><span class="p">,</span> <span class="n">artifact_name</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Uploading external artifact to '</span><span class="si">%s</span><span class="s2">'."</span><span class="p">,</span> <span class="n">uri</span><span class="p">)</span>
 
     <span class="n">artifact</span> <span class="o">=</span> <span class="n">save_artifact</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="n">artifact_name</span><span class="p">,</span>
@@ -4939,7 +4939,7 @@ If not provided, the active stack's artifact store will be used.</p>
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">artifact</span><span class="o">.</span><span class="n">id</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Finished uploading external artifact </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Finished uploading external artifact </span><span class="si">%s</span><span class="s2">."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5143,7 +5143,7 @@ is not the same as the one in the active stack.</p>
 <span class="normal">90</span>
 <span class="normal">91</span>
 <span class="normal">92</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifact_version_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact.</span>
+<span class="w">    </span><span class="sd">"""Get the artifact.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The artifact ID.</span>
@@ -5152,7 +5152,7 @@ is not the same as the one in the active stack.</p>
 <span class="sd">        RuntimeError: If neither the ID nor the name of the artifact was</span>
 <span class="sd">            provided, or if the artifact store of the referenced artifact</span>
 <span class="sd">            is not the same as the one in the active stack.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
@@ -5161,25 +5161,25 @@ is not the same as the one in the active stack.</p>
         <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_artifact_version</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="s2">&quot;The ID of the artifact must be provided. &quot;</span>
-            <span class="s2">&quot;- If you created this ExternalArtifact from a value, please &quot;</span>
-            <span class="s2">&quot;ensure that `upload_by_value` was called before trying to &quot;</span>
-            <span class="s2">&quot;fetch the artifact ID.</span><span class="se">\n</span><span class="s2">- If you specified an artifact name &quot;</span>
-            <span class="s2">&quot;or model name for this external artifact, this functionality &quot;</span>
-            <span class="s2">&quot;was removed from the ExternalArtifact class. Use Client &quot;</span>
-            <span class="s2">&quot;methods instead to dynamically fetch an artifact via name or &quot;</span>
-            <span class="s2">&quot;from a model instead.&quot;</span>
+            <span class="s2">"The ID of the artifact must be provided. "</span>
+            <span class="s2">"- If you created this ExternalArtifact from a value, please "</span>
+            <span class="s2">"ensure that `upload_by_value` was called before trying to "</span>
+            <span class="s2">"fetch the artifact ID.</span><span class="se">\n</span><span class="s2">- If you specified an artifact name "</span>
+            <span class="s2">"or model name for this external artifact, this functionality "</span>
+            <span class="s2">"was removed from the ExternalArtifact class. Use Client "</span>
+            <span class="s2">"methods instead to dynamically fetch an artifact via name or "</span>
+            <span class="s2">"from a model instead."</span>
         <span class="p">)</span>
 
     <span class="n">artifact_store_id</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">id</span>
     <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">artifact_store_id</span> <span class="o">!=</span> <span class="n">artifact_store_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The artifact </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (ID: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">) &quot;</span>
-            <span class="s2">&quot;referenced by an external artifact is not stored in the &quot;</span>
-            <span class="s2">&quot;artifact store of the active stack. This will lead to &quot;</span>
-            <span class="s2">&quot;issues loading the artifact. Please make sure to only &quot;</span>
-            <span class="s2">&quot;reference artifact versions stored in your active artifact &quot;</span>
-            <span class="s2">&quot;store.&quot;</span>
+            <span class="sa">f</span><span class="s2">"The artifact </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (ID: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">) "</span>
+            <span class="s2">"referenced by an external artifact is not stored in the "</span>
+            <span class="s2">"artifact store of the active stack. This will lead to "</span>
+            <span class="s2">"issues loading the artifact. Please make sure to only "</span>
+            <span class="s2">"reference artifact versions stored in your active artifact "</span>
+            <span class="s2">"store."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
@@ -5272,7 +5272,7 @@ is not the same as the one in the active stack.</p>
 <span class="normal">29</span>
 <span class="normal">30</span>
 <span class="normal">31</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the artifact cache.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Initialize the artifact cache."""</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </code></pre></div></td></tr></table></div>
@@ -5310,7 +5310,7 @@ is not the same as the one in the active stack.</p>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">33</span>
 <span class="normal">34</span>
 <span class="normal">35</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear the artifact cache.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Clear the artifact cache."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5398,14 +5398,14 @@ is not the same as the one in the active stack.</p>
 <span class="normal">44</span>
 <span class="normal">45</span>
 <span class="normal">46</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifact_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact data.</span>
+<span class="w">    </span><span class="sd">"""Get the artifact data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_: The ID of the artifact to get the data for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The artifact data.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5484,12 +5484,12 @@ is not the same as the one in the active stack.</p>
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_artifact_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the artifact data.</span>
+<span class="w">    </span><span class="sd">"""Set the artifact data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_: The ID of the artifact to set the data for.</span>
 <span class="sd">        data: The artifact data to set.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5594,12 +5594,12 @@ shall happen outside and is in user's responsibility.</p>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseArtifactStore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
+<span class="w">    </span><span class="sd">"""Initializes a materializer with the given URI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data will be stored.</span>
 <span class="sd">        artifact_store: The artifact store used to store this artifact.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_artifact_store</span> <span class="o">=</span> <span class="n">artifact_store</span>
     <span class="c1"># Content hash recorded for the artifact version, set by the loading</span>
@@ -5708,14 +5708,14 @@ shall happen outside and is in user's responsibility.</p>
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy the artifact file(s) to a local temp directory.</span>
+<span class="w">    </span><span class="sd">"""Copy the artifact file(s) to a local temp directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: Unused.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Path to the local directory that contains the artifact files.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_temporary_directory</span><span class="p">(</span><span class="n">delete_at_exit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">temp_dir</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_copy_directory</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">temp_dir</span><span class="p">)</span>
@@ -5815,19 +5815,19 @@ shall happen outside and is in user's responsibility.</p>
 <span class="normal">69</span>
 <span class="normal">70</span>
 <span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Store the directory in the artifact store.</span>
+<span class="w">    </span><span class="sd">"""Store the directory in the artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data: Path to a local directory to store.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: Always</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-        <span class="s2">&quot;`PreexistingDataMaterializer` can only be used in the &quot;</span>
-        <span class="s2">&quot;context of `register_artifact` function, &quot;</span>
-        <span class="s2">&quot;which expects the data to be already properly saved in &quot;</span>
-        <span class="s2">&quot;the Artifact Store, thus `save` logic makes no sense here.&quot;</span>
+        <span class="s2">"`PreexistingDataMaterializer` can only be used in the "</span>
+        <span class="s2">"context of `register_artifact` function, "</span>
+        <span class="s2">"which expects the data to be already properly saved in "</span>
+        <span class="s2">"the Artifact Store, thus `save` logic makes no sense here."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6154,11 +6154,11 @@ def my_step(input_artifact: UnmaterializedArtifact):
 <span class="normal">683</span>
 <span class="normal">684</span>
 <span class="normal">685</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_artifact_files_from_response</span><span class="p">(</span>
-    <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
+    <span class="n">artifact</span><span class="p">:</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Download the given artifact into a file.</span>
+<span class="w">    </span><span class="sd">"""Download the given artifact into a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact: The artifact to download.</span>
@@ -6168,10 +6168,10 @@ def my_step(input_artifact: UnmaterializedArtifact):
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If the file already exists and `overwrite` is `False`.</span>
 <span class="sd">        Exception: If the artifact could not be downloaded to the zip file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">fileio</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;File &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; already exists and `overwrite` is set to `False`.&quot;</span>
+            <span class="sa">f</span><span class="s2">"File '</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">' already exists and `overwrite` is set to `False`."</span>
         <span class="p">)</span>
 
     <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">_get_artifact_store_from_response_or_from_active_stack</span><span class="p">(</span>
@@ -6179,24 +6179,24 @@ def my_step(input_artifact: UnmaterializedArtifact):
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">filepaths</span> <span class="o">:=</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">uri</span><span class="p">):</span>
-        <span class="c1"># save a zipfile to &#39;path&#39; containing all the files</span>
-        <span class="c1"># in &#39;filepaths&#39; with compression</span>
+        <span class="c1"># save a zipfile to 'path' containing all the files</span>
+        <span class="c1"># in 'filepaths' with compression</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">zipf</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">)</span> <span class="k">as</span> <span class="n">zipf</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">filepaths</span><span class="p">:</span>
-                    <span class="c1"># Ensure &#39;file&#39; is a string for path operations</span>
+                    <span class="c1"># Ensure 'file' is a string for path operations</span>
                     <span class="c1"># and ZIP entry naming</span>
                     <span class="n">file_str</span> <span class="o">=</span> <span class="p">(</span>
                         <span class="n">file</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">file</span>
                     <span class="p">)</span>
                     <span class="n">file_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span> <span class="o">/</span> <span class="n">file_str</span><span class="p">)</span>
                     <span class="k">with</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-                        <span class="n">file_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span>
+                        <span class="n">file_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span>
                     <span class="p">)</span> <span class="k">as</span> <span class="n">store_file</span><span class="p">:</span>
                         <span class="c1"># Stream file in chunks directly to ZIP without loading</span>
                         <span class="c1"># entire file into memory</span>
                         <span class="n">CHUNK_SIZE</span> <span class="o">=</span> <span class="mi">8192</span>
-                        <span class="k">with</span> <span class="n">zipf</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_str</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">zip_file</span><span class="p">:</span>
+                        <span class="k">with</span> <span class="n">zipf</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_str</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">zip_file</span><span class="p">:</span>
                             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                                 <span class="k">if</span> <span class="n">chunk</span> <span class="o">:=</span> <span class="n">store_file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">CHUNK_SIZE</span><span class="p">):</span>
                                     <span class="n">zip_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
@@ -6204,8 +6204,8 @@ def my_step(input_artifact: UnmaterializedArtifact):
                                     <span class="k">break</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Failed to save artifact &#39;</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; to zip file &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Failed to save artifact '</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">' to zip file "</span>
+                <span class="sa">f</span><span class="s2">" '</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
             <span class="k">raise</span>
 </code></pre></div></td></tr></table></div>
@@ -6320,9 +6320,9 @@ should be returned or also cached artifact versions.</p>
 <span class="normal">726</span>
 <span class="normal">727</span>
 <span class="normal">728</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifacts_versions_of_pipeline_run</span><span class="p">(</span>
-    <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span> <span class="n">only_produced</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all artifact versions produced during a pipeline run.</span>
+    <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">"PipelineRunResponse"</span><span class="p">,</span> <span class="n">only_produced</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get all artifact versions produced during a pipeline run.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pipeline_run: The pipeline run.</span>
@@ -6331,8 +6331,8 @@ should be returned or also cached artifact versions.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all artifact versions produced during the pipeline run.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">artifact_versions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="sd">    """</span>
+    <span class="n">artifact_versions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">pipeline_run</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">only_produced</span> <span class="ow">or</span> <span class="n">step</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">COMPLETED</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -6457,9 +6457,9 @@ should be returned or also cached artifact versions.</p>
 <span class="normal">705</span>
 <span class="normal">706</span>
 <span class="normal">707</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_producer_step_of_artifact</span><span class="p">(</span>
-    <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the step run that produced a given artifact.</span>
+    <span class="n">artifact</span><span class="p">:</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StepRunResponse"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get the step run that produced a given artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact: The artifact.</span>
@@ -6469,11 +6469,11 @@ should be returned or also cached artifact versions.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the run that created the artifact no longer exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">artifact</span><span class="o">.</span><span class="n">producer_step_run_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The run that produced the artifact with id &#39;</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; no &quot;</span>
-            <span class="s2">&quot;longer exists. This can happen if the run was deleted.&quot;</span>
+            <span class="sa">f</span><span class="s2">"The run that produced the artifact with id '</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">' no "</span>
+            <span class="s2">"longer exists. This can happen if the run was deleted."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_run_step</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">producer_step_run_id</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -6578,9 +6578,9 @@ cached stores on server shutdown.</p>
 <span class="normal">911</span>
 <span class="normal">912</span>
 <span class="normal">913</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">instantiate_artifact_store</span><span class="p">(</span>
-    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ComponentResponse&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an artifact store for the model, cached when on the server.</span>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">"ComponentResponse"</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BaseArtifactStore"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return an artifact store for the model, cached when on the server.</span>
 
 <span class="sd">    On the server the returned instance is shared across requests, so callers</span>
 <span class="sd">    must not call `cleanup()` on it. The cache owns its lifecycle and closes</span>
@@ -6591,7 +6591,7 @@ cached stores on server shutdown.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A cached or freshly built artifact store instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">should_use_artifact_store_cache</span><span class="p">():</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">artifact_store_cache</span>
 
@@ -6599,7 +6599,7 @@ cached stores on server shutdown.</p>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.stack</span><span class="w"> </span><span class="kn">import</span> <span class="n">StackComponent</span>
 
-    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">,</span> <span class="n">StackComponent</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="s2">"BaseArtifactStore"</span><span class="p">,</span> <span class="n">StackComponent</span><span class="o">.</span><span class="n">from_model</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6712,7 +6712,7 @@ name. If not provided, the latest version will be loaded.</p>
     <span class="n">name_or_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load an artifact.</span>
+<span class="w">    </span><span class="sd">"""Load an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name_or_id: The name or ID of the artifact to load.</span>
@@ -6721,7 +6721,7 @@ name. If not provided, the latest version will be loaded.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded artifact.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">artifact</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_artifact_version</span><span class="p">(</span><span class="n">name_or_id</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">load_artifact_from_response</span><span class="p">(</span><span class="n">artifact</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -6819,15 +6819,15 @@ name. If not provided, the latest version will be loaded.</p>
 <span class="normal">625</span>
 <span class="normal">626</span>
 <span class="normal">627</span>
-<span class="normal">628</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_from_response</span><span class="p">(</span><span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the given artifact into memory.</span>
+<span class="normal">628</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_from_response</span><span class="p">(</span><span class="n">artifact</span><span class="p">:</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Load the given artifact into memory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact: The artifact to load.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The artifact loaded into memory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">_get_artifact_store_from_response_or_from_active_stack</span><span class="p">(</span>
         <span class="n">artifact</span><span class="o">=</span><span class="n">artifact</span>
     <span class="p">)</span>
@@ -7018,15 +7018,15 @@ an artifact store.</p>
 <span class="normal">965</span>
 <span class="normal">966</span>
 <span class="normal">967</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_store</span><span class="p">(</span>
-    <span class="n">artifact_store_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;UUID&quot;</span><span class="p">],</span>
-    <span class="n">zen_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseZenStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load an artifact store (potentially inside the server).</span>
+    <span class="n">artifact_store_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"UUID"</span><span class="p">],</span>
+    <span class="n">zen_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"BaseZenStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BaseArtifactStore"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Load an artifact store (potentially inside the server).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_store_id: The id of the artifact store to load.</span>
 <span class="sd">        zen_store: The ZenStore to use for finding the artifact store. If not</span>
-<span class="sd">            provided, the client&#39;s ZenStore will be used.</span>
+<span class="sd">            provided, the client's ZenStore will be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded artifact store.</span>
@@ -7035,7 +7035,7 @@ an artifact store.</p>
 <span class="sd">        DoesNotExistException: If the artifact store does not exist or is not</span>
 <span class="sd">            an artifact store.</span>
 <span class="sd">        NotImplementedError: If the artifact store could not be loaded.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
     <span class="n">artifact_store_id</span> <span class="o">=</span> <span class="n">to_uuid</span><span class="p">(</span><span class="n">artifact_store_id</span><span class="p">)</span>
 
@@ -7052,22 +7052,22 @@ an artifact store.</p>
         <span class="n">artifact_store_model</span> <span class="o">=</span> <span class="n">zen_store</span><span class="o">.</span><span class="n">get_stack_component</span><span class="p">(</span><span class="n">artifact_store_id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DoesNotExistException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Artifact store &#39;</span><span class="si">{</span><span class="n">artifact_store_id</span><span class="si">}</span><span class="s2">&#39; does not exist.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Artifact store '</span><span class="si">{</span><span class="n">artifact_store_id</span><span class="si">}</span><span class="s2">' does not exist."</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">artifact_store_model</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">ARTIFACT_STORE</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DoesNotExistException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Stack component &#39;</span><span class="si">{</span><span class="n">artifact_store_id</span><span class="si">}</span><span class="s2">&#39; is not an artifact store.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Stack component '</span><span class="si">{</span><span class="n">artifact_store_id</span><span class="si">}</span><span class="s2">' is not an artifact store."</span>
         <span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">instantiate_artifact_store</span><span class="p">(</span><span class="n">artifact_store_model</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="n">link</span> <span class="o">=</span> <span class="s2">&quot;https://docs.zenml.io/stacks/stack-components/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores&quot;</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="s2">"https://docs.zenml.io/stacks/stack-components/artifact-stores/custom#enabling-artifact-visualizations-with-custom-artifact-stores"</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Artifact store &#39;</span><span class="si">{</span><span class="n">artifact_store_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; could not be &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;instantiated. This is likely because the artifact store&#39;s &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;dependencies are not installed. For more information, see </span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Artifact store '</span><span class="si">{</span><span class="n">artifact_store_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' could not be "</span>
+            <span class="sa">f</span><span class="s2">"instantiated. This is likely because the artifact store's "</span>
+            <span class="sa">f</span><span class="s2">"dependencies are not installed. For more information, see </span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7275,18 +7275,18 @@ store.</p>
 <span class="normal">604</span>
 <span class="normal">605</span>
 <span class="normal">606</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_visualization</span><span class="p">(</span>
-    <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
+    <span class="n">artifact</span><span class="p">:</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">,</span>
     <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">zen_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseZenStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">zen_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"BaseZenStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">encode_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LoadedVisualization</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a visualization of the given artifact.</span>
+<span class="w">    </span><span class="sd">"""Load a visualization of the given artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact: The artifact to visualize.</span>
 <span class="sd">        index: The index of the visualization to load.</span>
 <span class="sd">        zen_store: The ZenStore to use for finding the artifact store. If not</span>
-<span class="sd">            provided, the client&#39;s ZenStore will be used.</span>
+<span class="sd">            provided, the client's ZenStore will be used.</span>
 <span class="sd">        encode_image: Whether to base64 encode image visualizations.</span>
 
 <span class="sd">    Returns:</span>
@@ -7296,29 +7296,29 @@ store.</p>
 <span class="sd">        DoesNotExistException: If the artifact does not have the requested</span>
 <span class="sd">            visualization or if the visualization was not found in the artifact</span>
 <span class="sd">            store.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Get the visualization to load</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">artifact</span><span class="o">.</span><span class="n">visualizations</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DoesNotExistException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Artifact &#39;</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; has no visualizations.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Artifact '</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">' has no visualizations."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">visualizations</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">DoesNotExistException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Artifact &#39;</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; only has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">visualizations</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;visualizations, but index </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2"> was requested.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Artifact '</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">' only has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">visualizations</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"visualizations, but index </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2"> was requested."</span>
         <span class="p">)</span>
     <span class="n">visualization</span> <span class="o">=</span> <span class="n">artifact</span><span class="o">.</span><span class="n">visualizations</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 
-    <span class="c1"># Load the visualization from the artifact&#39;s artifact store</span>
+    <span class="c1"># Load the visualization from the artifact's artifact store</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">artifact</span><span class="o">.</span><span class="n">artifact_store_id</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">DoesNotExistException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Artifact &#39;</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39; cannot be visualized because the &quot;</span>
-            <span class="s2">&quot;underlying artifact store was deleted.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Artifact '</span><span class="si">{</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">' cannot be visualized because the "</span>
+            <span class="s2">"underlying artifact store was deleted."</span>
         <span class="p">)</span>
     <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">load_artifact_store</span><span class="p">(</span>
         <span class="n">artifact_store_id</span><span class="o">=</span><span class="n">artifact</span><span class="o">.</span><span class="n">artifact_store_id</span><span class="p">,</span> <span class="n">zen_store</span><span class="o">=</span><span class="n">zen_store</span>
     <span class="p">)</span>
-    <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;rb&quot;</span> <span class="k">if</span> <span class="n">visualization</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">IMAGE</span> <span class="k">else</span> <span class="s2">&quot;r&quot;</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="s2">"rb"</span> <span class="k">if</span> <span class="n">visualization</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">IMAGE</span> <span class="k">else</span> <span class="s2">"r"</span>
     <span class="n">value</span> <span class="o">=</span> <span class="n">_load_file_from_artifact_store</span><span class="p">(</span>
         <span class="n">uri</span><span class="o">=</span><span class="n">visualization</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span>
         <span class="n">artifact_store</span><span class="o">=</span><span class="n">artifact_store</span><span class="p">,</span>
@@ -7459,7 +7459,7 @@ used to load the model into memory in the inference environment.</p>
 <span class="normal">1152</span>
 <span class="normal">1153</span>
 <span class="normal">1154</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_model_from_metadata</span><span class="p">(</span><span class="n">model_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a zenml model artifact from a json file.</span>
+<span class="w">    </span><span class="sd">"""Load a zenml model artifact from a json file.</span>
 
 <span class="sd">    This function is used to load information from a Yaml file that was created</span>
 <span class="sd">    by the save_model_metadata function. The information in the Yaml file is</span>
@@ -7470,7 +7470,7 @@ used to load the model into memory in the inference environment.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The ML model object loaded into memory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Load the model from its metadata</span>
     <span class="n">artifact_versions_by_uri</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">list_artifact_versions</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">model_uri</span><span class="p">)</span>
     <span class="n">expected_content_hash</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -7485,11 +7485,11 @@ used to load the model into memory in the inference environment.</p>
         <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">artifact_store</span>
 
     <span class="k">with</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_uri</span><span class="p">,</span> <span class="n">MODEL_METADATA_YAML_FILE_NAME</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">model_uri</span><span class="p">,</span> <span class="n">MODEL_METADATA_YAML_FILE_NAME</span><span class="p">),</span> <span class="s2">"r"</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">metadata</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-    <span class="n">data_type</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;datatype&quot;</span><span class="p">]</span>
-    <span class="n">materializer</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;materializer&quot;</span><span class="p">]</span>
+    <span class="n">data_type</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">"datatype"</span><span class="p">]</span>
+    <span class="n">materializer</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">"materializer"</span><span class="p">]</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">_load_artifact_from_uri</span><span class="p">(</span>
         <span class="n">materializer</span><span class="o">=</span><span class="n">materializer</span><span class="p">,</span>
         <span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">,</span>
@@ -7712,11 +7712,11 @@ artifact nor an output with the given name exists.</p>
 <span class="normal">541</span>
 <span class="normal">542</span>
 <span class="normal">543</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_artifact_metadata</span><span class="p">(</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">],</span>
     <span class="n">artifact_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log artifact metadata.</span>
+<span class="w">    </span><span class="sd">"""Log artifact metadata.</span>
 
 <span class="sd">    This function can be used to log metadata for either existing artifact</span>
 <span class="sd">    versions or artifact versions that are newly created in the same step.</span>
@@ -7735,12 +7735,12 @@ artifact nor an output with the given name exists.</p>
 <span class="sd">            called inside a step with a single output, or, if neither an</span>
 <span class="sd">            artifact nor an output with the given name exists.</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-        <span class="s2">&quot;The `log_artifact_metadata` function is deprecated and will soon be &quot;</span>
-        <span class="s2">&quot;removed. Instead, you can consider using: &quot;</span>
-        <span class="s2">&quot;`log_metadata(metadata={...}, infer_artifact=True, ...)` instead. For more &quot;</span>
-        <span class="s2">&quot;info: https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact&quot;</span>
+        <span class="s2">"The `log_artifact_metadata` function is deprecated and will soon be "</span>
+        <span class="s2">"removed. Instead, you can consider using: "</span>
+        <span class="s2">"`log_metadata(metadata={...}, infer_artifact=True, ...)` instead. For more "</span>
+        <span class="s2">"info: https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact"</span>
     <span class="p">)</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_metadata</span>
@@ -7775,12 +7775,12 @@ artifact nor an output with the given name exists.</p>
     <span class="k">elif</span> <span class="n">artifact_name</span><span class="p">:</span>
         <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Deprecation warning! Currently, you are calling &quot;</span>
-            <span class="s2">&quot;`log_artifact_metadata` from a context, where we use the &quot;</span>
-            <span class="s2">&quot;`artifact_name` to fetch it and link the metadata to its &quot;</span>
-            <span class="s2">&quot;latest version. This behavior is deprecated and will be &quot;</span>
-            <span class="s2">&quot;removed in the future. To circumvent this, please check&quot;</span>
-            <span class="s2">&quot;the `log_metadata` function.&quot;</span>
+            <span class="s2">"Deprecation warning! Currently, you are calling "</span>
+            <span class="s2">"`log_artifact_metadata` from a context, where we use the "</span>
+            <span class="s2">"`artifact_name` to fetch it and link the metadata to its "</span>
+            <span class="s2">"latest version. This behavior is deprecated and will be "</span>
+            <span class="s2">"removed in the future. To circumvent this, please check"</span>
+            <span class="s2">"the `log_metadata` function."</span>
         <span class="p">)</span>
         <span class="n">artifact_version_model</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_artifact_version</span><span class="p">(</span>
             <span class="n">name_id_or_prefix</span><span class="o">=</span><span class="n">artifact_name</span>
@@ -7791,9 +7791,9 @@ artifact nor an output with the given name exists.</p>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;You need to call `log_artifact_metadata` either within a step &quot;</span>
-            <span class="s2">&quot;(potentially with an artifact name) or outside of a step with an &quot;</span>
-            <span class="s2">&quot;artifact name (and/or version).&quot;</span>
+            <span class="s2">"You need to call `log_artifact_metadata` either within a step "</span>
+            <span class="s2">"(potentially with an artifact name) or outside of a step with an "</span>
+            <span class="s2">"artifact name (and/or version)."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8078,9 +8078,9 @@ bounds.</p>
     <span class="n">artifact_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">has_custom_name</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">artifact_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register existing data stored in the artifact store as a ZenML Artifact.</span>
+    <span class="n">artifact_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Register existing data stored in the artifact store as a ZenML Artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        folder_or_file_uri: The full URI within the artifact store to the folder</span>
@@ -8092,7 +8092,7 @@ bounds.</p>
 <span class="sd">            to `data`.</span>
 <span class="sd">        tags: Tags to associate with the artifact.</span>
 <span class="sd">        has_custom_name: If the artifact name is custom and should be listed in</span>
-<span class="sd">            the dashboard &quot;Artifacts&quot; tab.</span>
+<span class="sd">            the dashboard "Artifacts" tab.</span>
 <span class="sd">        artifact_metadata: Metadata dictionary to attach to the artifact version.</span>
 
 <span class="sd">    Returns:</span>
@@ -8101,7 +8101,7 @@ bounds.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileNotFoundError: If the folder URI is outside the artifact store</span>
 <span class="sd">            bounds.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
     <span class="c1"># Get the current artifact store</span>
@@ -8109,8 +8109,8 @@ bounds.</p>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">folder_or_file_uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Folder `</span><span class="si">{</span><span class="n">folder_or_file_uri</span><span class="si">}</span><span class="s2">` is outside of &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;artifact store bounds `</span><span class="si">{</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">`&quot;</span>
+            <span class="sa">f</span><span class="s2">"Folder `</span><span class="si">{</span><span class="n">folder_or_file_uri</span><span class="si">}</span><span class="s2">` is outside of "</span>
+            <span class="sa">f</span><span class="s2">"artifact store bounds `</span><span class="si">{</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">`"</span>
         <span class="p">)</span>
 
     <span class="n">_check_if_artifact_with_given_uri_already_registered</span><span class="p">(</span>
@@ -8529,15 +8529,15 @@ not provided, the active stack's artifact store will be used.</p>
     <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">extract_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">include_visualizations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">user_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">materializer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;MaterializerClassOrSource&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">user_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">materializer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"MaterializerClassOrSource"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="c1"># TODO: remove these once external artifact does not use this function anymore</span>
     <span class="n">save_type</span><span class="p">:</span> <span class="n">ArtifactSaveType</span> <span class="o">=</span> <span class="n">ArtifactSaveType</span><span class="o">.</span><span class="n">MANUAL</span><span class="p">,</span>
     <span class="n">has_custom_name</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Upload and publish an artifact.</span>
+    <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"BaseArtifactStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Upload and publish an artifact.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the artifact.</span>
@@ -8557,13 +8557,13 @@ not provided, the active stack's artifact store will be used.</p>
 <span class="sd">            `custom_artifacts/{name}/{version}`.</span>
 <span class="sd">        save_type: The type of save operation that created the artifact version.</span>
 <span class="sd">        has_custom_name: If the artifact name is custom and should be listed in</span>
-<span class="sd">            the dashboard &quot;Artifacts&quot; tab.</span>
+<span class="sd">            the dashboard "Artifacts" tab.</span>
 <span class="sd">        artifact_store: The artifact store in which to store the artifact. If</span>
-<span class="sd">            not provided, the active stack&#39;s artifact store will be used.</span>
+<span class="sd">            not provided, the active stack's artifact store will be used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The saved artifact response.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.materializers.materializer_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">materializer_registry</span><span class="p">,</span>
     <span class="p">)</span>
@@ -8573,7 +8573,7 @@ not provided, the active stack's artifact store will be used.</p>
     <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">artifact_store</span> <span class="ow">or</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">artifact_store</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">uri</span><span class="p">:</span>
-        <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;custom_artifacts&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()))</span>
+        <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">"custom_artifacts"</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()))</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
         <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">uri</span><span class="p">)</span>
 
@@ -8727,8 +8727,8 @@ materializer: The path to the materializer class.</p>
 <span class="normal">1099</span>
 <span class="normal">1100</span>
 <span class="normal">1101</span>
-<span class="normal">1102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_model_metadata</span><span class="p">(</span><span class="n">model_artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a zenml model artifact metadata to a YAML file.</span>
+<span class="normal">1102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_model_metadata</span><span class="p">(</span><span class="n">model_artifact</span><span class="p">:</span> <span class="s2">"ArtifactVersionResponse"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Save a zenml model artifact metadata to a YAML file.</span>
 
 <span class="sd">    This function is used to extract and save information from a zenml model</span>
 <span class="sd">    artifact such as the model type and materializer. The extracted information</span>
@@ -8743,13 +8743,13 @@ materializer: The path to the materializer class.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The path to the temporary file where the model metadata is saved</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">metadata</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;datatype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_artifact</span><span class="o">.</span><span class="n">data_type</span>
-    <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;materializer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_artifact</span><span class="o">.</span><span class="n">materializer</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s2">"datatype"</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_artifact</span><span class="o">.</span><span class="n">data_type</span>
+    <span class="n">metadata</span><span class="p">[</span><span class="s2">"materializer"</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_artifact</span><span class="o">.</span><span class="n">materializer</span>
 
     <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span>
-        <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.yaml&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s2">"w"</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">".yaml"</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">write_yaml</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span>
@@ -8810,11 +8810,11 @@ materializer: The path to the materializer class.</p>
 <span class="normal">886</span>
 <span class="normal">887</span>
 <span class="normal">888</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">should_use_artifact_store_cache</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether the server should serve artifact stores from the cache.</span>
+<span class="w">    </span><span class="sd">"""Whether the server should serve artifact stores from the cache.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Whether the artifact store cache is active.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">ENV_ZENML_SERVER</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
@@ -8957,18 +8957,18 @@ active stack's artifact store is used.</p>
 <span class="normal">363</span>
 <span class="normal">364</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">upload_input_artifact_overrides</span><span class="p">(</span>
     <span class="n">overrides</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
-    <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseArtifactStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"BaseArtifactStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Upload input artifact override values to the artifact store.</span>
+<span class="w">    </span><span class="sd">"""Upload input artifact override values to the artifact store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        overrides: The input artifact overrides to upload.</span>
 <span class="sd">        artifact_store: The artifact store to upload to. If not provided, the</span>
-<span class="sd">            active stack&#39;s artifact store is used.</span>
+<span class="sd">            active stack's artifact store is used.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The overrides with values replaced by artifact version IDs.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalArtifact</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">overrides</span><span class="p">:</span>

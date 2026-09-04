@@ -4111,19 +4111,19 @@ directories. It is heavily influenced and inspired by the <code>io</code> module
 <span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
-<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a &quot;PathType&quot; to a str using UTF-8.</span>
+<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Converts a "PathType" to a str using UTF-8.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to convert.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The path as a string.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">path</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4271,8 +4271,8 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">100</span>
 <span class="normal">101</span>
 <span class="normal">102</span>
-<span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Copy a file from the source to the destination.</span>
 
 <span class="sd">    If the source and destination are on different filesystems, the file is</span>
 <span class="sd">    streamed in chunks of `FILEIO_COPY_CHUNK_SIZE` bytes (configurable via</span>
@@ -4288,7 +4288,7 @@ midway, a partial file may be left at the destination.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If a file already exists at the destination and</span>
 <span class="sd">            `overwrite` is not set to `True`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">src_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
     <span class="n">dst_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">src_fs</span> <span class="ow">is</span> <span class="n">dst_fs</span><span class="p">:</span>
@@ -4296,12 +4296,12 @@ midway, a partial file may be left at the destination.</p>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Destination file &#39;</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39; already exists &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;and `overwrite` is false.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Destination file '</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2">' already exists "</span>
+                <span class="sa">f</span><span class="s2">"and `overwrite` is false."</span>
             <span class="p">)</span>
         <span class="k">with</span> <span class="p">(</span>
-            <span class="nb">open</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_file</span><span class="p">,</span>
-            <span class="nb">open</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst_file</span><span class="p">,</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_file</span><span class="p">,</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst_file</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="k">while</span> <span class="n">chunk</span> <span class="o">:=</span> <span class="n">src_file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">FILEIO_COPY_CHUNK_SIZE</span><span class="p">):</span>
                 <span class="n">dst_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
@@ -4390,15 +4390,15 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">112</span>
 <span class="normal">113</span>
 <span class="normal">114</span>
-<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
+<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Check whether a given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the given path exists, `False` otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4485,15 +4485,15 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">124</span>
 <span class="normal">125</span>
 <span class="normal">126</span>
-<span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
+<span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">"PathType"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Find all files matching the given pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The pattern to match.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of paths matching the pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4580,15 +4580,15 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">136</span>
 <span class="normal">137</span>
 <span class="normal">138</span>
-<span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
+<span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Check whether the given path is a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the given path is a directory, `False` otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4702,7 +4702,7 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">only_file_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
+<span class="w">    </span><span class="sd">"""Lists all files in a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
@@ -4710,7 +4710,7 @@ midway, a partial file may be left at the destination.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of files in the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">convert_to_str</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
@@ -4719,7 +4719,7 @@ midway, a partial file may be left at the destination.</p>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="p">]</span>
     <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dir </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> not found.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dir </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> not found."</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4780,12 +4780,12 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">167</span>
 <span class="normal">168</span>
 <span class="normal">169</span>
-<span class="normal">170</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="normal">170</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4846,12 +4846,12 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">176</span>
 <span class="normal">177</span>
 <span class="normal">178</span>
-<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4863,7 +4863,7 @@ midway, a partial file may be left at the destination.</p>
 
 
 <h6 id="zenml.io.fileio.open" class="doc doc-heading">
-            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
 </h6>
 
@@ -4955,8 +4955,8 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">64</span>
 <span class="normal">65</span>
 <span class="normal">66</span>
-<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Opens a file.</span>
+<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"r"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa</span>
+<span class="w">    </span><span class="sd">"""Opens a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -4964,7 +4964,7 @@ midway, a partial file may be left at the destination.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The opened file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5053,17 +5053,17 @@ midway, a partial file may be left at the destination.</p>
 <span class="normal">190</span>
 <span class="normal">191</span>
 <span class="normal">192</span>
-<span class="normal">193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="normal">193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file to remove.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        FileNotFoundError: If the file does not exist.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2"> does not exist!&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2"> does not exist!"</span><span class="p">)</span>
     <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5198,8 +5198,8 @@ the same.</p>
 <span class="normal">215</span>
 <span class="normal">216</span>
 <span class="normal">217</span>
-<span class="normal">218</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename a file.</span>
+<span class="normal">218</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Rename a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -5211,15 +5211,15 @@ the same.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        NotImplementedError: If the source and destination file systems are not</span>
 <span class="sd">            the same.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">src_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
     <span class="n">dst_fs</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">src_fs</span> <span class="ow">is</span> <span class="n">dst_fs</span><span class="p">:</span>
         <span class="n">src_fs</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Renaming from </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;using different file systems plugins is currently not supported.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Renaming from </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">convert_to_str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"using different file systems plugins is currently not supported."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5310,16 +5310,16 @@ the same.</p>
 <span class="normal">231</span>
 <span class="normal">232</span>
 <span class="normal">233</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="n">dir_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Deletes a directory recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dir_path: The path to the directory to delete.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If the path is not pointing to a directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">isdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Path &#39;</span><span class="si">{</span><span class="n">dir_path</span><span class="si">}</span><span class="s2">&#39; is not a directory.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Path '</span><span class="si">{</span><span class="n">dir_path</span><span class="si">}</span><span class="s2">' is not a directory."</span><span class="p">)</span>
 
     <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5443,8 +5443,8 @@ the same.</p>
 <span class="normal">280</span>
 <span class="normal">281</span>
 <span class="normal">282</span>
-<span class="normal">283</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file or directory in bytes.</span>
+<span class="normal">283</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the size of a file or directory in bytes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -5452,14 +5452,14 @@ the same.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        The size of the file or directory in bytes or `None` if the responsible</span>
 <span class="sd">        file system does not implement the `size` method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">file_system</span> <span class="o">=</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
     <span class="c1"># If the file system does not implement the `size` method, return `None`.</span>
     <span class="k">if</span> <span class="n">file_system</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">BaseFilesystem</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Cannot get size of file or directory &#39;</span><span class="si">%s</span><span class="s2">&#39; since the responsible &quot;</span>
-            <span class="s2">&quot;file system `</span><span class="si">%s</span><span class="s2">` does not implement the `size` method.&quot;</span><span class="p">,</span>
+            <span class="s2">"Cannot get size of file or directory '</span><span class="si">%s</span><span class="s2">' since the responsible "</span>
+            <span class="s2">"file system `</span><span class="si">%s</span><span class="s2">` does not implement the `size` method."</span><span class="p">,</span>
             <span class="n">path</span><span class="p">,</span>
             <span class="n">file_system</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
         <span class="p">)</span>
@@ -5564,15 +5564,15 @@ the same.</p>
 <span class="normal">242</span>
 <span class="normal">243</span>
 <span class="normal">244</span>
-<span class="normal">245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
+<span class="normal">245</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stat descriptor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5720,11 +5720,11 @@ the same.</p>
 <span class="normal">301</span>
 <span class="normal">302</span>
 <span class="normal">303</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span>
-    <span class="n">top</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span><span class="p">,</span>
+    <span class="n">top</span><span class="p">:</span> <span class="s2">"PathType"</span><span class="p">,</span>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="s2">"PathType"</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">"PathType"</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="s2">"PathType"</span><span class="p">]]]:</span>
+<span class="w">    </span><span class="sd">"""Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path of directory to walk.</span>
@@ -5735,7 +5735,7 @@ the same.</p>
 <span class="sd">        An Iterable of Tuples, each of which contain the path of the current</span>
 <span class="sd">        directory path, a list of directories inside the current directory</span>
 <span class="sd">        and a list of files inside the current directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">_get_filesystem</span><span class="p">(</span><span class="n">top</span><span class="p">)</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="n">topdown</span><span class="p">,</span> <span class="n">onerror</span><span class="o">=</span><span class="n">onerror</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5954,7 +5954,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">"""Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to copy.</span>
@@ -5964,7 +5964,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If a file already exists at the destination and</span>
 <span class="sd">            `overwrite` is not set to `True`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: DOC502</span>
+<span class="sd">    """</span>  <span class="c1"># noqa: DOC502</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6059,14 +6059,14 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a given path exists.</span>
+<span class="w">    </span><span class="sd">"""Check whether a given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the given path exists, `False` otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6161,14 +6161,14 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">107</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find all files matching the given pattern.</span>
+<span class="w">    </span><span class="sd">"""Find all files matching the given pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The pattern to match.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of paths matching the pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6263,14 +6263,14 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the given path is a directory.</span>
+<span class="w">    </span><span class="sd">"""Check whether the given path is a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        `True` if the given path is a directory, `False` otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6365,14 +6365,14 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Lists all files in a directory.</span>
+<span class="w">    </span><span class="sd">"""Lists all files in a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of files in the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6441,11 +6441,11 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">140</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6514,11 +6514,11 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">149</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: Path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6529,7 +6529,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 
 
 <h8 id="zenml.io.filesystem.BaseFilesystem.open" class="doc doc-heading">
-            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
@@ -6629,8 +6629,8 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">65</span>
 <span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Opens a file.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"r"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Opens a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -6638,7 +6638,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The opened file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6733,14 +6733,14 @@ https://github.com/tensorflow/tfx/blob/master/tfx/dsl/io/filesystem.py</p>
 <span class="normal">161</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file to remove.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        FileNotFoundError: If the file does not exist.</span>
-<span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: DOC502</span>
+<span class="sd">    """</span>  <span class="c1"># noqa: DOC502</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6875,7 +6875,7 @@ and overwrite is not set to <code>True</code>.</p>
 <span class="normal">178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename a file.</span>
+<span class="w">    </span><span class="sd">"""Rename a file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -6887,7 +6887,7 @@ and overwrite is not set to <code>True</code>.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If a file already exists at the destination</span>
 <span class="sd">            and overwrite is not set to `True`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: DOC502</span>
+<span class="sd">    """</span>  <span class="c1"># noqa: DOC502</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6956,11 +6956,11 @@ and overwrite is not set to <code>True</code>.</p>
 <span class="normal">187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a directory recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Deletes a directory recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory to delete.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7058,7 +7058,7 @@ compatibility.</p>
 <span class="normal">213</span>
 <span class="normal">214</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
+<span class="w">    </span><span class="sd">"""Get the size of a file in bytes.</span>
 
 <span class="sd">    To be implemented by subclasses but not abstract for backwards</span>
 <span class="sd">    compatibility.</span>
@@ -7068,7 +7068,7 @@ compatibility.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The size of the file in bytes.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7164,14 +7164,14 @@ compatibility.</p>
 <span class="normal">199</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">"""Get the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stat descriptor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7330,7 +7330,7 @@ compatibility.</p>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">"""Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: The path of directory to walk.</span>
@@ -7341,7 +7341,7 @@ compatibility.</p>
 <span class="sd">        An Iterable of Tuples, each of which contain the path of the current</span>
 <span class="sd">        directory path, a list of directories inside the current directory</span>
 <span class="sd">        and a list of files inside the current directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -7429,8 +7429,8 @@ compatibility.</p>
 <span class="normal">47</span>
 <span class="normal">48</span>
 <span class="normal">49</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the registry.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="s2">&quot;PathType&quot;</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="w">    </span><span class="sd">"""Initialize the registry."""</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="s2">"PathType"</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="s2">"BaseFilesystem"</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -7570,9 +7570,9 @@ path.</p>
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_filesystem_for_path</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given path.</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="s2">"PathType"</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">"BaseFilesystem"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get filesystem plugin for given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to get the filesystem for.</span>
@@ -7583,19 +7583,19 @@ path.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If no filesystem plugin is registered for the given</span>
 <span class="sd">            path.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Assume local path by default, but extract filesystem prefix if available.</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
         <span class="n">path_bytes</span> <span class="o">=</span> <span class="n">path</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid path type: </span><span class="si">%r</span><span class="s2">.&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;^([a-z0-9]+://)&quot;</span><span class="p">,</span> <span class="n">path_bytes</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid path type: </span><span class="si">%r</span><span class="s2">."</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">b</span><span class="s2">"^([a-z0-9]+://)"</span><span class="p">,</span> <span class="n">path_bytes</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
-        <span class="n">scheme</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">scheme</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="s2">""</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_filesystem_for_scheme</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7722,9 +7722,9 @@ scheme.</p>
 <span class="normal">93</span>
 <span class="normal">94</span>
 <span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_filesystem_for_scheme</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="s2">&quot;PathType&quot;</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get filesystem plugin for given scheme string.</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">scheme</span><span class="p">:</span> <span class="s2">"PathType"</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">"BaseFilesystem"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get filesystem plugin for given scheme string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        scheme: The scheme to get the filesystem for.</span>
@@ -7735,15 +7735,15 @@ scheme.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If no filesystem plugin is registered for the given</span>
 <span class="sd">            scheme.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheme</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
-        <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">scheme</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;No file systems were found for the scheme: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">. Please make sure that you are using &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;the right path and the all the necessary &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;integrations are properly installed.&quot;</span>
+            <span class="sa">f</span><span class="s2">"No file systems were found for the scheme: "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">. Please make sure that you are using "</span>
+            <span class="sa">f</span><span class="s2">"the right path and the all the necessary "</span>
+            <span class="sa">f</span><span class="s2">"integrations are properly installed."</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
@@ -7817,19 +7817,19 @@ scheme.</p>
 <span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
-<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseFilesystem&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a filesystem implementation.</span>
+<span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filesystem_cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">"BaseFilesystem"</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Register a filesystem implementation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        filesystem_cls: Subclass of `zenml.io.filesystem.Filesystem`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_registration_lock</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">scheme</span> <span class="ow">in</span> <span class="n">filesystem_cls</span><span class="o">.</span><span class="n">SUPPORTED_SCHEMES</span><span class="p">:</span>
             <span class="n">current_preferred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystems</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">scheme</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">current_preferred</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Overwriting previously registered filesystem for &quot;</span>
-                    <span class="s2">&quot;scheme `</span><span class="si">%s</span><span class="s2">`. Old class: </span><span class="si">%s</span><span class="s2">, new class: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">"Overwriting previously registered filesystem for "</span>
+                    <span class="s2">"scheme `</span><span class="si">%s</span><span class="s2">`. Old class: </span><span class="si">%s</span><span class="s2">, new class: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                     <span class="n">scheme</span><span class="p">,</span>
                     <span class="n">current_preferred</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
                     <span class="n">filesystem_cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
@@ -8065,7 +8065,7 @@ False.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file from the source to the destination.</span>
+<span class="w">    </span><span class="sd">"""Copy a file from the source to the destination.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The source path.</span>
@@ -8075,11 +8075,11 @@ False.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If the destination file exists and overwrite is</span>
 <span class="sd">            False.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Destination file </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> already exists and argument &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`overwrite` is false.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Destination file </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> already exists and argument "</span>
+            <span class="sa">f</span><span class="s2">"`overwrite` is false."</span>
         <span class="p">)</span>
     <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -8174,14 +8174,14 @@ False.</p>
 <span class="normal">102</span>
 <span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns `True` if the given path exists.</span>
+<span class="w">    </span><span class="sd">"""Returns `True` if the given path exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        bool: Whether the path exists.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8275,14 +8275,14 @@ False.</p>
 <span class="normal">114</span>
 <span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the paths that match a glob pattern.</span>
+<span class="w">    </span><span class="sd">"""Return the paths that match a glob pattern.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pattern: The glob pattern.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List[PathType]: The paths that match the glob pattern.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>  <span class="c1"># type: ignore[type-var]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8376,14 +8376,14 @@ False.</p>
 <span class="normal">126</span>
 <span class="normal">127</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns whether the given path points to a directory.</span>
+<span class="w">    </span><span class="sd">"""Returns whether the given path points to a directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        bool: Whether the path points to a directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8477,14 +8477,14 @@ False.</p>
 <span class="normal">138</span>
 <span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of files under a given directory in the filesystem.</span>
+<span class="w">    </span><span class="sd">"""Returns a list of files under a given directory in the filesystem.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List[PathType]: The list of files under the given directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type:ignore[return-value]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8552,11 +8552,11 @@ False.</p>
 <span class="normal">147</span>
 <span class="normal">148</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path, recursively creating parents.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path, recursively creating parents.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8624,11 +8624,11 @@ False.</p>
 <span class="normal">156</span>
 <span class="normal">157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a directory at the given path; parent directory must exist.</span>
+<span class="w">    </span><span class="sd">"""Make a directory at the given path; parent directory must exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8640,7 +8640,7 @@ False.</p>
 
 
 <h8 id="zenml.io.local_filesystem.LocalFilesystem.open" class="doc doc-heading">
-            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
+            <code class="highlight language-python"><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'r'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
@@ -8739,8 +8739,8 @@ False.</p>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"r"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
@@ -8748,8 +8748,8 @@ False.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Any: The file object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">encoding</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span> <span class="k">if</span> <span class="s2">&quot;b&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mode</span> <span class="k">else</span> <span class="kc">None</span>
+<span class="sd">    """</span>
+    <span class="n">encoding</span> <span class="o">=</span> <span class="s2">"utf-8"</span> <span class="k">if</span> <span class="s2">"b"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mode</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8817,11 +8817,11 @@ False.</p>
 <span class="normal">165</span>
 <span class="normal">166</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Remove the file at the given path. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8958,7 +8958,7 @@ False.</p>
 <span class="normal">186</span>
 <span class="normal">187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
+<span class="w">    </span><span class="sd">"""Rename source file to destination file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        src: The path of the file to rename.</span>
@@ -8969,11 +8969,11 @@ False.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        FileExistsError: If the destination file exists and overwrite is</span>
 <span class="sd">            False.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Destination path </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> already exists and argument &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;`overwrite` is false.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Destination path </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span><span class="si">}</span><span class="s2"> already exists and argument "</span>
+            <span class="sa">f</span><span class="s2">"`overwrite` is false."</span>
         <span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -9042,11 +9042,11 @@ False.</p>
 <span class="normal">195</span>
 <span class="normal">196</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes dir recursively. Dangerous operation.</span>
+<span class="w">    </span><span class="sd">"""Deletes dir recursively. Dangerous operation.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9140,14 +9140,14 @@ False.</p>
 <span class="normal">219</span>
 <span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
+<span class="w">    </span><span class="sd">"""Get the size of a file in bytes.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The size of the file in bytes.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9241,14 +9241,14 @@ False.</p>
 <span class="normal">207</span>
 <span class="normal">208</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the stat descriptor for a given file path.</span>
+<span class="w">    </span><span class="sd">"""Return the stat descriptor for a given file path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the file.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Any: The stat descriptor for the file.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9419,7 +9419,7 @@ False.</p>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">onerror</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">PathType</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterator that walks the contents of the given directory.</span>
+<span class="w">    </span><span class="sd">"""Return an iterator that walks the contents of the given directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        top: Path of directory to walk.</span>
@@ -9431,7 +9431,7 @@ False.</p>
 <span class="sd">        current directory path, a list of directories inside the</span>
 <span class="sd">        current directory and a list of files inside the current</span>
 <span class="sd">        directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">yield from</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span>  <span class="c1"># type: ignore[type-var, misc]</span>
         <span class="n">top</span><span class="p">,</span> <span class="n">topdown</span><span class="o">=</span><span class="n">topdown</span><span class="p">,</span> <span class="n">onerror</span><span class="o">=</span><span class="n">onerror</span>
     <span class="p">)</span>

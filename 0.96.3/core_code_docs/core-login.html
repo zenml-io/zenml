@@ -4896,19 +4896,19 @@ can be used to login and generate a new API token.</p>
 <span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_server_info</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">WorkspaceRead</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update with server information received from the server itself or from a ZenML Pro workspace descriptor.</span>
+<span class="w">    </span><span class="sd">"""Update with server information received from the server itself or from a ZenML Pro workspace descriptor.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_info: The server information to update with.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">server_info</span><span class="p">,</span> <span class="n">ServerModel</span><span class="p">):</span>
-        <span class="c1"># The server ID doesn&#39;t change during the lifetime of the server</span>
+        <span class="c1"># The server ID doesn't change during the lifetime of the server</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">server_id</span> <span class="ow">or</span> <span class="n">server_info</span><span class="o">.</span><span class="n">id</span>
         <span class="c1"># All other attributes can change during the lifetime of the server</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span> <span class="o">=</span> <span class="n">server_info</span><span class="o">.</span><span class="n">deployment_type</span>
         <span class="n">server_name</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">server_info</span><span class="o">.</span><span class="n">pro_workspace_name</span>
-            <span class="ow">or</span> <span class="n">server_info</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;workspace_name&quot;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">server_info</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"workspace_name"</span><span class="p">)</span>
             <span class="ow">or</span> <span class="n">server_info</span><span class="o">.</span><span class="n">name</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">server_name</span><span class="p">:</span>
@@ -4928,7 +4928,7 @@ can be used to login and generate a new API token.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">server_info</span><span class="o">.</span><span class="n">version</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span>
         <span class="c1"># The server information was retrieved from the server itself, so we</span>
         <span class="c1"># can assume that the server is available</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;available&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"available"</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span> <span class="o">=</span> <span class="n">ServerDeploymentType</span><span class="o">.</span><span class="n">CLOUD</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">server_id</span> <span class="o">=</span> <span class="n">server_info</span><span class="o">.</span><span class="n">id</span>
@@ -5123,12 +5123,12 @@ instance.</p>
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the login credentials store with values loaded from the credentials YAML file.</span>
+<span class="w">    </span><span class="sd">"""Initializes the login credentials store with values loaded from the credentials YAML file.</span>
 
 <span class="sd">    CredentialsStore is a singleton class: only one instance can exist.</span>
 <span class="sd">    Calling this constructor multiple times will always yield the same</span>
 <span class="sd">    instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_load_credentials</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -5254,7 +5254,7 @@ instance.</p>
 <span class="normal">422</span>
 <span class="normal">423</span>
 <span class="normal">424</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">can_login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if credentials to login to the given server exist.</span>
+<span class="w">    </span><span class="sd">"""Check if credentials to login to the given server exist.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to check the authentication.</span>
@@ -5262,7 +5262,7 @@ instance.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the credentials store contains credentials that can be used</span>
 <span class="sd">        to login to the given server URL, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">credentials</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -5317,7 +5317,7 @@ instance.</p>
 <span class="normal">229</span>
 <span class="normal">230</span>
 <span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_and_reload_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the credentials file has been modified and reload it if necessary.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Check if the credentials file has been modified and reload it if necessary."""</span>
     <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
         <span class="k">return</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_modified_time</span><span class="p">:</span>
@@ -5357,7 +5357,7 @@ instance.</p>
 <span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_all_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all stored credentials.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Delete all stored credentials."""</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
@@ -5424,11 +5424,11 @@ instance.</p>
 <span class="normal">639</span>
 <span class="normal">640</span>
 <span class="normal">641</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all credentials from the store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Delete all credentials from the store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to delete the credentials.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">server_url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">:</span>
@@ -5494,11 +5494,11 @@ instance.</p>
 <span class="normal">389</span>
 <span class="normal">390</span>
 <span class="normal">391</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pro_api_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete the token from the store for a ZenML Pro API server.</span>
+<span class="w">    </span><span class="sd">"""Delete the token from the store for a ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pro_api_url: The URL of the ZenML Pro API server.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">clear_token</span><span class="p">(</span><span class="n">pro_api_url</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5574,11 +5574,11 @@ instance.</p>
 <span class="normal">627</span>
 <span class="normal">628</span>
 <span class="normal">629</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a token from the store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Delete a token from the store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to delete the token.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">server_url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">:</span>
@@ -5684,14 +5684,14 @@ instance.</p>
 <span class="normal">262</span>
 <span class="normal">263</span>
 <span class="normal">264</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve an API key from the credentials store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Retrieve an API key from the credentials store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to retrieve the API key.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored API key if it exists, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span><span class="p">:</span>
@@ -5784,14 +5784,14 @@ instance.</p>
 <span class="normal">296</span>
 <span class="normal">297</span>
 <span class="normal">298</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the credentials for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Retrieve the credentials for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to retrieve the credentials.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored credentials if they exist, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -5851,12 +5851,12 @@ instance.</p>
 <span class="normal">131</span>
 <span class="normal">132</span>
 <span class="normal">133</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the singleton instance of the CredentialsStore.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"CredentialsStore"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the singleton instance of the CredentialsStore.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The singleton instance of the CredentialsStore.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">CredentialsStore</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="p">())</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5954,7 +5954,7 @@ password.</p>
 <span class="normal">249</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_password</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the username and password from the credentials store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Retrieve the username and password from the credentials store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to retrieve the username and</span>
@@ -5962,7 +5962,7 @@ password.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored username and password if they exist, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span><span class="p">:</span>
@@ -6057,14 +6057,14 @@ password.</p>
 <span class="normal">327</span>
 <span class="normal">328</span>
 <span class="normal">329</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pro_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pro_api_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve an API key from the credentials store for a ZenML Pro API server.</span>
+<span class="w">    </span><span class="sd">"""Retrieve an API key from the credentials store for a ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pro_api_url: The URL of the ZenML Pro API server.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored API key if it exists, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pro_credentials</span><span class="p">(</span><span class="n">pro_api_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span> <span class="ow">and</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_key</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_key</span>
@@ -6162,14 +6162,14 @@ password.</p>
 <span class="normal">366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pro_credentials</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">pro_api_url</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve valid credentials from the credentials store for a ZenML Pro API server.</span>
+<span class="w">    </span><span class="sd">"""Retrieve valid credentials from the credentials store for a ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pro_api_url: The URL of the ZenML Pro API server.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored credentials if they exist, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">(</span><span class="n">pro_api_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span> <span class="ow">and</span> <span class="n">credential</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">PRO_API</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">credential</span>
@@ -6290,7 +6290,7 @@ expired.</p>
 <span class="normal">350</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pro_token</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">pro_api_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for a ZenML Pro API server.</span>
+<span class="w">    </span><span class="sd">"""Retrieve a valid token from the credentials store for a ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pro_api_url: The URL of the ZenML Pro API server.</span>
@@ -6300,7 +6300,7 @@ expired.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored token if it exists and is not expired, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pro_credentials</span><span class="p">(</span><span class="n">pro_api_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span><span class="p">:</span>
         <span class="n">token</span> <span class="o">=</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_token</span>
@@ -6424,7 +6424,7 @@ expired.</p>
 <span class="normal">286</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_token</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Retrieve a valid token from the credentials store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to retrieve the token.</span>
@@ -6434,7 +6434,7 @@ expired.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored token if it exists and is not expired, None otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span><span class="p">:</span>
@@ -6544,7 +6544,7 @@ expired.</p>
 <span class="normal">313</span>
 <span class="normal">314</span>
 <span class="normal">315</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_valid_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if valid credentials exist for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Check if valid credentials exist for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which to check the authentication.</span>
@@ -6552,7 +6552,7 @@ expired.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the credentials store contains credentials that can be used</span>
 <span class="sd">        to login to the given server URL, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credentials</span> <span class="ow">and</span> <span class="p">(</span>
         <span class="n">credentials</span><span class="o">.</span><span class="n">has_valid_token</span> <span class="ow">or</span> <span class="n">credentials</span><span class="o">.</span><span class="n">can_refresh_token</span>
@@ -6661,7 +6661,7 @@ expired.</p>
 <span class="normal">381</span>
 <span class="normal">382</span>
 <span class="normal">383</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_valid_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pro_api_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if valid credentials exist for a ZenML Pro API server.</span>
+<span class="w">    </span><span class="sd">"""Check if valid credentials exist for a ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        pro_api_url: The URL of the ZenML Pro API server.</span>
@@ -6669,7 +6669,7 @@ expired.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the credentials store contains credentials that can be used</span>
 <span class="sd">        to login to the given ZenML Pro API server, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credentials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pro_credentials</span><span class="p">(</span><span class="n">pro_api_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credentials</span> <span class="ow">and</span> <span class="p">(</span>
         <span class="n">credentials</span><span class="o">.</span><span class="n">has_valid_token</span> <span class="ow">or</span> <span class="n">credentials</span><span class="o">.</span><span class="n">can_refresh_token</span>
@@ -6773,14 +6773,14 @@ expired.</p>
 <span class="normal">661</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_credentials</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all credentials stored in the credentials store.</span>
+<span class="w">    </span><span class="sd">"""Get all credentials stored in the credentials store.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        type: Optional server type to filter the credentials by.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of all credentials stored in the credentials store.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
 
     <span class="n">credentials</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
@@ -6868,14 +6868,14 @@ singleton instance. If None, a new instance will be created.</p>
 <span class="normal">123</span>
 <span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">reset_instance</span><span class="p">(</span>
-    <span class="bp">cls</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">cls</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"CredentialsStore"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the singleton instance of the CredentialsStore.</span>
+<span class="w">    </span><span class="sd">"""Reset the singleton instance of the CredentialsStore.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        store: Optional instance of the CredentialsStore to set as the</span>
 <span class="sd">            singleton instance. If None, a new instance will be created.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">current_store</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_instance</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">current_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">current_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
         <span class="c1"># Delete the credentials file from disk if it exists, otherwise</span>
@@ -7011,7 +7011,7 @@ will be replaced by the API key.</p>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">is_zenml_pro</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Store an API key in the credentials store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Store an API key in the credentials store for a specific server URL.</span>
 
 <span class="sd">    If an API token or a password is already stored for the server URL, they</span>
 <span class="sd">    will be replaced by the API key.</span>
@@ -7020,7 +7020,7 @@ will be replaced by the API key.</p>
 <span class="sd">        server_url: The server URL for which the token is to be stored.</span>
 <span class="sd">        api_key: The API key to store.</span>
 <span class="sd">        is_zenml_pro: Whether the API key is for the ZenML Pro API.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span> <span class="ow">and</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_key</span> <span class="o">!=</span> <span class="n">api_key</span><span class="p">:</span>
@@ -7165,7 +7165,7 @@ will be replaced by the API key.</p>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIToken</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Store a bare API token.</span>
+<span class="w">    </span><span class="sd">"""Store a bare API token.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which the token is to be stored.</span>
@@ -7173,7 +7173,7 @@ will be replaced by the API key.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        APIToken: The stored token.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
 
     <span class="n">api_token</span> <span class="o">=</span> <span class="n">APIToken</span><span class="p">(</span>
@@ -7316,7 +7316,7 @@ replaced by the username and password.</p>
     <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Store a username and password in the credentials store for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Store a username and password in the credentials store for a specific server URL.</span>
 
 <span class="sd">    If an API token is already stored for the server URL, it will be</span>
 <span class="sd">    replaced by the username and password.</span>
@@ -7325,7 +7325,7 @@ replaced by the username and password.</p>
 <span class="sd">        server_url: The server URL for which the token is to be stored.</span>
 <span class="sd">        username: The username to store.</span>
 <span class="sd">        password: The password to store.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">credential</span> <span class="ow">and</span> <span class="p">(</span>
@@ -7516,7 +7516,7 @@ replaced by the username and password.</p>
     <span class="n">token_response</span><span class="p">:</span> <span class="n">OAuthTokenResponse</span><span class="p">,</span>
     <span class="n">is_zenml_pro</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIToken</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Store an API token received from an OAuth2 server.</span>
+<span class="w">    </span><span class="sd">"""Store an API token received from an OAuth2 server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which the token is to be stored.</span>
@@ -7525,7 +7525,7 @@ replaced by the username and password.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        APIToken: The stored token.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">token_response</span><span class="o">.</span><span class="n">expires_in</span><span class="p">:</span>
         <span class="n">expires_at</span> <span class="o">=</span> <span class="n">utc_now_tz_aware</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span>
@@ -7665,13 +7665,13 @@ updated.</p>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">WorkspaceRead</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the server information stored for a specific server URL.</span>
+<span class="w">    </span><span class="sd">"""Update the server information stored for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        server_url: The server URL for which the server information is to be</span>
 <span class="sd">            updated.</span>
 <span class="sd">        server_info: Updated server information.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
 
     <span class="n">credential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
@@ -7742,11 +7742,11 @@ updated.</p>
 <span class="normal">668</span>
 <span class="normal">669</span>
 <span class="normal">670</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials_store</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CredentialsStore</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the global credentials store instance.</span>
+<span class="w">    </span><span class="sd">"""Get the global credentials store instance.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The global credentials store instance.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">CredentialsStore</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -7895,11 +7895,11 @@ updated.</p>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the ZenML Pro client.</span>
+<span class="w">    </span><span class="sd">"""Initialize the ZenML Pro client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: The URL of the ZenML Pro API server.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">=</span> <span class="n">url</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -8194,20 +8194,20 @@ updated.</p>
 <span class="normal">103</span>
 <span class="normal">104</span>
 <span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIToken</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Authenticate to ZenML Pro and return the API token.</span>
+<span class="w">    </span><span class="sd">"""Authenticate to ZenML Pro and return the API token.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The API token.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        AuthorizationException: If the login fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credentials_store</span> <span class="o">=</span> <span class="n">get_credentials_store</span><span class="p">()</span>
     <span class="n">pro_credentials</span> <span class="o">=</span> <span class="n">credentials_store</span><span class="o">.</span><span class="n">get_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_url</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">pro_credentials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;No ZenML Pro credentials found. Please run &#39;zenml login&#39; to &quot;</span>
-            <span class="s2">&quot;login to ZenML Pro.&quot;</span>
+            <span class="s2">"No ZenML Pro credentials found. Please run 'zenml login' to "</span>
+            <span class="s2">"login to ZenML Pro."</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">pro_credentials</span><span class="o">.</span><span class="n">has_valid_token</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">pro_credentials</span><span class="o">.</span><span class="n">api_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -8225,8 +8225,8 @@ updated.</p>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;Your ZenML Pro authentication has expired. Please run &quot;</span>
-            <span class="s2">&quot;&#39;zenml login&#39; to login again.&quot;</span>
+            <span class="s2">"Your ZenML Pro authentication has expired. Please run "</span>
+            <span class="s2">"'zenml login' to login again."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -8364,7 +8364,7 @@ updated.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a DELETE request to the given endpoint path.</span>
+<span class="w">    </span><span class="sd">"""Make a DELETE request to the given endpoint path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the endpoint.</span>
@@ -8373,10 +8373,10 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The response body.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sending DELETE request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending DELETE request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
-        <span class="s2">&quot;DELETE&quot;</span><span class="p">,</span>
+        <span class="s2">"DELETE"</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -8529,7 +8529,7 @@ updated.</p>
 <span class="normal">188</span>
 <span class="normal">189</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">fetch_api_token</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OAuthTokenResponse</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the API token for a given ZenML Pro server URL.</span>
+<span class="w">    </span><span class="sd">"""Fetch the API token for a given ZenML Pro server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: ZenML Pro server URL</span>
@@ -8540,18 +8540,18 @@ updated.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: if the response is not in the right format.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="s2">&quot;Bearer &quot;</span> <span class="o">+</span> <span class="n">api_key</span><span class="p">}</span>
+<span class="sd">    """</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="s2">"Bearer "</span> <span class="o">+</span> <span class="n">api_key</span><span class="p">}</span>
     <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="n">url</span> <span class="o">+</span> <span class="s2">&quot;/auth/login&quot;</span><span class="p">,</span>
-        <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">api_key</span><span class="p">},</span>
+        <span class="n">url</span> <span class="o">+</span> <span class="s2">"/auth/login"</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="n">api_key</span><span class="p">},</span>
         <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">json_response</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_handle_response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">json_response</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Bad response from API. Expected dict, got</span><span class="se">\n</span><span class="si">{</span><span class="n">json_response</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Bad response from API. Expected dict, got</span><span class="se">\n</span><span class="si">{</span><span class="n">json_response</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">OAuthTokenResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">json_response</span><span class="p">)</span>
@@ -8691,7 +8691,7 @@ updated.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a GET request to the given endpoint path.</span>
+<span class="w">    </span><span class="sd">"""Make a GET request to the given endpoint path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the endpoint.</span>
@@ -8700,10 +8700,10 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The response body.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sending GET request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending GET request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
-        <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+        <span class="s2">"GET"</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -8867,7 +8867,7 @@ updated.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a PATCH request to the given endpoint path.</span>
+<span class="w">    </span><span class="sd">"""Make a PATCH request to the given endpoint path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the endpoint.</span>
@@ -8877,13 +8877,13 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The response body.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sending PATCH request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending PATCH request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
     <span class="n">json</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">body</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">body</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
-        <span class="s2">&quot;PATCH&quot;</span><span class="p">,</span>
+        <span class="s2">"PATCH"</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
         <span class="n">json</span><span class="o">=</span><span class="n">json</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
@@ -9045,7 +9045,7 @@ updated.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a POST request to the given endpoint path.</span>
+<span class="w">    </span><span class="sd">"""Make a POST request to the given endpoint path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the endpoint.</span>
@@ -9055,12 +9055,12 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The response body.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sending POST request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending POST request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
-        <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+        <span class="s2">"POST"</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
-        <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">),</span>
+        <span class="n">json</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"json"</span><span class="p">),</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span>
@@ -9223,7 +9223,7 @@ updated.</p>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a PUT request to the given endpoint path.</span>
+<span class="w">    </span><span class="sd">"""Make a PUT request to the given endpoint path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the endpoint.</span>
@@ -9233,13 +9233,13 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The response body.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sending PUT request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sending PUT request to </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
     <span class="n">json</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">body</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"json"</span><span class="p">,</span> <span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">body</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
-        <span class="s2">&quot;PUT&quot;</span><span class="p">,</span>
+        <span class="s2">"PUT"</span><span class="p">,</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">+</span> <span class="n">path</span><span class="p">,</span>
         <span class="n">json</span><span class="o">=</span><span class="n">json</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
@@ -9539,11 +9539,11 @@ updated.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the organization client.</span>
+<span class="w">    </span><span class="sd">"""Initialize the organization client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        client: ZenML Pro client.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -9651,14 +9651,14 @@ updated.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">id_or_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrganizationRead</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get an organization by id or name.</span>
+<span class="w">    </span><span class="sd">"""Get an organization by id or name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id_or_name: Id or name of the organization to retrieve.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An organization.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get_resource</span><span class="p">(</span>
         <span class="n">resource_id</span><span class="o">=</span><span class="n">id_or_name</span><span class="p">,</span>
         <span class="n">route</span><span class="o">=</span><span class="n">ORGANIZATIONS_ROUTE</span><span class="p">,</span>
@@ -9784,7 +9784,7 @@ updated.</p>
     <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">OrganizationRead</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List organizations.</span>
+<span class="w">    </span><span class="sd">"""List organizations.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        offset: Query offset.</span>
@@ -9792,7 +9792,7 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of organizations.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_list_resources</span><span class="p">(</span>
         <span class="n">route</span><span class="o">=</span><span class="n">ORGANIZATIONS_ROUTE</span><span class="p">,</span>
         <span class="n">response_model</span><span class="o">=</span><span class="n">OrganizationRead</span><span class="p">,</span>
@@ -10104,14 +10104,14 @@ updated.</p>
 <span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_troubleshooting_instructions</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get troubleshooting instructions for a given ZenML Pro server URL.</span>
+<span class="w">    </span><span class="sd">"""Get troubleshooting instructions for a given ZenML Pro server URL.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: ZenML Pro server URL</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Troubleshooting instructions</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">credentials_store</span> <span class="o">=</span> <span class="n">get_credentials_store</span><span class="p">()</span>
 
     <span class="n">credentials</span> <span class="o">=</span> <span class="n">credentials_store</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -10125,64 +10125,64 @@ updated.</p>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">servers</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">workspace</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">member_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to list workspaces: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to list workspaces: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">servers</span><span class="p">:</span>
                 <span class="n">server</span> <span class="o">=</span> <span class="n">servers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">AVAILABLE</span><span class="p">:</span>
                     <span class="k">return</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The &#39;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; ZenML Pro server that the client &quot;</span>
-                        <span class="s2">&quot;is connected to is currently running but you may not &quot;</span>
-                        <span class="s2">&quot;have the necessary permissions to access it. Please &quot;</span>
-                        <span class="s2">&quot;contact your ZenML Pro administrator for more &quot;</span>
-                        <span class="s2">&quot;information or try to manage the server members &quot;</span>
-                        <span class="s2">&quot;yourself if you have the necessary permissions by &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;visiting the ZenML Pro workspace page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"The '</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' ZenML Pro server that the client "</span>
+                        <span class="s2">"is connected to is currently running but you may not "</span>
+                        <span class="s2">"have the necessary permissions to access it. Please "</span>
+                        <span class="s2">"contact your ZenML Pro administrator for more "</span>
+                        <span class="s2">"information or try to manage the server members "</span>
+                        <span class="s2">"yourself if you have the necessary permissions by "</span>
+                        <span class="sa">f</span><span class="s2">"visiting the ZenML Pro workspace page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">."</span>
                     <span class="p">)</span>
                 <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">DEACTIVATED</span><span class="p">:</span>
                     <span class="k">return</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The &#39;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; ZenML Pro server that the client &quot;</span>
-                        <span class="s2">&quot;is connected to has been deactivated. &quot;</span>
-                        <span class="s2">&quot;Please contact your ZenML Pro administrator for more &quot;</span>
-                        <span class="s2">&quot;information or to reactivate the server yourself if &quot;</span>
-                        <span class="s2">&quot;you have the necessary permissions by visiting the &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;ZenML Pro Organization page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_organization_url</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"The '</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' ZenML Pro server that the client "</span>
+                        <span class="s2">"is connected to has been deactivated. "</span>
+                        <span class="s2">"Please contact your ZenML Pro administrator for more "</span>
+                        <span class="s2">"information or to reactivate the server yourself if "</span>
+                        <span class="s2">"you have the necessary permissions by visiting the "</span>
+                        <span class="sa">f</span><span class="s2">"ZenML Pro Organization page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_organization_url</span><span class="si">}</span><span class="s2">."</span>
                     <span class="p">)</span>
                 <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">WorkspaceStatus</span><span class="o">.</span><span class="n">PENDING</span><span class="p">:</span>
                     <span class="k">return</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The &#39;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; ZenML Pro server that the client &quot;</span>
-                        <span class="s2">&quot;is connected to is currently undergoing maintenance &quot;</span>
-                        <span class="s2">&quot;(e.g. being deployed, upgraded or re-activated). &quot;</span>
-                        <span class="s2">&quot;Please try again later or contact your ZenML Pro &quot;</span>
-                        <span class="s2">&quot;administrator for more information. You can also &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;visit the ZenML Pro workspace page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"The '</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' ZenML Pro server that the client "</span>
+                        <span class="s2">"is connected to is currently undergoing maintenance "</span>
+                        <span class="s2">"(e.g. being deployed, upgraded or re-activated). "</span>
+                        <span class="s2">"Please try again later or contact your ZenML Pro "</span>
+                        <span class="s2">"administrator for more information. You can also "</span>
+                        <span class="sa">f</span><span class="s2">"visit the ZenML Pro workspace page at </span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">."</span>
                     <span class="p">)</span>
                 <span class="k">return</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;The &#39;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; ZenML Pro server that the client &quot;</span>
-                    <span class="s2">&quot;is connected to is currently in a failed &quot;</span>
-                    <span class="s2">&quot;state. Please contact your ZenML Pro administrator for &quot;</span>
-                    <span class="s2">&quot;more information or try to re-deploy the server &quot;</span>
-                    <span class="s2">&quot;yourself if you have the necessary permissions by &quot;</span>
-                    <span class="s2">&quot;visiting the ZenML Pro Organization page at &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_organization_url</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"The '</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' ZenML Pro server that the client "</span>
+                    <span class="s2">"is connected to is currently in a failed "</span>
+                    <span class="s2">"state. Please contact your ZenML Pro administrator for "</span>
+                    <span class="s2">"more information or try to re-deploy the server "</span>
+                    <span class="s2">"yourself if you have the necessary permissions by "</span>
+                    <span class="s2">"visiting the ZenML Pro Organization page at "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">server</span><span class="o">.</span><span class="n">dashboard_organization_url</span><span class="si">}</span><span class="s2">."</span>
                 <span class="p">)</span>
 
             <span class="k">return</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The ZenML Pro server at URL &#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&#39; that the client is &quot;</span>
-                <span class="s2">&quot;connected to does not exist or you may not have access to it. &quot;</span>
-                <span class="s2">&quot;Please check the URL and your permissions and try again or &quot;</span>
-                <span class="s2">&quot;connect your client to a different server by running `zenml &quot;</span>
-                <span class="s2">&quot;login` or by using a service account API key.&quot;</span>
+                <span class="sa">f</span><span class="s2">"The ZenML Pro server at URL '</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">' that the client is "</span>
+                <span class="s2">"connected to does not exist or you may not have access to it. "</span>
+                <span class="s2">"Please check the URL and your permissions and try again or "</span>
+                <span class="s2">"connect your client to a different server by running `zenml "</span>
+                <span class="s2">"login` or by using a service account API key."</span>
             <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;The ZenML Pro server at URL &#39;</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&#39; that the client is connected to &quot;</span>
-        <span class="s2">&quot;does not exist, is not running, or you do not have permissions to &quot;</span>
-        <span class="s2">&quot;connect to it. Please check the URL and your permissions &quot;</span>
-        <span class="s2">&quot;and try again. The ZenML Pro server might have been deactivated or is &quot;</span>
-        <span class="s2">&quot;currently pending maintenance. Please contact your ZenML Pro &quot;</span>
-        <span class="s2">&quot;administrator for more information or try to manage the server &quot;</span>
-        <span class="s2">&quot;state by visiting the ZenML Pro dashboard.&quot;</span>
+        <span class="sa">f</span><span class="s2">"The ZenML Pro server at URL '</span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">' that the client is connected to "</span>
+        <span class="s2">"does not exist, is not running, or you do not have permissions to "</span>
+        <span class="s2">"connect to it. Please check the URL and your permissions "</span>
+        <span class="s2">"and try again. The ZenML Pro server might have been deactivated or is "</span>
+        <span class="s2">"currently pending maintenance. Please contact your ZenML Pro "</span>
+        <span class="s2">"administrator for more information or try to manage the server "</span>
+        <span class="s2">"state by visiting the ZenML Pro dashboard."</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -10337,11 +10337,11 @@ updated.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the workspace client.</span>
+<span class="w">    </span><span class="sd">"""Initialize the workspace client.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        client: ZenML Pro client.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -10443,14 +10443,14 @@ updated.</p>
 <span class="normal">53</span>
 <span class="normal">54</span>
 <span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WorkspaceRead</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a workspace by id.</span>
+<span class="w">    </span><span class="sd">"""Get a workspace by id.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id: Id. of the workspace to retrieve.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A workspace.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_get_resource</span><span class="p">(</span>
         <span class="n">resource_id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span>
         <span class="n">route</span><span class="o">=</span><span class="n">WORKSPACES_ROUTE</span><span class="p">,</span>
@@ -10674,7 +10674,7 @@ updated.</p>
     <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WorkspaceStatus</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">member_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">WorkspaceRead</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List workspaces.</span>
+<span class="w">    </span><span class="sd">"""List workspaces.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        offset: Offset to use for filtering.</span>
@@ -10688,7 +10688,7 @@ updated.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of workspaces.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">_list_resources</span><span class="p">(</span>
         <span class="n">route</span><span class="o">=</span><span class="n">WORKSPACES_ROUTE</span><span class="p">,</span>
         <span class="n">response_model</span><span class="o">=</span><span class="n">WorkspaceRead</span><span class="p">,</span>
@@ -11426,16 +11426,16 @@ of the workspace</li>
 <span class="normal">50</span>
 <span class="normal">51</span>
 <span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_server_info</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve server information from a remote ZenML server.</span>
+<span class="w">    </span><span class="sd">"""Retrieve server information from a remote ZenML server.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        url: The URL of the ZenML server.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The server information or None if the server info could not be fetched.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Here we try to leverage the existing RestZenStore support to fetch the</span>
-    <span class="c1"># server info and only the server info, which doesn&#39;t actually need</span>
+    <span class="c1"># server info and only the server info, which doesn't actually need</span>
     <span class="c1"># any authentication.</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">store</span> <span class="o">=</span> <span class="n">RestZenStore</span><span class="p">(</span>
@@ -11446,7 +11446,7 @@ of the workspace</li>
         <span class="k">return</span> <span class="n">store</span><span class="o">.</span><span class="n">server_info</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Failed to fetch server info from the server running at </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Failed to fetch server info from the server running at </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="kc">None</span>
@@ -11888,7 +11888,7 @@ process.</p>
     <span class="n">pro_api_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">preferred_workspace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIToken</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implements the OAuth2 Device Authorization Grant flow.</span>
+<span class="w">    </span><span class="sd">"""Implements the OAuth2 Device Authorization Grant flow.</span>
 
 <span class="sd">    This function implements the client side of the OAuth2 Device Authorization</span>
 <span class="sd">    Grant flow as defined in https://tools.ietf.org/html/rfc8628, with the</span>
@@ -11918,7 +11918,7 @@ process.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        AuthorizationException: If an error occurred during the authorization</span>
 <span class="sd">            process.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.login.credentials_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_credentials_store</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">OAuthDeviceAuthorizationRequest</span><span class="p">,</span>
@@ -11957,7 +11957,7 @@ process.</p>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># Get rid of any trailing slashes to prevent issues when having double</span>
         <span class="c1"># slashes in the URL</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">pro_api_url</span><span class="p">:</span>
             <span class="c1"># This is a ZenML Pro server. The device authentication is done</span>
             <span class="c1"># through the ZenML Pro API.</span>
@@ -11987,8 +11987,8 @@ process.</p>
         <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
             <span class="n">auth_url</span><span class="p">,</span>
             <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;User-Agent&quot;</span><span class="p">:</span> <span class="n">user_agent_header</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
+                <span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/x-www-form-urlencoded"</span><span class="p">,</span>
+                <span class="s2">"User-Agent"</span><span class="p">:</span> <span class="n">user_agent_header</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
             <span class="p">},</span>
             <span class="n">data</span><span class="o">=</span><span class="n">auth_request</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
             <span class="n">verify</span><span class="o">=</span><span class="n">verify_ssl</span><span class="p">,</span>
@@ -11997,27 +11997,27 @@ process.</p>
         <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
             <span class="n">auth_response</span> <span class="o">=</span> <span class="n">OAuthDeviceAuthorizationResponse</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Could not connect to </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">. Please check the URL.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Could not connect to </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">. Please check the URL."</span>
             <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Bad response received from API server.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Bad response received from API server."</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="s2">&quot;Bad response received from API server. Please check the URL.&quot;</span>
+            <span class="s2">"Bad response received from API server. Please check the URL."</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Could not connect to API server.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Could not connect to API server."</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not connect to </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">. Please check the URL.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Could not connect to </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">. Please check the URL."</span>
         <span class="p">)</span>
 
-    <span class="c1"># Open the verification URL in the user&#39;s browser</span>
+    <span class="c1"># Open the verification URL in the user's browser</span>
     <span class="n">verification_uri</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">auth_response</span><span class="o">.</span><span class="n">verification_uri_complete</span>
         <span class="ow">or</span> <span class="n">auth_response</span><span class="o">.</span><span class="n">verification_uri</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="n">verification_uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">verification_uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">):</span>
         <span class="c1"># If the verification URI is a relative path, we need to add the base</span>
         <span class="c1"># URL to it</span>
         <span class="n">verification_uri</span> <span class="o">=</span> <span class="n">base_url</span> <span class="o">+</span> <span class="n">verification_uri</span>
@@ -12027,7 +12027,7 @@ process.</p>
     <span class="k">if</span> <span class="n">preferred_workspace</span><span class="p">:</span>
         <span class="n">parsed_uri</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">verification_uri</span><span class="p">)</span>
         <span class="n">query_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parse_qsl</span><span class="p">(</span><span class="n">parsed_uri</span><span class="o">.</span><span class="n">query</span><span class="p">))</span>
-        <span class="n">query_params</span><span class="p">[</span><span class="s2">&quot;workspace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">preferred_workspace</span>
+        <span class="n">query_params</span><span class="p">[</span><span class="s2">"workspace"</span><span class="p">]</span> <span class="o">=</span> <span class="n">preferred_workspace</span>
         <span class="n">verification_uri</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">(</span>
             <span class="n">parsed_uri</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">urlencode</span><span class="p">(</span><span class="n">query_params</span><span class="p">))</span>
         <span class="p">)</span>
@@ -12039,10 +12039,10 @@ process.</p>
 
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
-        <span class="s2">&quot;If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:&quot;</span><span class="p">,</span>
-        <span class="n">style</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span>
+        <span class="s2">"If your browser did not open automatically, please open the following URL into your browser to proceed with the authentication:"</span><span class="p">,</span>
+        <span class="n">style</span><span class="o">=</span><span class="s2">"white"</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">verification_uri</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;bright_blue underline&quot;</span><span class="p">)</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">verification_uri</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"bright_blue underline"</span><span class="p">)</span>
     <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
 
     <span class="c1"># Poll the OAuth2 server until the user has authorized the device</span>
@@ -12056,7 +12056,7 @@ process.</p>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
             <span class="n">login_url</span><span class="p">,</span>
-            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/x-www-form-urlencoded&quot;</span><span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/x-www-form-urlencoded"</span><span class="p">},</span>
             <span class="n">data</span><span class="o">=</span><span class="n">token_request</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
             <span class="n">verify</span><span class="o">=</span><span class="n">verify_ssl</span><span class="p">,</span>
             <span class="n">timeout</span><span class="o">=</span><span class="n">DEFAULT_HTTP_TIMEOUT</span><span class="p">,</span>
@@ -12065,9 +12065,9 @@ process.</p>
             <span class="c1"># The user has authorized the device, so we can extract the access token</span>
             <span class="n">token_response</span> <span class="o">=</span> <span class="n">OAuthTokenResponse</span><span class="p">(</span><span class="o">**</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">zenml_pro</span><span class="p">:</span>
-                <span class="n">cli_utils</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">&quot;✔ Successfully logged in to ZenML Pro.&quot;</span><span class="p">)</span>
+                <span class="n">cli_utils</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="s2">"✔ Successfully logged in to ZenML Pro."</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">cli_utils</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✔ Successfully logged in to </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="n">cli_utils</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✔ Successfully logged in to </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
             <span class="k">break</span>
         <span class="k">elif</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">400</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -12078,32 +12078,32 @@ process.</p>
                 <span class="ne">TypeError</span><span class="p">,</span>
             <span class="p">):</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Error received from </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Error received from </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">error_response</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="s2">&quot;authorization_pending&quot;</span><span class="p">:</span>
-                <span class="c1"># The user hasn&#39;t authorized the device yet, so we wait for the</span>
+            <span class="k">if</span> <span class="n">error_response</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="s2">"authorization_pending"</span><span class="p">:</span>
+                <span class="c1"># The user hasn't authorized the device yet, so we wait for the</span>
                 <span class="c1"># interval and try again</span>
                 <span class="k">pass</span>
-            <span class="k">elif</span> <span class="n">error_response</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="s2">&quot;slow_down&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">error_response</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="s2">"slow_down"</span><span class="p">:</span>
                 <span class="c1"># The OAuth2 server is asking us to slow down our polling</span>
                 <span class="n">interval</span> <span class="o">+=</span> <span class="mi">5</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># There was another error with the request</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">error_response</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">error_response</span><span class="o">.</span><span class="n">error_description</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Error: </span><span class="si">{</span><span class="n">error_response</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">error_response</span><span class="o">.</span><span class="n">error_description</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
 
             <span class="n">expires_in</span> <span class="o">-=</span> <span class="n">interval</span>
             <span class="k">if</span> <span class="n">expires_in</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                    <span class="s2">&quot;User did not authorize the device in time.&quot;</span>
+                    <span class="s2">"User did not authorize the device in time."</span>
                 <span class="p">)</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># There was another error with the request</span>
             <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
     <span class="c1"># Save the token in the credentials store</span>

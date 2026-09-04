@@ -4803,7 +4803,7 @@ ensure quality of data.</p>
 
 
 <h4 id="zenml.integrations.deepchecks.DEEPCHECKS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">DEEPCHECKS</span> <span class="o">=</span> <span class="s1">&#39;deepchecks&#39;</span></code>
+            <code class="highlight language-python"><span class="n">DEEPCHECKS</span> <span class="o">=</span> <span class="s1">'deepchecks'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4823,7 +4823,7 @@ ensure quality of data.</p>
 
 
 <h4 id="zenml.integrations.deepchecks.DEEPCHECKS_DATA_VALIDATOR_FLAVOR" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">DEEPCHECKS_DATA_VALIDATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">&#39;deepchecks&#39;</span></code>
+            <code class="highlight language-python"><span class="n">DEEPCHECKS_DATA_VALIDATOR_FLAVOR</span> <span class="o">=</span> <span class="s1">'deepchecks'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4843,7 +4843,7 @@ ensure quality of data.</p>
 
 
 <h4 id="zenml.integrations.deepchecks.PANDAS" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">PANDAS</span> <span class="o">=</span> <span class="s1">&#39;pandas&#39;</span></code>
+            <code class="highlight language-python"><span class="n">PANDAS</span> <span class="o">=</span> <span class="s1">'pandas'</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4925,7 +4925,7 @@ ensure quality of data.</p>
 <span class="normal">57</span>
 <span class="normal">58</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the Deepchecks integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Activate the Deepchecks integration."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.deepchecks</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4989,11 +4989,11 @@ ensure quality of data.</p>
 <span class="normal">88</span>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Deepchecks integration.</span>
+<span class="w">    </span><span class="sd">"""Declare the stack component flavors for the Deepchecks integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.deepchecks.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">DeepchecksDataValidatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
@@ -5115,7 +5115,7 @@ ensure quality of data.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -5123,7 +5123,7 @@ ensure quality of data.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
@@ -5796,19 +5796,19 @@ service connector types that are compatible with this flavor.</p>
 <span class="normal">171</span>
 <span class="normal">172</span>
 <span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Flavor&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a flavor from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">flavor_model</span><span class="p">:</span> <span class="n">FlavorResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Flavor"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a flavor from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        flavor_model: The model to load from.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        CustomFlavorImportError: If the custom flavor can&#39;t be imported.</span>
-<span class="sd">        ImportError: If the flavor can&#39;t be imported.</span>
+<span class="sd">        CustomFlavorImportError: If the custom flavor can't be imported.</span>
+<span class="sd">        ImportError: If the flavor can't be imported.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded flavor.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">flavor</span> <span class="o">=</span> <span class="n">validate_flavor_source</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
@@ -5817,22 +5817,22 @@ service connector types that are compatible with this flavor.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">is_custom</span><span class="p">:</span>
-            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+            <span class="n">flavor_module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
             <span class="n">expected_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="n">source_utils</span><span class="o">.</span><span class="n">get_source_root</span><span class="p">(),</span>
-                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
+                <span class="n">flavor_module</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">CustomFlavorImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of &quot;</span>
-                <span class="s2">&quot;a library, make sure it is installed. If &quot;</span>
-                <span class="s2">&quot;it is a local code file, make sure it exists at &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import custom flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">. Make sure the custom flavor class "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2">` is importable. If it is part of "</span>
+                <span class="s2">"a library, make sure it is installed. If "</span>
+                <span class="s2">"it is a local code file, make sure it exists at "</span>
+                <span class="sa">f</span><span class="s2">"`</span><span class="si">{</span><span class="n">expected_file_path</span><span class="si">}</span><span class="s2">.py`."</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Couldn't import flavor </span><span class="si">{</span><span class="n">flavor_model</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
     <span class="k">return</span> <span class="n">flavor</span>
 </code></pre></div></td></tr></table></div>
@@ -5896,19 +5896,19 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">234</span>
 <span class="normal">235</span>
 <span class="normal">236</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate the doc urls for all inbuilt and integration flavors.</span>
+<span class="w">    </span><span class="sd">"""Generate the doc urls for all inbuilt and integration flavors.</span>
 
 <span class="sd">    Note that this method is not going to be useful for custom flavors,</span>
 <span class="sd">    which do not have any docs in the main zenml docs.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml documentation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="s2">&quot;https://docs.zenml.io&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="s2">"https://docs.zenml.io"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/stack-components/</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5987,37 +5987,37 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">268</span>
 <span class="normal">269</span>
 <span class="normal">270</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_default_sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate SDK docs url for a flavor.</span>
+<span class="w">    </span><span class="sd">"""Generate SDK docs url for a flavor.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The complete url to the zenml SDK docs</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
-    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"https://sdkdocs.zenml.io/</span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="n">component_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">.</span><span class="n">plural</span>
 
-    <span class="k">if</span> <span class="s2">&quot;zenml.integrations&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"zenml.integrations"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
         <span class="c1"># Get integration name out of module path which will look something</span>
-        <span class="c1">#  like this &quot;zenml.integrations.&lt;integration&gt;....</span>
+        <span class="c1">#  like this "zenml.integrations.&lt;integration&gt;....</span>
         <span class="n">integration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
-            <span class="s2">&quot;zenml.integrations.&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="s2">"zenml.integrations."</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span>
+        <span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Get the config class name to point to the specific class</span>
         <span class="n">config_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="o">.</span><span class="vm">__name__</span>
 
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/integration_code_docs"</span>
+            <span class="sa">f</span><span class="s2">"/integrations-</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"#zenml.integrations.</span><span class="si">{</span><span class="n">integration</span><span class="si">}</span><span class="s2">.flavors.</span><span class="si">{</span><span class="n">config_class_name</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/core_code_docs/core-</span><span class="si">{</span><span class="n">component_type</span><span class="si">}</span><span class="s2">/"</span>
+            <span class="sa">f</span><span class="s2">"#</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6162,7 +6162,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">integration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_custom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FlavorRequest</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a flavor to a model.</span>
+<span class="w">    </span><span class="sd">"""Converts a flavor to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        integration: The integration to use for the model.</span>
@@ -6170,7 +6170,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">connector_requirements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_requirements</span>
     <span class="n">connector_type</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">connector_requirements</span><span class="o">.</span><span class="n">connector_type</span>
@@ -6280,7 +6280,7 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">137</span>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to activate the integration.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract method to activate the integration."""</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6367,18 +6367,18 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">93</span>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_installation</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to check whether the required packages are installed.</span>
+<span class="w">    </span><span class="sd">"""Method to check whether the required packages are installed.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if all required packages are installed, False otherwise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">requirement</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">():</span>
         <span class="n">parsed_requirement</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span><span class="n">requirement</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">parsed_requirement</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not installed &quot;</span>
-                <span class="s2">&quot;or installed with the wrong version.&quot;</span><span class="p">,</span>
+                <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not installed "</span>
+                <span class="s2">"or installed with the wrong version."</span><span class="p">,</span>
                 <span class="n">requirement</span><span class="p">,</span>
                 <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
             <span class="p">)</span>
@@ -6389,16 +6389,16 @@ which do not have any docs in the main zenml docs.</p>
         <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">requirement_installed</span><span class="p">(</span><span class="n">dependency</span><span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;Requirement &#39;</span><span class="si">%s</span><span class="s2">&#39; for integration &#39;</span><span class="si">%s</span><span class="s2">&#39; is not &quot;</span>
-                    <span class="s2">&quot;installed or installed with the wrong version.&quot;</span><span class="p">,</span>
+                    <span class="s2">"Requirement '</span><span class="si">%s</span><span class="s2">' for integration '</span><span class="si">%s</span><span class="s2">' is not "</span>
+                    <span class="s2">"installed or installed with the wrong version."</span><span class="p">,</span>
                     <span class="n">dependency</span><span class="p">,</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;Integration &#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">&#39; is installed correctly with &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="sa">f</span><span class="s2">"Integration '</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">NAME</span><span class="si">}</span><span class="s2">' is installed correctly with "</span>
+        <span class="sa">f</span><span class="s2">"requirements </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">()</span><span class="si">}</span><span class="s2">."</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div></td></tr></table></div>
@@ -6459,11 +6459,11 @@ which do not have any docs in the main zenml docs.</p>
 <span class="normal">146</span>
 <span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method to declare new stack component flavors.</span>
+<span class="w">    </span><span class="sd">"""Abstract method to declare new stack component flavors.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of new stack component flavors.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[]</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6582,7 +6582,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">python_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
@@ -6590,7 +6590,7 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6697,14 +6697,14 @@ which do not have any docs in the main zenml docs.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_uninstall_requirements</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the uninstall requirements for the integration.</span>
+<span class="w">    </span><span class="sd">"""Method to get the uninstall requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        target_os: The target operating system to get the requirements for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">each</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">):</span>
         <span class="n">is_ignored</span> <span class="o">=</span> <span class="kc">False</span>
@@ -6875,7 +6875,7 @@ which do not have any docs in the main zenml docs.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -6900,11 +6900,11 @@ which do not have any docs in the main zenml docs.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -7220,7 +7220,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
+<span class="w">    </span><span class="sd">"""Run one or more Deepchecks data validation checks on a dataset.</span>
 
 <span class="sd">    Call this method to analyze and identify potential integrity problems</span>
 <span class="sd">    with a single dataset (e.g. missing values, conflicting labels, mixed</span>
@@ -7266,7 +7266,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks SuiteResult with the results of the validation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">check_enum</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">DeepchecksValidationCheck</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">comparison_dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">check_enum</span> <span class="o">=</span> <span class="n">DeepchecksDataIntegrityCheck</span>
@@ -7586,7 +7586,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
+<span class="w">    </span><span class="sd">"""Run one or more Deepchecks model validation checks.</span>
 
 <span class="sd">    Call this method to perform model validation checks (e.g. confusion</span>
 <span class="sd">    matrix validation, performance reports, model error analyzes, etc).</span>
@@ -7633,7 +7633,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks SuiteResult with the results of the validation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">check_enum</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">DeepchecksValidationCheck</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">comparison_dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">check_enum</span> <span class="o">=</span> <span class="n">DeepchecksModelValidationCheck</span>
@@ -7810,7 +7810,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a StackComponent.</span>
+<span class="w">    </span><span class="sd">"""Initializes a StackComponent.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the component.</span>
@@ -7835,11 +7835,11 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If a secret reference is passed as name.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_secret_reference</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Passing the `name` attribute of a stack component as a &quot;</span>
-            <span class="s2">&quot;secret reference is not allowed.&quot;</span>
+            <span class="s2">"Passing the `name` attribute of a stack component as a "</span>
+            <span class="s2">"secret reference is not allowed."</span>
         <span class="p">)</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
@@ -8155,7 +8155,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks data validation checks on a dataset.</span>
+<span class="w">    </span><span class="sd">"""Run one or more Deepchecks data validation checks on a dataset.</span>
 
 <span class="sd">    Call this method to analyze and identify potential integrity problems</span>
 <span class="sd">    with a single dataset (e.g. missing values, conflicting labels, mixed</span>
@@ -8201,7 +8201,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks SuiteResult with the results of the validation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">check_enum</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">DeepchecksValidationCheck</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">comparison_dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">check_enum</span> <span class="o">=</span> <span class="n">DeepchecksDataIntegrityCheck</span>
@@ -8521,7 +8521,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run one or more Deepchecks model validation checks.</span>
+<span class="w">    </span><span class="sd">"""Run one or more Deepchecks model validation checks.</span>
 
 <span class="sd">    Call this method to perform model validation checks (e.g. confusion</span>
 <span class="sd">    matrix validation, performance reports, model error analyzes, etc).</span>
@@ -8568,7 +8568,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks SuiteResult with the results of the validation.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">check_enum</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">DeepchecksValidationCheck</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">comparison_dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">check_enum</span> <span class="o">=</span> <span class="n">DeepchecksModelValidationCheck</span>
@@ -9368,12 +9368,12 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">110</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseArtifactStore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Define `self.data_path`.</span>
+<span class="w">    </span><span class="sd">"""Define `self.data_path`.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data is stored.</span>
 <span class="sd">        artifact_store: The artifact store where the artifact data is stored.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span>  <span class="c1"># noqa</span>
@@ -9382,11 +9382,11 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pyarrow_exists</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;By default, the `PandasMaterializer` stores data as a &quot;</span>
-            <span class="s2">&quot;`.csv` file. If you want to store data more efficiently, &quot;</span>
-            <span class="s2">&quot;you can install `pyarrow` by running &quot;</span>
-            <span class="s2">&quot;&#39;`pip install pyarrow`&#39;. This will allow `PandasMaterializer` &quot;</span>
-            <span class="s2">&quot;to automatically store the data as a `.parquet` file instead.&quot;</span>
+            <span class="s2">"By default, the `PandasMaterializer` stores data as a "</span>
+            <span class="s2">"`.csv` file. If you want to store data more efficiently, "</span>
+            <span class="s2">"you can install `pyarrow` by running "</span>
+            <span class="s2">"'`pip install pyarrow`'. This will allow `PandasMaterializer` "</span>
+            <span class="s2">"to automatically store the data as a `.parquet` file instead."</span>
         <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parquet_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">PARQUET_FILENAME</span><span class="p">)</span>
@@ -9490,15 +9490,15 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">74</span>
 <span class="normal">75</span>
 <span class="normal">76</span>
-<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given `Dataset` object.</span>
+<span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract metadata from the given `Dataset` object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: The `Dataset` object to extract metadata from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted metadata as a dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">extract_metadata</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9587,14 +9587,14 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">43</span>
 <span class="normal">44</span>
 <span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads pandas dataframes and creates `deepchecks.Dataset` from it.</span>
+<span class="w">    </span><span class="sd">"""Reads pandas dataframes and creates `deepchecks.Dataset` from it.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks Dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">df</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_type</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -9657,11 +9657,11 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializes pandas dataframe within a `Dataset` object.</span>
+<span class="w">    </span><span class="sd">"""Serializes pandas dataframe within a `Dataset` object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: A deepchecks.Dataset object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9753,14 +9753,14 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">66</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves visualizations for the given Deepchecks dataset.</span>
+<span class="w">    </span><span class="sd">"""Saves visualizations for the given Deepchecks dataset.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: The Deepchecks dataset to save visualizations for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of visualization URIs and their types.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save_visualizations</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -9861,12 +9861,12 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">138</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">artifact_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseArtifactStore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a materializer with the given URI.</span>
+<span class="w">    </span><span class="sd">"""Initializes a materializer with the given URI.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        uri: The URI where the artifact data will be stored.</span>
 <span class="sd">        artifact_store: The artifact store used to store this artifact.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">uri</span> <span class="o">=</span> <span class="n">uri</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_artifact_store</span> <span class="o">=</span> <span class="n">artifact_store</span>
     <span class="c1"># Content hash recorded for the artifact version, set by the loading</span>
@@ -9985,24 +9985,24 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">116</span>
 <span class="normal">117</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given Deepchecks result.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Extract metadata from the given Deepchecks result.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        result: The Deepchecks result to extract metadata from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted metadata as a dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">CheckResult</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;deepchecks_check_name&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get_header</span><span class="p">(),</span>
-            <span class="s2">&quot;deepchecks_check_passed&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">passed_conditions</span><span class="p">(),</span>
+            <span class="s2">"deepchecks_check_name"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get_header</span><span class="p">(),</span>
+            <span class="s2">"deepchecks_check_passed"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">passed_conditions</span><span class="p">(),</span>
         <span class="p">}</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;deepchecks_suite_name&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;deepchecks_suite_passed&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">passed</span><span class="p">(),</span>
+            <span class="s2">"deepchecks_suite_name"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"deepchecks_suite_passed"</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">passed</span><span class="p">(),</span>
         <span class="p">}</span>
     <span class="k">return</span> <span class="p">{}</span>
 </code></pre></div></td></tr></table></div>
@@ -10126,7 +10126,7 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">65</span>
 <span class="normal">66</span>
 <span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a Deepchecks check or suite result from a serialized JSON file.</span>
+<span class="w">    </span><span class="sd">"""Reads a Deepchecks check or suite result from a serialized JSON file.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        data_type: The type of the data to read.</span>
@@ -10136,7 +10136,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: if the input data type is not supported.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">RESULTS_FILENAME</span><span class="p">)</span>
 
     <span class="n">json_res</span> <span class="o">=</span> <span class="n">io_utils</span><span class="o">.</span><span class="n">read_file_contents_as_string</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
@@ -10145,7 +10145,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="k">elif</span> <span class="n">data_type</span> <span class="o">==</span> <span class="n">CheckResult</span><span class="p">:</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">CheckResult</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">json_res</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown data type: </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown data type: </span><span class="si">{</span><span class="n">data_type</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">res</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -10209,11 +10209,11 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a JSON serialization for a CheckResult or SuiteResult.</span>
+<span class="w">    </span><span class="sd">"""Creates a JSON serialization for a CheckResult or SuiteResult.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        result: A Deepchecks CheckResult or SuiteResult.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">RESULTS_FILENAME</span><span class="p">)</span>
     <span class="n">serialized_json</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">io_utils</span><span class="o">.</span><span class="n">write_file_contents_as_string</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">serialized_json</span><span class="p">)</span>
@@ -10311,17 +10311,17 @@ Deepchecks Suite <code>run</code> method.</p>
 <span class="normal">94</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">CheckResult</span><span class="p">,</span> <span class="n">SuiteResult</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves visualizations for the given Deepchecks result.</span>
+<span class="w">    </span><span class="sd">"""Saves visualizations for the given Deepchecks result.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        result: The Deepchecks result to save visualizations for.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A dictionary of visualization URIs and their types.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">visualization_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">HTML_FILENAME</span><span class="p">)</span>
-    <span class="n">visualization_path</span> <span class="o">=</span> <span class="n">visualization_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">fileio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">visualization_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">visualization_path</span> <span class="o">=</span> <span class="n">visualization_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">fileio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">visualization_path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">result</span><span class="o">.</span><span class="n">save_as_html</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">visualization_path</span><span class="p">:</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">HTML</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
@@ -10632,7 +10632,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">check_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run data drift checks on two pandas datasets using Deepchecks.</span>
+<span class="w">    </span><span class="sd">"""Run data drift checks on two pandas datasets using Deepchecks.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: Reference dataset for the data drift check.</span>
@@ -10652,7 +10652,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks suite result with the validation results.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data_validator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
         <span class="n">DeepchecksDataValidator</span><span class="p">,</span>
         <span class="n">DeepchecksDataValidator</span><span class="o">.</span><span class="n">get_active_data_validator</span><span class="p">(),</span>
@@ -10903,7 +10903,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">check_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run data integrity checks on a pandas dataset using Deepchecks.</span>
+<span class="w">    </span><span class="sd">"""Run data integrity checks on a pandas dataset using Deepchecks.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: a Pandas DataFrame to validate</span>
@@ -10922,7 +10922,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks suite result with the validation results.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data_validator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
         <span class="n">DeepchecksDataValidator</span><span class="p">,</span>
         <span class="n">DeepchecksDataValidator</span><span class="o">.</span><span class="n">get_active_data_validator</span><span class="p">(),</span>
@@ -11212,7 +11212,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">check_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run model drift checks on two pandas DataFrames and an sklearn model.</span>
+<span class="w">    </span><span class="sd">"""Run model drift checks on two pandas DataFrames and an sklearn model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        reference_dataset: Reference dataset for the model drift check.</span>
@@ -11233,7 +11233,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks suite result with the validation results.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data_validator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
         <span class="n">DeepchecksDataValidator</span><span class="p">,</span>
         <span class="n">DeepchecksDataValidator</span><span class="o">.</span><span class="n">get_active_data_validator</span><span class="p">(),</span>
@@ -11505,7 +11505,7 @@ Deepchecks Suite <code>run</code> method.</p>
     <span class="n">check_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">run_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SuiteResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run model validation checks on a pandas DataFrame and an sklearn model.</span>
+<span class="w">    </span><span class="sd">"""Run model validation checks on a pandas DataFrame and an sklearn model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        dataset: a Pandas DataFrame to use for the validation</span>
@@ -11525,7 +11525,7 @@ Deepchecks Suite <code>run</code> method.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A Deepchecks suite result with the validation results.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">data_validator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
         <span class="n">DeepchecksDataValidator</span><span class="p">,</span>
         <span class="n">DeepchecksDataValidator</span><span class="o">.</span><span class="n">get_active_data_validator</span><span class="p">(),</span>
@@ -12059,7 +12059,7 @@ Deepchecks BaseCheck class.</p>
 <span class="normal">138</span>
 <span class="normal">139</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_check_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseCheck</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Deepchecks check class associated with an enum value or a custom check name.</span>
+<span class="w">    </span><span class="sd">"""Get the Deepchecks check class associated with an enum value or a custom check name.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        check_name: Identifies a builtin Deepchecks check. The identifier</span>
@@ -12075,7 +12075,7 @@ Deepchecks BaseCheck class.</p>
 <span class="sd">            values fall out of sync with the Deepchecks code base or if a</span>
 <span class="sd">            custom check name is supplied that cannot be resolved to a valid</span>
 <span class="sd">            Deepchecks BaseCheck class.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">cls</span><span class="o">.</span><span class="n">validate_check_name</span><span class="p">(</span><span class="n">check_name</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
@@ -12086,15 +12086,15 @@ Deepchecks BaseCheck class.</p>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not map the `</span><span class="si">{</span><span class="n">check_name</span><span class="si">}</span><span class="s2">` check identifier to a valid &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Deepchecks check class.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Could not map the `</span><span class="si">{</span><span class="n">check_name</span><span class="si">}</span><span class="s2">` check identifier to a valid "</span>
+            <span class="sa">f</span><span class="s2">"Deepchecks check class."</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">check_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;You are using a custom Deepchecks check identifier that is &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;not listed in the `</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="si">}</span><span class="s2">` enum type. This could lead &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;to unexpected behavior.&quot;</span>
+            <span class="sa">f</span><span class="s2">"You are using a custom Deepchecks check identifier that is "</span>
+            <span class="sa">f</span><span class="s2">"not listed in the `</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="si">}</span><span class="s2">` enum type. This could lead "</span>
+            <span class="sa">f</span><span class="s2">"to unexpected behavior."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">check_class</span>
@@ -12191,16 +12191,16 @@ Deepchecks BaseCheck class.</p>
 <span class="normal">82</span>
 <span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_tabular_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to tabular data.</span>
+<span class="w">    </span><span class="sd">"""Check if a validation check is applicable to tabular data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        check_name: Identifies a builtin Deepchecks check.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the check is applicable to tabular data, otherwise False.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">cls</span><span class="o">.</span><span class="n">validate_check_name</span><span class="p">(</span><span class="n">check_name</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">check_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;deepchecks.tabular.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">check_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"deepchecks.tabular."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12305,7 +12305,7 @@ Deepchecks BaseCheck class.</p>
 <span class="normal">96</span>
 <span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_vision_check</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a validation check is applicable to computer vision data.</span>
+<span class="w">    </span><span class="sd">"""Check if a validation check is applicable to computer vision data.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        check_name: Identifies a builtin Deepchecks check.</span>
@@ -12313,9 +12313,9 @@ Deepchecks BaseCheck class.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if the check is applicable to compute vision data, otherwise</span>
 <span class="sd">        False.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">cls</span><span class="o">.</span><span class="n">validate_check_name</span><span class="p">(</span><span class="n">check_name</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">check_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;deepchecks.vision.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">check_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"deepchecks.vision."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -12422,7 +12422,7 @@ used by ZenML to identify Deepchecks builtin checks.</p>
 <span class="normal">69</span>
 <span class="normal">70</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_check_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate a Deepchecks check identifier.</span>
+<span class="w">    </span><span class="sd">"""Validate a Deepchecks check identifier.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        check_name: Identifies a builtin Deepchecks check. The identifier</span>
@@ -12431,17 +12431,17 @@ used by ZenML to identify Deepchecks builtin checks.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the check identifier does not follow the convention</span>
 <span class="sd">            used by ZenML to identify Deepchecks builtin checks.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
-        <span class="sa">r</span><span class="s2">&quot;^deepchecks\.(tabular|vision)\.checks\.&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="s2">"^deepchecks\.(tabular|vision)\.checks\."</span><span class="p">,</span>
         <span class="n">check_name</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The supplied Deepcheck check identifier does not follow the &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;convention used by ZenML: `</span><span class="si">{</span><span class="n">check_name</span><span class="si">}</span><span class="s2">`. The identifier &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;must be formatted as `deepchecks.&lt;tabular|vision&gt;.checks...` &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;and must be resolvable to a valid Deepchecks BaseCheck &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;subclass.&quot;</span>
+            <span class="sa">f</span><span class="s2">"The supplied Deepcheck check identifier does not follow the "</span>
+            <span class="sa">f</span><span class="s2">"convention used by ZenML: `</span><span class="si">{</span><span class="n">check_name</span><span class="si">}</span><span class="s2">`. The identifier "</span>
+            <span class="sa">f</span><span class="s2">"must be formatted as `deepchecks.&lt;tabular|vision&gt;.checks...` "</span>
+            <span class="sa">f</span><span class="s2">"and must be resolvable to a valid Deepchecks BaseCheck "</span>
+            <span class="sa">f</span><span class="s2">"subclass."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

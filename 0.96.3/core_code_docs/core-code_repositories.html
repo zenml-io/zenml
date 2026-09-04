@@ -4228,7 +4228,7 @@
 
 
 <h4 id="zenml.code_repositories.__all__" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BaseCodeRepository&#39;</span><span class="p">,</span> <span class="s1">&#39;LocalRepositoryContext&#39;</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'BaseCodeRepository'</span><span class="p">,</span> <span class="s1">'LocalRepositoryContext'</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
@@ -4363,13 +4363,13 @@ download files from the repository when a pipeline is run remotely.</p>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a code repository.</span>
+<span class="w">    </span><span class="sd">"""Initializes a code repository.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id: The ID of the code repository.</span>
 <span class="sd">        name: The name of the code repository.</span>
 <span class="sd">        config: The config of the code repository.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="nb">id</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
@@ -4696,7 +4696,7 @@ download files from.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Downloads files from the code repository to a local directory.</span>
+<span class="w">    </span><span class="sd">"""Downloads files from the code repository to a local directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        commit: The commit hash to download files from.</span>
@@ -4706,7 +4706,7 @@ download files from.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the download fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4804,15 +4804,15 @@ download files from.</p>
 <span class="normal">84</span>
 <span class="normal">85</span>
 <span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a code repository from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BaseCodeRepository"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a code repository from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: The CodeRepositoryResponseModel to load from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded code repository object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">class_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseCodeRepository</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">source_utils</span><span class="o">.</span><span class="n">load_and_validate_class</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">expected_class</span><span class="o">=</span><span class="n">BaseCodeRepository</span>
@@ -4914,15 +4914,15 @@ download files from.</p>
 <span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalRepositoryContext&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a local repository context from a path.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"LocalRepositoryContext"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Gets a local repository context from a path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the local repository.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The local repository context object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4987,14 +4987,14 @@ It should be used to authenticate with the code repository.</p>
 <span class="normal">142</span>
 <span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs into the code repository.</span>
+<span class="w">    </span><span class="sd">"""Logs into the code repository.</span>
 
 <span class="sd">    This method is called when the code repository is initialized.</span>
 <span class="sd">    It should be used to authenticate with the code repository.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the login fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5071,16 +5071,16 @@ the configured repository exists.</p>
 <span class="normal">101</span>
 <span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate the code repository config.</span>
+<span class="w">    </span><span class="sd">"""Validate the code repository config.</span>
 
 <span class="sd">    This method should check that the config/credentials are valid and</span>
 <span class="sd">    the configured repository exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: The configuration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># The initialization calls the login to verify the credentials</span>
-    <span class="n">code_repo</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">code_repo</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 
     <span class="c1"># Explicitly access the config for pydantic validation</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">code_repo</span><span class="o">.</span><span class="n">config</span>
@@ -5168,12 +5168,12 @@ commit, and whether the repository is dirty.</p>
 <span class="normal">39</span>
 <span class="normal">40</span>
 <span class="normal">41</span>
-<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local repository context.</span>
+<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Initializes a local repository context.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        code_repository: The code repository.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_code_repository</span> <span class="o">=</span> <span class="n">code_repository</span>
 </code></pre></div></td></tr></table></div>
                   </details>
@@ -5585,13 +5585,13 @@ download files from the repository when a pipeline is run remotely.</p>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a code repository.</span>
+<span class="w">    </span><span class="sd">"""Initializes a code repository.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        id: The ID of the code repository.</span>
 <span class="sd">        name: The name of the code repository.</span>
 <span class="sd">        config: The config of the code repository.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="nb">id</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
@@ -5918,7 +5918,7 @@ download files from.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Downloads files from the code repository to a local directory.</span>
+<span class="w">    </span><span class="sd">"""Downloads files from the code repository to a local directory.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        commit: The commit hash to download files from.</span>
@@ -5928,7 +5928,7 @@ download files from.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the download fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6026,15 +6026,15 @@ download files from.</p>
 <span class="normal">84</span>
 <span class="normal">85</span>
 <span class="normal">86</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a code repository from a model.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BaseCodeRepository"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Loads a code repository from a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model: The CodeRepositoryResponseModel to load from.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded code repository object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">class_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseCodeRepository</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">source_utils</span><span class="o">.</span><span class="n">load_and_validate_class</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">expected_class</span><span class="o">=</span><span class="n">BaseCodeRepository</span>
@@ -6136,15 +6136,15 @@ download files from.</p>
 <span class="normal">174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalRepositoryContext&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a local repository context from a path.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"LocalRepositoryContext"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Gets a local repository context from a path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the local repository.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The local repository context object.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6209,14 +6209,14 @@ It should be used to authenticate with the code repository.</p>
 <span class="normal">142</span>
 <span class="normal">143</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs into the code repository.</span>
+<span class="w">    </span><span class="sd">"""Logs into the code repository.</span>
 
 <span class="sd">    This method is called when the code repository is initialized.</span>
 <span class="sd">    It should be used to authenticate with the code repository.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If the login fails.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">pass</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -6293,16 +6293,16 @@ the configured repository exists.</p>
 <span class="normal">101</span>
 <span class="normal">102</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">validate_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate the code repository config.</span>
+<span class="w">    </span><span class="sd">"""Validate the code repository config.</span>
 
 <span class="sd">    This method should check that the config/credentials are valid and</span>
 <span class="sd">    the configured repository exists.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: The configuration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># The initialization calls the login to verify the credentials</span>
-    <span class="n">code_repo</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">code_repo</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 
     <span class="c1"># Explicitly access the config for pydantic validation</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">code_repo</span><span class="o">.</span><span class="n">config</span>
@@ -6409,7 +6409,7 @@ the configured repository exists.</p>
 <span class="normal">89</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">warn_about_plain_text_secrets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ensures that secret references are only passed for valid fields.</span>
+<span class="w">    </span><span class="sd">"""Ensures that secret references are only passed for valid fields.</span>
 
 <span class="sd">    This method ensures that secret references are not passed for fields</span>
 <span class="sd">    that explicitly prevent them or require pydantic validation.</span>
@@ -6422,7 +6422,7 @@ the configured repository exists.</p>
 <span class="sd">        ValueError: If an attribute that requires custom pydantic validation</span>
 <span class="sd">            or an attribute which explicitly disallows secret references</span>
 <span class="sd">            is passed as a secret reference.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -6440,19 +6440,19 @@ the configured repository exists.</p>
                 <span class="ow">and</span> <span class="n">warn_about_plain_text_secrets</span>
             <span class="p">):</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;You specified a plain-text value for the sensitive &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, &quot;</span>
-                    <span class="s2">&quot;but future versions of ZenML will require you to pass &quot;</span>
-                    <span class="s2">&quot;in sensitive information as secrets. Check out the &quot;</span>
-                    <span class="s2">&quot;documentation on how to configure values with secrets &quot;</span>
-                    <span class="s2">&quot;here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management&quot;</span>
+                    <span class="s2">"You specified a plain-text value for the sensitive "</span>
+                    <span class="sa">f</span><span class="s2">"attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">`. This is currently only a warning, "</span>
+                    <span class="s2">"but future versions of ZenML will require you to pass "</span>
+                    <span class="s2">"in sensitive information as secrets. Check out the "</span>
+                    <span class="s2">"documentation on how to configure values with secrets "</span>
+                    <span class="s2">"here: https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management"</span>
                 <span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="k">if</span> <span class="n">secret_utils</span><span class="o">.</span><span class="n">is_clear_text_field</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` attribute as a secret reference is "</span>
+                <span class="s2">"not allowed."</span>
             <span class="p">)</span>
 
         <span class="n">requires_validation</span> <span class="o">=</span> <span class="n">has_validators</span><span class="p">(</span>
@@ -6460,9 +6460,9 @@ the configured repository exists.</p>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">requires_validation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is &quot;</span>
-                <span class="s2">&quot;not allowed as additional validation is required for &quot;</span>
-                <span class="s2">&quot;this attribute.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Passing the attribute `</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">` as a secret reference is "</span>
+                <span class="s2">"not allowed as additional validation is required for "</span>
+                <span class="s2">"this attribute."</span>
             <span class="p">)</span>
 
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -6641,17 +6641,17 @@ the configured repository exists.</p>
 <span class="normal">53</span>
 <span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">,</span>
-    <span class="n">git_repo</span><span class="p">:</span> <span class="s2">&quot;Repo&quot;</span><span class="p">,</span>
+    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">,</span>
+    <span class="n">git_repo</span><span class="p">:</span> <span class="s2">"Repo"</span><span class="p">,</span>
     <span class="n">remote_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local git repository context.</span>
+<span class="w">    </span><span class="sd">"""Initializes a local git repository context.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        code_repository: The code repository.</span>
 <span class="sd">        git_repo: The git repo.</span>
 <span class="sd">        remote_name: Name of the remote.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">code_repository</span><span class="o">=</span><span class="n">code_repository</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_git_repo</span> <span class="o">=</span> <span class="n">git_repo</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_remote</span> <span class="o">=</span> <span class="n">git_repo</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">remote_name</span><span class="p">)</span>
@@ -7136,10 +7136,10 @@ remote URL of the git repository.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">at</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">,</span>
+    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">,</span>
     <span class="n">remote_url_validation_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalGitRepositoryContext&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a local git repository at the given path.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"LocalGitRepositoryContext"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Returns a local git repository at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the local git repository.</span>
@@ -7150,19 +7150,19 @@ remote URL of the git repository.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        A local git repository if the path is a valid git repository</span>
 <span class="sd">        and the remote URL is valid, otherwise None.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># These imports fail when git is not installed on the machine</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">git.exc</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">git.repo.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repo</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to import git library.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Failed to import git library."</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">git_repo</span> <span class="o">=</span> <span class="n">Repo</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">search_parent_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">InvalidGitRepositoryError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No git repository exists at path </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"No git repository exists at path </span><span class="si">%s</span><span class="s2">."</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">remote_name</span> <span class="o">=</span> <span class="kc">None</span>
@@ -7337,17 +7337,17 @@ remote URL of the git repository.</p>
 <span class="normal">53</span>
 <span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">,</span>
-    <span class="n">git_repo</span><span class="p">:</span> <span class="s2">&quot;Repo&quot;</span><span class="p">,</span>
+    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">,</span>
+    <span class="n">git_repo</span><span class="p">:</span> <span class="s2">"Repo"</span><span class="p">,</span>
     <span class="n">remote_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local git repository context.</span>
+<span class="w">    </span><span class="sd">"""Initializes a local git repository context.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        code_repository: The code repository.</span>
 <span class="sd">        git_repo: The git repo.</span>
 <span class="sd">        remote_name: Name of the remote.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">code_repository</span><span class="o">=</span><span class="n">code_repository</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_git_repo</span> <span class="o">=</span> <span class="n">git_repo</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_remote</span> <span class="o">=</span> <span class="n">git_repo</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">remote_name</span><span class="p">)</span>
@@ -7832,10 +7832,10 @@ remote URL of the git repository.</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">at</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">,</span>
+    <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">,</span>
     <span class="n">remote_url_validation_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalGitRepositoryContext&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a local git repository at the given path.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"LocalGitRepositoryContext"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Returns a local git repository at the given path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        path: The path to the local git repository.</span>
@@ -7846,19 +7846,19 @@ remote URL of the git repository.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        A local git repository if the path is a valid git repository</span>
 <span class="sd">        and the remote URL is valid, otherwise None.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># These imports fail when git is not installed on the machine</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">git.exc</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">git.repo.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repo</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to import git library.&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Failed to import git library."</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">git_repo</span> <span class="o">=</span> <span class="n">Repo</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">search_parent_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">InvalidGitRepositoryError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No git repository exists at path </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"No git repository exists at path </span><span class="si">%s</span><span class="s2">."</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="n">remote_name</span> <span class="o">=</span> <span class="kc">None</span>
@@ -8008,12 +8008,12 @@ commit, and whether the repository is dirty.</p>
 <span class="normal">39</span>
 <span class="normal">40</span>
 <span class="normal">41</span>
-<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository</span><span class="p">:</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local repository context.</span>
+<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository</span><span class="p">:</span> <span class="s2">"BaseCodeRepository"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Initializes a local repository context.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        code_repository: The code repository.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_code_repository</span> <span class="o">=</span> <span class="n">code_repository</span>
 </code></pre></div></td></tr></table></div>
                   </details>

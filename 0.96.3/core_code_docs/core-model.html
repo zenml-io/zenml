@@ -4323,13 +4323,13 @@ the artifact store.</p>
     <span class="n">only_link</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all artifacts linked to this model version.</span>
+<span class="w">    </span><span class="sd">"""Delete all artifacts linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        only_link: Whether to only delete the link to the artifact.</span>
 <span class="sd">        delete_from_artifact_store: Whether to delete the artifact from</span>
 <span class="sd">            the artifact store.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
@@ -4509,7 +4509,7 @@ artifact store.</p>
     <span class="n">delete_metadata</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete the artifact linked to this model version.</span>
+<span class="w">    </span><span class="sd">"""Delete the artifact linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the artifact to delete.</span>
@@ -4519,7 +4519,7 @@ artifact store.</p>
 <span class="sd">        delete_metadata: Whether to delete the metadata of the artifact.</span>
 <span class="sd">        delete_from_artifact_store: Whether to delete the artifact from the</span>
 <span class="sd">            artifact store.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
@@ -4656,8 +4656,8 @@ of the pipeline.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact linked to this model version.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the artifact linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the artifact to retrieve.</span>
@@ -4667,7 +4667,7 @@ of the pipeline.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        Specific version of the artifact or placeholder in the design time</span>
 <span class="sd">            of the pipeline.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">lazy</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_artifact_get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">lazy</span>
 
@@ -4804,8 +4804,8 @@ latest/non-versioned)</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the data artifact linked to this model version.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the data artifact linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the data artifact to retrieve.</span>
@@ -4815,7 +4815,7 @@ latest/non-versioned)</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        Specific version of the data artifact or placeholder in the design</span>
 <span class="sd">        time of the pipeline.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">lazy</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_artifact_get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">lazy</span>
 
@@ -4952,8 +4952,8 @@ for latest/non-versioned)</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the deployment artifact linked to this model version.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the deployment artifact linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the deployment artifact to retrieve.</span>
@@ -4963,7 +4963,7 @@ for latest/non-versioned)</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        Specific version of the deployment artifact or placeholder in the</span>
 <span class="sd">        design time of the pipeline.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">lazy</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_artifact_get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">lazy</span>
 
@@ -5091,8 +5091,8 @@ time of the pipeline.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the model artifact linked to this model version.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"ArtifactVersionResponse"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Get the model artifact linked to this model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: The name of the model artifact to retrieve.</span>
@@ -5102,7 +5102,7 @@ time of the pipeline.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        Specific version of the model artifact or placeholder in the design</span>
 <span class="sd">            time of the pipeline.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="n">lazy</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_artifact_get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">lazy</span>
 
@@ -5252,7 +5252,7 @@ the given name and version.</p>
 <span class="normal">206</span>
 <span class="normal">207</span>
 <span class="normal">208</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load artifact from the Model Control Plane.</span>
+<span class="w">    </span><span class="sd">"""Load artifact from the Model Control Plane.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        name: Name of the artifact to load.</span>
@@ -5264,7 +5264,7 @@ the given name and version.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: if the model version is not linked to any artifact with</span>
 <span class="sd">            the given name and version.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_artifact</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
@@ -5272,8 +5272,8 @@ the given name and version.</p>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact</span><span class="p">,</span> <span class="n">ArtifactVersionResponse</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Version </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2"> of model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not have &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;an artifact with name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> and version </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Version </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2"> of model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not have "</span>
+            <span class="sa">f</span><span class="s2">"an artifact with name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> and version </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">load_artifact</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">version</span><span class="p">))</span>
@@ -5359,15 +5359,15 @@ the given name and version.</p>
 <span class="normal">339</span>
 <span class="normal">340</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log model version metadata.</span>
+<span class="w">    </span><span class="sd">"""Log model version metadata.</span>
 
 <span class="sd">    This function can be used to log metadata for current model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        metadata: The metadata to log.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunMetadataResource</span>
 
@@ -5463,13 +5463,13 @@ target stage or raise.</p>
 <span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_stage</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ModelStages</span><span class="p">],</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sets this Model to a desired stage.</span>
+<span class="w">    </span><span class="sd">"""Sets this Model to a desired stage.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        stage: the target stage for model version.</span>
 <span class="sd">        force: whether to force archiving of current model version in</span>
 <span class="sd">            target stage or raise.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span><span class="o">.</span><span class="n">set_stage</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -5649,9 +5649,9 @@ target stage or raise.</p>
 <span class="normal">135</span>
 <span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_artifact_to_model</span><span class="p">(</span>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">ArtifactVersionResponse</span><span class="p">,</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"Model"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Link the artifact to the model.</span>
+<span class="w">    </span><span class="sd">"""Link the artifact to the model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_version: The artifact version to link.</span>
@@ -5659,7 +5659,7 @@ target stage or raise.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If called outside a step.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
         <span class="n">is_issue</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">try</span><span class="p">:</span>
@@ -5670,10 +5670,10 @@ target stage or raise.</p>
 
         <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">is_issue</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;`link_artifact_to_model` called without `model` parameter &quot;</span>
-                <span class="s2">&quot;and configured model context cannot be identified. Consider &quot;</span>
-                <span class="s2">&quot;passing the `model` explicitly or configuring it in &quot;</span>
-                <span class="s2">&quot;@step or @pipeline decorator.&quot;</span>
+                <span class="s2">"`link_artifact_to_model` called without `model` parameter "</span>
+                <span class="s2">"and configured model context cannot be identified. Consider "</span>
+                <span class="s2">"passing the `model` explicitly or configuring it in "</span>
+                <span class="s2">"@step or @pipeline decorator."</span>
             <span class="p">)</span>
 
     <span class="n">model_version</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
@@ -5770,12 +5770,12 @@ target stage or raise.</p>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">ArtifactVersionResponse</span><span class="p">,</span>
     <span class="n">model_version</span><span class="p">:</span> <span class="n">ModelVersionResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Link an artifact version to a model version.</span>
+<span class="w">    </span><span class="sd">"""Link an artifact version to a model version.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        artifact_version: The artifact version to link.</span>
 <span class="sd">        model_version: The model version to link.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
     <span class="n">client</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_model_version_artifact_link</span><span class="p">(</span>
         <span class="n">ModelVersionArtifactRequest</span><span class="p">(</span>
@@ -5937,10 +5937,10 @@ identified.</p>
 <span class="normal">181</span>
 <span class="normal">182</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_service_to_model</span><span class="p">(</span>
     <span class="n">service_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"Model"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_version_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Links a service to a model.</span>
+<span class="w">    </span><span class="sd">"""Links a service to a model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        service_id: The ID of the service to link to the model.</span>
@@ -5950,7 +5950,7 @@ identified.</p>
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If no model is provided and the model context cannot be</span>
 <span class="sd">            identified.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
     <span class="c1"># If no model is provided, try to get it from the context</span>
@@ -5964,10 +5964,10 @@ identified.</p>
 
         <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">is_issue</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
-                <span class="s2">&quot;`link_service_to_model` called without `model` parameter &quot;</span>
-                <span class="s2">&quot;and configured model context cannot be identified. Consider &quot;</span>
-                <span class="s2">&quot;passing the `model` explicitly or configuring it in &quot;</span>
-                <span class="s2">&quot;@step or @pipeline decorator.&quot;</span>
+                <span class="s2">"`link_service_to_model` called without `model` parameter "</span>
+                <span class="s2">"and configured model context cannot be identified. Consider "</span>
+                <span class="s2">"passing the `model` explicitly or configuring it in "</span>
+                <span class="s2">"@step or @pipeline decorator."</span>
             <span class="p">)</span>
 
     <span class="n">model_version_id</span> <span class="o">=</span> <span class="p">(</span>
@@ -6142,11 +6142,11 @@ be omitted when being called inside a step with configured
 <span class="normal">79</span>
 <span class="normal">80</span>
 <span class="normal">81</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_model_metadata</span><span class="p">(</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"MetadataType"</span><span class="p">],</span>
     <span class="n">model_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ModelStages</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log model version metadata.</span>
+<span class="w">    </span><span class="sd">"""Log model version metadata.</span>
 
 <span class="sd">    This function can be used to log metadata for existing model versions.</span>
 
@@ -6161,12 +6161,12 @@ be omitted when being called inside a step with configured
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the function is not called with proper input.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-        <span class="s2">&quot;The `log_model_metadata` function is deprecated and will soon be &quot;</span>
-        <span class="s2">&quot;removed. Instead, you can consider using: &quot;</span>
-        <span class="s2">&quot;`log_metadata(metadata={...}, infer_model=True)` instead. For more &quot;</span>
-        <span class="s2">&quot;info: https://docs.zenml.io/concepts/metadata#attaching-metadata-to-models&quot;</span>
+        <span class="s2">"The `log_model_metadata` function is deprecated and will soon be "</span>
+        <span class="s2">"removed. Instead, you can consider using: "</span>
+        <span class="s2">"`log_metadata(metadata={...}, infer_model=True)` instead. For more "</span>
+        <span class="s2">"info: https://docs.zenml.io/concepts/metadata#attaching-metadata-to-models"</span>
     <span class="p">)</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_metadata</span>
@@ -6184,8 +6184,8 @@ be omitted when being called inside a step with configured
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;You can call `log_model_metadata` by either providing both &quot;</span>
-            <span class="s2">&quot;`model_name` and `model_version` or keeping both of them None.&quot;</span>
+            <span class="s2">"You can call `log_model_metadata` by either providing both "</span>
+            <span class="s2">"`model_name` and `model_version` or keeping both of them None."</span>
         <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>

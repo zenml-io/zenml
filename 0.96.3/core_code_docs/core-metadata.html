@@ -3924,14 +3924,14 @@ design time context.</p>
     <span class="n">_lazy_load_artifact_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">_lazy_load_artifact_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a RunMetadataLazyGetter.</span>
+<span class="w">    </span><span class="sd">"""Initialize a RunMetadataLazyGetter.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        _lazy_load_model_name: The model name.</span>
 <span class="sd">        _lazy_load_model_version: The model version.</span>
 <span class="sd">        _lazy_load_artifact_name: The artifact name.</span>
 <span class="sd">        _lazy_load_artifact_version: The artifact version.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_load_model_name</span> <span class="o">=</span> <span class="n">_lazy_load_model_name</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_load_model_version</span> <span class="o">=</span> <span class="n">_lazy_load_model_version</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_load_artifact_name</span> <span class="o">=</span> <span class="n">_lazy_load_artifact_name</span>
@@ -4352,7 +4352,7 @@ design time context.</p>
     <span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
     <span class="n">type_</span><span class="p">:</span> <span class="n">MetadataTypeEnum</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cast an object to a metadata type.</span>
+<span class="w">    </span><span class="sd">"""Cast an object to a metadata type.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        value: The object to cast.</span>
@@ -4360,7 +4360,7 @@ design time context.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The value cast to the given metadata type.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">metadata_type</span> <span class="o">=</span> <span class="n">metadata_enum_to_type_mapping</span><span class="p">[</span><span class="n">type_</span><span class="p">]</span>
     <span class="n">typed_value</span> <span class="o">=</span> <span class="n">metadata_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">typed_value</span>  <span class="c1"># type: ignore[no-any-return]</span>
@@ -4483,7 +4483,7 @@ design time context.</p>
 <span class="normal">193</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_metadata_type</span><span class="p">(</span>
     <span class="n">object_</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataTypeEnum</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the metadata type enum for a given object.</span>
+<span class="w">    </span><span class="sd">"""Get the metadata type enum for a given object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        object_: The object to get the metadata type for.</span>
@@ -4493,11 +4493,11 @@ design time context.</p>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If the metadata type is not supported.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">metadata_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">object_</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">metadata_type</span> <span class="ow">in</span> <span class="n">metadata_type_to_enum_mapping</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">metadata_type_to_enum_mapping</span><span class="p">[</span><span class="n">metadata_type</span><span class="p">]</span>
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata type </span><span class="si">{</span><span class="n">metadata_type</span><span class="si">}</span><span class="s2"> is not supported.&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Metadata type </span><span class="si">{</span><span class="n">metadata_type</span><span class="si">}</span><span class="s2"> is not supported."</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4631,7 +4631,7 @@ or of an unsupported type.</p>
 <span class="normal">258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_metadata</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate metadata.</span>
+<span class="w">    </span><span class="sd">"""Validate metadata.</span>
 
 <span class="sd">    This function excludes and warns about metadata values that are too long</span>
 <span class="sd">    or of an unsupported type.</span>
@@ -4641,14 +4641,14 @@ or of an unsupported type.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The validated metadata.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">validated_metadata</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">STR_FIELD_MAX_LENGTH</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Metadata key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is too large to be &quot;</span>
-                <span class="s2">&quot;stored in the database. Skipping.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Metadata key '</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">' is too large to be "</span>
+                <span class="s2">"stored in the database. Skipping."</span>
             <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -4657,8 +4657,8 @@ or of an unsupported type.</p>
             <span class="o">&gt;</span> <span class="n">TEXT_FIELD_MAX_LENGTH</span>
         <span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Metadata value for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is too large to be &quot;</span>
-                <span class="s2">&quot;stored in the database. Skipping.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Metadata value for key '</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">' is too large to be "</span>
+                <span class="s2">"stored in the database. Skipping."</span>
             <span class="p">)</span>
             <span class="k">continue</span>
 
@@ -4666,8 +4666,8 @@ or of an unsupported type.</p>
             <span class="n">get_metadata_type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Metadata value for key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is not of a supported &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;type. Skipping. Full error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Metadata value for key '</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">' is not of a supported "</span>
+                <span class="sa">f</span><span class="s2">"type. Skipping. Full error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
         <span class="n">validated_metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>

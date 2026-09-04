@@ -4213,14 +4213,14 @@ attribute is the class name <code>Source</code>.</p>
 <span class="normal">182</span>
 <span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">convert_source</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts an old source string to a source object.</span>
+<span class="w">    </span><span class="sd">"""Converts an old source string to a source object.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source: Source string or object.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The converted source.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="n">source</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_import_path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
 
@@ -4381,8 +4381,8 @@ attribute is the class name <code>Source</code>.</p>
 <span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">from_import_path</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">import_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_module_path</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Source&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a source from an import path.</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Source"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates a source from an import path.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        import_path: The import path.</span>
@@ -4393,22 +4393,22 @@ attribute is the class name <code>Source</code>.</p>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The source.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">import_path</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;Invalid empty import path. The import path needs to refer &quot;</span>
-            <span class="s2">&quot;to a Python module and an optional attribute of that module.&quot;</span>
+            <span class="s2">"Invalid empty import path. The import path needs to refer "</span>
+            <span class="s2">"to a Python module and an optional attribute of that module."</span>
         <span class="p">)</span>
 
     <span class="c1"># Remove internal version pins for backwards compatibility</span>
-    <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">import_path</span><span class="p">:</span>
-        <span class="n">import_path</span> <span class="o">=</span> <span class="n">import_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">"@"</span> <span class="ow">in</span> <span class="n">import_path</span><span class="p">:</span>
+        <span class="n">import_path</span> <span class="o">=</span> <span class="n">import_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"@"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="n">is_module_path</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">import_path</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">is_module_path</span> <span class="ow">or</span> <span class="s2">"."</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">import_path</span><span class="p">:</span>
         <span class="n">module</span> <span class="o">=</span> <span class="n">import_path</span>
         <span class="n">attribute</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">module</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">import_path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">module</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">import_path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">Source</span><span class="p">(</span>
         <span class="n">module</span><span class="o">=</span><span class="n">module</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">SourceType</span><span class="o">.</span><span class="n">UNKNOWN</span>
@@ -4499,14 +4499,14 @@ attribute is the class name <code>Source</code>.</p>
 <span class="normal">155</span>
 <span class="normal">156</span>
 <span class="normal">157</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">model_dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dump the source as a dictionary.</span>
+<span class="w">    </span><span class="sd">"""Dump the source as a dictionary.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Additional keyword arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The source as a dictionary.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">serialize_as_any</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
@@ -4594,14 +4594,14 @@ attribute is the class name <code>Source</code>.</p>
 <span class="normal">166</span>
 <span class="normal">167</span>
 <span class="normal">168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">model_dump_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dump the source as a JSON string.</span>
+<span class="w">    </span><span class="sd">"""Dump the source as a JSON string.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        **kwargs: Additional keyword arguments.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The source as a JSON string.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">(</span><span class="n">serialize_as_any</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
