@@ -341,6 +341,22 @@ def deploy(pr: PRRef, repo: str) -> None:
         )
 
 
+def _validate_max_fix_iterations(max_fix_iterations: int) -> None:
+    """Validate the `max_fix_iterations` argument of `software_factory`.
+
+    Args:
+        max_fix_iterations: The maximum number of test and review fix
+            iterations.
+
+    Raises:
+        ValueError: If `max_fix_iterations` is less than 1.
+    """
+    if max_fix_iterations < 1:
+        raise ValueError(
+            f"max_fix_iterations must be at least 1, got {max_fix_iterations}."
+        )
+
+
 @pipeline(
     dynamic=True,
     enable_cache=False,
@@ -374,7 +390,12 @@ def software_factory(
             Tests are skipped if unset.
         max_fix_iterations: The maximum number of test and review fix
             iterations.
+
+    Raises:
+        ValueError: If `max_fix_iterations` is less than 1.
     """
+    _validate_max_fix_iterations(max_fix_iterations)
+
     plan = write_plan(repo=repo, issue=issue, base_branch=base_branch)
     plan_review = wait(
         schema=Review,
@@ -398,7 +419,9 @@ def software_factory(
         base_branch=base_branch,
     )
     verdict = None
+    fixed_last = False
     for attempt in range(max_fix_iterations):
+        fixed_last = False
         tests = run_tests(
             workspace=workspace,
             repo=repo,
@@ -429,6 +452,19 @@ def software_factory(
             base_branch=base_branch,
             verdict=verdict,
             id=f"fix_{attempt}",
+        )
+        fixed_last = True
+
+    if fixed_last:
+        # The last loop iteration ended with an untested fix. Re-run tests
+        # so the deploy approval below reflects the branch's final state
+        # instead of a stale pre-fix report.
+        tests = run_tests(
+            workspace=workspace,
+            repo=repo,
+            branch=target_branch,
+            test_command=test_command,
+            id="run_tests_final",
         )
     close_workspace(workspace=workspace)
 
