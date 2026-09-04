@@ -124,7 +124,7 @@ jobs:
           cd "$(mktemp -d)"
           uv init --quiet -p 3.12 --name demo-pipelines .
           bash "$GITHUB_WORKSPACE/install.sh" --no-skills
-          grep -q 'zenml\[local\]' pyproject.toml
+          grep -q 'zenml\[server\]' pyproject.toml
           uv run zenml --version
       - name: A failed install must exit nonzero (quiet path)
         shell: bash
