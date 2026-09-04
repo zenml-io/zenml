@@ -119,8 +119,7 @@ def _fetch_and_verify_api_key(
     Raises:
         CredentialsNotValid: If the API key could not be found, is not
             active, if it could not be verified against the supplied key value
-            or if the associated service account is not active or is an
-            external service account.
+            or if the associated service account is not active.
     """
     store = zen_store()
 
@@ -141,12 +140,11 @@ def _fetch_and_verify_api_key(
         raise CredentialsNotValid(error)
 
     if api_key.service_account.external_user_id:
-        error = (
-            "Authentication error: cannot use an API key associated with an "
+        warning = (
+            "Authentication warning: using an API key associated with an "
             "external service account to authenticate to the ZenML server"
         )
-        logger.exception(error)
-        raise CredentialsNotValid(error)
+        logger.warning(warning)
 
     if not api_key.active:
         error = (
@@ -539,6 +537,39 @@ def authenticate_credentials(
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
+
+        if decoded_token.deployment_id:
+            # If the token contains a deployment ID, we need to check if the
+            # deployment still exists in the database. We use a cached version
+            # of the existence check to avoid unnecessary database queries.
+
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
+            def check_if_deployment_exists(deployment_id: UUID) -> bool:
+                """Check whether a deployment exists.
+
+                Args:
+                    deployment_id: The deployment ID.
+
+                Returns:
+                    Whether the deployment exists.
+                """
+                try:
+                    zen_store().get_deployment(deployment_id, hydrate=False)
+                except KeyError:
+                    return False
+
+                return True
+
+            if not check_if_deployment_exists(decoded_token.deployment_id):
+                error = (
+                    "Authentication error: deployment "
+                    f"{decoded_token.deployment_id} does not exist."
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,

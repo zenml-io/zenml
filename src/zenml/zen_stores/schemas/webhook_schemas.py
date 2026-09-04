@@ -1,0 +1,267 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""SQL schemas for webhooks."""
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Sequence
+from uuid import UUID
+
+from sqlalchemy import TEXT, Column, LargeBinary, String, UniqueConstraint
+from sqlalchemy.dialects.mysql import LONGBLOB
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.sql.base import ExecutableOption
+from sqlmodel import Field, Relationship, SQLModel
+
+from zenml.models import (
+    WebhookRequest,
+    WebhookResponse,
+    WebhookResponseBody,
+    WebhookResponseMetadata,
+    WebhookResponseResources,
+    WebhookStats,
+    WebhookUpdate,
+)
+from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
+
+
+class WebhookSchema(NamedSchema, table=True):
+    """SQL schema for a project-scoped webhook."""
+
+    __tablename__ = "webhook"
+    __table_args__ = (
+        UniqueConstraint(
+            "project_id",
+            "name",
+            name="unique_webhook_name_in_project",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["webhook_type"],
+        ),
+    )
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project: "ProjectSchema" = Relationship(back_populates="webhooks")
+    user_id: UUID | None = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: UserSchema | None = Relationship()
+    triggers: list["TriggerSchema"] = Relationship(back_populates="webhook")
+    secret_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=SecretSchema.__tablename__,
+        source_column="secret_id",
+        target_column="id",
+        ondelete="RESTRICT",
+        nullable=False,
+    )
+    webhook_type: str
+    active: bool = Field(default=True)
+    stats: "WebhookStatsSchema" = Relationship(
+        back_populates="webhook",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "single_parent": True,
+            "uselist": False,
+        },
+    )
+
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get query options for webhooks.
+
+        Args:
+            include_metadata: Whether statistics will be included.
+            include_resources: Whether related resources will be included.
+            **kwargs: Additional query option arguments.
+
+        Returns:
+            Query options for the requested response shape.
+        """
+        options: list[ExecutableOption] = []
+        if include_metadata:
+            options.append(selectinload(jl_arg(cls.stats)))
+        if include_resources:
+            options.append(joinedload(jl_arg(cls.user)))
+        return options
+
+    @classmethod
+    def from_request(
+        cls, request: WebhookRequest, secret_id: UUID
+    ) -> "WebhookSchema":
+        """Create a schema from a request.
+
+        Args:
+            request: The webhook creation request.
+            secret_id: The internal signing secret ID.
+
+        Returns:
+            The created webhook schema.
+        """
+        return cls(
+            name=request.name,
+            project_id=request.project,
+            user_id=request.user,
+            webhook_type=request.webhook_type,
+            active=request.active,
+            secret_id=secret_id,
+        )
+
+    def to_model(
+        self,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> WebhookResponse:
+        """Convert the schema to a response model.
+
+        Args:
+            include_metadata: Whether to include intake statistics.
+            include_resources: Whether to include associated resources.
+            **kwargs: Additional conversion options.
+
+        Returns:
+            The webhook response.
+        """
+        metadata = None
+        if include_metadata:
+            metadata = WebhookResponseMetadata(stats=self.stats.to_model())
+
+        resources = None
+        if include_resources:
+            resources = WebhookResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
+        return WebhookResponse(
+            id=self.id,
+            name=self.name,
+            body=WebhookResponseBody(
+                user_id=self.user_id,
+                project_id=self.project_id,
+                created=self.created,
+                updated=self.updated,
+                webhook_type=self.webhook_type,
+                active=self.active,
+            ),
+            metadata=metadata,
+            resources=resources,
+        )
+
+    def update(self, update: WebhookUpdate) -> "WebhookSchema":
+        """Apply a webhook update.
+
+        Args:
+            update: The webhook update.
+
+        Returns:
+            The updated webhook schema.
+        """
+        if update.name is not None:
+            self.name = update.name
+        if update.active is not None:
+            self.active = update.active
+        self.updated = utc_now()
+        return self
+
+
+class WebhookStatsSchema(SQLModel, table=True):
+    """SQL schema for webhook intake statistics."""
+
+    __tablename__ = "webhook_stats"
+
+    webhook_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookSchema.__tablename__,
+        source_column="webhook_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    received_count: int = 0
+    accepted_count: int = 0
+    auth_failed_count: int = 0
+    invalid_payload_count: int = 0
+    last_received_at: datetime | None = None
+    last_accepted_at: datetime | None = None
+    last_error_at: datetime | None = None
+    last_error_summary: str | None = Field(
+        default=None, sa_column=Column(TEXT, nullable=True)
+    )
+
+    webhook: WebhookSchema = Relationship(back_populates="stats")
+
+    def to_model(self) -> WebhookStats:
+        """Convert persisted statistics to their domain model.
+
+        Returns:
+            The webhook intake statistics.
+        """
+        return WebhookStats.model_validate(self, from_attributes=True)
+
+
+class WebhookEventPayloadSchema(SQLModel, table=True):
+    """Compressed raw body retained for a consumed webhook event."""
+
+    __tablename__ = "webhook_event_payload"
+
+    webhook_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookSchema.__tablename__,
+        source_column="webhook_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    delivery_id: str = Field(
+        sa_column=Column(String(255), primary_key=True, nullable=False),
+    )
+    created: datetime = Field(default_factory=utc_now, nullable=False)
+    payload: bytes = Field(
+        sa_column=Column(
+            LargeBinary().with_variant(LONGBLOB, "mysql"),
+            nullable=False,
+        ),
+    )

@@ -30,7 +30,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -47,6 +52,7 @@ from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     EnumFilterOption,
     StringFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -244,6 +250,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotResponse,
         UserResponse,
+        WebhookResponse,
     )
     from zenml.models.v2.base.filter import AnySchema
 
@@ -357,6 +364,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    webhook: Optional["WebhookResponse"] = None
     snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
         default_factory=dict
     )
@@ -410,6 +418,10 @@ class UnScopedTriggerFilter(BaseFilter):
     concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."
     )
+    webhook_id: UUIDFilterOption = Field(
+        default=None,
+        description="The webhook associated with the trigger.",
+    )
 
     def apply_filter(
         self,
@@ -462,6 +474,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "type",
         "flavor",
         "next_occurrence",
+        "webhook_id",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
         *UnScopedTriggerFilter.API_SINGLE_INPUT_PARAMS,
@@ -1098,21 +1111,161 @@ class PlatformEventTriggerResponse(
         return self.get_body().target_events
 
 
+# ----------- WEBHOOK CLASSES ------------------- #
+
+
+class WebhookTrigger(BaseModel):
+    """Marker base class for webhook trigger models."""
+
+
+class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
+    """Class representing a webhook trigger request."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+    flavor: Literal[TriggerFlavor.WEBHOOK] = TriggerFlavor.WEBHOOK
+    webhook_id: UUID
+    configuration: dict[str, Any]
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            The provider-specific event configuration.
+        """
+        return self.model_dump_json(include={"configuration"})
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return flat webhook trigger fields.
+
+        Returns:
+            The webhook association.
+        """
+        return {"webhook_id": self.webhook_id}
+
+
+class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
+    """Class representing a webhook trigger update."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+    configuration: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_complete_update(self) -> "WebhookTriggerUpdate":
+        """Ensure webhook trigger updates preserve PUT semantics.
+
+        Returns:
+            The validated webhook trigger update.
+
+        Raises:
+            ValueError: If any mutable trigger field was omitted.
+        """
+        required_fields = {
+            "name",
+            "active",
+            "concurrency",
+            "configuration",
+        }
+        missing_fields = required_fields - self.model_fields_set
+        if missing_fields:
+            raise ValueError(
+                "Webhook trigger updates must include all mutable fields. "
+                f"Missing: {', '.join(sorted(missing_fields))}."
+            )
+        return self
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            The provider-specific event configuration.
+        """
+        return self.model_dump_json(include={"configuration"})
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return flat webhook trigger fields.
+
+        Returns:
+            The webhook association.
+        """
+        return {}
+
+
+class WebhookTriggerResponseBody(WebhookTrigger, TriggerResponseBody):
+    """Class representing a webhook trigger response body."""
+
+    configuration: dict[str, Any]
+    webhook_id: UUID | None = None
+
+    def get_extra_fields(self) -> list[str]:
+        """Return flat fields required for the response.
+
+        Returns:
+            The webhook association field.
+        """
+        return ["webhook_id"]
+
+
+class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
+    """Class representing a webhook trigger response."""
+
+    @property
+    def webhook_id(self) -> UUID | None:
+        """Return the associated webhook ID.
+
+        Returns:
+            The associated webhook ID, if any.
+        """
+        return self.get_body().webhook_id
+
+    @property
+    def webhook(self) -> Optional["WebhookResponse"]:
+        """Return the associated webhook.
+
+        Returns:
+            The associated webhook, if any.
+        """
+        return self.get_resources().webhook
+
+    @property
+    def configuration(self) -> dict[str, Any]:
+        """Return the provider-neutral configuration.
+
+        Returns:
+            The webhook trigger configuration.
+        """
+        return self.get_body().configuration
+
+
+class WebhookTriggerExecutionInfo(BaseModel):
+    """Information about the webhook event that triggered a pipeline run."""
+
+    webhook_id: UUID
+    delivery_id: str
+    event: dict[str, Any] | None = None
+
+
 class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
     upstream_run_id: UUID | None = None
     upstream_pipeline_ids: list[UUID] = Field(default_factory=list)
+    webhook_upstream_event: dict[str, WebhookTriggerExecutionInfo] | None = (
+        None
+    )
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate | WebhookTriggerUpdate,
     Field(discriminator="type"),
 ]
 TRIGGER_CREATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerRequest | PlatformEventTriggerRequest,
+    ScheduleTriggerRequest
+    | PlatformEventTriggerRequest
+    | WebhookTriggerRequest,
     Field(discriminator="type"),
 ]
 TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
-    ScheduleTriggerResponse | PlatformEventTriggerResponse
+    ScheduleTriggerResponse
+    | PlatformEventTriggerResponse
+    | WebhookTriggerResponse
 )

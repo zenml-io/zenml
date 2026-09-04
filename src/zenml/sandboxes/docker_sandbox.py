@@ -402,7 +402,7 @@ class DockerSandboxSession(SandboxSession):
 
         self._log_command(command)
 
-        pid_file = f"/tmp/zenml-sandbox-exec-{uuid4().hex[:8]}.pid"
+        pid_file = f"/tmp/zenml-sandbox-exec-{uuid4().hex[:8]}.pid"  # nosec B108
         api = self._container.client.api
         started_at = time.time()
         try:

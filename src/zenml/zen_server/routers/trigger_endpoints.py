@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for triggers."""
 
+from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -36,7 +37,11 @@ from zenml.models import (
     PlatformEventTriggerRequest,
     PlatformEventTriggerUpdate,
     TriggerFilter,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerUpdate,
 )
+from zenml.webhooks import get_webhook_provider
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
@@ -49,10 +54,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
     verify_permission,
     verify_permission_for_model,
 )
@@ -123,6 +128,14 @@ def create_trigger(
         verify_permissions_for_source_entity(
             source_type=trigger.source_entity.type,
             source_id=trigger.source_entity.id,
+        )
+    elif isinstance(trigger, WebhookTriggerRequest):
+        webhook = zen_store().get_webhook(trigger.webhook_id)
+        verify_permission_for_model(model=webhook, action=Action.READ)
+        trigger.configuration = (
+            get_webhook_provider(webhook.webhook_type)
+            .validate_configuration(trigger.configuration)
+            .model_dump(mode="json")
         )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
@@ -209,21 +222,43 @@ def update_trigger(
 
     Returns:
         The updated trigger object.
+
+    Raises:
+        IllegalOperationError: If the update changes the trigger type.
     """
+    existing_trigger = zen_store().get_trigger(trigger_id, hydrate=False)
+    verify_permission_for_model(model=existing_trigger, action=Action.UPDATE)
+    if existing_trigger.type != trigger_update.type:
+        raise IllegalOperationError(
+            "A trigger can not be updated with a different trigger type."
+        )
+
     if isinstance(trigger_update, PlatformEventTriggerUpdate):
         verify_permissions_for_source_entity(
             source_type=trigger_update.source_entity.type,
             source_id=trigger_update.source_entity.id,
         )
+    elif isinstance(trigger_update, WebhookTriggerUpdate):
+        if not isinstance(existing_trigger, WebhookTriggerResponse):
+            raise IllegalOperationError(
+                "A trigger can not be updated with a different trigger type."
+            )
+        webhook = zen_store().get_webhook(
+            cast(UUID, existing_trigger.webhook_id)
+        )
+        verify_permission_for_model(model=webhook, action=Action.READ)
+        trigger_update.configuration = (
+            get_webhook_provider(webhook.webhook_type)
+            .validate_configuration(trigger_update.configuration)
+            .model_dump(mode="json")
+        )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
-
-    return verify_permissions_and_update_entity(
-        id=trigger_id,
-        update_model=trigger_update,
-        get_method=zen_store().get_trigger,
-        update_method=zen_store().update_trigger,
+    updated_trigger = zen_store().update_trigger(
+        trigger_id=existing_trigger.id,
+        trigger_update=trigger_update,
     )
+    return dehydrate_response_model(updated_trigger)
 
 
 @router.delete(
@@ -272,15 +307,14 @@ def attach_trigger_to_snapshot(
 
     Raises:
         IllegalOperationError: If the trigger is already attached to the snapshot.
+        KeyError: If the trigger and snapshot belong to different projects.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     if trigger.project_id != snapshot.project_id:
-        raise IllegalOperationError(
-            "Trigger and snapshot must be in the same project"
-        )
+        raise KeyError(f"Snapshot {snapshot_id} not found.")
 
     if not snapshot.name:
         raise IllegalOperationError(

@@ -29,12 +29,14 @@ from zenml.zen_server import auth
 
 
 class _ApiKey:
-    def __init__(self):
+    def __init__(self, *, external_user_id=None):
         self.id = uuid4()
         self.name = "test-key"
         self.active = True
         self.service_account = SimpleNamespace(
-            active=True, external_user_id=None, name="test-service-account"
+            active=True,
+            external_user_id=external_user_id,
+            name="test-service-account",
         )
         self.verified_keys = []
 
@@ -122,6 +124,29 @@ def test_fetch_and_verify_api_key_allows_internal_skip(monkeypatch):
 
     assert api_key.verified_keys == []
     assert store.updated_api_key_ids == [api_key.id]
+
+
+def test_fetch_and_verify_api_key_allows_adopted_service_account(monkeypatch):
+    """Ensure adopted service accounts retain their existing API keys."""
+    api_key = _ApiKey(external_user_id=uuid4())
+    store = _ZenStore(api_key)
+    warnings = []
+    monkeypatch.setattr(auth, "zen_store", lambda: store)
+    monkeypatch.setattr(
+        auth.logger, "warning", lambda message: warnings.append(message)
+    )
+
+    result = auth._fetch_and_verify_api_key(
+        api_key_id=api_key.id, key_to_verify="valid"
+    )
+
+    assert result is api_key
+    assert api_key.verified_keys == ["valid"]
+    assert store.updated_api_key_ids == [api_key.id]
+    assert warnings == [
+        "Authentication warning: using an API key associated with an external "
+        "service account to authenticate to the ZenML server"
+    ]
 
 
 def test_authenticate_api_key_keeps_pro_api_key_flow(monkeypatch):
@@ -292,6 +317,93 @@ def test_authenticate_credentials_allows_local_service_account_api_key_token_for
     assert fetch_calls == [
         ((api_key.id,), {"token_generation": None}),
     ]
+
+
+def test_authenticate_credentials_allows_token_for_existing_deployment(
+    monkeypatch,
+):
+    """Ensure deployment-scoped tokens work while the deployment exists."""
+    user = _user_model()
+    deployment_id = uuid4()
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
+        deployment_id=deployment_id,
+    )
+    deployment_calls = []
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+        def get_deployment(self, requested_id, hydrate):
+            deployment_calls.append((requested_id, hydrate))
+            return SimpleNamespace(id=deployment_id)
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(
+            auth_scheme=AuthScheme.OAUTH2_PASSWORD_BEARER,
+            memcache_max_capacity=100,
+            memcache_default_expiry=60,
+        ),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+
+    auth_context = auth.authenticate_credentials(access_token="access-token")
+
+    assert auth_context.access_token is decoded_token
+    assert deployment_calls == [(deployment_id, False)]
+
+
+def test_authenticate_credentials_rejects_token_for_missing_deployment(
+    monkeypatch,
+):
+    """Ensure deployment-scoped tokens expire when deployment is deleted."""
+    user = _user_model()
+    deployment_id = uuid4()
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
+        deployment_id=deployment_id,
+    )
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+        def get_deployment(self, requested_id, hydrate):
+            assert requested_id == deployment_id
+            assert not hydrate
+            raise KeyError(deployment_id)
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(
+            auth_scheme=AuthScheme.OAUTH2_PASSWORD_BEARER,
+            memcache_max_capacity=100,
+            memcache_default_expiry=60,
+        ),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+
+    with pytest.raises(
+        CredentialsNotValid,
+        match=f"deployment {deployment_id} does not exist",
+    ):
+        auth.authenticate_credentials(access_token="access-token")
 
 
 def test_api_key_token_generation_allows_legacy_tokens():

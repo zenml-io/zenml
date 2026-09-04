@@ -30,6 +30,7 @@ from pydantic import (
 )
 
 from zenml.constants import (
+    API,
     DEFAULT_HTTP_TIMEOUT,
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
@@ -65,6 +66,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER_PRO_PREFIX,
     MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+    VERSION_1,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -442,6 +444,7 @@ class ServerConfiguration(BaseModel):
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
+    webhook_event_handler_sources: list[str] = []
 
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
@@ -648,24 +651,27 @@ class ServerConfiguration(BaseModel):
 
         return value
 
-    @field_validator("event_handler_sources", mode="before")
+    @field_validator(
+        "event_handler_sources",
+        "webhook_event_handler_sources",
+        mode="before",
+    )
     @classmethod
-    def _convert_event_handlers(cls, value: Any) -> list[str]:
-        """Convert comma-separated value to list of strings.
+    def _convert_event_sources(cls, value: Any) -> Any:
+        """Convert comma-separated extension sources to a list.
 
         Args:
             value: A comma-separated string or None.
 
         Returns:
-            A list of event handlers or an empty list.
+            The potentially converted source list.
         """
-        if isinstance(value, list):
-            return value
-
         if isinstance(value, str):
-            return [i.strip() for i in value.strip().split(",")]
+            return [
+                source.strip() for source in value.split(",") if source.strip()
+            ]
 
-        return []
+        return value
 
     @property
     def deployment_id(self) -> UUID:
@@ -790,6 +796,25 @@ class ServerConfiguration(BaseModel):
         self.external_server_id = self.deployment_id
 
         return self.external_server_id
+
+    @property
+    def server_api_url(self) -> Optional[str]:
+        """Get the externally reachable base URL of the server API.
+
+        Returns:
+            The absolute API URL, or `None` when no external server URL is
+            configured.
+        """
+        if not self.server_url:
+            return None
+
+        segments = [
+            self.server_url.rstrip("/"),
+            self.root_url_path.strip("/"),
+            API.strip("/"),
+            VERSION_1.strip("/"),
+        ]
+        return "/".join(segment for segment in segments if segment)
 
     @property
     def is_pro_server(self) -> bool:

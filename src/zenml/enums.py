@@ -570,6 +570,13 @@ class DatabaseBackupStrategy(StrEnum):
     CUSTOM = "custom"
 
 
+class SQLDatabaseAuthMode(StrEnum):
+    """Authentication modes supported by SQL ZenML stores."""
+
+    PASSWORD = "password"
+    AWS_RDS_IAM = "aws_rds_iam"
+
+
 class OnboardingStep(StrEnum):
     """All onboarding steps."""
 
@@ -676,6 +683,7 @@ class TriggerType(StrEnum):
 
     SCHEDULE = "schedule"
     PLATFORM_EVENT = "platform_event"
+    WEBHOOK = "webhook"
 
 
 class TriggerFlavor(StrEnum):
@@ -683,6 +691,7 @@ class TriggerFlavor(StrEnum):
 
     NATIVE_SCHEDULE = "native schedule"
     PLATFORM_EVENT = "platform event"
+    WEBHOOK = "webhook"
 
 
 class TriggerRunConcurrency(StrEnum):

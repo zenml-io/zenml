@@ -17,6 +17,15 @@ ruff check $TESTS_EXAMPLES --extend-ignore D --extend-exclude "*.ipynb"
 
 pydoclint $SRC_NO_TESTS
 
+# autoflake replacement: checks for unused imports and variables
+ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
+
+ruff format $SRC  --check
+
+# check type annotations
+mypy $SRC_NO_TESTS
+
+
 # Flag checks for skipping optional linters
 SKIP_YAMLFIX=false
 SKIP_ZIZMOR=false
@@ -48,17 +57,9 @@ if [ "$SKIP_ZIZMOR" = false ] && [ -d ".github/workflows" ]; then
 
     if [ -n "$GH_TOKEN" ]; then
         export GH_TOKEN
-        uvx zizmor --config=.github/zizmor.yml .github/workflows/
+        uvx --constraints .github/zizmor/requirements.txt zizmor --config=.github/zizmor.yml .github/workflows/
     else
         echo "⚠️  Skipping zizmor check: no GH_TOKEN and gh CLI not authenticated."
         echo "   Run: GH_TOKEN=\$(gh auth token) bash scripts/lint.sh"
     fi
 fi
-
-# autoflake replacement: checks for unused imports and variables
-ruff check $SRC --select F401,F841 --exclude "__init__.py" --exclude "*.ipynb" --isolated
-
-ruff format $SRC  --check
-
-# check type annotations
-mypy $SRC_NO_TESTS
