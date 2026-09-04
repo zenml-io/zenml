@@ -83,7 +83,8 @@ def issue_from_event(
             "No issue was given and this run was not started by a webhook "
             "trigger. Pass the `issue` parameter."
         )
-    return issue_from_webhook_body(delivery["body"], default_repo=repo)
+    repo, issue = issue_from_webhook_body(delivery["body"], default_repo=repo)
+    return repo, issue
 
 
 @step(
