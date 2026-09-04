@@ -3,6 +3,11 @@ description: Learn how to manage and use Personal Access Tokens.
 icon: user-lock
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Personal Access Tokens
 
 Personal Access Tokens (PATs) in ZenML Pro provide a secure way to authenticate your user account programmatically with the ZenML Pro API and workspaces. PATs are associated with your personal user account and inherit your full permissions within all organizations you are a member of.

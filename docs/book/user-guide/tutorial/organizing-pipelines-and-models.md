@@ -5,6 +5,11 @@ description: >-
 icon: inbox-full
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Organizing pipelines and models
 
 This cookbook demonstrates how to effectively organize your machine learning assets in ZenML using tags and projects. We'll implement a fraud detection system while applying increasingly sophisticated organization techniques.

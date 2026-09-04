@@ -2,6 +2,11 @@
 description: Deploying ZenML with custom Docker images.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy with custom images
 
 In most cases, deploying ZenML with the default `zenmlhub/zenml-server` Docker image should work just fine. However, there are some scenarios when you might need to deploy ZenML with a custom Docker image:

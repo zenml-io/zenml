@@ -2,6 +2,11 @@
 description: "Finetuning an LLM with Accelerate and PEFT"
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Finetuning an LLM with Accelerate and PEFT
 
 We're finally ready to get our hands on the code and see how it works. In this

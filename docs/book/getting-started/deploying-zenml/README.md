@@ -3,6 +3,11 @@ description: Why do we need to deploy ZenML?
 icon: rocket-launch
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy
 
 ![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)

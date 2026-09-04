@@ -2,6 +2,11 @@
 description: Pod-backed sandbox sessions for isolated command execution on Kubernetes.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Kubernetes Sandbox
 
 The Kubernetes sandbox flavor creates one Kubernetes pod per sandbox session and executes each `session.exec(...)` command inside that pod using Kubernetes `exec`.
