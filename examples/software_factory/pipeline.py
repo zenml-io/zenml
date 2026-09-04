@@ -60,8 +60,9 @@ def issue_from_event(
     """Read the issue from the webhook delivery that started this run.
 
     Used when the run was started by a webhook trigger instead of with an
-    explicit `issue` parameter, for example from a GitHub issue or a Slack
-    message. Needs a ZenML Pro server with webhooks.
+    explicit `issue` parameter, for example from a GitHub issue, a Slack
+    message or an emoji reaction on one. Needs a ZenML Pro server with
+    webhooks.
 
     Args:
         repo: The repository configured on the snapshot, used when the

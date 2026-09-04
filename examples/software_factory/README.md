@@ -27,7 +27,7 @@ issue ──▶ write_plan ──▶ [plan_review] ──▶ open_workspace ─�
 
 | Step | Sandbox | What it does | Output |
 |---|---|---|---|
-| `issue_from_event` | none | Reads the issue from the webhook delivery that started the run, only when no `issue` parameter is given | `repo`, `issue` |
+| `issue_from_event` | none | Reads the issue from the webhook delivery that started the run, only when the `issue` parameter is empty | `repo`, `issue` |
 | `write_plan` | own session | Clones the base branch, asks the agent for a plan | `plan` (Markdown), `plan_preview` (HTML) |
 | `open_workspace` | creates the shared session | Checks out or creates the target branch, commits the plan as `spec/plans/<branch>.md`, pushes | `workspace`, `base_branch` |
 | `implement` | attach | Agent makes the changes, step commits, pushes and opens a draft pull request | `pr` |
@@ -201,7 +201,7 @@ The dashboard's snapshot page offers the same run dialog with editable parameter
 
 ### Start runs from GitHub issues or Slack
 
-On ZenML Pro, [webhooks](https://docs.zenml.io/getting-started/zenml-pro/webhooks) receive signed deliveries from GitHub, Slack, ClickUp or any custom system, and [webhook triggers](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) start the attached snapshot when a delivery matches. A trigger starts the snapshot with the parameters stored in it, so create the snapshot with `issue` left empty. The `issue_from_event` step then reads the issue from the delivery: title and body of a GitHub issue, or the text of a Slack message or app mention.
+On ZenML Pro, [webhooks](https://docs.zenml.io/getting-started/zenml-pro/webhooks) receive signed deliveries from GitHub, Slack, ClickUp or any custom system, and [webhook triggers](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) start the attached snapshot when a delivery matches. A trigger starts the snapshot with the parameters stored in it, so create a second snapshot with `issue: ""` for the trigger and keep the one with the example issue for the run dialog. The `issue_from_event` step then reads the issue from the delivery: title and body of a GitHub issue, the text of a Slack message or app mention, or the text of the message an emoji reaction was added to.
 
 Run the pipeline whenever an issue labeled `agent` is opened:
 
@@ -219,15 +219,21 @@ zenml trigger webhook create on-agent-issue --webhook github-issues --config on-
 zenml trigger webhook attach on-agent-issue software-factory
 ```
 
-Or whenever someone mentions your Slack app in a channel, with the message as the issue:
+Or whenever someone reacts with 🏭 to a message in a channel, with that message as the issue. Follow the [Slack webhook setup](https://docs.zenml.io/getting-started/zenml-pro/webhooks/slack) with the `reaction_added` bot event, and give the app the `channels:history` scope as well, because a reaction delivery only carries the message's channel and timestamp and the step fetches the text through the Slack API with a bot token:
+
+```bash
+zenml secret create slack --private --SLACK_BOT_TOKEN=xoxb-...
+```
 
 ```yaml
 target_events:
-  - type: app_mention
+  - type: reaction_added
     channel_id: C0123456789
+    reaction: factory
+    item_type: message
 ```
 
-Slack reactions and ClickUp task events only carry ids, so starting a run from an emoji reaction means fetching the message through the Slack API first. `issue_from_webhook_body` in `factory_utils.py` is the place to add that. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
+An `app_mention` target works the same way without the extra scope, since the mention carries its text. ClickUp task events only carry ids, extend `issue_from_webhook_body` in `factory_utils.py` with a ClickUp API call in the same way as the Slack reaction. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
 
 ## 🏗️ What's Inside
 

@@ -19,6 +19,8 @@ import os
 import re
 import tempfile
 import threading
+import urllib.parse
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -42,6 +44,8 @@ RESULT_DIR = ".factory"
 PLAN_DIR = "spec/plans"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 AGENT_AUTH_ENV_VARS = ["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]
+SLACK_SECRET_NAME = "slack"
+SLACK_TOKEN_KEY = "SLACK_BOT_TOKEN"
 
 
 def active_sandbox() -> BaseSandbox:
@@ -588,15 +592,52 @@ def branch_for_issue(issue: str) -> str:
     return f"factory/{slug or 'issue'}"
 
 
+def slack_message_text(channel: str, ts: str) -> str:
+    """Fetch the text of one Slack message through the Web API.
+
+    Needs a ZenML secret named `slack` with the key `SLACK_BOT_TOKEN`, a bot
+    token whose app has the `channels:history` scope (and `groups:history`
+    for private channels) and is a member of the channel.
+
+    Args:
+        channel: The channel id.
+        ts: The message timestamp, which is the message id in Slack.
+
+    Raises:
+        RuntimeError: If Slack does not return the message.
+
+    Returns:
+        The message text.
+    """
+    token = (
+        Client().get_secret(SLACK_SECRET_NAME).secret_values[SLACK_TOKEN_KEY]
+    )
+    query = urllib.parse.urlencode(
+        {"channel": channel, "latest": ts, "inclusive": "true", "limit": 1}
+    )
+    request = urllib.request.Request(
+        f"https://slack.com/api/conversations.history?{query}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        payload = json.load(response)
+    if not payload.get("ok") or not payload.get("messages"):
+        raise RuntimeError(
+            f"Slack did not return message {ts} in {channel}: "
+            f"{payload.get('error', 'no messages')}"
+        )
+    return str(payload["messages"][0].get("text", ""))
+
+
 def issue_from_webhook_body(
     body: Dict[str, Any], default_repo: str
 ) -> Tuple[str, str]:
     """Turn the raw payload of a webhook delivery into repository and issue.
 
-    Supports GitHub `issues` deliveries and Slack `message` and
-    `app_mention` events. Other payloads, such as Slack reactions or
-    ClickUp tasks, only carry ids and need an API call to fetch the text.
-    Extend this function for those.
+    Supports GitHub `issues` deliveries and the Slack events `message`,
+    `app_mention` and `reaction_added` on a message. ClickUp task events
+    only carry ids and would need a ClickUp API call in the same way as the
+    Slack reaction.
 
     Args:
         body: The JSON body of the delivery.
@@ -616,14 +657,19 @@ def issue_from_webhook_body(
         return body["repository"]["full_name"], text
 
     event = body.get("event") or {}
-    if event.get("text"):
+    text = event.get("text")
+    if event.get("type") == "reaction_added":
+        item = event.get("item") or {}
+        if item.get("type") != "message":
+            raise ValueError("Only reactions on messages are supported.")
+        text = slack_message_text(item["channel"], item["ts"])
+    if text:
         # Slack keeps app mentions in the text as `<@U0123456789>`.
-        text = re.sub(r"<@[A-Z0-9]+>", "", event["text"]).strip()
-        return default_repo, text
+        return default_repo, re.sub(r"<@[A-Z0-9]+>", "", text).strip()
 
     raise ValueError(
         "The webhook payload carries no issue text. Supported are GitHub "
-        "issue deliveries and Slack messages or app mentions."
+        "issue deliveries and Slack messages, app mentions and reactions."
     )
 
 
