@@ -245,12 +245,6 @@ class WebhookEventPayloadSchema(SQLModel, table=True):
     """Compressed raw body retained for a consumed webhook event."""
 
     __tablename__ = "webhook_event_payload"
-    __table_args__ = (
-        build_index(
-            table_name=__tablename__,
-            column_names=["expires_at"],
-        ),
-    )
 
     webhook_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -265,7 +259,6 @@ class WebhookEventPayloadSchema(SQLModel, table=True):
         sa_column=Column(String(255), primary_key=True, nullable=False),
     )
     created: datetime = Field(default_factory=utc_now, nullable=False)
-    expires_at: datetime = Field(nullable=False)
     payload: bytes = Field(
         sa_column=Column(
             LargeBinary().with_variant(LONGBLOB, "mysql"),

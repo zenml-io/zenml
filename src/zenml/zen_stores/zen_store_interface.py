@@ -1930,7 +1930,7 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             The extensible raw webhook event payload.
 
         Raises:
-            KeyError: If no unexpired payload exists.
+            KeyError: If no payload exists.
         """
 
     # -------------------- Triggers ---------------------

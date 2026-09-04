@@ -8581,12 +8581,9 @@ class SqlZenStore(BaseZenStore):
         payload = gzip.compress(
             json.dumps({"body": body}, separators=(",", ":")).encode("utf-8")
         )
-        created = utc_now()
         schema = WebhookEventPayloadSchema(
             webhook_id=webhook_id,
             delivery_id=delivery_id,
-            created=created,
-            expires_at=created + timedelta(days=30),
             payload=payload,
         )
         with Session(self.engine) as session:
@@ -8611,7 +8608,7 @@ class SqlZenStore(BaseZenStore):
         webhook_id: UUID,
         delivery_id: str,
     ) -> Dict[str, Any]:
-        """Get an unexpired retained raw webhook event payload.
+        """Get a retained raw webhook event payload.
 
         Args:
             webhook_id: The webhook ID.
@@ -8621,7 +8618,7 @@ class SqlZenStore(BaseZenStore):
             The extensible raw webhook event payload.
 
         Raises:
-            KeyError: If no unexpired payload exists.
+            KeyError: If no payload exists.
             ValueError: If the stored payload is invalid.
         """
         with Session(self.engine) as session:
@@ -8629,7 +8626,6 @@ class SqlZenStore(BaseZenStore):
                 select(WebhookEventPayloadSchema).where(
                     col(WebhookEventPayloadSchema.webhook_id) == webhook_id,
                     col(WebhookEventPayloadSchema.delivery_id) == delivery_id,
-                    col(WebhookEventPayloadSchema.expires_at) > utc_now(),
                 )
             ).first()
         if schema is None:

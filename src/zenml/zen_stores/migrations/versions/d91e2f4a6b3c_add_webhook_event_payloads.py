@@ -36,7 +36,6 @@ def upgrade() -> None:
         sa.Column("webhook_id", sa.Uuid(), nullable=False),
         sa.Column("delivery_id", sa.String(length=255), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
-        sa.Column("expires_at", sa.DateTime(), nullable=False),
         sa.Column(
             "payload",
             LONGBLOB
@@ -52,18 +51,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("webhook_id", "delivery_id"),
     )
-    op.create_index(
-        "ix_webhook_event_payload_expires_at",
-        "webhook_event_payload",
-        ["expires_at"],
-        unique=False,
-    )
 
 
 def downgrade() -> None:
     """Remove the retained webhook event payload table."""
-    op.drop_index(
-        "ix_webhook_event_payload_expires_at",
-        table_name="webhook_event_payload",
-    )
     op.drop_table("webhook_event_payload")

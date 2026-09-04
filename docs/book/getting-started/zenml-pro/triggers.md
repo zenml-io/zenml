@@ -946,8 +946,8 @@ custom webhooks that do not produce a semantic event, `event` is `null`.
 ### Access the raw webhook body
 
 When at least one trigger matches an accepted delivery, ZenML retains its
-original JSON body for 30 days. Use `get_raw_webhook_event` inside a downstream
-step to retrieve it:
+original JSON body. Use `get_raw_webhook_event` inside a downstream step to
+retrieve it:
 
 ```python
 from zenml import step
@@ -980,8 +980,8 @@ The returned envelope has the following extensible shape:
 You can pass an existing pipeline run response with
 `get_raw_webhook_event(pipeline_run=run)`. The helper returns `None` when the
 run was not started directly by a webhook trigger or when the retained body is
-missing or expired. Reading the body requires read access to its webhook.
-Request headers are not retained in this version.
+missing. Reading the body requires read access to its webhook. Request headers
+are not retained in this version.
 
 ### Custom webhook triggers
 

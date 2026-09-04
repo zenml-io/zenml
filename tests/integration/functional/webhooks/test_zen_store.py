@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import gzip
-from datetime import timedelta
 from uuid import uuid4
 
 import pytest
@@ -27,7 +26,6 @@ from zenml.models import (
     WebhookRotateSecretRequest,
     WebhookUpdate,
 )
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.webhook_schemas import (
     WebhookEventPayloadSchema,
@@ -178,8 +176,8 @@ def test_zen_store_webhook_lifecycle(clean_client):
         store.get_webhook(webhook.id)
 
 
-def test_raw_webhook_event_storage_is_idempotent_and_expires(clean_client):
-    """Raw event bodies are compressed, immutable, and hidden after expiry."""
+def test_raw_webhook_event_storage_is_idempotent(clean_client):
+    """Raw event bodies are compressed and immutable."""
     store = clean_client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Local SQL store behavior is required for this test.")
@@ -218,16 +216,6 @@ def test_raw_webhook_event_storage_is_idempotent_and_expires(clean_client):
                 )
             ).one()
             assert gzip.decompress(schema.payload)
-            assert schema.expires_at - schema.created == timedelta(days=30)
-            schema.expires_at = utc_now() - timedelta(seconds=1)
-            session.add(schema)
-            session.commit()
-
-        with pytest.raises(KeyError):
-            store.get_raw_webhook_event(
-                webhook_id=webhook.id,
-                delivery_id=delivery_id,
-            )
     finally:
         store.delete_webhook(webhook.id)
 
