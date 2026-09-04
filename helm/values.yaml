@@ -1359,6 +1359,10 @@ resourcesMigrationPod: {}
   # Resource requests and limits for the database migration pod.
   # If not set, falls back to the global resources configuration defined in .Values.resources
 
+environmentMigrationPod: {}
+  # Extra environment variables to set in the database migration pod. These
+  # override variables inherited from the ZenML server environment.
+
 autoscaling:
   enabled: false
   minReplicas: 1

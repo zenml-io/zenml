@@ -45,17 +45,13 @@ from zenml.constants import (
     READY,
 )
 from zenml.enums import AuthScheme
+from zenml.otel import configure_otel, otel_span, shutdown_otel
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
-from zenml.zen_server.otel import (
-    configure_otel,
-    instrument_sqlalchemy_store,
-    shutdown_otel,
-)
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -121,7 +117,6 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
-    zen_store,
 )
 
 
@@ -176,9 +171,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # IMPORTANT: these need to be run before the fastapi app starts, to avoid
     # race conditions
     await initialize_request_manager()
-    initialize_zen_store()
-    # Instrument the SQL store with OpenTelemetry after it has been initialized.
-    instrument_sqlalchemy_store(store=zen_store())
+
+    # Trace database initialization, including any migrations it runs.
+    with otel_span("zenml.database.initialize"):
+        initialize_zen_store()
+
     initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
@@ -226,7 +223,7 @@ add_middlewares(app)
 _configure_uvicorn_logging()
 
 # Configure OpenTelemetry
-configure_otel(app)
+configure_otel(config=server_config(), app=app)
 
 
 # Customize the default request validation handler that comes with FastAPI
