@@ -522,6 +522,10 @@ def get_resource_type_for_model(
         TagRequest,
         TagResponse,
         TriggerRequest,
+        WebhookRequest,
+        WebhookResponse,
+        WebhookTriggerRequest,
+        WebhookTriggerResponse,
     )
 
     mapping: Dict[
@@ -581,6 +585,10 @@ def get_resource_type_for_model(
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
+        WebhookRequest: ResourceType.WEBHOOK,
+        WebhookResponse: ResourceType.WEBHOOK,
+        WebhookTriggerRequest: ResourceType.TRIGGER,
+        WebhookTriggerResponse: ResourceType.TRIGGER,
     }
 
     return mapping.get(type(model))
@@ -714,6 +722,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         TagSchema,
         TriggerSchema,
         UserSchema,
+        WebhookSchema,
     )
 
     return {
@@ -742,6 +751,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
         ResourceType.TRIGGER: TriggerSchema,
+        ResourceType.WEBHOOK: WebhookSchema,
         ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
     }
 

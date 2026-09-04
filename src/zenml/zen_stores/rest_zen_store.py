@@ -126,6 +126,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    WEBHOOKS,
     ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
@@ -307,6 +308,13 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -2576,6 +2584,128 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ------------------------ Webhooks -----------------------
+
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook.
+
+        Args:
+            webhook: The webhook creation request.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """
+        response = self.post(WEBHOOKS, body=webhook)
+        return WebhookCreateResponse.model_validate(response)
+
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        response = self.get(
+            f"{WEBHOOKS}/{webhook_id}",
+            params={"hydrate": hydrate},
+        )
+        return WebhookResponse.model_validate(response)
+
+    def list_webhooks(
+        self,
+        filter_model: WebhookFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks.
+
+        Args:
+            filter_model: The webhook filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        response = self.get(
+            WEBHOOKS,
+            params={
+                "hydrate": hydrate,
+                **filter_model.model_dump(exclude_none=True),
+            },
+        )
+        return Page[WebhookResponse].model_validate(response)
+
+    def update_webhook(
+        self,
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The webhook update.
+
+        Returns:
+            The updated webhook.
+        """
+        response = self.put(f"{WEBHOOKS}/{webhook_id}", body=update)
+        return WebhookResponse.model_validate(response)
+
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+        """
+        self.delete(f"{WEBHOOKS}/{webhook_id}")
+
+    def rotate_webhook_secret(
+        self,
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
+        """Rotate a webhook signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        response = self.put(f"{WEBHOOKS}/{webhook_id}/secret", body=request)
+        return WebhookSecretResponse.model_validate(response)
+
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            ValueError: If the server returns an invalid payload shape.
+        """
+        response = self.get(
+            f"{WEBHOOKS}/{webhook_id}/events/raw",
+            params={"delivery_id": delivery_id},
+        )
+        if not isinstance(response, dict):
+            raise ValueError("Invalid raw webhook event response.")
+        return response
 
     # ----------------------------- Triggers ------------------------------
 
