@@ -69,7 +69,7 @@ zenml stack update --sandbox agent-sandbox
 
 Use `--flavor=kubernetes` (with `--kubernetes_namespace=...` and a service connector) or `--flavor=modal` in the same way. See the [sandbox flavors](https://docs.zenml.io/component-guide/sandboxes) for their options. The containerized flavors (Docker, Kubernetes, Modal) support `attach(...)`, so one sandbox session is shared across the steps of a run.
 
-`run.py --sandbox-image <image>` puts the image into the pipeline settings under the key `sandbox:<component name>`, and `snapshot.yaml` carries the same setting for snapshots. Replace `agent-sandbox` in `snapshot.yaml` with the name of your sandbox component.
+`run.py --sandbox-image <image>` puts the image into the pipeline settings under the key `sandbox:<component name>`, and `snapshot.yaml` carries the same setting for snapshots. Replace `agent-sandbox` in `snapshot.yaml` with the name of your sandbox component. The key must name a component of the stack the snapshot is created for. Settings for a component that is not in the stack are dropped with a warning, and the sandbox then runs the image configured on the component itself, which has none of the tools.
 
 **Local flavor**, for trying the example out on your machine without a container. It has no isolation and no `attach(...)`, so every step re-clones the branch, and it ignores the image. The `claude` CLI, `git` and `gh` must be installed locally. The CLI needs the `USER` variable, which the default forwarded set does not include:
 
@@ -231,9 +231,10 @@ Or whenever someone reacts with 🏭 to a message in a channel, with that messag
 4. Under Subscribe to bot events add `reaction_added`. Under OAuth & Permissions add the scopes `reactions:read` and `channels:history` (`groups:history` for private channels).
 5. Install the app, invite it to the channel, and store its bot token for the step:
    ```bash
-   zenml secret create slack --private --SLACK_BOT_TOKEN=xoxb-...
+   zenml secret create slack --SLACK_BOT_TOKEN=xoxb-...
    ```
-6. Create the trigger with the channel id and the emoji name, and attach it to the snapshot with the empty `issue`:
+   The token is the **Bot User OAuth Token** on the OAuth & Permissions page. The step reads the secret with the user the triggered run executes as, so a `--private` secret works only when that is the user who created it.
+6. Create the trigger with the channel id and the emoji name, and attach it to the snapshot with the empty `issue`. A trigger runs with `--concurrency skip` unless told otherwise, so reactions that arrive while a run is in flight start nothing. Use `submit` to start one run per reaction:
    ```yaml
    target_events:
      - type: reaction_added
@@ -242,11 +243,18 @@ Or whenever someone reacts with 🏭 to a message in a channel, with that messag
        item_type: message
    ```
    ```bash
-   zenml trigger webhook create on-slack-reaction --webhook slack-events --config on-reaction.yaml
+   zenml trigger webhook create on-slack-reaction --webhook slack-events --config on-reaction.yaml --concurrency submit
    zenml trigger webhook attach on-slack-reaction software-factory-on-issue
    ```
+   Recreating a snapshot with `--replace` drops its trigger attachments, so run the attach command again after every `zenml pipeline snapshot create`. The trigger's `target_events` are not shown by the CLI, read them with `Client().get_webhook_trigger("on-slack-reaction").configuration`.
 
-If a reaction starts no run, check the app settings in this order, which is the order they usually fail in: `reaction_added` is listed under Subscribe to bot events, since enabling events and verifying the URL alone subscribes to nothing. Changes on that page are saved, the Save Changes button sits at the bottom. The app was reinstalled after the scopes were added, Slack shows a yellow banner while that is pending. The app is a member of the channel, invite it with `/invite @<app name>`, since Slack only delivers reactions for conversations the bot is in. Socket Mode is off. The webhook's `received_count` in `zenml webhook describe slack-events` tells you whether deliveries arrive at all.
+If a reaction starts no run, check the app settings in this order, which is the order they usually fail in: `reaction_added` is listed under Subscribe to bot events, since enabling events and verifying the URL alone subscribes to nothing. Changes on that page are saved, the Save Changes button sits at the bottom. The app was reinstalled after the scopes were added, Slack shows a yellow banner while that is pending. The app is a member of the channel, invite it with `/invite @<app name>`, since Slack only delivers reactions for conversations the bot is in. Socket Mode is off. The webhook's `received_count` in `zenml webhook describe slack-events` tells you whether deliveries arrive at all. The URL verification counts as one accepted delivery, so a count of one means no event has arrived yet.
+
+If a run starts but the step fails to read the message, the bot token lacks `channels:history`. Adding `reaction_added` under bot events only grants `reactions:read`. The scopes the token actually carries are in the `x-oauth-scopes` header of any Slack API response:
+
+```bash
+curl -s -D - -o /dev/null -H "Authorization: Bearer xoxb-..." https://slack.com/api/auth.test | grep x-oauth-scopes
+```
 
 An `app_mention` target works the same way without the extra scope, since the mention carries its text. ClickUp task events only carry ids, extend `issue_from_webhook_body` in `factory_utils.py` with a ClickUp API call in the same way as the Slack reaction. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
 
