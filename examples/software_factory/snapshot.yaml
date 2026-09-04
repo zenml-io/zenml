@@ -1,0 +1,12 @@
+# Parameters are placeholders, override them when triggering the snapshot.
+parameters:
+  repo: owner/name
+  issue: Replace with the issue description when triggering.
+  target_branch: replace-me
+  base_branch: null
+  test_command: null
+  max_fix_iterations: 3
+# Replace `kubernetes_aws` with the name of your sandbox component.
+settings:
+  sandbox:kubernetes_aws:
+    image: michaelzenml/software-factory-sandbox:latest
