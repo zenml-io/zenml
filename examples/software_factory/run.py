@@ -33,7 +33,8 @@ def main() -> None:
         "--issue-file", help="Path to a file containing the issue description."
     )
     parser.add_argument(
-        "--target-branch", required=True, help="The branch to work on."
+        "--target-branch",
+        help="The branch to work on. Derived from the issue title if not set.",
     )
     parser.add_argument(
         "--base-branch",
@@ -48,7 +49,7 @@ def main() -> None:
     parser.add_argument(
         "--max-fix-iterations",
         type=int,
-        default=3,
+        default=2,
         help="The maximum number of fix rounds. Zero means test and review "
         "only.",
     )

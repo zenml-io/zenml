@@ -113,22 +113,20 @@ pip install -r requirements.txt
 python run.py \
   --repo owner/name \
   --issue "Add a health check endpoint." \
-  --target-branch feature/health-check \
-  --base-branch develop \
   --test-command "uv run pytest tests/unit -q" \
-  --max-fix-iterations 2 \
-  --agent-model sonnet \
   --sandbox-image <registry>/software-factory-sandbox:latest
 ```
+
+Only the repository, the issue and the sandbox image are required. Everything else has a default:
 
 | Flag | Meaning |
 |---|---|
 | `--repo` | Repository as `owner/name` |
 | `--issue`, `--issue-file` | The issue description, inline or from a file. The first line becomes the pull request title |
-| `--target-branch` | Branch to work on. Created from the base branch if it does not exist, checked out if it does |
+| `--target-branch` | Branch to work on. Created from the base branch if it does not exist, checked out if it does. Derived from the issue title if omitted, for example `factory/add-health-check-endpoint` |
 | `--base-branch` | Branch the work starts from and the pull request targets. The repository's default branch if omitted |
 | `--test-command` | Shell command run in the checkout after each implementation. Tests are skipped if omitted |
-| `--max-fix-iterations` | Upper bound for fix rounds. Zero means test and review only |
+| `--max-fix-iterations` | Upper bound for fix rounds, 2 by default. Zero means test and review only |
 | `--agent-model` | Model alias or id for the agent, `sonnet` by default. Try `opus` or a full model id |
 | `--sandbox-image` | Container image for the sandbox sessions of this run. Ignored by the local flavor |
 
@@ -147,7 +145,7 @@ Each gate polls for 60 seconds and then pauses the run. ZenML Pro resumes a paus
 
 ## 📸 Trigger It From the Server
 
-A snapshot packages the pipeline, its code and the stack so runs can be started from the dashboard, the CLI or the REST API without a local checkout. `snapshot.yaml` holds placeholder parameters and the sandbox image setting. Put your image and sandbox component name in it, then:
+A snapshot packages the pipeline, its code and the stack so runs can be started from the dashboard, the CLI or the REST API without a local checkout. `snapshot.yaml` holds the parameters shown in the run dialog and the sandbox image setting. Only `repo` and `issue` need a real value per run. Put your image and sandbox component name in it, then:
 
 ```bash
 cd examples/software_factory
@@ -165,8 +163,6 @@ cat > run.yaml <<'EOF'
 parameters:
   repo: owner/name
   issue: Add a health check endpoint.
-  target_branch: feature/health-check
-  base_branch: develop
   test_command: uv run pytest tests/unit -q
 EOF
 
@@ -185,7 +181,6 @@ Client().trigger_pipeline(
             "repo": "owner/name",
             "issue": issue_body,
             "target_branch": f"issue/{issue_number}",
-            "base_branch": "develop",
         }
     },
 )
@@ -197,7 +192,7 @@ Or from any system with a ZenML API token:
 curl -X POST "<ZENML_SERVER_URL>/api/v1/pipeline_snapshots/<SNAPSHOT_ID>/runs" \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"run_configuration": {"parameters": {"repo": "owner/name", "issue": "...", "target_branch": "issue/42"}}}'
+  -d '{"run_configuration": {"parameters": {"repo": "owner/name", "issue": "..."}}}'
 ```
 
 The dashboard's snapshot page offers the same run dialog with editable parameters.

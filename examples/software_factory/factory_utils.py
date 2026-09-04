@@ -16,6 +16,7 @@
 import base64
 import json
 import os
+import re
 import tempfile
 import threading
 from typing import Any, Dict, List, Optional
@@ -534,6 +535,20 @@ def push_branch(session: SandboxSession, branch: str) -> None:
     run_command(
         session, ["git", "push", "-u", "origin", branch], env=git_auth_env()
     )
+
+
+def branch_for_issue(issue: str) -> str:
+    """Derive a work branch name from the first line of an issue.
+
+    Args:
+        issue: The issue description.
+
+    Returns:
+        A branch name like `factory/add-health-check-endpoint`.
+    """
+    title = issue.strip().splitlines()[0].lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", title).strip("-")[:50].rstrip("-")
+    return f"factory/{slug or 'issue'}"
 
 
 def plan_path(branch: str) -> str:

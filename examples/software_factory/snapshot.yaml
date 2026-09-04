@@ -1,11 +1,16 @@
-# Parameters are placeholders, override them when triggering the snapshot.
+# Parameters shown in the run dialog. Only `repo` and `issue` are
+# required, the rest are sensible defaults you can override per run.
 parameters:
   repo: owner/name
-  issue: Replace with the issue description when triggering.
-  target_branch: replace-me
+  issue: |
+    Add a health check endpoint.
+
+    Add a `GET /health` route that returns HTTP 200 and the JSON body
+    `{"status": "ok"}`, plus a test for it.
+  target_branch: null
   base_branch: null
   test_command: null
-  max_fix_iterations: 3
+  max_fix_iterations: 2
   agent_model: sonnet
 # Sandbox image for the sessions of this pipeline. The key is
 # `sandbox:<name of your sandbox component>`.

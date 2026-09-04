@@ -20,6 +20,7 @@ from factory_utils import (
     attach_or_recreate,
     attach_sandbox,
     branch_exists,
+    branch_for_issue,
     clone_repo,
     commit_all,
     destroy_workspace_hook,
@@ -370,19 +371,21 @@ def deploy(pr: PRRef, repo: str) -> None:
 def software_factory(
     repo: str,
     issue: str,
-    target_branch: str,
+    target_branch: Optional[str] = None,
     base_branch: Optional[str] = None,
     test_command: Optional[str] = None,
-    max_fix_iterations: int = 3,
+    max_fix_iterations: int = 2,
     agent_model: str = "sonnet",
 ) -> None:
     """Drive a GitHub issue through plan, implement, test and review.
 
     Args:
         repo: The repository to work in, `owner/name`.
-        issue: The issue description.
+        issue: The issue description. The first line is the title.
         target_branch: The branch to work on. Created from the base branch
-            if it does not exist, checked out if it does.
+            if it does not exist, checked out if it does. Derived from the
+            issue title if unset, for example
+            `factory/add-health-check-endpoint`.
         base_branch: The branch to create `target_branch` from and to open
             the pull request against. The repository's default branch if
             unset.
@@ -394,6 +397,7 @@ def software_factory(
         agent_model: The model alias or id the agent uses, for example
             `sonnet`, `opus` or a full model id.
     """
+    target_branch = target_branch or branch_for_issue(issue)
     plan, _ = write_plan(
         repo=repo,
         issue=issue,
