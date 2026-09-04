@@ -1241,6 +1241,7 @@ class WebhookTriggerExecutionInfo(BaseModel):
 
     webhook_id: UUID
     delivery_id: str
+    event_type: str | None = None
     event: dict[str, Any] | None = None
 
 

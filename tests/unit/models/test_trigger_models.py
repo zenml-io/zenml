@@ -61,6 +61,7 @@ def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
                 "github": {
                     "webhook_id": str(webhook_id),
                     "delivery_id": "delivery-001",
+                    "event_type": "push",
                     "event": {
                         "type": "push",
                         "repo": "zenml-io/zenml",
@@ -75,6 +76,7 @@ def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
         "github": WebhookTriggerExecutionInfo(
             webhook_id=webhook_id,
             delivery_id="delivery-001",
+            event_type="push",
             event={
                 "type": "push",
                 "repo": "zenml-io/zenml",
@@ -103,6 +105,7 @@ def test_trigger_execution_info_allows_missing_semantic_event() -> None:
         "custom": WebhookTriggerExecutionInfo(
             webhook_id=webhook_id,
             delivery_id="delivery-001",
+            event_type=None,
             event=None,
         )
     }
