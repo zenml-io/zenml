@@ -20,7 +20,7 @@ curl -fsSL https://zenml.io/install | bash
 That one command:
 
 1. Installs [uv](https://docs.astral.sh/uv/) if you do not have it. No system Python and no `sudo` are needed.
-2. Installs `zenml[local]`. Run inside a Python project (a `pyproject.toml` or `uv.lock` in the current directory) it adds ZenML to that project's environment with `uv add`, so your pipelines and ZenML share one set of dependencies. Run anywhere else it installs an isolated `zenml` CLI on your PATH.
+2. Installs `zenml[server]`, the client plus everything `zenml login --local` needs to run the server and dashboard on your machine. Run inside a Python project (a `pyproject.toml` or `uv.lock` in the current directory) it adds ZenML to that project's environment with `uv add`, so your pipelines and ZenML share one set of dependencies. Run anywhere else it installs an isolated `zenml` CLI on your PATH.
 3. Installs the [ZenML coding-agent skills](https://github.com/zenml-io/skills) into `~/.agents/skills`, plus `~/.claude/skills` and `~/.codex/skills` when Claude Code or Codex is installed.
 4. Prints what to do next and stops:
 
@@ -35,12 +35,12 @@ zenml login            managed cloud. 14-day free trial
 Works on macOS, Linux, WSL, and Git Bash on Windows. Running it again upgrades.
 
 {% hint style="info" %}
-**Want the local dashboard?** `zenml login --local` needs the `server` extra. Add `--server` to the installer (`curl -fsSL https://zenml.io/install | bash -s -- --server`) and it installs `zenml[server]` instead of `zenml[local]`. On Apple Silicon also set `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` before starting the server (see the Local Dashboard tab below).
+**Only need a client?** Add `--no-server` (`curl -fsSL https://zenml.io/install | bash -s -- --no-server`) and it installs the slimmer `zenml[local]` instead, enough to connect to a deployed server or run pipelines against a local SQLite store. `zenml login --local` then needs Docker (`--docker`). On Apple Silicon set `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` before starting the local server (see the Local Dashboard tab below).
 {% endhint %}
 
 | Option | Effect |
 | --- | --- |
-| `--server` | Install `zenml[server]` so `zenml login --local` can run the server and dashboard here |
+| `--no-server` | Install the slimmer `zenml[local]` instead of `zenml[server]` (no local dashboard) |
 | `--version 0.96.3` | Pin a ZenML release (`--pre` allows pre-releases) |
 | `--with PKG` | Also install a package into the same environment (repeatable), e.g. an integration |
 | `--project` / `--global` | Force the in-project or the isolated install |
@@ -52,7 +52,7 @@ Options go after `bash -s --`, so `curl -fsSL https://zenml.io/install | bash -s
 **Prefer to do it by hand?** Inside your project, the installer is equivalent to:
 
 ```shell
-uv add "zenml[local]"                  # or "zenml[server]" for the local dashboard
+uv add "zenml[server]"                 # or "zenml[local]" for a client without the dashboard
 npx skills add zenml-io/skills         # the coding-agent skills
 uv run zenml init
 ```

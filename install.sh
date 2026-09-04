@@ -2,7 +2,7 @@
 # install.sh: one-line ZenML installer.
 #
 #   curl -fsSL https://zenml.io/install | bash
-#   curl -fsSL https://zenml.io/install | bash -s -- --server
+#   curl -fsSL https://zenml.io/install | bash -s -- --no-server
 #
 # What it does, in order:
 #   1. Makes sure `uv` is available (installs it from astral.sh if not).
@@ -12,10 +12,10 @@
 #          pipelines import zenml next to their own dependencies;
 #        - anywhere else: `uv tool install` into an isolated environment, with
 #          the `zenml` CLI on PATH (~/.local/bin).
-#      --project / --global force either. The `local` extra is what lets the
-#      client work against a local SQLite store with no server at all;
-#      --server swaps it for the `server` extra, which the local server and
-#      dashboard (`zenml login --local`) need.
+#      --project / --global force either. The default is the `server` extra,
+#      so `zenml login --local` can run the server and dashboard on this
+#      machine; --no-server installs the slimmer `local` extra (client plus
+#      a local SQLite store, no dashboard).
 #   3. Installs the ZenML coding-agent skills (zenml-io/skills) from the
 #      repository tarball into ~/.agents/skills, plus ~/.claude/skills and
 #      ~/.codex/skills when those CLIs are installed. No Node needed.
@@ -40,7 +40,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 ZENML_VERSION="${ZENML_VERSION:-}"            # pin, e.g. 0.96.3
 ZENML_PRE="${ZENML_PRE:-0}"                   # allow pre-releases
-ZENML_SERVER_EXTRA="${ZENML_SERVER_EXTRA:-0}" # zenml[server] instead of zenml[local]
+ZENML_SERVER_EXTRA="${ZENML_SERVER_EXTRA:-1}" # 0: zenml[local] (slimmer client) instead of zenml[server]
 ZENML_SKIP_SKILLS="${ZENML_SKIP_SKILLS:-0}"
 ZENML_QUIET="${ZENML_QUIET:-0}"
 ZENML_VERBOSE="${ZENML_VERBOSE:-0}"
@@ -58,9 +58,9 @@ Usage: install.sh [options]
 
   --version=X.Y.Z     Install a specific ZenML version (default: latest)
   --pre               Allow pre-release versions
-  --server            Install zenml[server] instead of zenml[local], so
-                      `zenml login --local` can run the server and dashboard
-                      on this machine
+  --no-server         Install the slimmer zenml[local] instead of zenml[server].
+                      `zenml login --local` then needs Docker (--docker) or a
+                      re-run of this installer without --no-server
   --with=PKG          Also install PKG into the same environment (repeatable)
   --project           Install into the Python project in the current directory
                       (uv add). Default when a pyproject.toml or uv.lock is here.
@@ -72,7 +72,7 @@ Usage: install.sh [options]
   --verbose           Print every command
   -h, --help          This text
 
-Environment equivalents: ZENML_VERSION, ZENML_PRE=1, ZENML_SERVER_EXTRA=1,
+Environment equivalents: ZENML_VERSION, ZENML_PRE=1, ZENML_SERVER_EXTRA=0,
 ZENML_SCOPE=project|global, ZENML_SKIP_SKILLS=1, ZENML_NO_MODIFY_PATH=1,
 ZENML_QUIET=1, ZENML_VERBOSE=1, ZENML_PYTHON (default 3.12), NO_COLOR.
 USAGE
@@ -84,6 +84,7 @@ while [ $# -gt 0 ]; do
     --version) shift; ZENML_VERSION="${1:-}" ;;
     --pre) ZENML_PRE=1 ;;
     --server) ZENML_SERVER_EXTRA=1 ;;
+    --no-server) ZENML_SERVER_EXTRA=0 ;;
     --with=?*) ZENML_WITH+=("${1#*=}") ;;
     --with) shift; [ -n "${1:-}" ] && ZENML_WITH+=("$1") ;;
     --project) ZENML_SCOPE=project ;;
@@ -236,9 +237,10 @@ zenml_version_of() {
 # on a fresh machine fails with an ImportError without the `local` extra
 # (SQLite store). The `server` extra is a superset that adds what `zenml login
 # --local` needs to run the server and dashboard on this machine without
-# Docker; it is opt-in because it pulls in FastAPI, uvicorn and friends.
-SPEC="zenml[local]"
-[ "$ZENML_SERVER_EXTRA" = "1" ] && SPEC="zenml[server]"
+# Docker. It is the default so the printed next step just works; --no-server
+# opts out of FastAPI, uvicorn and friends.
+SPEC="zenml[server]"
+[ "$ZENML_SERVER_EXTRA" = "0" ] && SPEC="zenml[local]"
 [ -n "$ZENML_VERSION" ] && SPEC="${SPEC}==${ZENML_VERSION}"
 
 PROJECT_DIR="$PWD"
@@ -400,7 +402,7 @@ if [ "$ZENML_SERVER_EXTRA" = "1" ]; then
   say "    ${C_BOLD}$Z login --local${C_RESET}    local server and dashboard on this machine. Free, open source."
 else
   say "    ${C_BOLD}$Z login --local${C_RESET}    local server and dashboard. Needs the server extra:"
-  say "                            re-run this installer with --server, or use --local --docker."
+  say "                            re-run this installer without --no-server, or use --local --docker."
 fi
 say "    ${C_BOLD}$Z login${C_RESET}            managed cloud. 14-day free trial."
 say ""
