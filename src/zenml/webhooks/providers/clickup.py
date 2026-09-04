@@ -564,7 +564,8 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
             headers: The request headers.
 
         Returns:
-            The delivery ID, if the payload contains a webhook ID.
+            The documented history-based delivery ID, if available. Intake
+            generates a unique ID for history-less events.
 
         Raises:
             WebhookPayloadError: If webhook_id is missing.
@@ -577,17 +578,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         history_ids = _history_item_ids(payload)
         if history_ids:
             return f"{webhook_id}:{','.join(history_ids)}"
-        resource_id = next(
-            (
-                value
-                for key in _RESOURCE_KEYS
-                if (value := _id_string(payload, key)) is not None
-            ),
-            "unknown",
-        )
-        event_type = payload.get("event")
-        event_name = event_type if isinstance(event_type, str) else "unknown"
-        return f"{webhook_id}:{event_name}:{resource_id}"
+        return None
 
     def _cast_runtime_targets(
         self, trigger: "WebhookTriggerResponse"

@@ -13,7 +13,8 @@
 #  permissions and limitations under the License.
 """Management and public intake endpoints for webhooks."""
 
-from uuid import UUID
+from typing import Any
+from uuid import UUID, uuid4
 
 from fastapi import (
     APIRouter,
@@ -180,6 +181,34 @@ def get_webhook(
     )
     _set_webhook_endpoint_url(webhook)
     return webhook
+
+
+@management_router.get("/{webhook_id}/events/raw")
+@async_fastapi_endpoint_wrapper
+def get_raw_webhook_event(
+    webhook_id: UUID,
+    delivery_id: str,
+    _: AuthContext = Security(authorize),
+) -> dict[str, Any]:
+    """Get the retained raw body for a consumed webhook event.
+
+    The delivery ID is a query parameter because provider-defined IDs may not
+    be safe path segments. The response is an extensible envelope so headers
+    can be added in a future API version without changing its shape.
+
+    Args:
+        webhook_id: The webhook ID.
+        delivery_id: The provider or ZenML delivery ID.
+
+    Returns:
+        The raw event envelope in the form ``{"body": {...}}``.
+    """
+    webhook = zen_store().get_webhook(webhook_id, hydrate=False)
+    verify_permission_for_model(model=webhook, action=Action.READ)
+    return zen_store().get_raw_webhook_event(
+        webhook_id=webhook_id,
+        delivery_id=delivery_id,
+    )
 
 
 @management_router.put("/{webhook_id}")
@@ -378,7 +407,7 @@ def _receive_webhook_event(
             webhook_id=webhook_id,
             webhook_type=webhook_type,
             event_type=parsed_event.event_type,
-            delivery_id=parsed_event.delivery_id,
+            delivery_id=parsed_event.delivery_id or str(uuid4()),
             payload=parsed_event.payload,
         )
         background_task = BackgroundTask(

@@ -851,6 +851,18 @@ def test_clickup_parse_extracts_event_and_history_delivery_id() -> None:
     assert parsed.payload["task_id"] == "abc"
 
 
+def test_clickup_parse_defers_ambiguous_delivery_id_to_intake() -> None:
+    """History-less ClickUp events receive a unique ID at intake."""
+    provider = ClickUpWebhookProvider()
+
+    parsed = provider.parse(
+        body=(b'{"event":"taskDeleted","webhook_id":"wh-1","task_id":"abc"}'),
+        headers={},
+    )
+
+    assert parsed.delivery_id is None
+
+
 def test_clickup_parse_rejects_missing_event_or_webhook_id() -> None:
     """ClickUp parsing requires event and webhook_id in the JSON body."""
     provider = ClickUpWebhookProvider()

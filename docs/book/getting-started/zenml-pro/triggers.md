@@ -890,7 +890,8 @@ use trigger dispatch state and pipeline runs to verify downstream execution.
 ### Access the upstream webhook event
 
 A pipeline run started directly by a webhook trigger stores the provider's
-parsed semantic event in its trigger execution information. Use
+delivery locator and, when available, its parsed semantic event in the run's
+trigger execution information. Use
 `get_webhook_upstream_event` inside a step to retrieve it as a plain dictionary:
 
 ```python
@@ -917,6 +918,7 @@ For example, a GitHub push event has this shape:
 ```json
 {
   "github": {
+    "webhook_id": "7f9f38a7-8dd6-4ced-91c8-bf05857838d5",
     "delivery_id": "delivery-001",
     "event": {
       "type": "push",
@@ -937,9 +939,49 @@ necessarily the provider's raw event family. Optional semantic fields are
 included with `null` values when unavailable. You can also pass an existing
 pipeline run response to `get_webhook_upstream_event(pipeline_run=run)`.
 
-Only runs started directly by a provider with semantic event support contain
-this metadata. It is not propagated through later platform event triggers, and
-custom webhook triggers do not currently persist their arbitrary payloads.
+Only runs started directly by a webhook trigger contain this metadata. It is
+not propagated through later platform event triggers. For providers such as
+custom webhooks that do not produce a semantic event, `event` is `null`.
+
+### Access the raw webhook body
+
+When at least one trigger matches an accepted delivery, ZenML retains its
+original JSON body for 30 days. Use `get_raw_webhook_event` inside a downstream
+step to retrieve it:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_raw_webhook_event
+
+
+@step
+def inspect_raw_webhook_event() -> None:
+    raw_event = get_raw_webhook_event()
+    if raw_event is None:
+        print("No retained webhook body is available.")
+        return
+
+    print(raw_event["body"])
+```
+
+The returned envelope has the following extensible shape:
+
+```json
+{
+  "body": {
+    "action": "closed",
+    "pull_request": {
+      "body": "Description from the original pull request"
+    }
+  }
+}
+```
+
+You can pass an existing pipeline run response with
+`get_raw_webhook_event(pipeline_run=run)`. The helper returns `None` when the
+run was not started directly by a webhook trigger or when the retained body is
+missing or expired. Reading the body requires read access to its webhook.
+Request headers are not retained in this version.
 
 ### Custom webhook triggers
 

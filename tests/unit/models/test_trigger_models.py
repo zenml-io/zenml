@@ -54,10 +54,12 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
 
 def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
     """Webhook trigger execution metadata keeps a dynamic provider event."""
+    webhook_id = uuid4()
     info = TriggerExecutionInfo.model_validate(
         {
             "webhook_upstream_event": {
                 "github": {
+                    "webhook_id": str(webhook_id),
                     "delivery_id": "delivery-001",
                     "event": {
                         "type": "push",
@@ -71,12 +73,37 @@ def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
 
     assert info.webhook_upstream_event == {
         "github": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
             delivery_id="delivery-001",
             event={
                 "type": "push",
                 "repo": "zenml-io/zenml",
                 "commit": None,
             },
+        )
+    }
+
+
+def test_trigger_execution_info_allows_missing_semantic_event() -> None:
+    """Custom webhook runs still carry a complete raw payload locator."""
+    webhook_id = uuid4()
+
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "custom": {
+                    "webhook_id": str(webhook_id),
+                    "delivery_id": "delivery-001",
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "custom": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
+            delivery_id="delivery-001",
+            event=None,
         )
     }
 

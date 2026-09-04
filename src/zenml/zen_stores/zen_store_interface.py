@@ -15,7 +15,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import (
@@ -1912,6 +1912,25 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             The newly active signing secret.
+        """
+
+    @abstractmethod
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            KeyError: If no unexpired payload exists.
         """
 
     # -------------------- Triggers ---------------------

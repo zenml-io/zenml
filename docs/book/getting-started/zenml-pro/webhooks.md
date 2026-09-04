@@ -29,6 +29,11 @@ events and execute attached pipeline snapshots when a pull request is merged
 or a task status changes, a deployment message is posted, or an approval reaction
 is added.
 
+When at least one webhook trigger matches, ZenML retains the original JSON
+request body so directly triggered pipeline steps can retrieve
+fields omitted from the normalized semantic event. Request headers are not
+retained. See [Access the raw webhook body](triggers.md#access-the-raw-webhook-body).
+
 The endpoint returns an HTTP response selected by the provider. GitHub and
 custom deliveries normally return `202 Accepted`; Slack returns `200 OK`. An
 invalid signature, invalid payload, missing webhook, or inactive webhook returns

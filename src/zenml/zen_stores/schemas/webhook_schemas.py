@@ -17,7 +17,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, Column, LargeBinary, String, UniqueConstraint
+from sqlalchemy.dialects.mysql import LONGBLOB
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
@@ -238,3 +239,36 @@ class WebhookStatsSchema(SQLModel, table=True):
             The webhook intake statistics.
         """
         return WebhookStats.model_validate(self, from_attributes=True)
+
+
+class WebhookEventPayloadSchema(SQLModel, table=True):
+    """Compressed raw body retained for a consumed webhook event."""
+
+    __tablename__ = "webhook_event_payload"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=["expires_at"],
+        ),
+    )
+
+    webhook_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookSchema.__tablename__,
+        source_column="webhook_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    delivery_id: str = Field(
+        sa_column=Column(String(255), primary_key=True, nullable=False),
+    )
+    created: datetime = Field(default_factory=utc_now, nullable=False)
+    expires_at: datetime = Field(nullable=False)
+    payload: bytes = Field(
+        sa_column=Column(
+            LargeBinary().with_variant(LONGBLOB, "mysql"),
+            nullable=False,
+        ),
+    )

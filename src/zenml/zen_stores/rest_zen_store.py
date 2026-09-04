@@ -2682,6 +2682,31 @@ class RestZenStore(BaseZenStore):
         response = self.put(f"{WEBHOOKS}/{webhook_id}/secret", body=request)
         return WebhookSecretResponse.model_validate(response)
 
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            ValueError: If the server returns an invalid payload shape.
+        """
+        response = self.get(
+            f"{WEBHOOKS}/{webhook_id}/events/raw",
+            params={"delivery_id": delivery_id},
+        )
+        if not isinstance(response, dict):
+            raise ValueError("Invalid raw webhook event response.")
+        return response
+
     # ----------------------------- Triggers ------------------------------
 
     def create_trigger(

@@ -407,3 +407,42 @@ def get_webhook_upstream_event(
         provider: provider_info.model_dump(mode="json")
         for provider, provider_info in info.webhook_upstream_event.items()
     }
+
+
+def get_raw_webhook_event(
+    pipeline_run: PipelineRunResponse | None = None,
+) -> dict[str, Any] | None:
+    """Get the retained raw webhook event for a pipeline run.
+
+    When no run is provided, the current step's pipeline run is used. Only
+    runs started directly by a webhook trigger carry the lookup information.
+
+    Args:
+        pipeline_run: Pipeline run to inspect. If omitted, the current run is
+            resolved from the active step context.
+
+    Returns:
+        The extensible raw event envelope, or `None` if it is unavailable.
+    """
+    if pipeline_run is None:
+        from zenml.steps.step_context import get_step_context
+
+        pipeline_run = get_step_context().pipeline_run
+
+    info = pipeline_run.trigger_execution_info
+    if info is None or not info.webhook_upstream_event:
+        return None
+    if len(info.webhook_upstream_event) != 1:
+        logger.error(
+            "Expected one webhook provider in trigger execution information."
+        )
+        return None
+
+    _, event = next(iter(info.webhook_upstream_event.items()))
+    try:
+        return Client().get_raw_webhook_event(
+            webhook_id=event.webhook_id,
+            delivery_id=event.delivery_id,
+        )
+    except KeyError:
+        return None
