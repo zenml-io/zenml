@@ -15,7 +15,7 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 from uuid import UUID
 
 import click
@@ -1224,13 +1224,14 @@ def prompt_select_resource_id(
                 f"argument to select a {resource_name} resource from the "
                 "list."
             )
-        resource_id = click.prompt(
+        # click >= 8.4 types `prompt(type=Choice(...))` as returning `str`.
+        resource_id: str = click.prompt(
             f"{msg}Please select the {resource_name} that you want to use",
             type=click.Choice(resource_ids),
             show_choices=False,
         )
 
-        return cast(str, resource_id)
+        return resource_id
 
     # We should never get here, but just in case...
     cli_utils.error(

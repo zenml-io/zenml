@@ -205,9 +205,12 @@ def error(text: str) -> NoReturn:
 
     class StyledClickException(click.ClickException):
         def show(self, file: Optional[IO[Any]] = None) -> None:
+            # `click.get_text_stream` is deprecated since click 8.5 (removed
+            # in 9.0); `echo(err=True)` resolves the same stderr wrapper.
             if file is None:
-                file = click.get_text_stream("stderr")
-            click.echo(self.message, file=file)
+                click.echo(self.message, err=True)
+            else:
+                click.echo(self.message, file=file)
 
     raise StyledClickException(message=error_prefix + error_message)
 
@@ -974,6 +977,9 @@ def prompt_configuration(
             else:
                 title = "Please enter a new value or press Enter to skip it"
 
+        # click >= 8.4 types `prompt(type=str)` as returning `str`, so the
+        # variable needs an explicit `Optional` for the "skip" branch below.
+        value: Optional[str]
         while True:
             # Ask the user to enter a value for the attribute
             value = click.prompt(
