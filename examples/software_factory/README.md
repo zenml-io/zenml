@@ -35,7 +35,7 @@ issue ──▶ write_plan ──▶ [plan_review] ──▶ open_workspace ─�
 | `close_workspace` | attach | Destroys the shared session | |
 | `deploy` | own session | Marks the pull request ready for review, a stand-in for a real deployment | |
 
-The loop over `run_tests`, `review` and `fix` runs at most `max_fix_iterations` times and stops early on an approved review.
+The loop over `run_tests`, `review` and `fix` runs at most `max_fix_iterations` times (must be at least 1) and stops early on an approved review. If the loop runs out of attempts and the last thing that happened was a `fix`, the tests are run one more time as `run_tests_final` so the deploy approval reflects the branch as it stands after that last fix.
 
 ## 📋 Prerequisites
 
@@ -127,7 +127,7 @@ python run.py \
 The run prints a dashboard URL. It stops twice for you:
 
 1. `plan_review` after the plan is written. The plan is attached to the wait condition. Answer with `{"approved": true, "feedback": ""}` to continue, `approved: false` ends the run.
-2. `deploy_approval` after the loop settles. The wait condition carries the pull request URL, the last test report and the last review verdict. Answer `true` to mark the pull request ready for review.
+2. `deploy_approval` after the loop settles. The wait condition carries the pull request URL, the last test report and the last review verdict. If the loop was exhausted on a `fix`, "last test report" is the `run_tests_final` report from after that fix, not the report from before it. Answer `true` to mark the pull request ready for review.
 
 Resolve them in the dashboard or from the CLI:
 
@@ -232,9 +232,10 @@ Every mutating step commits and pushes before returning, so the branch on GitHub
 
 ### Bounded fix loop with deterministic step ids
 
-Each invocation inside the loop carries an explicit `id=`, so a resumed run matches the same step runs:
+`max_fix_iterations` must be at least 1 — the loop has to run at least once to produce a test report for the deploy approval, so the pipeline validates this and raises before doing any work otherwise. Each invocation inside the loop carries an explicit `id=`, so a resumed run matches the same step runs. The loop's `else` clause only runs when every attempt was used up without an `approved` review ever `break`-ing out of it, i.e. when the last thing that happened was a `fix`. It re-runs the tests as `run_tests_final` so `tests` reflects the branch after that fix instead of the stale pre-fix report:
 
 ```python
+verdict = None
 for attempt in range(max_fix_iterations):
     tests = run_tests(..., id=f"run_tests_{attempt}")
     verdict = None
@@ -243,6 +244,8 @@ for attempt in range(max_fix_iterations):
         if verdict.load().approved:
             break
     pr = fix(..., tests=tests, verdict=verdict, id=f"fix_{attempt}")
+else:
+    tests = run_tests(..., id="run_tests_final")
 ```
 
 ### The agent result-file contract
