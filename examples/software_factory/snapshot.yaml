@@ -6,6 +6,7 @@ parameters:
   base_branch: null
   test_command: null
   max_fix_iterations: 3
+  agent_model: sonnet
 # Sandbox image for the sessions of this pipeline. The key is
 # `sandbox:<name of your sandbox component>`.
 settings:

@@ -24,6 +24,7 @@ from factory_utils import (
     commit_all,
     destroy_workspace_hook,
     github_token,
+    markdown_to_html,
     open_pr,
     plan_path,
     pr_body,
@@ -41,7 +42,7 @@ from zenml import pipeline, step, wait
 from zenml.config import DockerSettings
 from zenml.config.retry_config import StepRetryConfig
 from zenml.logger import get_logger
-from zenml.types import MarkdownString
+from zenml.types import HTMLString, MarkdownString
 
 logger = get_logger(__name__)
 
@@ -51,17 +52,24 @@ logger = get_logger(__name__)
     retry=StepRetryConfig(max_retries=2, delay=5),
 )
 def write_plan(
-    repo: str, issue: str, base_branch: Optional[str] = None
-) -> Annotated[MarkdownString, "plan"]:
+    repo: str,
+    issue: str,
+    agent_model: str,
+    base_branch: Optional[str] = None,
+) -> Tuple[
+    Annotated[MarkdownString, "plan"],
+    Annotated[HTMLString, "plan_preview"],
+]:
     """Draft a fix plan for a GitHub issue in a fresh sandbox session.
 
     Args:
         repo: The repository to work in, `owner/name`.
         issue: The issue description.
+        agent_model: The model the agent uses.
         base_branch: The branch to plan against, the default branch if unset.
 
     Returns:
-        The plan written by the agent.
+        The plan written by the agent and an HTML rendering of it.
     """
     session = active_sandbox().create_session()
     try:
@@ -75,8 +83,9 @@ def write_plan(
             "Write your result to the file .factory/plan.md relative to the "
             "repository root."
         )
-        run_agent(session, prompt)
-        return MarkdownString(read_repo_file(session, ".factory/plan.md"))
+        run_agent(session, prompt, model=agent_model)
+        plan = read_repo_file(session, ".factory/plan.md")
+        return MarkdownString(plan), markdown_to_html(plan, title="Plan")
     finally:
         session.destroy()
 
@@ -126,6 +135,7 @@ def implement(
     issue: str,
     plan: MarkdownString,
     base_branch: str,
+    agent_model: str,
 ) -> Annotated[PRRef, "pr"]:
     """Implement the plan and open a draft pull request.
 
@@ -136,6 +146,7 @@ def implement(
         issue: The issue description.
         plan: The plan for the issue.
         base_branch: The pull request base.
+        agent_model: The model the agent uses.
 
     Returns:
         A reference to the opened pull request.
@@ -152,7 +163,7 @@ def implement(
             "made, as bullet points without headings, to the file "
             ".factory/summary.md relative to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         summary = read_repo_file(session, ".factory/summary.md")
         commit_all(session, f"Implement: {issue.splitlines()[0]}")
         push_branch(session, branch)
@@ -208,6 +219,7 @@ def review(
     plan: MarkdownString,
     tests: TestReport,
     base_branch: str,
+    agent_model: str,
 ) -> Annotated[ReviewVerdict, "verdict"]:
     """Review the diff on the branch against the issue, plan and test report.
 
@@ -219,6 +231,7 @@ def review(
         plan: The plan for the issue.
         tests: The result of the latest test run.
         base_branch: The branch to diff against.
+        agent_model: The model the agent uses.
 
     Returns:
         The verdict of the review.
@@ -240,7 +253,7 @@ def review(
             "Write your result to the file .factory/review.json relative "
             "to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         result = read_repo_file(session, ".factory/review.json")
         return ReviewVerdict.model_validate_json(result)
 
@@ -256,6 +269,7 @@ def fix(
     issue: str,
     tests: TestReport,
     base_branch: str,
+    agent_model: str,
     verdict: Optional[ReviewVerdict] = None,
 ) -> Annotated[PRRef, "pr"]:
     """Address review and test feedback and update the pull request.
@@ -267,6 +281,7 @@ def fix(
         issue: The issue description.
         tests: The result of the latest test run.
         base_branch: The pull request base.
+        agent_model: The model the agent uses.
         verdict: The verdict of the latest review, unset if the tests failed.
 
     Returns:
@@ -290,7 +305,7 @@ def fix(
             "this branch, as bullet points without headings, to the file "
             ".factory/summary.md relative to the repository root."
         )
-        run_agent(session, prompt)
+        run_agent(session, prompt, model=agent_model)
         summary = read_repo_file(session, ".factory/summary.md")
         commit_all(session, "Fix: address review and test feedback")
         push_branch(session, branch)
@@ -359,6 +374,7 @@ def software_factory(
     base_branch: Optional[str] = None,
     test_command: Optional[str] = None,
     max_fix_iterations: int = 3,
+    agent_model: str = "sonnet",
 ) -> None:
     """Drive a GitHub issue through plan, implement, test and review.
 
@@ -372,10 +388,18 @@ def software_factory(
             unset.
         test_command: Shell command that runs the tests in the checkout.
             Tests are skipped if unset.
-        max_fix_iterations: The maximum number of test and review fix
-            iterations.
+        max_fix_iterations: The maximum number of fix rounds. Tests and
+            review run once more than this, so the last fix is always
+            tested. Zero means test and review only.
+        agent_model: The model alias or id the agent uses, for example
+            `sonnet`, `opus` or a full model id.
     """
-    plan = write_plan(repo=repo, issue=issue, base_branch=base_branch)
+    plan, _ = write_plan(
+        repo=repo,
+        issue=issue,
+        agent_model=agent_model,
+        base_branch=base_branch,
+    )
     plan_review = wait(
         schema=Review,
         question="Approve plan?",
@@ -396,9 +420,11 @@ def software_factory(
         issue=issue,
         plan=plan,
         base_branch=base_branch,
+        agent_model=agent_model,
     )
-    verdict = None
-    for attempt in range(max_fix_iterations):
+    # One more test and review round than fixes, so the loop never ends
+    # on an untested fix.
+    for attempt in range(max_fix_iterations + 1):
         tests = run_tests(
             workspace=workspace,
             repo=repo,
@@ -416,10 +442,13 @@ def software_factory(
                 plan=plan,
                 tests=tests,
                 base_branch=base_branch,
+                agent_model=agent_model,
                 id=f"review_{attempt}",
             )
             if verdict.load().approved:
                 break
+        if attempt == max_fix_iterations:
+            break
         pr = fix(
             workspace=workspace,
             repo=repo,
@@ -427,6 +456,7 @@ def software_factory(
             issue=issue,
             tests=tests,
             base_branch=base_branch,
+            agent_model=agent_model,
             verdict=verdict,
             id=f"fix_{attempt}",
         )

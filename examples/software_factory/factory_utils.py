@@ -20,15 +20,17 @@ import tempfile
 import threading
 from typing import Any, Dict, List, Optional
 
+import markdown
 from models import PRRef
 
-from zenml import get_step_context
+from zenml import get_step_context, log_metadata
 from zenml.client import Client
 from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
 from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandbox, SandboxOutput, SandboxSession
+from zenml.types import HTMLString
 from zenml.utils.dashboard_utils import get_run_url
 
 logger = get_logger(__name__)
@@ -38,16 +40,6 @@ RESULT_DIR = ".factory"
 PLAN_DIR = "spec/plans"
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 AGENT_AUTH_ENV_VARS = ["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]
-AGENT_COMMAND = [
-    "claude",
-    "-p",
-    "--model",
-    "sonnet",
-    "--dangerously-skip-permissions",
-    "--output-format",
-    "stream-json",
-    "--verbose",
-]
 
 
 def active_sandbox() -> BaseSandbox:
@@ -288,20 +280,15 @@ def attach_or_recreate(
     return session
 
 
-def render_agent_event(line: str) -> List[str]:
-    """Render one stream-json line of the agent CLI as log lines.
+def render_agent_event(event: Dict[str, Any]) -> List[str]:
+    """Render one stream-json event of the agent CLI as log lines.
 
     Args:
-        line: The raw stdout line.
+        event: The decoded event.
 
     Returns:
         Log lines for the event.
     """
-    try:
-        event = json.loads(line)
-    except ValueError:
-        return [line.rstrip("\n")]
-
     event_type = event.get("type")
     if event_type == "assistant":
         rendered = []
@@ -340,26 +327,63 @@ def _summarize_tool_input(tool_input: Dict[str, Any]) -> str:
     return json.dumps(tool_input)[:200]
 
 
+def agent_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract model, token and cost figures from the agent's result event.
+
+    Args:
+        result: The `result` event emitted by the agent CLI.
+
+    Returns:
+        Metadata describing the agent invocation.
+    """
+    usage = result.get("usage", {})
+    # The CLI also bills small helper calls to a cheaper model. Report the
+    # model that did the actual work.
+    model_usage: Dict[str, Dict[str, Any]] = result.get("modelUsage", {})
+    model = max(
+        model_usage, key=lambda m: model_usage[m]["costUSD"], default="unknown"
+    )
+    return {
+        "model": model,
+        "turns": result.get("num_turns", 0),
+        "duration_s": round(result.get("duration_ms", 0) / 1000, 1),
+        "cost_usd": round(result.get("total_cost_usd", 0.0), 4),
+        "input_tokens": usage.get("input_tokens", 0),
+        "output_tokens": usage.get("output_tokens", 0),
+        "cache_read_tokens": usage.get("cache_read_input_tokens", 0),
+        "cache_write_tokens": usage.get("cache_creation_input_tokens", 0),
+    }
+
+
 def run_agent(
-    session: SandboxSession, prompt: str, cwd: str = REPO_DIR
-) -> str:
-    """Run the agent CLI non-interactively and stream its output.
+    session: SandboxSession, prompt: str, model: str, cwd: str = REPO_DIR
+) -> None:
+    """Run the agent CLI non-interactively, stream its output, log its usage.
+
+    Model, turn count, token counts, cost and duration are attached to the
+    calling step run as metadata under the `agent` key. Results are read
+    from files the agent writes, see the prompts in `pipeline.py`.
 
     Args:
         session: The sandbox session to run the agent in.
         prompt: The prompt to pass to the agent.
+        model: The model alias or id the agent should use.
         cwd: Working directory for the agent, relative to the session.
 
     Raises:
         RuntimeError: If the agent exits with a non-zero code.
-
-    Returns:
-        The final answer of the agent.
     """
-    insert_index = AGENT_COMMAND.index("-p") + 1
-    command = (
-        AGENT_COMMAND[:insert_index] + [prompt] + AGENT_COMMAND[insert_index:]
-    )
+    command = [
+        "claude",
+        "-p",
+        prompt,
+        "--model",
+        model,
+        "--dangerously-skip-permissions",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+    ]
     env = {
         name: os.environ[name]
         for name in AGENT_AUTH_ENV_VARS
@@ -373,22 +397,69 @@ def run_agent(
         target=lambda: stderr_lines.extend(process.stderr()), daemon=True
     )
     stderr_thread.start()
-    result = ""
+    result: Dict[str, Any] = {}
     for line in process.stdout():
-        for rendered in render_agent_event(line):
-            logger.info(rendered)
         try:
             event = json.loads(line)
         except ValueError:
+            logger.info(line.rstrip("\n"))
             continue
+        for rendered in render_agent_event(event):
+            logger.info(rendered)
         if event.get("type") == "result":
-            result = event.get("result") or ""
+            result = event
     stderr_thread.join()
     exit_code = process.wait()
     if exit_code != 0:
         stderr = "".join(stderr_lines)
         raise RuntimeError(f"Agent failed (exit {exit_code}): {stderr}")
-    return result
+
+    if result:
+        metadata = agent_metadata(result)
+        logger.info(
+            "Agent used %s for %s turns, %s input / %s output tokens, "
+            "$%s, %ss.",
+            metadata["model"],
+            metadata["turns"],
+            metadata["input_tokens"],
+            metadata["output_tokens"],
+            metadata["cost_usd"],
+            metadata["duration_s"],
+        )
+        log_metadata(metadata={"agent": metadata})
+
+
+def markdown_to_html(text: str, title: str) -> HTMLString:
+    """Render Markdown as a self-contained HTML page for the dashboard.
+
+    The dashboard's own Markdown view styles fenced code blocks poorly, so
+    plan-like artifacts are also stored as HTML with explicit code styling.
+
+    Args:
+        text: The Markdown source.
+        title: The page title.
+
+    Returns:
+        The rendered page.
+    """
+    body = markdown.markdown(text, extensions=["fenced_code", "tables"])
+    style = (
+        "body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;"
+        "max-width:900px;margin:2rem auto;padding:0 1rem;line-height:1.5;"
+        "color:#1f2933}"
+        "pre{background:#f4f6f8;border:1px solid #d9dee3;border-radius:6px;"
+        "padding:12px;overflow-x:auto}"
+        "code{font-family:SFMono-Regular,Consolas,Menlo,monospace;"
+        "font-size:0.9em}"
+        ":not(pre)>code{background:#f4f6f8;padding:1px 4px;border-radius:4px}"
+        "table{border-collapse:collapse}td,th{border:1px solid #d9dee3;"
+        "padding:4px 8px}"
+    )
+    return HTMLString(
+        f"<!doctype html><html><head><meta charset='utf-8'>"
+        f"<title>{title}</title><style>{style}</style></head>"
+        f"<body>{body}</body></html>"
+    )
 
 
 def read_repo_file(session: SandboxSession, path: str) -> str:
@@ -596,11 +667,11 @@ def destroy_workspace_hook(exception: Optional[BaseException] = None) -> None:
         if step_run is None:
             return
 
-        outputs = step_run.regular_outputs
-        if not outputs:
+        output = step_run.regular_outputs.get("workspace")
+        if output is None:
             return
 
-        workspace = next(iter(outputs.values())).load()
+        workspace = output.load()
         try:
             session = attach_sandbox(workspace)
         except (KeyError, RuntimeError):
