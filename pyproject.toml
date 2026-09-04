@@ -382,6 +382,8 @@ module = [
     "google.*",
     "google_cloud_pipeline_components.*",
     "great_expectations.*",
+    "evidently.*",
+    "nltk.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
@@ -438,6 +440,12 @@ ignore_missing_imports = true
 module = ["zenml.integrations.great_expectations.*"]
 warn_unused_ignores = false
 disallow_subclassing_any = false
+
+# evidently is only installed on Python < 3.14 (see its integration
+# requirements), so its `type: ignore` comments are unused on 3.14 lint runs.
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.evidently.*"]
+warn_unused_ignores = false
 
 [[tool.mypy.overrides]]
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)
