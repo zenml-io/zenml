@@ -9,9 +9,11 @@ events to ZenML. Use it when a service can make HTTP requests but does not have
 a dedicated ZenML webhook provider.
 
 Custom webhooks preserve the sender's event name and JSON payload for consumers.
-They do not define a ZenML semantic event catalog or provider-level payload
-filters. A [custom webhook trigger](../triggers.md#custom-webhook-triggers)
-uses an empty configuration and matches every accepted delivery for its webhook.
+They do not define a ZenML semantic event catalog. A
+[custom webhook trigger](../triggers.md#custom-webhook-triggers) can retain the
+original match-all behavior with an empty configuration or use a
+[dynamic event filter](../triggers.md#dynamic-event-filters) to match the event
+name and fields in the authenticated JSON body.
 
 ## Create a custom webhook
 
