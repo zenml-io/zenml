@@ -219,19 +219,32 @@ zenml trigger webhook create on-agent-issue --webhook github-issues --config on-
 zenml trigger webhook attach on-agent-issue software-factory
 ```
 
-Or whenever someone reacts with 🏭 to a message in a channel, with that message as the issue. Follow the [Slack webhook setup](https://docs.zenml.io/getting-started/zenml-pro/webhooks/slack) with the `reaction_added` bot event, and give the app the `channels:history` scope as well, because a reaction delivery only carries the message's channel and timestamp and the step fetches the text through the Slack API with a bot token:
+Or whenever someone reacts with 🏭 to a message in a channel, with that message as the issue. A reaction delivery only carries the message's channel and timestamp, so the step fetches the text through the Slack API with a bot token. Setup, in this order, since Slack signs the URL verification with the signing secret:
 
-```bash
-zenml secret create slack --private --SLACK_BOT_TOKEN=xoxb-...
-```
-
-```yaml
-target_events:
-  - type: reaction_added
-    channel_id: C0123456789
-    reaction: factory
-    item_type: message
-```
+1. Create a [Slack app](https://api.slack.com/apps) in your workspace. Copy the **Signing Secret** from Basic Information, App Credentials.
+2. Create the ZenML webhook with that secret and copy its endpoint URL:
+   ```bash
+   zenml webhook create slack-events --type slack --secret "<signing secret>"
+   zenml webhook describe slack-events
+   ```
+3. In the app, open Event Subscriptions, enable events, paste the endpoint URL as Request URL and wait for **Verified**. Socket Mode must be off.
+4. Under Subscribe to bot events add `reaction_added`. Under OAuth & Permissions add the scopes `reactions:read` and `channels:history` (`groups:history` for private channels).
+5. Install the app, invite it to the channel, and store its bot token for the step:
+   ```bash
+   zenml secret create slack --private --SLACK_BOT_TOKEN=xoxb-...
+   ```
+6. Create the trigger with the channel id and the emoji name, and attach it to the snapshot with the empty `issue`:
+   ```yaml
+   target_events:
+     - type: reaction_added
+       channel_id: C0123456789
+       reaction: factory
+       item_type: message
+   ```
+   ```bash
+   zenml trigger webhook create on-slack-reaction --webhook slack-events --config on-reaction.yaml
+   zenml trigger webhook attach on-slack-reaction software-factory-on-issue
+   ```
 
 An `app_mention` target works the same way without the extra scope, since the mention carries its text. ClickUp task events only carry ids, extend `issue_from_webhook_body` in `factory_utils.py` with a ClickUp API call in the same way as the Slack reaction. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
 
