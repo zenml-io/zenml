@@ -52,7 +52,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--sandbox-image",
-        default="michaelzenml/software-factory-sandbox:latest",
+        required=True,
         help="Container image for the sandbox sessions of this run.",
     )
     args = parser.parse_args()

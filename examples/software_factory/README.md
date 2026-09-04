@@ -41,21 +41,39 @@ The loop over `run_tests`, `review` and `fix` runs at most `max_fix_iterations` 
 
 ### ZenML server and stack
 
-A ZenML server (`zenml login --local` or `zenml login <workspace>` for ZenML Pro) and a stack with a sandbox component. The agent and every git command run inside the sandbox, so the sandbox needs `git`, `gh`, the `claude` CLI, Python and `pytest`.
+A ZenML server (`zenml login --local` or `zenml login <workspace>` for ZenML Pro) and a stack with a sandbox component. The agent and every git command run inside the sandbox.
 
-**Containerized flavors** (Docker, Kubernetes, Modal) support `attach(...)`, so one sandbox session is shared across the steps of a run. Build the image from the `Dockerfile` in this directory and register the flavor without an image, `run.py` sets the image per run through step settings:
+### Sandbox image
+
+The sandbox needs `git`, `gh`, the `claude` CLI, Python, `pytest` and `uv`. The `Dockerfile` in this directory builds such an image. It runs as a non-root user because the `claude` CLI refuses `--dangerously-skip-permissions` as root. Build it for the platform of your cluster nodes and push it to a registry the sandbox can pull from:
 
 ```bash
-docker build -t <registry>/software-factory-sandbox .
-docker push <registry>/software-factory-sandbox
+cd examples/software_factory
+docker buildx build --platform linux/amd64 -t <registry>/software-factory-sandbox:latest --push .
+```
 
+Register the sandbox component without an image. The image is passed per run through step settings, so one component serves any pipeline:
+
+```bash
 zenml sandbox register agent-sandbox --flavor=docker
 zenml stack update --sandbox agent-sandbox
 ```
 
-The image runs as a non-root user because the `claude` CLI refuses `--dangerously-skip-permissions` as root. `run.py` defaults to the published `michaelzenml/software-factory-sandbox:latest`, pass `--sandbox-image` to use your own build.
+Use `--flavor=kubernetes` (with `--kubernetes_namespace=...` and a service connector) or `--flavor=modal` in the same way. See the [sandbox flavors](https://docs.zenml.io/component-guide/sandboxes) for their options.
 
-**Local flavor**, for trying the example out. It has no isolation and no `attach(...)`, so every step re-clones the branch. The `claude` CLI reads its login from the user keychain and needs the `USER` variable in the session, which the default forwarded set does not include:
+`run.py --sandbox-image <image>` sets `settings={"sandbox:<component name>": ContainerizedSandboxSettings(image=<image>)}` on the pipeline, and `snapshot.yaml` carries the same setting for snapshots:
+
+```yaml
+settings:
+  sandbox:agent-sandbox:
+    image: <registry>/software-factory-sandbox:latest
+```
+
+Replace `agent-sandbox` with the name of your sandbox component.
+
+The containerized flavors (Docker, Kubernetes, Modal) support `attach(...)`, so one sandbox session is shared across the steps of a run.
+
+**Local flavor**, for trying the example out without a container. It has no isolation and no `attach(...)`, so every step re-clones the branch, and it ignores the image. The `claude` CLI reads its login from the user keychain and needs the `USER` variable in the session, which the default forwarded set does not include:
 
 ```bash
 zenml sandbox register agent-sandbox --flavor=local --forward_env=true
@@ -92,7 +110,8 @@ python run.py \
   --target-branch feature/health-check \
   --base-branch develop \
   --test-command "uv run pytest tests/unit -q" \
-  --max-fix-iterations 2
+  --max-fix-iterations 2 \
+  --sandbox-image <registry>/software-factory-sandbox:latest
 ```
 
 | Flag | Meaning |
@@ -120,7 +139,7 @@ Each gate polls for 60 seconds and then pauses the run. ZenML Pro resumes a paus
 
 ## 📸 Trigger It From the Server
 
-A snapshot packages the pipeline, its code and the stack so runs can be started from the dashboard, the CLI or the REST API without a local checkout. `snapshot.yaml` holds placeholder parameters and the sandbox image setting, edit the sandbox component name in it, then:
+A snapshot packages the pipeline, its code and the stack so runs can be started from the dashboard, the CLI or the REST API without a local checkout. `snapshot.yaml` holds placeholder parameters and the sandbox image setting described above. Put your image and sandbox component name in it, then:
 
 ```bash
 cd examples/software_factory

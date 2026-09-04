@@ -6,7 +6,8 @@ parameters:
   base_branch: null
   test_command: null
   max_fix_iterations: 3
-# Replace `kubernetes_aws` with the name of your sandbox component.
+# Sandbox image for the sessions of this pipeline. The key is
+# `sandbox:<name of your sandbox component>`.
 settings:
-  sandbox:kubernetes_aws:
-    image: michaelzenml/software-factory-sandbox:latest
+  sandbox:agent-sandbox:
+    image: <registry>/software-factory-sandbox:latest
