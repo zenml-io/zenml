@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import gzip
+from uuid import uuid4
+
 import pytest
 from sqlalchemy import event
 from sqlmodel import Session, select
@@ -25,6 +28,7 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.webhook_schemas import (
+    WebhookEventPayloadSchema,
     WebhookSchema,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -53,6 +57,8 @@ def test_client_webhook_methods_require_rest_store(
         clean_client.delete_webhook("webhook")
     with pytest.raises(TypeError, match=error):
         clean_client.rotate_webhook_secret("webhook")
+    with pytest.raises(TypeError, match=error):
+        clean_client.get_raw_webhook_event(uuid4(), "delivery-001")
 
 
 def test_zen_store_webhook_lifecycle(clean_client):
@@ -168,6 +174,56 @@ def test_zen_store_webhook_lifecycle(clean_client):
 
     with pytest.raises(KeyError):
         store.get_webhook(webhook.id)
+
+
+def test_raw_webhook_event_storage_is_idempotent(clean_client):
+    """Raw event bodies are compressed and immutable."""
+    store = clean_client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Local SQL store behavior is required for this test.")
+
+    webhook = store.create_webhook(
+        WebhookRequest(
+            project=clean_client.active_project.id,
+            name=sample_name("webhook-raw-event"),
+            webhook_type="custom",
+        )
+    )
+    delivery_id = "delivery-001"
+
+    try:
+        store.store_raw_webhook_event(
+            webhook_id=webhook.id,
+            delivery_id=delivery_id,
+            body={"message": "first"},
+        )
+        store.store_raw_webhook_event(
+            webhook_id=webhook.id,
+            delivery_id=delivery_id,
+            body={"message": "second"},
+        )
+
+        assert store.get_raw_webhook_event(
+            webhook_id=webhook.id,
+            delivery_id=delivery_id,
+        ) == {"body": {"message": "first"}}
+
+        with Session(store.engine) as session:
+            schema = session.exec(
+                select(WebhookEventPayloadSchema).where(
+                    WebhookEventPayloadSchema.webhook_id == webhook.id,
+                    WebhookEventPayloadSchema.delivery_id == delivery_id,
+                )
+            ).one()
+            assert gzip.decompress(schema.payload)
+    finally:
+        store.delete_webhook(webhook.id)
+
+    with Session(store.engine) as session:
+        assert (
+            session.get(WebhookEventPayloadSchema, (webhook.id, delivery_id))
+            is None
+        )
 
 
 def test_sql_store_webhook_intake_config_contains_masked_secret(
