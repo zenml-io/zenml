@@ -227,7 +227,7 @@ Or whenever someone reacts with 🏭 to a message in a channel, with that messag
    zenml webhook create slack-events --type slack --secret "<signing secret>"
    zenml webhook describe slack-events
    ```
-3. In the app, open Event Subscriptions, enable events, paste the endpoint URL as Request URL and wait for **Verified**. Socket Mode must be off.
+3. In the app, turn **Socket Mode off** first. New Slack apps have it on by default, and with it on Slack sends events over a WebSocket instead of to the Request URL, so nothing reaches ZenML. Then open Event Subscriptions, enable events, paste the endpoint URL as Request URL and wait for **Verified**.
 4. Under Subscribe to bot events add `reaction_added`. Under OAuth & Permissions add the scopes `reactions:read` and `channels:history` (`groups:history` for private channels).
 5. Install the app, invite it to the channel, and store its bot token for the step:
    ```bash
@@ -245,6 +245,8 @@ Or whenever someone reacts with 🏭 to a message in a channel, with that messag
    zenml trigger webhook create on-slack-reaction --webhook slack-events --config on-reaction.yaml
    zenml trigger webhook attach on-slack-reaction software-factory-on-issue
    ```
+
+If a reaction starts no run, check the app settings in this order, which is the order they usually fail in: `reaction_added` is listed under Subscribe to bot events, since enabling events and verifying the URL alone subscribes to nothing. Changes on that page are saved, the Save Changes button sits at the bottom. The app was reinstalled after the scopes were added, Slack shows a yellow banner while that is pending. The app is a member of the channel, invite it with `/invite @<app name>`, since Slack only delivers reactions for conversations the bot is in. Socket Mode is off. The webhook's `received_count` in `zenml webhook describe slack-events` tells you whether deliveries arrive at all.
 
 An `app_mention` target works the same way without the extra scope, since the mention carries its text. ClickUp task events only carry ids, extend `issue_from_webhook_body` in `factory_utils.py` with a ClickUp API call in the same way as the Slack reaction. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
 
