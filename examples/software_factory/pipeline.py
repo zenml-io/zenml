@@ -25,6 +25,7 @@ from factory_utils import (
     commit_all,
     destroy_workspace_hook,
     github_token,
+    issue_from_webhook_body,
     log_agent_totals,
     markdown_to_html,
     open_pr,
@@ -40,7 +41,7 @@ from factory_utils import (
 )
 from models import PRRef, Review, ReviewVerdict, TestReport
 
-from zenml import pipeline, step, wait
+from zenml import add_tags, pipeline, step, wait
 from zenml.config import DockerSettings
 from zenml.config.retry_config import StepRetryConfig
 from zenml.execution.pipeline.dynamic.run_context import (
@@ -50,6 +51,38 @@ from zenml.logger import get_logger
 from zenml.types import HTMLString, MarkdownString
 
 logger = get_logger(__name__)
+
+
+@step
+def issue_from_event(
+    repo: str,
+) -> Tuple[Annotated[str, "repo"], Annotated[str, "issue"]]:
+    """Read the issue from the webhook delivery that started this run.
+
+    Used when the run was started by a webhook trigger instead of with an
+    explicit `issue` parameter, for example from a GitHub issue or a Slack
+    message. Needs a ZenML Pro server with webhooks.
+
+    Args:
+        repo: The repository configured on the snapshot, used when the
+            delivery names none.
+
+    Raises:
+        RuntimeError: If the run was not started by a webhook trigger.
+
+    Returns:
+        The repository and the issue text.
+    """
+    # Imported here so the example also imports on servers without webhooks.
+    from zenml.utils.trigger_utils import get_raw_webhook_event
+
+    delivery = get_raw_webhook_event()
+    if delivery is None:
+        raise RuntimeError(
+            "No issue was given and this run was not started by a webhook "
+            "trigger. Pass the `issue` parameter."
+        )
+    return issue_from_webhook_body(delivery["body"], default_repo=repo)
 
 
 @step(
@@ -374,7 +407,7 @@ def deploy(pr: PRRef, repo: str) -> None:
 )
 def software_factory(
     repo: str,
-    issue: str,
+    issue: Optional[str] = None,
     target_branch: Optional[str] = None,
     base_branch: Optional[str] = None,
     test_command: Optional[str] = None,
@@ -385,8 +418,10 @@ def software_factory(
     """Drive a GitHub issue through plan, implement, test and review.
 
     Args:
-        repo: The repository to work in, `owner/name`.
-        issue: The issue description. The first line is the title.
+        repo: The repository to work in, `owner/name`. A GitHub issue
+            delivery overrides it with the issue's repository.
+        issue: The issue description. The first line is the title. Read
+            from the webhook delivery that started the run if unset.
         target_branch: The branch to work on. Created from the base branch
             if it does not exist, checked out if it does. Derived from the
             issue title if unset, for example
@@ -404,7 +439,14 @@ def software_factory(
         gate_timeout: Seconds each approval gate polls for an answer before
             the run is paused.
     """
+    context = DynamicPipelineRunContext.get()
+    assert context is not None
+    if not issue:
+        repo_output, issue_output = issue_from_event(repo=repo)
+        repo, issue = repo_output.load(), issue_output.load()
     target_branch = target_branch or branch_for_issue(issue)
+    add_tags(tags=[repo, target_branch], run=context.run.id)
+
     plan, _ = write_plan(
         repo=repo,
         issue=issue,
@@ -474,8 +516,6 @@ def software_factory(
     close_workspace(workspace=workspace)
 
     pr_result = pr.load()
-    context = DynamicPipelineRunContext.get()
-    assert context is not None
     totals = log_agent_totals(context.run.id)
     metadata = {
         "pr_url": pr_result.url,

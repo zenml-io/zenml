@@ -19,7 +19,7 @@ import os
 import re
 import tempfile
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import markdown
@@ -586,6 +586,45 @@ def branch_for_issue(issue: str) -> str:
     title = issue.strip().splitlines()[0].lower()
     slug = re.sub(r"[^a-z0-9]+", "-", title).strip("-")[:50].rstrip("-")
     return f"factory/{slug or 'issue'}"
+
+
+def issue_from_webhook_body(
+    body: Dict[str, Any], default_repo: str
+) -> Tuple[str, str]:
+    """Turn the raw payload of a webhook delivery into repository and issue.
+
+    Supports GitHub `issues` deliveries and Slack `message` and
+    `app_mention` events. Other payloads, such as Slack reactions or
+    ClickUp tasks, only carry ids and need an API call to fetch the text.
+    Extend this function for those.
+
+    Args:
+        body: The JSON body of the delivery.
+        default_repo: The repository to use when the payload names none.
+
+    Raises:
+        ValueError: If the payload is not supported.
+
+    Returns:
+        The repository, `owner/name`, and the issue text.
+    """
+    if "issue" in body:
+        issue = body["issue"]
+        text = issue["title"].strip()
+        if issue.get("body"):
+            text += "\n\n" + issue["body"].strip()
+        return body["repository"]["full_name"], text
+
+    event = body.get("event") or {}
+    if event.get("text"):
+        # Slack keeps app mentions in the text as `<@U0123456789>`.
+        text = re.sub(r"<@[A-Z0-9]+>", "", event["text"]).strip()
+        return default_repo, text
+
+    raise ValueError(
+        "The webhook payload carries no issue text. Supported are GitHub "
+        "issue deliveries and Slack messages or app mentions."
+    )
 
 
 def plan_path(branch: str) -> str:

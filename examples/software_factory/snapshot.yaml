@@ -1,5 +1,7 @@
 # Parameters shown in the run dialog. Only `repo` and `issue` are
 # required, the rest are sensible defaults you can override per run.
+# Leave `issue` empty on a snapshot attached to a webhook trigger, the run
+# then reads the issue from the GitHub or Slack delivery.
 parameters:
   repo: owner/name
   issue: |

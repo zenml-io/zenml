@@ -11,8 +11,8 @@ Turn a GitHub issue into a reviewed pull request. A dynamic ZenML pipeline drive
 - Pause a run with `zenml.wait(...)` for a plan approval and a deploy approval
 - Pass secrets into the sandbox per command, so they never land in the checkout or the logs
 - Bound a test, review and fix loop with `id=` on repeated step invocations
-- Record which model the agent used, how many tokens it consumed and what it cost, per step
-- Publish the pipeline as a snapshot that anyone can trigger from the ZenML server
+- Record which model the agent used, how many tokens it consumed and what it cost, per step and per run
+- Publish the pipeline as a snapshot that anyone can trigger from the ZenML server, and start runs from GitHub issues or Slack messages through webhook triggers
 
 ## 🔁 The Flow
 
@@ -27,6 +27,7 @@ issue ──▶ write_plan ──▶ [plan_review] ──▶ open_workspace ─�
 
 | Step | Sandbox | What it does | Output |
 |---|---|---|---|
+| `issue_from_event` | none | Reads the issue from the webhook delivery that started the run, only when no `issue` parameter is given | `repo`, `issue` |
 | `write_plan` | own session | Clones the base branch, asks the agent for a plan | `plan` (Markdown), `plan_preview` (HTML) |
 | `open_workspace` | creates the shared session | Checks out or creates the target branch, commits the plan as `spec/plans/<branch>.md`, pushes | `workspace`, `base_branch` |
 | `implement` | attach | Agent makes the changes, step commits, pushes and opens a draft pull request | `pr` |
@@ -198,6 +199,36 @@ curl -X POST "<ZENML_SERVER_URL>/api/v1/pipeline_snapshots/<SNAPSHOT_ID>/runs" \
 
 The dashboard's snapshot page offers the same run dialog with editable parameters.
 
+### Start runs from GitHub issues or Slack
+
+On ZenML Pro, [webhooks](https://docs.zenml.io/getting-started/zenml-pro/webhooks) receive signed deliveries from GitHub, Slack, ClickUp or any custom system, and [webhook triggers](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) start the attached snapshot when a delivery matches. A trigger starts the snapshot with the parameters stored in it, so create the snapshot with `issue` left empty. The `issue_from_event` step then reads the issue from the delivery: title and body of a GitHub issue, or the text of a Slack message or app mention.
+
+Run the pipeline whenever an issue labeled `agent` is opened:
+
+```bash
+zenml webhook create github-issues --type github
+zenml webhook describe github-issues   # endpoint URL and signing secret for the GitHub webhook settings
+
+cat > on-issue.yaml <<'EOF'
+target_events:
+  - type: issue_opened
+    repo: owner/name
+    labels: agent
+EOF
+zenml trigger webhook create on-agent-issue --webhook github-issues --config on-issue.yaml
+zenml trigger webhook attach on-agent-issue software-factory
+```
+
+Or whenever someone mentions your Slack app in a channel, with the message as the issue:
+
+```yaml
+target_events:
+  - type: app_mention
+    channel_id: C0123456789
+```
+
+Slack reactions and ClickUp task events only carry ids, so starting a run from an emoji reaction means fetching the message through the Slack API first. `issue_from_webhook_body` in `factory_utils.py` is the place to add that. The [webhook trigger docs](https://docs.zenml.io/getting-started/zenml-pro/triggers#webhook-triggers) describe the filters of each provider. On an OSS server, use the REST API or the Python client shown above from your own webhook handler.
+
 ## 🏗️ What's Inside
 
 ```
@@ -263,6 +294,10 @@ plan = read_repo_file(session, ".factory/plan.md")
 ```
 
 `.factory/` is excluded from git through `.git/info/exclude`, so review verdicts and summaries never end up in a commit. The plan is the exception: `open_workspace` commits it as `spec/plans/<branch>.md`, with slashes in the branch name replaced by dashes, so the pull request carries it as a file. The pull request body is the agent's own summary of the changes plus links to the plan and the ZenML run.
+
+### Readable artifacts and tagged runs
+
+`TestReport` and `ReviewVerdict` are Pydantic models. Their materializer in `models.py` adds a Markdown visualization next to the JSON, so test output and review comments are readable on the artifact page. Every run is tagged with the repository and the work branch, so the runs list filters by either.
 
 ### Streaming agent output and usage metadata
 
