@@ -510,9 +510,11 @@ class ServerConfiguration(BaseModel):
 
         Args:
             enabled: Whether exporting the telemetry signal is enabled.
+                E.g.: logs, metrics, traces are individual enabled or disabled.
             endpoint: The explicitly configured endpoint, if any.
-            signal_path: The signal-specific path appended to the base
-                endpoint.
+                E.g. if user has set individual endpoints for traces, metrics or logs.
+            signal_path: The signal-specific path appended to the base endpoint.
+                E.g: `v1/traces`, `v1/metrics`, `v1/logs` suffixes at the end of base OTel endpoint.
 
         Returns:
             The resolved signal endpoint, or `None` if the signal is disabled

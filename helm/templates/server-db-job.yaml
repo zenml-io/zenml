@@ -150,6 +150,7 @@ spec:
           {{- end }}
           env:
             {{- $envVars := include "zenml.envVariables" . | fromYaml | default dict }}
+            {{- $envVars = mustMergeOverwrite $envVars (.Values.environmentMigrationPod | default dict) }}
             {{- range $k, $v := $envVars }}
             - name: {{ $k }}
               value: {{ $v | quote }}
