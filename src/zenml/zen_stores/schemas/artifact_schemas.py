@@ -20,7 +20,8 @@ from pydantic import ValidationError
 from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
-from sqlmodel import Field, Relationship, asc, col, desc, select
+from sqlalchemy.sql.elements import ColumnElement
+from sqlmodel import Field, Relationship, and_, asc, col, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -380,6 +381,50 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         back_populates="artifact_version",
         sa_relationship_kwargs={"cascade": "delete"},
     )
+
+    @classmethod
+    def unused_filter(cls) -> ColumnElement[bool]:
+        """Build the filter matching artifact versions that nothing references.
+
+        A version is referenced while a step input or output, a pipeline
+        output, a hook output, or a model version link points at it.
+
+        Returns:
+            A SQL expression matching unused artifact versions.
+        """
+        from zenml.zen_stores.schemas.hook_invocation_schemas import (
+            HookInvocationOutputArtifactSchema,
+        )
+        from zenml.zen_stores.schemas.model_schemas import (
+            ModelVersionArtifactSchema,
+        )
+        from zenml.zen_stores.schemas.pipeline_run_schemas import (
+            PipelineRunOutputSchema,
+        )
+        from zenml.zen_stores.schemas.step_run_schemas import (
+            StepRunInputArtifactSchema,
+            StepRunOutputArtifactSchema,
+        )
+
+        referencing_columns = [
+            StepRunInputArtifactSchema.artifact_id,
+            StepRunOutputArtifactSchema.artifact_id,
+            PipelineRunOutputSchema.artifact_id,
+            HookInvocationOutputArtifactSchema.artifact_version_id,
+            ModelVersionArtifactSchema.artifact_version_id,
+        ]
+
+        # Correlated `NOT EXISTS` lets MySQL probe each link table through
+        # its foreign key index instead of materializing every referenced ID
+        # in memory as `NOT IN` does. Correlating on this table explicitly
+        # keeps a link table that an outer filter also joins (e.g. a model
+        # version filter) inside the subquery.
+        return and_(
+            *(
+                ~select(1).where(column == col(cls.id)).correlate(cls).exists()
+                for column in referencing_columns
+            )
+        )
 
     @classmethod
     def get_query_options(

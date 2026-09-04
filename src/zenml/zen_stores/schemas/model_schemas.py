@@ -64,7 +64,10 @@ from zenml.zen_stores.schemas.curated_visualization_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
@@ -606,6 +609,11 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     """SQL Model for linking of Model Versions and Artifacts M:M."""
 
     __tablename__ = "model_versions_artifacts"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__, column_names=["artifact_version_id"]
+        ),
+    )
 
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,

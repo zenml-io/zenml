@@ -403,11 +403,14 @@ Individual artifacts cannot be deleted directly (to prevent broken references). 
 zenml artifact prune
 ```
 
-This deletes artifacts that are no longer referenced by any pipeline run. You can control this behavior with flags:
+This deletes artifact versions that no pipeline run, step, hook invocation or model version references anymore, their data in the artifact store, and the artifacts left without versions. The command reports how many versions it found and asks for confirmation; when connected to a ZenML server, the deletion runs there in the background and the command prints a task ID that you can search the server logs for. You can control this behavior with flags:
 
+* `--dry-run`: Only report how many artifact versions would be deleted
 * `--only-artifact`: Only delete the physical files, keep database entries
 * `--only-metadata`: Only delete database entries, keep files
-* `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
+* `--yes`: Don't ask for confirmation
+
+When connected to a server, the server deletes the artifact data itself, so it needs access to the artifact store, for example through a service connector, and you need permission to use that artifact store and connector. Artifact versions whose data cannot be deleted are kept, together with their metadata, so nothing points at data that is gone. A server runs one such maintenance task at a time; a prune started while another is running is rejected.
 
 ### Registering Existing Data as Artifacts
 

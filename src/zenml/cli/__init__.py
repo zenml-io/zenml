@@ -1832,18 +1832,20 @@ version can only be deleted if the run that produced it and all runs that used
 it as an input have been deleted. Similarly, an artifact can only be deleted if
 all its versions can be deleted.
 
-To delete all artifacts and artifact versions that are no longer linked to any
-pipeline runs, use:
+To delete all artifact versions that no pipeline run, step, hook invocation or
+model version references anymore, together with their data and the artifacts
+left without versions, use:
 
 ```bash
 zenml artifact prune
 ```
 
-You might find that some artifacts throw errors when you try to prune them,
-likely because they were stored locally and no longer exist. If you wish to
-continue pruning and to ignore these errors, please add the `--ignore-errors`
-flag. Warning messages will still be output to the terminal during this
-process.
+The command reports how many artifact versions it found and asks for
+confirmation. Use `--dry-run` to only see the count, `--yes` to skip the
+confirmation, and `--only-metadata` or `--only-artifact` to keep the data or
+the database entries. When connected to a ZenML server, the deletion runs
+there in the background and the command prints a task ID that you can search
+the server logs for. Artifact versions whose data cannot be deleted are kept.
 
 Each pipeline run that requires Docker images also stores a build which
 contains the image names used for this run. To list all builds, use:
