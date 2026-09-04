@@ -384,6 +384,7 @@ from zenml.models import (
     WebhookTriggerRequest,
     WebhookUpdate,
 )
+from zenml.otel import instrument_sqlalchemy_engine
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -1564,6 +1565,7 @@ class SqlZenStore(BaseZenStore):
             url=url, connect_args=connect_args, **engine_args
         )
         self.config.configure_engine_auth(self._engine)
+        instrument_sqlalchemy_engine(self._engine)
         self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will

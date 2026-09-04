@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""OpenTelemetry instrumentation for the ZenML server.
+"""OpenTelemetry instrumentation for ZenML.
 
 Activates only when a base or per-signal OTLP/HTTP endpoint is configured in
 ``ServerConfiguration``. Without it the server runs with zero OTel overhead.
 
-We are not doing OTel's auto-instrumentation because it is incompatible with
-uvicorn's `--reload` mode. So we are using programmatic instrumentation instead.
+Instrumentation is configured programmatically because OTel's automatic
+instrumentation is incompatible with uvicorn's reload and multi-worker modes.
 
 More details:
 
@@ -34,16 +34,17 @@ Ref:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, Callable, Generator, Optional
 
 from zenml.logger import add_zenml_filters, get_logger, get_logging_level
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from opentelemetry.sdk.resources import Resource
+    from sqlalchemy import Engine
 
     from zenml.config.server_config import ServerConfiguration
-    from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
 
@@ -57,7 +58,10 @@ _otel_providers: list[Any] = []
 _otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
 
-def configure_otel(app: Optional["FastAPI"] = None) -> None:
+def configure_otel(
+    config: Optional["ServerConfiguration"] = None,
+    app: Optional["FastAPI"] = None,
+) -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
 
     Reads OTel settings from ``ServerConfiguration`` (which in turn reads
@@ -66,6 +70,8 @@ def configure_otel(app: Optional["FastAPI"] = None) -> None:
     immediately so the server runs without OTel overhead.
 
     Args:
+        config: Server configuration containing the OTel settings. If omitted,
+            the configuration is loaded from the environment.
         app: Optional FastAPI application instance to instrument.
     """
     global _otel_configured
@@ -74,9 +80,10 @@ def configure_otel(app: Optional["FastAPI"] = None) -> None:
         logger.debug("OpenTelemetry instrumentation already configured.")
         return
 
-    from zenml.zen_server.utils import server_config
+    if config is None:
+        from zenml.config.server_config import ServerConfiguration
 
-    config = server_config()
+        config = ServerConfiguration.get_server_config()
 
     # If no signal has an effective endpoint, then return early.
     if not any(
@@ -97,7 +104,7 @@ def configure_otel(app: Optional["FastAPI"] = None) -> None:
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
-            "instrumentation.  Install the [otel] extra to enable."
+            "instrumentation. Install the [otel] extra to enable."
         )
         return
 
@@ -132,38 +139,6 @@ def configure_otel(app: Optional["FastAPI"] = None) -> None:
         config.otel_exporter_otlp_endpoint
         or "configured per-signal OTLP endpoints",
     )
-
-
-def _get_otel_resource_attributes(
-    config: "ServerConfiguration",
-) -> dict[str, str]:
-    """Build OpenTelemetry resource attributes for the ZenML server.
-
-    Args:
-        config: The ZenML server configuration.
-
-    Returns:
-        Resource attributes shared by all exported telemetry signals.
-    """
-    from zenml import __version__
-
-    attributes: dict[str, str] = {
-        "service.name": config.otel_service_name,
-        "service.version": __version__,
-        "deployment.environment.name": str(config.deployment_type),
-    }
-
-    metadata = config.metadata
-    if organization_name := metadata.get("organization_name"):
-        attributes["zenml.organization.name"] = organization_name
-    if organization_id := metadata.get("organization_id"):
-        attributes["zenml.organization.id"] = organization_id
-    if workspace_name := metadata.get("workspace_name"):
-        attributes["zenml.workspace.name"] = workspace_name
-    if workspace_id := metadata.get("workspace_id"):
-        attributes["zenml.workspace.id"] = workspace_id
-
-    return attributes
 
 
 def shutdown_otel() -> None:
@@ -210,6 +185,63 @@ def shutdown_otel() -> None:
     _otel_providers.clear()
 
     _otel_configured = False
+
+
+@contextmanager
+def otel_span(name: str) -> Generator[None, None, None]:
+    """Create an OTel span when tracing is configured.
+
+    Args:
+        name: Name of the span.
+
+    Yields:
+        Control to the instrumented operation.
+    """
+    if not _otel_configured:
+        yield
+        return
+
+    try:
+        from opentelemetry import trace
+    except ImportError:
+        yield
+        return
+
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span(name):
+        yield
+
+
+def _get_otel_resource_attributes(
+    config: "ServerConfiguration",
+) -> dict[str, str]:
+    """Build OpenTelemetry resource attributes for the ZenML server.
+
+    Args:
+        config: The ZenML server configuration.
+
+    Returns:
+        Resource attributes shared by all exported telemetry signals.
+    """
+    from zenml import __version__
+
+    attributes: dict[str, str] = {
+        "service.name": config.otel_service_name,
+        "service.version": __version__,
+        "deployment.environment.name": str(config.deployment_type),
+    }
+
+    metadata = config.metadata
+    if organization_name := metadata.get("organization_name"):
+        attributes["zenml.organization.name"] = organization_name
+    if organization_id := metadata.get("organization_id"):
+        attributes["zenml.organization.id"] = organization_id
+    if workspace_name := metadata.get("workspace_name"):
+        attributes["zenml.workspace.name"] = workspace_name
+    if workspace_id := metadata.get("workspace_id"):
+        attributes["zenml.workspace.id"] = workspace_id
+
+    return attributes
 
 
 def _configure_traces(endpoint: Optional[str], resource: "Resource") -> bool:
@@ -345,34 +377,6 @@ def _configure_logs(
         return False
 
 
-def instrument_sqlalchemy_store(store: "SqlZenStore") -> None:
-    """Instrument the initialized server SQL store with OpenTelemetry.
-
-    Args:
-        store: The SQL Zen store used by the server.
-    """
-    if not _otel_configured:
-        return
-
-    try:
-        from opentelemetry.instrumentation.sqlalchemy import (
-            SQLAlchemyInstrumentor,
-        )
-
-        sqlalchemy_instrumentor = SQLAlchemyInstrumentor()
-        sqlalchemy_instrumentor.instrument(engine=store.engine)
-        _otel_uninstrument_callbacks.append(
-            sqlalchemy_instrumentor.uninstrument
-        )
-    except ImportError:
-        logger.debug(
-            "OpenTelemetry SQLAlchemy instrumentation package not installed. "
-            "Install `opentelemetry-instrumentation-sqlalchemy`."
-        )
-    except Exception:
-        logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
-
-
 def _instrument_fastapi_app(app: "FastAPI") -> None:
     """Instrument a FastAPI application when OTel packages are present.
 
@@ -412,3 +416,31 @@ def _instrument_requests() -> None:
             "OpenTelemetry requests instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-requests`."
         )
+
+
+def instrument_sqlalchemy_engine(engine: "Engine") -> None:
+    """Instrument a SQLAlchemy engine when OTel is configured.
+
+    Args:
+        engine: SQLAlchemy engine to instrument.
+    """
+    if not _otel_configured:
+        return
+
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import (
+            SQLAlchemyInstrumentor,
+        )
+
+        sqlalchemy_instrumentor = SQLAlchemyInstrumentor()
+        sqlalchemy_instrumentor.instrument(engine=engine)
+        _otel_uninstrument_callbacks.append(
+            sqlalchemy_instrumentor.uninstrument
+        )
+    except ImportError:
+        logger.debug(
+            "OpenTelemetry SQLAlchemy instrumentation package not installed. "
+            "Install `opentelemetry-instrumentation-sqlalchemy`."
+        )
+    except Exception:
+        logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
