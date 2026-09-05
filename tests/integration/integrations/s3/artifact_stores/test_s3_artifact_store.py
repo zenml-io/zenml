@@ -258,3 +258,31 @@ def test_safe_aexit_propagates_unrelated_assertion_errors() -> None:
 
     with pytest.raises(AssertionError, match="Something else broke"):
         asyncio.run(ZenMLS3Filesystem._safe_aexit_s3_creator(creator))
+
+
+def test_s3_filesystem_does_not_cache_listings():
+    """Checks that the s3 filesystem is built without a directory listing cache.
+
+    This is a different cache from the instance caching `ZenMLS3Filesystem`
+    turns off. The server shares one instance across requests and step logs
+    are written by another process, so a cached listing would never be
+    refreshed.
+    """
+    with patch("boto3.resource", MagicMock()):
+        artifact_store = S3ArtifactStore(
+            name="",
+            id=uuid4(),
+            config=S3ArtifactStoreConfig(path="s3://mybucket"),
+            flavor="s3",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+
+    with patch(
+        "zenml.integrations.s3.artifact_stores.s3_artifact_store.ZenMLS3Filesystem"
+    ) as mock_filesystem:
+        _ = artifact_store.filesystem
+
+    assert mock_filesystem.call_args.kwargs["use_listings_cache"] is False

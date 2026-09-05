@@ -295,6 +295,14 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             client_kwargs=client_kwargs,
             config_kwargs=self.config.config_kwargs,
             s3_additional_kwargs=self.config.s3_additional_kwargs,
+            # No directory listing cache, which is a different cache from the
+            # instance caching `ZenMLS3Filesystem` turns off: the server shares
+            # one artifact store instance across requests, and fsspec only
+            # invalidates a cached listing for writes made through that same
+            # instance. Step logs are written by the orchestrator in another
+            # process, so a listing cached while a step is running would never
+            # be refreshed.
+            use_listings_cache=False,
         )
 
     @property
