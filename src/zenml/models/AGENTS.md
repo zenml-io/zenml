@@ -1,8 +1,8 @@
 # ZenML Domain Models Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/models/` or below. For
+This file applies to changes in `src/zenml/models/` and below. For
 detailed model hierarchy notes and examples, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 Models live under `src/zenml/models`. Keep them aligned with ORM schemas and
 store behavior.
@@ -43,15 +43,14 @@ layer.
 
 ## Compatibility
 
-Usually safe:
+Check compatibility separately for each payload role:
 
-- Adding optional properties.
+- Requests: adding a required field breaks callers that omit it. Optional fields
+  with defaults usually preserve existing calls; check older servers too.
+- Updates: preserve the distinction between an omitted field and explicit
+  `None`; changing it can turn a partial update into an unintended overwrite.
+- Responses: removing or renaming fields, changing types, or allowing `None`
+  where callers expect a value can break clients.
 
-Risky or breaking:
-
-- Deleting properties.
-- Renaming properties.
-- Making required fields optional in a way older code cannot tolerate.
-- Changing property types incompatibly.
-
-Use deprecation periods and defaults when evolving public model responses.
+Check old persisted data and rolling client/server versions. Use deprecation
+periods and defaults when evolving supported contracts.

@@ -1,8 +1,8 @@
 # ZenML Orchestrators Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/orchestrators/` or below. For
+This file applies to changes in `src/zenml/orchestrators/` and below. For
 detailed examples and implementation recipes, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Key Files
 
@@ -43,7 +43,8 @@ parent Kubernetes job name for dynamic runs, falling back only when needed.
 
 ## Dynamic Child Pipelines
 
-When changing dynamic pipeline behavior, check:
+When changing dynamic pipeline behavior, inspect these dependencies and update
+the affected layers:
 
 - `src/zenml/execution/pipeline/dynamic/`
 - `src/zenml/pipelines/dynamic/`

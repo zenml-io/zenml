@@ -1,8 +1,8 @@
 # Documentation Agent Guidelines
 
-This file applies when Codex starts in `docs/book/` or below. For detailed
+This file applies to changes in `docs/book/` and below. For detailed
 GitBook URL examples, link-checking notes, and docs workflow recipes, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Source of Truth
 
