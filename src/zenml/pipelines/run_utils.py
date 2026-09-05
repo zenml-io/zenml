@@ -44,6 +44,7 @@ from zenml.models import (
     StackResponse,
 )
 from zenml.stack import Flavor, Stack
+from zenml.status_sources import CLIENT_PLACEHOLDER_RUN_CREATED
 from zenml.utils import (
     code_utils,
     notebook_utils,
@@ -116,6 +117,7 @@ def create_placeholder_run(
         project=snapshot.project_id,
         snapshot=snapshot.id,
         status=ExecutionStatus.INITIALIZING,
+        status_source=CLIENT_PLACEHOLDER_RUN_CREATED,
         tags=snapshot.pipeline_configuration.tags,
         logs=logs,
         trigger_info=trigger_info,

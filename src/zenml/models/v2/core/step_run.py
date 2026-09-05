@@ -120,6 +120,11 @@ class StepRunRequest(ProjectScopedRequest):
         default=None,
     )
     status: ExecutionStatus = Field(title="The status of the step.")
+    status_source: Optional[str] = Field(
+        title="The source that set the status of the step run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     cache_key: Optional[str] = Field(
         title="The cache key of the step run.",
         default=None,
@@ -204,6 +209,11 @@ class StepRunUpdate(BaseUpdate):
         title="The status of the step.",
         default=None,
     )
+    status_source: Optional[str] = Field(
+        title="The source that set the status of the step run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
         default=None,
@@ -232,6 +242,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         default=None,
     )
     status: ExecutionStatus = Field(title="The status of the step.")
+    status_source: Optional[str] = Field(
+        title="The source that set the status of the step run.",
+        default=None,
+    )
     version: int = Field(
         title="The version of the step run.",
     )
@@ -503,6 +517,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def status_source(self) -> Optional[str]:
+        """The `status_source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().status_source
 
     @property
     def version(self) -> int:

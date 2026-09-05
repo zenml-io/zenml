@@ -56,6 +56,7 @@ from zenml.models import (
     RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
+from zenml.status_sources import compose_status_source
 from zenml.utils.run_utils import (
     build_dag,
     find_all_downstream_steps,
@@ -148,6 +149,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
     status_reason: Optional[str] = Field(nullable=True)
+    status_source: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -523,6 +525,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             index=index,
             in_progress=not request.status.is_finished,
             status_reason=request.status_reason,
+            status_source=compose_status_source(
+                declared=request.status_source,
+                requested=None,
+                stored=request.status,
+            ),
             pipeline_id=pipeline_id,
             snapshot_id=request.snapshot,
             triggered_by=triggered_by,
@@ -720,6 +727,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
             status_reason=self.status_reason,
+            status_source=self.status_source,
             created=self.created,
             updated=self.updated,
             in_progress=self.in_progress,
@@ -921,12 +929,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         requested_status: Optional[ExecutionStatus],
         status_reason: Optional[str] = None,
+        status_source: Optional[str] = None,
     ) -> bool:
         """Update the status of the pipeline run.
 
         Args:
             requested_status: The requested status of the pipeline run.
             status_reason: The reason for the status of the pipeline run.
+            status_source: The source that requested the status update.
 
         Raises:
             IllegalOperationError: If the requested status transition is
@@ -1018,6 +1028,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
 
         self.status = new_status.value
+        self.status_source = compose_status_source(
+            declared=status_source,
+            requested=requested_status,
+            stored=new_status,
+        )
 
         if is_dynamic_pipeline:
             self.in_progress = not new_status.is_finished
@@ -1101,6 +1116,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
+        self.status_source = compose_status_source(
+            declared=request.status_source,
+            requested=None,
+            stored=request.status,
+        )
         self.in_progress = not request.status.is_finished
 
         self.updated = utc_now()

@@ -26,6 +26,11 @@ from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.models import StepRunResponse
 from zenml.orchestrators import publish_utils
+from zenml.status_sources import (
+    SIGNAL_HANDLER_FAIL_FAST,
+    SIGNAL_HANDLER_RUN_STOPPING,
+    SIGNAL_HANDLER_STEP_STOPPING,
+)
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -162,6 +167,7 @@ class SignalHandler:
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
                     status=ExecutionStatus.STOPPED,
+                    status_source=SIGNAL_HANDLER_RUN_STOPPING,
                     end_time=utc_now(),
                 )
                 return RunStoppedException("Pipeline run is stopped.")
@@ -176,6 +182,7 @@ class SignalHandler:
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
                     status=ExecutionStatus.STOPPED,
+                    status_source=SIGNAL_HANDLER_FAIL_FAST,
                     end_time=utc_now(),
                 )
                 return RunStoppedException(
@@ -187,6 +194,7 @@ class SignalHandler:
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run.id,
                     status=ExecutionStatus.STOPPED,
+                    status_source=SIGNAL_HANDLER_STEP_STOPPING,
                     end_time=utc_now(),
                 )
                 return RunStoppedException("Pipeline run is stopped.")

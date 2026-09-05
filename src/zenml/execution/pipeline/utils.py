@@ -28,6 +28,7 @@ from zenml.models import (
 )
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.stack import Stack
+from zenml.status_sources import CLIENT_SUBMISSION_FAILED
 
 if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
@@ -103,7 +104,10 @@ def submit_pipeline(
             ):
                 # We failed during/before the submission of the run, so we mark
                 # the run as failed if it's still in an unfinished state.
-                publish_failed_pipeline_run(placeholder_run.id)
+                publish_failed_pipeline_run(
+                    placeholder_run.id,
+                    status_source=CLIENT_SUBMISSION_FAILED,
+                )
 
             raise e
 

@@ -135,6 +135,11 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    status_source: Optional[str] = Field(
+        title="The source that set the status of the pipeline run.",
+        default=None,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     orchestrator_environment: Dict[str, Any] = Field(
         default={},
         title=(
@@ -246,6 +251,11 @@ class PipelineRunUpdate(BaseUpdate):
         title="The reason for the status of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    status_source: Optional[str] = Field(
+        default=None,
+        title="The source that set the status of the pipeline run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     orchestrator_run_id: Optional[str] = None
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
@@ -285,6 +295,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
+    )
+    status_source: Optional[str] = Field(
+        default=None,
+        title="The source that set the status of the pipeline run.",
     )
     index: int = Field(
         title="The unique index of the run within the pipeline."
@@ -503,6 +517,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def status_source(self) -> Optional[str]:
+        """The `status_source` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().status_source
 
     @property
     def index(self) -> int:

@@ -73,6 +73,11 @@ from zenml.orchestrators.utils import (
     get_config_environment_vars,
 )
 from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.status_sources import (
+    KUBERNETES_ORCHESTRATOR_JOB_FAILED,
+    KUBERNETES_ORCHESTRATOR_NODE_FAILED,
+    KUBERNETES_ORCHESTRATOR_RUN_FAILED,
+)
 from zenml.utils import env_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
@@ -431,6 +436,7 @@ def main() -> None:
                 return NodeStatus.FAILED
 
             step_run_request.status = ExecutionStatus.FAILED
+            step_run_request.status_source = KUBERNETES_ORCHESTRATOR_JOB_FAILED
             step_run_request.end_time = utc_now()
 
             try:
@@ -918,7 +924,10 @@ def main() -> None:
                         ExecutionStatus.INITIALIZING,
                         ExecutionStatus.RUNNING,
                     }:
-                        publish_utils.publish_failed_step_run(step_run.id)
+                        publish_utils.publish_failed_step_run(
+                            step_run.id,
+                            status_source=KUBERNETES_ORCHESTRATOR_NODE_FAILED,
+                        )
 
             # If any steps failed and the pipeline run is still in a transient
             # state, we need to mark it as failed.
@@ -931,7 +940,10 @@ def main() -> None:
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 }:
-                    publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+                    publish_utils.publish_failed_pipeline_run(
+                        pipeline_run.id,
+                        status_source=KUBERNETES_ORCHESTRATOR_RUN_FAILED,
+                    )
         except AuthorizationException:
             # If a step of the pipeline failed or all of them completed
             # successfully, the pipeline run will be finished and the API token

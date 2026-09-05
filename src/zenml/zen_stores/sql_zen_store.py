@@ -389,6 +389,14 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
+from zenml.status_sources import (
+    SERVER_AUTO_RESUME,
+    SERVER_AUTO_RESUME_FAILED,
+    SERVER_RETRY_SUPERSEDED,
+    SERVER_WAIT_CONDITION_ABORTED,
+    SERVER_WAIT_CONDITION_PAUSED,
+    compose_status_source,
+)
 from zenml.utils import source_utils, tag_utils, uuid_utils, yaml_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -7487,6 +7495,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     requested_status=run_update.status,
                     status_reason=run_update.status_reason,
+                    status_source=run_update.status_source,
                 )
 
             if run_update.orchestrator_run_id:
@@ -7932,6 +7941,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     requested_status=ExecutionStatus.STOPPED,
                     status_reason="Wait condition was aborted.",
+                    status_source=SERVER_WAIT_CONDITION_ABORTED,
                 )
 
         return resolved_model
@@ -7990,6 +8000,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                         requested_status=ExecutionStatus.PAUSED,
                         status_reason="Waiting for input.",
+                        status_source=SERVER_WAIT_CONDITION_PAUSED,
                     )
 
             session.add(schema)
@@ -8014,6 +8025,7 @@ class SqlZenStore(BaseZenStore):
                     pipeline_run_id=run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
+                    status_source=SERVER_WAIT_CONDITION_PAUSED,
                 )
                 session.commit()
             # Then, attempt to resume the run from the server.
@@ -8047,6 +8059,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     requested_status=ExecutionStatus.RESUMING,
                     status_reason="Automatically resuming run from server.",
+                    status_source=SERVER_AUTO_RESUME,
                 )
                 session.commit()
 
@@ -8066,6 +8079,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                         requested_status=ExecutionStatus.PAUSED,
                         status_reason="Waiting for manual resume.",
+                        status_source=SERVER_AUTO_RESUME_FAILED,
                     )
                     session.commit()
 
@@ -8078,6 +8092,7 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                     status_reason="Waiting for manual resume.",
+                    status_source=SERVER_AUTO_RESUME_FAILED,
                 )
                 session.commit()
 
@@ -12148,12 +12163,19 @@ class SqlZenStore(BaseZenStore):
                     .where(col(StepRunSchema.name) == step_run.name)
                     .values(
                         status=ExecutionStatus.RETRIED.value,
+                        status_source=compose_status_source(
+                            declared=SERVER_RETRY_SUPERSEDED,
+                            requested=None,
+                            stored=ExecutionStatus.RETRIED,
+                        ),
                         end_time=func.coalesce(
                             StepRunSchema.end_time,
                             func.now(),
                         ),
                     )
                 )
+
+            requested_step_status = step_run.status
 
             is_retriable = len(existing_step_runs) < max_retries
             if is_retriable and step_run.status == ExecutionStatus.FAILED:
@@ -12171,6 +12193,11 @@ class SqlZenStore(BaseZenStore):
                 # step runs. Or if it doesn't reach the point in code where
                 # the step run is created.
                 is_retriable=is_retriable,
+            )
+            step_schema.status_source = compose_status_source(
+                declared=step_run.status_source,
+                requested=requested_step_status,
+                stored=ExecutionStatus(step_schema.status),
             )
 
             # cached top-level heartbeat config property (for fast validation).
@@ -12404,7 +12431,9 @@ class SqlZenStore(BaseZenStore):
 
             if step_run.status != ExecutionStatus.RUNNING:
                 self._update_pipeline_run_status(
-                    pipeline_run_id=step_run.pipeline_run_id, session=session
+                    pipeline_run_id=step_run.pipeline_run_id,
+                    session=session,
+                    status_source=step_run.status_source,
                 )
 
             session.commit()
@@ -12460,6 +12489,11 @@ class SqlZenStore(BaseZenStore):
                     and request.status != ResourceRequestStatus.ALLOCATED
                 ):
                     step_schema.status = ExecutionStatus.QUEUED.value
+                    step_schema.status_source = compose_status_source(
+                        declared=step_run.status_source,
+                        requested=requested_step_status,
+                        stored=ExecutionStatus.QUEUED,
+                    )
                     session.add(step_schema)
                     session.commit()
 
@@ -12828,6 +12862,9 @@ class SqlZenStore(BaseZenStore):
                     new_status=step_run_update.status,
                 )
 
+            declared_step_status_source = step_run_update.status_source
+            requested_step_status = step_run_update.status
+
             if step_run_update.status in {
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
@@ -12861,6 +12898,15 @@ class SqlZenStore(BaseZenStore):
                 and step_run_update.status == ExecutionStatus.FAILED
             ):
                 step_run_update.status = ExecutionStatus.STOPPED
+
+            if step_run_update.status is not None:
+                step_run_update.status_source = compose_status_source(
+                    declared=declared_step_status_source,
+                    requested=requested_step_status,
+                    stored=step_run_update.status,
+                )
+            else:
+                step_run_update.status_source = None
 
             # Update the step
             existing_step_run.update(step_run_update)
@@ -12903,6 +12949,7 @@ class SqlZenStore(BaseZenStore):
             self._update_pipeline_run_status(
                 pipeline_run_id=existing_step_run.pipeline_run_id,
                 session=session,
+                status_source=declared_step_status_source,
             )
 
             # Add logs if specified
@@ -13155,6 +13202,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
+        status_source: Optional[str] = None,
     ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus]:
         """Update a pipeline run status without committing the transaction.
 
@@ -13163,6 +13211,7 @@ class SqlZenStore(BaseZenStore):
             session: The database session to use.
             requested_status: The requested status of the pipeline run.
             status_reason: The reason for the status of the pipeline run.
+            status_source: The source that requested the status update.
 
         Returns:
             A tuple containing whether the schema was updated, the updated
@@ -13175,7 +13224,9 @@ class SqlZenStore(BaseZenStore):
         ).one()
         previous_status = ExecutionStatus(pipeline_run.status)
         did_update = pipeline_run.update_status(
-            requested_status=requested_status, status_reason=status_reason
+            requested_status=requested_status,
+            status_reason=status_reason,
+            status_source=status_source,
         )
         session.add(pipeline_run)
         return did_update, pipeline_run, previous_status
@@ -13186,6 +13237,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
+        status_source: Optional[str] = None,
     ) -> None:
         """Updates the status of a pipeline run.
 
@@ -13194,6 +13246,7 @@ class SqlZenStore(BaseZenStore):
             session: The database session to use.
             requested_status: The requested status of the pipeline run.
             status_reason: The reason for the status of the pipeline run.
+            status_source: The source that requested the status update.
         """
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
@@ -13204,6 +13257,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 requested_status=requested_status,
                 status_reason=status_reason,
+                status_source=status_source,
             )
         )
 
