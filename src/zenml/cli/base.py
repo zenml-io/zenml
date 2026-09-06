@@ -711,6 +711,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
 @cli.command(
     "backfill-database",
     help="Compress existing snapshot and step configuration text.",
+    hidden=True,
 )
 @click.option(
     "--checkpoint",

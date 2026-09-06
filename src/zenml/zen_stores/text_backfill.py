@@ -20,11 +20,10 @@ from zenml.enums import StoreType
 from zenml.zen_stores.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     MAX_DECOMPRESSED_TEXT_BYTES,
+    MIN_COMPRESSIBLE_BYTES,
     decode_compressed_text,
     encode_compressed_text,
 )
-from zenml.zen_stores.schemas.compressed_text import MIN_COMPRESSIBLE_BYTES
-from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
 COLUMNS = {
     "pipeline_snapshot": (
@@ -149,9 +148,16 @@ def backfill_compressed_text(
         Cumulative checkpointed progress, including completed columns.
 
     Raises:
-        ValueError: If limits, dialect, checkpoint identity or revision differ.
+        ValueError: If limits, dialect, checkpoint identity or revision differ,
+            or if the platform has no advisory file locks.
     """
-    import fcntl
+    try:
+        import fcntl
+    except ImportError:
+        raise ValueError(
+            "The backfill needs advisory file locks and runs on Linux and "
+            "macOS only."
+        ) from None
 
     if (
         not 1 <= batch_size <= 1000
@@ -274,6 +280,8 @@ def backfill_from_config(
         ValueError: If not directly connected to SQL or compressed writes are off.
         RuntimeError: If a database operation fails.
     """
+    from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
+
     if config.type != StoreType.SQL:
         raise ValueError("Backfill requires a direct SQL store configuration.")
     config = SqlZenStoreConfiguration.model_validate(config.model_dump())
