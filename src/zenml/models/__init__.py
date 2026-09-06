@@ -425,6 +425,12 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
     TriggerUpdate,
+    WebhookTrigger,
+    WebhookTriggerExecutionInfo,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerResponseBody,
+    WebhookTriggerUpdate,
 )
 from zenml.models.v2.core.user import (
     UserFilter,
@@ -433,6 +439,20 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
     UserUpdate,
+)
+from zenml.models.v2.core.webhook import (
+    WebhookCreateResponse,
+    WebhookEventStatsUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookResponseBody,
+    WebhookResponseMetadata,
+    WebhookResponseResources,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookStats,
+    WebhookUpdate,
 )
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -645,6 +665,16 @@ PlatformEventTriggerRequest.model_rebuild()
 PlatformEventTriggerUpdate.model_rebuild()
 PlatformEventTriggerResponse.model_rebuild()
 PlatformEventTriggerResponseBody.model_rebuild()
+WebhookTrigger.model_rebuild()
+WebhookTriggerRequest.model_rebuild()
+WebhookTriggerUpdate.model_rebuild()
+WebhookTriggerResponse.model_rebuild()
+WebhookTriggerResponseBody.model_rebuild()
+WebhookResponseBody.model_rebuild()
+WebhookStats.model_rebuild()
+WebhookResponseMetadata.model_rebuild()
+WebhookResponseResources.model_rebuild()
+WebhookResponse.model_rebuild()
 
 
 __all__ = [
@@ -1026,9 +1056,27 @@ __all__ = [
     "PlatformEventTriggerResponse",
     "PlatformEventTriggerResponseBody",
     "PlatformEventTrigger",
+    "WebhookTrigger",
+    "WebhookTriggerRequest",
+    "WebhookTriggerUpdate",
+    "WebhookTriggerResponse",
+    "WebhookTriggerResponseBody",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
     "SourceEntity",
     "TriggerExecutionInfo",
+    "WebhookTriggerExecutionInfo",
+    "WebhookEventStatsUpdate",
+    "WebhookCreateResponse",
+    "WebhookFilter",
+    "WebhookRequest",
+    "WebhookResponse",
+    "WebhookResponseBody",
+    "WebhookResponseMetadata",
+    "WebhookResponseResources",
+    "WebhookRotateSecretRequest",
+    "WebhookSecretResponse",
+    "WebhookStats",
+    "WebhookUpdate",
 ]

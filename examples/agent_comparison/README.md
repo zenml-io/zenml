@@ -305,6 +305,7 @@ To make this production-ready:
 5. **Scale Testing**: Run on larger datasets and more architectures
 6. **Add Monitoring**: Track performance degradation over time with Langfuse dashboards
 7. **Implement A/B Testing**: Gradually roll out winning architectures with proper monitoring
+8. **Replay Real Runs**: Import the Langfuse traces of the winning architecture into [Kitaru](https://docs.zenml.io/kitaru) with `kitaru-langfuse-importer` and replay them against your real code with one thing changed, instead of comparing architectures on sample data only ([importing Langfuse traces](https://docs.zenml.io/kitaru/guides/import-langfuse-traces))
 
 ## 🔗 Related Examples
 
