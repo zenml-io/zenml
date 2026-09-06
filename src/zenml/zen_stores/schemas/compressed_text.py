@@ -38,6 +38,7 @@ from zenml.zen_stores.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     COMPRESSED_TEXT_PREFIX,
     MAX_DECOMPRESSED_TEXT_BYTES,
+    MIN_COMPRESSIBLE_BYTES,
     CompressedTextError,
     decode_compressed_text,
     encode_compressed_text,
@@ -55,13 +56,6 @@ __all__ = [
     "encode_compressed_text",
     "set_compressed_writes",
 ]
-
-# Base64 inflates the zlib stream by a third, so a value only gets smaller if
-# zlib beats a 0.75 ratio, which JSON payloads do not reach below a few
-# hundred bytes. Shorter values skip the attempt instead of paying for a
-# compression that is discarded, which matters for step configurations as the
-# most frequently written of these columns.
-MIN_COMPRESSIBLE_BYTES = 256
 
 # Column types are created when the schemas are imported and shared by every
 # engine in the process, so the write setting is kept per engine, keyed by
