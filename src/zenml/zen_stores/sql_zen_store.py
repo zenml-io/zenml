@@ -1401,6 +1401,7 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
         query_options_kwargs: Optional[Dict[str, Any]] = None,
+        paginate_by_ids: bool = False,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1425,6 +1426,8 @@ class SqlZenStore(BaseZenStore):
                 query options defined on the schema.
             query_options_kwargs: Extra keyword arguments forwarded to the
                 schema's `get_query_options`.
+            paginate_by_ids: Fetch page IDs before loading rows. Only use for
+                single-entity queries sorted on columns of that entity.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1492,6 +1495,25 @@ class SqlZenStore(BaseZenStore):
         else:
             query = filter_model.apply_sorting(query=query, table=table)
 
+            if paginate_by_ids:
+                # Keep filtering (including RBAC) and deduplication inside the
+                # page. MySQL needs the sort column selected with DISTINCT.
+                sort_column = getattr(table, filter_model.sorting_params[0])
+                page_query = query.with_only_columns(
+                    col(table.id), sort_column, maintain_column_froms=True
+                )
+                if cls._query_requires_distinct(query):
+                    page_query = page_query.distinct()
+                page_ids = (
+                    page_query.limit(filter_model.size)
+                    .offset(filter_model.offset)
+                    .subquery("page_ids")
+                )
+                query = select(table).join(
+                    page_ids, col(table.id) == page_ids.c.id
+                )
+                query = filter_model.apply_sorting(query=query, table=table)
+
             query_options = table.get_query_options(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -1507,9 +1529,11 @@ class SqlZenStore(BaseZenStore):
             if cls._query_requires_distinct(query):
                 query = query.distinct()
 
-            query_result = session.exec(
-                query.limit(filter_model.size).offset(filter_model.offset)
-            )
+            if not paginate_by_ids:
+                query = query.limit(filter_model.size).offset(
+                    filter_model.offset
+                )
+            query_result = session.exec(query)
             item_schemas = query_result.all()
 
         # Convert this page of items from schemas to models.
@@ -7454,6 +7478,8 @@ class SqlZenStore(BaseZenStore):
                 query_options_kwargs={
                     "include_full_metadata": include_full_metadata
                 },
+                paginate_by_ids=runs_filter_model.sorting_params[0]
+                not in {"pipeline", "stack", "model", "model_version"},
             )
 
     def update_run(
