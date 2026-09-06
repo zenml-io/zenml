@@ -14,7 +14,7 @@
 """Utility functions for networking."""
 
 import socket
-from typing import List, Optional, Tuple, cast
+from typing import Optional, Sequence, Tuple, cast
 from urllib.parse import urlparse
 
 from zenml.environment import Environment
@@ -68,7 +68,7 @@ def find_available_port() -> int:
 
 
 def lookup_preferred_or_free_port(
-    preferred_ports: List[int] = [],
+    preferred_ports: Optional[Sequence[int]] = None,
     allocate_port_if_busy: bool = True,
     range: Tuple[int, int] = SCAN_PORT_RANGE,
     address: str = "127.0.0.1",
@@ -93,7 +93,7 @@ def lookup_preferred_or_free_port(
             is disabled, or if no free TCP port could be otherwise allocated.
     """
     # If a port value is explicitly configured, attempt to use it first
-    if preferred_ports:
+    if preferred_ports is not None:
         for port in preferred_ports:
             if port_available(port, address):
                 return port
@@ -124,6 +124,17 @@ def scan_for_available_port(
         The first available port in the given range, or None if no available
         port is found.
     """
+    # Fast path: ask the OS kernel for a free port. If it falls within
+    # the requested range, return immediately without a linear scan.
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((address, 0))
+            _, kernel_port = s.getsockname()
+        if start <= kernel_port <= stop:
+            return kernel_port
+    except socket.error:
+        pass
+
     for port in range(start, stop + 1):
         if port_available(port, address):
             return port
@@ -135,21 +146,28 @@ def scan_for_available_port(
     return None
 
 
-def port_is_open(hostname: str, port: int) -> bool:
+def port_is_open(
+    hostname: str, port: int, timeout: float = 5.0
+) -> bool:
     """Check if a TCP port is open on a remote host.
 
     Args:
         hostname: hostname of the remote machine
         port: TCP port number
+        timeout: connection timeout in seconds (default: 5.0).
+            Without a timeout, the socket blocks for the OS default
+            TCP timeout (typically 75-120s on Linux), which can stall
+            health-check loops.
 
     Returns:
         True if the port is open, False otherwise
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(timeout)
             result = sock.connect_ex((hostname, port))
             return result == 0
-    except socket.error as e:
+    except (socket.error, socket.timeout) as e:
         logger.debug(
             f"Error checking TCP port {port} on host {hostname}: {str(e)}"
         )
