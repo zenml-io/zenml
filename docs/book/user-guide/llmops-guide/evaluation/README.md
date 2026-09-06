@@ -15,6 +15,8 @@ Our RAG pipeline is a whole system, moreover, not just a model, and evaluating i
 
 In the previous section we built out a basic RAG pipeline for our documentation question-and-answer use case. We'll use this pipeline to demonstrate how to evaluate the performance of your RAG pipeline.
 
+Everything that follows starts from a dataset you assembled and score offline, which is the right shape for a RAG pipeline. An agent already serving traffic gives you the opposite starting point: real runs, some of which went wrong. [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for agents, replays one of those recorded runs against your real code with a single thing changed — a cheaper model, a different prompt — and diffs the pair, so a failure you saw once becomes a check you can rerun. See [building a regression suite from production](https://docs.zenml.io/kitaru/guides/regression-suite) for that workflow and [evaluators](https://docs.zenml.io/kitaru/concepts/evaluators) for how Kitaru scores sessions.
+
 {% hint style="info" %}
 If you were running this in a production setting, you might want to set up evaluation to check the performance of a raw LLM model (i.e. without any retrieval / RAG components) as a baseline, and then compare this to the performance of your RAG pipeline. This will help you understand how much value the retrieval and generation components are adding to your system. We won't cover this here, but it's a good practice to keep in mind.
 {% endhint %}

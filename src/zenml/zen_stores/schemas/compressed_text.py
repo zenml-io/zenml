@@ -11,14 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Text column types that read compressed values.
+"""Text column types that store text compressed when that is smaller.
 
-A compressed value is `COMPRESSED_TEXT_PREFIX` followed by the standard Base64
-encoding of the zlib stream of the UTF-8 encoded text. A NUL byte can never
-start the JSON documents or source code that these columns hold, so it marks
-compressed values unambiguously, and the `<algorithm>:<version>` segment lets
-readers reject encodings they do not know instead of handing garbage to the
-JSON parser.
+The storage format is defined in `zenml.zen_stores.compressed_text`; these
+column types apply it at the column boundary so that every ORM reader receives
+plain text.
 
 Compressed writes are off by default and enabled per engine through the
 corresponding `SqlZenStoreConfiguration` setting. They may only be enabled once
@@ -28,8 +25,6 @@ replicas cannot read during a rolling upgrade. Readers never depend on the
 setting, so it can be switched off again at any time.
 """
 
-import base64
-import zlib
 from typing import Any, Optional, Type, Union
 from weakref import WeakSet
 
@@ -39,32 +34,29 @@ from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator, TypeEngine
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.zen_stores.compressed_text import (
+    COMPRESSED_TEXT_MARKER,
+    COMPRESSED_TEXT_PREFIX,
+    MAX_DECOMPRESSED_TEXT_BYTES,
+    CompressedTextError,
+    decode_compressed_text,
+    encode_compressed_text,
+)
 
-COMPRESSED_TEXT_MARKER = "\x00zenml-compressed:"
-COMPRESSED_TEXT_PREFIX = f"{COMPRESSED_TEXT_MARKER}zlib:v1:"
-
-# Bounds the decompressed size independently of the column width, so a corrupt
-# or malicious payload cannot expand without limit while compression can still
-# fit a payload that would not fit the column as plain text.
-MAX_DECOMPRESSED_TEXT_BYTES = 64 * 1024 * 1024
-
-
-def encode_compressed_text(value: str) -> str:
-    """Encode text in the compressed storage format.
-
-    Args:
-        value: The text to encode.
-
-    Returns:
-        The encoded value.
-    """
-    return _encode_utf8(value.encode("utf-8"))
-
-
-def _encode_utf8(raw: bytes) -> str:
-    payload = zlib.compress(raw)
-    return COMPRESSED_TEXT_PREFIX + base64.b64encode(payload).decode("ascii")
-
+__all__ = [
+    "COMPRESSED_TEXT_MARKER",
+    "COMPRESSED_TEXT_PREFIX",
+    "MAX_DECOMPRESSED_TEXT_BYTES",
+    "MIN_COMPRESSIBLE_BYTES",
+    "CompressedMediumText",
+    "CompressedText",
+    "CompressedTextError",
+    "decode_compressed_text",
+    "encode_compressed_text",
+    "CompressedStructuredJsonText",
+    "set_compressed_structured_json_writes",
+    "set_compressed_writes",
+]
 
 # Base64 inflates the zlib stream by a third, so a value only gets smaller if
 # zlib beats a 0.75 ratio, which JSON payloads do not reach below a few
@@ -123,11 +115,11 @@ def _encode_if_smaller(value: str, minimum_bytes: int) -> str:
     Returns:
         The encoded value when it is smaller, otherwise the original value.
     """
-    raw = value.encode("utf-8")
-    if len(raw) < minimum_bytes:
+    plain_size = len(value.encode("utf-8"))
+    if plain_size < minimum_bytes:
         return value
-    encoded = _encode_utf8(raw)
-    return encoded if len(encoded) < len(raw) else value
+    encoded = encode_compressed_text(value)
+    return encoded if len(encoded) < plain_size else value
 
 
 def _reject_compressed_input(value: str, column: str) -> None:
@@ -144,68 +136,6 @@ def _reject_compressed_input(value: str, column: str) -> None:
         raise ValueError(
             f"The {column} must not start with the compressed text marker."
         )
-
-
-def decode_compressed_text(value: str, context: str) -> str:
-    """Decode a stored text value, decompressing it if it is compressed.
-
-    Args:
-        value: The stored text value.
-        context: What the value is, e.g. the qualified column name, for
-            error messages.
-
-    Returns:
-        The plain text.
-
-    Raises:
-        ValueError: If the value carries the compressed-text marker but is
-            not a well-formed compressed value within
-            `MAX_DECOMPRESSED_TEXT_BYTES`.
-    """
-    if not value.startswith(COMPRESSED_TEXT_MARKER):
-        return value
-    if not value.startswith(COMPRESSED_TEXT_PREFIX):
-        header = value[
-            len(COMPRESSED_TEXT_MARKER) : len(COMPRESSED_TEXT_MARKER) + 64
-        ].split(":", 2)[:2]
-        raise ValueError(
-            f"The compressed {context} uses the format `{':'.join(header)}`, "
-            "which this server version cannot read. It was probably written "
-            "by a newer server version."
-        )
-
-    try:
-        compressed = base64.b64decode(
-            value[len(COMPRESSED_TEXT_PREFIX) :], validate=True
-        )
-    except ValueError as error:
-        raise ValueError(
-            f"The compressed {context} is not valid Base64."
-        ) from error
-
-    decompressor = zlib.decompressobj()
-    try:
-        decoded = decompressor.decompress(
-            compressed, MAX_DECOMPRESSED_TEXT_BYTES + 1
-        )
-    except zlib.error as error:
-        raise ValueError(f"The compressed {context} is corrupt.") from error
-    if len(decoded) > MAX_DECOMPRESSED_TEXT_BYTES:
-        raise ValueError(
-            f"The compressed {context} decompresses to more than "
-            f"{MAX_DECOMPRESSED_TEXT_BYTES} bytes."
-        )
-    if not decompressor.eof:
-        raise ValueError(f"The compressed {context} is truncated.")
-    if decompressor.unused_data:
-        raise ValueError(f"The compressed {context} has trailing data.")
-
-    try:
-        return decoded.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise ValueError(
-            f"The compressed {context} is not valid UTF-8."
-        ) from error
 
 
 class CompressedText(TypeDecorator[str]):
@@ -236,12 +166,11 @@ class CompressedText(TypeDecorator[str]):
     ) -> Optional[str]:
         """Compress a value on write when that is enabled and smaller.
 
+        A value that starts with the compressed-text marker is rejected.
+
         Args:
             value: The plain text being written.
             dialect: The dialect of the engine writing the value.
-
-        Raises:
-            ValueError: If the value starts with the compressed-text marker.
 
         Returns:
             The value to store.
