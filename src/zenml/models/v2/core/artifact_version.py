@@ -19,6 +19,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     Type,
@@ -937,6 +938,14 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
             self.lazy_load_name,
             self.lazy_load_version,
         )
+
+
+class ArtifactVersionLocation(NamedTuple):
+    """Where the data of an artifact version is stored."""
+
+    id: UUID
+    uri: str
+    artifact_store_id: Optional[UUID]
 
 
 class ArtifactVersionPruneRequest(BaseZenModel):

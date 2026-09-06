@@ -14,7 +14,7 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import TYPE_CHECKING, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, List, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -38,7 +38,6 @@ from zenml.constants import (
     VISUALIZE,
 )
 from zenml.enums import DownloadType
-from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionFilter,
@@ -81,7 +80,6 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
-    set_auth_context,
     set_filter_project_scope,
     submit_maintenance_task,
     zen_store,
@@ -294,8 +292,8 @@ def delete_artifact_version(
                 "Artifact version has no artifact store, cannot delete data."
             )
 
-        artifact_store = instantiate_artifact_store(
-            _verify_artifact_store_access(artifact_version.artifact_store_id)
+        artifact_store = _load_accessible_artifact_store(
+            artifact_version.artifact_store_id
         )
         try:
             if artifact_store.exists(artifact_version.uri):
@@ -361,9 +359,6 @@ def prune_artifact_versions(
         )
 
     def _prune() -> None:
-        # The task thread serves no request, so the caller's context is
-        # restored for the artifact store permission checks.
-        set_auth_context(auth_context)
         logger.info(
             f"Pruning unused artifact versions of project "
             f"{prune_request.project} on behalf of user "
@@ -372,7 +367,7 @@ def prune_artifact_versions(
         result = zen_store().prune_artifact_versions(
             prune_request,
             delete_artifact_data=ArtifactDataDeleter(
-                _load_usable_artifact_store
+                _load_accessible_artifact_store
             ),
             on_deleted=_delete_artifact_version_resources,
         )
@@ -419,27 +414,20 @@ def prune_artifact_versions_legacy(
     )
 
 
-def _load_usable_artifact_store(
+def _load_accessible_artifact_store(
     artifact_store_id: UUID,
-) -> Optional["BaseArtifactStore"]:
-    """Load an artifact store if it exists and the caller may use it.
+) -> "BaseArtifactStore":
+    """Load an artifact store after checking that the caller may use it.
 
     Args:
         artifact_store_id: The artifact store.
 
     Returns:
-        The artifact store, or None if the caller cannot use it.
+        The artifact store.
     """
-    try:
-        return instantiate_artifact_store(
-            _verify_artifact_store_access(artifact_store_id)
-        )
-    except (KeyError, IllegalOperationError) as e:
-        logger.warning(
-            f"Keeping the artifact versions stored in artifact store "
-            f"{artifact_store_id}: {e}"
-        )
-        return None
+    return instantiate_artifact_store(
+        _verify_artifact_store_access(artifact_store_id)
+    )
 
 
 def _verify_artifact_store_access(

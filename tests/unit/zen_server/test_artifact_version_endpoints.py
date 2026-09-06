@@ -28,6 +28,7 @@ from zenml.client import Client
 from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ArtifactVersionLocation,
     ArtifactVersionPruneRequest,
     ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
@@ -35,7 +36,6 @@ from zenml.models import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import artifact_version_endpoints as endpoints
 from zenml.zen_stores import sql_zen_store
-from zenml.zen_stores.sql_zen_store import ArtifactVersionLocation
 
 
 @contextmanager
@@ -51,7 +51,6 @@ def _server(store: MagicMock) -> Iterator[MagicMock]:
     with (
         patch.object(endpoints, "verify_permission") as verify,
         patch.object(endpoints, "zen_store", return_value=store),
-        patch.object(endpoints, "set_auth_context"),
         patch.object(
             endpoints, "submit_maintenance_task", return_value="task"
         ),
@@ -105,7 +104,6 @@ def test_prune_apply_runs_in_the_background() -> None:
         store.prune_artifact_versions.assert_not_called()
         endpoints.submit_maintenance_task.assert_called_once()
         endpoints.submit_maintenance_task.call_args.args[0]()
-        endpoints.set_auth_context.assert_called_once()
         call = store.prune_artifact_versions.call_args
         version_id = uuid4()
         call.kwargs["on_deleted"]([version_id])
@@ -173,7 +171,7 @@ def test_data_deleter_keeps_versions_it_cannot_delete_data_for() -> None:
             return_value=artifact_store,
         ) as instantiate,
     ):
-        delete = ArtifactDataDeleter(endpoints._load_usable_artifact_store)
+        delete = ArtifactDataDeleter(endpoints._load_accessible_artifact_store)
         results = [
             delete(ArtifactVersionLocation(uuid4(), uri, store_id))
             for uri, store_id in [
@@ -245,7 +243,7 @@ def test_prune_deletes_data_and_metadata_batch_by_batch(
             pruned = clean_client.zen_store.prune_artifact_versions(
                 prune_request,
                 delete_artifact_data=ArtifactDataDeleter(
-                    endpoints._load_usable_artifact_store
+                    endpoints._load_accessible_artifact_store
                 ),
             ).artifact_version_count
     finally:

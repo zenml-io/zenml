@@ -61,7 +61,6 @@ from typing import (
     ForwardRef,
     List,
     Literal,
-    NamedTuple,
     NoReturn,
     Optional,
     Sequence,
@@ -210,6 +209,7 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionLocation,
     ArtifactVersionPruneRequest,
     ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
@@ -518,14 +518,6 @@ _WEBHOOK_SECRET_VALUE_KEY = "secret"
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
-
-
-class ArtifactVersionLocation(NamedTuple):
-    """Where the data of an artifact version is stored."""
-
-    id: UUID
-    uri: str
-    artifact_store_id: Optional[UUID]
 
 
 # Pruning walks unused artifact versions in batches of this size. Every
@@ -3546,8 +3538,6 @@ class SqlZenStore(BaseZenStore):
                     for location in locations
                     if delete_artifact_data(location)
                 ]
-            if not locations:
-                continue
             if not prune_request.delete_metadata:
                 pruned_count += len(locations)
                 continue
@@ -3622,6 +3612,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The IDs of the artifact versions that were deleted.
         """
+        if not artifact_version_ids:
+            return []
         with Session(self.engine) as session:
             session.execute(
                 delete(ArtifactVersionSchema)

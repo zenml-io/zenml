@@ -461,7 +461,9 @@ def submit_maintenance_task(task: Callable[[], Any]) -> str:
 
     The task runs detached from the request that submitted it, so its outcome
     is only reported through the server logs. Every log record it emits
-    carries the returned task ID and the ID of the submitting request.
+    carries the returned task ID and the ID of the submitting request, and
+    the request's authentication context is available to the task for
+    permission checks.
 
     Args:
         task: The task to run.
@@ -474,13 +476,20 @@ def submit_maintenance_task(task: Callable[[], Any]) -> str:
     """
     task_id = str(uuid4())
     request_id = get_logging_context().get("request_id")
+    auth_context = get_auth_context()
 
     def _run() -> None:
-        with logging_context(task_id=task_id, request_id=request_id):
-            try:
-                task()
-            except Exception:
-                logger.exception("Maintenance task failed.")
+        # The worker thread outlives the task, so the context is reset
+        # afterwards instead of leaking into the next task.
+        token = _auth_context.set(auth_context)
+        try:
+            with logging_context(task_id=task_id, request_id=request_id):
+                try:
+                    task()
+                except Exception:
+                    logger.exception("Maintenance task failed.")
+        finally:
+            _auth_context.reset(token)
 
     try:
         maintenance_executor().submit(_run)

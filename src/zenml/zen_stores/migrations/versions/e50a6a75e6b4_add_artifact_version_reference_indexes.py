@@ -6,8 +6,10 @@ Create Date: 2026-08-28 12:00:00.000000
 
 """
 
-from alembic import op
-from sqlalchemy import inspect
+from zenml.zen_stores.migrations.utils import (
+    create_index_if_missing,
+    drop_index_if_exists,
+)
 
 # revision identifiers, used by Alembic.
 revision = "e50a6a75e6b4"
@@ -35,14 +37,11 @@ def _index_name(table: str, column: str) -> str:
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    inspector = inspect(op.get_bind())
+    # Databases that went through migration c2f8d07a91b4 already have the
+    # pipeline_run_output index; databases created from the schema metadata
+    # do not, because the schema never declared it.
     for table, column in REFERENCING_COLUMNS:
-        # Databases that went through migration c2f8d07a91b4 already have the
-        # pipeline_run_output index; databases created from the schema
-        # metadata do not, because the schema never declared it.
-        existing = {index["name"] for index in inspector.get_indexes(table)}
-        if _index_name(table, column) not in existing:
-            op.create_index(_index_name(table, column), table, [column])
+        create_index_if_missing(table, _index_name(table, column), [column])
 
 
 def downgrade() -> None:
@@ -50,4 +49,4 @@ def downgrade() -> None:
     for table, column in REFERENCING_COLUMNS:
         # The pipeline_run_output index belongs to migration c2f8d07a91b4.
         if table != "pipeline_run_output":
-            op.drop_index(_index_name(table, column), table_name=table)
+            drop_index_if_exists(table, _index_name(table, column))

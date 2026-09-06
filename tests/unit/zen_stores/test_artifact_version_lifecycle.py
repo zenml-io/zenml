@@ -31,6 +31,7 @@ from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ArtifactRequest,
     ArtifactVersionFilter,
+    ArtifactVersionLocation,
     ArtifactVersionPruneRequest,
     ArtifactVersionRequest,
     ModelRequest,
@@ -46,10 +47,7 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     RunMetadataResourceSchema,
 )
-from zenml.zen_stores.sql_zen_store import (
-    ArtifactVersionLocation,
-    SqlZenStore,
-)
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
@@ -144,6 +142,31 @@ def _create_run_with_output(
             )
         )
         session.commit()
+
+
+def test_unused_filter_covers_every_table_referencing_artifact_versions() -> (
+    None
+):
+    """A new table that references artifact versions must join the rule."""
+    from sqlmodel import SQLModel
+
+    from zenml.zen_stores.schemas import ArtifactVersionSchema
+
+    referencing_columns = {
+        (fk.parent.table.name, fk.parent.name)
+        for table in SQLModel.metadata.tables.values()
+        for fk in table.foreign_keys
+        if fk.column.table.name == ArtifactVersionSchema.__tablename__
+        and fk.column.name == "id"
+    }
+    # Visualizations belong to their version and are deleted with it, so
+    # they do not keep it alive.
+    referencing_columns -= {("artifact_visualization", "artifact_version_id")}
+    assert referencing_columns
+
+    sql = str(ArtifactVersionSchema.unused_filter())
+    for table, column in referencing_columns:
+        assert f"{table}.{column} = artifact_version.id" in sql, table
 
 
 def test_model_linked_version_is_not_unused_or_pruned(
