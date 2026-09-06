@@ -15,7 +15,7 @@
 
 from contextlib import nullcontext
 
-from zenml.dispatcher import EventDispatcher
+from zenml.dispatcher import EventDispatcher, PipelineRunStatusUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -43,6 +43,7 @@ import math
 import os
 import random
 import re
+import secrets
 import sys
 import time
 import uuid
@@ -177,6 +178,7 @@ from zenml.enums import (
     StepRunInputArtifactType,
     StoreType,
     TaggableResourceTypes,
+    TriggerType,
     VisualizationResourceTypes,
 )
 from zenml.exceptions import (
@@ -372,6 +374,15 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookEventStatsUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookTriggerRequest,
+    WebhookUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -390,6 +401,7 @@ from zenml.utils.string_utils import (
     validate_name,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.webhooks.intake import WebhookIntakeConfig
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -456,6 +468,9 @@ from zenml.zen_stores.schemas import (
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
+    WebhookEventPayloadSchema,
+    WebhookSchema,
+    WebhookStatsSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -495,6 +510,9 @@ SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
 
 logger = get_logger(__name__)
+
+_WEBHOOK_SECRET_VALUE_KEY = "secret"
+
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
@@ -8228,7 +8246,425 @@ class SqlZenStore(BaseZenStore):
                         session.commit()
         return None
 
+    # -------------------- Webhooks ---------------------
+
+    def _create_webhook_secret(self, secret: str, session: Session) -> UUID:
+        """Create an internal secret containing a webhook signing secret.
+
+        Args:
+            secret: The signing secret value.
+            session: The active database session.
+
+        Returns:
+            The internal secret ID.
+        """
+        return self._create_secret_schema(
+            SecretRequest(
+                user=self._get_active_user(session=session).id,
+                name=f"webhook-{uuid.uuid4().hex}",
+                private=False,
+                values={_WEBHOOK_SECRET_VALUE_KEY: secret},
+            ),
+            session=session,
+            internal=True,
+        ).id
+
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook and its internal signing secret.
+
+        Args:
+            webhook: The webhook creation request.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """  # noqa: DOC501, DOC503
+        generated_secret = webhook.secret is None
+        if webhook.secret is None:
+            secret = secrets.token_urlsafe(32)
+        else:
+            secret = webhook.secret.get_secret_value()
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=webhook, session=session)
+            self._verify_name_uniqueness(
+                resource=webhook,
+                schema=WebhookSchema,
+                session=session,
+            )
+            secret_id = self._create_webhook_secret(
+                secret=secret,
+                session=session,
+            )
+            try:
+                schema = WebhookSchema.from_request(
+                    request=webhook, secret_id=secret_id
+                )
+                stats_schema = WebhookStatsSchema(webhook_id=schema.id)
+                session.add(schema)
+                session.add(stats_schema)
+                session.commit()
+            except Exception:
+                session.rollback()
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
+                raise
+            return WebhookCreateResponse(
+                **schema.to_model(
+                    include_metadata=True, include_resources=True
+                ).model_dump(),
+                secret=(
+                    PlainSerializedSecretStr(secret)
+                    if generated_secret
+                    else None
+                ),
+            )
+
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        with Session(self.engine) as session:
+            query_options = WebhookSchema.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+                query_options=query_options,
+            )
+            return schema.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_webhooks(
+        self,
+        filter_model: WebhookFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks in the active project.
+
+        Args:
+            filter_model: The webhook filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=filter_model, session=session
+            )
+            return self.filter_and_paginate(
+                session=session,
+                query=select(WebhookSchema),
+                table=WebhookSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
+
+    def update_webhook(
+        self,
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The webhook update.
+
+        Returns:
+            The updated webhook.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            self._verify_name_uniqueness(
+                resource=update, schema=schema, session=session
+            )
+            schema.update(update)
+            session.add(schema)
+            session.commit()
+            return schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook after clearing references from archived triggers.
+
+        Args:
+            webhook_id: The webhook ID.
+
+        Raises:
+            IllegalOperationError: If a live trigger references the webhook.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            secret_id = schema.secret_id
+            live_trigger_id = session.exec(
+                select(TriggerSchema.id)
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
+                .where(col(TriggerSchema.is_archived).is_(False))
+                .limit(1)
+            ).first()
+            if live_trigger_id is not None:
+                raise IllegalOperationError(
+                    "The webhook can not be deleted while non-archived "
+                    "triggers reference it."
+                )
+            session.exec(
+                update(TriggerSchema)
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
+                .values(
+                    webhook_id=None,
+                    updated=utc_now(),
+                )
+            )
+            session.delete(schema)
+            session.commit()
+            self._delete_secret_schema(secret_id=secret_id, session=session)
+
+    def rotate_webhook_secret(
+        self,
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
+        """Replace the active webhook signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            secret = (
+                request.secret.get_secret_value()
+                if request.secret is not None
+                else secrets.token_urlsafe(32)
+            )
+            self._update_secret_values(
+                secret_id=schema.secret_id,
+                values={_WEBHOOK_SECRET_VALUE_KEY: secret},
+                overwrite=True,
+            )
+            schema.updated = utc_now()
+            session.add(schema)
+            session.commit()
+        return WebhookSecretResponse(secret=PlainSerializedSecretStr(secret))
+
+    def get_webhook_intake_config(
+        self,
+        webhook_id: UUID,
+        expected_webhook_type: str,
+    ) -> WebhookIntakeConfig:
+        """Get the internal configuration required for webhook intake.
+
+        Args:
+            webhook_id: The webhook ID.
+            expected_webhook_type: The provider type encoded in the endpoint.
+
+        Returns:
+            The provider type, active state, project ID, and signing secret.
+
+        Raises:
+            KeyError: If the webhook does not exist or its provider type does
+                not match the endpoint.
+        """
+        with Session(self.engine) as session:
+            config = session.exec(
+                select(
+                    WebhookSchema.webhook_type,
+                    WebhookSchema.active,
+                    WebhookSchema.secret_id,
+                    WebhookSchema.project_id,
+                ).where(col(WebhookSchema.id) == webhook_id)
+            ).first()
+        if config is None:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        webhook_type, active, secret_id, project_id = config
+        if webhook_type != expected_webhook_type:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        secret = self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
+        return WebhookIntakeConfig(
+            webhook_type=webhook_type,
+            active=active,
+            project_id=project_id,
+            secret=secret,
+        )
+
+    def record_webhook_event(
+        self, webhook_id: UUID, update: WebhookEventStatsUpdate
+    ) -> None:
+        """Record a webhook intake outcome.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The terminal intake outcome.
+
+        Raises:
+            KeyError: If the webhook no longer exists.
+        """
+        now = utc_now()
+        values: Dict[str, Any] = {
+            "received_count": (WebhookStatsSchema.received_count + 1),
+            "last_received_at": now,
+        }
+        if update.accepted:
+            values["accepted_count"] = WebhookStatsSchema.accepted_count + 1
+            values["last_accepted_at"] = now
+        elif update.auth_failed:
+            values["auth_failed_count"] = (
+                WebhookStatsSchema.auth_failed_count + 1
+            )
+        elif update.invalid_payload:
+            values["invalid_payload_count"] = (
+                WebhookStatsSchema.invalid_payload_count + 1
+            )
+        if update.error_summary is not None:
+            values["last_error_at"] = now
+            values["last_error_summary"] = update.error_summary
+
+        with Session(self.engine) as session:
+            result = session.exec(
+                sqlalchemy.update(WebhookStatsSchema)
+                .where(col(WebhookStatsSchema.webhook_id) == webhook_id)
+                .values(**values)
+            )
+            if result.rowcount == 0:
+                raise KeyError(f"Webhook {webhook_id} not found.")
+            session.commit()
+
+    def store_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+        body: Dict[str, Any],
+    ) -> None:
+        """Idempotently retain the raw body for a consumed webhook event.
+
+        The first writer wins when concurrent consumers try to retain the same
+        delivery.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+            body: The parsed top-level JSON request body.
+
+        Raises:
+            IntegrityError: If persistence fails for a reason other than an
+                existing delivery.
+        """
+        payload = gzip.compress(
+            json.dumps({"body": body}, separators=(",", ":")).encode("utf-8")
+        )
+        schema = WebhookEventPayloadSchema(
+            webhook_id=webhook_id,
+            delivery_id=delivery_id,
+            payload=payload,
+        )
+        with Session(self.engine) as session:
+            session.add(schema)
+            try:
+                session.commit()
+            except IntegrityError as error:
+                session.rollback()
+                existing = session.exec(
+                    select(WebhookEventPayloadSchema).where(
+                        col(WebhookEventPayloadSchema.webhook_id)
+                        == webhook_id,
+                        col(WebhookEventPayloadSchema.delivery_id)
+                        == delivery_id,
+                    )
+                ).first()
+                if existing is None:
+                    raise error
+
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            KeyError: If no payload exists.
+            ValueError: If the stored payload is invalid.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(WebhookEventPayloadSchema).where(
+                    col(WebhookEventPayloadSchema.webhook_id) == webhook_id,
+                    col(WebhookEventPayloadSchema.delivery_id) == delivery_id,
+                )
+            ).first()
+        if schema is None:
+            raise KeyError(
+                f"Raw webhook event {webhook_id}/{delivery_id} not found."
+            )
+        payload = json.loads(gzip.decompress(schema.payload).decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(
+            payload.get("body"), dict
+        ):
+            raise ValueError("Invalid stored raw webhook event payload.")
+        return payload
+
     # -------------------- Triggers ---------------------
+
+    def _verify_webhook_trigger_association(
+        self,
+        *,
+        webhook_id: UUID,
+        project_id: UUID,
+        session: Session,
+    ) -> None:
+        """Verify that a webhook belongs to the trigger project.
+
+        Args:
+            webhook_id: The webhook to associate.
+            project_id: The trigger project.
+            session: The active database session.
+
+        Raises:
+            KeyError: If the webhook does not belong to the trigger project.
+        """
+        webhook = self._get_schema_by_id(
+            resource_id=webhook_id,
+            schema_class=WebhookSchema,
+            session=session,
+        )
+        if webhook.project_id != project_id:
+            raise KeyError(f"Webhook {webhook_id} not found.")
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
@@ -8244,6 +8680,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
+            if isinstance(trigger, WebhookTriggerRequest):
+                self._verify_webhook_trigger_association(
+                    webhook_id=trigger.webhook_id,
+                    project_id=trigger.project,
+                    session=session,
+                )
             self._verify_name_uniqueness(
                 resource=trigger,
                 schema=TriggerSchema,
@@ -8361,7 +8803,13 @@ class SqlZenStore(BaseZenStore):
 
             if existing_trigger.is_archived:
                 raise IllegalOperationError(
-                    "Archived schedules can not be updated."
+                    "Archived triggers can not be updated."
+                )
+
+            if existing_trigger.type != trigger_update.type.value:
+                raise IllegalOperationError(
+                    "A trigger can not be updated with a different trigger "
+                    "type."
                 )
 
             self._verify_name_uniqueness(
@@ -8370,7 +8818,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Update the schedule
+            # Update the trigger.
             existing_trigger = existing_trigger.update(trigger_update)
             session.add(existing_trigger)
             session.commit()
@@ -8446,15 +8894,18 @@ class SqlZenStore(BaseZenStore):
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
 
-            if not snapshot.is_runnable:
-                raise IllegalOperationError(
-                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
-                )
-
             trigger = session.get(TriggerSchema, trigger_id)
 
             if not trigger:
                 raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.project_id != snapshot.project_id:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            if not snapshot.is_runnable:
+                raise IllegalOperationError(
+                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
+                )
 
             if trigger.is_archived:
                 raise IllegalOperationError(
@@ -8692,8 +9143,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of PlatformEventTriggerResponse objects matching the conditions.
         """
-        from zenml.enums import TriggerType
-
         if not conditions:
             return []
 
@@ -12769,8 +13218,11 @@ class SqlZenStore(BaseZenStore):
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
-                dispatcher.handle_run_status_update(
-                    run=pipeline_run.to_model(include_metadata=True)
+                dispatcher.dispatch_event(
+                    PipelineRunStatusUpdate(
+                        run=pipeline_run.to_model(include_metadata=True),
+                        previous_status=previous_status,
+                    )
                 )
 
         if new_status.is_finished and pipeline_run.end_time:
@@ -13593,8 +14045,17 @@ class SqlZenStore(BaseZenStore):
                     "The default project cannot be deleted."
                 )
 
+            webhook_secret_ids = session.exec(
+                select(WebhookSchema.secret_id).where(
+                    WebhookSchema.project_id == project.id
+                )
+            ).all()
             session.delete(project)
             session.commit()
+            for secret_id in webhook_secret_ids:
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
 
     def count_projects(
         self, filter_model: Optional[ProjectFilter] = None
