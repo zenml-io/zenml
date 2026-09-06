@@ -1426,8 +1426,11 @@ class SqlZenStore(BaseZenStore):
                 query options defined on the schema.
             query_options_kwargs: Extra keyword arguments forwarded to the
                 schema's `get_query_options`.
-            paginate_by_ids: Fetch page IDs before loading rows. Only use for
-                single-entity queries sorted on columns of that entity.
+            paginate_by_ids: Fetch the IDs of the page first and load only
+                those rows, so that deep offsets do not load the rows they
+                skip. Applies to single-entity queries; sorting on a related
+                entity (the filter's custom sorting options) falls back to
+                loading the page directly.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1495,22 +1498,32 @@ class SqlZenStore(BaseZenStore):
         else:
             query = filter_model.apply_sorting(query=query, table=table)
 
+            sort_by = filter_model.sorting_params[0]
+            paginate_by_ids = (
+                paginate_by_ids
+                and sort_by not in filter_model.CUSTOM_SORTING_OPTIONS
+            )
             if paginate_by_ids:
                 # Keep filtering (including RBAC) and deduplication inside the
                 # page. MySQL needs the sort column selected with DISTINCT.
-                sort_column = getattr(table, filter_model.sorting_params[0])
                 page_query = query.with_only_columns(
-                    col(table.id), sort_column, maintain_column_froms=True
-                )
-                if cls._query_requires_distinct(query):
+                    col(table.id),
+                    getattr(table, sort_by),
+                    maintain_column_froms=True,
+                ).options(noload("*"))
+                if query_requires_distinct:
                     page_query = page_query.distinct()
+                # A derived table, because MySQL rejects LIMIT directly inside
+                # IN (SELECT ...). Filtering on `IN` instead of joining the
+                # page keeps the outer query a single-table select, so it is
+                # not wrapped in a DISTINCT over every row column.
                 page_ids = (
                     page_query.limit(filter_model.size)
                     .offset(filter_model.offset)
                     .subquery("page_ids")
                 )
-                query = select(table).join(
-                    page_ids, col(table.id) == page_ids.c.id
+                query = select(table).where(
+                    col(table.id).in_(select(page_ids.c.id))
                 )
                 query = filter_model.apply_sorting(query=query, table=table)
 
@@ -7478,8 +7491,7 @@ class SqlZenStore(BaseZenStore):
                 query_options_kwargs={
                     "include_full_metadata": include_full_metadata
                 },
-                paginate_by_ids=runs_filter_model.sorting_params[0]
-                not in {"pipeline", "stack", "model", "model_version"},
+                paginate_by_ids=True,
             )
 
     def update_run(

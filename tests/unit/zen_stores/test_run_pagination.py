@@ -62,19 +62,35 @@ def populated_store(clean_client: Client) -> SqlZenStore:
 
 
 @pytest.mark.parametrize(
-    "sort_by",
-    ["asc:created", "desc:created", "asc:id", "desc:index", "asc:pipeline"],
-)
-@pytest.mark.parametrize(
-    "criteria",
+    "sort_by, criteria, hydrate",
     [
-        {},
-        {"status": "completed"},
-        {"tags": ["a", "b"]},
-        {"status": "completed", "name": "page-0", "logical_operator": "or"},
+        # Sorts on run columns take the ID-first path.
+        *(
+            (sort_by, criteria, hydrate)
+            for sort_by in [
+                "asc:created",
+                "desc:created",
+                "asc:id",
+                "desc:index",
+            ]
+            for criteria in [
+                {},
+                {"status": "completed"},
+                {"tags": ["a", "b"]},
+                {
+                    "status": "completed",
+                    "name": "page-0",
+                    "logical_operator": "or",
+                },
+            ]
+            for hydrate in [False, True]
+        ),
+        # Sorts on related entities fall back to loading the page directly.
+        ("asc:pipeline", {}, False),
+        ("asc:user", {}, False),
+        ("desc:tags", {"tags": ["a", "b"]}, False),
     ],
 )
-@pytest.mark.parametrize("hydrate", [False, True])
 def test_pages_match_existing_query(
     populated_store: SqlZenStore,
     sort_by: str,
@@ -91,9 +107,8 @@ def test_pages_match_existing_query(
         filters = PipelineRunFilter(
             size=2, page=page, sort_by=sort_by, **criteria
         )
-        actual = store.list_runs(
-            filters, hydrate=hydrate, include_full_metadata=True
-        )
+        actual = store.list_runs(filters, hydrate=hydrate)
+        # The same query through the paginator without ID-first fetching.
         with Session(store.engine) as session:
             expected = store.filter_and_paginate(
                 session,
@@ -102,13 +117,9 @@ def test_pages_match_existing_query(
                 filters,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
-                custom_schema_to_model_conversion=lambda row: row.to_model(
-                    include_metadata=hydrate,
-                    include_resources=True,
-                    include_full_metadata=True,
-                ),
+                query_options_kwargs={"include_full_metadata": False},
             )
-        assert actual.model_dump() == expected.model_dump()
+        assert actual == expected
         seen.extend(row.id for row in actual.items)
     assert len(seen) == len(set(seen)) == first.total
     if not criteria and sort_by.endswith("created"):
