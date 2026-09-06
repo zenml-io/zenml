@@ -38,6 +38,7 @@ from zenml.models import (
     ArtifactRequest,
     ArtifactVersionRequest,
     ModelRequest,
+    ModelVersionArtifactRequest,
     ModelVersionRequest,
     PipelineRequest,
     PipelineRunRequest,
@@ -467,16 +468,22 @@ def _artifact_version(
     return version.id, MetadataResourceTypes.ARTIFACT_VERSION
 
 
-def _model_version(
-    store: SqlZenStore, project_id: UUID, stack: StackResponse
-) -> Resource:
+def _create_model_version(store: SqlZenStore, project_id: UUID) -> UUID:
     model = store.create_model(
         ModelRequest(name=f"model-{uuid4().hex[:8]}", project=project_id)
     )
-    version = store.create_model_version(
+    return store.create_model_version(
         ModelVersionRequest(model=model.id, project=project_id)
+    ).id
+
+
+def _model_version(
+    store: SqlZenStore, project_id: UUID, stack: StackResponse
+) -> Resource:
+    return (
+        _create_model_version(store, project_id),
+        MetadataResourceTypes.MODEL_VERSION,
     )
-    return version.id, MetadataResourceTypes.MODEL_VERSION
 
 
 def _schedule(
@@ -509,12 +516,30 @@ def _delete_model(store: SqlZenStore, version_id: UUID) -> None:
     store.delete_model(store.get_model_version(version_id).model.id)
 
 
+def _delete_all_model_version_artifact_links(
+    store: SqlZenStore, version_id: UUID
+) -> None:
+    """Bulk-delete the artifact versions linked to a model version."""
+    model_version_id = _create_model_version(
+        store, store.get_artifact_version(version_id).project_id
+    )
+    store.create_model_version_artifact_link(
+        ModelVersionArtifactRequest(
+            model_version=model_version_id, artifact_version=version_id
+        )
+    )
+    store.delete_all_model_version_artifact_links(
+        model_version_id, only_links=False
+    )
+
+
 @pytest.mark.parametrize(
     "create_resource, delete_resource",
     [
         (_artifact_version, SqlZenStore.delete_artifact_version),
         (_artifact_version, _delete_artifact),
         (_artifact_version, _prune_artifact_versions),
+        (_artifact_version, _delete_all_model_version_artifact_links),
         (_model_version, SqlZenStore.delete_model_version),
         (_model_version, _delete_model),
         (_schedule, SqlZenStore.delete_schedule),

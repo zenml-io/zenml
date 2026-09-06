@@ -587,7 +587,7 @@ def my_pipeline():
 Metadata is stored once per logged value and linked to every resource it was
 logged for, so the same value can belong to several resources: a cached step
 run, for example, reuses the metadata of the step run it was cached from
-instead of logging it again. When a pipeline run, step run, artifact version,
+instead of logging it again. When a pipeline run, artifact version,
 model version, or schedule is deleted, its metadata links are removed together
 with it, and a metadata value is deleted as soon as its last link is gone.
 Deleting a pipeline run therefore also deletes the metadata that only that run
