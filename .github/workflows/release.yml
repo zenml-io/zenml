@@ -9,7 +9,7 @@ env:
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/unit-test.yml
+    uses: $/.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.11'
@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
           version: 0.8.14
           enable-cache: false
@@ -120,12 +120,12 @@ jobs:
   publish-docker-image:
     if: github.repository == 'zenml-io/zenml'
     needs: wait-for-package-release
-    uses: ./.github/workflows/publish_docker_image.yml
+    uses: $/.github/workflows/publish_docker_image.yml
     secrets: inherit
   publish-helm-chart:
     if: github.repository == 'zenml-io/zenml'
     needs: publish-docker-image
-    uses: ./.github/workflows/publish_helm_chart.yml
+    uses: $/.github/workflows/publish_helm_chart.yml
     secrets: inherit
   wait-for-package-release-again:
     runs-on: ubuntu-latest
@@ -137,7 +137,7 @@ jobs:
   publish-stack-templates:
     if: github.repository == 'zenml-io/zenml'
     needs: publish-python-package
-    uses: ./.github/workflows/publish_stack_templates.yml
+    uses: $/.github/workflows/publish_stack_templates.yml
     secrets: inherit
   # create a tag on the ZenML cloud plugins repo
   create_tag_on_cloud_plugins_repo:

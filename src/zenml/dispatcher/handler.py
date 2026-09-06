@@ -11,25 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base classes for event handlers registered with the dispatcher."""
+"""Base class for event handlers registered with the dispatcher."""
 
 from abc import ABC, abstractmethod
 
-from zenml.models import PipelineRunResponse
+from zenml.dispatcher.events import Event
 
 
 class EventHandler(ABC):
     """Abstract base for handlers registered with `EventDispatcher`."""
 
     @abstractmethod
-    def handle_run_status_update(
-        self,
-        run: PipelineRunResponse,
-    ) -> None:
-        """Handle a status update on a pipeline run.
+    def handle_event(self, event: Event) -> None:
+        """Handle or ignore one dispatched event.
 
         Args:
-            run: The pipeline run whose status has changed.
+            event: The event envelope.
         """
 
     @classmethod
