@@ -3623,7 +3623,7 @@ class SqlZenStore(BaseZenStore):
             The IDs of the artifact versions that were deleted.
         """
         with Session(self.engine) as session:
-            result = session.execute(
+            session.execute(
                 delete(ArtifactVersionSchema)
                 .where(
                     col(ArtifactVersionSchema.id).in_(artifact_version_ids),
@@ -3631,21 +3631,16 @@ class SqlZenStore(BaseZenStore):
                 )
                 .execution_options(synchronize_session=False)
             )
-            if result.rowcount == len(artifact_version_ids):  # type: ignore[attr-defined]
-                deleted = list(artifact_version_ids)
-            else:
-                survivors = set(
-                    session.exec(
-                        select(col(ArtifactVersionSchema.id)).where(
-                            col(ArtifactVersionSchema.id).in_(
-                                artifact_version_ids
-                            )
-                        )
-                    ).all()
-                )
-                deleted = [
-                    id_ for id_ in artifact_version_ids if id_ not in survivors
-                ]
+            survivors = set(
+                session.exec(
+                    select(col(ArtifactVersionSchema.id)).where(
+                        col(ArtifactVersionSchema.id).in_(artifact_version_ids)
+                    )
+                ).all()
+            )
+            deleted = [
+                id_ for id_ in artifact_version_ids if id_ not in survivors
+            ]
             if deleted:
                 # Run metadata links carry no foreign key to the artifact
                 # version table, so the database cannot cascade them.

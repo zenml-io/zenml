@@ -430,8 +430,7 @@ class Model(BaseModel):
             )
             for artifact_version in artifact_versions:
                 client._delete_artifact_from_artifact_store(
-                    uri=artifact_version.uri,
-                    artifact_store_id=artifact_version.artifact_store_id,
+                    artifact_version=artifact_version
                 )
 
         client.delete_all_model_version_artifact_links(mv.id, only_link)

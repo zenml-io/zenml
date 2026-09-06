@@ -6306,8 +6306,7 @@ class Client(metaclass=ClientMetaClass):
         )
         if delete_from_artifact_store and not server_side:
             self._delete_artifact_from_artifact_store(
-                uri=artifact_version.uri,
-                artifact_store_id=artifact_version.artifact_store_id,
+                artifact_version=artifact_version
             )
         if delete_metadata or (server_side and delete_from_artifact_store):
             self._delete_artifact_version(
@@ -6371,13 +6370,12 @@ class Client(metaclass=ClientMetaClass):
             )
 
     def _delete_artifact_from_artifact_store(
-        self, uri: str, artifact_store_id: Optional[UUID]
+        self, artifact_version: ArtifactVersionResponse
     ) -> None:
         """Delete an artifact object from the artifact store.
 
         Args:
-            uri: The URI of the artifact object.
-            artifact_store_id: The artifact store holding the object.
+            artifact_version: The artifact version to delete.
 
         Raises:
             Exception: If the artifact store is inaccessible.
@@ -6385,23 +6383,24 @@ class Client(metaclass=ClientMetaClass):
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
         from zenml.stack.stack_component import StackComponent
 
-        if not artifact_store_id:
+        if not artifact_version.artifact_store_id:
             logger.warning(
-                f"Artifact '{uri}' does not have an artifact store associated "
-                "with it. Skipping deletion from artifact store."
+                f"Artifact '{artifact_version.uri}' does not have an artifact "
+                "store associated with it. Skipping deletion from artifact "
+                "store."
             )
             return
         try:
             artifact_store_model = self.get_stack_component(
                 component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact_store_id,
+                name_id_or_prefix=artifact_version.artifact_store_id,
             )
             artifact_store = StackComponent.from_model(artifact_store_model)
             assert isinstance(artifact_store, BaseArtifactStore)
-            artifact_store.rmtree(uri)
+            artifact_store.rmtree(artifact_version.uri)
         except Exception as e:
             logger.error(
-                f"Failed to delete artifact '{uri}' from the "
+                f"Failed to delete artifact '{artifact_version.uri}' from the "
                 "artifact store. This might happen if your local client "
                 "does not have access to the artifact store or does not "
                 "have the required integrations installed. Full error: "
@@ -6409,7 +6408,10 @@ class Client(metaclass=ClientMetaClass):
             )
             raise e
         else:
-            logger.info(f"Deleted artifact '{uri}' from the artifact store.")
+            logger.info(
+                f"Deleted artifact '{artifact_version.uri}' from the artifact "
+                "store."
+            )
 
     # ------------------------------ Run Metadata ------------------------------
 
