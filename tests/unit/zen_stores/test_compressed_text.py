@@ -23,12 +23,13 @@ from sqlalchemy.dialects import mysql, sqlite
 from sqlalchemy.sql.cache_key import NO_CACHE
 from sqlmodel import SQLModel
 
-from zenml.zen_stores.schemas import compressed_text
+from zenml.zen_stores import compressed_text
 from zenml.zen_stores.schemas.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     COMPRESSED_TEXT_PREFIX,
     CompressedMediumText,
     CompressedText,
+    CompressedTextError,
     decode_compressed_text,
     encode_compressed_text,
 )
@@ -74,7 +75,7 @@ def test_malformed_compressed_text_is_rejected(
     value: str, reason: str
 ) -> None:
     """Every way a compressed value can be broken fails with its own reason."""
-    with pytest.raises(ValueError, match=reason) as error:
+    with pytest.raises(CompressedTextError, match=reason) as error:
         decode_compressed_text(value, "step_configuration.config")
     assert "step_configuration.config" in str(error.value)
 
@@ -84,7 +85,7 @@ def test_decompression_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(compressed_text, "MAX_DECOMPRESSED_TEXT_BYTES", 1024)
     bomb = _wrap(zlib.compress(b"0" * (64 * 1024)))
 
-    with pytest.raises(ValueError, match="more than 1024 bytes"):
+    with pytest.raises(CompressedTextError, match="more than 1024 bytes"):
         decode_compressed_text(bomb, "value")
     assert decode_compressed_text(
         _wrap(zlib.compress(b"0" * 1024)), "value"
