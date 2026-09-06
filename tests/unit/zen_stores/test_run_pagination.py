@@ -119,7 +119,9 @@ def test_pages_match_existing_query(
                 apply_query_options_from_schema=True,
                 query_options_kwargs={"include_full_metadata": False},
             )
-        assert actual == expected
+        # Response equality only compares IDs, so compare the serialized
+        # pages to cover every projected field, resource and metadata.
+        assert actual.model_dump() == expected.model_dump()
         seen.extend(row.id for row in actual.items)
     assert len(seen) == len(set(seen)) == first.total
     if not criteria and sort_by.endswith("created"):
