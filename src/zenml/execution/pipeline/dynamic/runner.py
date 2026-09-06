@@ -1966,11 +1966,23 @@ class DynamicPipelineRunner:
             for future in self._future_registry.get_all_futures():
                 if future.running():
                     has_in_progress_work = True
-                else:
+                    continue
+
+                try:
                     # A terminal future can represent either a successful or
                     # failed invocation. Consume its result so an unawaited
                     # failure cannot be mistaken for successful settlement.
                     future.wait()
+                except RunPaused:
+                    # Pausing is control flow, not a failure. Keep draining
+                    # other concurrent work before publishing the run status.
+                    self._mark_paused()
+                except Exception:
+                    # Explicit waits happen in the pipeline entrypoint and
+                    # already raise there. During internal settlement,
+                    # unawaited failures are tolerated in this mode.
+                    if not self._continue_on_failure:
+                        raise
 
             if not has_in_progress_work:
                 return
