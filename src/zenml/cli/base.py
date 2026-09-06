@@ -708,6 +708,59 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
         )
 
 
+@cli.command(
+    "backfill-database",
+    help="Compress existing snapshot and step configuration text.",
+)
+@click.option(
+    "--checkpoint",
+    type=click.Path(path_type=Path, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "--apply", is_flag=True, help="Write SQL changes; default is a dry run."
+)
+@click.option(
+    "--batch-size",
+    type=click.IntRange(1, 1000),
+    default=100,
+    show_default=True,
+)
+@click.option(
+    "--max-batches",
+    type=click.IntRange(1, 10000),
+    default=10,
+    show_default=True,
+)
+def backfill_database(
+    checkpoint: Path, apply: bool, batch_size: int, max_batches: int
+) -> None:
+    """Backfill compressed text using a direct database connection.
+
+    Args:
+        checkpoint: Persistent progress file, separate for dry-run and apply.
+        apply: Whether to write SQL changes.
+        batch_size: Maximum values processed per transaction.
+        max_batches: Maximum transactions in this pass.
+
+    Raises:
+        click.ClickException: If maintenance cannot proceed.
+    """
+    from zenml.zen_stores.text_backfill import backfill_from_config
+
+    try:
+        progress = backfill_from_config(
+            GlobalConfiguration().get_store_configuration(),
+            checkpoint,
+            apply=apply,
+            batch_size=batch_size,
+            max_batches=max_batches,
+        )
+    except (ValueError, RuntimeError, OSError) as error:
+        raise click.ClickException(str(error)) from None
+    click.echo(progress.model_dump_json(indent=2))
+
+
 @cli.command("backup-database", help="Create a database backup.", hidden=True)
 @click.option(
     "--strategy",
