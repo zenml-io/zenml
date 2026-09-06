@@ -72,3 +72,7 @@ curl -X POST http://localhost:8000/invoke \
 - **Tracing & Monitoring**: Comprehensive execution tracking
 - **Real-time Deployment**: Deploy as HTTP API for instant responses
 - **ZenML Orchestration**: Full pipeline tracking and artifact management
+
+## 🔁 Recording runs with Kitaru
+
+The pipeline invokes the agent through the SDK's `Runner`. In production, swap it for `KitaruRunner` from the `kitaru-openai-agents` package and every run is recorded as a replayable session by [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for agents — then replay a real run against your real code with one thing changed and diff the pair. See the [OpenAI Agents SDK adapter docs](https://docs.zenml.io/kitaru/adapters/openai-agents).

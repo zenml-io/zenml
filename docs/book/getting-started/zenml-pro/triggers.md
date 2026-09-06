@@ -610,3 +610,478 @@ for snapshot_id, state in trigger.snapshot_dispatch_states.items():
             f"{cycle_pipeline_ids}"
         )
 ```
+
+## Webhook Triggers
+
+Webhook triggers are consumers of accepted [webhook](webhooks.md) events. A
+webhook receives and authenticates external deliveries; a webhook trigger
+selects events from one webhook and dispatches its attached pipeline snapshots.
+Creating a webhook alone does not execute a pipeline.
+
+A webhook trigger belongs permanently to the webhook selected at creation. The
+webhook determines which provider-specific `target_events` configuration is
+valid. One webhook can own multiple triggers, and each matching trigger can be
+attached to multiple snapshots.
+
+Webhook and trigger active states are independent:
+
+- An inactive webhook rejects deliveries before consumers receive them.
+- An inactive trigger does not match accepted deliveries.
+- You can create and activate a trigger while its webhook is inactive, then
+  enable the webhook when setup is complete.
+
+| Attribute | Description | Notes |
+|-----------|-------------|-------|
+| `name` | The trigger name | Unique within the project |
+| `webhook` | The owning webhook | Selected by name or ID at creation and cannot be changed |
+| `configuration.target_events` | Provider-specific events and filters | Validated by the owning webhook's provider |
+| `active` | Whether the trigger can match deliveries | Independent from the webhook active state |
+| `concurrency` | How overlapping runs of an attached snapshot are handled | `skip` is the default |
+
+The CLI reads provider configuration from a YAML file. Configuration updates
+replace the complete configuration atomically rather than merging individual
+fields. The SDK accepts a mapping or a typed provider configuration model; the
+typed models are recommended because they validate and document the available
+fields.
+
+### String filter operators
+
+Every provider-defined string field in a webhook event filter supports the same
+case-sensitive operators:
+
+| Syntax | Matches when |
+|--------|--------------|
+| `value` or `equals:value` | The field equals `value` |
+| `notequals:value` | The field does not equal `value` |
+| `contains:value` | The field contains `value` |
+| `notcontains:value` | The field does not contain `value` |
+| `startswith:value` | The field starts with `value` |
+| `endswith:value` | The field ends with `value` |
+| `oneof:["a","b"]` | The field equals one of the JSON-list values |
+| `notoneof:["a","b"]` | The field equals none of the JSON-list values |
+
+A YAML list combines multiple expressions for one field with OR. Use
+`notoneof:` instead of a list of `notequals:` expressions when excluding
+several exact values:
+
+```yaml
+target_events:
+  - type: push
+    branch:
+      - main
+      - "startswith:release/"
+    actor: 'notoneof:["dependabot[bot]","renovate[bot]"]'
+```
+
+Different populated fields on one target event combine with AND, while
+multiple target events combine with OR. An absent event field does not satisfy
+a configured filter, including a negative filter. For collection-valued event
+fields such as GitHub labels, positive operators match any item and negative
+operators require every item to satisfy the expression.
+
+### GitHub webhook triggers
+
+This example executes a pipeline snapshot when GitHub reports a push to the
+`main` branch of `acme/ml-pipelines`. First, create and configure the GitHub
+webhook by following [GitHub webhooks](webhooks/github.md).
+
+Create `github-push.yaml`:
+
+```yaml
+target_events:
+  - type: push
+    repo: acme/ml-pipelines
+    branch: main
+```
+
+Then create the trigger and select the owning webhook:
+
+```bash
+zenml trigger webhook create on-main-push \
+  --webhook github-ml-pipelines \
+  --config github-push.yaml
+```
+
+Via the SDK, use the typed GitHub configuration and event model:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-main-push",
+    webhook="github-ml-pipelines",
+    configuration=GitHubWebhookConfiguration(
+        target_events=[
+            PushEvent(
+                repo="acme/ml-pipelines",
+                branch="main",
+            )
+        ]
+    ),
+)
+```
+
+GitHub supports `merged_pull_request`, `workflow_run_completed`, `push`,
+`release_published`, and `issue_opened` semantic events. See the provider's
+[supported events and filters](webhooks/github.md#supported-events-and-filters)
+for all fields, supported string-filter operators, and another configuration
+example.
+
+### ClickUp webhook triggers
+
+This example executes a pipeline snapshot when ClickUp reports that a task in
+one list moved to `done`. First, create and configure the ClickUp webhook by
+following [ClickUp webhooks](webhooks/clickup.md).
+
+Create `clickup-status.yaml`:
+
+```yaml
+target_events:
+  - type: taskStatusUpdated
+    list_id: "162641285"
+    status: done
+```
+
+Then create the trigger and select the owning webhook:
+
+```bash
+zenml trigger webhook create on-task-done \
+  --webhook clickup-ops \
+  --config clickup-status.yaml
+```
+
+Via the SDK, use the typed ClickUp configuration and event model:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.clickup import (
+    ClickUpWebhookConfiguration,
+    TaskStatusUpdated,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-task-done",
+    webhook="clickup-ops",
+    configuration=ClickUpWebhookConfiguration(
+        target_events=[
+            TaskStatusUpdated(
+                list_id="162641285",
+                status="done",
+            )
+        ]
+    ),
+)
+```
+
+ClickUp supports task and list semantic events such as `taskCreated`,
+`taskStatusUpdated`, and `listUpdated`. See the provider's
+[supported events and filters](webhooks/clickup.md#supported-events-and-filters)
+for all fields and supported string-filter operators.
+
+Attach the trigger to a snapshot as shown below, then follow the
+[signed ClickUp mock request](webhooks/clickup.md#mock-a-signed-clickup-delivery)
+to test the intake path.
+### Slack webhook triggers
+
+Slack webhook triggers support seven semantic event types suited to automation:
+`app_mention`, `message`, `reaction_added`, `reaction_removed`,
+`message_metadata_posted`, `message_metadata_updated`, and `file_shared`.
+First, configure the Slack app, event subscriptions, and webhook by following
+[Slack webhooks](webhooks/slack.md).
+
+Create `slack-automation.yaml`:
+
+```yaml
+target_events:
+  - type: app_mention
+    channel_id: C0123456789
+    text: "contains:deploy production"
+  - type: message
+    channel_id: 'oneof:["C0123456789","C9876543210"]'
+    text: "startswith:deploy production"
+  - type: reaction_added
+    channel_id: C0123456789
+    reaction: rocket
+```
+
+Then create the trigger:
+
+```bash
+zenml trigger webhook create on-slack-automation \
+  --webhook slack-events \
+  --config slack-automation.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.slack import (
+    AppMentionEventFilter,
+    MessageEventFilter,
+    ReactionAddedEventFilter,
+    SlackWebhookConfiguration,
+)
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-slack-automation",
+    webhook="slack-events",
+    configuration=SlackWebhookConfiguration(
+        target_events=[
+            AppMentionEventFilter(
+                channel_id="C0123456789",
+                text="contains:deploy production",
+            ),
+            MessageEventFilter(
+                channel_id='oneof:["C0123456789","C9876543210"]',
+                text="startswith:deploy production",
+            ),
+            ReactionAddedEventFilter(
+                channel_id="C0123456789",
+                reaction="rocket",
+            ),
+        ]
+    ),
+)
+```
+
+Each event filter has event-specific optional fields, and all string fields use
+the shared [string filter operators](#string-filter-operators). See the Slack
+provider's [supported events and filters](webhooks/slack.md#supported-events-and-filters)
+for the complete event catalog, subscription scopes, and matching behavior.
+
+### Attach the trigger to a snapshot
+
+A matching webhook trigger dispatches only the snapshots attached to it. In
+CLI commands that accept both resources, the trigger comes first and the
+snapshot second:
+
+```bash
+zenml trigger webhook attach on-main-push <SNAPSHOT_NAME_OR_ID>
+```
+
+Via the SDK:
+
+```python
+from uuid import UUID
+
+client.attach_trigger_to_snapshot(
+    trigger_id=trigger.id,
+    pipeline_snapshot_id=UUID("<SNAPSHOT_UUID>"),
+)
+```
+
+The trigger's `concurrency` setting controls what happens when another matching
+delivery arrives while a run for an attached snapshot is already active.
+
+Send an event from the configured provider, or test the intake path with a
+[signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) or
+[signed Slack mock request](webhooks/slack.md#mock-a-signed-slack-message).
+Remember that a successful `200` or `202` response confirms webhook intake;
+use trigger dispatch state and pipeline runs to verify downstream execution.
+
+### Access the upstream webhook event
+
+A pipeline run started directly by a webhook trigger stores the provider's
+delivery locator and, when available, its parsed semantic event in the run's
+trigger execution information. Use
+`get_webhook_upstream_event` inside a step to retrieve it as a plain dictionary:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_webhook_upstream_event
+
+
+@step
+def inspect_webhook_event() -> None:
+    upstream_event = get_webhook_upstream_event()
+    if upstream_event is None:
+        print("This run was not started by a supported webhook event.")
+        return
+
+    github_event = upstream_event.get("github")
+    if github_event is not None:
+        event = github_event["event"]
+        print(f"Event type: {event['type']}")
+        print(f"Delivery ID: {github_event['delivery_id']}")
+```
+
+For example, a GitHub push event has this shape:
+
+```json
+{
+  "github": {
+    "webhook_id": "7f9f38a7-8dd6-4ced-91c8-bf05857838d5",
+    "delivery_id": "delivery-001",
+    "event": {
+      "type": "push",
+      "repo": "acme/ml-pipelines",
+      "branch": "main",
+      "actor": "octocat",
+      "commit": {
+        "name": "Update model pipeline",
+        "sha": "abc123"
+      }
+    }
+  }
+}
+```
+
+The event `type` is the semantic type used by the webhook trigger, not
+necessarily the provider's raw event family. Optional semantic fields are
+included with `null` values when unavailable. You can also pass an existing
+pipeline run response to `get_webhook_upstream_event(pipeline_run=run)`.
+
+Only runs started directly by a webhook trigger contain this metadata. It is
+not propagated through later platform event triggers. For providers such as
+custom webhooks that do not produce a semantic event, `event` is `null`.
+
+### Access the raw webhook body
+
+When at least one trigger matches an accepted delivery, ZenML retains its
+original JSON body. Use `get_raw_webhook_event` inside a downstream step to
+retrieve it:
+
+```python
+from zenml import step
+from zenml.utils.trigger_utils import get_raw_webhook_event
+
+
+@step
+def inspect_raw_webhook_event() -> None:
+    raw_event = get_raw_webhook_event()
+    if raw_event is None:
+        print("No retained webhook body is available.")
+        return
+
+    print(raw_event["body"])
+```
+
+The returned envelope has the following extensible shape:
+
+```json
+{
+  "body": {
+    "action": "closed",
+    "pull_request": {
+      "body": "Description from the original pull request"
+    }
+  }
+}
+```
+
+You can pass an existing pipeline run response with
+`get_raw_webhook_event(pipeline_run=run)`. The helper returns `None` when the
+run was not started directly by a webhook trigger or when the retained body is
+missing. Reading the body requires read access to its webhook. Request headers
+are not retained in this version.
+
+### Custom webhook triggers
+
+Custom webhooks do not currently provide semantic event or payload filtering.
+Every accepted delivery matches every active, non-archived custom webhook
+trigger owned by that webhook. Use separate custom webhooks when you need
+distinct routes.
+
+Create `custom-webhook.yaml` with an empty provider configuration:
+
+```yaml
+{}
+```
+
+Create the trigger with the CLI:
+
+```bash
+zenml trigger webhook create on-custom-event \
+  --webhook custom-events \
+  --config custom-webhook.yaml
+```
+
+Via the SDK:
+
+```python
+from zenml.client import Client
+from zenml.webhooks.providers.custom import CustomWebhookConfiguration
+
+client = Client()
+trigger = client.create_webhook_trigger(
+    name="on-custom-event",
+    webhook="custom-events",
+    configuration=CustomWebhookConfiguration(),
+)
+```
+
+Attach the trigger to a snapshot as shown above, then follow
+[Send a signed event](webhooks/custom.md#send-a-signed-event) to test it.
+
+### Update and inspect webhook triggers
+
+Replace a trigger's complete provider configuration with the CLI:
+
+```bash
+zenml trigger webhook update on-main-push --config github-push.yaml
+```
+
+You can update its active state and concurrency in the same command:
+
+```bash
+zenml trigger webhook update on-main-push \
+  --active false \
+  --concurrency submit
+```
+
+Via the SDK, provider configuration is also a complete replacement:
+
+```python
+from zenml.enums import TriggerRunConcurrency
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    PushEvent,
+)
+
+trigger = client.update_webhook_trigger(
+    trigger_name_id_or_prefix="on-main-push",
+    active=True,
+    concurrency=TriggerRunConcurrency.SKIP,
+    configuration=GitHubWebhookConfiguration(
+        target_events=[
+            PushEvent(
+                repo="acme/ml-pipelines",
+                branch="startswith:release/",
+            )
+        ]
+    ),
+)
+```
+
+List or retrieve webhook triggers with:
+
+```bash
+zenml trigger webhook list
+zenml trigger webhook list --webhook-id <WEBHOOK_UUID>
+```
+
+```python
+trigger = client.get_webhook_trigger("on-main-push")
+triggers = client.list_webhook_triggers(webhook_id=trigger.webhook_id)
+```
+
+The attach, detach, delete, and clear-errors operations follow the same trigger
+resource lifecycle described earlier on this page:
+
+```bash
+zenml trigger webhook detach on-main-push <SNAPSHOT_NAME_OR_ID>
+zenml trigger webhook clear-errors on-main-push
+zenml trigger webhook delete on-main-push
+```
+
+Deleting a webhook is blocked while any non-archived trigger references it.
+The default trigger deletion is soft deletion (archival); archived triggers do
+not block subsequent webhook deletion.

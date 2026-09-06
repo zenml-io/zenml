@@ -185,6 +185,7 @@ quickstart/
 This quickstart shows the foundation. In production, you might:
 
 - **Collect real conversation data** from agent interactions via tracing tools like Langfuse, Datadog, etc.
+- **Turn those traces into tests** with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for agents: `kitaru-langfuse-importer` imports Langfuse traces as sessions you can replay against your real code with one thing changed, so a failure you saw in production becomes a check you can rerun ([importing your traces](https://docs.zenml.io/kitaru/getting-started/import-your-traces))
 - **Fine-tune larger models** (DistilBERT, small LLMs) for better accuracy
 - **A/B test model versions** by deploying different tagged artifacts
 - **Deploy to any cloud infrastructure** with [stacks](https://docs.zenml.io/stacks)
