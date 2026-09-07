@@ -698,7 +698,11 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
 
     store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
-        from zenml.otel import configure_otel, otel_span, shutdown_otel
+        from zenml.zen_server.otel import (
+            configure_otel,
+            otel_span,
+            shutdown_otel,
+        )
 
         try:
             configure_otel()
