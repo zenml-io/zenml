@@ -274,13 +274,13 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
     run_name_template: str = Field(
         title="The run name template for runs created using this snapshot.",
     )
-    pipeline_configuration: PipelineConfiguration = Field(
-        title="The pipeline configuration for this snapshot."
+    pipeline_configuration: Optional[PipelineConfiguration] = Field(
+        default=None, title="The pipeline configuration for this snapshot."
     )
-    step_configurations: Dict[str, Step] = Field(
+    step_configurations: Optional[Dict[str, Step]] = Field(
         default={}, title="The step configurations for this snapshot."
     )
-    client_environment: Dict[str, Any] = Field(
+    client_environment: Optional[Dict[str, Any]] = Field(
         default={}, title="The client environment for this snapshot."
     )
     client_version: Optional[str] = Field(
@@ -450,8 +450,17 @@ class PipelineSnapshotResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().pipeline_configuration
+        value = self.get_metadata().pipeline_configuration
+        if value is None:
+            raise ValueError(
+                f"The pipeline_configuration of snapshot '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def step_configurations(self) -> Dict[str, Step]:
@@ -459,8 +468,17 @@ class PipelineSnapshotResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().step_configurations
+        value = self.get_metadata().step_configurations
+        if value is None:
+            raise ValueError(
+                f"The step_configurations of snapshot '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def client_environment(self) -> Dict[str, Any]:
@@ -468,8 +486,17 @@ class PipelineSnapshotResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().client_environment
+        value = self.get_metadata().client_environment
+        if value is None:
+            raise ValueError(
+                f"The client_environment of snapshot '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def client_version(self) -> Optional[str]:

@@ -490,6 +490,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         return self
 
     @property
+    def is_archived(self) -> bool:
+        """Whether either archive marker identifies archived detail.
+
+        Returns:
+            Whether the snapshot's detail is archived.
+        """
+        return (
+            self.archived_at is not None or self.archive_bundle_id is not None
+        )
+
+    @property
     def is_runnable(self) -> bool:
         """Implements the `is_runnable` property.
 
@@ -497,7 +508,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             True if the snapshot is runnable from server.
         """
         return (
-            self.build is not None
+            not self.is_archived
+            and self.build is not None
             and not self.build.is_local
             and self.build.stack_id is not None
         )
@@ -527,7 +539,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             The response.
         """
         deployable = False
-        if self.build and self.stack and self.stack.has_deployer:
+        if (
+            not self.is_archived
+            and self.build
+            and self.stack
+            and self.stack.has_deployer
+        ):
             deployable = True
 
         body = PipelineSnapshotResponseBody(
@@ -543,7 +560,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
-        if include_metadata:
+        if include_metadata and not self.is_archived:
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )
@@ -613,6 +630,20 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 source_snapshot_id=self.source_snapshot_id,
                 config_schema=config_schema,
                 config_template=config_template,
+            )
+
+        elif include_metadata:
+            metadata = PipelineSnapshotResponseMetadata(
+                run_name_template=self.run_name_template,
+                pipeline_configuration=None,
+                step_configurations=None,
+                client_environment=None,
+                client_version=self.client_version,
+                server_version=self.server_version,
+                pipeline_version_hash=self.pipeline_version_hash,
+                code_path=self.code_path,
+                template_id=self.template_id,
+                source_snapshot_id=self.source_snapshot_id,
             )
 
         resources = None

@@ -334,7 +334,8 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default={},
         title="Metadata associated with this pipeline run.",
     )
-    config: PipelineConfiguration = Field(
+    config: Optional[PipelineConfiguration] = Field(
+        default=None,
         title="The pipeline configuration used for this pipeline run.",
     )
     start_time: Optional[datetime] = Field(
@@ -345,14 +346,14 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         title="The end time of the pipeline run.",
         default=None,
     )
-    client_environment: Dict[str, Any] = Field(
+    client_environment: Optional[Dict[str, Any]] = Field(
         default={},
         title=(
             "Environment of the client that initiated this pipeline run "
             "(OS, Python version, etc.)."
         ),
     )
-    orchestrator_environment: Dict[str, Any] = Field(
+    orchestrator_environment: Optional[Dict[str, Any]] = Field(
         default={},
         title=(
             "Environment of the orchestrator that executed this pipeline run "
@@ -561,8 +562,17 @@ class PipelineRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().config
+        value = self.get_metadata().config
+        if value is None:
+            raise ValueError(
+                f"The config of run '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def start_time(self) -> Optional[datetime]:
@@ -597,8 +607,17 @@ class PipelineRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().client_environment
+        value = self.get_metadata().client_environment
+        if value is None:
+            raise ValueError(
+                f"The client_environment of run '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def orchestrator_environment(self) -> Dict[str, Any]:
@@ -606,8 +625,17 @@ class PipelineRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().orchestrator_environment
+        value = self.get_metadata().orchestrator_environment
+        if value is None:
+            raise ValueError(
+                f"The orchestrator_environment of run '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def orchestrator_run_id(self) -> Optional[str]:

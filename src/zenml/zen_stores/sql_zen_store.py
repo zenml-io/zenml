@@ -404,6 +404,7 @@ from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
+from zenml.zen_stores.dag.archived import generate_archived_dag
 from zenml.zen_stores.dag.dag_generator import (
     DAGGeneratorHelper,
 )
@@ -411,6 +412,7 @@ from zenml.zen_stores.dag.models import (
     DAGStepView,
 )
 from zenml.zen_stores.dag.utils import (
+    add_run_context,
     load_input_artifact_rows,
     load_output_artifact_rows,
     load_step_run_metadata,
@@ -6253,11 +6255,15 @@ class SqlZenStore(BaseZenStore):
                 query_options=[
                     load_only(
                         jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.archived_at),
+                        jl_arg(PipelineRunSchema.archive_bundle_id),
                         jl_arg(PipelineRunSchema.start_time),
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
+                        jl_arg(PipelineSnapshotSchema.archived_at),
+                        jl_arg(PipelineSnapshotSchema.archive_bundle_id),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.snapshot)
@@ -6271,6 +6277,9 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(StepRunSchema.status),
                         jl_arg(StepRunSchema.start_time),
                         jl_arg(StepRunSchema.end_time),
+                        jl_arg(StepRunSchema.step_type),
+                        jl_arg(StepRunSchema.archived_at),
+                        jl_arg(StepRunSchema.archive_bundle_id),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -6297,30 +6306,21 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            assert run.snapshot is not None
-            snapshot = run.snapshot
-            for condition in run.wait_conditions:
-                node_metadata: Dict[str, Any] = {
-                    "status": condition.status,
-                    "type": condition.type,
-                    "created_at": condition.created.isoformat(),
-                }
-                if condition.resolution:
-                    node_metadata["resolution"] = condition.resolution
-                if condition.question:
-                    node_metadata["question"] = condition.question
-                if condition.resolved_at:
-                    node_metadata["resolved_at"] = (
-                        condition.resolved_at.isoformat()
-                    )
-
-                helper.add_wait_condition_node(
-                    node_id=helper.get_wait_condition_node_id(condition.name),
-                    id=condition.id,
-                    name=condition.name,
-                    **node_metadata,
+            add_run_context(helper=helper, run=run)
+            if (
+                run.is_archived
+                or (run.snapshot is not None and run.snapshot.is_archived)
+                or any(step.is_archived for step in run.step_runs)
+            ):
+                return generate_archived_dag(
+                    session=session,
+                    run=run,
+                    helper=helper,
+                    include_step_metadata=include_step_metadata,
                 )
 
+            assert run.snapshot is not None
+            snapshot = run.snapshot
             step_runs = {
                 step.name: step
                 for step in run.step_runs
@@ -6727,30 +6727,6 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
-            for child_run in run.child_runs:
-                child_run_metadata: Dict[str, Any] = {
-                    "status": child_run.status,
-                }
-                if child_run.start_time:
-                    child_run_metadata["start_time"] = (
-                        child_run.start_time.isoformat()
-                    )
-                    if child_run.end_time:
-                        child_run_metadata["end_time"] = (
-                            child_run.end_time.isoformat()
-                        )
-                        child_run_metadata["duration"] = (
-                            child_run.end_time - child_run.start_time
-                        ).total_seconds()
-
-                helper.add_child_run_node(
-                    node_id=helper.get_child_run_node_id(child_run.name),
-                    id=child_run.id,
-                    name=child_run.name,
-                    **child_run_metadata,
-                )
-                # TODO: maybe include nodes for outputs and connect via edges?
-
         return helper.finalize_dag(
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
@@ -6825,6 +6801,7 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
+            ValueError: If the source snapshot is archived.
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
@@ -6839,6 +6816,12 @@ class SqlZenStore(BaseZenStore):
             reference_id=pipeline_run.snapshot,
             session=session,
         )
+
+        if snapshot.is_archived:
+            raise ValueError(
+                f"Snapshot {snapshot.id} is archived. Restore its owning run "
+                "with `zenml pipeline runs restore <run-id>` before running it."
+            )
 
         if pipeline_run.original_run_id:
             self._get_reference_schema_by_id(

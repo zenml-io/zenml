@@ -41,6 +41,7 @@ from zenml.zen_stores.schemas.utils import jl_arg
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
+    from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
@@ -100,6 +101,10 @@ class HookInvocationSchema(BaseSchema, table=True):
     )
 
     # Relationships
+    # Archive checks must not change ownership or cascade behavior.
+    run: "PipelineRunSchema" = Relationship(
+        sa_relationship_kwargs={"viewonly": True}
+    )
     user: Optional["UserSchema"] = Relationship()
     output_artifacts: List["HookInvocationOutputArtifactSchema"] = (
         Relationship(
@@ -130,9 +135,20 @@ class HookInvocationSchema(BaseSchema, table=True):
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import ArtifactVersionSchema
+        from zenml.zen_stores.schemas import (
+            ArtifactVersionSchema,
+            PipelineRunSchema,
+        )
 
-        options = []
+        options: List[ExecutableOption] = []
+
+        if include_metadata:
+            options.append(
+                selectinload(jl_arg(cls.run)).load_only(
+                    jl_arg(PipelineRunSchema.archived_at),
+                    jl_arg(PipelineRunSchema.archive_bundle_id),
+                )
+            )
 
         if include_resources:
             options.extend(
@@ -219,7 +235,7 @@ class HookInvocationSchema(BaseSchema, table=True):
                 exception_info=ExceptionInfo.model_validate_json(
                     self.exception_info
                 )
-                if self.exception_info
+                if self.exception_info and not self.run.is_archived
                 else None,
             )
 

@@ -212,14 +212,7 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             The wait condition response model.
         """
-        data_schema: Optional[Dict[str, Any]] = None
-        if self.data_schema_json:
-            data_schema = json.loads(self.data_schema_json)
-
-        result: Optional[Any] = None
-        if self.result_json:
-            result = json.loads(self.result_json)
-
+        archived = self.run.is_archived
         body = RunWaitConditionResponseBody(
             user_id=self.user_id,
             project_id=self.run.project_id,
@@ -227,17 +220,29 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             type=RunWaitConditionType(self.type),
             status=RunWaitConditionStatus(self.status),
-            last_polled_at=self.last_polled_at,
-            poller_instance_id=self.poller_instance_id,
-            poller_lease_expires_at=self.poller_lease_expires_at,
+            last_polled_at=self.last_polled_at if not archived else None,
+            poller_instance_id=self.poller_instance_id
+            if not archived
+            else None,
+            poller_lease_expires_at=self.poller_lease_expires_at
+            if not archived
+            else None,
             resolved_at=self.resolved_at,
             resolved_by_user_id=self.resolved_by_user_id,
         )
 
         metadata = None
         if include_metadata:
+            data_schema: Optional[Dict[str, Any]] = None
+            result: Optional[Any] = None
+            if not archived:
+                if self.data_schema_json:
+                    data_schema = json.loads(self.data_schema_json)
+                if self.result_json:
+                    result = json.loads(self.result_json)
+
             metadata = RunWaitConditionResponseMetadata(
-                question=self.question,
+                question=self.question if not archived else None,
                 run_metadata=self.fetch_metadata(),
                 data_schema=data_schema,
                 resolution=self.resolution,

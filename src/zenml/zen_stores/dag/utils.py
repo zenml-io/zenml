@@ -15,7 +15,7 @@
 
 import json
 from collections import defaultdict
-from typing import Dict, List
+from typing import Any, Dict, List
 from uuid import UUID
 
 from sqlalchemy import select
@@ -24,9 +24,11 @@ from sqlmodel import Session, col
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import RunMetadataEntry
+from zenml.zen_stores.dag.dag_generator import DAGGeneratorHelper
 from zenml.zen_stores.dag.models import InputArtifactRow, OutputArtifactRow
 from zenml.zen_stores.schemas import (
     ArtifactVersionSchema,
+    PipelineRunSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
     StepRunInputArtifactSchema,
@@ -173,3 +175,53 @@ def load_step_run_metadata(
         step_id: resolve_metadata_collection(collection)
         for step_id, collection in metadata_collections.items()
     }
+
+
+def add_run_context(
+    helper: DAGGeneratorHelper, run: PipelineRunSchema
+) -> None:
+    """Add retained wait conditions and child runs to either DAG representation.
+
+    Args:
+        helper: The graph being built.
+        run: The SQL run with its retained relationships loaded.
+    """
+    for condition in run.wait_conditions:
+        node_metadata: Dict[str, Any] = {
+            "status": condition.status,
+            "type": condition.type,
+            "created_at": condition.created.isoformat(),
+        }
+        if condition.resolution:
+            node_metadata["resolution"] = condition.resolution
+        if condition.question and not run.is_archived:
+            node_metadata["question"] = condition.question
+        if condition.resolved_at:
+            node_metadata["resolved_at"] = condition.resolved_at.isoformat()
+
+        helper.add_wait_condition_node(
+            node_id=helper.get_wait_condition_node_id(condition.name),
+            id=condition.id,
+            name=condition.name,
+            **node_metadata,
+        )
+
+    for child_run in run.child_runs:
+        child_run_metadata: Dict[str, Any] = {
+            "status": child_run.status,
+        }
+        if child_run.start_time:
+            child_run_metadata["start_time"] = child_run.start_time.isoformat()
+            if child_run.end_time:
+                child_run_metadata["end_time"] = child_run.end_time.isoformat()
+                child_run_metadata["duration"] = (
+                    child_run.end_time - child_run.start_time
+                ).total_seconds()
+
+        helper.add_child_run_node(
+            node_id=helper.get_child_run_node_id(child_run.name),
+            id=child_run.id,
+            name=child_run.name,
+            **child_run_metadata,
+        )
+        # TODO: maybe include nodes for outputs and connect via edges?

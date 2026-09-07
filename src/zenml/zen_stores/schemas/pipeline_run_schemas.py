@@ -543,16 +543,35 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             root_run_id=root_run_id,
         )
 
+    @property
+    def is_archived(self) -> bool:
+        """Whether either archive marker identifies archived detail.
+
+        Returns:
+            Whether the run's detail is archived.
+        """
+        return (
+            self.archived_at is not None or self.archive_bundle_id is not None
+        )
+
     def get_pipeline_configuration(self) -> PipelineConfiguration:
         """Get the pipeline configuration for the pipeline run.
 
         Raises:
+            ValueError: If the pipeline configuration is archived.
             RuntimeError: if the pipeline run has no snapshot and no pipeline
                 configuration.
 
         Returns:
             The pipeline configuration.
         """
+        if self.is_archived or (
+            self.snapshot is not None and self.snapshot.is_archived
+        ):
+            raise ValueError(
+                f"Run '{self.id}' has archived configuration. Restore it with "
+                f"`zenml pipeline runs restore {self.id}` before reading it."
+            )
         if self.snapshot:
             pipeline_config = PipelineConfiguration.model_validate_json(
                 self.snapshot.pipeline_configuration
@@ -602,9 +621,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The list of upstream steps for each step.
 
         Raises:
+            ValueError: If the pipeline specification is archived.
             RuntimeError: If the pipeline run has no snapshot or
                 the snapshot has no pipeline spec.
         """
+        if self.is_archived or (
+            self.snapshot is not None and self.snapshot.is_archived
+        ):
+            raise ValueError(
+                f"Run '{self.id}' has an archived specification. Restore it "
+                f"with `zenml pipeline runs restore {self.id}` before reading it."
+            )
         if self.snapshot and self.snapshot.pipeline_spec:
             pipeline_spec = PipelineSpec.model_validate_json(
                 self.snapshot.pipeline_spec
@@ -694,33 +721,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The created `PipelineRunResponse`.
-
-        Raises:
-            RuntimeError: if the model creation fails.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -739,24 +740,43 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
+            config = None
+            client_environment = None
+            orchestrator_environment = None
+            archived = self.is_archived or (
+                self.snapshot is not None and self.snapshot.is_archived
+            )
+            if not archived:
+                config = self.get_pipeline_configuration()
+                if self.snapshot is not None:
+                    client_environment = json.loads(
+                        self.snapshot.client_environment
+                    )
+                else:
+                    client_environment = (
+                        json.loads(self.client_environment)
+                        if self.client_environment
+                        else {}
+                    )
+                orchestrator_environment = (
+                    json.loads(self.orchestrator_environment)
+                    if self.orchestrator_environment
+                    else {}
+                )
+                if not include_python_packages:
+                    client_environment.pop("python_packages", None)
+                    orchestrator_environment.pop("python_packages", None)
+
             is_templatable = False
             if (
-                self.snapshot
+                not self.is_archived
+                and self.snapshot
+                and not self.snapshot.is_archived
                 and self.snapshot.build
                 and not self.snapshot.build.is_local
                 and self.snapshot.build.stack_id
             ):
                 is_templatable = True
-
-            orchestrator_environment = (
-                json.loads(self.orchestrator_environment)
-                if self.orchestrator_environment
-                else {}
-            )
-
-            if not include_python_packages:
-                client_environment.pop("python_packages", None)
-                orchestrator_environment.pop("python_packages", None)
 
             trigger_info: Optional[PipelineRunTriggerInfo] = None
             if self.triggered_by and self.triggered_by_type:
@@ -793,7 +813,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 trigger_info=trigger_info,
                 enable_heartbeat=self.enable_heartbeat,
                 exception_info=json.loads(self.exception_info)
-                if self.exception_info
+                if self.exception_info and not archived
                 else None,
                 trigger_execution_info=json.loads(self.trigger_execution.info)
                 if self.trigger_execution and self.trigger_execution.info

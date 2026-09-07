@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Unit tests for the execution archive markers and `archived` filters."""
 
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Iterator, Optional
@@ -144,6 +145,11 @@ def _create_tree(
         ).model_dump_json(),
         **marker,
     )
+    if archived_at is not None or bundle_id is not None:
+        assert step.step_configuration is not None
+        configuration = Step.model_validate_json(step.step_configuration)
+        step.step_type = configuration.config.step_type
+        step.substitutions = json.dumps(configuration.config.substitutions)
     with Session(store.engine, expire_on_commit=False) as session:
         session.add_all([pipeline, snapshot, run, step])
         session.commit()

@@ -268,7 +268,7 @@ class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
         "step run.",
         default=None,
     )
-    substitutions: Dict[str, str] = Field(
+    substitutions: Optional[Dict[str, str]] = Field(
         title="The substitutions of the step run.",
         default={},
     )
@@ -289,8 +289,12 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     ]
 
     # Configuration
-    config: "StepConfiguration" = Field(title="The configuration of the step.")
-    spec: "StepSpec" = Field(title="The spec of the step.")
+    config: Optional[StepConfiguration] = Field(
+        default=None, title="The configuration of the step."
+    )
+    spec: Optional[StepSpec] = Field(
+        default=None, title="The spec of the step."
+    )
 
     # Code related fields
     cache_key: Optional[str] = Field(
@@ -324,8 +328,8 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    snapshot_id: UUID = Field(
-        title="The snapshot associated with the step run."
+    snapshot_id: Optional[UUID] = Field(
+        default=None, title="The snapshot associated with the step run."
     )
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
@@ -569,8 +573,17 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_body().substitutions
+        value = self.get_body().substitutions
+        if value is None:
+            raise ValueError(
+                f"The substitutions of step '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def config(self) -> "StepConfiguration":
@@ -578,8 +591,17 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().config
+        value = self.get_metadata().config
+        if value is None:
+            raise ValueError(
+                f"The config of step '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def spec(self) -> "StepSpec":
@@ -587,8 +609,17 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            ValueError: If the archived detail is unavailable.
         """
-        return self.get_metadata().spec
+        value = self.get_metadata().spec
+        if value is None:
+            raise ValueError(
+                f"The spec of step '{self.id}' is unavailable. "
+                "Restore its archived execution before accessing this detail."
+            )
+        return value
 
     @property
     def cache_key(self) -> Optional[str]:
@@ -683,7 +714,7 @@ class StepRunResponse(
         return self.get_body().heartbeat_threshold
 
     @property
-    def snapshot_id(self) -> UUID:
+    def snapshot_id(self) -> Optional[UUID]:
         """The `snapshot_id` property.
 
         Returns:

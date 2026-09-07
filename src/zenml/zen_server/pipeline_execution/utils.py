@@ -414,8 +414,17 @@ def prepare_snapshot_run(
         The durable execution request.
 
     Raises:
-        ValueError: If replay execution has no original run.
+        ValueError: If the snapshot is archived or replay execution has no
+            original run.
     """
+    if (
+        snapshot.archived_at is not None
+        or snapshot.archive_bundle_id is not None
+    ):
+        raise ValueError(
+            f"Snapshot {snapshot.id} is archived. Restore its owning run with "
+            "`zenml pipeline runs restore <run-id>` before running it."
+        )
     if replay_configuration and not original_run:
         raise ValueError("Original run is required to replay a pipeline run.")
 
