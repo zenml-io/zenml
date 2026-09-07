@@ -1,8 +1,12 @@
+"""Tests for run template utilities."""
+
 from types import SimpleNamespace
 from typing import Any, Dict
+from unittest.mock import Mock, patch
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.enums import StackComponentType
 from zenml.zen_stores.template_utils import (
     generate_config_schema,
     generate_config_template,
@@ -137,6 +141,33 @@ def test_generate_config_schema_reuses_and_renames_step_defs():
         ]["config"]["$ref"]
         == "#/$defs/conflicting_step__NestedConfig"
     )
+
+
+def test_generate_config_schema_does_not_import_custom_flavors():
+    """Tests that custom flavors are not imported for schema generation."""
+    flavor_schema = Mock(is_custom=True)
+    component = SimpleNamespace(
+        name="custom_step_operator",
+        type=StackComponentType.STEP_OPERATOR,
+        flavor_schema=flavor_schema,
+    )
+    snapshot = SimpleNamespace(
+        is_dynamic=False,
+        build=SimpleNamespace(stack=SimpleNamespace(components=[component])),
+    )
+
+    with patch(
+        "zenml.zen_stores.template_utils.Flavor.from_model"
+    ) as from_model:
+        schema = generate_config_schema(
+            snapshot=snapshot,
+            pipeline_configuration=PipelineConfiguration(name="pipeline"),
+            step_configurations={"my_step": _create_step("my_step", {})},
+        )
+
+    flavor_schema.to_model.assert_not_called()
+    from_model.assert_not_called()
+    assert schema["$defs"]["StepOperators"]["enum"] == ["custom_step_operator"]
 
 
 def test_generate_config_template_serializes_hook_sources_as_import_paths():

@@ -171,10 +171,21 @@ def generate_config_schema(
         "resources": (Optional[ResourceSettings], None)
     }
     for component in stack.components:
-        if not component.flavor_schema:
+        flavor_schema = component.flavor_schema
+        if not flavor_schema:
             continue
 
-        flavor_model = component.flavor_schema.to_model()
+        if component.type == StackComponentType.EXPERIMENT_TRACKER:
+            experiment_trackers.append(component.name)
+        if component.type == StackComponentType.STEP_OPERATOR:
+            step_operators.append(component.name)
+
+        # Custom flavor code is available in the client and runner images, but
+        # is intentionally not required in the server environment.
+        if flavor_schema.is_custom:
+            continue
+
+        flavor_model = flavor_schema.to_model()
         flavor = Flavor.from_model(flavor_model)
 
         for class_ in flavor.config_class.__mro__[1:]:
@@ -191,12 +202,6 @@ def generate_config_schema(
                     )
 
                 break
-
-        if component.type == StackComponentType.EXPERIMENT_TRACKER:
-            experiment_trackers.append(component.name)
-        if component.type == StackComponentType.STEP_OPERATOR:
-            step_operators.append(component.name)
-
     settings_model = create_model("Settings", **settings_fields)
 
     generic_step_fields: Dict[str, Any] = {}
