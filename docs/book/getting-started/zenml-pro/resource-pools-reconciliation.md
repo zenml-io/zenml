@@ -1,111 +1,212 @@
 ---
 description: >-
-  How the resource pool reconciliation process works in ZenML Pro.
+  How resource pool reconciliation, queueing, accounting, preemption, and lease
+  management work at runtime.
 ---
-# Resource Pool Reconciliation
+# Reconciliation process
 
-## Runtime flow (orchestration)
+This page explains what happens after a dynamic step or external caller creates
+a Resource Manager request. For definitions, see
+[Core concepts](resource-pools-core-concepts.md). For author-facing settings,
+see the [User guide](resource-pools-user-guide.md).
 
-1. Request creation: For eligible runs, the server derives requested
-   resources from the step’s `ResourceSettings` (see below), adds `step_run: 1`,
-   and stores `preemptible` from the same settings. The resource requester
-   is the stack’s step operator if the step uses one, otherwise the
-   orchestrator.
-2. Queuing: If capacity is not available immediately, the step can remain
-   queued until the reconciler allocates it.
-3. Client wait: The step launcher polls the resource request until it is allocated 
-   (with backoff). If the request is not allocated, it is rejected, preempted, or cancelled, the client surfaces an error. When allocation succeeds, the step is published as running and execution proceeds.
-4. Preemption: If the job at the front of the queue still cannot be granted,
-   the reconciler may stop other *preemptible* runs in that pool to free units
-   (see [How preemption works](#how-preemption-works)). Non-preemptible runs
-   are never stopped this way. They are also constrained so each request’s
-   per-key demand is **≤ policy reserved** for that key—even when **limit** is
-   higher—so they never rely on borrowed capacity that could clash with other
-   non-preemptible use on the same component.
-5. Post-preemption retry: after preemption, if the step configuration allows
-retries, the step goes back to the queue and is retried again. If the number of
-retries is exhausted, the step fails. See [Automatic Step Retries](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#automatic-step-retries) for more information.
-6. Deallocation: When the step run completes, the resources are released back to the pool. If the step crashes unexpectedly, the resources are eventually released back to the pool.
+Most of this page describes `authoritative` pools, where Resource Manager owns
+allocation decisions. `advisory` and `governance` modes are covered separately
+below.
 
-{% hint style="warning" %}
-If the resource requester (orchestrator or step operator) has more than one
-policy attached to more than one pool, the same logical request may appear in
-several pool queues, but reconciliation still grants at most one active
-allocation. Eligibility is computed separately per pool against the entire
-resource request; the system never assigns part of a step’s demand to one pool
-and the rest to another.
-{% endhint %}
+## Lifecycle
 
-## How preemption works
+1. **Request creation** - ZenML or an external caller sends subjects, demands,
+   reclaim tolerance, optional pool selectors, optional preemption group, and
+   lease settings.
+2. **Admission discovery** - Resource Manager finds pools whose target bindings
+   match the request and policies whose subject selectors match the request.
+3. **Planning** - For each matching policy, Resource Manager builds candidate
+   allocation plans against eligible classes and grants. Grantless policies
+   consider every matching class in the pool.
+4. **Queueing** - If a plan is eligible but capacity is not currently free, the
+   request stays `pending` in the pool queue.
+5. **Allocation** - When a plan fits capacity, limits, reservations, and
+   concurrency caps, Resource Manager marks the request `allocated` and records
+   allocation lines.
+6. **Heartbeat and renewal** - The owner renews the lease while work is active.
+7. **Release or expiry** - Completed work releases capacity. Expired leases
+   return capacity automatically.
 
-**When.** Preemption runs only when the next queued request for a pool cannot be
-allocated—there is not enough free capacity, or a policy rule blocks the
-grant. The reconciler may then mark selected *already running* requests as
-preempted, which cancels those step runs and returns their units to the pool.
+```mermaid
+sequenceDiagram
+    participant W as Workspace or external caller
+    participant RM as Resource Manager
+    participant R as Reconciler
+    participant T as Runtime target
 
-**Who can be stopped.** Only steps with `preemptible=True` (the default in
-`ResourceSettings`) are candidates. `preemptible=False` means “never pick this
-run as the one to kill.”
+    W->>RM: Create resource request
+    RM->>RM: Find pools, policies, classes, grants
+    RM-->>W: pending, allocated, or rejected
+    R->>RM: Reconcile pending queues
+    R->>RM: Allocate or preempt
+    RM-->>W: Allocated request with target settings
+    W->>T: Launch or continue workload
+    W->>RM: Renew lease
+    W->>RM: Release request
+```
 
-**Who gets stopped first (simple picture).**
+## Admission rules
 
-1. Among preemptible runs in the same pool, **lower policy priority** is
-   considered before higher priority. If the waiting job’s priority is *strictly
-   higher* than a victim’s, that victim can be preempted to make room, as long
-   as freeing it actually fixes the shortage.
-2. **Reserved** adds a second idea: *reclaim*. If the waiting component still
-   has unused **reserved** headroom on this pool (reserved minus what it is
-   already using here), the system may preempt preemptible runs that are using
-   **borrowed** capacity—even when those runs have the same or higher priority
-   than the waiter. Intuition: your reserved share is “yours to fill”; if
-   someone else is on the spare capacity you could have used under your
-   reservation, they can be moved out of the way.
-3. **Limit** does not pick victims. It only caps how much a component may hold;
-   if the waiting request itself is over its own limit, killing other jobs will
-   not fix that—you need a higher limit or a smaller request.
+A request is statically eligible only when all of these are true:
 
-Victims are ordered by ascending policy priority, then by allocation time as a
-tie-break.
+* The pool scope is visible to the request.
+* The request matches a pool target binding, or the pool has no target
+  bindings.
+* A policy subject selector matches at least one request subject.
+* The request can run on the candidate class `reclaimable` value.
+* Every demand matches exactly one resource in the class bundle.
+* For grant-based policies, every demanded class resource is present in the
+  grant and the requested quantity fits the grant limit.
+* For grantless policies, every demanded resource is present in the class and
+  the requested quantity fits the class resource quantity.
+* The request's exact `class`, `resource`, kind, and selectors can all be
+  resolved.
 
-### Step-level: `preemptible`
+Resource Manager does not split one request across pools. A plan must satisfy
+all demands in one pool, one class, one policy, and either one grant or a
+grantless policy path.
 
-| Setting | Effect |
+## Ordering
+
+Candidate plans are ordered deterministically:
+
+1. Lower accounting pressure first for advisory ordering.
+2. Priority lane before normal priority.
+3. Higher policy priority.
+4. Higher pool rank.
+5. Higher class rank.
+6. Stable subject, target, policy, class, capacity, and grant identifiers.
+
+Within a pool queue, older requests win after the priority and rank ordering
+keys are equal.
+
+## Accounting modes
+
+| Mode | Reconciliation behavior |
 | --- | --- |
-| `preemptible=True` (default) | This run may be preempted to help another request. |
-| `preemptible=False` | This run is never preempted. Each requested amount per pool key must be ≤ that key’s **reserved** on the policy; **limit** above reserved does not increase what a non-preemptible step may request. |
+| `authoritative` | Enforces class quantities, grant limits, reservations, pool/class/policy/grant concurrency, queueing, allocation, and preemption. |
+| `advisory` | Computes pressure and orders plans, but does not reject a plan solely because current accounting pressure is high. Use with care. |
+| `governance` | Keeps policy and target-setting decisions in ZenML while external infrastructure schedulers handle allocation and preemption. |
 
-Policies do not override `preemptible`; they only affect ordering and reclaim
-among runs that are allowed to be preempted.
+Use `authoritative` for the examples in this documentation unless a scenario
+explicitly calls out infrastructure-level scheduling.
 
-### After preemption
+## Concurrency limits
 
-Preempted step runs are stopped and the resources are released back to the pool.
-The steps are put back into the queue and are retried again. If the number of
-retries is exhausted or the step is not configured to allow retries, the step fails. See [Automatic Step Retries](https://docs.zenml.io/how-to/steps-pipelines/advanced_features#automatic-step-retries) for more information.
+Concurrency limits cap active requests rather than resource quantities:
 
-## Policy scenarios (how reserved, limit, and preemptible interact)
+| Limit location | Counts active requests in |
+| --- | --- |
+| Pool | The pool |
+| Class | The selected pool class |
+| Policy | The selected policy |
+| Grant | The selected grant |
 
-For the problems these patterns solve in everyday terms, see
-[Resource pools](resource-pools.md).
-   
-* Fair share plus burst: set **reserved** to the slice you want to account as
-  “yours” and **limit** to the most that stack may ever hold. **Preemptible**
-  steps can **borrow** idle capacity between reserved and limit (and up to the
-  pool) when the pool has room. **Non-preemptible** steps only use up to
-  **reserved** per requested key, regardless of a higher limit.
-* Production vs experiments: higher **priority** on production policies;
-  experimental steps stay **preemptible** so production can take capacity or
-  reclaim borrowed slack when it needs its reservation.
-* Non-preemptible training: set `preemptible=False` and size **reserved** so
-  each step’s per-key request (for example `gpu_count`) is ≤ reserved for that
-  key. **Limit** can be higher for preemptible burst on the same policy, but it
-  does not raise the ceiling for non-preemptible requests; raise **reserved**
-  if those jobs need more per step. The reconciler also blocks non-preemptible
-  grants that would sit on borrowed capacity in ways that conflict with other
-  non-preemptible use on the component.
-* Several pools for one component: multiple policies with different
-  **priority** values; higher priority is preferred when queuing and allocating,
-  subject to each pool’s **limit**.
+Grantless policies have no grant-level concurrency limit because no grant row
+is selected. Pool, class, and policy concurrency still apply.
 
-For preemption rules (priority vs reclaim), see
-[How preemption works](#how-preemption-works).
+Use concurrency limits when the scarce thing is "how many workloads can run at
+once" rather than a descriptor quantity. For example, a pool can enforce at
+most eight active H200 jobs even when CPU and memory are tracked as unlimited.
+
+## Reservations and limits
+
+Grant-based policies use:
+
+* `reserved` as protected share.
+* `limit` as active usage ceiling. `null` follows the class resource quantity.
+* `missing_action` to decide what to do when a request omits a resource that is
+  listed in the grant.
+
+For `reclaim_tolerance: "none"`, a grant-based request in an authoritative pool
+must fit inside the grant's reserved share. This prevents non-reclaimable work
+from depending on capacity that another policy may need back.
+
+Grantless policies have reservation 0 and limits equal to class resources.
+They are useful when the policy subject should access the whole matching pool
+instead of a reserved slice.
+
+## Preemption
+
+Preemption happens when an authoritative pool has an eligible pending request
+that cannot currently allocate without reclaiming capacity or concurrency.
+
+Victims must be eligible:
+
+* Lower priority than the waiting request, or same-priority borrowed usage that
+  can be reclaimed for protected reserved share.
+* Not protected by the same preemption group.
+* Not configured with `reclaim_tolerance: "none"`.
+* Currently active and holding capacity or concurrency needed by the waiter.
+
+Priority-lane policies sit at the maximum internal priority. They can reclaim
+lower-priority eligible work, but they do not automatically preempt other
+priority-lane work at the same priority.
+
+Preemption is cooperative where possible: Resource Manager marks a request
+`preempting`, the owner stops or retries, and capacity is returned. If leases
+expire or forceful termination is required, the request eventually becomes
+terminal and the ledger is cleared.
+
+## Leases and heartbeats
+
+An allocated request holds a lease. The owner renews it while the workload is
+running. ZenML step launchers do this automatically for dynamic steps.
+
+Leases protect the ledger from stale allocations:
+
+* If a queued request times out or is cancelled, queue entries are removed.
+* If an allocated request stops renewing, it becomes `expired`.
+* Released, cancelled, rejected, preempted, and expired requests no longer hold
+  active capacity.
+
+For external workloads, renew the lease before `lease_expires_at` and release
+the request promptly when the work is done.
+
+## Target settings merge
+
+When a plan wins, Resource Manager returns the target settings selected along
+the route. ZenML merges settings from broader to narrower scope:
+
+1. Pool target route and pool target settings.
+2. Pool class target settings.
+3. Policy target settings.
+4. Grant target settings, when a grant was selected.
+
+The UI currently exposes component settings at all four levels and service
+connector settings at pool and class levels. These settings are applied to the
+selected stack component or service connector after allocation.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| Request rejected with no admitting policy | No pool target matched, no policy subject matched, wrong class, missing descriptor, or grant missing a demanded resource |
+| Non-reclaimable request rejected for reserved share | Grant-based policy did not reserve enough of one demanded resource |
+| Request stays pending | Capacity, grant limit, reservation pressure, or concurrency limit is currently blocking allocation |
+| Lower-priority work was preempted | Higher-priority eligible work needed the capacity or concurrency and the lower-priority request allowed reclaim |
+| Target settings did not apply | The winning pool, class, policy, or grant did not include settings for the selected target type |
+
+Inspect stuck requests in the UI or with:
+
+```shell
+zenml resource-request list --status pending
+zenml resource-request describe <request-id>
+```
+
+## See also
+
+* [Core concepts](resource-pools-core-concepts.md) - descriptors, classes,
+  policies, subjects, and requests.
+* [User guide](resource-pools-user-guide.md) - author settings and request
+  inspection.
+* [External workloads](resource-pools-external-workloads.md) - direct requests
+  and priority-lane policies.
+* [Examples](resource-pools-examples.md) - complete scenarios.
+* [Resource pools](resource-pools.md) - overview.
