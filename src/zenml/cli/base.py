@@ -699,8 +699,7 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
     store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
         BaseZenStore.create_store(
-            store_config,
-            skip_default_registrations=skip_default_registrations,
+            store_config, skip_default_registrations=skip_default_registrations
         )
         cli_utils.declare("Database migration finished.")
     else:
