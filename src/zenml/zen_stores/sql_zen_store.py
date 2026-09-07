@@ -468,6 +468,7 @@ from zenml.zen_stores.schemas import (
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
+    WebhookEventPayloadSchema,
     WebhookSchema,
     WebhookStatsSchema,
 )
@@ -8556,6 +8557,87 @@ class SqlZenStore(BaseZenStore):
             if result.rowcount == 0:
                 raise KeyError(f"Webhook {webhook_id} not found.")
             session.commit()
+
+    def store_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+        body: Dict[str, Any],
+    ) -> None:
+        """Idempotently retain the raw body for a consumed webhook event.
+
+        The first writer wins when concurrent consumers try to retain the same
+        delivery.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+            body: The parsed top-level JSON request body.
+
+        Raises:
+            IntegrityError: If persistence fails for a reason other than an
+                existing delivery.
+        """
+        payload = gzip.compress(
+            json.dumps({"body": body}, separators=(",", ":")).encode("utf-8")
+        )
+        schema = WebhookEventPayloadSchema(
+            webhook_id=webhook_id,
+            delivery_id=delivery_id,
+            payload=payload,
+        )
+        with Session(self.engine) as session:
+            session.add(schema)
+            try:
+                session.commit()
+            except IntegrityError as error:
+                session.rollback()
+                existing = session.exec(
+                    select(WebhookEventPayloadSchema).where(
+                        col(WebhookEventPayloadSchema.webhook_id)
+                        == webhook_id,
+                        col(WebhookEventPayloadSchema.delivery_id)
+                        == delivery_id,
+                    )
+                ).first()
+                if existing is None:
+                    raise error
+
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            KeyError: If no payload exists.
+            ValueError: If the stored payload is invalid.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(WebhookEventPayloadSchema).where(
+                    col(WebhookEventPayloadSchema.webhook_id) == webhook_id,
+                    col(WebhookEventPayloadSchema.delivery_id) == delivery_id,
+                )
+            ).first()
+        if schema is None:
+            raise KeyError(
+                f"Raw webhook event {webhook_id}/{delivery_id} not found."
+            )
+        payload = json.loads(gzip.decompress(schema.payload).decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(
+            payload.get("body"), dict
+        ):
+            raise ValueError("Invalid stored raw webhook event payload.")
+        return payload
 
     # -------------------- Triggers ---------------------
 

@@ -7284,6 +7284,26 @@ class Client(metaclass=ClientMetaClass):
             request=WebhookRotateSecretRequest(secret=secret),
         )
 
+    @_fail_for_sql_zen_store
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The exact webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+        """
+        return self.zen_store.get_raw_webhook_event(
+            webhook_id=webhook_id,
+            delivery_id=delivery_id,
+        )
+
     # --------------------------- Service Connectors ---------------------------
 
     def create_service_connector(

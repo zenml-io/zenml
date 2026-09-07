@@ -18,8 +18,11 @@ from zenml.webhooks.handler import WebhookEventHandler
 from zenml.webhooks.intake import WebhookIntakeConfig
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
+    ParsedWebhookDelivery,
+    ParsedWebhookEvent,
     WebhookAuthenticationError,
     WebhookConfiguration,
+    WebhookIntakeResponse,
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookProviderRegistry,
@@ -31,11 +34,14 @@ from zenml.webhooks.providers import (
 
 __all__ = [
     "BaseWebhookProvider",
+    "ParsedWebhookDelivery",
+    "ParsedWebhookEvent",
     "WebhookConfiguration",
     "WebhookAuthenticationError",
     "WebhookEvent",
     "WebhookEventHandler",
     "WebhookIntakeConfig",
+    "WebhookIntakeResponse",
     "WebhookPayloadError",
     "WebhookPreValidationResult",
     "WebhookProviderRegistry",

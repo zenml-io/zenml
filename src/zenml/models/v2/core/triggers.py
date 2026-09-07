@@ -1239,8 +1239,9 @@ class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
 class WebhookTriggerExecutionInfo(BaseModel):
     """Information about the webhook event that triggered a pipeline run."""
 
-    delivery_id: str | None = None
-    event: dict[str, Any]
+    webhook_id: UUID
+    delivery_id: str
+    event: dict[str, Any] | None = None
 
 
 class TriggerExecutionInfo(BaseModel):

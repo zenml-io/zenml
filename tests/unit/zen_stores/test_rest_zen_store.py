@@ -23,6 +23,7 @@ from zenml.models import WebhookTriggerUpdate
 from zenml.zen_stores.rest_zen_store import (
     ARTIFACT_VERSIONS,
     TRIGGERS,
+    WEBHOOKS,
     RestZenStore,
     RestZenStoreConfiguration,
 )
@@ -125,4 +126,25 @@ def test_webhook_trigger_updates_use_full_serialization(
         body=trigger_update,
         params=None,
         exclude_unset=False,
+    )
+
+
+def test_get_raw_webhook_event_uses_delivery_query_parameter(
+    mocker: MockerFixture,
+) -> None:
+    """Provider delivery IDs are not interpolated into URL path segments."""
+    store = mocker.Mock()
+    webhook_id = uuid4()
+    store.get.return_value = {"body": {"message": "hello"}}
+
+    result = RestZenStore.get_raw_webhook_event(
+        store,
+        webhook_id=webhook_id,
+        delivery_id="provider/id:with,characters",
+    )
+
+    assert result == {"body": {"message": "hello"}}
+    store.get.assert_called_once_with(
+        f"{WEBHOOKS}/{webhook_id}/events/raw",
+        params={"delivery_id": "provider/id:with,characters"},
     )

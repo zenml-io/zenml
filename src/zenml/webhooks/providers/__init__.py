@@ -3,8 +3,11 @@
 
 from zenml.webhooks.providers.base import (
     BaseWebhookProvider,
+    ParsedWebhookDelivery,
+    ParsedWebhookEvent,
     WebhookAuthenticationError,
     WebhookConfiguration,
+    WebhookIntakeResponse,
     WebhookPayloadError,
     WebhookPreValidationResult,
     WebhookTargetEvent,
@@ -20,8 +23,11 @@ from zenml.webhooks.providers.types import BuiltinWebhookType
 __all__ = [
     "BaseWebhookProvider",
     "BuiltinWebhookType",
+    "ParsedWebhookDelivery",
+    "ParsedWebhookEvent",
     "WebhookConfiguration",
     "WebhookAuthenticationError",
+    "WebhookIntakeResponse",
     "WebhookPayloadError",
     "WebhookPreValidationResult",
     "WebhookProviderRegistry",

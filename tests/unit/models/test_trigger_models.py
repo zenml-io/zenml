@@ -54,10 +54,12 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
 
 def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
     """Webhook trigger execution metadata keeps a dynamic provider event."""
+    webhook_id = uuid4()
     info = TriggerExecutionInfo.model_validate(
         {
             "webhook_upstream_event": {
                 "github": {
+                    "webhook_id": str(webhook_id),
                     "delivery_id": "delivery-001",
                     "event": {
                         "type": "push",
@@ -71,12 +73,37 @@ def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
 
     assert info.webhook_upstream_event == {
         "github": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
             delivery_id="delivery-001",
             event={
                 "type": "push",
                 "repo": "zenml-io/zenml",
                 "commit": None,
             },
+        )
+    }
+
+
+def test_trigger_execution_info_allows_missing_semantic_event() -> None:
+    """Custom webhook runs still carry a complete raw payload locator."""
+    webhook_id = uuid4()
+
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "custom": {
+                    "webhook_id": str(webhook_id),
+                    "delivery_id": "delivery-001",
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "custom": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
+            delivery_id="delivery-001",
+            event=None,
         )
     }
 
@@ -217,16 +244,14 @@ def test_github_webhook_configuration_rejects_empty_event_list() -> None:
 @pytest.mark.parametrize(
     "field, value",
     [
-        ("repo", "startswith:zenml-io/"),
-        ("author", "contains:george"),
         ("source_branch", "oneof:not-json"),
         ("target_branch", 'oneof:["develop", 42]'),
     ],
 )
-def test_pull_request_merged_rejects_unsupported_filters(
+def test_pull_request_merged_rejects_invalid_filters(
     field: str, value: str
 ) -> None:
-    """Semantic event fields enforce their operator allowlists."""
+    """Semantic event fields reject malformed filter expressions."""
     with pytest.raises(ValidationError):
         MergedPullRequest(**{field: value})
 
@@ -242,10 +267,11 @@ def test_pull_request_merged_rejects_unsupported_filters(
         "milestone",
     ],
 )
-def test_issue_opened_rejects_prefix_filters(field: str) -> None:
-    """Opened-issue filters support exact values and alternatives only."""
-    with pytest.raises(ValidationError):
-        IssueOpened(**{field: "startswith:prefix"})
+def test_issue_opened_accepts_prefix_filters(field: str) -> None:
+    """All opened-issue string filter fields support prefix matching."""
+    event = IssueOpened(**{field: "startswith:prefix"})
+
+    assert getattr(event, field) == "startswith:prefix"
 
 
 def test_schedule_trigger_valid_and_inheritance():

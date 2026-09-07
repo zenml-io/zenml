@@ -90,10 +90,12 @@ class WebhookProviderRegistry:
             from zenml.webhooks.providers.clickup import ClickUpWebhookProvider
             from zenml.webhooks.providers.custom import CustomWebhookProvider
             from zenml.webhooks.providers.github import GitHubWebhookProvider
+            from zenml.webhooks.providers.slack import SlackWebhookProvider
 
             self.register(CustomWebhookProvider)
             self.register(GitHubWebhookProvider)
             self.register(ClickUpWebhookProvider)
+            self.register(SlackWebhookProvider)
             self._builtins_registered = True
 
 

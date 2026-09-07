@@ -38,6 +38,7 @@
 * [Snapshots](snapshots.md)
 * [Triggers](triggers.md)
 * [Webhooks](webhooks.md)
+  * [Slack](webhooks/slack.md)
   * [GitHub](webhooks/github.md)
   * [ClickUp](webhooks/clickup.md)
   * [Custom webhooks](webhooks/custom.md)

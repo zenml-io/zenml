@@ -62,54 +62,17 @@ class _ClickUpListTarget(WebhookTargetEvent):
     space_id: StringFilterOption = None
     folder_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            "list_id": False,
-            "space_id": False,
-            "folder_id": False,
-        }
-
 
 class _ClickUpTaskTarget(_ClickUpListTarget):
     """Shared location and task filters for ClickUp task events."""
 
     task_id: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "task_id": False,
-        }
-
 
 class _ClickUpTaskStatusTarget(_ClickUpTaskTarget):
     """Task filters plus the post-change status."""
 
     status: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            **super().get_prefix_matching_support(),
-            "status": False,
-        }
 
 
 class TaskCreated(_ClickUpTaskTarget):
@@ -601,7 +564,8 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
             headers: The request headers.
 
         Returns:
-            The delivery ID, if the payload contains a webhook ID.
+            The documented history-based delivery ID, if available. Intake
+            generates a unique ID for history-less events.
 
         Raises:
             WebhookPayloadError: If webhook_id is missing.
@@ -614,17 +578,7 @@ class ClickUpWebhookProvider(BaseWebhookProvider):
         history_ids = _history_item_ids(payload)
         if history_ids:
             return f"{webhook_id}:{','.join(history_ids)}"
-        resource_id = next(
-            (
-                value
-                for key in _RESOURCE_KEYS
-                if (value := _id_string(payload, key)) is not None
-            ),
-            "unknown",
-        )
-        event_type = payload.get("event")
-        event_name = event_type if isinstance(event_type, str) else "unknown"
-        return f"{webhook_id}:{event_name}:{resource_id}"
+        return None
 
     def _cast_runtime_targets(
         self, trigger: "WebhookTriggerResponse"

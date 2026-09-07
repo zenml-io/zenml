@@ -156,13 +156,18 @@ Semantic event fields use ZenML string filters (`StringFilterOption`). You can
 use:
 
 - a plain string for exact equality, such as `list_id: "162641285"`;
+- `equals:`, `notequals:`, `contains:`, `notcontains:`, `startswith:`, and
+  `endswith:` expressions;
 - `oneof:` with a non-empty JSON list for exact alternatives, such as
-  `status: 'oneof:["done","complete"]'`.
+  `status: 'oneof:["done","complete"]'`;
+- `notoneof:` with a non-empty JSON list for exclusions; and
+- a YAML list to OR multiple expressions for one field.
 
-ClickUp ID and status fields do not support `startswith:`. Values configured for
-the same field use OR logic; different populated fields use AND logic. Omitted
-fields match any value. If a configured field is absent from a delivery, it
-does not match.
+All filter fields in the table support these generic webhook string operators.
+Values configured for the same field use OR logic; different populated fields
+use AND logic. Omitted fields match any value. If a configured field is absent
+from a delivery, it does not match. See the complete
+[string filter operator reference](../triggers.md#string-filter-operators).
 
 For example, this target matches status updates to `done` on one list:
 

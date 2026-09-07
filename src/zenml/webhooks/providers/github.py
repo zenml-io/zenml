@@ -73,20 +73,6 @@ class MergedPullRequest(WebhookTargetEvent):
     source_branch: StringFilterOption = None
     author: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            "repo": False,
-            "target_branch": True,
-            "source_branch": True,
-            "author": False,
-        }
-
 
 class WorkflowRunCompleted(WebhookTargetEvent):
     """Filters for a completed GitHub workflow run."""
@@ -98,15 +84,6 @@ class WorkflowRunCompleted(WebhookTargetEvent):
     conclusion: StringFilterOption = None
     actor: StringFilterOption = None
 
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {"workflow": False, "conclusion": False, "actor": False}
-
 
 class PushEvent(WebhookTargetEvent):
     """Filters for a GitHub branch push."""
@@ -115,15 +92,6 @@ class PushEvent(WebhookTargetEvent):
     repo: StringFilterOption = None
     branch: StringFilterOption = None
     actor: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {"repo": False, "branch": True, "actor": False}
 
 
 class ReleasePublished(WebhookTargetEvent):
@@ -136,20 +104,6 @@ class ReleasePublished(WebhookTargetEvent):
     tag: StringFilterOption = None
     target_branch: StringFilterOption = None
     actor: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            "repo": False,
-            "tag": True,
-            "target_branch": True,
-            "actor": False,
-        }
 
 
 class IssueOpened(WebhookTargetEvent):
@@ -164,22 +118,6 @@ class IssueOpened(WebhookTargetEvent):
     labels: StringFilterOption = None
     assignees: StringFilterOption = None
     milestone: StringFilterOption = None
-
-    @classmethod
-    def get_prefix_matching_support(cls) -> Mapping[str, bool]:
-        """Get prefix matching support for string filter fields.
-
-        Returns:
-            Filter fields mapped to whether they allow `startswith`.
-        """
-        return {
-            "repo": False,
-            "author": False,
-            "author_association": False,
-            "labels": False,
-            "assignees": False,
-            "milestone": False,
-        }
 
 
 GitHubWebhookTargetEvent: TypeAlias = Annotated[
