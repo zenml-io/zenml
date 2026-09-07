@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 def main() -> None:
-    """Initialize and migrate the ZenML server database."""
+    """Migrate the ZenML database."""
     store_config = GlobalConfiguration().store_configuration
     if store_config.type != StoreType.SQL:
         logger.warning("Database migration requires a SQL store.")
