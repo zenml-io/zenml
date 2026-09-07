@@ -698,21 +698,10 @@ def migrate_database(skip_default_registrations: bool = False) -> None:
 
     store_config = GlobalConfiguration().store_configuration
     if store_config.type == StoreType.SQL:
-        from zenml.zen_server.otel import (
-            configure_otel,
-            otel_span,
-            shutdown_otel,
+        BaseZenStore.create_store(
+            store_config,
+            skip_default_registrations=skip_default_registrations,
         )
-
-        try:
-            configure_otel()
-            with otel_span("zenml.database.migrate"):
-                BaseZenStore.create_store(
-                    store_config,
-                    skip_default_registrations=skip_default_registrations,
-                )
-        finally:
-            shutdown_otel()
         cli_utils.declare("Database migration finished.")
     else:
         cli_utils.warning(
