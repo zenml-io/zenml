@@ -166,35 +166,33 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     to_thread.current_default_thread_limiter().total_tokens = (
         cfg.thread_pool_size
     )
-    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
-    # race conditions
-    await initialize_request_manager()
-
-    # Trace database initialization, including any migrations it runs.
-    with otel_span("zenml.database.initialize"):
+    # Trace all app initialization before the app starts.
+    with otel_span("zenml.server.initialize"):
+        # IMPORTANT: these need to be run before the fastapi app starts, to
+        # avoid race conditions
+        await initialize_request_manager()
         initialize_zen_store()
+        initialize_resource_pool_store()
+        service_connector_registry.register_builtin_service_connectors()
+        initialize_rbac()
+        initialize_feature_gate()
+        initialize_workload_manager()
+        initialize_resource_pool_store()
+        initialize_snapshot_executor()
+        await initialize_snapshot_run_dispatcher()
+        initialize_artifact_store_cache()
+        await initialize_streaming()
+        initialize_secure_headers()
+        if cfg.is_pro_server:
+            # Send a workspace status update to the Cloud API to indicate that the
+            # ZenML server is running or to update the version and server URL.
+            send_pro_workspace_status_update()
 
-    initialize_resource_pool_store()
-    service_connector_registry.register_builtin_service_connectors()
-    initialize_rbac()
-    initialize_feature_gate()
-    initialize_workload_manager()
-    initialize_resource_pool_store()
-    initialize_snapshot_executor()
-    await initialize_snapshot_run_dispatcher()
-    initialize_artifact_store_cache()
-    await initialize_streaming()
-    initialize_secure_headers()
-    if cfg.is_pro_server:
-        # Send a workspace status update to the Cloud API to indicate that the
-        # ZenML server is running or to update the version and server URL.
-        send_pro_workspace_status_update()
+        if logger.isEnabledFor(logging.DEBUG):
+            start_event_loop_lag_monitor()
 
-    if logger.isEnabledFor(logging.DEBUG):
-        start_event_loop_lag_monitor()
-
-    await register_event_handlers()
-    await register_webhook_event_handlers()
+        await register_event_handlers()
+        await register_webhook_event_handlers()
 
     yield
 
