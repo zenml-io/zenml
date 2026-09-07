@@ -46,6 +46,9 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableFilterMixin,
+    ArchivableResponse,
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -229,7 +232,7 @@ class StepRunUpdate(BaseUpdate):
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(ProjectScopedResponseBody):
+class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
     """Response body for step runs."""
 
     type: Optional[StepType] = Field(
@@ -375,7 +378,8 @@ class StepRunResponseResources(ProjectScopedResponseResources):
 class StepRunResponse(
     ProjectScopedResponse[
         StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
-    ]
+    ],
+    ArchivableResponse,
 ):
     """Response model for step runs."""
 
@@ -772,12 +776,15 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
+class StepRunFilter(
+    ProjectScopedFilter, RunMetadataFilterMixin, ArchivableFilterMixin
+):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
+        *ArchivableFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
         "exclude_retried",
         "cache_expired",
@@ -789,6 +796,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        *ArchivableFilterMixin.API_SINGLE_INPUT_PARAMS,
         "exclude_retried",
         "cache_expired",
     ]

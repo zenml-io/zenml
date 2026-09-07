@@ -2948,6 +2948,8 @@ class Client(metaclass=ClientMetaClass):
         tags: StringFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUID | None = None,
+        archived: Optional[bool] = None,
+        archived_at: DatetimeFilterOption = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -2976,11 +2978,16 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             trigger_id: Filter by trigger ID (attached trigger to snapshot).
+            archived: Whether to return only archived entities (True) or
+                only live ones (False). Both are returned when unset.
+            archived_at: Filter on the time the entity was archived.
 
         Returns:
             A page with snapshots fitting the filter description
         """
         snapshot_filter_model = PipelineSnapshotFilter(
+            archived_at=archived_at,
+            archived=archived,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5231,6 +5238,8 @@ class Client(metaclass=ClientMetaClass):
         trigger_id: UUIDFilterOption = None,
         parent_run_id: UUIDFilterOption = None,
         root_runs_only: Optional[bool] = None,
+        archived: Optional[bool] = None,
+        archived_at: DatetimeFilterOption = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5286,11 +5295,16 @@ class Client(metaclass=ClientMetaClass):
             trigger_id: The ID of the trigger that generated this run.
             parent_run_id: The parent run ID for nested child pipeline runs.
             root_runs_only: Whether to include only root runs. Ignored if False.
+            archived: Whether to return only archived entities (True) or
+                only live ones (False). Both are returned when unset.
+            archived_at: Filter on the time the entity was archived.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
         """
         runs_filter_model = PipelineRunFilter(
+            archived_at=archived_at,
+            archived=archived,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5505,6 +5519,8 @@ class Client(metaclass=ClientMetaClass):
         exclude_retried: Optional[bool] = None,
         version: IntegerFilterOption = None,
         hydrate: bool = False,
+        archived: Optional[bool] = None,
+        archived_at: DatetimeFilterOption = None,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
 
@@ -5538,11 +5554,16 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            archived: Whether to return only archived entities (True) or
+                only live ones (False). Both are returned when unset.
+            archived_at: Filter on the time the entity was archived.
 
         Returns:
             A page with Pipeline fitting the filter description
         """
         step_run_filter_model = StepRunFilter(
+            archived_at=archived_at,
+            archived=archived,
             sort_by=sort_by,
             page=page,
             size=size,

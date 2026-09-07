@@ -162,6 +162,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
     child_key: Optional[str] = Field(nullable=True, default=None)
+    # Pinned runs are never eligible for archival, whatever their age.
+    retain: bool = Field(nullable=False, default=False)
+
+    # Execution archive markers; the contract lives on `ArchiveBundleSchema`.
+    archived_at: Optional[datetime] = Field(nullable=True, default=None)
+    archive_bundle_id: Optional[UUID] = Field(nullable=True, default=None)
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -727,6 +733,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id=self.pipeline_id,
             child_key=self.child_key,
             root_run_id=self.root_run_id,
+            retain=self.retain,
+            archived_at=self.archived_at,
+            archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
         if include_metadata:
@@ -913,6 +922,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if run_update.exception_info:
             self.exception_info = run_update.exception_info.model_dump_json()
+
+        if run_update.retain is not None:
+            self.retain = run_update.retain
 
         self.updated = utc_now()
         return self

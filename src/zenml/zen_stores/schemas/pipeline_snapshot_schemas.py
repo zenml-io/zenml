@@ -14,6 +14,7 @@
 """Pipeline snapshot schemas."""
 
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
@@ -127,6 +128,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
+
+    # Execution archive markers; the contract lives on `ArchiveBundleSchema`.
+    archived_at: Optional[datetime] = Field(nullable=True, default=None)
+    archive_bundle_id: Optional[UUID] = Field(nullable=True, default=None)
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -534,6 +539,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             deployable=deployable,
             is_dynamic=self.is_dynamic,
             pipeline_id=self.pipeline_id,
+            archived_at=self.archived_at,
+            archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
         if include_metadata:

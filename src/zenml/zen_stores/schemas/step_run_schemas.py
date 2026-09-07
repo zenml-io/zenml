@@ -113,6 +113,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     status: str = Field(nullable=False)
 
+    # Archived lists cannot recover these projections from cleared configuration.
+    step_type: Optional[str] = Field(nullable=True, default=None)
+    substitutions: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True), default=None
+    )
+
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
     cache_expires_at: Optional[datetime] = Field(nullable=True)
@@ -130,6 +136,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
     heartbeat_threshold: Optional[int] = Field(nullable=True)
+
+    # Execution archive markers; the contract lives on `ArchiveBundleSchema`.
+    archived_at: Optional[datetime] = Field(nullable=True, default=None)
+    archive_bundle_id: Optional[UUID] = Field(nullable=True, default=None)
+
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -476,6 +487,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             resource_request_id=self.resource_request_id,
             substitutions=step.config.substitutions,
             heartbeat_threshold=self.heartbeat_threshold,
+            archived_at=self.archived_at,
+            archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
         if include_metadata:

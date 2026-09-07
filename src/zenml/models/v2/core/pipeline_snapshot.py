@@ -40,6 +40,9 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableFilterMixin,
+    ArchivableResponse,
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -229,7 +232,9 @@ class PipelineSnapshotUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
+class PipelineSnapshotResponseBody(
+    ProjectScopedResponseBody, ArchivableResponseBody
+):
     """Response body for pipeline snapshots."""
 
     runnable: bool = Field(
@@ -362,7 +367,8 @@ class PipelineSnapshotResponse(
         PipelineSnapshotResponseBody,
         PipelineSnapshotResponseMetadata,
         PipelineSnapshotResponseResources,
-    ]
+    ],
+    ArchivableResponse,
 ):
     """Response model for pipeline snapshots."""
 
@@ -652,12 +658,15 @@ class PipelineSnapshotResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
+class PipelineSnapshotFilter(
+    ProjectScopedFilter, TaggableFilter, ArchivableFilterMixin
+):
     """Model for filtering pipeline snapshots."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *ArchivableFilterMixin.FILTER_EXCLUDE_FIELDS,
         "named_only",
         "pipeline",
         "stack",
@@ -680,6 +689,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *ArchivableFilterMixin.API_SINGLE_INPUT_PARAMS,
         "named_only",
         "runnable",
         "deployable",

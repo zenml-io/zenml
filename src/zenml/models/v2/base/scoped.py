@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Scoped model definitions."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,12 +36,14 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
     BaseRequest,
+    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
 )
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
+    DatetimeFilterOption,
     StringFilterOption,
     UUIDFilterOption,
 )
@@ -609,6 +612,109 @@ class TaggableFilter(BaseFilter):
             return query
 
         return super().apply_sorting(query=query, table=table)
+
+
+class ArchivableResponseBody(BaseResponseBody):
+    """Response body fields shared by entities whose detail can be archived."""
+
+    archived_at: Optional[datetime] = Field(
+        default=None,
+        title="When the detail of this entity was moved to an archive "
+        "bundle. Unset while the entity is live.",
+    )
+    archive_bundle_id: Optional[UUID] = Field(
+        default=None,
+        title="The archive bundle that holds the archived detail, if any.",
+    )
+
+
+class ArchivableResponse:
+    """Response mixin exposing the execution archive markers of the body."""
+
+    def get_body(self) -> ArchivableResponseBody:
+        """The body accessor supplied by the concrete response class.
+
+        Returns:
+            The response body.
+
+        Raises:
+            NotImplementedError: Always; the response class provides it.
+        """
+        raise NotImplementedError
+
+    @property
+    def archived_at(self) -> Optional[datetime]:
+        """The `archived_at` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().archived_at
+
+    @property
+    def archive_bundle_id(self) -> Optional[UUID]:
+        """The `archive_bundle_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().archive_bundle_id
+
+
+class ArchivableFilterMixin(BaseFilter):
+    """Model to enable filtering by execution archive state.
+
+    `archived_at` is a regular datetime filter on the marker column and
+    supports every datetime operation, including `isnull:` and
+    `isnotnull:`. `archived` is shorthand for those two operations.
+    """
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "archived",
+    ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "archived",
+    ]
+
+    archived_at: DatetimeFilterOption = Field(
+        default=None,
+        description="When the detail of the entity was archived.",
+    )
+    archived: Optional[bool] = Field(
+        default=None,
+        description="Whether to return only archived entities (True) or only "
+        "live ones (False). Both are returned when unset.",
+    )
+
+    @model_validator(mode="after")
+    def translate_archived_flag(self) -> "ArchivableFilterMixin":
+        """Turn the `archived` shorthand into an `archived_at` operation.
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If both `archived` and `archived_at` are set.
+        """
+        if self.archived is None:
+            return self
+        if self.archived_at is not None:
+            raise ValueError(
+                "`archived` and `archived_at` cannot be combined; use "
+                "`archived_at` with `isnull:`/`isnotnull:` instead."
+            )
+        operation = (
+            GenericFilterOps.IS_NOT_NULL
+            if self.archived
+            else GenericFilterOps.IS_NULL
+        )
+        self.archived_at = f"{operation.value}:"
+        # Send only the canonical datetime filter to REST stores, so the
+        # server does not receive two mutually exclusive inputs.
+        self.archived = None
+        return self
 
 
 class RunMetadataFilterMixin(BaseFilter):

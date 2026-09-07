@@ -41,6 +41,9 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableFilterMixin,
+    ArchivableResponse,
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -266,6 +269,10 @@ class PipelineRunUpdate(BaseUpdate):
     add_logs: Optional[List[LogsRequest]] = Field(
         default=None, title="New logs to add to the pipeline run."
     )
+    retain: Optional[bool] = Field(
+        default=None,
+        title="Whether to pin the run so it is never archived.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -273,7 +280,9 @@ class PipelineRunUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineRunResponseBody(ProjectScopedResponseBody):
+class PipelineRunResponseBody(
+    ProjectScopedResponseBody, ArchivableResponseBody
+):
     """Response body for pipeline runs."""
 
     status: ExecutionStatus = Field(
@@ -302,6 +311,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     root_run_id: Optional[UUID] = Field(
         default=None,
         title="The ID of the top-level parent run of this run's nesting tree.",
+    )
+    retain: bool = Field(
+        default=False,
+        title="Whether the run is pinned and excluded from archival.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -448,7 +461,8 @@ class PipelineRunResponse(
         PipelineRunResponseBody,
         PipelineRunResponseMetadata,
         PipelineRunResponseResources,
-    ]
+    ],
+    ArchivableResponse,
 ):
     """Response model for pipeline runs."""
 
@@ -841,12 +855,24 @@ class PipelineRunResponse(
         """
         return self.get_body().root_run_id
 
+    @property
+    def retain(self) -> bool:
+        """The `retain` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().retain
+
 
 # ------------------ Filter Model ------------------
 
 
 class PipelineRunFilter(
-    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+    ProjectScopedFilter,
+    TaggableFilter,
+    RunMetadataFilterMixin,
+    ArchivableFilterMixin,
 ):
     """Model to enable advanced filtering of all pipeline runs."""
 
@@ -863,6 +889,7 @@ class PipelineRunFilter(
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
+        *ArchivableFilterMixin.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "build_id",
         "schedule_id",
@@ -891,6 +918,7 @@ class PipelineRunFilter(
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        *ArchivableFilterMixin.API_SINGLE_INPUT_PARAMS,
         "in_progress",
         "templatable",
         "root_runs_only",

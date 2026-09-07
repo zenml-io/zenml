@@ -619,6 +619,22 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
+class ArchiveBundleStatus(StrEnum):
+    """Lifecycle of an execution archive bundle catalog row.
+
+    The catalog row is created as PENDING before any object is uploaded, so a
+    crash at any point leaves either SQL authoritative (PENDING or FAILED) or
+    a cataloged, restorable bundle (COMPLETE). RESTORING and RESTORED mark
+    the inverse operation.
+    """
+
+    PENDING = "pending"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    RESTORING = "restoring"
+    RESTORED = "restored"
+
+
 class DeploymentStatus(StrEnum):
     """Status of a deployment."""
 
