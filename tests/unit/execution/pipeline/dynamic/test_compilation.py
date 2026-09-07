@@ -76,9 +76,9 @@ def test_explicit_inline_runtime_returns_resource_override_warning() -> None:
         orchestrator=SimpleNamespace(can_run_isolated_steps=True),
     ) == (
         StepRuntime.ISOLATED,
-        "Resource settings for step `step_name` require an isolated runtime, "
-        "but the step was configured to run inline. Running the step in "
-        "isolated runtime instead.",
+        "Specifying compute resource settings for step `step_name` requires an "
+        "isolated runtime, but the step was configured to run inline. Running "
+        "the step in isolated runtime instead.",
     )
 
 
@@ -110,7 +110,7 @@ def test_unsupported_isolation_returns_runtime_override_warning() -> None:
     ) == (
         StepRuntime.INLINE,
         "The SimpleNamespace does not support running steps in isolated "
-        "runtimes. Running step `step_name` in inline runtime instead.",
+        "runtimes. Running the step `step_name` in inline runtime instead.",
     )
 
 

@@ -189,8 +189,8 @@ def test_inline_step_with_resource_demands_warns_before_isolated_run(mocker):
 
     warning.assert_called_once_with(
         "%s",
-        "Resource settings for step `resource_step` require an isolated "
-        "runtime, but the step was configured to run inline. Running the "
+        "Specifying compute resource settings for step `resource_step` requires an "
+        "isolated runtime, but the step was configured to run inline. Running the "
         "step in isolated runtime instead.",
     )
     run_isolated.assert_called_once_with(

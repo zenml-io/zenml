@@ -323,7 +323,7 @@ def get_step_runtime(
         if step_config.runtime == StepRuntime.ISOLATED:
             warning = (
                 f"The {orchestrator.__class__.__name__} does not support "
-                "running steps in isolated runtimes. Running step "
+                "running steps in isolated runtimes. Running the step "
                 f"`{step_config.name}` in inline runtime instead."
             )
         return StepRuntime.INLINE, warning
