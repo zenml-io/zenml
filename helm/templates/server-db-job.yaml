@@ -150,6 +150,9 @@ spec:
           {{- end }}
           env:
             {{- $envVars := include "zenml.envVariables" . | fromYaml | default dict }}
+            {{- with $server.openTelemetry.dbMigrationServiceName }}
+            {{- $_ := set $envVars "ZENML_SERVER_OTEL_SERVICE_NAME" . }}
+            {{- end }}
             {{- range $k, $v := $envVars }}
             - name: {{ $k }}
               value: {{ $v | quote }}
