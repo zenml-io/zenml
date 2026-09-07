@@ -95,6 +95,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -1338,6 +1340,20 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Raises:
             KeyError: If the snapshot doesn't exist.
+        """
+
+    @abstractmethod
+    def prune_snapshots(
+        self, prune_request: PipelineSnapshotPruneRequest
+    ) -> PipelineSnapshotPruneResponse:
+        """Counts or deletes old anonymous snapshots that nothing references.
+
+        Args:
+            prune_request: Which snapshots to prune and whether to delete
+                them or only count them.
+
+        Returns:
+            The number of deleted or, for a dry run, eligible snapshots.
         """
 
     @abstractmethod

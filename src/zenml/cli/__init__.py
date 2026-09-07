@@ -1845,6 +1845,27 @@ continue pruning and to ignore these errors, please add the `--ignore-errors`
 flag. Warning messages will still be output to the terminal during this
 process.
 
+Pipeline snapshots that have no name and are no longer referenced by any
+pipeline run, deployment, schedule, run template, trigger, or derived snapshot
+can be deleted once they are older than a given number of days:
+
+```bash
+zenml pipeline snapshot prune --older-than-days 90
+```
+
+The command reports how many snapshots it found and asks for confirmation
+before deleting them. Use `--dry-run` to only see the count and `--yes` to skip
+the confirmation. When connected to a ZenML server, the deletion runs in the
+background and the command prints a task ID that you can search the server
+logs for.
+
+All pruning commands are also available under a common `zenml prune` group:
+
+```bash
+zenml prune artifacts
+zenml prune snapshots --older-than-days 90
+```
+
 Each pipeline run that requires Docker images also stores a build which
 contains the image names used for this run. To list all builds, use:
 
@@ -2589,6 +2610,7 @@ from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.project import *  # noqa
+from zenml.cli.prune import *  # noqa
 from zenml.cli.tag import *  # noqa
 from zenml.cli.trigger import *  # noqa
 from zenml.cli.webhook import *  # noqa

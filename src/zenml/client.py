@@ -142,6 +142,8 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunResponse,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
     PipelineSnapshotUpdate,
@@ -3263,6 +3265,41 @@ class Client(metaclass=ClientMetaClass):
             hydrate=False,
         )
         self.zen_store.delete_snapshot(snapshot_id=snapshot.id)
+
+    def prune_snapshots(
+        self,
+        older_than: datetime,
+        apply: bool = False,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> PipelineSnapshotPruneResponse:
+        """Delete old unused snapshots.
+
+        A snapshot is unused if it has no name and no pipeline run,
+        deployment, schedule, run template, trigger, or derived snapshot
+        references it. When connected to a ZenML server, the deletion is
+        scheduled as a background task: the returned task ID is attached to
+        the server log records it emits and no count is returned.
+
+        Args:
+            older_than: Only snapshots created before this point in time are
+                pruned.
+            apply: Whether to delete the eligible snapshots. If false, they
+                are only counted.
+            project: The project name/ID to prune snapshots in. Defaults to
+                the active project.
+
+        Returns:
+            The number of eligible or deleted snapshots, or the ID of the
+            background task deleting them.
+        """
+        project_id = (
+            self.get_project(project).id if project else self.active_project.id
+        )
+        return self.zen_store.prune_snapshots(
+            PipelineSnapshotPruneRequest(
+                project=project_id, older_than=older_than, apply=apply
+            )
+        )
 
     @_fail_for_sql_zen_store
     def trigger_pipeline(
