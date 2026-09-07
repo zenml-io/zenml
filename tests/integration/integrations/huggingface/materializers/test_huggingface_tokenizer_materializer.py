@@ -12,16 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from transformers import AutoTokenizer
+import sys
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
-    HFTokenizerMaterializer,
+import pytest
+
+
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
 )
-
-
 def test_huggingface_tokenizer_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tokenizer materializer."""
+    from transformers import AutoTokenizer
+
+    from tests.unit.test_general import _test_materializer
+    from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
+        HFTokenizerMaterializer,
+    )
+
     tokenizer = _test_materializer(
         step_output=AutoTokenizer.from_pretrained("bert-base-cased"),
         materializer_class=HFTokenizerMaterializer,

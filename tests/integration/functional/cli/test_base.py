@@ -57,7 +57,11 @@ def test_init_creates_from_templates(
         ],
     )
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, (
+        f"CLI output:\n{result.output}\n"
+        f"CLI stderr:\n{result.stderr}\n"
+        f"Exception: {result.exception!r}"
+    )
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
     files_in_top_level = set([f.lower() for f in os.listdir(str(tmp_path))])
     must_have_files = {

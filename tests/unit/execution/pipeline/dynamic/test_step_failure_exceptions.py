@@ -13,10 +13,20 @@
 #  permissions and limitations under the License.
 """Tests for the exception raised when a dynamic step fails."""
 
+from types import SimpleNamespace
+from uuid import uuid4
+
 import pytest
 
 from zenml import pipeline, step
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import StepExecutionException
+from zenml.execution.pipeline.dynamic.future_registry import FutureRegistry
+from zenml.execution.pipeline.dynamic.outputs import (
+    StepFuture,
+    _IsolatedStepFuture,
+)
+from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 
 
 @step
@@ -98,6 +108,41 @@ def unawaited_pipeline() -> None:
 def test_unawaited_failure_raises_step_execution_exception() -> None:
     with pytest.raises(StepExecutionException):
         unawaited_pipeline()
+
+
+def test_unawaited_isolated_failure_raises_during_settlement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An isolated failure is raised even before the monitor processes it."""
+    failed_step_run = SimpleNamespace(
+        status=ExecutionStatus.FAILED,
+        exception_info=None,
+    )
+    monkeypatch.setattr(
+        "zenml.execution.pipeline.dynamic.utils.get_latest_step_run",
+        lambda *_args, **_kwargs: failed_step_run,
+    )
+
+    registry = FutureRegistry()
+    registry.register_step_future(
+        invocation_id="failing_step",
+        future=StepFuture(
+            invocation_id="failing_step",
+            output_keys=[],
+            execution_future=_IsolatedStepFuture(
+                pipeline_run_id=uuid4(),
+                invocation_id="failing_step",
+            ),
+        ),
+    )
+
+    runner = object.__new__(DynamicPipelineRunner)
+    runner._exception = None
+    runner._continue_on_failure = False
+    runner._future_registry = registry
+
+    with pytest.raises(RuntimeError, match="failing_step"):
+        runner._settle_concurrent_work()
 
 
 @pipeline(dynamic=True, enable_cache=False)

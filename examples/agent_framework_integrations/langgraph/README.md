@@ -46,3 +46,7 @@ curl -X POST http://localhost:8000/invoke \
 - **Built-in Tools**: Search and calculation capabilities
 - **Real-time Deployment**: Deploy as HTTP API for instant responses
 - **ZenML Orchestration**: Full pipeline tracking and artifact management
+
+## 🔁 Recording runs with Kitaru
+
+This example builds its agent with `langchain.agents.create_agent`, which is exactly the shape [Kitaru](https://docs.zenml.io/kitaru) — ZenML's sibling project for agents — records in production: install `kitaru-langgraph` and pass `create_agent` itself, plus the arguments this example gives it, to `KitaruGraphRunner.from_agent_factory(...)`. Every run becomes a session you can replay against your real code with one thing changed — a cheaper model, a different prompt — and diff against the original. Going through the factory is what buys model and prompt substitution; wrapping an already compiled graph records but replays less. See the [LangGraph adapter docs](https://docs.zenml.io/kitaru/adapters/langgraph) for the capability matrix.

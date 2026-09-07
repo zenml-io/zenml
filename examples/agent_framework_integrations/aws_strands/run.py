@@ -24,19 +24,30 @@ docker_settings = DockerSettings(
 
 @step
 def run_strands_agent(query: str) -> Annotated[str, "agent_response"]:
-    """Execute the Strands agent and return the response."""
-    try:
-        response = agent(query)
-        return str(response)
-    except Exception as e:
-        return f"Agent error: {str(e)}"
+    """Execute the Strands agent and return the response.
+
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The agent response.
+    """
+    response = agent(query)
+    return str(response)
 
 
 @step
 def format_weather_response(
     response: str,
 ) -> Annotated[str, "formatted_response"]:
-    """Format the agent response into a readable summary."""
+    """Format the agent response into a readable summary.
+
+    Args:
+        response: Raw agent response.
+
+    Returns:
+        The formatted weather report.
+    """
     formatted = f"""🌤️ WEATHER REPORT
 {"=" * 30}
 

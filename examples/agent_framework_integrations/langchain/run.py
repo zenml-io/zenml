@@ -25,44 +25,38 @@ docker_settings = DockerSettings(
 def run_langchain_chain(
     url_input: str,
 ) -> Annotated[Dict[str, Any], "chain_results"]:
-    """Execute the LangChain chain for document summarization."""
-    try:
-        # Extract URL from input (assuming format "Summarize: URL")
-        if ":" in url_input and url_input.startswith("Summarize"):
-            url = url_input.split(":", 1)[1].strip()
-        else:
-            url = url_input  # Fallback to use input as URL directly
+    """Execute the LangChain chain for document summarization.
 
-        # Execute the LangChain chain
-        result = chain.invoke({"url": url})
+    Args:
+        url_input: URL or prefixed summarization request.
 
-        return {"url": url, "summary": result, "status": "success"}
-    except Exception as e:
-        return {
-            "url": url_input,
-            "summary": f"Chain error: {str(e)}",
-            "status": "error",
-        }
+    Returns:
+        The source URL and generated summary.
+    """
+    if ":" in url_input and url_input.startswith("Summarize"):
+        url = url_input.split(":", 1)[1].strip()
+    else:
+        url = url_input
+
+    result = chain.invoke({"url": url})
+    return {"url": url, "summary": result}
 
 
 @step
 def format_langchain_response(
     chain_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the LangChain results into a readable summary."""
+    """Format the LangChain results into a readable summary.
+
+    Args:
+        chain_data: Source URL and generated summary.
+
+    Returns:
+        The formatted document summary.
+    """
     url = chain_data["url"]
     summary = chain_data["summary"]
-    status = chain_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ LANGCHAIN CHAIN ERROR
-{"=" * 40}
-
-URL: {url}
-Error: {summary}
-"""
-    else:
-        formatted = f"""📄 LANGCHAIN DOCUMENT SUMMARY
+    formatted = f"""📄 LANGCHAIN DOCUMENT SUMMARY
 {"=" * 40}
 
 Source: {url}

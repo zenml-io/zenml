@@ -35,7 +35,7 @@ Choose one of the paths below. The same ZenML pipeline pattern works for all of 
 Use large language models, prompts, and tools to build intelligent autonomous agents that can reason, take action, and interact with your systems.
 
 {% hint style="info" %}
-**Two ways to run agents.** This path runs your agent *inside a pipeline*, which is ideal for batch workloads and evaluation. If the agent itself runs in production, use [Kitaru](https://docs.zenml.io/kitaru): it records every model and tool call as a durable checkpoint, so you can replay a real run faithfully with one thing changed (a cheaper model, a different prompt), diff the two, and keep the version that wins. The two compose: a Kitaru flow is a dynamic ZenML pipeline, so agents and the pipelines that evaluate them share the same stacks and UI.
+**Evaluating production agents.** This path runs your agent *inside a ZenML pipeline*, which is useful for orchestrated batch workloads and evaluations. If your agent runs elsewhere in production, [Kitaru](https://docs.zenml.io/kitaru) can record or import its traces as sessions. You can investigate those sessions, define cohorts and evaluators, and use replay experiments to test changes and build regression checks. Kitaru does not use ZenML pipelines or stacks for this workflow.
 {% endhint %}
 
 ### Architecture example
