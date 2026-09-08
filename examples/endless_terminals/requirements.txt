@@ -1,0 +1,2 @@
+zenml[server]>=0.96.4
+pydantic>=2,<3

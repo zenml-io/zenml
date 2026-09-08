@@ -1,0 +1,172 @@
+{
+  "dataset": "obiwan96/endless-terminals",
+  "dataset_revision": "26ecf78458e7f756e4d06780d5fbf3dd78e91815",
+  "license": "MIT",
+  "scope": "Reviewed ten-task pilot, not a representative benchmark",
+  "tasks": [
+    {
+      "task_id": "task_000000_0090c771",
+      "qualified_image_id": "sha256:58cefa6cd7ad7880f71c1d5b308c108e6639ee2b22919562a21a58b413308d28",
+      "task_file_sha256": {
+        "environment/Dockerfile": "d0653be4ae9ddb8e31271093864a4491e59d2cdc163f219d4c8a4719d0aa12f6",
+        "environment/task.json": "7d27858b4f0280e1d02a5665188104c8b1e4e4717a5a66951de04473c3326043",
+        "environment/test_initial_state.py": "51e6bc878f412d50f1b48c7963e2edc0ecc8f722122463ec23a0eec1afeb4cd4",
+        "instruction.md": "24730191d58c5d3946073dd67a31289e69a455a59954097e3ae9c5033cea8a07",
+        "solution/solve.sh": "bae04378d19200aaaf78e96f67ba377e3e9404b80fee88f28b55fd419264796d",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "d6a8a56a669b4d06c11fc1f4b210adbbec1ee5638c8ca496de177c9a6441f6b3"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/backup_logs/integrity_report.log"
+    },
+    {
+      "task_id": "task_000000_009a1afa",
+      "qualified_image_id": "sha256:29a85c0008b66c30206251019a894c068afcc71ecec821d145d11b66e3a2d3c0",
+      "task_file_sha256": {
+        "environment/Dockerfile": "cdefa22e84ade5d6a04c5b77472ebeaabe31b19e0e5b10fa523192e4190b11b9",
+        "environment/task.json": "1f637a5b2630544d58cf29f719e0b1e37b59310b29891ff84671850cdefff050",
+        "environment/test_initial_state.py": "c2f34a963389100b79a78d48c4d689070abeee6d50d521d222821c8f325cf4c3",
+        "instruction.md": "f103555adf659582745f0d513337dd4b175b506670943f8da94d90e55dd0c7da",
+        "solution/solve.sh": "5746060516e00602fb33989e767ba3d1861aebe36af1eb2c4ce386072fab7050",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "0323e2e974308a75c1a3fded6e50924364336424fac33cd16bb94e5826b44237"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/experiments/opt_solver/summary.txt"
+    },
+    {
+      "task_id": "task_000000_00e67104",
+      "qualified_image_id": "sha256:b775748c8fc173848894a13ae3593eea017deb439629deb40c0b562933408cd5",
+      "task_file_sha256": {
+        "environment/Dockerfile": "4e0379256fc88984c500eefddcae4909384bd4319fd14d39a76a11230b34fdd2",
+        "environment/task.json": "7575922ef4aeade3bdb139de5449e024bf16a6e04248612cc6056cd7a50d08a8",
+        "environment/test_initial_state.py": "a853ae8117172e4c2487c7ddcb875ee2348013ef45d16d846138ef74ec579e29",
+        "instruction.md": "753db749489d7f03d37b6188f03fb92e816cf655cfcbf124263dfaeeb01ae14a",
+        "solution/solve.sh": "11a0b36ea723de8cb0a3dbd2074e352590a7940ab6ab7ed5340b2cd62647fb15",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "eec13ef95a9f57b9ae7166ad7505f7fd7ec7e8ae471bbb5976479aac6ca720ad"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/build/reports/warning_frequency.txt"
+    },
+    {
+      "task_id": "task_000000_010b99da",
+      "qualified_image_id": "sha256:208526eacec6418b9a94cd54265d29a2298c6d522e313b39a3a4b2e00b8bd8e1",
+      "task_file_sha256": {
+        "environment/Dockerfile": "f6ef631fc7b6a159b9b72afe7cf9ea8b6c2b1b8edcb3cc71888412a2e2b2d4f3",
+        "environment/task.json": "6fb0de49582349520f017a6a20e6a1814bb9f6c96deb19adfad1ec92523df28c",
+        "environment/test_initial_state.py": "2456cc83295525db7a30d73f1c700abbf170ce6b70bf30d86d16ebefe3c2b2c2",
+        "instruction.md": "e280297e1063035a9375074457ca8629f8fe3bf917490cd79f97d648354576f1",
+        "solution/solve.sh": "f47cd006d930367b9461b4987ef9ccc3566fb19af9220cda9277cb49ab28d51e",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "65400e74404a368ebc06d14c8aa77f1cc09bb98a9fc3db8e3cdd7c82fd2fbc62"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/projects/metrics/defined_services.log"
+    },
+    {
+      "task_id": "task_000000_010d25ed",
+      "qualified_image_id": "sha256:2b0cd41c7c8e16e4a4c6dc99cd7f98a9e3ac07a389f3a21821676fb6e17af377",
+      "task_file_sha256": {
+        "environment/Dockerfile": "aa569039a0eb1cdf054c53edf8276a2358e1823fc71aa87fb19b8217ed89b584",
+        "environment/task.json": "fdafa33b9b96aa24361447ef805a20e400661fa4d137df5b0dd17aae9992c69c",
+        "environment/test_initial_state.py": "2d03ce5e8f769d6e1dd0c1ffdea986d3d28406a311ff65b69ebbaf95494f9f74",
+        "instruction.md": "b94ac7cad1f133b087abe9f8fd908647f81b8b2aee031a985576eeb1839da38d",
+        "solution/solve.sh": "8919e9d348724d386423676e0086cea05ad8d6a073338fa891c4f235e1cbd5ee",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "8f81a79f78a0622b77098acfed1d1f1aacaee78cc0bcf5c50606d627958adaa1"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/firewall/action.log"
+    },
+    {
+      "task_id": "task_000000_010fa6d9",
+      "qualified_image_id": "sha256:a0ee7f23ca810ce7beebded0ddf0e0526cf65d6687676eb9453367527641fc73",
+      "task_file_sha256": {
+        "environment/Dockerfile": "f066ac0b58400e7e163963da5576af71e6f79e082fc6048f6f382e993f8c5f30",
+        "environment/task.json": "d32c851fe5bf8063d1f64f496b00f29131a1bd9f4e2d444f01a5eb82968cecce",
+        "environment/test_initial_state.py": "d8c84831aa66752e41be7133be857d96ce1c7a7db6ddba62162bef738c70076b",
+        "instruction.md": "4b6fea984fb0b46140b7531fa136c1795dc9a8ff6fe678e38e22ada000630793",
+        "solution/solve.sh": "411bac4734618f4d990b16e09be94a94f88479e9fe11179510db52dcb266581f",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "2f3ab2fd1bc32289eab8f9c4f433a7a5bb6fbc8ce9f179b7dd5283dac6e74bc3"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/tickets/ticket-5502/resolution.log"
+    },
+    {
+      "task_id": "task_000000_0228cd64",
+      "qualified_image_id": "sha256:a6ea6015e9257908f60fcd80afa5d2e9836596c6df0ff2bbfe0f8053c0bdc42b",
+      "task_file_sha256": {
+        "environment/Dockerfile": "18bc177626b6693cfd75f560ee68535769f4d6ebd724f5047f29a46c08f3a900",
+        "environment/task.json": "44ac7d659c4bf6039d8412892a7e39fdc6056db8afa17ffa8afcbdf8bd84c542",
+        "environment/test_initial_state.py": "779356a960935c1af87d859a350ad474ea06238ed842efc6b06448bbef6ead29",
+        "instruction.md": "adc72ce1c43383b5b8ae820e36ee7c7b4786f64bcf8d3548422b2b46f62ff1f2",
+        "solution/solve.sh": "4573e6ffcdc6908bbb1a9197ebac9ee493d15c3dae5494a9191c9ef6581ad5cc",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "cccf3561cb7dfc5f3581dc65b3731112edf58dec416bd11bbfa76c2fa90a5445"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/observability/primary_dns.log"
+    },
+    {
+      "task_id": "task_000000_02c76919",
+      "qualified_image_id": "sha256:85521d9f774df0c2993dbf42eba4cde3b52e190c4b2947de3f8e72be724c9302",
+      "task_file_sha256": {
+        "environment/Dockerfile": "ec3ee00a20c2f561022189592a3da42fa9c61786f10febfd8579d6b26fc93dab",
+        "environment/task.json": "e17ab0b0f6c4bb1fb70555783d7705cb23d52d0c7e7b307d92f4025e6ce19fc1",
+        "environment/test_initial_state.py": "b636657cbed4f87b54dafaf86b2e711ca2189bb4219cebf57c82b46a3539681a",
+        "instruction.md": "13cc73be190159417c0b2c14e17765ef8ad3a228c8647b281b5269f54ccd747e",
+        "solution/solve.sh": "2e10ff18a732384d638a73328e1ea7e56fa5184419df3de5f800b678621363ec",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "03d303218ef8740735caa46bc67b9ed452038fdd85789f091200c40be78e5409"
+      },
+      "protected_sources": {},
+      "corrupted_output_probe": "/home/user/deployment/release_manifest.log"
+    },
+    {
+      "task_id": "task_000000_01ee6df4",
+      "qualified_image_id": "sha256:2317586dd3008b5d1f35fbb9a938c52b3d357eaa93de52454d825baf739fcdca",
+      "task_file_sha256": {
+        "environment/Dockerfile": "a60d4e89095329367a1c895f74ab9ef3ca2160cae449f70c1dc14521b6b86286",
+        "environment/task.json": "7c3f5c9b3d6d315ad41527464bf480ffe15aed7cb616dff0caf1c0510b25123f",
+        "environment/test_initial_state.py": "a5a66d578e87858d3d427291da95779d706510a93363d791a4964d684f573f63",
+        "instruction.md": "13cef02885195a4b937e0de9fc8a81af56b8e3a18e418be70d877e1aba68027a",
+        "solution/solve.sh": "f4a3c4f1525a1bf7a4e355df6793fb0775b6bd93b4a6dc273d58130e38dbf5c9",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "b654ab74f42e679a954811a9470e6eebb5c8c8b7e003ab367b562d1fa25692ae"
+      },
+      "protected_sources": {
+        "/home/user/logs/access.log": "e205eee80bec46bd278d81ceee4fc1b2389b0b7b6c64c52b814fe84d987a4d6f"
+      },
+      "corrupted_output_probe": "/home/user/analysis/404_by_ip.txt"
+    },
+    {
+      "task_id": "task_000000_0319faa5",
+      "qualified_image_id": "sha256:fa295eeec8d78b92265fa4cc117d8601e0ff21dab3561f89e408cc76b0c30b90",
+      "task_file_sha256": {
+        "environment/Dockerfile": "d2b391b4158ed792928fed7b2333e8059986d728fc1d969329edf29f21fc0c4d",
+        "environment/task.json": "f4729aa0c1c7fa376a9a677658ec84bf319207e5b55081527ac9e99e7343e5f1",
+        "environment/test_initial_state.py": "3add0daf0c9d460073b9870bb62f2a3526b2186656dde56e9faa0c7627e17b3f",
+        "instruction.md": "bfec0e2a6f991a3e39d6a78c650691de361046e07c8dbdaa626f66e54427511f",
+        "solution/solve.sh": "0a73f645db45cfe6ab342d67ad399e11f59f517432c8ab5387447b00e1df030d",
+        "task.toml": "5e8c77884777068ff42eeac6cccbaa5336c212e92137649eecc38f31dcd11d6d",
+        "tests/test.sh": "52d87e5cb768634d6a7bda203b72ea77c802fdb9e8700d3d7cdcf631080c3298",
+        "tests/test_final_state.py": "8d6400bcb84c0587766bc6ff8888c26e034d4d9715f16c8241f304e2dad0b861"
+      },
+      "protected_sources": {
+        "/home/user/log_samples/auth.log": "a064d5486f484caaff6c77987140df12318caef4e87c464245ac50c8607a6f89"
+      },
+      "corrupted_output_probe": "/home/user/sec_reports/filtered_auth.log"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "controller_image": "REGISTRY/controller@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "training": {
+    "mode": "native",
+    "task_ids": [
+      "task_000000_0228cd64"
+    ],
+    "training_task_ids": [
+      "task_000000_0228cd64"
+    ],
+    "groups": 2,
+    "group_size": 4,
+    "max_actions": 4,
+    "training_max_actions": 4,
+    "max_tokens": 512,
+    "episode_timeout": 90,
+    "max_context": 8192,
+    "zero_signal_patience": 2
+  },
+  "sandbox": {
+    "helper_image": "REGISTRY/helper@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "task_ids": [
+      "task_000000_0228cd64"
+    ]
+  },
+  "service": {
+    "training_image": "REGISTRY/training@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "proxy_image": "REGISTRY/proxy@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

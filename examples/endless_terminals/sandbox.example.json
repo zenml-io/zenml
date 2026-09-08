@@ -1,0 +1,9 @@
+{
+  "helper_image": "REGISTRY/terminal-helper@sha256:REPLACE_WITH_BUILT_IMAGE_DIGEST",
+  "storage_class": "gp2",
+  "startup_timeout": 600,
+  "cleanup_timeout": 120,
+  "command_timeout": 30,
+  "episode_timeout": 300,
+  "task_ids": []
+}

@@ -1,0 +1,4 @@
+*
+!Dockerfile
+!entrypoint.py
+!backend_config.json
