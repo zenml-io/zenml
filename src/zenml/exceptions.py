@@ -106,6 +106,10 @@ class EntityCreationError(ZenMLBaseException, RuntimeError):
     """Raised when failing to create an entity."""
 
 
+class ApiTransactionResultTooLargeError(ZenMLBaseException):
+    """Raised when an API transaction result exceeds the database limit."""
+
+
 class WebhookInactiveError(ZenMLBaseException):
     """Raised when source is inactive."""
 

@@ -11,6 +11,8 @@ from sqlmodel import Session, col, select
 
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_DISABLE_DATABASE_MIGRATION
+from zenml.exceptions import ApiTransactionResultTooLargeError
+from zenml.models import ApiTransactionUpdate
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import sql_zen_store as sql_zen_store_module
 from zenml.zen_stores.schemas import (
@@ -216,6 +218,57 @@ def test_api_transaction_index_covers_expired_completed_cleanup():
     assert _index_columns(
         ApiTransactionSchema, "ix_api_transaction_completed_expired"
     ) == ["completed", "expired"]
+
+
+def test_oversized_compressed_api_transaction_result_is_rejected(
+    clean_client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Transaction results are limited based on their compressed size."""
+    store = clean_client.zen_store
+
+    if not isinstance(store, SqlZenStore):
+        pytest.skip(
+            "API transaction finalization is testable only for SQL ZenML "
+            "stores"
+        )
+
+    transaction_id = uuid4()
+    with Session(store.engine) as session:
+        session.add(
+            ApiTransactionSchema(
+                id=transaction_id,
+                method="POST",
+                url="/api/oversized-result",
+                user_id=clean_client.active_user.id,
+                completed=False,
+            )
+        )
+        session.commit()
+
+    update = ApiTransactionUpdate(cache_time=300)
+    update.set_result("result that exceeds the configured test limit")
+    result_value = update.get_result()
+    assert result_value is not None
+    compressed_size = len(gzip.compress(result_value.encode("utf-8")))
+    monkeypatch.setattr(
+        sql_zen_store_module,
+        "MEDIUMBLOB_MAX_LENGTH",
+        compressed_size - 1,
+    )
+
+    with pytest.raises(ApiTransactionResultTooLargeError, match="exceeds"):
+        store.finalize_api_transaction(
+            api_transaction_id=transaction_id,
+            api_transaction_update=update,
+        )
+
+    with Session(store.engine) as session:
+        transaction = session.get(ApiTransactionSchema, transaction_id)
+        stored_result = session.get(ApiTransactionResultSchema, transaction_id)
+
+    assert transaction is not None
+    assert transaction.completed is False
+    assert stored_result is None
 
 
 def test_artifact_version_index_covers_artifact_version_lookup():
