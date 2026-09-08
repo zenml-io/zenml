@@ -431,6 +431,13 @@ class TestModalSandbox:
             session = sandbox.restore(snap)
         modal_mock.Image.from_id.assert_called_once_with("im-old", client=None)
         modal_mock.Sandbox.create.assert_called_once()
+        assert modal_mock.Sandbox.create.call_args.args == (
+            "sleep",
+            "infinity",
+        )
+        modal_mock.Image.from_id.return_value.entrypoint.assert_called_once_with(
+            []
+        )
         assert session.id == "sb_new"
 
     def test_restore_uses_configured_modal_client(self) -> None:
@@ -505,6 +512,46 @@ class TestModalSandbox:
             settings = ModalSandboxSettings(image="my-registry/app:v1")
             _make_modal_sandbox().create_session(settings=settings)
         modal_mock.Image.from_registry.assert_called_with("my-registry/app:v1")
+
+    def test_create_session_overrides_image_startup_command(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Keep sessions alive despite short-lived image commands or entrypoints.
+
+        Args:
+            monkeypatch: Scoped replacement for the active stack lookup.
+        """
+        client = MagicMock()
+        client.active_stack.container_registry = None
+        monkeypatch.setattr(
+            "zenml.integrations.modal.sandboxes.modal_sandbox.Client",
+            lambda: client,
+        )
+        with _patch_modal() as modal_mock:
+            registry_image = MagicMock(name="registry_image")
+            session_image = MagicMock(name="session_image")
+            registry_image.entrypoint.return_value = session_image
+            modal_mock.Image.from_registry.return_value = registry_image
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_keepalive"
+            )
+
+            _make_modal_sandbox().create_session(
+                settings=ModalSandboxSettings(image="registry/task:v1")
+            )
+
+        registry_image.entrypoint.assert_called_once_with([])
+        modal_mock.Image.from_registry.assert_called_once_with(
+            "registry/task:v1"
+        )
+        assert modal_mock.Sandbox.create.call_args.args == (
+            "sleep",
+            "infinity",
+        )
+        assert (
+            modal_mock.Sandbox.create.call_args.kwargs["image"]
+            is session_image
+        )
 
     def test_cpu_and_memory_settings_reach_sandbox_create(self) -> None:
         with _patch_modal() as modal_mock:
@@ -714,3 +761,114 @@ class TestModalDashboardUrl:
         )
         session = _make_session(fake_sandbox)
         assert session._get_dashboard_url() == "https://modal.com/id/sb-x"
+
+
+def test_volume_mounts_use_component_client_and_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Existing volumes resolve with the same identity as the sandbox."""
+    from zenml.integrations.modal.flavors.modal_sandbox_flavor import (
+        ModalSandboxVolumeMount,
+    )
+
+    component = _make_modal_sandbox(
+        config=ModalSandboxConfig(
+            token_id="test-id", token_secret="test-secret"
+        )
+    )
+    zenml_client = MagicMock()
+    zenml_client.active_stack.container_registry = None
+    monkeypatch.setattr(
+        "zenml.integrations.modal.sandboxes.modal_sandbox.Client",
+        lambda: zenml_client,
+    )
+    explicit_client = MagicMock()
+    with _patch_modal() as fake:
+        fake.Client.from_credentials.return_value = explicit_client
+        settings = ModalSandboxSettings(
+            modal_environment="dev",
+            block_network=True,
+            volumes={
+                "/home/user": ModalSandboxVolumeMount(
+                    name="episode-volume", sub_path="/home", read_only=True
+                )
+            },
+        )
+        component.create_session(settings=settings)
+        kwargs = fake.Sandbox.create.call_args.kwargs
+        fake.Volume.from_name.assert_called_once_with(
+            "episode-volume", environment_name="dev", client=explicit_client
+        )
+        fake.Volume.from_name.return_value.with_mount_options.assert_called_once_with(
+            sub_path="/home", read_only=True
+        )
+        assert kwargs["block_network"] is True
+        assert "/home/user" in kwargs["volumes"]
+        assert "secrets" not in kwargs
+
+
+@pytest.mark.parametrize("read_only", [False, True])
+def test_volume_mount_options_supported_by_installed_sdk(
+    read_only: bool,
+) -> None:
+    """Exercise real SDK mount construction without credentials or cloud calls.
+
+    Args:
+        read_only: Whether sandbox writes to the mounted volume are allowed.
+    """
+    import modal
+
+    from zenml.integrations.modal.flavors.modal_sandbox_flavor import (
+        ModalSandboxVolumeMount,
+    )
+
+    mount = ModalSandboxVolumeMount(
+        name="sdk-contract-test", sub_path="/episodes", read_only=read_only
+    )
+    volume = modal.Volume.from_name(
+        mount.name, environment_name="test"
+    ).with_mount_options(sub_path=mount.sub_path, read_only=mount.read_only)
+    assert isinstance(volume, modal.Volume)
+
+
+@pytest.mark.parametrize(
+    ("original_blocked", "current_blocked"),
+    [(True, False), (False, True), (False, False)],
+)
+def test_snapshot_restore_preserves_network_restrictions(
+    monkeypatch: pytest.MonkeyPatch,
+    original_blocked: bool,
+    current_blocked: bool,
+) -> None:
+    """A restore retains either the original or current network restriction.
+
+    Args:
+        monkeypatch: Scoped replacement for the active stack lookup.
+        original_blocked: Per-call network restriction on the first session.
+        current_blocked: Network restriction configured for the restored session.
+    """
+    client = MagicMock()
+    client.active_stack.container_registry = None
+    monkeypatch.setattr(
+        "zenml.integrations.modal.sandboxes.modal_sandbox.Client",
+        lambda: client,
+    )
+    component = _make_modal_sandbox(
+        config=ModalSandboxConfig(block_network=current_blocked)
+    )
+    with _patch_modal() as fake:
+        fake.Sandbox.create.return_value = MagicMock(object_id="sb-original")
+        fake.Sandbox.create.return_value.snapshot_filesystem.return_value = (
+            MagicMock(object_id="im-snapshot")
+        )
+        session = component.create_session(
+            settings=ModalSandboxSettings(block_network=original_blocked)
+        )
+        snapshot = session.create_snapshot()
+        assert snapshot.metadata["block_network"] is original_blocked
+        restored = component.restore(snapshot)
+        expected = original_blocked or current_blocked
+        assert (
+            fake.Sandbox.create.call_args.kwargs["block_network"] is expected
+        )
+        assert restored.create_snapshot().metadata["block_network"] is expected

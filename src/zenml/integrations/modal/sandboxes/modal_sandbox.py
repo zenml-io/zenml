@@ -170,6 +170,7 @@ class ModalSandboxSession(SandboxSession):
         *,
         parent: "ModalSandbox",
         destroy_on_exit: bool = False,
+        block_network: bool = False,
     ) -> None:
         """Initialize the session wrapper.
 
@@ -178,7 +179,9 @@ class ModalSandboxSession(SandboxSession):
             parent: The owning Modal sandbox component.
             destroy_on_exit: Whether to destroy the sandbox session when the
                 session context manager exits.
+            block_network: Whether snapshots must retain blocked network access.
         """
+        self._block_network = block_network
         # Assign _sandbox before super().__init__ so the dashboard hook,
         # which is called during base __init__ via _publish_sandbox_metadata,
         # has the state it needs.
@@ -248,7 +251,11 @@ class ModalSandboxSession(SandboxSession):
             in-memory process state is captured.
         """
         image = self._sandbox.snapshot_filesystem()
-        return SandboxSnapshot(sandbox_id=self._parent.id, ref=image.object_id)
+        return SandboxSnapshot(
+            sandbox_id=self._parent.id,
+            ref=image.object_id,
+            metadata={"block_network": self._block_network},
+        )
 
     def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the Sandbox.
@@ -417,7 +424,7 @@ class ModalSandbox(BaseSandbox):
         environment_name = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
-        return sandbox_utils.build_sandbox_create_kwargs(
+        kwargs = sandbox_utils.build_sandbox_create_kwargs(
             app=sandbox_utils.lookup_modal_app(
                 self.config.app_name,
                 modal_environment=environment_name,
@@ -431,6 +438,19 @@ class ModalSandbox(BaseSandbox):
             environment=environment,
             modal_client=modal_client,
         )
+        kwargs["block_network"] = settings.block_network
+        if settings.volumes:
+            kwargs["volumes"] = {
+                path: modal.Volume.from_name(
+                    mount.name,
+                    environment_name=environment_name,
+                    client=modal_client,
+                ).with_mount_options(
+                    sub_path=mount.sub_path, read_only=mount.read_only
+                )
+                for path, mount in settings.volumes.items()
+            }
+        return kwargs
 
     def create_session(
         self,
@@ -452,21 +472,33 @@ class ModalSandbox(BaseSandbox):
         image = sandbox_utils.get_modal_image_from_registry(
             settings.image,
             registry_credentials=self._registry_credentials(settings.image),
-        )
+        ).entrypoint([])
+        # Interactive sessions must outlive the image's default command, and
+        # an inherited entrypoint must not intercept the keepalive command.
         sandbox = modal.Sandbox.create(
+            "sleep",
+            "infinity",
             **self._build_create_kwargs(
                 settings,
                 image=image,
                 modal_client=modal_client,
                 environment=self._resolve_session_environment(settings),
-            )
+            ),
         )
         return ModalSandboxSession(
-            sandbox, parent=self, destroy_on_exit=destroy_on_exit
+            sandbox,
+            parent=self,
+            destroy_on_exit=destroy_on_exit,
+            block_network=settings.block_network,
         )
 
     def attach(self, session_id: str) -> SandboxSession:
         """Reconnect to a still-live Modal Sandbox by id.
+
+        The SDK cannot report the original network policy. Snapshots taken
+        through attached sessions use the component network policy on
+        restore. Configure ``block_network`` on the component when
+        snapshotting attached sessions that must remain network-isolated.
 
         Args:
             session_id: The Modal sandbox object id (e.g. ``sb_xxx``).
@@ -500,6 +532,10 @@ class ModalSandbox(BaseSandbox):
     def restore(self, snapshot: SandboxSnapshot) -> SandboxSession:
         """Boot a new Session from a stored filesystem snapshot.
 
+        Network access stays blocked if either the snapshot or the current
+        component settings require it. Other runtime settings use the
+        current component configuration.
+
         Args:
             snapshot: A ``SandboxSnapshot`` whose ``ref`` is a Modal Image
                 id captured via ``snapshot_filesystem()``.
@@ -513,23 +549,35 @@ class ModalSandbox(BaseSandbox):
         """
         self._validate_snapshot(snapshot)
         settings = cast(ModalSandboxSettings, self.resolve_settings(None))
+        settings = settings.model_copy(
+            update={
+                "block_network": settings.block_network
+                or snapshot.metadata.get("block_network") is True
+            }
+        )
         modal_client = self._get_modal_client()
         try:
-            image = modal.Image.from_id(snapshot.ref, client=modal_client)
+            image = modal.Image.from_id(
+                snapshot.ref, client=modal_client
+            ).entrypoint([])
             # Env vars are runtime config, not filesystem state, so the
             # snapshot image doesn't carry them — re-apply the resolved
             # session environment on restore.
             sandbox = modal.Sandbox.create(
+                "sleep",
+                "infinity",
                 **self._build_create_kwargs(
                     settings,
                     image=image,
                     modal_client=modal_client,
                     environment=self._resolve_session_environment(settings),
-                )
+                ),
             )
         except Exception as e:
             raise RuntimeError(
                 f"Failed to restore Modal sandbox from image "
                 f"'{snapshot.ref}' ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(sandbox, parent=self)
+        return ModalSandboxSession(
+            sandbox, parent=self, block_network=settings.block_network
+        )
