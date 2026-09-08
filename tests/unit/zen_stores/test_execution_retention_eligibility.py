@@ -173,12 +173,52 @@ def test_positive_tree_and_utf8_lengths(sql_store: SqlZenStore) -> None:
 
 
 @pytest.mark.parametrize(
+    "status,end_time",
+    [
+        ("cached", None),
+        ("skipped", None),
+        ("completed", None),
+        ("failed", None),
+        ("completed", NOW - timedelta(days=90)),
+        ("skipped", NOW),
+    ],
+)
+def test_terminal_step_timestamps_do_not_set_retention_age(
+    sql_store: SqlZenStore, status: str, end_time: datetime | None
+) -> None:
+    """Old trees remain eligible when terminal steps lack old end timestamps.
+
+    Args:
+        sql_store: Isolated SQL store.
+        status: Terminal child-step status.
+        end_time: Missing or recent step timestamp that must not block retention.
+    """
+    root = make_tree(sql_store)
+    child = make_tree(sql_store, root["run"])
+    with Session(sql_store.engine) as session:
+        step = session.get(StepRunSchema, child["step"])
+        assert step
+        step.status = status
+        step.end_time = end_time
+        session.add(step)
+        session.commit()
+    result = selection(sql_store, root)
+    assert not result.exclusions
+    assert len(result.candidates) == 1
+    assert not result.candidates[0].exclusions
+    assert set(result.candidates[0].tree_run_ids) == {
+        root["run"],
+        child["run"],
+    }
+
+
+@pytest.mark.parametrize(
     "rule",
     [
         "not_terminal",
         "not_old",
         "missing_end",
-        "step_not_terminal_or_old",
+        "step_not_terminal",
         "pinned",
         "unresolved_wait",
         "model_link",
@@ -211,7 +251,7 @@ def test_each_exclusion_and_its_release(
             run.end_time = None
         elif rule == "pinned":
             run.retain = True
-        elif rule == "step_not_terminal_or_old":
+        elif rule == "step_not_terminal":
             step = session.get(StepRunSchema, child["step"])
             assert step
             step.status = "running"

@@ -28,7 +28,11 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql.elements import BindParameter
 from sqlmodel import Session, col
 
-from zenml.enums import ExecutionStatus, RunWaitConditionStatus
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    RunWaitConditionStatus,
+)
 from zenml.models.v2.misc.retention import (
     RetentionLimits,
     RetentionSettings,
@@ -179,7 +183,8 @@ def _metadata_query(
     external = select(col(MetadataLink.id)).where(
         col(MetadataLink.run_metadata_id) == col(Metadata.id),
         or_(
-            col(MetadataLink.resource_type) != "pipeline_run",
+            col(MetadataLink.resource_type)
+            != MetadataResourceTypes.PIPELINE_RUN,
             col(MetadataLink.resource_id).not_in(_bounded_ids(members)),
         ),
     )
@@ -249,13 +254,9 @@ def _rules(
         "not_old": runs.where(
             or_(col(Run.end_time).is_(None), col(Run.end_time) >= cutoff)
         ),
-        "step_not_terminal_or_old": steps.where(
-            or_(
-                col(Step.status).not_in(terminal),
-                col(Step.end_time).is_(None),
-                col(Step.end_time) >= cutoff,
-            )
-        ),
+        # Run completion sets retention age; cached/skipped steps may have no
+        # end timestamp even though their execution is terminal.
+        "step_not_terminal": steps.where(col(Step.status).not_in(terminal)),
         "unresolved_wait": select(col(Wait.id)).where(
             col(Wait.run_id).in_(membership),
             col(Wait.status) != RunWaitConditionStatus.RESOLVED,
@@ -390,7 +391,8 @@ def _inventory(
         ),
         select(col(MetadataLink.run_metadata_id))
         .where(
-            col(MetadataLink.resource_type) == "pipeline_run",
+            col(MetadataLink.resource_type)
+            == MetadataResourceTypes.PIPELINE_RUN,
             col(MetadataLink.resource_id).in_(_bounded_ids(members)),
         )
         .distinct(),
