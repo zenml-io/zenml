@@ -1564,6 +1564,15 @@ class SqlZenStore(BaseZenStore):
             url=url, connect_args=connect_args, **engine_args
         )
         self.config.configure_engine_auth(self._engine)
+
+        # Instrument the SQLAlchemy engine if ZenML Server is running.
+        # This env var is set during Server Helm deployment.
+        # Refer: helm/templates/_environment.tpl
+        if os.environ.get("ZENML_SERVER", "").lower() == "true":
+            from zenml.zen_server.otel import instrument_sqlalchemy_engine
+
+            instrument_sqlalchemy_engine(self._engine)
+
         self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will

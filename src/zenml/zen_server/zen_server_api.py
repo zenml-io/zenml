@@ -51,11 +51,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
-from zenml.zen_server.otel import (
-    configure_otel,
-    instrument_sqlalchemy_store,
-    shutdown_otel,
-)
+from zenml.zen_server.otel import configure_otel, otel_span, shutdown_otel
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -119,7 +115,6 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
-    zen_store,
 )
 
 
@@ -171,44 +166,47 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     to_thread.current_default_thread_limiter().total_tokens = (
         cfg.thread_pool_size
     )
-    # IMPORTANT: these need to be run before the fastapi app starts, to avoid
-    # race conditions
-    await initialize_request_manager()
-    initialize_zen_store()
-    # Instrument the SQL store with OpenTelemetry after it has been initialized.
-    instrument_sqlalchemy_store(store=zen_store())
-    initialize_resource_pool_store()
-    service_connector_registry.register_builtin_service_connectors()
-    initialize_rbac()
-    initialize_feature_gate()
-    initialize_workload_manager()
-    initialize_resource_pool_store()
-    initialize_snapshot_executor()
-    await initialize_snapshot_run_dispatcher()
-    initialize_artifact_store_cache()
-    await initialize_streaming()
-    initialize_secure_headers()
-    if cfg.is_pro_server:
-        # Send a workspace status update to the Cloud API to indicate that the
-        # ZenML server is running or to update the version and server URL.
-        send_pro_workspace_status_update()
+    # Trace all app initialization before the app starts.
+    with otel_span("zenml.server.initialize"):
+        # IMPORTANT: these need to be run before the fastapi app starts, to
+        # avoid race conditions
+        await initialize_request_manager()
+        initialize_zen_store()
+        initialize_resource_pool_store()
+        service_connector_registry.register_builtin_service_connectors()
+        initialize_rbac()
+        initialize_feature_gate()
+        initialize_workload_manager()
+        initialize_snapshot_executor()
+        await initialize_snapshot_run_dispatcher()
+        initialize_artifact_store_cache()
+        await initialize_streaming()
+        initialize_secure_headers()
+        if cfg.is_pro_server:
+            # Send a workspace status update to the Cloud API to indicate that the
+            # ZenML server is running or to update the version and server URL.
+            send_pro_workspace_status_update()
 
-    if logger.isEnabledFor(logging.DEBUG):
-        start_event_loop_lag_monitor()
+        if logger.isEnabledFor(logging.DEBUG):
+            start_event_loop_lag_monitor()
 
-    await register_event_handlers()
-    await register_webhook_event_handlers()
+        await register_event_handlers()
+        await register_webhook_event_handlers()
 
     yield
 
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
-    shutdown_otel()
-    snapshot_executor().shutdown(wait=True)
-    await shutdown_snapshot_run_dispatcher()
-    await shutdown_streaming()
-    await cleanup_request_manager()
-    cleanup_artifact_store_cache()
+
+    try:
+        snapshot_executor().shutdown(wait=True)
+        await shutdown_snapshot_run_dispatcher()
+        await shutdown_streaming()
+        await cleanup_request_manager()
+        cleanup_artifact_store_cache()
+    finally:
+        # Shutown OTel after all cleanup tasks to ensure shutdown logs/traces are captured, if any.
+        shutdown_otel()
 
 
 app = FastAPI(
@@ -223,8 +221,8 @@ add_middlewares(app)
 # suppress uvicorn access logs
 _configure_uvicorn_logging()
 
-# Configure OpenTelemetry
-configure_otel(app)
+# Configure OpenTelemetry before the app starts
+configure_otel(config=server_config(), app=app)
 
 
 # Customize the default request validation handler that comes with FastAPI
