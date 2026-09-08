@@ -175,6 +175,10 @@ from zenml.models import (
     WebhookSecretResponse,
     WebhookUpdate,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+)
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsStoreInterface,
 )
@@ -2996,6 +3000,22 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     # -------------------- Projects --------------------
+
+    @abstractmethod
+    def retention_dry_run(
+        self,
+        project_id: UUID,
+        request: RetentionDryRunRequest,
+    ) -> RetentionDryRunResponse:
+        """Estimate a bounded project retention batch without changing data.
+
+        Args:
+            project_id: Project to inspect.
+            request: Optional what-if overrides.
+
+        Returns:
+            Per-table estimates, effective policy and exclusion counts.
+        """
 
     @abstractmethod
     def create_project(self, project: ProjectRequest) -> ProjectResponse:

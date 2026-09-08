@@ -308,6 +308,10 @@ from zenml.models import (
     WebhookSecretResponse,
     WebhookUpdate,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+)
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -4081,6 +4085,27 @@ class RestZenStore(BaseZenStore):
             resource=project,
             route=PROJECTS,
             response_model=ProjectResponse,
+        )
+
+    def retention_dry_run(
+        self,
+        project_id: UUID,
+        request: RetentionDryRunRequest,
+    ) -> RetentionDryRunResponse:
+        """Request a non-destructive inventory from the server.
+
+        Args:
+            project_id: Project to inspect.
+            request: What-if policy and limit overrides.
+
+        Returns:
+            Bounded inventory and independent exclusion counts.
+        """
+        return RetentionDryRunResponse.model_validate(
+            self.post(
+                f"{PROJECTS}/{project_id}/retention/dry-run",
+                body=request,
+            )
         )
 
     def get_project(

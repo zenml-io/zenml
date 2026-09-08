@@ -36,6 +36,31 @@ def project() -> None:
     """Commands for project management."""
 
 
+@project.group("retention")
+def retention() -> None:
+    """Preview execution retention; archiving is not available yet."""
+
+
+@retention.command("dry-run")
+@click.option(
+    "--project", "project_name", default=None, help="Project name or ID."
+)
+@click.option("--archive-after-days", type=click.IntRange(min=7), default=None)
+def retention_dry_run(
+    project_name: Optional[str], archive_after_days: Optional[int]
+) -> None:
+    """Report a bounded inventory without changing any data or settings.
+
+    Args:
+        project_name: Project to inspect, or the active project.
+        archive_after_days: What-if age; unconfigured projects use 90 days.
+    """
+    result = Client().retention_dry_run(
+        project=project_name, archive_after_days=archive_after_days
+    )
+    cli_utils.declare(result.model_dump_json(indent=2))
+
+
 @project.command("list")
 @list_options(
     ProjectFilter, default_columns=["active", "id", "name", "description"]

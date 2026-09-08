@@ -22,6 +22,7 @@ from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -512,6 +513,24 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             and self.build is not None
             and not self.build.is_local
             and self.build.stack_id is not None
+        )
+
+    @classmethod
+    def runnable_filter(cls) -> ColumnElement[bool]:
+        """Express the server's runnable-snapshot contract in SQL.
+
+        Returns:
+            Predicate equivalent to ``is_runnable`` without loading a build.
+        """
+        return (
+            col(cls.archived_at).is_(None)
+            & col(cls.archive_bundle_id).is_(None)
+            & col(cls.build_id).in_(
+                select(PipelineBuildSchema.id).where(
+                    col(PipelineBuildSchema.is_local).is_(False),
+                    col(PipelineBuildSchema.stack_id).is_not(None),
+                )
+            )
         )
 
     def to_model(

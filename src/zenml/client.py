@@ -230,6 +230,11 @@ from zenml.models.v2.base.filter import (
     StringFilterOption,
     UUIDFilterOption,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+    RetentionSettings,
+)
 from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
@@ -1121,6 +1126,7 @@ class Client(metaclass=ClientMetaClass):
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
         project_metadata: Optional[Dict[str, Any]] = None,
+        retention: Optional[RetentionSettings] = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1130,6 +1136,7 @@ class Client(metaclass=ClientMetaClass):
             new_display_name: New display name of the project.
             new_description: New description of the project.
             project_metadata: New metadata for the project.
+            retention: Replacement retention settings; does not start archiving.
 
         Returns:
             The updated project.
@@ -1145,10 +1152,30 @@ class Client(metaclass=ClientMetaClass):
             project_update.description = new_description
         if project_metadata is not None:
             project_update.project_metadata = project_metadata
+        if retention is not None:
+            project_update.retention = retention
         return self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
         )
+
+    def retention_dry_run(
+        self,
+        project: Optional[Union[UUID, str]] = None,
+        **overrides: Any,
+    ) -> RetentionDryRunResponse:
+        """Preview bounded retention without saving settings or changing data.
+
+        Args:
+            project: Project name/ID/prefix, or the active project.
+            **overrides: Age, model-link policy or max_trees/max_rows/max_bytes.
+
+        Returns:
+            Logical stored-byte estimates and exclusion reasons.
+        """
+        request = RetentionDryRunRequest.model_validate(overrides)
+        selected = self.get_project(project)
+        return self.zen_store.retention_dry_run(selected.id, request)
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.

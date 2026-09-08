@@ -28,6 +28,7 @@ from zenml.models.v2.base.base import (
     BaseUpdate,
 )
 from zenml.models.v2.base.filter import BaseFilter, StringFilterOption
+from zenml.models.v2.misc.retention import RetentionSettings
 from zenml.utils.pydantic_utils import before_validator_handler
 
 # ------------------ Request Model ------------------
@@ -98,6 +99,8 @@ class ProjectRequest(BaseRequest):
 class ProjectUpdate(BaseUpdate):
     """Update model for projects."""
 
+    retention: Optional[RetentionSettings] = None
+
     name: Optional[str] = Field(
         title="The unique name of the project. The project name must only "
         "contain only lowercase letters, numbers, underscores, and hyphens and "
@@ -137,6 +140,8 @@ class ProjectResponseBody(BaseDatedResponseBody):
 
 class ProjectResponseMetadata(BaseResponseMetadata):
     """Response metadata for projects."""
+
+    retention: RetentionSettings = Field(default_factory=RetentionSettings)
 
     description: str = Field(
         default="",
@@ -205,6 +210,15 @@ class ProjectResponse(
             the value of the property.
         """
         return self.get_metadata().project_metadata
+
+    @property
+    def retention(self) -> RetentionSettings:
+        """Get the saved retention policy, disabled on unconfigured projects.
+
+        Returns:
+            The project's retention settings.
+        """
+        return self.get_metadata().retention
 
 
 # ------------------ Filter Model ------------------

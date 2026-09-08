@@ -382,6 +382,13 @@ from zenml.models import (
 from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+    RetentionLimits,
+    RetentionSettings,
+    RetentionTableEstimate,
+)
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -496,6 +503,7 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
+    from zenml.zen_stores.retention.eligibility import RetentionSelection
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -13999,6 +14007,74 @@ class SqlZenStore(BaseZenStore):
             )
 
         return project_model
+
+    def select_archivable_trees(
+        self,
+        project_id: UUID,
+        policy: RetentionSettings,
+        limits: RetentionLimits,
+    ) -> "RetentionSelection":
+        """Inspect a bounded batch of roots without mutating execution rows.
+
+        Args:
+            project_id: Project owning the roots.
+            policy: Effective retention policy.
+            limits: Examined-root, row and stored-byte bounds.
+
+        Returns:
+            Detached candidates and overlapping exclusion counts.
+        """
+        from zenml.zen_stores.retention.eligibility import (
+            select_archivable_trees,
+        )
+
+        self.get_project(project_id, hydrate=False)
+        with Session(self.engine) as session:
+            return select_archivable_trees(session, project_id, policy, limits)
+
+    def retention_dry_run(
+        self,
+        project_id: UUID,
+        request: RetentionDryRunRequest,
+    ) -> RetentionDryRunResponse:
+        """Estimate a batch using saved settings and non-persistent overrides.
+
+        Args:
+            project_id: Project to inspect.
+            request: What-if overrides; unconfigured projects use 90 days.
+
+        Returns:
+            Stored-byte estimates and exclusions, with no data changed.
+        """
+        settings = self.get_project(project_id).retention.model_dump()
+        settings.update(request.model_dump(exclude_none=True))
+        if settings["archive_after_days"] is None:
+            settings["archive_after_days"] = 90
+        policy = RetentionSettings.model_validate(settings)
+        limits = RetentionLimits.model_validate(
+            {k: settings[k] for k in RetentionLimits.model_fields}
+        )
+        selection = self.select_archivable_trees(project_id, policy, limits)
+        tables: Dict[str, RetentionTableEstimate] = {}
+        eligible = 0
+        for tree in selection.candidates:
+            if tree.exclusions:
+                continue
+            eligible += 1
+            for name, estimate in tree.tables.items():
+                total = tables.setdefault(name, RetentionTableEstimate())
+                total.rows += estimate.rows
+                total.rows_deleted += estimate.rows_deleted
+                total.estimated_bytes += estimate.estimated_bytes
+        return RetentionDryRunResponse(
+            eligible_tree_count=eligible,
+            examined_tree_count=len(selection.candidates),
+            truncated=selection.truncated,
+            tables=tables,
+            exclusions=dict(selection.exclusions),
+            retained_details=dict(selection.retained_details),
+            effective_policy=policy,
+        )
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

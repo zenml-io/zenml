@@ -16,7 +16,7 @@
 from typing import Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, Body, Depends, Security
 
 from zenml.constants import (
     API,
@@ -35,6 +35,10 @@ from zenml.models import (
     ProjectStatistics,
     ProjectUpdate,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -47,9 +51,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -69,6 +74,29 @@ router = APIRouter(
     tags=["projects"],
     responses={401: error_response},
 )
+
+
+@router.post("/{project_name_or_id}/retention/dry-run")
+def retention_dry_run(
+    project_name_or_id: Union[str, UUID],
+    request: RetentionDryRunRequest = Body(
+        default_factory=RetentionDryRunRequest
+    ),
+    _: AuthContext = Security(authorize),
+) -> RetentionDryRunResponse:
+    """Preview a bounded batch after verifying project update permission.
+
+    Args:
+        project_name_or_id: Project name or ID.
+        request: Non-persistent what-if overrides.
+
+    Returns:
+        Inventory estimates for the examined roots, never project-wide totals.
+    """
+    store = zen_store()
+    project = store.get_project(project_name_or_id, hydrate=False)
+    verify_permission_for_model(model=project, action=Action.UPDATE)
+    return store.retention_dry_run(project.id, request)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

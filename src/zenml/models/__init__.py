@@ -464,6 +464,13 @@ from zenml.models.v2.misc.param_groups import (
     StepRunIdentifier,
 )
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunRequest,
+    RetentionDryRunResponse,
+    RetentionLimits,
+    RetentionSettings,
+    RetentionTableEstimate,
+)
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
@@ -651,8 +658,12 @@ WebhookResponseMetadata.model_rebuild()
 WebhookResponseResources.model_rebuild()
 WebhookResponse.model_rebuild()
 
-
 __all__ = [
+    "RetentionDryRunRequest",
+    "RetentionDryRunResponse",
+    "RetentionLimits",
+    "RetentionSettings",
+    "RetentionTableEstimate",
     # V2 Base
     "BaseRequest",
     "BaseResponse",
