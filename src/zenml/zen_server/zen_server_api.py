@@ -218,7 +218,7 @@ add_middlewares(app)
 # suppress uvicorn access logs
 _configure_uvicorn_logging()
 
-# Configure OpenTelemetry
+# Configure OpenTelemetry before the app starts
 configure_otel(config=server_config(), app=app)
 
 

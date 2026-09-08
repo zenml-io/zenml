@@ -129,9 +129,11 @@ def configure_otel(
         )
         return
 
+    # Instrument other libraries
     if app is not None:
         _instrument_fastapi_app(app=app)
     _instrument_requests()
+
     _otel_configured = True
 
     logger.info(
