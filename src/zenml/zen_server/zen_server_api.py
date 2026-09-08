@@ -198,12 +198,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
-    shutdown_otel()
-    snapshot_executor().shutdown(wait=True)
-    await shutdown_snapshot_run_dispatcher()
-    await shutdown_streaming()
-    await cleanup_request_manager()
-    cleanup_artifact_store_cache()
+
+    try:
+        snapshot_executor().shutdown(wait=True)
+        await shutdown_snapshot_run_dispatcher()
+        await shutdown_streaming()
+        await cleanup_request_manager()
+        cleanup_artifact_store_cache()
+    finally:
+        # Shutown OTel after all cleanup tasks to ensure shutdown logs/traces are captured, if any.
+        shutdown_otel()
 
 
 app = FastAPI(
