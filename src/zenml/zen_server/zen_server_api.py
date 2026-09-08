@@ -177,7 +177,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         initialize_rbac()
         initialize_feature_gate()
         initialize_workload_manager()
-        initialize_resource_pool_store()
         initialize_snapshot_executor()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
