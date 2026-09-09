@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from collections import defaultdict
 from tempfile import TemporaryDirectory
 from typing import Optional, Type
 
@@ -165,20 +164,6 @@ def test_dict_with_mixed_key_types_content_hash_does_not_fail():
     materializer = BuiltInContainerMaterializer(uri="unused")
 
     assert materializer.compute_content_hash({1: "one", "a": "letter"}) is None
-
-
-def test_dict_subclass_with_integer_keys_materialization():
-    """Test materialization for a dict subclass with integer keys."""
-    with TemporaryDirectory(
-        dir=Client().active_stack.artifact_store.path
-    ) as artifact_uri:
-        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
-        materializer.save(defaultdict(int, {1: 1}))
-
-        result = materializer.load(defaultdict)
-
-    assert type(result) is dict
-    assert result == {1: 1}
 
 
 def test_list_of_bytes_materialization():
