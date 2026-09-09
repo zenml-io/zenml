@@ -1,7 +1,7 @@
 """Add artifact version reference indexes [e50a6a75e6b4].
 
 Revision ID: e50a6a75e6b4
-Revises: 0.96.4
+Revises: 9f2b8c7d6e5a
 Create Date: 2026-08-28 12:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from zenml.zen_stores.migrations.utils import (
 
 # revision identifiers, used by Alembic.
 revision = "e50a6a75e6b4"
-down_revision = "0.96.4"
+down_revision = "9f2b8c7d6e5a"
 branch_labels = None
 depends_on = None
 
