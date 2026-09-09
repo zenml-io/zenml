@@ -419,7 +419,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Cast the data to the correct type.
         if issubclass(data_type, dict) and not isinstance(outputs, dict):
             keys, values = outputs
-            return data_type(zip(keys, values))
+            # Dict subclasses historically loaded from JSON as plain dicts.
+            # Retain that behavior because subclasses such as defaultdict have
+            # constructors that do not accept an iterable of key-value pairs.
+            return dict(zip(keys, values))
         if issubclass(data_type, tuple) and not isinstance(outputs, tuple):
             return data_type(outputs)
         if issubclass(data_type, set) and not isinstance(outputs, set):
