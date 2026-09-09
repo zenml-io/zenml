@@ -129,8 +129,14 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ $server.image.pullPolicy }}
-          args: ["-m", "zenml.zen_server.database_migration"]
-          command: ["python"]
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              if python -c 'import importlib.util; raise SystemExit(importlib.util.find_spec("zenml.zen_server.database_migration") is None)'; then
+                exec python -m zenml.zen_server.database_migration
+              else
+                exec zenml migrate-database
+              fi
           volumeMounts:
             - name: zenml-config
               mountPath: /zenml/.zenconfig
