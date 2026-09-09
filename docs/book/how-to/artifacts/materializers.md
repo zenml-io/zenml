@@ -38,6 +38,11 @@ structured type reconstruction, use a Pydantic model, a dataclass, or a custom
 materializer. Additionally, dicts with non-string keys are stored with
 additional metadata so key types are preserved instead of being coerced by
 JSON object key rules.
+
+When materialized through this metadata layout, `Counter` values are restored
+with their counts intact. `defaultdict` values load as regular dictionaries
+because their default factory cannot be reconstructed. Use a custom
+materializer if preserving a `defaultdict` default factory is required.
 {% endhint %}
 
 {% hint style="info" %}
