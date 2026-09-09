@@ -1248,7 +1248,7 @@ class DynamicPipelineRunner:
 
         remaining_retries = None
         if step_run := self._existing_step_runs.get(invocation_id):
-            runtime = get_step_runtime(
+            runtime, _ = get_step_runtime(
                 step_config=step_run.config,
                 pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
                 orchestrator=self._orchestrator,
@@ -1961,7 +1961,30 @@ class DynamicPipelineRunner:
         while True:
             if self._exception:
                 raise self._exception
-            if not self._future_registry.has_in_progress_work():
+
+            has_in_progress_work = False
+            for future in self._future_registry.get_all_futures():
+                if future.running():
+                    has_in_progress_work = True
+                    continue
+
+                try:
+                    # A terminal future can represent either a successful or
+                    # failed invocation. Consume its result so an unawaited
+                    # failure cannot be mistaken for successful settlement.
+                    future.wait()
+                except RunPaused:
+                    # Pausing is control flow, not a failure. Keep draining
+                    # other concurrent work before publishing the run status.
+                    self._mark_paused()
+                except Exception:
+                    # Explicit waits happen in the pipeline entrypoint and
+                    # already raise there. During internal settlement,
+                    # unawaited failures are tolerated in this mode.
+                    if not self._continue_on_failure:
+                        raise
+
+            if not has_in_progress_work:
                 return
             time.sleep(1)
 
@@ -2254,7 +2277,7 @@ class DynamicPipelineRunner:
             implicit_upstream_steps=node.implicit_upstream_steps,
         )
 
-        runtime = get_step_runtime(
+        runtime, _ = get_step_runtime(
             step_config=compiled_step.config,
             pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
             orchestrator=self._orchestrator,

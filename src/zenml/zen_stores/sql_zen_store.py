@@ -15,7 +15,7 @@
 
 from contextlib import nullcontext
 
-from zenml.dispatcher import EventDispatcher
+from zenml.dispatcher import EventDispatcher, PipelineRunStatusUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
@@ -43,6 +43,7 @@ import math
 import os
 import random
 import re
+import secrets
 import sys
 import time
 import uuid
@@ -90,10 +91,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import (
-    ArgumentError,
-    IntegrityError,
-)
+from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import (
     Mapped,
     load_only,
@@ -168,17 +166,22 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
     SecretResourceTypes,
     SecretsStoreType,
+    SQLDatabaseAuthMode,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
+    StepRuntime,
     StoreType,
     TaggableResourceTypes,
+    TriggerType,
     VisualizationResourceTypes,
 )
 from zenml.exceptions import (
@@ -293,14 +296,6 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
-    ResourcePoolFilter,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -374,6 +369,18 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+    WebhookCreateResponse,
+    WebhookEventStatsUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookTriggerRequest,
+    WebhookUpdate,
+)
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRenewalRequest,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -392,6 +399,7 @@ from zenml.utils.string_utils import (
     validate_name,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.webhooks.intake import WebhookIntakeConfig
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -458,6 +466,9 @@ from zenml.zen_stores.schemas import (
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
+    WebhookEventPayloadSchema,
+    WebhookSchema,
+    WebhookStatsSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -477,12 +488,12 @@ from zenml.zen_stores.secrets_stores.sql_secrets_store import (
 if TYPE_CHECKING:
     from concurrent.futures import Future
 
+    from zenml.config import ResourceSettings
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.models.v2.core.triggers import (
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
-
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -498,6 +509,9 @@ SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
 
 logger = get_logger(__name__)
+
+_WEBHOOK_SECRET_VALUE_KEY = "secret"
+
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
@@ -630,6 +644,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     Attributes:
         type: The type of the store.
+        auth_mode: The database authentication mode.
+        aws_region: The AWS region used to generate RDS IAM authentication
+            tokens.
+        aws_rds_iam_role_arn: Optional web-identity role used only for RDS IAM
+            authentication.
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
@@ -642,9 +661,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         username: The database username.
         password: The database password.
         ssl: Whether to use SSL.
-        ssl_ca: certificate authority certificate. Required for SSL
-            enabled authentication if the CA certificate is not part of the
-            certificates shipped by the operating system.
+        ssl_ca: Optional certificate authority certificate.
         ssl_cert: client certificate. Required for SSL enabled
             authentication if client certificates are used.
         ssl_key: client certificate private key. Required for SSL
@@ -671,6 +688,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     database: Optional[str] = None
     username: Optional[PlainSerializedSecretStr] = None
     password: Optional[PlainSerializedSecretStr] = None
+    auth_mode: SQLDatabaseAuthMode = SQLDatabaseAuthMode.PASSWORD
+    aws_region: Optional[str] = None
+    aws_rds_iam_role_arn: Optional[str] = None
     ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
@@ -901,11 +921,20 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 sql_url = sql_url._replace(query=immutabledict())
 
             database = self.database
-            if not self.username or not self.password or not database:
+            password_missing = (
+                self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                and not self.password
+            )
+            if not self.username or password_missing or not database:
+                password_requirement = (
+                    ", password"
+                    if self.auth_mode == SQLDatabaseAuthMode.PASSWORD
+                    else ""
+                )
                 raise ValueError(
-                    "Invalid MySQL configuration: The username, password and "
-                    "database must be set in the URL or as configuration "
-                    "attributes",
+                    f"Invalid MySQL configuration: The username"
+                    f"{password_requirement} and database must be set in the "
+                    "URL or as configuration attributes"
                 )
 
             regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
@@ -915,6 +944,15 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     f"The database name does not conform to the required "
                     f"format "
                     f"rules ({regexp}): {database}"
+                )
+
+            if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM and (
+                self.ssl_ca or self.ssl_cert or self.ssl_key
+            ):
+                raise ValueError(
+                    "AWS RDS IAM authentication uses the operating system "
+                    "trust store and does not accept `ssl_ca`, `ssl_cert`, "
+                    "or `ssl_key`."
                 )
 
             # Save the certificates in a secure location on disk
@@ -934,10 +972,70 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         "w",
                     ) as f:
                         f.write(content.get_secret_value())
-                    setattr(self, key, str(file_path))
+                    # Keep the field a secret string: every reader calls
+                    # `get_secret_value()` on it, and `validate_assignment` is
+                    # off so a plain `str` here would survive validation and
+                    # only fail later, when the engine is built.
+                    setattr(
+                        self, key, PlainSerializedSecretStr(str(file_path))
+                    )
 
         self.url = str(sql_url)
         return self
+
+    @model_validator(mode="after")
+    def _validate_authentication(self) -> "SqlZenStoreConfiguration":
+        """Validate database authentication settings.
+
+        Returns:
+            The validated configuration.
+
+        Raises:
+            ValueError: If RDS IAM authentication is configured unsafely.
+        """
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
+            return self
+
+        if self.driver != SQLDatabaseDriver.MYSQL:
+            raise ValueError(
+                "AWS RDS IAM authentication is supported only for MySQL."
+            )
+        if self.password is not None:
+            raise ValueError(
+                "The `password` attribute must not be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.aws_region:
+            raise ValueError(
+                "The `aws_region` attribute must be set when `auth_mode` is "
+                "`aws_rds_iam`."
+            )
+        if not self.ssl or not self.ssl_verify_server_cert:
+            raise ValueError(
+                "AWS RDS IAM authentication requires `ssl=true`, "
+                "and `ssl_verify_server_cert=true`."
+            )
+        return self
+
+    def configure_engine_auth(self, engine: Engine) -> None:
+        """Configure per-connection authentication for an SQLAlchemy engine.
+
+        Args:
+            engine: The engine whose connections should use this configuration.
+        """
+        if self.auth_mode != SQLDatabaseAuthMode.AWS_RDS_IAM:
+            return
+
+        from zenml.zen_stores.rds_iam import (
+            configure_rds_iam_authentication,
+        )
+
+        assert self.aws_region is not None
+        configure_rds_iam_authentication(
+            engine,
+            self.aws_region,
+            role_arn=self.aws_rds_iam_role_arn,
+        )
 
     @staticmethod
     def get_local_url(path: str) -> str:
@@ -1001,7 +1099,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             # all these are guaranteed by our root validator
             assert self.database is not None
             assert self.username is not None
-            assert self.password is not None
+            if self.auth_mode == SQLDatabaseAuthMode.PASSWORD:
+                assert self.password is not None
             assert sql_url.host is not None
 
             if not database:
@@ -1016,30 +1115,40 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
                 username=self.username.get_secret_value(),
-                password=self.password.get_secret_value(),
+                password=(
+                    self.password.get_secret_value()
+                    if self.password is not None
+                    else None
+                ),
                 database=database,
             )
 
-            sqlalchemy_ssl_args: Dict[str, Any] = {}
-
-            # Handle SSL params
             if self.ssl:
-                sqlalchemy_ssl_args["ssl"] = True
-                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                    ssl_setting = getattr(self, key)
-                    if not ssl_setting:
-                        continue
-                    if not os.path.isfile(ssl_setting.get_secret_value()):
-                        logger.warning(
-                            f"Database SSL setting `{key}` is not a file. "
-                        )
-                    sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
-                        ssl_setting.get_secret_value()
+                if self.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
+                    from zenml.zen_stores.rds_iam import (
+                        create_verified_ssl_context,
                     )
-                sqlalchemy_ssl_args["check_hostname"] = (
-                    self.ssl_verify_server_cert
-                )
-                sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
+
+                    sqlalchemy_connect_args["ssl"] = (
+                        create_verified_ssl_context()
+                    )
+                else:
+                    sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
+                    for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                        ssl_setting = getattr(self, key)
+                        if not ssl_setting:
+                            continue
+                        if not os.path.isfile(ssl_setting.get_secret_value()):
+                            logger.warning(
+                                f"Database SSL setting `{key}` is not a file. "
+                            )
+                        sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                            ssl_setting.get_secret_value()
+                        )
+                    sqlalchemy_ssl_args["check_hostname"] = (
+                        self.ssl_verify_server_cert
+                    )
+                    sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
                 f"SQL driver `{sql_url.drivername}` is not supported."
@@ -1454,6 +1563,16 @@ class SqlZenStore(BaseZenStore):
         self._engine = create_engine(
             url=url, connect_args=connect_args, **engine_args
         )
+        self.config.configure_engine_auth(self._engine)
+
+        # Instrument the SQLAlchemy engine if ZenML Server is running.
+        # This env var is set during Server Helm deployment.
+        # Refer: helm/templates/_environment.tpl
+        if os.environ.get("ZENML_SERVER", "").lower() == "true":
+            from zenml.zen_server.otel import instrument_sqlalchemy_engine
+
+            instrument_sqlalchemy_engine(self._engine)
+
         self._db_backup_engine = self.initialize_database_backup_engine()
 
         # SQLite: As long as the parent directory exists, SQLAlchemy will
@@ -3970,151 +4089,6 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type."
             )
 
-    # -------------------- Resource Pools -------------
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-        return self.resource_pools.create_resource_pool(resource_pool)
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self.resource_pools.get_resource_pool(
-            resource_pool_id, hydrate=hydrate
-        )
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-        return self.resource_pools.list_resource_pools(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        return self.resource_pools.update_resource_pool(
-            resource_pool_id, update
-        )
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-        self.resource_pools.delete_resource_pool(resource_pool_id)
-
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-        return self.resource_pools.create_resource_pool_subject_policy(policy)
-
-    def get_resource_pool_subject_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            The requested policy.
-        """
-        return self.resource_pools.get_resource_pool_subject_policy(
-            policy_id, hydrate=hydrate
-        )
-
-    def list_resource_pool_subject_policies(
-        self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Whether to include metadata fields.
-
-        Returns:
-            Matching policies.
-        """
-        return self.resource_pools.list_resource_pool_subject_policies(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update model.
-
-        Returns:
-            The updated policy.
-        """
-        return self.resource_pools.update_resource_pool_subject_policy(
-            policy_id, update
-        )
-
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-        self.resource_pools.delete_resource_pool_subject_policy(policy_id)
-
     # -------------------- Resource Requests -------------
 
     def get_resource_request(
@@ -4148,17 +4122,45 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all resource requests matching the filter criteria.
         """
+        self.set_filter_project_id(filter_model)
         return self.resource_pools.list_resource_requests(
             filter_model, hydrate=hydrate
         )
 
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
 
         Args:
-            resource_request_id: The ID of the resource request to delete.
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
         """
-        self.resource_pools.delete_resource_request(resource_request_id)
+        return self.resource_pools.release_resource_request(
+            resource_request_id,
+        )
+
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
+        """
+        return self.resource_pools.renew_resource_request(
+            resource_request_id,
+            renewal_request,
+        )
 
     # -------------------------- Devices -------------------------
 
@@ -8135,7 +8137,425 @@ class SqlZenStore(BaseZenStore):
                         session.commit()
         return None
 
+    # -------------------- Webhooks ---------------------
+
+    def _create_webhook_secret(self, secret: str, session: Session) -> UUID:
+        """Create an internal secret containing a webhook signing secret.
+
+        Args:
+            secret: The signing secret value.
+            session: The active database session.
+
+        Returns:
+            The internal secret ID.
+        """
+        return self._create_secret_schema(
+            SecretRequest(
+                user=self._get_active_user(session=session).id,
+                name=f"webhook-{uuid.uuid4().hex}",
+                private=False,
+                values={_WEBHOOK_SECRET_VALUE_KEY: secret},
+            ),
+            session=session,
+            internal=True,
+        ).id
+
+    def create_webhook(self, webhook: WebhookRequest) -> WebhookCreateResponse:
+        """Create a webhook and its internal signing secret.
+
+        Args:
+            webhook: The webhook creation request.
+
+        Returns:
+            The created webhook and any generated signing secret.
+        """  # noqa: DOC501, DOC503
+        generated_secret = webhook.secret is None
+        if webhook.secret is None:
+            secret = secrets.token_urlsafe(32)
+        else:
+            secret = webhook.secret.get_secret_value()
+        with Session(self.engine) as session:
+            self._set_request_user_id(request_model=webhook, session=session)
+            self._verify_name_uniqueness(
+                resource=webhook,
+                schema=WebhookSchema,
+                session=session,
+            )
+            secret_id = self._create_webhook_secret(
+                secret=secret,
+                session=session,
+            )
+            try:
+                schema = WebhookSchema.from_request(
+                    request=webhook, secret_id=secret_id
+                )
+                stats_schema = WebhookStatsSchema(webhook_id=schema.id)
+                session.add(schema)
+                session.add(stats_schema)
+                session.commit()
+            except Exception:
+                session.rollback()
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
+                raise
+            return WebhookCreateResponse(
+                **schema.to_model(
+                    include_metadata=True, include_resources=True
+                ).model_dump(),
+                secret=(
+                    PlainSerializedSecretStr(secret)
+                    if generated_secret
+                    else None
+                ),
+            )
+
+    def get_webhook(
+        self, webhook_id: UUID, hydrate: bool = True
+    ) -> WebhookResponse:
+        """Get a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook.
+        """
+        with Session(self.engine) as session:
+            query_options = WebhookSchema.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+                query_options=query_options,
+            )
+            return schema.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_webhooks(
+        self,
+        filter_model: WebhookFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookResponse]:
+        """List webhooks in the active project.
+
+        Args:
+            filter_model: The webhook filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhooks.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=filter_model, session=session
+            )
+            return self.filter_and_paginate(
+                session=session,
+                query=select(WebhookSchema),
+                table=WebhookSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
+
+    def update_webhook(
+        self,
+        webhook_id: UUID,
+        update: WebhookUpdate,
+    ) -> WebhookResponse:
+        """Update a webhook.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The webhook update.
+
+        Returns:
+            The updated webhook.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            self._verify_name_uniqueness(
+                resource=update, schema=schema, session=session
+            )
+            schema.update(update)
+            session.add(schema)
+            session.commit()
+            return schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def delete_webhook(self, webhook_id: UUID) -> None:
+        """Delete a webhook after clearing references from archived triggers.
+
+        Args:
+            webhook_id: The webhook ID.
+
+        Raises:
+            IllegalOperationError: If a live trigger references the webhook.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            secret_id = schema.secret_id
+            live_trigger_id = session.exec(
+                select(TriggerSchema.id)
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
+                .where(col(TriggerSchema.is_archived).is_(False))
+                .limit(1)
+            ).first()
+            if live_trigger_id is not None:
+                raise IllegalOperationError(
+                    "The webhook can not be deleted while non-archived "
+                    "triggers reference it."
+                )
+            session.exec(
+                update(TriggerSchema)
+                .where(col(TriggerSchema.webhook_id) == webhook_id)
+                .values(
+                    webhook_id=None,
+                    updated=utc_now(),
+                )
+            )
+            session.delete(schema)
+            session.commit()
+            self._delete_secret_schema(secret_id=secret_id, session=session)
+
+    def rotate_webhook_secret(
+        self,
+        webhook_id: UUID,
+        request: WebhookRotateSecretRequest,
+    ) -> WebhookSecretResponse:
+        """Replace the active webhook signing secret.
+
+        Args:
+            webhook_id: The webhook ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=webhook_id,
+                schema_class=WebhookSchema,
+                session=session,
+            )
+            secret = (
+                request.secret.get_secret_value()
+                if request.secret is not None
+                else secrets.token_urlsafe(32)
+            )
+            self._update_secret_values(
+                secret_id=schema.secret_id,
+                values={_WEBHOOK_SECRET_VALUE_KEY: secret},
+                overwrite=True,
+            )
+            schema.updated = utc_now()
+            session.add(schema)
+            session.commit()
+        return WebhookSecretResponse(secret=PlainSerializedSecretStr(secret))
+
+    def get_webhook_intake_config(
+        self,
+        webhook_id: UUID,
+        expected_webhook_type: str,
+    ) -> WebhookIntakeConfig:
+        """Get the internal configuration required for webhook intake.
+
+        Args:
+            webhook_id: The webhook ID.
+            expected_webhook_type: The provider type encoded in the endpoint.
+
+        Returns:
+            The provider type, active state, project ID, and signing secret.
+
+        Raises:
+            KeyError: If the webhook does not exist or its provider type does
+                not match the endpoint.
+        """
+        with Session(self.engine) as session:
+            config = session.exec(
+                select(
+                    WebhookSchema.webhook_type,
+                    WebhookSchema.active,
+                    WebhookSchema.secret_id,
+                    WebhookSchema.project_id,
+                ).where(col(WebhookSchema.id) == webhook_id)
+            ).first()
+        if config is None:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        webhook_type, active, secret_id, project_id = config
+        if webhook_type != expected_webhook_type:
+            raise KeyError(f"Webhook {webhook_id} not found.")
+        secret = self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
+        return WebhookIntakeConfig(
+            webhook_type=webhook_type,
+            active=active,
+            project_id=project_id,
+            secret=secret,
+        )
+
+    def record_webhook_event(
+        self, webhook_id: UUID, update: WebhookEventStatsUpdate
+    ) -> None:
+        """Record a webhook intake outcome.
+
+        Args:
+            webhook_id: The webhook ID.
+            update: The terminal intake outcome.
+
+        Raises:
+            KeyError: If the webhook no longer exists.
+        """
+        now = utc_now()
+        values: Dict[str, Any] = {
+            "received_count": (WebhookStatsSchema.received_count + 1),
+            "last_received_at": now,
+        }
+        if update.accepted:
+            values["accepted_count"] = WebhookStatsSchema.accepted_count + 1
+            values["last_accepted_at"] = now
+        elif update.auth_failed:
+            values["auth_failed_count"] = (
+                WebhookStatsSchema.auth_failed_count + 1
+            )
+        elif update.invalid_payload:
+            values["invalid_payload_count"] = (
+                WebhookStatsSchema.invalid_payload_count + 1
+            )
+        if update.error_summary is not None:
+            values["last_error_at"] = now
+            values["last_error_summary"] = update.error_summary
+
+        with Session(self.engine) as session:
+            result = session.exec(
+                sqlalchemy.update(WebhookStatsSchema)
+                .where(col(WebhookStatsSchema.webhook_id) == webhook_id)
+                .values(**values)
+            )
+            if result.rowcount == 0:
+                raise KeyError(f"Webhook {webhook_id} not found.")
+            session.commit()
+
+    def store_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+        body: Dict[str, Any],
+    ) -> None:
+        """Idempotently retain the raw body for a consumed webhook event.
+
+        The first writer wins when concurrent consumers try to retain the same
+        delivery.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+            body: The parsed top-level JSON request body.
+
+        Raises:
+            IntegrityError: If persistence fails for a reason other than an
+                existing delivery.
+        """
+        payload = gzip.compress(
+            json.dumps({"body": body}, separators=(",", ":")).encode("utf-8")
+        )
+        schema = WebhookEventPayloadSchema(
+            webhook_id=webhook_id,
+            delivery_id=delivery_id,
+            payload=payload,
+        )
+        with Session(self.engine) as session:
+            session.add(schema)
+            try:
+                session.commit()
+            except IntegrityError as error:
+                session.rollback()
+                existing = session.exec(
+                    select(WebhookEventPayloadSchema).where(
+                        col(WebhookEventPayloadSchema.webhook_id)
+                        == webhook_id,
+                        col(WebhookEventPayloadSchema.delivery_id)
+                        == delivery_id,
+                    )
+                ).first()
+                if existing is None:
+                    raise error
+
+    def get_raw_webhook_event(
+        self,
+        webhook_id: UUID,
+        delivery_id: str,
+    ) -> Dict[str, Any]:
+        """Get a retained raw webhook event payload.
+
+        Args:
+            webhook_id: The webhook ID.
+            delivery_id: The provider or ZenML delivery ID.
+
+        Returns:
+            The extensible raw webhook event payload.
+
+        Raises:
+            KeyError: If no payload exists.
+            ValueError: If the stored payload is invalid.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(WebhookEventPayloadSchema).where(
+                    col(WebhookEventPayloadSchema.webhook_id) == webhook_id,
+                    col(WebhookEventPayloadSchema.delivery_id) == delivery_id,
+                )
+            ).first()
+        if schema is None:
+            raise KeyError(
+                f"Raw webhook event {webhook_id}/{delivery_id} not found."
+            )
+        payload = json.loads(gzip.decompress(schema.payload).decode("utf-8"))
+        if not isinstance(payload, dict) or not isinstance(
+            payload.get("body"), dict
+        ):
+            raise ValueError("Invalid stored raw webhook event payload.")
+        return payload
+
     # -------------------- Triggers ---------------------
+
+    def _verify_webhook_trigger_association(
+        self,
+        *,
+        webhook_id: UUID,
+        project_id: UUID,
+        session: Session,
+    ) -> None:
+        """Verify that a webhook belongs to the trigger project.
+
+        Args:
+            webhook_id: The webhook to associate.
+            project_id: The trigger project.
+            session: The active database session.
+
+        Raises:
+            KeyError: If the webhook does not belong to the trigger project.
+        """
+        webhook = self._get_schema_by_id(
+            resource_id=webhook_id,
+            schema_class=WebhookSchema,
+            session=session,
+        )
+        if webhook.project_id != project_id:
+            raise KeyError(f"Webhook {webhook_id} not found.")
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
@@ -8151,6 +8571,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
+            if isinstance(trigger, WebhookTriggerRequest):
+                self._verify_webhook_trigger_association(
+                    webhook_id=trigger.webhook_id,
+                    project_id=trigger.project,
+                    session=session,
+                )
             self._verify_name_uniqueness(
                 resource=trigger,
                 schema=TriggerSchema,
@@ -8268,7 +8694,13 @@ class SqlZenStore(BaseZenStore):
 
             if existing_trigger.is_archived:
                 raise IllegalOperationError(
-                    "Archived schedules can not be updated."
+                    "Archived triggers can not be updated."
+                )
+
+            if existing_trigger.type != trigger_update.type.value:
+                raise IllegalOperationError(
+                    "A trigger can not be updated with a different trigger "
+                    "type."
                 )
 
             self._verify_name_uniqueness(
@@ -8277,7 +8709,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Update the schedule
+            # Update the trigger.
             existing_trigger = existing_trigger.update(trigger_update)
             session.add(existing_trigger)
             session.commit()
@@ -8324,7 +8756,7 @@ class SqlZenStore(BaseZenStore):
                     delete(TriggerSnapshotSchema).where(
                         col(TriggerSnapshotSchema.trigger_id) == trigger_id
                     )
-                )  # type: ignore[call-overload, unused-ignore]
+                )
 
             session.commit()
 
@@ -8353,15 +8785,18 @@ class SqlZenStore(BaseZenStore):
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
 
-            if not snapshot.is_runnable:
-                raise IllegalOperationError(
-                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
-                )
-
             trigger = session.get(TriggerSchema, trigger_id)
 
             if not trigger:
                 raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.project_id != snapshot.project_id:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            if not snapshot.is_runnable:
+                raise IllegalOperationError(
+                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
+                )
 
             if trigger.is_archived:
                 raise IllegalOperationError(
@@ -8599,8 +9034,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of PlatformEventTriggerResponse objects matching the conditions.
         """
-        from zenml.enums import TriggerType
-
         if not conditions:
             return []
 
@@ -11473,6 +11906,127 @@ class SqlZenStore(BaseZenStore):
             "Stack deployments are not supported by local ZenML deployments."
         )
 
+    @staticmethod
+    def _validate_reclaim_tolerance_for_resource_request(
+        resource_settings: "ResourceSettings",
+        runtime: StepRuntime,
+        heartbeat_enabled: bool,
+        step_name: str,
+    ) -> None:
+        """Validate that reclaim tolerance matches runtime capabilities.
+
+        Args:
+            resource_settings: Resource settings from the step configuration.
+            runtime: Resolved dynamic step runtime.
+            heartbeat_enabled: Whether heartbeat is enabled for the step run.
+            step_name: Step name used in error messages.
+
+        Raises:
+            IllegalOperationError: If the reclaim tolerance cannot be honored.
+        """
+        reclaim_tolerance = resource_settings.effective_reclaim_tolerance(
+            runtime
+        )
+        if reclaim_tolerance == ResourceRequestReclaimTolerance.NONE:
+            return
+
+        if (
+            resource_settings.reclaim_tolerance_explicitly_set
+            and runtime == StepRuntime.INLINE
+        ):
+            raise IllegalOperationError(
+                f"Step `{step_name}` is configured with reclaim tolerance "
+                f"`{resource_settings.reclaim_tolerance}` but will run inline. "
+                "Inline dynamic steps are not reclaimable. Configure the step "
+                "to run isolated or set reclaim tolerance to `none`."
+            )
+
+        if (
+            resource_settings.reclaim_tolerance_explicitly_set
+            and not heartbeat_enabled
+        ):
+            raise IllegalOperationError(
+                f"Step `{step_name}` is configured with reclaim tolerance "
+                f"`{reclaim_tolerance}` but heartbeat is disabled. Enable "
+                "heartbeat or set reclaim tolerance to `none`."
+            )
+
+    def _renew_step_resource_request_from_heartbeat(
+        self,
+        session: Session,
+        step_run: StepRunSchema,
+        heartbeat_liveness_timeout_seconds: int | None = None,
+    ) -> ExecutionStatus:
+        """Renew the step resource request lease during heartbeat.
+
+        Args:
+            session: Active database session.
+            step_run: Step run schema receiving the heartbeat.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
+
+        Returns:
+            The status that should be returned to the heartbeat caller.
+        """
+        step_status = ExecutionStatus(step_run.status)
+        if (
+            not self.resource_pools_enabled
+            or step_run.resource_request_id is None
+            or step_run.heartbeat_threshold is None
+        ):
+            return step_status
+
+        if heartbeat_liveness_timeout_seconds is None:
+            lease_duration = timedelta(minutes=step_run.heartbeat_threshold)
+        else:
+            lease_duration = timedelta(
+                seconds=heartbeat_liveness_timeout_seconds
+            )
+
+        try:
+            request = self.resource_pools.renew_resource_request(
+                step_run.resource_request_id,
+                ResourceRequestRenewalRequest(
+                    lease_expires_at=utc_now() + lease_duration,
+                    runtime_state=ResourceRequestRuntimeState.RUNNING,
+                ),
+            )
+        except KeyError:
+            logger.warning(
+                "Resource request `%s` for step `%s` no longer exists. "
+                "Cancelling the step run.",
+                step_run.resource_request_id,
+                step_run.name,
+            )
+            request_status = ResourceRequestStatus.CANCELLED
+        except Exception as e:
+            logger.warning(
+                "Failed to renew resource request `%s` for step `%s`: %s",
+                step_run.resource_request_id,
+                step_run.name,
+                e,
+            )
+            return step_status
+        else:
+            request_status = request.status
+
+        if request_status in {
+            ResourceRequestStatus.PREEMPTING,
+            ResourceRequestStatus.PREEMPTED,
+            ResourceRequestStatus.CANCELLED,
+            ResourceRequestStatus.REJECTED,
+            ResourceRequestStatus.RELEASED,
+            ResourceRequestStatus.EXPIRED,
+        }:
+            if not step_status.is_finished:
+                step_run.status = ExecutionStatus.CANCELLING.value
+                session.add(step_run)
+                session.commit()
+            return ExecutionStatus.CANCELLING
+
+        return step_status
+
     # ----------------------------- Step runs -----------------------------
 
     def create_run_step(self, step_run: StepRunRequest) -> StepRunResponse:
@@ -11538,6 +12092,31 @@ class SqlZenStore(BaseZenStore):
                 step_run.dynamic_config
                 or run.get_step_configuration(step_name=step_run.name)
             )
+            resource_runtime: Optional[StepRuntime] = None
+            resource_request_heartbeat_enabled: Optional[bool] = None
+            if (
+                self.resource_pools_enabled
+                and step_run.status
+                in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }
+                and step_run.resource_requester
+            ):
+                resource_settings = step_config.config.resource_settings
+                resource_runtime = (
+                    step_run.resource_request_runtime or StepRuntime.ISOLATED
+                )
+                resource_request_heartbeat_enabled = (
+                    step_config.spec.enable_heartbeat and run.enable_heartbeat
+                )
+                self._validate_reclaim_tolerance_for_resource_request(
+                    resource_settings=resource_settings,
+                    runtime=resource_runtime,
+                    heartbeat_enabled=resource_request_heartbeat_enabled,
+                    step_name=step_run.name,
+                )
 
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
@@ -11890,6 +12469,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.refresh(step_schema)
 
+            created_resource_request: ResourceRequestResponse | None = None
             if (
                 self.resource_pools_enabled
                 and step_schema.status
@@ -11900,32 +12480,70 @@ class SqlZenStore(BaseZenStore):
                 }
                 and step_run.resource_requester
             ):
-                requested_resources = step_config.config.resource_settings.merged_requested_resources()
-                requested_resources["step_run"] = 1
-
-                request = self.resource_pools.create_resource_request(
-                    session=session,
-                    resource_request=ResourceRequestRequest(
-                        user=step_run.user,
-                        component_id=step_run.resource_requester,
-                        step_run_id=step_schema.id,
-                        requested_resources=requested_resources,
-                        preemptible=step_config.config.resource_settings.preemptible,
-                    ),
+                resource_settings = step_config.config.resource_settings
+                resource_runtime = (
+                    resource_runtime
+                    or step_run.resource_request_runtime
+                    or StepRuntime.ISOLATED
                 )
-                if (
-                    request is not None
-                    and request.status != ResourceRequestStatus.ALLOCATED
-                ):
-                    step_schema.status = ExecutionStatus.QUEUED.value
-                    session.add(step_schema)
-                    session.commit()
+                heartbeat_enabled = (
+                    resource_request_heartbeat_enabled
+                    if resource_request_heartbeat_enabled is not None
+                    else step_schema.heartbeat_threshold is not None
+                )
+                demands = resource_settings.merged_resource_demands()
+
+                if demands:
+                    lease_expires_at = None
+                    if (
+                        resource_runtime == StepRuntime.ISOLATED
+                        and heartbeat_enabled
+                        and step_schema.heartbeat_threshold is not None
+                    ):
+                        lease_expires_at = utc_now() + timedelta(
+                            minutes=step_schema.heartbeat_threshold
+                        )
+
+                    request = self.resource_pools.create_resource_request(
+                        session,
+                        ResourceRequestRequest(
+                            user=step_run.user,
+                            component_ids=[step_run.resource_requester],
+                            step_run_id=step_schema.id,
+                            demands=demands,
+                            reclaim_tolerance=resource_settings.effective_reclaim_tolerance(
+                                resource_runtime
+                            ),
+                            lease_expires_at=lease_expires_at,
+                            allocation_wait_timeout_seconds=(
+                                resource_settings.allocation_wait_timeout_seconds
+                            ),
+                        ),
+                    )
+                    if (
+                        request.status
+                        != ResourceRequestStatus.NO_MATCHING_POOL
+                    ):
+                        step_schema.resource_request_id = request.id
+                        created_resource_request = request
+                        if request.status != ResourceRequestStatus.ALLOCATED:
+                            step_schema.status = ExecutionStatus.QUEUED.value
+                        session.add(step_schema)
+                        session.commit()
 
                 session.refresh(step_schema)
 
-            return step_schema.to_model(
+            step_run_response = step_schema.to_model(
                 include_metadata=True, include_resources=True
             )
+            if (
+                created_resource_request is not None
+                and step_run_response.resources is not None
+            ):
+                step_run_response.resources.resource_request = (
+                    created_resource_request
+                )
+            return step_run_response
 
     def get_run_step(
         self, step_run_id: UUID, hydrate: bool = True
@@ -12160,7 +12778,9 @@ class SqlZenStore(BaseZenStore):
         )
 
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: int | None = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat value.
 
@@ -12168,6 +12788,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             step_run_id: ID of the step run.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             Step heartbeat response (minimal info, id, status & latest_heartbeat).
@@ -12183,10 +12806,19 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
             session.refresh(existing_step_run)
+            heartbeat_status = (
+                self._renew_step_resource_request_from_heartbeat(
+                    session=session,
+                    step_run=existing_step_run,
+                    heartbeat_liveness_timeout_seconds=(
+                        heartbeat_liveness_timeout_seconds
+                    ),
+                )
+            )
 
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
-                status=ExecutionStatus(existing_step_run.status),
+                status=heartbeat_status,
                 latest_heartbeat=existing_step_run.latest_heartbeat,
                 heartbeat_enabled=existing_step_run.heartbeat_threshold
                 is not None,
@@ -12197,6 +12829,7 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         token_run_id: UUID | None = None,
         token_schedule_id: UUID | None = None,
+        heartbeat_liveness_timeout_seconds: int | None = None,
     ) -> StepHeartbeatResponse:
         """Updates & Validates a step run heartbeat value.
 
@@ -12206,6 +12839,9 @@ class SqlZenStore(BaseZenStore):
             step_run_id: ID of the step run.
             token_run_id: Pipeline run id of the auth context
             token_schedule_id: Schedule id of the auth context
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             Step heartbeat response (minimal info, id, status & latest_heartbeat).
@@ -12249,10 +12885,19 @@ class SqlZenStore(BaseZenStore):
             latest_heartbeat = datetime.now(timezone.utc)
             step_run.latest_heartbeat = latest_heartbeat
             session.commit()
+            heartbeat_status = (
+                self._renew_step_resource_request_from_heartbeat(
+                    session=session,
+                    step_run=step_run,
+                    heartbeat_liveness_timeout_seconds=(
+                        heartbeat_liveness_timeout_seconds
+                    ),
+                )
+            )
 
             return StepHeartbeatResponse(
                 id=step_run_id,
-                status=ExecutionStatus(step_run.status),
+                status=heartbeat_status,
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
                 pipeline_run_status=ExecutionStatus(run.status),
@@ -12676,8 +13321,11 @@ class SqlZenStore(BaseZenStore):
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
-                dispatcher.handle_run_status_update(
-                    run=pipeline_run.to_model(include_metadata=True)
+                dispatcher.dispatch_event(
+                    PipelineRunStatusUpdate(
+                        run=pipeline_run.to_model(include_metadata=True),
+                        previous_status=previous_status,
+                    )
                 )
 
         if new_status.is_finished and pipeline_run.end_time:
@@ -13500,8 +14148,17 @@ class SqlZenStore(BaseZenStore):
                     "The default project cannot be deleted."
                 )
 
+            webhook_secret_ids = session.exec(
+                select(WebhookSchema.secret_id).where(
+                    WebhookSchema.project_id == project.id
+                )
+            ).all()
             session.delete(project)
             session.commit()
+            for secret_id in webhook_secret_ids:
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
 
     def count_projects(
         self, filter_model: Optional[ProjectFilter] = None

@@ -3,12 +3,16 @@ name: GitHub Actions Security Analysis
 on:
   push:
     branches: [main, develop]
-    paths: [.github/workflows/**, .github/zizmor.yml]
+    paths:
+      - .github/workflows/**
+      - .github/zizmor.yml
+      - .github/zizmor/requirements.txt
   pull_request:
     branches: [main, develop]
     paths:
       - .github/workflows/**
       - .github/zizmor.yml
+      - .github/zizmor/requirements.txt
   # Weekly safety net to catch drift (runs Monday 3am UTC)
   schedule:
     - cron: 0 3 * * 1
@@ -31,7 +35,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
       - name: Run zizmor
         run: |
           echo "============================================================"
@@ -45,12 +49,12 @@ jobs:
           echo ""
           echo "📖 To run locally and see detailed output:"
           echo ""
-          echo "    GH_TOKEN=\$(gh auth token) uvx zizmor --config=.github/zizmor.yml .github/workflows/"
+          echo "    GH_TOKEN=\$(gh auth token) uvx --constraints .github/zizmor/requirements.txt zizmor --config=.github/zizmor.yml .github/workflows/"
           echo ""
           echo "📖 Documentation: https://docs.zizmor.sh/"
           echo "📖 Config: .github/zizmor.yml"
           echo "============================================================"
           echo ""
-          uvx zizmor --format=github --config=.github/zizmor.yml .github/workflows/
+          uvx --constraints .github/zizmor/requirements.txt zizmor --format=github --config=.github/zizmor.yml .github/workflows/
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

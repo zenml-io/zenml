@@ -19,6 +19,8 @@ from zenml.models.v2.core.triggers import (
     PlatformEventTriggerResponseBody,
     ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
+    WebhookTriggerResponse,
+    WebhookTriggerResponseBody,
 )
 
 # Type to return class mappings - should be extended with new type classes
@@ -26,13 +28,20 @@ from zenml.models.v2.core.triggers import (
 TYPE_TO_RESPONSE_BODY_MAPPING = {
     TriggerType.SCHEDULE.value: ScheduleTriggerResponseBody,
     TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponseBody,
+    TriggerType.WEBHOOK.value: WebhookTriggerResponseBody,
 }
 
 TYPE_TO_RESPONSE_MAPPING: dict[
-    str, type[ScheduleTriggerResponse | PlatformEventTriggerResponse]
+    str,
+    type[
+        ScheduleTriggerResponse
+        | PlatformEventTriggerResponse
+        | WebhookTriggerResponse
+    ],
 ] = {
     TriggerType.SCHEDULE.value: ScheduleTriggerResponse,
     TriggerType.PLATFORM_EVENT.value: PlatformEventTriggerResponse,
+    TriggerType.WEBHOOK.value: WebhookTriggerResponse,
 }
 
 # Union type objects - should be extended with the future type classes (e.g. Webhook)

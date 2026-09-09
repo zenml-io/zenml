@@ -100,6 +100,10 @@ print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 - **Make subagents independent.** The planner's system prompt insists on no shared state; if you write a leading query that implies a pipeline, the planner may still produce dependent subtasks and you'll see "file not found" errors from subagents 2+.
 - **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, pass a pre-built sci-py image in `ModalSandboxSettings(image="ghcr.io/your-org/scipy-base:latest")` on the relevant step.
 
+## Recording runs with Kitaru
+
+The agents here run inside a pipeline, which is the right shape for a batch fan-out. If the same PydanticAI agent runs in production, [Kitaru](https://docs.zenml.io/kitaru) — ZenML's sibling project for agents — records each run as a replayable session: install `kitaru-pydantic-ai` and wrap the agent in `KitaruAgent`, a transparent wrapper that leaves `run_sync`, tools and output types untouched. A recorded run can then be replayed against your real code with one thing changed, and a [tool policy](https://docs.zenml.io/kitaru/guides/tool-policies) decides whether each tool call is answered from the session or executed live — worth setting deliberately when the tools write files and run shell commands, as they do here. See the [PydanticAI adapter docs](https://docs.zenml.io/kitaru/adapters/pydantic-ai).
+
 ## Cloud orchestrators
 
 The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the pipeline's `DockerSettings` bakes the example's requirements into the step image. No extra env wiring is needed for the OpenAI key: the `--secret=openai` attached to the sandbox component is resolved into the step environment at runtime, on any orchestrator.

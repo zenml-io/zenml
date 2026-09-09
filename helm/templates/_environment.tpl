@@ -25,6 +25,13 @@ Returns:
 {{- define "zenml.storeConfigurationAttrs" -}}
 {{- if .ZenML.database.url }}
 type: sql
+auth_mode: {{ .ZenML.database.authMode | quote }}
+{{- if .ZenML.database.awsRegion }}
+aws_region: {{ .ZenML.database.awsRegion | quote }}
+{{- end }}
+{{- if .ZenML.database.awsRdsIamRoleArn }}
+aws_rds_iam_role_arn: {{ .ZenML.database.awsRdsIamRoleArn | quote }}
+{{- end }}
 {{- if .ZenML.database.ssl }}
 ssl: {{ .ZenML.database.ssl | quote }}
 {{- end }}

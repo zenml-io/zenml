@@ -59,20 +59,6 @@ from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     StepConfigurationSchema,
 )
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.resource_pool_policy_schemas import (
-    ResourcePoolSubjectPolicyResourceSchema,
-    ResourcePoolSubjectPolicySchema,
-)
-from zenml.zen_stores.schemas.resource_pool_schemas import (
-    ResourcePoolAllocationSchema,
-    ResourcePoolQueueSchema,
-    ResourcePoolResourceSchema,
-    ResourcePoolSchema,
-)
-from zenml.zen_stores.schemas.resource_request_schemas import (
-    ResourceRequestResourceSchema,
-    ResourceRequestSchema,
-)
 from zenml.zen_stores.schemas.run_metadata_schemas import (
     RunMetadataResourceSchema,
     RunMetadataSchema,
@@ -110,6 +96,11 @@ from zenml.zen_stores.schemas.trigger_assoc import (
 )
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.webhook_schemas import (
+    WebhookEventPayloadSchema,
+    WebhookSchema,
+    WebhookStatsSchema,
+)
 
 __all__ = [
     "APIKeySchema",
@@ -161,15 +152,10 @@ __all__ = [
     "ProjectSchema",
     "ApiTransactionResultSchema",
     "ApiTransactionSchema",
-    "ResourcePoolQueueSchema",
-    "ResourcePoolAllocationSchema",
-    "ResourcePoolSubjectPolicySchema",
-    "ResourcePoolSubjectPolicyResourceSchema",
-    "ResourcePoolSchema",
-    "ResourcePoolResourceSchema",
-    "ResourceRequestSchema",
-    "ResourceRequestResourceSchema",
     "TriggerSchema",
     "TriggerSnapshotSchema",
     "TriggerExecutionSchema",
+    "WebhookEventPayloadSchema",
+    "WebhookSchema",
+    "WebhookStatsSchema",
 ]

@@ -30,8 +30,6 @@ from typing import (
 )
 from uuid import UUID
 
-import yaml
-
 from zenml.config.base_settings import BaseSettings
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
@@ -228,9 +226,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             RuntimeError: If a remote command fails.
         """
         remote_dir = self._remote_run_directory(run_id)
-        compose_yaml = yaml.dump(
-            compose, default_flow_style=False, sort_keys=False
-        )
+        compose_yaml = orchestrator_utils.dump_compose_yaml(compose)
         docker = self.config.docker_binary
 
         with SSHClient(self.config) as ssh:

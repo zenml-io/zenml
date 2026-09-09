@@ -16,6 +16,7 @@
 # ------------------------------------- V2 -------------------------------------
 
 # V2 Base
+from zenml.enums import ResourceRequestReclaimTolerance
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -255,28 +256,12 @@ from zenml.models.v2.core.project import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
-from zenml.models.v2.core.resource_pool import (
-    ResourcePoolAllocation,
-    ResourcePoolFilter,
-    ResourcePoolQueueItem,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolResponseBody,
-    ResourcePoolResponseMetadata,
-    ResourcePoolResponseResources,
-    ResourcePoolUpdate,
-)
-from zenml.models.v2.core.resource_pool_subject_policy import (
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyResponseBody,
-    ResourcePoolSubjectPolicyResponseMetadata,
-    ResourcePoolSubjectPolicyResponseResources,
-    ResourcePoolSubjectPolicyUpdate,
-)
 from zenml.models.v2.core.resource_request import (
+    ResourcePoolAllocation,
+    ResourcePoolQueueItem,
+    ResourceRequestDemand,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
@@ -371,6 +356,7 @@ from zenml.models.v2.core.stack import (
     StackUpdate,
 )
 from zenml.models.v2.core.step_run import (
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
@@ -381,9 +367,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -423,6 +409,12 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
     TriggerUpdate,
+    WebhookTrigger,
+    WebhookTriggerExecutionInfo,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerResponseBody,
+    WebhookTriggerUpdate,
 )
 from zenml.models.v2.core.user import (
     UserFilter,
@@ -431,6 +423,20 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
     UserUpdate,
+)
+from zenml.models.v2.core.webhook import (
+    WebhookCreateResponse,
+    WebhookEventStatsUpdate,
+    WebhookFilter,
+    WebhookRequest,
+    WebhookResponse,
+    WebhookResponseBody,
+    WebhookResponseMetadata,
+    WebhookResponseResources,
+    WebhookRotateSecretRequest,
+    WebhookSecretResponse,
+    WebhookStats,
+    WebhookUpdate,
 )
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -615,21 +621,12 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
-ResourcePoolResponseBody.model_rebuild()
-ResourcePoolResponseMetadata.model_rebuild()
-ResourcePoolResponseResources.model_rebuild()
-ResourcePoolResponse.model_rebuild()
 ResourceRequestResponseBody.model_rebuild()
 ResourceRequestResponseMetadata.model_rebuild()
 ResourceRequestResponseResources.model_rebuild()
 ResourceRequestResponse.model_rebuild()
 ResourcePoolAllocation.model_rebuild()
 ResourcePoolQueueItem.model_rebuild()
-ResourcePoolSubjectPolicyRequest.model_rebuild()
-ResourcePoolSubjectPolicyResponseBody.model_rebuild()
-ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
-ResourcePoolSubjectPolicyResponseResources.model_rebuild()
-ResourcePoolSubjectPolicyResponse.model_rebuild()
 TriggerRequest.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -643,6 +640,16 @@ PlatformEventTriggerRequest.model_rebuild()
 PlatformEventTriggerUpdate.model_rebuild()
 PlatformEventTriggerResponse.model_rebuild()
 PlatformEventTriggerResponseBody.model_rebuild()
+WebhookTrigger.model_rebuild()
+WebhookTriggerRequest.model_rebuild()
+WebhookTriggerUpdate.model_rebuild()
+WebhookTriggerResponse.model_rebuild()
+WebhookTriggerResponseBody.model_rebuild()
+WebhookResponseBody.model_rebuild()
+WebhookStats.model_rebuild()
+WebhookResponseMetadata.model_rebuild()
+WebhookResponseResources.model_rebuild()
+WebhookResponse.model_rebuild()
 
 
 __all__ = [
@@ -828,24 +835,13 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
-    "ResourcePoolRequest",
-    "ResourcePoolUpdate",
-    "ResourcePoolFilter",
-    "ResourcePoolResponse",
-    "ResourcePoolResponseBody",
-    "ResourcePoolResponseMetadata",
-    "ResourcePoolResponseResources",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
-    "ResourcePoolSubjectPolicyFilter",
-    "ResourcePoolSubjectPolicyRequest",
-    "ResourcePoolSubjectPolicyResponse",
-    "ResourcePoolSubjectPolicyResponseBody",
-    "ResourcePoolSubjectPolicyResponseMetadata",
-    "ResourcePoolSubjectPolicyResponseResources",
-    "ResourcePoolSubjectPolicyUpdate",
-    "ResourceRequestRequest",
+    "ResourceRequestDemand",
     "ResourceRequestFilter",
+    "ResourceRequestRequest",
+    "ResourceRequestRenewalRequest",
+    "ResourceRequestReclaimTolerance",
     "ResourceRequestResponse",
     "ResourceRequestResponseBody",
     "ResourceRequestResponseMetadata",
@@ -1012,6 +1008,7 @@ __all__ = [
     "StepRunIdentifier",
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
+    "StepHeartbeatRequest",
     "StepHeartbeatResponse",
     "ScheduleTriggerRequest",
     "ScheduleTriggerResponse",
@@ -1022,9 +1019,27 @@ __all__ = [
     "PlatformEventTriggerResponse",
     "PlatformEventTriggerResponseBody",
     "PlatformEventTrigger",
+    "WebhookTrigger",
+    "WebhookTriggerRequest",
+    "WebhookTriggerUpdate",
+    "WebhookTriggerResponse",
+    "WebhookTriggerResponseBody",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",
     "SourceEntity",
     "TriggerExecutionInfo",
+    "WebhookTriggerExecutionInfo",
+    "WebhookEventStatsUpdate",
+    "WebhookCreateResponse",
+    "WebhookFilter",
+    "WebhookRequest",
+    "WebhookResponse",
+    "WebhookResponseBody",
+    "WebhookResponseMetadata",
+    "WebhookResponseResources",
+    "WebhookRotateSecretRequest",
+    "WebhookSecretResponse",
+    "WebhookStats",
+    "WebhookUpdate",
 ]
