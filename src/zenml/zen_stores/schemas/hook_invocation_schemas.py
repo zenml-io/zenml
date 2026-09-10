@@ -35,7 +35,10 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
@@ -48,6 +51,19 @@ class HookInvocationSchema(BaseSchema, table=True):
     """SQL Model for hook invocations of pipeline runs."""
 
     __tablename__ = "hook_invocation"
+    __table_args__ = (
+        # Deleting a pipeline run or a step run cascades onto these columns.
+        # Without an index, SQLite has to scan the whole table once per
+        # deleted parent row to find the children.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["step_run_id"],
+        ),
+    )
 
     # Fields
     hook_type: str = Field(nullable=False)

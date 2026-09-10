@@ -64,7 +64,10 @@ from zenml.zen_stores.schemas.curated_visualization_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
@@ -687,6 +690,14 @@ class ModelVersionPipelineRunSchema(BaseSchema, table=True):
     """SQL Model for linking of Model Versions and Pipeline Runs M:M."""
 
     __tablename__ = "model_versions_runs"
+    __table_args__ = (
+        # Deleting a pipeline run cascades onto this column, which without an
+        # index means scanning the whole link table.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
+        ),
+    )
 
     model_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
