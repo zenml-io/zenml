@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for stack behavior."""
+
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
 
@@ -154,9 +156,12 @@ def test_stack_submission(
     stack_with_mock_components,
     empty_pipeline,  # noqa: F811
 ):
-    """Tests that when a pipeline is deployed on a stack, the stack calls the
+    """Tests that stack submission delegates to the orchestrator.
+
+    When a pipeline is deployed on a stack, the stack calls the
     orchestrator to run the pipeline and calls cleanup methods on all of its
-    components."""
+    components.
+    """
     # Mock the pipeline run registering which tries (and fails) to serialize
     # our mock objects
     empty_pipeline.prepare()
@@ -208,7 +213,6 @@ def test_submission_server_validation(
     mocker, stack_with_mock_components, sample_snapshot_response_model
 ):
     """Tests that the submission validation fails when the stack requires a remote server but the store is local."""
-
     ######### Remote server #########
     mocker.patch(
         "zenml.zen_stores.base_zen_store.BaseZenStore.is_local_store",
@@ -400,8 +404,10 @@ def test_get_step_run_metadata_never_raises_errors(
 def test_docker_builds_collection(
     stack_with_mock_components, sample_snapshot_response_model
 ):
-    """Tests that the stack collects the required Docker builds from all its
-    components."""
+    """Tests that the stack collects the required Docker builds.
+
+    The stack collects builds from all its components.
+    """
     first_orchestrator_build = BuildConfiguration(
         key="orchestrator", settings=DockerSettings()
     )

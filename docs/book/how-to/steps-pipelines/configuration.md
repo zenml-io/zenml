@@ -199,8 +199,8 @@ Resource settings allow you to specify the CPU, memory, and GPU requirements for
 
 On **ZenML Pro**, those declarations are also what the **resource pool** feature
 uses: for eligible dynamic pipelines, the server builds resource
-requests from your merged `ResourceSettings` (including `pool_resources` and
-`preemptible`), matches them against workspace pools and policies on your stack’s
+requests from your merged `ResourceSettings` (including `resources` and
+`reclaim_tolerance`), matches them against workspace pools and policies on your stack’s
 orchestrator or step operator, and may queue or preempt work accordingly. For more information on how this feature works, see [ZenML Pro Resource Pools](https://docs.zenml.io/pro/core-concepts/resource-pools).
 
 ```python

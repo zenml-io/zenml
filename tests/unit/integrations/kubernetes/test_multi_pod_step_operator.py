@@ -195,10 +195,11 @@ def _submit(
             return_value=KubernetesStepOperatorSettings(pod_count=pod_count),
         ),
     ):
-        operator.submit(
+        operator.submit_with_allocation(
             info=info,
             entrypoint_command=["bash", "-lc", "torchrun train.py"],
             environment={"USER_VAR": "1"},
+            allocated_resource_request=None,
         )
 
     return batch_api, core_api
