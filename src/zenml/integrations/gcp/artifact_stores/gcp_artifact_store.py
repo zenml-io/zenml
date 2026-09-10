@@ -100,7 +100,14 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 return self._filesystem
 
             token = self.get_credentials()
-            self._filesystem = gcsfs.GCSFileSystem(token=token)
+            # No directory listing cache: the server shares one artifact store
+            # instance across requests, and fsspec only invalidates a cached
+            # listing for writes made through that same instance. Step logs are
+            # written by the orchestrator in another process, so a listing
+            # cached while a step is running would never be refreshed.
+            self._filesystem = gcsfs.GCSFileSystem(
+                token=token, use_listings_cache=False
+            )
 
             return self._filesystem
 
