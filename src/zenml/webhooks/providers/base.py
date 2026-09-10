@@ -42,6 +42,11 @@ _WEBHOOK_NEGATIVE_STRING_FILTER_OPERATORS = {
     GenericFilterOps.NOT_ONEOF,
 }
 
+WEBHOOK_FILTER_MAX_EXPRESSIONS = 10
+WEBHOOK_FILTER_MAX_EXPRESSION_LENGTH = 512
+WEBHOOK_FILTER_MAX_ONEOF_CHOICES = 10
+WEBHOOK_MAX_TARGET_EVENTS = 10
+
 
 class WebhookAuthenticationError(CredentialsNotValid):
     """Raised when a webhook request cannot be authenticated."""
@@ -85,19 +90,30 @@ class WebhookTargetEvent(BaseModel):
         """
         if value is None:
             return None
-        for item in value if isinstance(value, list) else [value]:
+        items = value if isinstance(value, list) else [value]
+        if not items:
+            raise ValueError(f"Webhook event filter '{field_name}' is empty.")
+        if len(items) > WEBHOOK_FILTER_MAX_EXPRESSIONS:
+            raise ValueError(
+                f"Webhook event filter '{field_name}' supports at most "
+                f"{WEBHOOK_FILTER_MAX_EXPRESSIONS} expressions."
+            )
+        for item in items:
             if not item:
                 raise ValueError(
                     f"Webhook event filter '{field_name}' is empty."
+                )
+            if len(item) > WEBHOOK_FILTER_MAX_EXPRESSION_LENGTH:
+                raise ValueError(
+                    f"Webhook event filter '{field_name}' expressions must "
+                    f"not exceed {WEBHOOK_FILTER_MAX_EXPRESSION_LENGTH} "
+                    "characters."
                 )
             if ":" not in item:
                 continue
             operator, operand = item.split(":", 1)
             if operator not in _WEBHOOK_STRING_FILTER_OPERATORS:
-                raise ValueError(
-                    f"Webhook event filter '{field_name}' does not support "
-                    f"the '{operator}' operator."
-                )
+                continue
             if not operand:
                 raise ValueError(
                     f"Webhook event filter '{field_name}' has an empty "
@@ -117,6 +133,7 @@ class WebhookTargetEvent(BaseModel):
                 if (
                     not isinstance(choices, list)
                     or not choices
+                    or len(choices) > WEBHOOK_FILTER_MAX_ONEOF_CHOICES
                     or not all(
                         isinstance(choice, str) and choice
                         for choice in choices
@@ -124,7 +141,9 @@ class WebhookTargetEvent(BaseModel):
                 ):
                     raise ValueError(
                         f"Webhook event filter '{field_name}' requires a "
-                        f"non-empty JSON list of strings for '{operator}'."
+                        "non-empty JSON list of at most "
+                        f"{WEBHOOK_FILTER_MAX_ONEOF_CHOICES} strings for "
+                        f"'{operator}'."
                     )
         return value
 
@@ -158,6 +177,8 @@ def _matches_string_filter_value(*, actual: str, configured: str) -> bool:
     if ":" not in configured:
         return actual == configured
     operator, operand = configured.split(":", 1)
+    if operator not in _WEBHOOK_STRING_FILTER_OPERATORS:
+        return actual == configured
     if operator == GenericFilterOps.EQUALS:
         return actual == operand
     if operator == GenericFilterOps.NOT_EQUALS:

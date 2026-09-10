@@ -3,14 +3,21 @@
 
 import logging
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
+
+from pydantic import Field
 
 from zenml.webhooks.providers.base import (
+    WEBHOOK_MAX_TARGET_EVENTS,
     BaseWebhookProvider,
     WebhookConfiguration,
     WebhookPayloadError,
     WebhookTriggerMatch,
     authenticate_hmac_sha256,
+)
+from zenml.webhooks.providers.dynamic import (
+    DynamicWebhookTargetEvent,
+    matches_webhook_target,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -26,7 +33,11 @@ CUSTOM_DELIVERY_HEADER = "x-zenml-delivery"
 
 
 class CustomWebhookConfiguration(WebhookConfiguration):
-    """Configuration for an unfiltered custom webhook trigger."""
+    """Optional dynamic filtering for a custom webhook trigger."""
+
+    target_events: list[DynamicWebhookTargetEvent] | None = Field(
+        default=None, max_length=WEBHOOK_MAX_TARGET_EVENTS
+    )
 
 
 class CustomWebhookProvider(BaseWebhookProvider):
@@ -94,7 +105,7 @@ class CustomWebhookProvider(BaseWebhookProvider):
         event: "WebhookEvent",
         candidates: Sequence["WebhookTriggerResponse"],
     ) -> "WebhookTriggerMatch[WebhookTriggerResponse]":
-        """Match candidates with valid unfiltered custom configuration.
+        """Match candidates using optional dynamic custom filters.
 
         Args:
             event: The trusted custom event.
@@ -106,12 +117,26 @@ class CustomWebhookProvider(BaseWebhookProvider):
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             try:
-                self.validate_configuration(trigger.configuration)
+                configuration = self.validate_configuration(
+                    trigger.configuration
+                )
             except (TypeError, ValueError):
                 logger.exception(
                     "Skipping defective webhook trigger configuration %s",
                     trigger.id,
                 )
                 continue
-            matches.append(trigger)
+            targets = cast(
+                CustomWebhookConfiguration, configuration
+            ).target_events
+            if not targets or any(
+                matches_webhook_target(
+                    target=target,
+                    event_type=event.event_type,
+                    payload=event.payload,
+                    semantic_matcher=None,
+                )
+                for target in targets
+            ):
+                matches.append(trigger)
         return WebhookTriggerMatch(triggers=matches)

@@ -660,6 +660,12 @@ case-sensitive operators:
 | `oneof:["a","b"]` | The field equals one of the JSON-list values |
 | `notoneof:["a","b"]` | The field equals none of the JSON-list values |
 
+The text before the first colon is treated as an operator only when it is one
+of the operators above. Other colon-containing values, such as
+`https://example.com/hook`, are matched literally. Use an explicit `equals:`
+when a literal value starts with an operator name, for example
+`equals:startswith:queued`.
+
 A YAML list combines multiple expressions for one field with OR. Use
 `notoneof:` instead of a list of `notequals:` expressions when excluding
 several exact values:
@@ -678,6 +684,77 @@ multiple target events combine with OR. An absent event field does not satisfy
 a configured filter, including a negative filter. For collection-valued event
 fields such as GitHub labels, positive operators match any item and negative
 operators require every item to satisfy the expression.
+
+### Dynamic event filters
+
+GitHub, ClickUp, Slack, and Custom triggers support a `dynamic` target for
+provider events and payload fields that are not covered by the semantic event
+catalog. For example, this target matches GitHub pull requests when they are
+opened against a release branch:
+
+```yaml
+target_events:
+  - type: dynamic
+    event_type: pull_request
+    filters:
+      action: opened
+      pull_request.base.ref: "startswith:release/"
+```
+
+`event_type` is required and supports all shared string filter operators. The
+provider determines its value: GitHub uses `X-GitHub-Event`, ClickUp uses the
+top-level `event` field, Slack uses `event.type` inside an event callback, and
+Custom uses `X-ZenML-Event`. Dynamic filters do not match Slack control
+deliveries such as URL verification or rate-limit notifications.
+
+The optional `filters` mapping is evaluated against the complete authenticated
+JSON body. All configured paths must match. A path supports object traversal,
+non-negative array indexes, one array wildcard, and JSON-quoted unusual keys:
+
+```yaml
+filters:
+  history_items[0].after.status: ready
+  labels[*].name: "contains:priority"
+  metadata["build.version"]: v2
+```
+
+Wildcard results use the same collection semantics as typed filters: positive
+operators match any resolved scalar and negative operators require all resolved
+scalars to match. Missing keys, incompatible payload types, out-of-range
+indexes, empty wildcard results, and object or array terminal values do not
+match. Strings are compared unchanged; JSON numbers, booleans, and null are
+compared as strings such as `42`, `false`, and `null`.
+
+Paths are intentionally smaller than JSONPath: recursive descent, functions,
+slices, inline predicates, negative indexes, and implicit numeric segments such
+as `items.0` are not supported. A configuration can contain at most 10 target
+events. Each dynamic target can contain at most 10 paths; paths are limited to
+512 characters, eight segments, and one wildcard. Each string filter supports
+at most 10 expressions, a 512-character expression, and 10 `oneof` or
+`notoneof` choices.
+
+Via the SDK, use the same public dynamic target model with any provider
+configuration:
+
+```python
+from zenml.webhooks import DynamicWebhookTargetEvent
+from zenml.webhooks.providers.github import GitHubWebhookConfiguration
+
+configuration = GitHubWebhookConfiguration(
+    target_events=[
+        DynamicWebhookTargetEvent(
+            event_type="pull_request",
+            filters={
+                "action": "opened",
+                "pull_request.base.ref": "startswith:release/",
+            },
+        )
+    ]
+)
+```
+
+Typed and dynamic targets can be combined in the same `target_events` list.
+They retain the usual OR behavior across target entries.
 
 ### GitHub webhook triggers
 
@@ -908,8 +985,10 @@ def inspect_webhook_event() -> None:
 
     github_event = upstream_event.get("github")
     if github_event is not None:
+        print(f"Provider event type: {github_event['event_type']}")
         event = github_event["event"]
-        print(f"Event type: {event['type']}")
+        if event is not None:
+            print(f"Semantic event type: {event['type']}")
         print(f"Delivery ID: {github_event['delivery_id']}")
 ```
 
@@ -920,6 +999,7 @@ For example, a GitHub push event has this shape:
   "github": {
     "webhook_id": "7f9f38a7-8dd6-4ced-91c8-bf05857838d5",
     "delivery_id": "delivery-001",
+    "event_type": "push",
     "event": {
       "type": "push",
       "repo": "acme/ml-pipelines",
@@ -934,10 +1014,11 @@ For example, a GitHub push event has this shape:
 }
 ```
 
-The event `type` is the semantic type used by the webhook trigger, not
-necessarily the provider's raw event family. Optional semantic fields are
-included with `null` values when unavailable. You can also pass an existing
-pipeline run response to `get_webhook_upstream_event(pipeline_run=run)`.
+`event_type` is the provider's raw event type. The nested event `type` is the
+semantic type used by typed webhook targets and can differ from the raw family.
+Optional semantic fields are included with `null` values when unavailable. You
+can also pass an existing pipeline run response to
+`get_webhook_upstream_event(pipeline_run=run)`.
 
 Only runs started directly by a webhook trigger contain this metadata. It is
 not propagated through later platform event triggers. For providers such as
@@ -985,10 +1066,12 @@ are not retained in this version.
 
 ### Custom webhook triggers
 
-Custom webhooks do not currently provide semantic event or payload filtering.
-Every accepted delivery matches every active, non-archived custom webhook
-trigger owned by that webhook. Use separate custom webhooks when you need
-distinct routes.
+Custom webhooks do not provide a semantic event catalog. An omitted, null, or
+empty `target_events` list preserves the original behavior: every accepted
+delivery matches every active, non-archived custom trigger owned by that
+webhook. Supply a non-empty list of
+[dynamic event filters](#dynamic-event-filters) to filter on `X-ZenML-Event`
+and the custom JSON body.
 
 Create `custom-webhook.yaml` with an empty provider configuration:
 
@@ -1014,8 +1097,20 @@ client = Client()
 trigger = client.create_webhook_trigger(
     name="on-custom-event",
     webhook="custom-events",
-    configuration=CustomWebhookConfiguration(),
+configuration=CustomWebhookConfiguration(),
 )
+```
+
+For example, this configuration matches only successful publication events for
+one model:
+
+```yaml
+target_events:
+  - type: dynamic
+    event_type: model.published
+    filters:
+      model: fraud-detector
+      successful: "true"
 ```
 
 Attach the trigger to a snapshot as shown above, then follow
