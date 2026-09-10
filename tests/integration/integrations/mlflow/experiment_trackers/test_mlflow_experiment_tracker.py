@@ -16,6 +16,7 @@
 import os
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -270,7 +271,9 @@ def test_mlflow_experiment_tracker_requires_databricks_host() -> None:
 
 
 def test_mlflow_experiment_tracker_set_config(
-    local_stack: Stack, monkeypatch: pytest.MonkeyPatch
+    local_stack: Stack,
+    monkeypatch: pytest.MonkeyPatch,
+    isolated_mlflow_environment: None,
 ) -> None:
     """Tests that the MLflow experiment tracker sets the MLflow configuration correctly."""
     for env_var in [
@@ -379,7 +382,9 @@ def test_mlflow_experiment_tracker_set_config(
 
 
 def test_mlflow_experiment_tracker_uses_sqlite_for_local_backend(
-    tmp_path, monkeypatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    isolated_mlflow_environment: None,
 ) -> None:
     """Tests that the implicit local MLflow backend does not use the file store."""
     import mlflow
@@ -423,8 +428,6 @@ def test_mlflow_experiment_tracker_uses_sqlite_for_local_backend(
 
     assert mlflow.get_tracking_uri() == expected_tracking_uri
     assert experiment.artifact_location == "file:" + expected_artifact_path
-
-    mlflow.set_tracking_uri("")
 
 
 @patch("mlflow.start_run")

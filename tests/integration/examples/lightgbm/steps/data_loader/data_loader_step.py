@@ -11,38 +11,59 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import tempfile
 from typing import Tuple
 
 import lightgbm as lgb
+import numpy as np
 import pandas as pd
-import requests
 from typing_extensions import Annotated
 
 from zenml import step
 
-TRAIN_SET_RAW = "https://raw.githubusercontent.com/microsoft/LightGBM/master/examples/regression/regression.train"
+# Shape of the LightGBM regression demo dataset this example used to download
+# from GitHub: a scalar target followed by 28 numeric features. The predictor
+# step feeds the trained booster 28-column inputs, so keep the width in sync.
+NUM_FEATURES = 28
+NUM_TRAIN_ROWS = 7000
+NUM_TEST_ROWS = 500
+RANDOM_SEED = 42
 
-TEST_SET_RAW = "https://raw.githubusercontent.com/microsoft/LightGBM/master/examples/regression/regression.test"
+
+def _make_regression_frame(
+    rng: np.random.Generator, num_rows: int, weights: np.ndarray
+) -> pd.DataFrame:
+    """Builds a frame with the target in column 0 and features after it.
+
+    Args:
+        rng: Seeded random generator.
+        num_rows: Number of rows to generate.
+        weights: Linear weights used to derive the target from the features.
+
+    Returns:
+        A frame with integer column labels, matching the layout of the
+        original tab-separated demo files (label first, no header).
+    """
+    features = rng.standard_normal((num_rows, NUM_FEATURES))
+    noise = rng.standard_normal(num_rows) * 0.1
+    target = features @ weights + noise
+    return pd.DataFrame(np.column_stack([target, features]))
 
 
 @step
 def data_loader() -> Tuple[
     Annotated[lgb.Dataset, "mat_train"], Annotated[lgb.Dataset, "mat_test"]
 ]:
-    """Retrieves the data from the demo directory of the LightGBM repo."""
-    # Write data to temporary files to load it with `lgb.Dataset`.
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, suffix=".html", encoding="utf-8"
-    ) as f:
-        f.write(requests.get(TRAIN_SET_RAW, timeout=13).text)
-        df_train = pd.read_csv(f.name, header=None, sep="\t")
+    """Generates a deterministic synthetic regression dataset.
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, suffix=".html", encoding="utf-8"
-    ) as f:
-        f.write(requests.get(TEST_SET_RAW, timeout=13).text)
-        df_test = pd.read_csv(f.name, header=None, sep="\t")
+    The example previously downloaded LightGBM's demo files from
+    raw.githubusercontent.com without checking the response, so a rate-limited
+    or empty reply surfaced as ``pandas.errors.EmptyDataError`` inside the
+    pipeline. Generating the data locally keeps the example hermetic.
+    """
+    rng = np.random.default_rng(RANDOM_SEED)
+    weights = rng.standard_normal(NUM_FEATURES)
+    df_train = _make_regression_frame(rng, NUM_TRAIN_ROWS, weights)
+    df_test = _make_regression_frame(rng, NUM_TEST_ROWS, weights)
 
     # Parse data
     y_train = df_train[0]

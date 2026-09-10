@@ -12,19 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from pipelines.docker_settings import docker_settings
 from pipelines.tracking_pipeline.tracking_pipeline import (
     mlflow_tracking_pipeline,
 )
 
 from zenml import pipeline
-from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, SKLEARN
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 SERVICE_START_STOP_TIMEOUT = 120
-docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
-)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
