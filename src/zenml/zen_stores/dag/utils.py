@@ -15,7 +15,8 @@
 
 import json
 from collections import defaultdict
-from typing import Dict, List
+from graphlib import TopologicalSorter
+from typing import Dict, List, Tuple
 from uuid import UUID
 
 from sqlalchemy import select
@@ -24,7 +25,11 @@ from sqlmodel import Session, col
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import RunMetadataEntry
-from zenml.zen_stores.dag.models import InputArtifactRow, OutputArtifactRow
+from zenml.zen_stores.dag.models import (
+    DAGStepView,
+    InputArtifactRow,
+    OutputArtifactRow,
+)
 from zenml.zen_stores.schemas import (
     ArtifactVersionSchema,
     RunMetadataResourceSchema,
@@ -34,6 +39,31 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
 )
 from zenml.zen_stores.schemas.utils import resolve_metadata_collection
+
+
+def sort_dag_steps(
+    steps: Dict[str, DAGStepView],
+) -> List[Tuple[str, DAGStepView]]:
+    """Sort DAG steps in dependency order.
+
+    Args:
+        steps: The DAG steps.
+
+    Returns:
+        The sorted DAG steps.
+    """
+    dependencies = {
+        name: [
+            upstream
+            for upstream in step.spec.upstream_steps
+            if upstream in steps
+        ]
+        for name, step in steps.items()
+    }
+    return [
+        (name, steps[name])
+        for name in TopologicalSorter(dependencies).static_order()
+    ]
 
 
 def load_input_artifact_rows(
