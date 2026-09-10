@@ -32,6 +32,7 @@ def should_use_real_llm() -> bool:
         or os.getenv("ANTHROPIC_API_KEY")
         or os.getenv("GROQ_API_KEY")
         or os.getenv("COHERE_API_KEY")
+        or os.getenv("ORCAROUTER_API_KEY")
     )
 
 
@@ -104,6 +105,21 @@ def call_llm(
         # Add metadata for Langfuse if available
         if metadata and should_use_langfuse():
             call_params["metadata"] = metadata
+
+        # Route through the OrcaRouter gateway when configured. OrcaRouter is
+        # an OpenAI-compatible gateway that exposes many providers behind a
+        # single key, so LiteLLM needs an explicit api_base, api_key and
+        # provider instead of the default OpenAI endpoint. Gateway model slugs
+        # (e.g. "orcarouter/auto") are passed through verbatim; the default
+        # model is swapped for the gateway's auto-routing model so the example
+        # works out of the box for users who only set ORCAROUTER_API_KEY.
+        orcarouter_api_key = os.getenv("ORCAROUTER_API_KEY")
+        if orcarouter_api_key:
+            call_params["api_base"] = "https://api.orcarouter.ai/v1"
+            call_params["api_key"] = orcarouter_api_key
+            call_params["custom_llm_provider"] = "openai"
+            if model == "gpt-3.5-turbo":
+                call_params["model"] = "orcarouter/auto"
 
         response = litellm.completion(**call_params)
 

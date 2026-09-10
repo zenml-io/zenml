@@ -55,6 +55,9 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 export GROQ_API_KEY="your-groq-key"
 export COHERE_API_KEY="your-cohere-key"
 
+# Or use OrcaRouter (OpenAI-compatible gateway, one key for many models)
+export ORCAROUTER_API_KEY="your-orcarouter-key"
+
 # Optional: Enable Langfuse observability (tracks costs, performance, traces)
 # Note: LiteLLM requires Langfuse v2, ensure you have: pip install "langfuse>=2,<3"
 export LANGFUSE_PUBLIC_KEY="your-langfuse-public-key"
@@ -229,6 +232,7 @@ response = completion(
     # model="claude-3-sonnet",  # Anthropic
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
+    # model="orcarouter/auto",  # OrcaRouter auto-routing (set ORCAROUTER_API_KEY)
     messages=[{"role": "user", "content": query}],
     max_tokens=200,
     # Langfuse integration (automatic when env vars are set)
@@ -241,6 +245,7 @@ response = completion(
 - **Anthropic**: `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
 - **Groq**: `groq/llama2-70b-4096`, `groq/mixtral-8x7b-32768`
 - **Cohere**: `command-r`, `command-r-plus`
+- **OrcaRouter**: OpenAI-compatible gateway with many models behind one key (set `ORCAROUTER_API_KEY`)
 - **100+ other providers** - see [LiteLLM docs](https://docs.litellm.ai/docs/providers)
 
 **Langfuse Observability Benefits:**
