@@ -58,6 +58,7 @@ from zenml.zen_stores.schemas import (
     StepConfigurationSchema,
     StepRunSchema,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.mark.parametrize(
@@ -872,3 +873,38 @@ def test_capture_stops_at_the_source_byte_budget(
             )
         ).all()
     assert statuses == [ArchiveBundleStatus.FAILED]
+
+
+def test_run_creation_rechecks_archival_after_index_allocation(
+    sql_store, tree_factory, storage, monkeypatch
+):
+    """Archival between index allocation and insert cannot orphan a new run."""
+    ids = tree_factory(sql_store)
+    allocate = SqlZenStore._get_next_run_index
+
+    def allocate_then_archive(store, pipeline_id, session):
+        index = allocate(store, pipeline_id=pipeline_id, session=session)
+        outcome = store.archive_project(ids.project)
+        assert outcome.outcome == RetentionOutcome.SUCCEEDED
+        return index
+
+    monkeypatch.setattr(
+        SqlZenStore, "_get_next_run_index", allocate_then_archive
+    )
+    runs = PipelineRunFilter(project=ids.project)
+    before = sql_store.list_runs(runs).total
+
+    with pytest.raises(ExecutionArchivedError):
+        sql_store.get_or_create_run(
+            PipelineRunRequest(
+                project=ids.project,
+                name=f"late-{uuid4().hex[:8]}",
+                snapshot=ids.snapshot,
+                status=ExecutionStatus.RUNNING,
+            )
+        )
+
+    assert sql_store.get_snapshot(
+        ids.snapshot, hydrate=False
+    ).archive_bundle_id
+    assert sql_store.list_runs(runs).total == before

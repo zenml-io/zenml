@@ -7047,18 +7047,40 @@ class SqlZenStore(BaseZenStore):
         else:
             return bool(value)
 
+    def _guard_run_sources(
+        self, pipeline_run: PipelineRunRequest, session: Session
+    ) -> Set[UUID]:
+        """Lock the snapshot and related roots a new run will reference.
+
+        Args:
+            pipeline_run: The pipeline run about to be created or replaced.
+            session: Transaction that must hold the locks until it commits.
+
+        Returns:
+            Related roots whose detail is already archived.
+        """
+        related_run_ids = [
+            run_id
+            for run_id in (
+                pipeline_run.parent_run_id,
+                pipeline_run.original_run_id,
+            )
+            if run_id is not None
+        ]
+        cold_roots = fences.protect_membership(session, related_run_ids)
+        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
+        return cold_roots
+
     def _create_run(
         self,
         pipeline_run: PipelineRunRequest,
         session: Session,
-        cold_roots: Set[UUID],
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
             session: SQLAlchemy session.
-            cold_roots: Archived related roots found under the caller's locks.
 
         Returns:
             The created pipeline run.
@@ -7083,6 +7105,14 @@ class SqlZenStore(BaseZenStore):
         if snapshot.is_offloaded:
             raise ExecutionArchivedError.for_entity(snapshot.id, None)
 
+        index = self._get_next_run_index(
+            pipeline_id=snapshot.pipeline_id, session=session
+        )
+        # Allocating the index commits, which ends the transaction holding
+        # the caller's retention guards. Take them again so an archive pass
+        # cannot retire the snapshot or parent tree before the insert commits.
+        cold_roots = self._guard_run_sources(pipeline_run, session)
+
         if pipeline_run.original_run_id:
             self._get_reference_schema_by_id(
                 resource=pipeline_run,
@@ -7105,10 +7135,6 @@ class SqlZenStore(BaseZenStore):
 
         if root_run_id in cold_roots:
             raise ExecutionArchivedError.for_entity(root_run_id, root_run_id)
-
-        index = self._get_next_run_index(
-            pipeline_id=snapshot.pipeline_id, session=session
-        )
 
         new_run = PipelineRunSchema.from_request(
             pipeline_run,
@@ -7475,16 +7501,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            related_run_ids = [
-                run_id
-                for run_id in (
-                    pipeline_run.parent_run_id,
-                    pipeline_run.original_run_id,
-                )
-                if run_id is not None
-            ]
-            cold_roots = fences.protect_membership(session, related_run_ids)
-            fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
+            self._guard_run_sources(pipeline_run, session)
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -7530,9 +7547,7 @@ class SqlZenStore(BaseZenStore):
                 #     unique constraint on those columns.
                 if pre_creation_hook:
                     pre_creation_hook()
-                return self._create_run(
-                    pipeline_run, session=session, cold_roots=cold_roots
-                ), True
+                return self._create_run(pipeline_run, session=session), True
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
                     # No orchestrator_run_id means this is likely a name conflict.
