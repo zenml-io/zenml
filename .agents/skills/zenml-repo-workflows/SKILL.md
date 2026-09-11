@@ -1,6 +1,6 @@
 ---
 name: zenml-repo-workflows
-description: Use for ZenML repo work involving tests, PRs, migrations, docs, integrations, models, orchestrators, server, or storage.
+description: Use for ZenML tests, PRs, migrations, docs, integrations, models, orchestrators, server, storage, or webhooks. Read only relevant sections.
 ---
 
 # ZenML Repo Workflows
@@ -8,7 +8,9 @@ description: Use for ZenML repo work involving tests, PRs, migrations, docs, int
 Use this skill when work in the ZenML repository needs more detail than the
 always-loaded `AGENTS.md` files provide. The root guide keeps safety rules,
 universal conventions, and the most common commands in memory. This skill keeps
-the longer recipes, examples, and subsystem checklists.
+the longer recipes, examples, and subsystem checklists. Before editing, read
+applicable subtree `AGENTS.md` files even when starting at the root. Follow the
+user's current task scope; this skill does not require running every recipe.
 
 ## Moved Content Index
 
@@ -77,20 +79,38 @@ Former root headings covered here:
 
 ### Formatting, Linting, and Tests
 
-- Format before committing: `bash scripts/format.sh`.
-- Check quality: `bash scripts/lint.sh`.
+- Before committing Python changes, format changed paths with
+  `bash scripts/format.sh <changed-paths> --no-yamlfix`.
+- For focused Python quality checks, use
+  `bash scripts/lint.sh <changed-path> --no-yamlfix --no-zizmor`. The script
+  accepts one path argument for Python checks; run it per affected package
+  when necessary.
+- Without a path, both scripts cover broad repository directories. Formatting
+  also runs yamlfix on `.github` and `tests` unless `--no-yamlfix` is set;
+  passing Python paths alone does not restrict YAML formatting.
+- For YAML/workflow changes, run the relevant yamlfix and zizmor checks. Use
+  unscoped scripts when repository-wide validation is intended, and inspect
+  formatting changes before staging.
 - The lint script runs Ruff, pydoclint on `src/zenml tests/harness`, yamlfix,
   zizmor, unused import/variable checks, Ruff formatting checks, and mypy.
 - Full mypy is slow on the whole codebase. For focused work, run mypy on the
   changed file or package.
-- Run targeted pytest files or tests for the component you changed. Avoid the
-  full local test suite unless there is a specific reason.
+- Run targeted pytest files or tests for changed behavior. Avoid the full local
+  test suite unless there is a specific reason.
+- Once relevant checks pass, repeat or broaden them only for subsequent
+  relevant edits, failures, or an unresolved concern. Report unavailable checks
+  and the missing environment. Do not add tests that merely mirror low-impact
+  edits.
+- Documentation-only edits need relevant link/content checks and diff review,
+  not Python tests or repository-wide formatting.
 - Some coverage workflows use `bash scripts/test-coverage-xml.sh`, but that does
   not run every test.
 
 ### Branches and PRs
 
-- `develop` is the primary working branch. PRs should target `develop`.
+- Create new independent branches from current `develop`; PRs should target
+  `develop`. Preserve the branch/base when continuing an existing PR unless a
+  change is requested.
 - `main` is only updated during the release process.
 - PR titles should be human-readable and concise. Avoid prefixes like `feat:`.
 - PR descriptions should explain what changed, why it was needed, important
@@ -168,12 +188,13 @@ Useful utility locations:
 Symbols with a leading underscore are private and should only be called from
 inside their class or module.
 
-When changing a non-underscore symbol, check whether it is exported from
-`zenml.__init__`. Root exports and public methods on those exports are public
-API and generally require deprecation before breaking changes.
+When changing a non-underscore symbol, check `zenml.__init__` exports,
+documented import paths, and supported extension/integration interfaces. Root
+exports are one signal of public API, not an exhaustive list. Preserve supported
+contracts or use deprecation before breaking changes.
 
-Internal non-underscore code that is not exported at the root can usually be
-changed without deprecation, but update all internal usages.
+For code established to be internal, search usages and update affected callers.
+Do not infer that a symbol is internal solely because it lacks a root export.
 
 Integrations should avoid ZenML private methods because future external
 integration packages will not be protected by in-repo mypy checks.
@@ -194,7 +215,11 @@ Preferred patterns:
 
 - Extend existing service or repository classes when behavior belongs there.
 - Keep shared state in FastAPI dependency injection or the application factory.
-- Use synchronous `def` route handlers in OSS Codex contributions.
+- Use synchronous `def` with the established async compatibility wrapper for
+  ordinary store-backed routes. Preserve async handlers for request-body access
+  or other awaited I/O; use the existing thread-pool pattern for blocking work.
+- Set an explicit project filter when listing project-scoped resources through
+  the store; an omitted filter can return resources from other projects.
 - Use descriptive lower_snake_case paths and named exports.
 - Co-locate Pydantic request/response models with consuming routes.
 - Keep reusable behavior in service or repository modules accessed through
@@ -220,7 +245,8 @@ Database schema changes require Alembic migrations.
 Migration rules:
 
 - Create descriptive migrations, e.g. `alembic revision -m "Add X to Y table"`.
-- Test upgrade paths with `alembic upgrade head`.
+- Test upgrades only against a disposable database with isolated ZenML
+  configuration. Never use the user's configured store as a test target.
 - Downgrade testing is optional because ZenML generally does not support
   downgrades.
 - Never modify existing migrations that are already on `main` or `develop`.
@@ -230,10 +256,33 @@ Migration rules:
 
 Migration testing workflow:
 
-1. Check out `develop` or the relevant old release.
-2. Populate the database from that version.
-3. Switch to the feature branch.
-4. Run `alembic upgrade head`.
+1. Choose the old version and database backend relevant to the change. Create
+   a separate checkout and Python environment for that version, leaving the
+   active feature checkout intact.
+2. Create a unique temporary directory and a disposable database. In the test
+   subprocess environment, remove inherited `ZENML_STORE_*`,
+   `ZENML_SECRETS_STORE_*`, and `ZENML_BACKUP_SECRETS_STORE_*` overrides. Set
+   `ZENML_CONFIG_PATH` to a fresh directory there and `ZENML_STORE_URL` to the
+   disposable database URL. For SQLite, use an absolute file path, for example
+   `sqlite:////tmp/<unique-test-directory>/migration.db`. For MySQL, use a
+   dedicated test database and test credentials. Keep analytics disabled with
+   `ZENML_ANALYTICS_OPT_IN=false` and `ZENML_DEBUG=true`.
+3. Verify the effective store target without printing credentials before any
+   population or upgrade command. `migrations/env.py` reads ZenML's configured
+   store, and environment overrides can supersede its saved configuration.
+4. Use the old-version environment to populate representative fixtures. Use a
+   separate fresh configuration directory for the feature version, with the
+   same explicit disposable database URL. Confirm that the feature Python
+   environment imports this checkout.
+5. From the feature repo root, run `alembic upgrade head` in that isolated
+   environment. Check the resulting schema and assert that representative data
+   and relationships survived. Run `bash scripts/check-alembic-branches.sh`.
+6. Remove only the disposable resources created for this test after collecting
+   results. Report any backend or fixture coverage that could not run.
+
+`scripts/test-migrations.sh` provides broader upgrade coverage but uses a fixed
+`/tmp/upgrade-tests` configuration path and changes test environments. Inspect
+its setup before using it; it is not the default for a focused change.
 
 Useful MySQL query for foreign key dependency tracing:
 
@@ -330,20 +379,17 @@ the store layer.
 
 ### Model Compatibility
 
-Usually safe:
+Check requests, updates, and responses separately:
 
-- Adding optional properties.
+- New required request fields break clients that omit them. Optional fields
+  with defaults usually preserve calls; check older servers too.
+- Updates must preserve omitted-field versus explicit-`None` semantics to avoid
+  unintended overwrites.
+- Removed or renamed response fields, incompatible types, and newly nullable
+  values can break consumers that rely on the old guarantees.
 
-Risky or breaking:
-
-- Deleting properties.
-- Renaming properties.
-- Making required fields optional in a way older code cannot tolerate.
-- Changing property types.
-
-Safe evolution pattern: add optional fields, deprecate before removal, use
-defaults when adding required behavior, and consider versioned responses for
-major changes.
+Check persisted data and rolling client/server versions. Use defaults and
+deprecation periods when evolving supported contracts.
 
 ## CLI Work
 
@@ -438,7 +484,9 @@ Dependency updates:
 
 - Prefer inclusive lower bounds and exclusive upper bounds.
 - Check Python version compatibility.
-- Test locally with realistic integration scenarios.
+- Test realistic integration scenarios when services and credentials are
+  available. Otherwise run applicable local checks and report the unverified
+  scenarios and required CI coverage.
 - Treat dropping support for an old version as breaking.
 - Mention breaking dependency changes in release notes.
 
@@ -509,7 +557,9 @@ Rules:
 - Keep fields aligned with domain models.
 - Schema changes usually require migrations.
 - Export new schemas from `src/zenml/zen_stores/schemas/__init__.py`.
-- General string column limit is about 250 characters because of MySQL.
+- Use `zenml.constants.STR_FIELD_MAX_LENGTH` (currently 255) for standard string
+  fields. Match existing column types and MySQL index/charset constraints;
+  this is a repository convention, not a universal database limit.
 
 Foreign keys:
 
@@ -536,9 +586,21 @@ Import rule: code outside `zen_stores/` should not import SQL-related code
 directly from this directory. Use `Client`, or `client.zen_store` when lower
 level access is truly needed.
 
+## Webhooks
+
+Read `src/zenml/webhooks/AGENTS.md` for provider, semantic-event, and handler
+changes, including when editing HTTP intake under `zen_server/`. Also read the
+server guide when changing routes.
+
+Authenticate exact raw body bytes before dispatch. Never expose unauthenticated
+payloads to handlers or perform provider side effects during intake. A success
+response confirms intake acceptance only, not trigger matching or execution.
+Preserve the isolated, non-durable background handoff and its failure reporting.
+
 ## Cross-Area Change Checklist
 
-Some features span many layers. When touching these, trace the whole path:
+Some features span many layers. Trace the dependencies below and update the
+affected layers; the checklist does not require edits to every listed area:
 
 - Dynamic pipelines and nested child pipelines:
   - `src/zenml/execution/pipeline/dynamic/`
@@ -565,8 +627,8 @@ Some features span many layers. When touching these, trace the whole path:
 - Private method changes: all internal usages are updated.
 - Import checks: no `zen_server` imports outside `zen_server`.
 - Import checks: no direct SQL imports outside `zen_stores`.
-- Model changes: adding properties is usually OK; deleting, renaming, or
-  incompatible type changes are risky.
+- Model changes: check request, update, and response contracts, persisted data,
+  and rolling client/server compatibility.
 - Dependency bumps: dropping old version support is breaking.
 - Scheduling changes: update both legacy schedule and trigger stacks where
   relevant.

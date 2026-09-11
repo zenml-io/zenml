@@ -13,6 +13,18 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 - `examples/` - Example projects.
 - `scripts/` - Development utilities.
 
+## Task Scope and Completion
+
+- For implementation requests, continue through the requested change, relevant
+  checks, and final diff review. For audits and proposals, report findings
+  without applying changes unless requested.
+- Make routine choices from repository conventions. Ask when the answer changes
+  behavior, compatibility, or authorization; continue independent authorized
+  work while waiting. Do not ask again for actions already authorized.
+- Current user instructions take precedence over skill guidelines. If a skill
+  would block authorized work, identify the exact file and instruction and
+  explain the conflict rather than silently stopping or expanding the task.
+
 ## Always-Loaded Rules
 
 - Use US English spelling in code, comments, docstrings, and documentation.
@@ -34,18 +46,27 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Common Commands
 
-- Format before committing: `bash scripts/format.sh`.
-- Check quality: `bash scripts/lint.sh`.
+- Before committing Python changes, format only the changed paths:
+  `bash scripts/format.sh <changed-paths> --no-yamlfix`.
+- For focused Python quality checks:
+  `bash scripts/lint.sh <changed-path> --no-yamlfix --no-zizmor`.
+- The unscoped scripts check or format repository-wide files, including YAML
+  and workflows. Use the workflow skill for their scope and required checks.
 - Run targeted tests only: `pytest tests/unit/path/to/test_file.py` or
   `pytest tests/unit/path/to/test_file.py::test_specific_function`.
 - Do NOT run the entire local test suite by default; many tests need special
   environments.
-- If you make changes after running tests, rerun the relevant tests.
+- After relevant checks pass, repeat or broaden them only for subsequent
+  relevant edits, failures, or a specific unresolved concern. Report checks
+  that could not run and why.
+- Documentation-only changes need relevant documentation checks, not Python
+  tests or repository-wide formatting.
 
 ## Branches, Git, and PRs
 
 - `develop` is the primary working branch, not `main`.
-- Always branch off `develop` for new work.
+- Branch off current `develop` for new independent work. When continuing an
+  existing PR, preserve its branch and base unless a change is requested.
 - PRs should target `develop`.
 - `main` is only updated during releases.
 - Use targeted `git add`; do not stage unrelated files.
@@ -62,25 +83,31 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 - NEVER commit secrets, API keys, tokens, passwords, or credentials.
 - Use environment variables or ZenML secret management for sensitive data.
 - Validate and sanitize user inputs.
-- If secrets are accidentally committed, notify the team immediately.
+- If secrets are accidentally committed, inform the user immediately without
+  repeating the secret. Prepare incident details; send external notifications
+  only when authorized.
 
 ## Architecture and API Safety
 
-- Check whether a class or function is exported in `zenml.__init__` before
-  changing a public-looking interface.
+- Before changing a public-looking interface, check root exports in
+  `zenml.__init__`, documented import paths, and supported extension/integration
+  interfaces. Absence from root exports does not establish that it is internal.
 - Public APIs need backward-compatible evolution or deprecation.
 - For internal non-underscore methods, search for usages and update all
   internal callers.
 - The term "model" can mean Pydantic models, machine learning models, or ZenML
   model namespaces. Be explicit when writing or reviewing.
 - When changing cross-cutting features, trace the full path through CLI,
-  client, server, models, schemas, migrations, tests, and docs.
+  client, server, models, schemas, migrations, tests, and docs. Inspect these
+  dependencies and update the affected layers; do not edit every layer by default.
 
 ## FastAPI and Runtime Rules
 
 - ZenML OSS FastAPI work expects FastAPI, SQLModel, SQLAlchemy 2.0, and
   Pydantic v2 patterns.
-- Implement synchronous `def` route handlers for OSS Codex contributions.
+- Use synchronous `def` handlers with the existing compatibility wrapper for
+  ordinary store-backed endpoints. Preserve async handlers for request-body
+  access or other awaited I/O; keep blocking store work off the event loop.
 - Keep shared state inside FastAPI dependency injection or the application
   factory; never introduce fresh global variables outside initialization.
 - Start routes, dependencies, and services with guard clauses.
@@ -92,6 +119,11 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
   require coordinated OTel updates. Keep OTel SDK/exporter versions aligned with
   the matching OpenTelemetry instrumentation beta line.
 - Code outside `src/zenml/zen_server/` should NEVER import from `zen_server/`.
+- Set an explicit project filter on store list calls for project-scoped
+  resources; omitting it queries across projects.
+- Authenticate exact webhook body bytes before dispatch. Never pass
+  unauthenticated payloads to handlers or perform provider side effects during
+  intake. Acceptance does not confirm downstream execution.
 
 ## Database and Storage Rules
 
@@ -99,8 +131,9 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 - Database schema changes require Alembic migrations.
 - Never modify existing migrations that are already on `main` or `develop`.
 - Always consider backward compatibility for rolling deployments.
-- Test migration upgrade paths with `alembic upgrade head` for meaningful
-  schema changes.
+- Test meaningful schema upgrades against a disposable database with isolated
+  ZenML configuration. Never use the user's configured store as a test target.
+  Follow the migration setup in the workflow skill before running Alembic.
 - Code outside `zen_stores/` should not import SQL-related code directly from
   `zen_stores`; use `Client` or, rarely, `client.zen_store`.
 
@@ -108,15 +141,18 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 Load `.agents/skills/zenml-repo-workflows/SKILL.md` for detailed guidance on
 tests, PRs, migrations, docs, integrations, models, orchestrators, FastAPI,
-server code, and storage.
+server code, storage, and webhooks. Load only the relevant sections.
 
-Directory-specific reminders:
+Before editing a subtree, read its applicable `AGENTS.md` files, even when the
+session started at the repository root. Read guidance for other affected
+subtrees when a change crosses their boundaries. Paths below are repo-relative:
 
 - `docs/book/AGENTS.md` - documentation source, GitBook links, and docs checks.
 - `src/zenml/cli/AGENTS.md` - CLI import rules and filter/client coupling.
 - `src/zenml/integrations/AGENTS.md` - integration flavor import rules.
 - `src/zenml/models/AGENTS.md` - domain model compatibility and filter fields.
 - `src/zenml/orchestrators/AGENTS.md` - orchestrator IDs and dynamic pipelines.
+- `src/zenml/webhooks/AGENTS.md` - authentication, intake, and provider contracts.
 - `src/zenml/zen_server/AGENTS.md` - server import boundary and endpoint shape.
 - `src/zenml/zen_stores/migrations/AGENTS.md` - Alembic migration guidance.
 - `src/zenml/zen_stores/schemas/AGENTS.md` - ORM schema and SQL import rules.
@@ -128,10 +164,8 @@ Directory-specific reminders:
   all steps in that run.
 - Filter model changes: matching client method signature and body are updated.
 - Private method changes: all internal usages are updated.
-- Import checks: no `zen_server` imports outside `zen_server`.
-- Import checks: no direct SQL imports outside `zen_stores`.
-- Model changes: adding properties is usually OK; deleting, renaming, or
-  incompatible type changes are risky.
+- Model changes: check request, update, and response compatibility separately;
+  new required inputs and weakened response guarantees can break callers.
 - Dependency bumps: dropping old version support is breaking.
 - Scheduling changes: check both legacy schedule and trigger stacks.
 - Step operator changes: check `BaseStepOperator`, `StepLauncher`, and at least
