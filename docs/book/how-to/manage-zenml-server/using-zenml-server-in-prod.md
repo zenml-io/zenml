@@ -90,6 +90,55 @@ Once this is set, you should also modify the `zenml.database.poolSize` and `zenm
 
 An important component of the ZenML server deployment is the backing database. When you start scaling your ZenML server instances, you will also need to scale your database to avoid any bottlenecks.
 
+The largest rows in the database are the pipeline snapshot and step configuration payloads that every run stores. Set `zenml.database.compressTextPayloads` (or the `ZENML_STORE_COMPRESS_TEXT_PAYLOADS` environment variable) to `true` to store them compressed whenever that takes less space than the plain text. Only enable this once every server sharing the database runs a version newer than 0.96.3: once compressed rows exist, the server can no longer be rolled back to a version without the compressed-payload reader. Switching the option off again only stops compressing new rows; already compressed rows stay readable. It affects rows written from then on, not existing ones.
+
+To compress existing snapshot/configuration rows, run `zenml backfill-database`
+from the server image as a separate maintenance process, with that database's
+`ZENML_STORE_*` configuration. It does not initialize or migrate the database
+and cannot run through a REST store. Upgrade all readers before enabling
+`ZENML_STORE_COMPRESS_TEXT_PAYLOADS=true` and using `--apply`.
+
+```bash
+# Measure first; SQL is unchanged. Repeat until all five columns are completed.
+zenml backfill-database --checkpoint /maintenance/compression-dry-run.json
+
+# After reviewing the measurement and reader rollout, apply in bounded passes.
+zenml backfill-database --apply --checkpoint /maintenance/compression-apply.json
+```
+
+The defaults process at most ten batches of 100 column values per invocation.
+Each batch stops after reading 8 MiB, plus at most one column value; values are
+loaded one at a time. `--batch-size` and `--max-batches` control the work per
+pass. MySQL row-lock waits and connection I/O are bounded; a failure stops the
+pass without automatic retries. Schedule another pass with the same checkpoint.
+Use a persistent local volume for the progress files. The maintenance command
+supports Linux and macOS and allows one process per checkpoint file.
+
+A checkpoint is tied to the database endpoint, database name, schema revision
+and dry-run/apply mode. It fixes an upper ID boundary for each table. New writes
+should already use compression; start a new checkpoint for a later historical
+sweep. Use new checkpoints after restoring or replacing a database, even if its
+endpoint is reused. Do not run schema migrations during a pass.
+
+Only the five compressed snapshot/configuration columns are rewritten, only
+when the complete encoded value is smaller. IDs, relationships, timestamps,
+run metadata, artifacts and legacy run/step columns are unchanged. MySQL locks
+a value before reading and replacing it; SQLite reserves the writer for each
+batch. This preserves concurrent updates but can briefly delay other writers.
+A malformed compressed value stops the pass and rolls back its current batch.
+
+Progress includes scanned and changed column values, raw stored bytes before
+and after, cursors, and completed columns. Dry-run changes are potential savings;
+apply changes are committed work. A crash after SQL commit but before the local
+checkpoint may undercount changed values on resume, but it cannot skip or
+double-compress those values. Measure final storage separately for acceptance.
+Payloads and database credentials are never written to the checkpoint.
+
+This reduces logical SQL bytes and allows database pages to be reused. It does
+not promise smaller allocated RDS storage or an equal reduction in gzipped dump
+size. Turning compression off stops future compressed writes; it does not
+reverse the backfill or make a readerless server rollback safe.
+
 We would recommend starting out with a simple (single) database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
 
 * CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utilization are expected but it should not be consistently high.

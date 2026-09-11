@@ -436,6 +436,16 @@ server:
     # poolSize: 20
     # maxOverflow: 20
 
+    # Store pipeline snapshot and step configuration payloads compressed when
+    # that is smaller than the plain text. Only enable this once every server
+    # sharing the database runs a version newer than 0.96.3: once compressed
+    # rows exist, the server can no longer be rolled back to a version without
+    # the compressed-payload reader. Switching the option off again only stops
+    # compressing new rows; already compressed rows stay readable. It affects
+    # rows written from then on, not existing ones. Defaults to false.
+    #
+    # compressTextPayloads: false
+
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,
     # see the following documentation:
