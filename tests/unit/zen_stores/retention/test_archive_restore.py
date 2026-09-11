@@ -62,19 +62,9 @@ from zenml.zen_stores.schemas import (
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        pytest.param("sql_store", id="sqlite"),
-        pytest.param(
-            "mysql_store", marks=pytest.mark.retention_mysql, id="mysql"
-        ),
-    ],
-)
 @pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
 def test_archive_restore_round_trip(
-    request,
-    backend,
+    retention_store,
     kind,
     tree_factory,
     archive_one_tree,
@@ -82,14 +72,13 @@ def test_archive_restore_round_trip(
     monkeypatch,
 ):
     """Restore all execution shapes after verified retirement."""
-    sql_store = request.getfixturevalue(backend)
-    ids = tree_factory(sql_store, kind)
+    ids = tree_factory(retention_store, kind)
     calls = [
-        lambda: sql_store.get_run(ids.run),
-        lambda: sql_store.get_run_step(ids.consumer),
-        lambda: sql_store.get_snapshot(ids.snapshot),
-        lambda: sql_store.get_pipeline_run_dag(ids.run),
-        lambda: sql_store.list_run_steps(
+        lambda: retention_store.get_run(ids.run),
+        lambda: retention_store.get_run_step(ids.consumer),
+        lambda: retention_store.get_snapshot(ids.snapshot),
+        lambda: retention_store.get_pipeline_run_dag(ids.run),
+        lambda: retention_store.list_run_steps(
             StepRunFilter(pipeline_run_id=ids.run), hydrate=True
         ),
     ]
@@ -103,8 +92,8 @@ def test_archive_restore_round_trip(
     exclude = {**marker, "items": {"__all__": marker}}
     before = [call().model_dump() for call in calls]
     hot = [call().model_dump(exclude=exclude) for call in calls]
-    archive_one_tree(sql_store, ids)
-    with Session(sql_store.engine) as session:
+    archive_one_tree(retention_store, ids)
+    with Session(retention_store.engine) as session:
         run = session.get(PipelineRunSchema, ids.run)
         step = session.get(StepRunSchema, ids.consumer)
         assert run.orchestrator_environment is None
@@ -117,18 +106,18 @@ def test_archive_restore_round_trip(
         )
         assert not session.scalars(configurations).all()
     assert [call().model_dump(exclude=exclude) for call in calls] == hot
-    restored = sql_store.restore_pipeline_run(ids.run)
+    restored = retention_store.restore_pipeline_run(ids.run)
     assert restored.outcome == RetentionOutcome.SUCCEEDED
     assert [call().model_dump() for call in calls] == before
 
 
 def test_archive_aware_execution_filters(
-    sql_store, tree_factory, archive_one_tree
+    retention_store, tree_factory, archive_one_tree
 ):
     """Keep execution flags and their public filters aligned when offloaded."""
-    ids = tree_factory(sql_store)
-    stack_id = sql_store.list_stacks(StackFilter()).items[0].id
-    with Session(sql_store.engine) as session:
+    ids = tree_factory(retention_store)
+    stack_id = retention_store.list_stacks(StackFilter()).items[0].id
+    with Session(retention_store.engine) as session:
         build = PipelineBuildSchema(
             project_id=ids.project,
             stack_id=stack_id,
@@ -146,21 +135,21 @@ def test_archive_aware_execution_filters(
         session.commit()
 
     def assert_state(*, available: bool) -> None:
-        snapshot = sql_store.get_snapshot(ids.snapshot)
-        run = sql_store.get_run(ids.run)
+        snapshot = retention_store.get_snapshot(ids.snapshot)
+        run = retention_store.get_run(ids.run)
         assert snapshot.runnable is available
         assert run.get_metadata().is_templatable is available
 
-        runnable = sql_store.list_snapshots(
+        runnable = retention_store.list_snapshots(
             PipelineSnapshotFilter(runnable=True)
         ).items
-        deployable = sql_store.list_snapshots(
+        deployable = retention_store.list_snapshots(
             PipelineSnapshotFilter(deployable=True)
         ).items
-        templatable = sql_store.list_runs(
+        templatable = retention_store.list_runs(
             PipelineRunFilter(templatable=True)
         ).items
-        not_templatable = sql_store.list_runs(
+        not_templatable = retention_store.list_runs(
             PipelineRunFilter(templatable=False)
         ).items
         assert (ids.snapshot in {item.id for item in runnable}) is available
@@ -171,22 +160,23 @@ def test_archive_aware_execution_filters(
         ) is not available
 
     assert_state(available=True)
-    archive_one_tree(sql_store, ids)
+    archive_one_tree(retention_store, ids)
     assert_state(available=False)
-    sql_store.restore_pipeline_run(ids.run)
+    retention_store.restore_pipeline_run(ids.run)
     assert_state(available=True)
 
 
 def test_shared_snapshot_capture_uses_bounded_projection(
-    sql_store, tree_factory, storage, NOW
+    retention_store, tree_factory, storage, NOW
 ):
     """Avoid loading unretired snapshot payloads while preserving run detail."""
-    ids = tree_factory(sql_store)
-    with Session(sql_store.engine) as session:
+    ids = tree_factory(retention_store)
+    with Session(retention_store.engine) as session:
         snapshot = session.get(PipelineSnapshotSchema, ids.snapshot)
         run = session.get(PipelineRunSchema, ids.run)
         assert snapshot and run
-        snapshot.source_code = "shared payload " + "x" * 1_000_000
+        # MySQL TEXT holds 64 KiB; the projection must still skip it.
+        snapshot.source_code = "shared payload " + "x" * 60_000
         session.add(snapshot)
         session.add(
             PipelineRunSchema(
@@ -204,7 +194,7 @@ def test_shared_snapshot_capture_uses_bounded_projection(
         session.commit()
 
     marker = {"body": {"archive_bundle_id"}}
-    before = sql_store.get_run(ids.run).model_dump(exclude=marker)
+    before = retention_store.get_run(ids.run).model_dump(exclude=marker)
     statements = []
 
     def record_statement(
@@ -212,12 +202,14 @@ def test_shared_snapshot_capture_uses_bounded_projection(
     ):
         statements.append(" ".join(statement.split()))
 
-    event.listen(sql_store.engine, "before_cursor_execute", record_statement)
+    event.listen(
+        retention_store.engine, "before_cursor_execute", record_statement
+    )
     try:
-        outcome = sql_store.archive_project(ids.project)
+        outcome = retention_store.archive_project(ids.project)
     finally:
         event.remove(
-            sql_store.engine, "before_cursor_execute", record_statement
+            retention_store.engine, "before_cursor_execute", record_statement
         )
 
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
@@ -227,7 +219,9 @@ def test_shared_snapshot_capture_uses_bounded_projection(
         "pipeline_snapshot.pipeline_configuration FROM pipeline_snapshot"
     )
     assert any(statement.startswith(projection) for statement in statements)
-    assert sql_store.get_run(ids.run).model_dump(exclude=marker) == before
+    assert (
+        retention_store.get_run(ids.run).model_dump(exclude=marker) == before
+    )
 
 
 @pytest.mark.skipif(
@@ -382,10 +376,10 @@ def test_sqlite_insert_guard_holds_lock_until_step_commit(
 
 
 def test_membership_writer_loses_when_archive_reaches_guard_first(
-    sql_store, tree_factory, storage, monkeypatch
+    retention_store, tree_factory, storage, monkeypatch
 ):
     """A child writer arriving after retirement fails without corrupting reads."""
-    ids = tree_factory(sql_store)
+    ids = tree_factory(retention_store)
     reached, release = Event(), Event()
     original_guard = fences.protect_membership
 
@@ -407,10 +401,10 @@ def test_membership_writer_loses_when_archive_reaches_guard_first(
     with ThreadPoolExecutor(
         max_workers=1, thread_name_prefix="late-child"
     ) as pool:
-        writer = pool.submit(sql_store.get_or_create_run, request)
+        writer = pool.submit(retention_store.get_or_create_run, request)
         assert reached.wait(10)
         try:
-            outcome = sql_store.archive_project(ids.project)
+            outcome = retention_store.archive_project(ids.project)
         finally:
             release.set()
         with pytest.raises(
@@ -419,7 +413,7 @@ def test_membership_writer_loses_when_archive_reaches_guard_first(
             writer.result(timeout=10)
 
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
-    assert sql_store.get_run(ids.run).id == ids.run
+    assert retention_store.get_run(ids.run).id == ids.run
 
 
 def test_archive_renews_claim_after_readback(
@@ -486,29 +480,29 @@ def test_archive_renews_claim_after_readback(
 
 
 def test_deleted_root_blocks_restore_but_keeps_archive_evidence(
-    sql_store, tree_factory, archive_one_tree, storage, monkeypatch, rows
+    retention_store, tree_factory, archive_one_tree, storage, monkeypatch, rows
 ):
     """Reject queued restore while preserving the catalog and object."""
-    ids = tree_factory(sql_store)
-    bundle_id = archive_one_tree(sql_store, ids)
-    prepared = sql_store.prepare_pipeline_run_restore(ids.run)
+    ids = tree_factory(retention_store)
+    bundle_id = archive_one_tree(retention_store, ids)
+    prepared = retention_store.prepare_pipeline_run_restore(ids.run)
     assert prepared is not None
-    sql_store.delete_run(ids.run)
-    before = rows(sql_store)
+    retention_store.delete_run(ids.run)
+    before = rows(retention_store)
     opened = Mock(
         side_effect=AssertionError("deleted-root restore opened storage")
     )
     with monkeypatch.context() as patch:
         patch.setattr(storage, "open", opened)
         with pytest.raises(ExecutionRetentionConflictError) as error:
-            sql_store.execute_pipeline_run_restore(prepared)
+            retention_store.execute_pipeline_run_restore(prepared)
     assert error.value.error_code == RetentionFailure.BUSY
-    assert rows(sql_store) == before
+    assert rows(retention_store) == before
     opened.assert_not_called()
 
-    evidence = tree_factory(sql_store)
-    evidence_bundle_id = archive_one_tree(sql_store, evidence)
-    with Session(sql_store.engine) as session:
+    evidence = tree_factory(retention_store)
+    evidence_bundle_id = archive_one_tree(retention_store, evidence)
+    with Session(retention_store.engine) as session:
         bundle = session.get(ArchiveBundleSchema, bundle_id)
         assert bundle is not None
         assert bundle.root_run_id is None
@@ -518,8 +512,8 @@ def test_deleted_root_blocks_restore_but_keeps_archive_evidence(
             f"{evidence_bundle.uri}/manifest.json",
             f"{evidence_bundle.uri}/rows.tar.gz",
         )
-    sql_store.delete_run(evidence.run)
-    with Session(sql_store.engine) as session:
+    retention_store.delete_run(evidence.run)
+    with Session(retention_store.engine) as session:
         evidence_bundle = session.get(ArchiveBundleSchema, evidence_bundle_id)
         assert evidence_bundle is not None
         assert evidence_bundle.root_run_id is None
@@ -527,21 +521,12 @@ def test_deleted_root_blocks_restore_but_keeps_archive_evidence(
     assert all(storage.exists(path) for path in paths)
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        pytest.param("sql_store", id="sqlite"),
-        pytest.param(
-            "mysql_store", marks=pytest.mark.retention_mysql, id="mysql"
-        ),
-    ],
-)
 @pytest.mark.parametrize("expired", [False, True])
 def test_claim_fencing(
-    request, backend, tree_factory, storage, monkeypatch, rows, expired
+    retention_store, tree_factory, storage, monkeypatch, rows, expired
 ):
     """A replacement generation fences an interrupted public archive pass."""
-    store = request.getfixturevalue(backend)
+    store = retention_store
     ids = tree_factory(store)
     bundles = select(ArchiveBundleSchema).where(
         ArchiveBundleSchema.root_run_id == ids.run
@@ -615,17 +600,17 @@ def test_claim_fencing(
 )
 @pytest.mark.parametrize("legacy", [False, True])
 def test_abandoned_pass_can_be_replaced(
-    sql_store, tree_factory, storage, NOW, outcome, legacy
+    retention_store, tree_factory, storage, NOW, outcome, legacy
 ):
     """Replace active-looking state after its operation freshness expires."""
-    ids = tree_factory(sql_store)
-    abandoned = sql_store.prepare_retention_pass(ids.project)
+    ids = tree_factory(retention_store)
+    abandoned = retention_store.prepare_retention_pass(ids.project)
     assert abandoned.state.operation_expires_at
     assert abandoned.state.operation_expires_at > NOW
-    contender = sql_store.prepare_retention_pass(ids.project)
+    contender = retention_store.prepare_retention_pass(ids.project)
     assert contender.state.operation_id == abandoned.operation_id
     assert contender.state.operation_id != contender.operation_id
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         project = session.get(ProjectSchema, ids.project)
         assert project and project.retention_state
         state = RetentionState.model_validate_json(project.retention_state)
@@ -637,13 +622,13 @@ def test_abandoned_pass_can_be_replaced(
         session.add(project)
         session.commit()
 
-    replacement = sql_store.prepare_retention_pass(ids.project)
+    replacement = retention_store.prepare_retention_pass(ids.project)
     assert replacement.state.operation_id == replacement.operation_id
     assert replacement.operation_id != abandoned.operation_id
-    result = sql_store.execute_retention_pass(replacement)
+    result = retention_store.execute_retention_pass(replacement)
     assert result.outcome == RetentionOutcome.SUCCEEDED
-    assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id
-    with Session(sql_store.engine) as session:
+    assert retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
+    with Session(retention_store.engine) as session:
         project = session.get(ProjectSchema, ids.project)
         assert project and project.retention_state
         state = RetentionState.model_validate_json(project.retention_state)
@@ -652,13 +637,16 @@ def test_abandoned_pass_can_be_replaced(
 
 @pytest.mark.parametrize("failure", ["retirement", "commit_ack"])
 def test_interrupted_archive(
-    sql_store, tree_factory, storage, rows, monkeypatch, failure
+    retention_store, tree_factory, storage, rows, monkeypatch, failure
 ):
     """Pre-commit failure rolls back; a lost acknowledgement remains restorable."""
-    ids = tree_factory(sql_store)
-    before = rows(sql_store), sql_store.get_run(ids.run).model_dump()
+    ids = tree_factory(retention_store)
+    before = (
+        rows(retention_store),
+        retention_store.get_run(ids.run).model_dump(),
+    )
     complete = False
-    original_commit = sql_store.engine.dialect.do_commit
+    original_commit = retention_store.engine.dialect.do_commit
 
     def observe(conn, cursor, statement, parameters, context, executemany):
         nonlocal complete
@@ -679,27 +667,34 @@ def test_interrupted_archive(
             complete = False
             raise OSError("acknowledgement lost")
 
-    event.listen(sql_store.engine, "before_cursor_execute", observe)
+    event.listen(retention_store.engine, "before_cursor_execute", observe)
     try:
         with monkeypatch.context() as patch:
-            patch.setattr(sql_store.engine.dialect, "do_commit", commit)
-            outcome = sql_store.archive_project(ids.project)
+            patch.setattr(retention_store.engine.dialect, "do_commit", commit)
+            outcome = retention_store.archive_project(ids.project)
     finally:
-        event.remove(sql_store.engine, "before_cursor_execute", observe)
+        event.remove(retention_store.engine, "before_cursor_execute", observe)
     if failure == "retirement":
         assert outcome.outcome == RetentionOutcome.FAILED
-        assert rows(sql_store) == before[0]
+        assert rows(retention_store) == before[0]
     else:
-        assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id
-        restored = sql_store.restore_pipeline_run(ids.run)
+        assert retention_store.get_run(
+            ids.run, hydrate=False
+        ).archive_bundle_id
+        restored = retention_store.restore_pipeline_run(ids.run)
         assert restored.outcome == RetentionOutcome.SUCCEEDED
-        assert sql_store.get_run(ids.run).model_dump() == before[1]
+        assert retention_store.get_run(ids.run).model_dump() == before[1]
 
 
-def test_cursor_advances_past_excluded_root(sql_store, tree_factory, storage):
+def test_cursor_advances_past_excluded_root(
+    retention_store, tree_factory, storage
+):
     """Resume after an excluded root without rescanning it forever."""
-    first, second = tree_factory(sql_store), tree_factory(sql_store)
-    with Session(sql_store.engine) as session:
+    first, second = (
+        tree_factory(retention_store),
+        tree_factory(retention_store),
+    )
+    with Session(retention_store.engine) as session:
         session.add(
             PipelineRunSchema(
                 project_id=first.project,
@@ -718,33 +713,34 @@ def test_cursor_advances_past_excluded_root(sql_store, tree_factory, storage):
             2025, 1, 1
         )
         session.commit()
-    sql_store.update_project(
+    retention_store.update_project(
         first.project,
         ProjectUpdate(
             retention=RetentionSettings(archive_after_days=7, max_trees=1)
         ),
     )
-    first_pass = sql_store.archive_project(first.project)
+    first_pass = retention_store.archive_project(first.project)
     assert first_pass.outcome == RetentionOutcome.PAUSED
     assert (
-        sql_store.get_run(second.run, hydrate=False).archive_bundle_id is None
+        retention_store.get_run(second.run, hydrate=False).archive_bundle_id
+        is None
     )
-    second_pass = sql_store.archive_project(first.project)
+    second_pass = retention_store.archive_project(first.project)
     assert second_pass.outcome == RetentionOutcome.SUCCEEDED
-    assert sql_store.get_run(first.run).archive_bundle_id is None
+    assert retention_store.get_run(first.run).archive_bundle_id is None
     assert (
-        sql_store.get_run(second.run, hydrate=False).archive_bundle_id
+        retention_store.get_run(second.run, hydrate=False).archive_bundle_id
         is not None
     )
 
 
 def test_wait_condition_metadata_publishes_after_guarded_insert(
-    sql_store, tree_factory
+    retention_store, tree_factory
 ):
     """The guarded outer insert releases SQLite before publishing metadata."""
-    ids = tree_factory(sql_store, kind="dynamic")
+    ids = tree_factory(retention_store, kind="dynamic")
 
-    condition = sql_store.create_run_wait_condition(
+    condition = retention_store.create_run_wait_condition(
         RunWaitConditionRequest(
             project=ids.project,
             run=ids.run,
@@ -754,7 +750,7 @@ def test_wait_condition_metadata_publishes_after_guarded_insert(
         )
     )
 
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         metadata = session.execute(
             select(RunMetadataSchema).where(RunMetadataSchema.key == "guarded")
         ).scalar_one()
@@ -770,47 +766,49 @@ def test_wait_condition_metadata_publishes_after_guarded_insert(
 
 
 def test_archive_pass_advances_past_a_preview_page_of_pinned_roots(
-    sql_store, tree_factory, storage, NOW
+    retention_store, tree_factory, storage, NOW
 ):
     """An empty truncated preview does not mean the pass has nothing to do."""
-    pinned = [tree_factory(sql_store) for _ in range(2)]
-    eligible = tree_factory(sql_store)
+    pinned = [tree_factory(retention_store) for _ in range(2)]
+    eligible = tree_factory(retention_store)
     for tree in pinned:
-        sql_store.update_run(tree.run, PipelineRunUpdate(retain=True))
-    with Session(sql_store.engine) as session:
+        retention_store.update_run(tree.run, PipelineRunUpdate(retain=True))
+    with Session(retention_store.engine) as session:
         run = session.get(PipelineRunSchema, eligible.run)
         run.end_time = NOW - timedelta(days=50)
         session.add(run)
         session.commit()
-    sql_store.update_project(
+    retention_store.update_project(
         eligible.project,
         ProjectUpdate(
             retention=RetentionSettings(archive_after_days=7, max_trees=2)
         ),
     )
 
-    preview = sql_store.retention_dry_run(
-        sql_store.get_project(eligible.project)
+    preview = retention_store.retention_dry_run(
+        retention_store.get_project(eligible.project)
     )
     assert preview.truncated and preview.eligible_tree_count == 0
 
-    outcome = sql_store.archive_project(eligible.project)
+    outcome = retention_store.archive_project(eligible.project)
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
-    assert sql_store.get_run(eligible.run, hydrate=False).archive_bundle_id
+    assert retention_store.get_run(
+        eligible.run, hydrate=False
+    ).archive_bundle_id
     for tree in pinned:
         assert (
-            sql_store.get_run(tree.run, hydrate=False).archive_bundle_id
+            retention_store.get_run(tree.run, hydrate=False).archive_bundle_id
             is None
         )
 
 
 def test_unrelated_expired_claim_does_not_replace_a_live_pass(
-    sql_store, tree_factory, storage
+    retention_store, tree_factory, storage
 ):
     """Only the running operation's own expired claim permits early takeover."""
-    ids = tree_factory(sql_store)
-    running = sql_store.prepare_retention_pass(ids.project)
-    with Session(sql_store.engine) as session:
+    ids = tree_factory(retention_store)
+    running = retention_store.prepare_retention_pass(ids.project)
+    with Session(retention_store.engine) as session:
         # An abandoned claim on a root that later passes no longer revisit.
         session.add(
             ArchiveBundleSchema(
@@ -824,21 +822,21 @@ def test_unrelated_expired_claim_does_not_replace_a_live_pass(
         )
         session.commit()
 
-    contender = sql_store.prepare_retention_pass(ids.project)
+    contender = retention_store.prepare_retention_pass(ids.project)
     assert contender.state.operation_id == running.operation_id
 
-    outcome = sql_store.execute_retention_pass(running)
+    outcome = retention_store.execute_retention_pass(running)
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
-    assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id
+    assert retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
 
 
 def test_capture_stops_at_the_source_byte_budget(
-    sql_store, tree_factory, storage, rows, monkeypatch
+    retention_store, tree_factory, storage, rows, monkeypatch
 ):
     """Fixed-weight estimates cannot hide stored payloads beyond the budget."""
-    ids = tree_factory(sql_store)
+    ids = tree_factory(retention_store)
     exception_info = ExceptionInfo(traceback="x" * 20 * 1024).model_dump_json()
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         steps = session.scalars(
             select(StepRunSchema).where(
                 StepRunSchema.pipeline_run_id == ids.run
@@ -858,16 +856,19 @@ def test_capture_stops_at_the_source_byte_budget(
 
     monkeypatch.setattr(capture, "source_row_bytes", counted)
     monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 16 * 1024)
-    before = rows(sql_store)
+    before = rows(retention_store)
 
-    outcome = sql_store.archive_project(ids.project)
+    outcome = retention_store.archive_project(ids.project)
 
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
     # Capture aborted on the first oversized step, before reading the rest.
     assert len(charged) == 1
-    assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id is None
-    assert rows(sql_store) == before
-    with Session(sql_store.engine) as session:
+    assert (
+        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
+        is None
+    )
+    assert rows(retention_store) == before
+    with Session(retention_store.engine) as session:
         statuses = session.scalars(
             select(ArchiveBundleSchema.status).where(
                 ArchiveBundleSchema.project_id == ids.project
@@ -877,10 +878,10 @@ def test_capture_stops_at_the_source_byte_budget(
 
 
 def test_run_creation_rechecks_archival_after_index_allocation(
-    sql_store, tree_factory, storage, monkeypatch
+    retention_store, tree_factory, storage, monkeypatch
 ):
     """Archival between index allocation and insert cannot orphan a new run."""
-    ids = tree_factory(sql_store)
+    ids = tree_factory(retention_store)
     allocate = SqlZenStore._get_next_run_index
 
     def allocate_then_archive(store, pipeline_id, session):
@@ -893,10 +894,10 @@ def test_run_creation_rechecks_archival_after_index_allocation(
         SqlZenStore, "_get_next_run_index", allocate_then_archive
     )
     runs = PipelineRunFilter(project=ids.project)
-    before = sql_store.list_runs(runs).total
+    before = retention_store.list_runs(runs).total
 
     with pytest.raises(ExecutionArchivedError):
-        sql_store.get_or_create_run(
+        retention_store.get_or_create_run(
             PipelineRunRequest(
                 project=ids.project,
                 name=f"late-{uuid4().hex[:8]}",
@@ -905,10 +906,10 @@ def test_run_creation_rechecks_archival_after_index_allocation(
             )
         )
 
-    assert sql_store.get_snapshot(
+    assert retention_store.get_snapshot(
         ids.snapshot, hydrate=False
     ).archive_bundle_id
-    assert sql_store.list_runs(runs).total == before
+    assert retention_store.list_runs(runs).total == before
 
 
 class BaselineStepRunResponseMetadata(StepRunResponseMetadata):
@@ -919,13 +920,13 @@ class BaselineStepRunResponseMetadata(StepRunResponseMetadata):
 
 @pytest.mark.parametrize("kind", ["static", "dynamic"])
 def test_archived_step_metadata_keeps_the_released_client_contract(
-    sql_store, tree_factory, archive_one_tree, storage, kind
+    retention_store, tree_factory, archive_one_tree, storage, kind
 ):
     """Archived steps keep snapshot_id, so older clients still deserialize them."""
-    ids = tree_factory(sql_store, kind)
-    archive_one_tree(sql_store, ids)
+    ids = tree_factory(retention_store, kind)
+    archive_one_tree(retention_store, ids)
 
-    step = sql_store.get_run_step(ids.consumer)
+    step = retention_store.get_run_step(ids.consumer)
     assert step.archive_bundle_id is not None
     metadata = BaselineStepRunResponseMetadata.model_validate_json(
         step.get_metadata().model_dump_json()

@@ -15,7 +15,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event, select, update
 from starlette.middleware.base import BaseHTTPMiddleware
 from tests.unit.zen_stores.conftest import NOW as NOW_fixture
-from tests.unit.zen_stores.conftest import sql_store as sql_store_fixture
+from tests.unit.zen_stores.conftest import (
+    retention_database as retention_database_fixture,
+)
+from tests.unit.zen_stores.conftest import (
+    retention_store as retention_store_fixture,
+)
 from tests.unit.zen_stores.retention.conftest import storage as storage_fixture
 from tests.unit.zen_stores.retention.fixture_graph import FROZEN_NOW, seed_tree
 
@@ -55,7 +60,8 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 # Re-export fixtures shared from the store suites.
 NOW = NOW_fixture
-sql_store = sql_store_fixture
+retention_database = retention_database_fixture
+retention_store = retention_store_fixture
 storage = storage_fixture
 
 ROUTERS = (
@@ -69,10 +75,10 @@ ROUTERS = (
 
 
 @pytest.fixture
-def http(sql_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
+def http(retention_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
     """Mount the real routers over one configured two-step SQL tree."""
-    tree = seed_tree(sql_store, FROZEN_NOW)
-    sql_store.update_project(
+    tree = seed_tree(retention_store, FROZEN_NOW)
+    retention_store.update_project(
         tree["project"],
         ProjectUpdate(retention=RetentionSettings(archive_after_days=90)),
     )
@@ -89,8 +95,8 @@ def http(sql_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
     app.add_middleware(BaseHTTPMiddleware, dispatch=record_requests)
     for module in ROUTERS:
         app.include_router(module.router)
-        monkeypatch.setattr(module, "zen_store", lambda: sql_store)
-    monkeypatch.setattr(utils, "zen_store", lambda: sql_store)
+        monkeypatch.setattr(module, "zen_store", lambda: retention_store)
+    monkeypatch.setattr(utils, "zen_store", lambda: retention_store)
     app.dependency_overrides[authorize] = lambda: Mock()
     app.dependency_overrides[workload_manager_enabled] = lambda: None
     pending: list[Any] = []
@@ -106,7 +112,7 @@ def http(sql_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
             client=client,
             tree=tree,
             pending=pending,
-            store=sql_store,
+            store=retention_store,
             storage=storage,
             original_submit=original_submit,
         )
@@ -395,10 +401,10 @@ def test_worker_reauthorization_failure_is_classified(
 
 
 def test_status_reports_an_unloadable_store_as_unconfigured(
-    sql_store, monkeypatch
+    retention_store, monkeypatch
 ) -> None:
     """Status distinguishes a configured ID from a loadable store."""
-    project = sql_store.list_projects(ProjectFilter()).items[0].id
+    project = retention_store.list_projects(ProjectFilter()).items[0].id
 
     def unavailable(_: SqlZenStore) -> None:
         raise ExecutionRetentionUnavailableError("unavailable")
@@ -406,4 +412,7 @@ def test_status_reports_an_unloadable_store_as_unconfigured(
     monkeypatch.setattr(
         SqlZenStore, "archive_artifact_store", property(unavailable)
     )
-    assert sql_store.get_retention_status(project).archive_configured is False
+    assert (
+        retention_store.get_retention_status(project).archive_configured
+        is False
+    )

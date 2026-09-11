@@ -32,10 +32,16 @@ This fixture was intentionally replaced while defining the initial V1 format;
 no deployed bundles predate it. Do not regenerate it merely to make a later
 compatibility test pass. There are no legacy metadata sections or adapters.
 
-The MySQL concurrency tier is opt-in. No CI workflow sets
-`ZENML_RETENTION_TEST_MYSQL_URL`; normal local and CI-style runs should exclude
-it explicitly:
+Execution retention tests run only on MySQL. Point
+`ZENML_RETENTION_TEST_MYSQL_URL` at a disposable server; each test session
+creates and drops its own database:
 
 ```sh
-pytest tests/unit/zen_stores/retention -m "not retention_mysql"
+docker run --name zenml-retention-mysql --rm -d -p 3307:3306 \
+  -e MYSQL_ROOT_PASSWORD=<local-only> mysql:8
+ZENML_RETENTION_TEST_MYSQL_URL=mysql://root:<local-only>@127.0.0.1:3307 \
+  pytest tests/unit/zen_stores/retention
 ```
+
+Without the variable the tests skip. CI passes `--require-retention-mysql` so
+a missing database fails instead.

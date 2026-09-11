@@ -3,8 +3,9 @@
 
 The exact canaries were measured against develop ``10a0a3033e`` (through
 resource pools v2) on 2026-09-11 using its store bodies with current schemas
-and dependencies. Other assertions compare paths
-within this build so unrelated query changes do not inflate fixed ceilings.
+and dependencies. MySQL starts transactions implicitly, so no ``BEGIN`` is
+counted. Other assertions compare paths within this build so unrelated query
+changes do not inflate fixed ceilings.
 """
 
 import re
@@ -34,8 +35,8 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.retention import fences
 
 ATOMIC_BASE_CANARIES = {
-    "get_run": {"SELECT": 7, "BEGIN": 1},
-    "list_run_steps": {"SELECT": 12, "BEGIN": 1},
+    "get_run": {"SELECT": 7},
+    "list_run_steps": {"SELECT": 12},
 }
 
 
@@ -69,57 +70,62 @@ def header_read(store, ids, operation):
 
 
 @pytest.mark.parametrize("operation", ATOMIC_BASE_CANARIES)
-def test_hot_read_statement_canary(sql_store, tree_factory, operation):
+def test_hot_read_statement_canary(retention_store, tree_factory, operation):
     """Keep two exact prerequisite comparisons as query-plan canaries."""
-    ids = tree_factory(sql_store)
+    ids = tree_factory(retention_store)
     reads = {
-        "get_run": partial(sql_store.get_run, ids.run),
+        "get_run": partial(retention_store.get_run, ids.run),
         "list_run_steps": partial(
-            sql_store.list_run_steps,
+            retention_store.list_run_steps,
             StepRunFilter(project=ids.project),
             hydrate=True,
         ),
     }
     reads[operation]()
-    with count_statements(sql_store) as statements:
+    with count_statements(retention_store) as statements:
         reads[operation]()
     assert dict(statements) == ATOMIC_BASE_CANARIES[operation]
 
 
 @pytest.mark.parametrize("operation", ("run", "step", "snapshot", "step_list"))
 def test_archive_marker_adds_no_header_read_statements(
-    sql_store, tree_factory, archive_one_tree, operation
+    retention_store, tree_factory, archive_one_tree, operation
 ):
     """A marker adds no SQL work to an identity-only read."""
-    cold = tree_factory(sql_store)
-    archive_one_tree(sql_store, cold)
+    cold = tree_factory(retention_store)
+    archive_one_tree(retention_store, cold)
     # Archival is project-wide, so the comparison tree must exist only after it.
-    hot = tree_factory(sql_store)
-    assert sql_store.get_run(cold.run, hydrate=False).archive_bundle_id
-    assert sql_store.get_snapshot(
+    hot = tree_factory(retention_store)
+    assert retention_store.get_run(cold.run, hydrate=False).archive_bundle_id
+    assert retention_store.get_snapshot(
         cold.snapshot, hydrate=False
     ).archive_bundle_id
-    assert sql_store.get_run(hot.run, hydrate=False).archive_bundle_id is None
     assert (
-        sql_store.get_snapshot(hot.snapshot, hydrate=False).archive_bundle_id
+        retention_store.get_run(hot.run, hydrate=False).archive_bundle_id
         is None
     )
-    with count_statements(sql_store) as hot_statements:
-        header_read(sql_store, hot, operation)
-    with count_statements(sql_store) as cold_statements:
-        header_read(sql_store, cold, operation)
+    assert (
+        retention_store.get_snapshot(
+            hot.snapshot, hydrate=False
+        ).archive_bundle_id
+        is None
+    )
+    with count_statements(retention_store) as hot_statements:
+        header_read(retention_store, hot, operation)
+    with count_statements(retention_store) as cold_statements:
+        header_read(retention_store, cold, operation)
     assert cold_statements == hot_statements
 
 
 def test_execution_insert_fence_adds_locking_statements(
-    sql_store, tree_factory, monkeypatch
+    retention_store, tree_factory, monkeypatch
 ):
-    """The SQLite guard begins its transaction before two locking reads."""
-    ids = tree_factory(sql_store)
+    """The insert guard adds exactly two locking reads."""
+    ids = tree_factory(retention_store)
 
     def insert_metadata():
         key = uuid4().hex
-        sql_store.create_run_metadata(
+        retention_store.create_run_metadata(
             RunMetadataRequest(
                 project=ids.project,
                 resources=[
@@ -134,53 +140,53 @@ def test_execution_insert_fence_adds_locking_statements(
         )
 
     insert_metadata()
-    with count_statements(sql_store) as protected:
+    with count_statements(retention_store) as protected:
         insert_metadata()
     monkeypatch.setattr(
         fences, "protect_inserts", lambda *args, **kwargs: None
     )
-    with count_statements(sql_store) as unprotected:
+    with count_statements(retention_store) as unprotected:
         insert_metadata()
-    assert protected == unprotected + Counter({"SELECT": 2, "BEGIN": 1})
+    assert protected == unprotected + Counter({"SELECT": 2})
 
 
 def test_header_lists_survive_unavailable_storage(
-    sql_store, tree_factory, archive_one_tree, storage, monkeypatch
+    retention_store, tree_factory, archive_one_tree, storage, monkeypatch
 ):
     """Identity lists stay available while hydrated reads map outage to 503."""
-    ids = tree_factory(sql_store)
-    archive_one_tree(sql_store, ids)
+    ids = tree_factory(retention_store)
+    archive_one_tree(retention_store, ids)
     opened = Mock(side_effect=OSError("storage unavailable"))
     monkeypatch.setattr(storage, "open", opened)
     for method, filters in (
-        (sql_store.list_runs, PipelineRunFilter(project=ids.project)),
-        (sql_store.list_run_steps, StepRunFilter(project=ids.project)),
+        (retention_store.list_runs, PipelineRunFilter(project=ids.project)),
+        (retention_store.list_run_steps, StepRunFilter(project=ids.project)),
         (
-            sql_store.list_snapshots,
+            retention_store.list_snapshots,
             PipelineSnapshotFilter(project=ids.project),
         ),
     ):
         assert method(filters, hydrate=False).items
     opened.assert_not_called()
     with pytest.raises(ExecutionRetentionUnavailableError) as error:
-        sql_store.get_run(ids.run)
+        retention_store.get_run(ids.run)
     assert http_exception_from_error(error.value).status_code == 503
 
 
 @pytest.mark.parametrize("kind", ["runs", "steps"])
 def test_hydrated_lists_require_one_bundle(
-    sql_store, tree_factory, archive_one_tree, storage, monkeypatch, kind
+    retention_store, tree_factory, archive_one_tree, storage, monkeypatch, kind
 ):
     """Hydrate one bundle and reject mixed bundles before object access."""
-    trees = [tree_factory(sql_store), tree_factory(sql_store)]
+    trees = [tree_factory(retention_store), tree_factory(retention_store)]
     for tree in trees:
-        archive_one_tree(sql_store, tree)
+        archive_one_tree(retention_store, tree)
     if kind == "runs":
-        read = sql_store.list_runs
+        read = retention_store.list_runs
         one = PipelineRunFilter(snapshot_id=trees[0].snapshot)
         mixed = PipelineRunFilter(project=trees[0].project, size=2)
     else:
-        read = sql_store.list_run_steps
+        read = retention_store.list_run_steps
         one = StepRunFilter(pipeline_run_id=trees[0].run)
         mixed = StepRunFilter(project=trees[0].project, size=4)
     assert read(one, hydrate=True).items

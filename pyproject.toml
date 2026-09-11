@@ -204,7 +204,6 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-markers = ["retention_mysql: local MySQL concurrency and round-trip tier"]
 filterwarnings = ["ignore::DeprecationWarning"]
 log_cli = false
 log_cli_level = "INFO"

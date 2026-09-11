@@ -91,17 +91,19 @@ def restored_bundle(
     )
 
 
-def test_policy_round_trip_validation_and_required_preview(sql_store) -> None:
+def test_policy_round_trip_validation_and_required_preview(
+    retention_store,
+) -> None:
     """Policies stay disabled by default and invalid bounds fail early."""
-    root = seed_tree(sql_store, NOW)
-    project = sql_store.get_project(root["project"])
+    root = seed_tree(retention_store, NOW)
+    project = retention_store.get_project(root["project"])
     assert project.retention.archive_after_days is None
-    assert sql_store.retention_dry_run(project).eligible_tree_count == 0
+    assert retention_store.retention_dry_run(project).eligible_tree_count == 0
     policy = RetentionSettings(archive_after_days=180, max_trees=20)
-    sql_store.update_project(project.id, ProjectUpdate(retention=policy))
-    project = sql_store.get_project(project.id)
+    retention_store.update_project(project.id, ProjectUpdate(retention=policy))
+    project = retention_store.get_project(project.id)
     assert project.retention == policy
-    assert sql_store.retention_dry_run(project).eligible_tree_count == 0
+    assert retention_store.retention_dry_run(project).eligible_tree_count == 0
 
     for values in (
         {"archive_after_days": 6},
@@ -119,10 +121,10 @@ def test_policy_round_trip_validation_and_required_preview(sql_store) -> None:
 
 
 def test_archive_markers_filter_headers_and_preserve_run_pins(
-    sql_store,
+    retention_store,
 ) -> None:
     """Public markers split header lists while run pins update explicitly."""
-    project = sql_store.list_projects(ProjectFilter()).items[0].id
+    project = retention_store.list_projects(ProjectFilter()).items[0].id
     bundle = ArchiveBundleSchema(
         project_id=project,
         uri="s3://archive/bundle",
@@ -131,20 +133,20 @@ def test_archive_markers_filter_headers_and_preserve_run_pins(
         format_version=1,
         status=ArchiveBundleStatus.COMPLETE,
     )
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         session.add(bundle)
         session.commit()
         session.refresh(bundle)
-    live = seed_tree(sql_store, NOW)
-    archived = seed_tree(sql_store, NOW, bundle_id=bundle.id)
+    live = seed_tree(retention_store, NOW)
+    archived = seed_tree(retention_store, NOW, bundle_id=bundle.id)
     listings = {
-        "run": lambda value: sql_store.list_runs(
+        "run": lambda value: retention_store.list_runs(
             PipelineRunFilter(project=project, archive_bundle_id=value)
         ),
-        "step": lambda value: sql_store.list_run_steps(
+        "step": lambda value: retention_store.list_run_steps(
             StepRunFilter(project=project, archive_bundle_id=value)
         ),
-        "snapshot": lambda value: sql_store.list_snapshots(
+        "snapshot": lambda value: retention_store.list_snapshots(
             PipelineSnapshotFilter(project=project, archive_bundle_id=value)
         ),
     }
@@ -163,22 +165,24 @@ def test_archive_markers_filter_headers_and_preserve_run_pins(
         assert {item.id for item in read("isnotnull:").items} == cold_ids
         assert {item.id for item in read(bundle.id).items} == cold_ids
 
-    assert sql_store.get_run(live["run"]).retain is False
-    sql_store.update_run(live["run"], PipelineRunUpdate(retain=True))
-    untouched = sql_store.update_run(
+    assert retention_store.get_run(live["run"]).retain is False
+    retention_store.update_run(live["run"], PipelineRunUpdate(retain=True))
+    untouched = retention_store.update_run(
         live["run"], PipelineRunUpdate(add_tags=["x"])
     )
     assert untouched.retain is True
 
 
-def test_pending_bundle_allows_an_incomplete_descriptor(sql_store) -> None:
+def test_pending_bundle_allows_an_incomplete_descriptor(
+    retention_store,
+) -> None:
     """A pending claim exists before its storage descriptor is known."""
     pending = ArchiveBundleSchema(
-        project_id=sql_store.list_projects(ProjectFilter()).items[0].id,
+        project_id=retention_store.list_projects(ProjectFilter()).items[0].id,
         format_version=1,
         status=ArchiveBundleStatus.PENDING,
     )
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         session.add(pending)
         session.commit()
         session.refresh(pending)
@@ -201,10 +205,12 @@ def test_pending_bundle_allows_an_incomplete_descriptor(sql_store) -> None:
         ("restored_grace", "restored_grace"),
     ],
 )
-def test_each_exclusion_family(sql_store, rule: str, expected: str) -> None:
+def test_each_exclusion_family(
+    retention_store, rule: str, expected: str
+) -> None:
     """Each safety rule excludes the whole tree with one stable reason."""
-    root = seed_tree(sql_store, NOW)
-    child = seed_tree(sql_store, NOW, root["run"])
+    root = seed_tree(retention_store, NOW)
+    child = seed_tree(retention_store, NOW, root["run"])
     simple = {
         "not_terminal": (
             PipelineRunSchema,
@@ -228,9 +234,9 @@ def test_each_exclusion_family(sql_store, rule: str, expected: str) -> None:
         ),
     }
     if mutation := simple.get(rule):
-        update_record(sql_store, mutation[0], mutation[1], **mutation[2])
+        update_record(retention_store, mutation[0], mutation[1], **mutation[2])
 
-    with Session(sql_store.engine) as session:
+    with Session(retention_store.engine) as session:
         if rule == "model_link":
             model = ModelSchema(
                 project_id=root["project"],
@@ -268,7 +274,9 @@ def test_each_exclusion_family(sql_store, rule: str, expected: str) -> None:
         elif rule == "resumable_failed_root":
             build = PipelineBuildSchema(
                 project_id=root["project"],
-                stack_id=sql_store.list_stacks(StackFilter()).items[0].id,
+                stack_id=retention_store.list_stacks(StackFilter())
+                .items[0]
+                .id,
                 images="{}",
                 is_local=False,
                 contains_code=True,
@@ -282,24 +290,24 @@ def test_each_exclusion_family(sql_store, rule: str, expected: str) -> None:
             session.add(restored_bundle(root))
         session.commit()
 
-    candidate = select_trees(sql_store, root["project"]).candidates[0]
+    candidate = select_trees(retention_store, root["project"]).candidates[0]
     assert candidate.exclusion == expected
     assert expected in RetentionTreeEstimate.EXCLUSION_DESCRIPTIONS
     assert set(candidate.tree_run_ids) == {root["run"], child["run"]}
 
 
-def test_overlapping_exclusions_report_one_reason(sql_store) -> None:
+def test_overlapping_exclusions_report_one_reason(retention_store) -> None:
     """Reason precedence stays stable when multiple protections apply."""
-    root = seed_tree(sql_store, NOW)
+    root = seed_tree(retention_store, NOW)
     update_record(
-        sql_store,
+        retention_store,
         PipelineRunSchema,
         root["run"],
         retain=True,
         in_progress=True,
     )
     assert (
-        select_trees(sql_store, root["project"]).candidates[0].exclusion
+        select_trees(retention_store, root["project"]).candidates[0].exclusion
         == "pinned"
     )
 
@@ -308,10 +316,13 @@ def test_overlapping_exclusions_report_one_reason(sql_store) -> None:
     "owner",
     ["shared", "deployment", "name"],
 )
-def test_snapshot_ownership_stays_hot(sql_store, owner: str) -> None:
+def test_snapshot_ownership_stays_hot(retention_store, owner: str) -> None:
     """Shared and operational snapshots remain in SQL without blocking the tree."""
-    root, other = seed_tree(sql_store, NOW), seed_tree(sql_store, NOW, age=1)
-    with Session(sql_store.engine) as session:
+    root, other = (
+        seed_tree(retention_store, NOW),
+        seed_tree(retention_store, NOW, age=1),
+    )
+    with Session(retention_store.engine) as session:
         snapshot = session.get(PipelineSnapshotSchema, root["snapshot"])
         assert snapshot is not None
         if owner == "shared":
@@ -330,22 +341,22 @@ def test_snapshot_ownership_stays_hot(sql_store, owner: str) -> None:
         else:
             snapshot.name = "named"
         session.commit()
-    candidate = select_trees(sql_store, root["project"]).candidates[0]
+    candidate = select_trees(retention_store, root["project"]).candidates[0]
     assert candidate.exclusion is None
     assert not candidate.snapshot_ids
     assert candidate.retained_details["snapshot_ownership"] == 1
 
 
-def test_grace_uses_latest_authoritative_restore(sql_store) -> None:
+def test_grace_uses_latest_authoritative_restore(retention_store) -> None:
     """New attempts cannot hide grace, while its exact boundary expires."""
-    root = seed_tree(sql_store, NOW)
-    with Session(sql_store.engine) as session:
+    root = seed_tree(retention_store, NOW)
+    with Session(retention_store.engine) as session:
         old = restored_bundle(root, age=30)
         old.created = NOW - timedelta(days=40)
         session.add_all([old, restored_bundle(root, status="pending")])
         session.commit()
     assert (
-        select_trees(sql_store, root["project"]).candidates[0].exclusion
+        select_trees(retention_store, root["project"]).candidates[0].exclusion
         is None
     )
 
@@ -353,39 +364,44 @@ def test_grace_uses_latest_authoritative_restore(sql_store) -> None:
 @pytest.mark.parametrize(
     "defect", ["incomplete_tree", "archived_step", "foreign_project"]
 )
-def test_malformed_membership_fails_closed(sql_store, defect: str) -> None:
+def test_malformed_membership_fails_closed(
+    retention_store, defect: str
+) -> None:
     """Partial archive state and cross-project tree membership stay hot."""
-    root = seed_tree(sql_store, NOW)
-    child = seed_tree(sql_store, NOW, root["run"])
+    root = seed_tree(retention_store, NOW)
+    child = seed_tree(retention_store, NOW, root["run"])
     if defect == "incomplete_tree":
         update_record(
-            sql_store, PipelineRunSchema, child["run"], root_run_id=None
+            retention_store, PipelineRunSchema, child["run"], root_run_id=None
         )
     elif defect == "archived_step":
         update_record(
-            sql_store,
+            retention_store,
             StepRunSchema,
             child["step"],
             archive_bundle_id=uuid4(),
         )
     else:
-        project = sql_store.create_project(
+        project = retention_store.create_project(
             ProjectRequest(name="other-project")
         )
         update_record(
-            sql_store, PipelineRunSchema, child["run"], project_id=project.id
+            retention_store,
+            PipelineRunSchema,
+            child["run"],
+            project_id=project.id,
         )
     assert (
-        select_trees(sql_store, root["project"]).candidates[0].exclusion
+        select_trees(retention_store, root["project"]).candidates[0].exclusion
         == "not_eligible"
     )
 
 
-def test_fixed_estimate_excludes_hot_metadata(sql_store) -> None:
+def test_fixed_estimate_excludes_hot_metadata(retention_store) -> None:
     """Only archived detail rows consume the fixed-weight budget."""
-    root = seed_tree(sql_store, NOW)
-    baseline = select_trees(sql_store, root["project"]).candidates[0]
-    with Session(sql_store.engine) as session:
+    root = seed_tree(retention_store, NOW)
+    baseline = select_trees(retention_store, root["project"]).candidates[0]
+    with Session(retention_store.engine) as session:
         value = RunMetadataSchema(
             project_id=root["project"],
             key="metric",
@@ -402,7 +418,7 @@ def test_fixed_estimate_excludes_hot_metadata(sql_store) -> None:
             )
         )
         session.commit()
-    actual = select_trees(sql_store, root["project"]).candidates[0]
+    actual = select_trees(retention_store, root["project"]).candidates[0]
     assert (actual.row_count, actual.estimated_bytes) == (
         baseline.row_count,
         baseline.estimated_bytes,
@@ -419,16 +435,16 @@ def test_fixed_estimate_excludes_hot_metadata(sql_store) -> None:
     ],
 )
 def test_invocation_limits_never_split_trees(
-    sql_store,
+    retention_store,
     limits: dict[str, int],
     reason: str | None,
     count: int,
     truncated: bool,
 ) -> None:
     """Discovery and size bounds return whole trees with explicit reasons."""
-    first = seed_tree(sql_store, NOW, age=110)
-    seed_tree(sql_store, NOW)
-    result = select_trees(sql_store, first["project"], **limits)
+    first = seed_tree(retention_store, NOW, age=110)
+    seed_tree(retention_store, NOW)
+    result = select_trees(retention_store, first["project"], **limits)
     assert len(result.candidates) == count and result.truncated is truncated
     assert result.candidates[0].exclusion == reason
 
@@ -436,10 +452,12 @@ def test_invocation_limits_never_split_trees(
 @pytest.mark.parametrize(
     "ceiling,extra", [("row_limit", 9_995), ("byte_limit", 2_043)]
 )
-def test_bundle_format_ceiling(sql_store, ceiling: str, extra: int) -> None:
+def test_bundle_format_ceiling(
+    retention_store, ceiling: str, extra: int
+) -> None:
     """Invocation capacity never admits an indivisible format-oversized tree."""
-    root = seed_tree(sql_store, NOW)
-    with Session(sql_store.engine) as session:
+    root = seed_tree(retention_store, NOW)
+    with Session(retention_store.engine) as session:
         session.add_all(
             StepConfigurationSchema(
                 name=f"extra-{index}",
@@ -451,19 +469,19 @@ def test_bundle_format_ceiling(sql_store, ceiling: str, extra: int) -> None:
         )
         session.commit()
     assert (
-        select_trees(sql_store, root["project"]).candidates[0].exclusion
+        select_trees(retention_store, root["project"]).candidates[0].exclusion
         == ceiling
     )
 
 
 def test_preview_continues_after_oversize_then_stops_at_pass_budget(
-    sql_store,
+    retention_store,
 ) -> None:
     """Per-tree oversize continues scanning; aggregate exhaustion pauses it."""
-    oldest = seed_tree(sql_store, NOW, age=120)
-    middle = seed_tree(sql_store, NOW, age=110)
-    latest = seed_tree(sql_store, NOW, age=100)
-    with Session(sql_store.engine) as session:
+    oldest = seed_tree(retention_store, NOW, age=120)
+    middle = seed_tree(retention_store, NOW, age=110)
+    latest = seed_tree(retention_store, NOW, age=100)
+    with Session(retention_store.engine) as session:
         session.add_all(
             StepConfigurationSchema(
                 name=f"extra-{index}",
@@ -474,7 +492,9 @@ def test_preview_continues_after_oversize_then_stops_at_pass_budget(
             for index in range(3)
         )
         session.commit()
-    result = select_trees(sql_store, oldest["project"], max_bytes=64 * 1024)
+    result = select_trees(
+        retention_store, oldest["project"], max_bytes=64 * 1024
+    )
     assert [tree.root_run_id for tree in result.candidates] == [
         oldest["run"],
         middle["run"],
@@ -488,14 +508,14 @@ def test_preview_continues_after_oversize_then_stops_at_pass_budget(
     assert result.truncated
 
 
-def test_self_referencing_root_is_canonical(sql_store) -> None:
+def test_self_referencing_root_is_canonical(retention_store) -> None:
     """Both persisted root encodings identify the same eligible tree."""
-    root = seed_tree(sql_store, NOW)
+    root = seed_tree(retention_store, NOW)
     update_record(
-        sql_store,
+        retention_store,
         PipelineRunSchema,
         root["run"],
         root_run_id=root["run"],
     )
-    candidate = select_trees(sql_store, root["project"]).candidates[0]
+    candidate = select_trees(retention_store, root["project"]).candidates[0]
     assert candidate.root_run_id == root["run"] and candidate.exclusion is None

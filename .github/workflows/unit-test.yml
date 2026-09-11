@@ -128,7 +128,29 @@ jobs:
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
+      # Execution retention only runs on MySQL. Hosted macOS and Windows
+      # runners have no Docker, so their retention tests skip; Ubuntu requires
+      # them so the suite cannot silently vanish from CI.
+      - name: Start MySQL for execution retention tests
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          docker run --name zenml-retention-mysql --rm -d -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD=password mysql:8
+          # A TCP ping only answers once initialization has finished, because
+          # the temporary bootstrap server listens on the socket only.
+          for _ in $(seq 1 90); do
+            if docker exec zenml-retention-mysql mysqladmin --protocol=tcp \
+              -h127.0.0.1 -uroot -ppassword ping --silent; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL did not become ready" >&2
+          exit 1
       - name: Run unit tests
+        env:
+          ZENML_RETENTION_TEST_MYSQL_URL: ${{ inputs.os == 'ubuntu-latest' && 'mysql://root:password@127.0.0.1:3306' || '' }}
+          PYTEST_ADDOPTS: ${{ inputs.os == 'ubuntu-latest' && '--require-retention-mysql' || '' }}
         run: |
           bash scripts/test-coverage-xml.sh unit
       - name: Setup tmate session after tests

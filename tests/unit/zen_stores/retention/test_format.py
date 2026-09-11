@@ -133,7 +133,7 @@ def test_future_format_preserves_compatibility_message(
         )
 
 
-def test_frozen_v1_restores_current_schema(sql_store, storage):
+def test_frozen_v1_restores_current_schema(retention_store, storage):
     """Restore the checked-in metadata-free V1 bytes into today's SQL schema."""
     fixtures = Path(__file__).parent / "fixtures"
     manifest_bytes = (fixtures / "v1-manifest.json").read_bytes()
@@ -194,11 +194,11 @@ def test_frozen_v1_restores_current_schema(sql_store, storage):
                         if isinstance(sql_type, Uuid)
                         else datetime.fromisoformat(value)
                     )
-    insert_rows(sql_store, cold)
-    restored = sql_store.restore_pipeline_run(manifest.root_run_id)
+    insert_rows(retention_store, cold)
+    restored = retention_store.restore_pipeline_run(manifest.root_run_id)
     assert restored.outcome == RetentionOutcome.SUCCEEDED
     actual = json.loads(
-        json.dumps(read_tables(sql_store), default=pydantic_encoder)
+        json.dumps(read_tables(retention_store), default=pydantic_encoder)
     )
     for name in TABLE_ORDER:
         assert actual[name] == fixture["before"][name], name

@@ -1,7 +1,6 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Small SQL trees and public archive operations shared by both database tiers."""
+"""Small SQL trees and public archive operations for the MySQL retention suite."""
 
-import os
 from datetime import timedelta
 from typing import Any, Dict, List
 from uuid import UUID, uuid4
@@ -21,10 +20,7 @@ from zenml.artifact_stores.local_artifact_store import (
 from zenml.enums import RetentionOutcome, StackComponentType
 from zenml.models import ProjectFilter, ProjectUpdate
 from zenml.models.v2.misc.retention import RetentionSettings
-from zenml.zen_stores.sql_zen_store import (
-    SqlZenStore,
-    SqlZenStoreConfiguration,
-)
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
@@ -143,16 +139,3 @@ def tree_factory(NOW):
         )
 
     return create
-
-
-@pytest.fixture
-def mysql_store() -> SqlZenStore:
-    """Use only the explicitly supplied isolated MySQL database."""
-    url = os.environ.get("ZENML_RETENTION_TEST_MYSQL_URL")
-    if not url:
-        pytest.skip("Set ZENML_RETENTION_TEST_MYSQL_URL for the MySQL tier.")
-    store = SqlZenStore(
-        config=SqlZenStoreConfiguration(url=url),
-    )
-    assert store.engine.dialect.name == "mysql"
-    return store
