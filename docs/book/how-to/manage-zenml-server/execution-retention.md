@@ -169,8 +169,10 @@ by a stopped server process.
 ## What users see
 
 Archived runs list normally when `hydrate=False`. Hydrated reads fetch and
-verify archived detail automatically. On an archived step,
-`StepRunResponseMetadata.snapshot_id` and `step_configuration` may be `None`.
+verify archived detail automatically, so an archived run, step, or snapshot
+returns the same response it returned before archiving. Archiving never clears
+a step's `snapshot_id`; only legacy steps recorded without a snapshot report it
+as `None`, archived or not.
 A hydrated run or step list returns detail only when all cold rows on its page
 belong to one bundle. A mixed-bundle page returns **409**; narrow the filter, or
 list without details with `hydrate=False` in the client and by omitting

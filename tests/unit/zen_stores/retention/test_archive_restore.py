@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from threading import Event, current_thread
 from unittest.mock import Mock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import event, select, update
@@ -41,6 +41,7 @@ from zenml.models import (
     StackFilter,
     StepRunFilter,
     StepRunRequest,
+    StepRunResponseMetadata,
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.retention import RetentionSettings
@@ -908,3 +909,25 @@ def test_run_creation_rechecks_archival_after_index_allocation(
         ids.snapshot, hydrate=False
     ).archive_bundle_id
     assert sql_store.list_runs(runs).total == before
+
+
+class BaselineStepRunResponseMetadata(StepRunResponseMetadata):
+    """Step metadata as released clients declare it, with a required snapshot."""
+
+    snapshot_id: UUID
+
+
+@pytest.mark.parametrize("kind", ["static", "dynamic"])
+def test_archived_step_metadata_keeps_the_released_client_contract(
+    sql_store, tree_factory, archive_one_tree, storage, kind
+):
+    """Archived steps keep snapshot_id, so older clients still deserialize them."""
+    ids = tree_factory(sql_store, kind)
+    archive_one_tree(sql_store, ids)
+
+    step = sql_store.get_run_step(ids.consumer)
+    assert step.archive_bundle_id is not None
+    metadata = BaselineStepRunResponseMetadata.model_validate_json(
+        step.get_metadata().model_dump_json()
+    )
+    assert metadata.snapshot_id == ids.snapshot
