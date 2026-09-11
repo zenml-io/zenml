@@ -35,7 +35,6 @@ from zenml.models.v2.misc.retention import (
     RetentionStatusResponse,
 )
 from zenml.utils.string_utils import get_human_readable_filesize
-from zenml.zen_stores.retention.eligibility import EXCLUSION_REASONS
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -105,13 +104,7 @@ def _print_retention_dry_run(result: RetentionDryRunResponse) -> None:
                 "root run": tree.root_run_id,
                 "rows": tree.rows,
                 "status": tree.exclusion_reason or "eligible",
-                "reason": (
-                    EXCLUSION_REASONS.get(
-                        tree.exclusion_reason, tree.exclusion_reason
-                    )
-                    if tree.exclusion_reason
-                    else ""
-                ),
+                "reason": tree.exclusion_description or "",
             }
             for tree in result.trees
         ],

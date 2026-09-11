@@ -43,20 +43,6 @@ from zenml.zen_stores.schemas import (
     TriggerSnapshotSchema,
 )
 
-EXCLUSION_REASONS: Dict[str, str] = {
-    "disabled": "Retention is disabled for this project.",
-    "not_eligible": "The tree is active, incomplete, or inconsistent.",
-    "not_old": "At least one run is too recent.",
-    "pinned": "At least one run is marked for retention.",
-    "in_progress_dependent": "An active run depends on this execution tree.",
-    "resumable_failed_root": "The failed root run can still be resumed.",
-    "restored_grace": "The latest archive was restored within its grace period.",
-    "model_link": "A model version still links to this execution tree.",
-    "row_limit": "The execution tree exceeds the row limit.",
-    "byte_limit": "The execution tree exceeds the byte limit.",
-    "pass_budget": "The retention pass reached its remaining row budget.",
-}
-
 # Stable logical weights keep previews and pass budgets cheap and predictable.
 # They are deliberately conservative proxies, not measurements of SQL storage
 # or claims about physical database savings.

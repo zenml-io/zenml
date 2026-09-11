@@ -183,3 +183,21 @@ def test_status_and_restore_acceptance_are_scalar_and_actionable(
         unstyle(restore.output).split()
     )
     assert "None" not in restore.output
+
+
+@pytest.mark.parametrize(
+    ("reason", "description"),
+    [
+        ("not_old", "At least one run is too recent."),
+        ("reason_from_a_newer_server", "reason_from_a_newer_server"),
+        (None, None),
+    ],
+)
+def test_exclusion_descriptions_come_from_the_public_model(
+    reason, description
+) -> None:
+    """Display text is part of the shared model, not the SQL eligibility module."""
+    estimate = RetentionTreeEstimate(
+        root_run_id=UUID(int=1), exclusion_reason=reason
+    )
+    assert estimate.exclusion_description == description

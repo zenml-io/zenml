@@ -22,7 +22,11 @@ from zenml.models import (
     StackFilter,
     StepRunFilter,
 )
-from zenml.models.v2.misc.retention import RetentionLimits, RetentionSettings
+from zenml.models.v2.misc.retention import (
+    RetentionLimits,
+    RetentionSettings,
+    RetentionTreeEstimate,
+)
 from zenml.zen_stores.retention import eligibility
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
@@ -280,6 +284,7 @@ def test_each_exclusion_family(sql_store, rule: str, expected: str) -> None:
 
     candidate = select_trees(sql_store, root["project"]).candidates[0]
     assert candidate.exclusion == expected
+    assert expected in RetentionTreeEstimate.EXCLUSION_DESCRIPTIONS
     assert set(candidate.tree_run_ids) == {root["run"], child["run"]}
 
 
