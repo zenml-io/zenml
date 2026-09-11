@@ -20,7 +20,6 @@ from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, SQLModel, col
 
 from zenml.exceptions import ExecutionArchivedError
-from zenml.zen_stores.schemas.archive_detail import BundleDetail
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -40,30 +39,18 @@ class ArchivableSchema(SQLModel):
         """
         return self.archive_bundle_id is not None
 
-    def archived_detail(
-        self,
-        detail: Optional[BundleDetail],
-        run_id: Optional[UUID] = None,
-    ) -> Optional[BundleDetail]:
-        """Select where this entity's payload must be read from.
+    def require_hot(self, run_id: Optional[UUID] = None) -> None:
+        """Require execution detail to be restored before it is used.
 
         Args:
-            detail: Verified archived records, if the request loaded them.
-            run_id: Run to name in a restore command.
-
-        Returns:
-            The loaded archive index for an archived entity, or None when the
-            payload is still in this SQL row.
+            run_id: Run to name in the restore command, if known.
 
         Raises:
-            ExecutionArchivedError: Archived detail has not been loaded.
+            ExecutionArchivedError: This row's detail is archived.
         """
-        if not self.is_archived:
-            return None
-        if detail is None:
+        if self.is_archived:
             row = cast("BaseSchema", self)
             raise ExecutionArchivedError.for_entity(row.id, run_id)
-        return detail
 
     @classmethod
     def not_archived(cls) -> ColumnElement[bool]:

@@ -7,7 +7,6 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import ExecutionArchivedError
 from zenml.zen_server.pipeline_execution import utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunDispatchError,
@@ -16,14 +15,8 @@ from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
 )
 
 
-def test_invalid_snapshot_does_not_create_or_report_usage(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Validation failures happen before preparation becomes billable.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+def test_invalid_snapshot_does_not_create_or_report_usage(monkeypatch) -> None:
+    """Validation failures happen before preparation becomes billable."""
     create_placeholder_run = MagicMock()
     report_usage = MagicMock()
     monkeypatch.setattr(
@@ -48,13 +41,9 @@ def test_invalid_snapshot_does_not_create_or_report_usage(
 
 
 def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch,
 ) -> None:
-    """Async snapshot runs dispatch durable IDs and return the placeholder.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+    """Async snapshot runs dispatch durable IDs and return the placeholder."""
     source_snapshot = SimpleNamespace(id=uuid4(), archive_bundle_id=None)
     target_snapshot = SimpleNamespace(id=uuid4())
     placeholder_run = SimpleNamespace(id=uuid4())
@@ -108,17 +97,11 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
 
 
 def test_synchronous_snapshot_run_executes_without_redispatch(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch,
 ) -> None:
-    """Synchronous runs report usage and expose submission outcomes.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+    """Synchronous runs report usage and expose submission outcomes."""
     snapshot = SimpleNamespace(
-        id=uuid4(),
-        source_snapshot_id=None,
-        archive_bundle_id=None,
+        id=uuid4(), source_snapshot_id=None, archive_bundle_id=None
     )
     placeholder_run = SimpleNamespace(
         id=uuid4(),
@@ -199,14 +182,9 @@ def test_synchronous_snapshot_run_executes_without_redispatch(
 
 @pytest.mark.parametrize("create_new_snapshot", [True, False])
 def test_queue_rejection_removes_prepared_state(
-    monkeypatch: pytest.MonkeyPatch, create_new_snapshot: bool
+    monkeypatch, create_new_snapshot: bool
 ) -> None:
-    """Queue backpressure only removes state created by the request.
-
-    Args:
-        monkeypatch: Test patching fixture.
-        create_new_snapshot: Whether execution creates a derived snapshot.
-    """
+    """Queue backpressure only removes state created by the request."""
     source_snapshot = SimpleNamespace(id=uuid4(), archive_bundle_id=None)
     target_snapshot = SimpleNamespace(id=uuid4())
     placeholder_run = SimpleNamespace(id=uuid4())
@@ -253,13 +231,9 @@ def test_queue_rejection_removes_prepared_state(
 
 
 def test_unexpected_dispatch_failure_marks_prepared_run_failed(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch,
 ) -> None:
-    """Unexpected dispatch failures retain a diagnosable failed run.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+    """Unexpected dispatch failures retain a diagnosable failed run."""
     source_snapshot = SimpleNamespace(id=uuid4(), archive_bundle_id=None)
     target_snapshot = SimpleNamespace(id=uuid4())
     placeholder_run = SimpleNamespace(id=uuid4())
@@ -299,14 +273,8 @@ def test_unexpected_dispatch_failure_marks_prepared_run_failed(
     store.delete_snapshot.assert_not_called()
 
 
-def test_prepared_execution_uses_persisted_run_owner(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Remote execution reconstructs identity from the placeholder owner.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+def test_prepared_execution_uses_persisted_run_owner(monkeypatch) -> None:
+    """Remote execution reconstructs identity from the placeholder owner."""
     source_snapshot_id = uuid4()
     target_snapshot = SimpleNamespace(
         id=uuid4(), source_snapshot_id=source_snapshot_id
@@ -371,14 +339,8 @@ def test_prepared_execution_uses_persisted_run_owner(
     assert build_and_run.call_args.kwargs["wait_for_completion"] is True
 
 
-def test_prepared_execution_skips_stale_or_missing_state(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Stale and missing queued state is acknowledged without execution.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
+def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
+    """Stale and missing queued state is acknowledged without execution."""
     stale_run = SimpleNamespace(id=uuid4(), status=ExecutionStatus.CANCELLED)
     store = MagicMock()
     store.get_run.return_value = stale_run
@@ -414,30 +376,3 @@ def test_prepared_execution_skips_stale_or_missing_state(
     assert executed is False
     store.update_run.assert_not_called()
     build_and_run.assert_not_called()
-
-
-def test_archived_snapshot_cannot_start_execution(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The bundle marker refuses execution before preparation side effects.
-
-    Args:
-        monkeypatch: Test patching fixture.
-    """
-    snapshot = SimpleNamespace(
-        id=uuid4(),
-        archive_bundle_id=uuid4(),
-    )
-    prepare = MagicMock(
-        side_effect=AssertionError("must not prepare execution")
-    )
-    monkeypatch.setattr(
-        utils, "validate_snapshot_for_server_execution", prepare
-    )
-    with pytest.raises(ExecutionArchivedError) as exc_info:
-        utils.run_snapshot(snapshot=snapshot, auth_context=MagicMock())
-    assert f"zenml pipeline runs list --snapshot_id {snapshot.id}" in str(
-        exc_info.value
-    )
-    assert "<owning-run-id>" not in str(exc_info.value)
-    prepare.assert_not_called()

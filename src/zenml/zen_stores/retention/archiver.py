@@ -14,9 +14,10 @@ Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
 """
 
+from contextlib import contextmanager
 from datetime import datetime
 from time import monotonic
-from typing import Callable, ClassVar, Literal, Optional
+from typing import ClassVar, Iterator, Literal, Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import Engine, bindparam, delete, select, update
@@ -104,7 +105,6 @@ class ArchivePass:
         self.policy = policy.model_copy(deep=True)
         self.operation_id = uuid4()
         self.state = RetentionState()
-        self.state_raw: Optional[str] = None
 
     def accept(self) -> None:
         """Take over the project's pass state for this pass.
@@ -114,8 +114,7 @@ class ArchivePass:
                 pass still holds the lease.
         """
         with transactions.transaction(self.engine) as session:
-            saved_raw = self._load(session)
-            if not self._policy_matches(saved_raw):
+            if self._load(session) != self.policy:
                 raise ExecutionRetentionConflictError(
                     "The retention policy changed before the pass started."
                 )
@@ -146,7 +145,8 @@ class ArchivePass:
         """
         started = monotonic()
         try:
-            self._update(self._mark_running)
+            with self._update() as state:
+                state.last_outcome = RetentionOutcome.RUNNING
             if not self.storage.probe():
                 return self._finish(
                     RetentionOutcome.FAILED,
@@ -187,16 +187,6 @@ class ArchivePass:
                 RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
             )
 
-    @staticmethod
-    def _mark_running(state: RetentionState, now: datetime) -> None:
-        """Record that the accepted pass started working.
-
-        Args:
-            state: Saved state owned by this pass.
-            now: Current database time.
-        """
-        state.last_outcome = RetentionOutcome.RUNNING
-
     def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
         """Archive or skip one run and save the position after it.
 
@@ -220,7 +210,7 @@ class ArchivePass:
         else:
             outcome = self._archive(run, evaluated_at)
 
-        def record(state: RetentionState, now: datetime) -> None:
+        with self._update() as state:
             state.cursor = cursor
             if outcome == "archived":
                 state.archived += 1
@@ -233,8 +223,6 @@ class ArchivePass:
                 state.failed += 1
             else:
                 state.skipped += 1
-
-        self._update(record)
 
     def _archive(
         self, run: ArchivableRun, evaluated_at: datetime
@@ -389,7 +377,7 @@ class ArchivePass:
                     col(ProjectSchema.id) == self.project_id
                 )
             ).scalar_one()
-            if not self._policy_matches(saved_raw):
+            if RetentionSettings.load(saved_raw) != self.policy:
                 raise _PolicyChanged()
             fresh = inspect_run(
                 session,
@@ -436,96 +424,72 @@ class ArchivePass:
             session.flush()
             _clear_detail(session, document, bundle_id)
 
-    def _policy_matches(self, saved_raw: Optional[str]) -> bool:
-        """Tell whether the saved policy is still the one this pass accepted.
+    def _load(self, session: Session) -> RetentionSettings:
+        """Lock the project while changing its latest pass state.
+
+        This lock is held only for progress updates, never during capture,
+        storage I/O, or retirement. The operation ID still prevents a replaced
+        worker from publishing progress.
 
         Args:
-            saved_raw: Serialized policy read from the project row.
+            session: Current short progress transaction.
 
         Returns:
-            True when the saved policy equals this pass's policy.
-        """
-        return RetentionSettings.load(saved_raw) == self.policy
-
-    def _load(self, session: Session) -> Optional[str]:
-        """Read the project's saved state and policy.
-
-        Args:
-            session: Current transaction.
-
-        Returns:
-            The serialized saved policy.
+            The saved project policy.
         """
         project = session.execute(
             select(
                 col(ProjectSchema.retention_state),
                 col(ProjectSchema.retention_settings),
-            ).where(col(ProjectSchema.id) == self.project_id)
+            )
+            .where(col(ProjectSchema.id) == self.project_id)
+            .with_for_update()
         ).one()
-        self.state_raw = project.retention_state
-        self.state = RetentionState.load(self.state_raw)
-        saved_policy: Optional[str] = project.retention_settings
-        return saved_policy
+        self.state = RetentionState.load(project.retention_state)
+        return RetentionSettings.load(project.retention_settings)
 
     def _save(self, session: Session, now: datetime) -> None:
-        """Replace the saved state if nobody changed it since it was read.
+        """Save progress while holding the project row lock.
 
         Args:
-            session: Current transaction.
-            now: Current database time, used for the pass lease.
-
-        Raises:
-            ExecutionRetentionConflictError: The saved state changed.
+            session: Transaction that locked and loaded the project.
+            now: Current database time for the lease and finish timestamp.
         """
+        active = self.state.last_outcome in RetentionState.ACTIVE_OUTCOMES
         self.state.operation_expires_at = (
-            now + RetentionState.LEASE
-            if self.state.last_outcome in RetentionState.ACTIVE_OUTCOMES
-            else None
+            now + RetentionState.LEASE if active else None
         )
-        serialized = self.state.model_dump_json()
-        expected = col(ProjectSchema.retention_state)
-        statement = (
+        self.state.last_finished_at = None if active else now
+        session.execute(
             update(ProjectSchema)
-            .where(
-                col(ProjectSchema.id) == self.project_id,
-                expected.is_(None)
-                if self.state_raw is None
-                else expected == self.state_raw,
-            )
-            .values(retention_state=serialized)
+            .where(col(ProjectSchema.id) == self.project_id)
+            .values(retention_state=self.state.model_dump_json())
         )
-        if session.connection().execute(statement).rowcount != 1:
-            raise ExecutionRetentionConflictError(
-                "The project's retention state changed during the pass."
-            )
-        self.state_raw = serialized
 
+    @contextmanager
     def _update(
-        self,
-        apply: Callable[[RetentionState, datetime], None],
-        *,
-        require_policy: bool = True,
-    ) -> None:
-        """Apply a change to the saved state this pass still owns.
+        self, *, require_policy: bool = True
+    ) -> Iterator[RetentionState]:
+        """Change progress only while this pass still owns it.
 
         Args:
-            apply: Change to the freshly read state, given the database
-                time.
-            require_policy: Stop the pass if the saved policy changed.
+            require_policy: Stop if the project's policy changed.
+
+        Yields:
+            Locked state to update before committing the short transaction.
 
         Raises:
             _PassReplaced: Another pass took over the state.
             _PolicyChanged: The saved policy changed.
         """
         with transactions.transaction(self.engine) as session:
-            saved_raw = self._load(session)
+            policy = self._load(session)
             if self.state.operation_id != self.operation_id:
                 raise _PassReplaced()
-            if require_policy and not self._policy_matches(saved_raw):
+            if require_policy and policy != self.policy:
                 raise _PolicyChanged()
-            now = transactions.database_now(session)
-            apply(self.state, now)
-            self._save(session, now)
+            yield self.state
+            self._save(session, transactions.database_now(session))
 
     def _finish(
         self,
@@ -541,15 +505,11 @@ class ArchivePass:
         Returns:
             The saved state.
         """
-
-        def finish(state: RetentionState, now: datetime) -> None:
-            state.last_outcome = outcome
-            state.last_finished_at = now
-            if outcome == RetentionOutcome.SUCCEEDED:
-                state.cursor = None
-
         try:
-            self._update(finish, require_policy=False)
+            with self._update(require_policy=False) as state:
+                state.last_outcome = outcome
+                if outcome == RetentionOutcome.SUCCEEDED:
+                    state.cursor = None
         except _PassReplaced:
             pass
         if failure is not None:

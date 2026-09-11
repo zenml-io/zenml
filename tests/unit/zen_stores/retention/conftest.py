@@ -2,7 +2,6 @@
 """Pipeline runs and archive storage for the MySQL retention suite."""
 
 from datetime import timedelta
-from typing import Any, Dict, List
 from uuid import UUID
 
 import pytest
@@ -11,7 +10,6 @@ from pydantic import BaseModel, ConfigDict
 from tests.unit.zen_stores.retention.fixture_graph import (
     graph_rows,
     insert_rows,
-    read_tables,
 )
 from zenml.enums import RetentionOutcome
 from zenml.models import ProjectFilter, ProjectUpdate
@@ -46,54 +44,17 @@ def archive_run(storage):
     return archive
 
 
-@pytest.fixture
-def rows():
-    """Provide SQL snapshots for atomicity assertions."""
-    return read_tables
-
-
 class ExecutionRun(BaseModel):
     """Identify the shared two-step pipeline run."""
 
     model_config = ConfigDict(frozen=True)
 
     project: UUID
+    pipeline: UUID
     run: UUID
     snapshot: UUID
     producer: UUID
     consumer: UUID
-
-
-FixtureRows = Dict[str, List[Dict[str, Any]]]
-
-
-def configure(source: FixtureRows, kind: str) -> None:
-    """Select snapshot, step, or legacy inline configuration ownership.
-
-    Args:
-        source: Independent graph rows.
-        kind: Static, dynamic, or legacy ownership.
-    """
-    if kind == "dynamic":
-        source["pipeline_snapshot"][0]["is_dynamic"] = True
-        steps = {row["name"]: row["id"] for row in source["step_run"]}
-        for row in source["step_configuration"]:
-            row.update(snapshot_id=None, step_run_id=steps[row["name"]])
-    elif kind == "legacy":
-        snapshot = source["pipeline_snapshot"][0]
-        source["pipeline_run"][0].update(
-            snapshot_id=None,
-            pipeline_configuration=snapshot["pipeline_configuration"],
-            client_environment=snapshot["client_environment"],
-        )
-        definitions = {
-            row["name"]: row["config"] for row in source["step_configuration"]
-        }
-        for row in source["step_run"]:
-            row.update(
-                snapshot_id=None, step_configuration=definitions[row["name"]]
-            )
-        source["step_configuration"] = []
 
 
 @pytest.fixture
@@ -101,21 +62,16 @@ def run_factory(NOW):
     """Create two-step runs with snapshot, step, or inline definitions."""
 
     def create(
-        store: SqlZenStore, kind: str = "static", age_days: int = 100
+        store: SqlZenStore,
+        kind: str = "static",
+        age_days: int = 100,
+        parent: UUID | None = None,
     ) -> ExecutionRun:
-        """Build the selected ownership graph and enable a 7-day policy.
-
-        Args:
-            store: Isolated metadata store.
-            kind: Static, dynamic, or legacy configuration ownership.
-            age_days: How long ago the run finished.
-
-        Returns:
-            Created execution identities.
-        """
         project = store.list_projects(ProjectFilter()).items[0].id
-        source = graph_rows(project, NOW - timedelta(days=age_days))
-        configure(source, kind)
+        source = graph_rows(project, NOW - timedelta(days=age_days), kind)
+        source["pipeline_run"][0].update(
+            parent_run_id=parent, root_run_id=parent
+        )
         insert_rows(store, source)
         store.update_project(
             project,
@@ -123,6 +79,7 @@ def run_factory(NOW):
         )
         return ExecutionRun(
             project=project,
+            pipeline=source["pipeline"][0]["id"],
             run=source["pipeline_run"][0]["id"],
             snapshot=source["pipeline_snapshot"][0]["id"],
             producer=source["step_run"][0]["id"],

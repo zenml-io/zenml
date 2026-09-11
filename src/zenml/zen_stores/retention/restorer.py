@@ -29,8 +29,8 @@ from zenml.zen_stores.retention.format import (
     Record,
     SnapshotRecord,
     StepRecord,
+    decode,
 )
-from zenml.zen_stores.retention.reader import BundleReference
 from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
@@ -71,15 +71,25 @@ def restore_run(
             raise ExecutionRetentionIntegrityError(
                 "Archive marker has no bundle record."
             )
-        reference = BundleReference.from_schema(bundle)
-    document = reference.verify(reference.download(storage))
-    if document.run_id != run_id:
+        bundle_id, project_id = bundle.id, bundle.project_id
+        uri, size_bytes, content_hash = (
+            bundle.uri,
+            bundle.size_bytes,
+            bundle.content_hash,
+        )
+    data = storage.read(uri, size_bytes)
+    if len(data) != size_bytes:
+        raise ExecutionRetentionIntegrityError(
+            "Archive object size differs from its bundle record."
+        )
+    document = decode(data, content_hash)
+    if document.run_id != run_id or document.project_id != project_id:
         raise ExecutionRetentionIntegrityError(
             "Archive content belongs to another run."
         )
     try:
         with transactions.transaction(engine) as session:
-            return _apply(session, document, reference.bundle_id)
+            return _apply(session, document, bundle_id)
     except IntegrityError as error:
         raise ExecutionRetentionConflictError(
             "A restored configuration identity or owner is already in use."

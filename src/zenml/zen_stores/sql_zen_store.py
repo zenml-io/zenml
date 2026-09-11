@@ -24,12 +24,6 @@ from zenml.zen_stores.resource_pools.store_interface import (
 )
 from zenml.zen_stores.retention import fences, transactions
 from zenml.zen_stores.retention.archiver import ArchivePass
-from zenml.zen_stores.retention.reader import (
-    ArchiveReader,
-    FetchedBundles,
-    no_bundles,
-    resolve_references,
-)
 from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.retention.storage import ArchiveStorage
@@ -70,7 +64,6 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
-    Generic,
     List,
     Literal,
     NoReturn,
@@ -89,7 +82,6 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     SerializeAsAny,
@@ -206,8 +198,6 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     ExecutionArchivedError,
-    ExecutionRetentionConflictError,
-    ExecutionRetentionIntegrityError,
     ExecutionRetentionUnavailableError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
@@ -500,7 +490,6 @@ from zenml.zen_stores.schemas import (
     WebhookSchema,
     WebhookStatsSchema,
 )
-from zenml.zen_stores.schemas.archive_detail import BundleDetail
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
@@ -525,13 +514,6 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
-_ExecutionReadValue = TypeVar("_ExecutionReadValue")
-_ExecutionReadResult = TypeVar("_ExecutionReadResult")
-ExecutionDetailRow = Union[
-    PipelineRunSchema,
-    StepRunSchema,
-    PipelineSnapshotSchema,
-]
 
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
@@ -542,37 +524,6 @@ AnyIdentifiedResponse = TypeVar(
     "AnyIdentifiedResponse",
     bound=BaseIdentifiedResponse,  # type: ignore[type-arg]  # noqa: F821
 )
-
-
-class _SchemaPage(BaseModel, Generic[_ExecutionReadValue]):
-    """Keep one filtered SQL page unconverted until its detail is available."""
-
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
-
-    items: Sequence[_ExecutionReadValue]
-    total: int
-    total_pages: int
-    index: int
-    max_size: int
-
-    def to_page(
-        self, convert: Callable[[_ExecutionReadValue], AnyResponse]
-    ) -> Page[AnyResponse]:
-        """Convert each SQL item exactly once.
-
-        Args:
-            convert: Response conversion within the current read transaction.
-
-        Returns:
-            Response page preserving the original pagination metadata.
-        """
-        return Page[AnyResponse](
-            items=[convert(item) for item in self.items],
-            total=self.total,
-            total_pages=self.total_pages,
-            index=self.index,
-            max_size=self.max_size,
-        )
 
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -1251,7 +1202,6 @@ class SqlZenStore(BaseZenStore):
 
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
-    _EXECUTION_READ_RETRIES: ClassVar[int] = 2
     _RUN_HEADER_COLUMNS: ClassVar[Tuple[InstrumentedAttribute[Any], ...]] = (
         jl_arg(PipelineRunSchema.id),
         jl_arg(PipelineRunSchema.name),
@@ -1519,72 +1469,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The Domain Model representation of the DB resource
-        """
-        page = cls._filter_and_paginate_schemas(
-            session=session,
-            query=query,
-            table=table,
-            filter_model=filter_model,
-            custom_fetch=custom_fetch,
-            hydrate=hydrate,
-            apply_query_options_from_schema=apply_query_options_from_schema,
-            query_options_kwargs=query_options_kwargs,
-        )
-        return page.to_page(
-            custom_schema_to_model_conversion
-            or (
-                lambda schema: schema.to_model(
-                    include_metadata=hydrate, include_resources=True
-                )
-            )
-        )
-
-    @classmethod
-    def _filter_and_paginate_schemas(
-        cls,
-        session: Session,
-        query: Union[Select[Any], SelectOfScalar[Any]],
-        table: Type[AnySchema],
-        filter_model: BaseFilter,
-        custom_fetch: Optional[
-            Callable[
-                [
-                    Session,
-                    Union[Select[Any], SelectOfScalar[Any]],
-                    BaseFilter,
-                ],
-                Sequence[Any],
-            ]
-        ] = None,
-        hydrate: bool = False,
-        apply_query_options_from_schema: bool = False,
-        query_options_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> _SchemaPage[AnySchema]:
-        """Fetch one filtered page of SQL rows without converting responses.
-
-        Args:
-            session: The SQLModel Session
-            query: The query to execute
-            table: The table to select from
-            filter_model: The filter to use, including pagination and sorting
-            custom_fetch: Custom callable to use to fetch items from the
-                database for a given query. This is used if the items fetched
-                from the database need to be processed differently (e.g. to
-                perform additional filtering). The callable should take a
-                `Session`, a `Select` query and a `BaseFilterModel` filter as
-                arguments and return a `List` of items.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-            apply_query_options_from_schema: Flag deciding whether to apply
-                query options defined on the schema.
-            query_options_kwargs: Extra keyword arguments forwarded to the
-                schema's `get_query_options`.
-
-        Returns:
-            SQL rows and pagination metadata for deferred conversion
 
         Raises:
             ValueError: if the filtered page number is out of bounds.
+            RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
 
@@ -1665,10 +1553,30 @@ class SqlZenStore(BaseZenStore):
             )
             item_schemas = query_result.all()
 
-        return _SchemaPage(
-            items=item_schemas,
+        # Convert this page of items from schemas to models.
+        items: List[AnyResponse] = []
+        for schema in item_schemas:
+            # If a custom conversion function is provided, use it.
+            if custom_schema_to_model_conversion:
+                items.append(custom_schema_to_model_conversion(schema))
+                continue
+            # Otherwise, try to use the `to_model` method of the schema.
+            to_model = getattr(schema, "to_model", None)
+            if callable(to_model):
+                items.append(
+                    to_model(include_metadata=hydrate, include_resources=True)
+                )
+                continue
+            # If neither of the above work, raise an error.
+            raise RuntimeError(
+                f"Cannot convert schema `{schema.__class__.__name__}` to model "
+                "since it does not have a `to_model` method."
+            )
+
+        return Page[Any](
             total=total,
             total_pages=total_pages,
+            items=items,
             index=filter_model.page,
             max_size=filter_model.size,
         )
@@ -5505,35 +5413,24 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The snapshot.
         """
-
-        def load(session: Session) -> PipelineSnapshotSchema:
-            return self._get_schema_by_id(
+        with Session(self.engine) as session:
+            snapshot = self._get_schema_by_id(
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
-
-        def convert(
-            session: Session,
-            snapshot: PipelineSnapshotSchema,
-            detail: Optional[BundleDetail],
-        ) -> PipelineSnapshotResponse:
+            if authorize is not None:
+                authorize(
+                    snapshot.to_model(
+                        include_metadata=False, include_resources=False
+                    )
+                )
             return snapshot.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
                 include_config_schema=include_config_schema,
-                detail=detail,
             )
-
-        return self._read_execution_detail(
-            load=load,
-            owners=lambda snapshot: [snapshot],
-            convert=convert,
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=lambda snapshot: snapshot,
-        )
 
     def list_snapshots(
         self,
@@ -5551,17 +5448,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A page of all snapshots matching the filter criteria.
         """
-        return self._list_execution_details(
-            table=PipelineSnapshotSchema,
-            filter_model=snapshot_filter_model,
-            owners=lambda snapshot: [snapshot],
-            convert=lambda snapshot, detail: snapshot.to_model(
-                include_metadata=hydrate,
-                include_resources=True,
-                detail=detail,
-            ),
-            hydrate=hydrate,
-        )
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=snapshot_filter_model,
+                session=session,
+            )
+            query = select(PipelineSnapshotSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineSnapshotSchema,
+                filter_model=snapshot_filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
 
     def update_snapshot(
         self,
@@ -6450,9 +6350,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The DAG of the pipeline run.
         """
-
-        def load(session: Session) -> PipelineRunSchema:
-            return self._get_schema_by_id(
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
@@ -6513,24 +6412,13 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-
-        def owners(run: PipelineRunSchema) -> Sequence[ExecutionDetailRow]:
-            rows: List[ExecutionDetailRow] = [run]
-            if run.snapshot is not None:
-                rows.append(run.snapshot)
-            for step in run.step_runs:
-                if step.status == ExecutionStatus.RETRIED.value:
-                    continue
-                rows.append(step)
-                if step.snapshot is not None:
-                    rows.append(step.snapshot)
-            return rows
-
-        def convert(
-            session: Session,
-            run: PipelineRunSchema,
-            detail: Optional[BundleDetail],
-        ) -> PipelineRunDAG:
+            if authorize is not None:
+                authorize(
+                    run.to_model(
+                        include_metadata=False, include_resources=False
+                    )
+                )
+            run.require_hot(run.id)
             helper = DAGGeneratorHelper()
             add_run_context(helper=helper, run=run)
             snapshot = run.snapshot
@@ -6539,21 +6427,17 @@ class SqlZenStore(BaseZenStore):
                 for step in run.step_runs
                 if step.status != ExecutionStatus.RETRIED.value
             }
-            pipeline_configuration = run.get_pipeline_configuration(detail)
+            pipeline_configuration = run.get_pipeline_configuration()
             if snapshot is None or snapshot.is_dynamic:
                 steps = {}
                 for name, configured_step in step_runs.items():
-                    configuration = (
-                        detail.step_configuration(configured_step.id)
-                        if detail is not None and configured_step.is_archived
-                        else configured_step.dynamic_config
-                    )
+                    configuration = configured_step.dynamic_config
                     step_definition = (
                         json.loads(configuration.config)
                         if configuration is not None
-                        else configured_step.get_step_configuration(
-                            detail
-                        ).model_dump(mode="json")
+                        else configured_step.get_step_configuration().model_dump(
+                            mode="json"
+                        )
                     )
                     steps[name] = DAGStepView.from_dict(
                         step_definition,
@@ -6581,9 +6465,7 @@ class SqlZenStore(BaseZenStore):
                         json.loads(config_table.config),
                         substitutions=pipeline_configuration.substitutions,
                     )
-                    for config_table in snapshot.get_step_configurations(
-                        detail=detail
-                    )
+                    for config_table in snapshot.get_step_configurations()
                 }
 
             input_artifact_rows = {}
@@ -6967,14 +6849,6 @@ class SqlZenStore(BaseZenStore):
             )
             return dag
 
-        return self._read_execution_detail(
-            load,
-            owners,
-            convert,
-            authorize=authorize,
-            permission_owner=lambda run: run,
-        )
-
     def _get_duplicate_run_name_error_message(
         self, pipeline_run_name: str
     ) -> str:
@@ -7215,9 +7089,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-
-        def load(session: Session) -> PipelineRunSchema:
-            return self._get_schema_by_id(
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
@@ -7227,28 +7100,18 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
-
-        def convert(
-            session: Session,
-            run: PipelineRunSchema,
-            detail: Optional[BundleDetail],
-        ) -> PipelineRunResponse:
+            if authorize is not None:
+                authorize(
+                    run.to_model(
+                        include_metadata=False, include_resources=False
+                    )
+                )
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
-                detail=detail,
             )
-
-        return self._read_execution_detail(
-            load=load,
-            owners=lambda run: [run, run.snapshot] if run.snapshot else [run],
-            convert=convert,
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=lambda run: run,
-        )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
         """Gets the status of a pipeline run.
@@ -7559,21 +7422,31 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs matching the filter criteria.
         """
-        return self._list_execution_details(
-            table=PipelineRunSchema,
-            filter_model=runs_filter_model,
-            owners=lambda run: [run, run.snapshot] if run.snapshot else [run],
-            convert=lambda run, detail: run.to_model(
-                include_metadata=hydrate,
-                include_resources=True,
-                include_full_metadata=include_full_metadata,
-                detail=detail,
-            ),
-            hydrate=hydrate,
-            query_options_kwargs={
-                "include_full_metadata": include_full_metadata
-            },
-        )
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=runs_filter_model,
+                session=session,
+            )
+            query = select(PipelineRunSchema)
+
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=PipelineRunSchema,
+                filter_model=runs_filter_model,
+                hydrate=hydrate,
+                custom_schema_to_model_conversion=lambda schema: (
+                    schema.to_model(
+                        include_metadata=hydrate,
+                        include_resources=True,
+                        include_full_metadata=include_full_metadata,
+                    )
+                ),
+                apply_query_options_from_schema=True,
+                query_options_kwargs={
+                    "include_full_metadata": include_full_metadata
+                },
+            )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
@@ -12796,9 +12669,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The step run.
         """
-
-        def load(session: Session) -> StepRunSchema:
-            return self._get_schema_by_id(
+        with Session(self.engine) as session:
+            step = self._get_schema_by_id(
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
@@ -12811,30 +12683,16 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-
-        def convert(
-            session: Session,
-            step: StepRunSchema,
-            detail: Optional[BundleDetail],
-        ) -> StepRunResponse:
+            if authorize is not None:
+                authorize(
+                    step.pipeline_run.to_model(
+                        include_metadata=False, include_resources=False
+                    )
+                )
             return step.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
-                detail=detail,
             )
-
-        return self._read_execution_detail(
-            load=load,
-            owners=lambda step: (
-                [step.pipeline_run, step, step.snapshot]
-                if step.snapshot
-                else [step.pipeline_run, step]
-            ),
-            convert=convert,
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=lambda step: step.pipeline_run,
-        )
 
     def list_run_steps(
         self,
@@ -12850,28 +12708,50 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            authorize: Optional permission check on every owning run header.
+
+            authorize: Optional permission check on each owning run header.
 
         Returns:
             A list of all step runs matching the filter criteria.
         """
-        return self._list_execution_details(
-            table=StepRunSchema,
-            filter_model=step_run_filter_model,
-            owners=lambda step: (
-                [step, step.pipeline_run, step.snapshot]
-                if step.snapshot
-                else [step, step.pipeline_run]
-            ),
-            convert=lambda step, detail: step.to_model(
-                include_metadata=hydrate,
-                include_resources=True,
-                detail=detail,
-            ),
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=lambda step: step.pipeline_run,
-        )
+        authorized: Set[UUID] = set()
+
+        def convert(step: StepRunSchema) -> StepRunResponse:
+            if (
+                authorize is not None
+                and step.pipeline_run_id not in authorized
+            ):
+                authorize(
+                    step.pipeline_run.to_model(
+                        include_metadata=False, include_resources=False
+                    )
+                )
+                authorized.add(step.pipeline_run_id)
+            return step.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=step_run_filter_model,
+                session=session,
+            )
+            query = select(StepRunSchema)
+            if authorize is not None:
+                query = query.options(
+                    selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+                        *self._RUN_HEADER_COLUMNS
+                    )
+                )
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StepRunSchema,
+                custom_schema_to_model_conversion=convert,
+                filter_model=step_run_filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
 
     # -------------------- Hook invocations --------------------
 
@@ -14326,245 +14206,6 @@ class SqlZenStore(BaseZenStore):
                 "Execution archiving is not configured on this server."
             )
         return ArchiveStorage.from_uri(uri)
-
-    def _list_execution_details(
-        self,
-        table: Type[AnySchema],
-        filter_model: ProjectScopedFilter,
-        owners: Callable[[AnySchema], Sequence[ExecutionDetailRow]],
-        convert: Callable[[AnySchema, Optional[BundleDetail]], AnyResponse],
-        hydrate: bool,
-        query_options_kwargs: Optional[Dict[str, Any]] = None,
-        authorize: Optional[Callable[[Any], None]] = None,
-        permission_owner: Optional[
-            Callable[[AnySchema], ExecutionDetailRow]
-        ] = None,
-    ) -> Page[AnyResponse]:
-        """Convert one authorized SQL page after resolving archived detail.
-
-        Rows are converted grouped by bundle, so only one decoded bundle is
-        alive at a time however many bundles the page touches.
-
-        Args:
-            table: Execution identity table.
-            filter_model: Project, authorization, and pagination constraints.
-            owners: Rows whose markers decide where each row's detail is.
-            convert: Response conversion from the authoritative payload.
-            hydrate: Whether responses include archived detail.
-            query_options_kwargs: Additional eager-loading options.
-            authorize: Optional permission check on each distinct owner header.
-            permission_owner: Resolve the permission owner for each page row.
-
-        Returns:
-            A filtered page converted in its final read transaction.
-        """
-
-        def load(session: Session) -> _SchemaPage[AnySchema]:
-            self._set_filter_project_id(filter_model, session)
-            return self._filter_and_paginate_schemas(
-                session=session,
-                query=select(table),
-                table=table,
-                filter_model=filter_model,
-                hydrate=hydrate,
-                apply_query_options_from_schema=True,
-                query_options_kwargs=query_options_kwargs,
-            )
-
-        def page_permission_owners(
-            page: _SchemaPage[AnySchema],
-        ) -> Sequence[ExecutionDetailRow]:
-            assert permission_owner is not None
-            by_id = {
-                owner.id: owner
-                for row in page.items
-                for owner in [permission_owner(row)]
-            }
-            return list(by_id.values())
-
-        def convert_page(
-            session: Session,
-            page: _SchemaPage[AnySchema],
-            bundles: FetchedBundles,
-        ) -> Page[AnyResponse]:
-            groups: Dict[Optional[UUID], List[int]] = {}
-            for index, row in enumerate(page.items):
-                markers = {
-                    owner.archive_bundle_id
-                    for owner in owners(row)
-                    if owner.archive_bundle_id is not None
-                }
-                if len(markers) > 1:
-                    raise ExecutionRetentionIntegrityError(
-                        "One execution's archived detail spans several "
-                        "bundles."
-                    )
-                bundle_id = markers.pop() if markers and hydrate else None
-                groups.setdefault(bundle_id, []).append(index)
-            converted: Dict[int, AnyResponse] = {}
-            for bundle_id, indexes in groups.items():
-                detail = (
-                    bundles.detail(bundle_id)
-                    if bundle_id is not None
-                    else None
-                )
-                for index in indexes:
-                    converted[index] = convert(page.items[index], detail)
-                # Release this bundle before the next one is decoded.
-                del detail
-            return Page[AnyResponse](
-                items=[converted[index] for index in range(len(page.items))],
-                total=page.total,
-                total_pages=page.total_pages,
-                index=page.index,
-                max_size=page.max_size,
-            )
-
-        return self._read_archived(
-            load=load,
-            owners=lambda page: [
-                owner for row in page.items for owner in owners(row)
-            ],
-            convert=convert_page,
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=(
-                page_permission_owners
-                if permission_owner is not None
-                else None
-            ),
-        )
-
-    def _read_execution_detail(
-        self,
-        load: Callable[[Session], _ExecutionReadValue],
-        owners: Callable[[_ExecutionReadValue], Sequence[ExecutionDetailRow]],
-        convert: Callable[
-            [Session, _ExecutionReadValue, Optional[BundleDetail]],
-            _ExecutionReadResult,
-        ],
-        *,
-        hydrate: bool = True,
-        authorize: Optional[Callable[[Any], None]] = None,
-        permission_owner: Optional[
-            Callable[
-                [_ExecutionReadValue],
-                Union[ExecutionDetailRow, Sequence[ExecutionDetailRow]],
-            ]
-        ] = None,
-    ) -> _ExecutionReadResult:
-        """Read one execution whose rows share at most one bundle.
-
-        Args:
-            load: Resolve requested identities under current filters.
-            owners: Rows whose markers decide where the detail is.
-            convert: Convert current rows and optional verified detail.
-            hydrate: Whether the response needs archived payloads.
-            authorize: Verify the permission header before conversion.
-            permission_owner: Resolve the permission header.
-
-        Returns:
-            Response produced from one current SQL snapshot.
-        """
-        return self._read_archived(
-            load=load,
-            owners=owners,
-            convert=lambda session, loaded, bundles: convert(
-                session,
-                loaded,
-                bundles.for_rows(owners(loaded)) if hydrate else None,
-            ),
-            hydrate=hydrate,
-            authorize=authorize,
-            permission_owner=permission_owner,
-        )
-
-    def _read_archived(
-        self,
-        load: Callable[[Session], _ExecutionReadValue],
-        owners: Callable[[_ExecutionReadValue], Sequence[ExecutionDetailRow]],
-        convert: Callable[
-            [Session, _ExecutionReadValue, FetchedBundles],
-            _ExecutionReadResult,
-        ],
-        *,
-        hydrate: bool,
-        authorize: Optional[Callable[[Any], None]],
-        permission_owner: Optional[
-            Callable[
-                [_ExecutionReadValue],
-                Union[ExecutionDetailRow, Sequence[ExecutionDetailRow]],
-            ]
-        ],
-    ) -> _ExecutionReadResult:
-        """Load archived objects outside SQL and recheck markers before use.
-
-        The first SQL phase authorizes the rows and resolves their bundles.
-        Objects are downloaded with no transaction open. The second SQL phase
-        reloads and reauthorizes the rows and converts them only if they
-        still point at the same bundles; a concurrent restore or archive
-        retries the read.
-
-        Args:
-            load: Resolve requested identities under current filters.
-            owners: Rows whose markers decide where the detail is.
-            convert: Convert current rows with the fetched bundles.
-            hydrate: Whether the response needs archived payloads.
-            authorize: Verify the permission header before conversion and
-                archive I/O.
-            permission_owner: Resolve the permission header independently of
-                markers.
-
-        Returns:
-            Response produced from one current SQL snapshot.
-
-        Raises:
-            ExecutionRetentionConflictError: Repeated restores or archives
-                changed the requested rows.
-            ExecutionRetentionIntegrityError: Authorization has no declared
-                permission owner.
-        """
-        if authorize is not None and permission_owner is None:
-            raise ExecutionRetentionIntegrityError(
-                "Authorizing a read requires its permission owner."
-            )
-
-        def authorize_loaded(loaded: _ExecutionReadValue) -> None:
-            if authorize is not None and permission_owner is not None:
-                headers = permission_owner(loaded)
-                if not isinstance(headers, Sequence):
-                    headers = [headers]
-                for header in headers:
-                    authorize(
-                        header.to_model(
-                            include_metadata=False, include_resources=False
-                        )
-                    )
-
-        for _ in range(self._EXECUTION_READ_RETRIES + 1):
-            with Session(self.engine) as session:
-                loaded = load(session)
-                authorize_loaded(loaded)
-                references = (
-                    resolve_references(session, owners(loaded))
-                    if hydrate
-                    else {}
-                )
-                if not references:
-                    return convert(session, loaded, no_bundles())
-            fetched = ArchiveReader(self.archive_storage).fetch(references)
-            with Session(self.engine) as session:
-                loaded = load(session)
-                authorize_loaded(loaded)
-                current = resolve_references(session, owners(loaded))
-                if not current:
-                    return convert(session, loaded, no_bundles())
-                if current != references:
-                    continue
-                return convert(session, loaded, fetched)
-        raise ExecutionRetentionConflictError(
-            "Execution history changed while loading. Retry the read."
-        )
 
     def get_step_run_owner(self, step_run_id: UUID) -> PipelineRunResponse:
         """Load the header of the run that owns a step, in one query.

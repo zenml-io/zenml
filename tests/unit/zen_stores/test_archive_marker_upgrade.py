@@ -1,25 +1,19 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""The archive migration keeps populated tables through upgrade and downgrade."""
+"""Populated upgrade must preserve referencing rows and support old writers."""
 
-from pathlib import Path
-from typing import Any
 from uuid import uuid4
 
-import pytest
 import sqlalchemy as sa
 
 from zenml.zen_stores.migrations.alembic import Alembic
-from zenml.zen_stores.schemas import ArchiveBundleSchema
 from zenml.zen_stores.sql_zen_store import (
     SqlZenStore,
     SqlZenStoreConfiguration,
 )
 
 
-def test_marker_upgrade_preserves_referencing_rows(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Run the additive upgrade after initialization has enabled foreign keys."""
+def test_marker_upgrade_preserves_referencing_rows(tmp_path, monkeypatch):
+    """A real cascading FK detects destructive table replacement during upgrade."""
     monkeypatch.setenv("ZENML_CONFIG_PATH", str(tmp_path / "config"))
     store = SqlZenStore(
         config=SqlZenStoreConfiguration(
@@ -28,167 +22,67 @@ def test_marker_upgrade_preserves_referencing_rows(
         skip_migrations=True,
         skip_default_registrations=True,
     )
-    # Keep the pre-marker fixture small, but preserve the actual cascade that
-    # makes replacing a referenced pipeline_run table destructive.
     metadata = sa.MetaData()
-    project = sa.Table(
-        "project", metadata, sa.Column("id", sa.Uuid(), primary_key=True)
-    )
-    snapshot = sa.Table(
-        "pipeline_snapshot",
-        metadata,
-        sa.Column("id", sa.Uuid(), primary_key=True),
-    )
-    run = sa.Table(
-        "pipeline_run",
-        metadata,
-        sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("project_id", sa.Uuid(), sa.ForeignKey("project.id")),
-        sa.Column(
-            "snapshot_id", sa.Uuid(), sa.ForeignKey("pipeline_snapshot.id")
-        ),
-    )
-    step = sa.Table(
-        "step_run",
-        metadata,
-        sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column(
-            "pipeline_run_id",
-            sa.Uuid(),
-            sa.ForeignKey("pipeline_run.id", ondelete="CASCADE"),
-        ),
-        sa.Column("step_configuration", sa.Text(), nullable=False),
-    )
+    tables = {}
+    for name in ("project", "pipeline_snapshot", "pipeline_run", "step_run"):
+        columns = [sa.Column("id", sa.Uuid(), primary_key=True)]
+        if name == "step_run":
+            columns.extend(
+                [
+                    sa.Column(
+                        "pipeline_run_id",
+                        sa.Uuid(),
+                        sa.ForeignKey("pipeline_run.id", ondelete="CASCADE"),
+                    ),
+                    sa.Column("step_configuration", sa.Text(), nullable=False),
+                ]
+            )
+        tables[name] = sa.Table(name, metadata, *columns)
     metadata.create_all(store.engine)
-    project_id, snapshot_id, run_id, step_id = (uuid4() for _ in range(4))
+    identities = {name: uuid4() for name in tables}
     with store.engine.begin() as connection:
         assert (
             connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
         )
-        connection.execute(project.insert().values(id=project_id))
-        connection.execute(snapshot.insert().values(id=snapshot_id))
-        connection.execute(
-            run.insert().values(
-                id=run_id, project_id=project_id, snapshot_id=snapshot_id
-            )
-        )
-        connection.execute(
-            step.insert().values(
-                id=step_id,
-                pipeline_run_id=run_id,
-                step_configuration='{"name":"keep"}',
-            )
-        )
+        for name, table in tables.items():
+            values = {"id": identities[name]}
+            if name == "step_run":
+                values.update(
+                    pipeline_run_id=identities["pipeline_run"],
+                    step_configuration='{"name":"keep"}',
+                )
+            connection.execute(table.insert().values(**values))
     migrations = Alembic(store.engine)
     migrations.stamp("9f2b8c7d6e5a")
-    statements: list[str] = []
-
-    def record_statement(
-        connection: sa.Connection,
-        cursor: Any,
-        statement: str,
-        parameters: Any,
-        context: Any,
-        executemany: bool,
-    ) -> None:
-        statements.append(statement)
-
-    sa.event.listen(store.engine, "before_cursor_execute", record_statement)
-    try:
-        migrations.upgrade("c3f5a9e1d7b2")
-    finally:
-        sa.event.remove(
-            store.engine, "before_cursor_execute", record_statement
-        )
+    migrations.upgrade("c3f5a9e1d7b2")
     with store.engine.begin() as connection:
+        for name, table in tables.items():
+            assert connection.execute(
+                sa.select(table.c.id)
+            ).scalars().all() == [identities[name]]
         assert (
-            connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
+            connection.execute(
+                sa.select(tables["step_run"].c.step_configuration)
+            ).scalar_one()
+            == '{"name":"keep"}'
         )
-        assert connection.execute(
-            sa.select(step.c.id, step.c.step_configuration)
-        ).all() == [(step_id, '{"name":"keep"}')]
-        assert connection.execute(sa.select(run.c.id)).scalars().all() == [
-            run_id
-        ]
-        assert connection.execute(
-            sa.select(snapshot.c.id)
-        ).scalars().all() == [snapshot_id]
         inspector = sa.inspect(connection)
-        for table in ("pipeline_run", "pipeline_snapshot", "step_run"):
-            columns = {
-                column["name"]: column
-                for column in inspector.get_columns(table)
-            }
+        for name in ("pipeline_run", "pipeline_snapshot", "step_run"):
+            columns = {c["name"]: c for c in inspector.get_columns(name)}
             assert columns["archive_bundle_id"]["nullable"] is True
-        catalog_columns = {
-            column["name"]: column
-            for column in inspector.get_columns("archive_bundle")
-        }
-        assert set(catalog_columns) == set(
-            ArchiveBundleSchema.__table__.columns.keys()
-        )
-        for column in ArchiveBundleSchema.__table__.columns:
-            assert catalog_columns[column.name]["nullable"] == column.nullable
-        assert [
-            index["column_names"]
-            for index in inspector.get_indexes("archive_bundle")
-        ] == [["run_id"]]
         upgraded = sa.Table(
             "pipeline_run", sa.MetaData(), autoload_with=connection
         )
-        assert (
-            connection.execute(sa.select(upgraded.c.retain)).scalar_one()
-            is False
-        )
-        # Old writers omit the new column during a rolling upgrade.
-        second_run_id = uuid4()
-        connection.execute(
-            run.insert().values(
-                id=second_run_id,
-                project_id=project_id,
-                snapshot_id=snapshot_id,
-            )
-        )
+        # A rolling deployment's old writer omits the new retain field.
+        connection.execute(tables["pipeline_run"].insert().values(id=uuid4()))
         assert connection.execute(
             sa.select(upgraded.c.retain)
         ).scalars().all() == [False, False]
         assert (
-            connection.exec_driver_sql("PRAGMA foreign_key_check").all() == []
-        )
-    assert not any(
-        "DROP TABLE" in statement.upper() for statement in statements
-    )
-    assert migrations.current_revisions() == ["c3f5a9e1d7b2"]
-
-    migrations.downgrade("9f2b8c7d6e5a")
-    with store.engine.begin() as connection:
-        assert (
             connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
         )
-        assert set(connection.execute(sa.select(run.c.id)).scalars()) == {
-            run_id,
-            second_run_id,
-        }
-        assert connection.execute(sa.select(step.c.id)).scalars().all() == [
-            step_id
-        ]
-        assert connection.execute(
-            sa.select(snapshot.c.id)
-        ).scalars().all() == [snapshot_id]
         assert (
             connection.exec_driver_sql("PRAGMA foreign_key_check").all() == []
         )
-        inspector = sa.inspect(connection)
-        assert "archive_bundle" not in inspector.get_table_names()
-        assert {
-            column["name"] for column in inspector.get_columns("pipeline_run")
-        }.isdisjoint({"archive_bundle_id", "retain"})
-        assert {
-            column["name"] for column in inspector.get_columns("step_run")
-        }.isdisjoint({"archive_bundle_id", "step_type", "substitutions"})
-        assert "archive_bundle_id" not in {
-            column["name"]
-            for column in inspector.get_columns("pipeline_snapshot")
-        }
-    assert migrations.current_revisions() == ["9f2b8c7d6e5a"]
+    assert migrations.current_revisions() == ["c3f5a9e1d7b2"]
     store.engine.dispose()

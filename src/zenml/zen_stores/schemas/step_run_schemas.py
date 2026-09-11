@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Union,
     cast,
 )
 from uuid import UUID
@@ -34,6 +33,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
@@ -45,7 +45,6 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     ExecutionArchivedError,
-    ExecutionRetentionIntegrityError,
 )
 from zenml.models import (
     ExceptionInfo,
@@ -62,11 +61,6 @@ from zenml.models.v2.core.step_run import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
-from zenml.zen_stores.schemas.archive_detail import (
-    BundleDetail,
-    ConfigurationPayload,
-    StepPayload,
-)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -78,10 +72,6 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
-)
-from zenml.zen_stores.schemas.step_configuration_utils import (
-    merge_step_configuration,
-    run_pipeline_configuration,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
@@ -452,74 +442,36 @@ class StepRunSchema(
             return cast(Dict[str, str], json.loads(self.substitutions))
         return None
 
-    def step_payload(self, detail: Optional["BundleDetail"]) -> StepPayload:
-        """Return this step's payload from SQL or its verified archive.
-
-        Args:
-            detail: Optional authoritative source for archived detail.
-
-        Returns:
-            This row while unarchived, otherwise its archived step record.
-        """
-        archived = self.archived_detail(detail, self.pipeline_run_id)
-        return self if archived is None else archived.step(self)
-
-    def get_step_configuration(
-        self, detail: Optional["BundleDetail"] = None
-    ) -> Step:
+    def get_step_configuration(self) -> Step:
         """Get the step configuration for the step run.
 
-        Args:
-            detail: Optional authoritative source for archived detail.
-
         Raises:
-            ExecutionRetentionIntegrityError: Required archived detail is missing.
-            ExecutionArchivedError: If the step configuration is archived.
-            ValueError: If the live step configuration is unavailable.
+            ExecutionArchivedError: The configuration needs an explicit restore.
+            ValueError: If the step run has no step configuration.
 
         Returns:
             The step configuration.
         """
-        if detail is None and self._has_archived_configuration():
+        if self._has_archived_configuration():
             raise ExecutionArchivedError.for_entity(
                 self.id, self.pipeline_run_id
             )
-
-        step_payload = self.step_payload(detail)
         step = None
 
         if self.snapshot is not None:
-            config_schema: Optional[
-                Union[StepConfigurationSchema, ConfigurationPayload]
-            ]
-            archived_step = self.archived_detail(detail)
-            if archived_step is not None:
-                config_schema = archived_step.step_configuration(self.id)
-            else:
-                config_schema = self.dynamic_config
-            if config_schema is None:
-                archived_snapshot = self.snapshot.archived_detail(detail)
-                if archived_snapshot is not None:
-                    config_schema = next(
-                        iter(
-                            archived_snapshot.step_configurations(
-                                self.snapshot.id, include=[self.name]
-                            )
-                        ),
-                        None,
+            if config_schema := (self.dynamic_config or self.static_config):
+                pipeline_configuration = (
+                    PipelineConfiguration.model_validate_json(
+                        self.snapshot.pipeline_configuration
                     )
-                else:
-                    config_schema = self.static_config
-            if config_schema is not None:
-                pipeline_configuration = run_pipeline_configuration(
-                    self.snapshot.snapshot_payload(
-                        detail
-                    ).pipeline_configuration,
-                    self.pipeline_run.start_time,
                 )
-                step = merge_step_configuration(
-                    config_schema.config,
-                    pipeline_configuration,
+                pipeline_configuration.finalize_substitutions(
+                    start_time=self.pipeline_run.start_time,
+                    inplace=True,
+                )
+                step = Step.from_dict(
+                    json.loads(config_schema.config),
+                    pipeline_configuration=pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
 
@@ -545,17 +497,13 @@ class StepRunSchema(
                         }
                     )
 
-        if not step and step_payload.step_configuration:
+        if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the
             # `Step` object directly without passing the pipeline
             # configuration.
-            step = Step.model_validate_json(step_payload.step_configuration)
+            step = Step.model_validate_json(self.step_configuration)
         elif not step:
-            if detail is not None and self._has_archived_configuration():
-                raise ExecutionRetentionIntegrityError(
-                    f"Archived configuration is missing for step {self.id}."
-                )
             raise ValueError(
                 f"Unable to load the configuration for step `{self.name}` from "
                 "the database. To solve this please delete the pipeline run "
@@ -569,7 +517,6 @@ class StepRunSchema(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        detail: Optional["BundleDetail"] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -577,7 +524,6 @@ class StepRunSchema(
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
-            detail: Optional authoritative source for archived detail.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -585,7 +531,7 @@ class StepRunSchema(
             The created StepRunResponse.
         """
         step = (
-            self.get_step_configuration(detail)
+            self.get_step_configuration()
             if include_metadata or not self._has_archived_configuration()
             else None
         )
@@ -610,7 +556,7 @@ class StepRunSchema(
         )
         metadata = None
         if include_metadata:
-            step_payload = self.step_payload(detail)
+            self.require_hot()
             step = cast(Step, step)
             metadata = StepRunResponseMetadata(
                 config=step.config,
@@ -621,9 +567,9 @@ class StepRunSchema(
                 docstring=self.docstring,
                 source_code=self.source_code,
                 exception_info=ExceptionInfo.model_validate_json(
-                    step_payload.exception_info
+                    self.exception_info
                 )
-                if step_payload.exception_info
+                if self.exception_info
                 else None,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,

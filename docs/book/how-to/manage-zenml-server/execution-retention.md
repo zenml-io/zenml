@@ -1,5 +1,5 @@
 ---
-description: Archive older execution details while keeping runs readable.
+description: Archive older execution details and restore them when needed.
 ---
 
 # Execution retention
@@ -9,8 +9,9 @@ the database into verified archive objects. Each archived run produces one
 object holding the run's configuration and environment, its steps' detail,
 the snapshots only that run uses, and their step configurations. Run
 identities, statuses, timestamps, artifact links, tags, and all run metadata
-stay in the database. Archived runs remain visible in ordinary lists, and
-detail reads load archived run, step, snapshot, and DAG data automatically.
+stay in the database. Archived runs remain visible in ordinary lists. Restore
+a run explicitly before reading its archived detail, inspecting its DAG, or
+replaying it.
 
 The schedule field `is_archived` is a separate scheduling concept and is
 unrelated to execution retention.
@@ -52,9 +53,9 @@ objects live at `{uri}/{project_id}/{run_id}/{bundle_id}.json.gz`; the
 database records each object's full URI.
 
 Keep the storage and its objects available while any run is archived. ZenML
-never deletes archive objects, and archived detail becomes unreadable if they
-disappear. Unsetting the URI stops new passes and makes archived detail
-unavailable until it is set again.
+keeps committed archive objects, and restoring their detail becomes impossible
+if they disappear. Unsetting the URI stops new passes and prevents restores
+until it is set again.
 
 ## Save a policy
 
@@ -154,23 +155,21 @@ other work finishes.
 
 ## What users see
 
-Archived runs list normally. Detail reads fetch and verify the archive object
-automatically, so an archived run, step, or snapshot returns the same
-response as before archiving. Archiving never clears a step's `snapshot_id`;
-only legacy steps recorded without a snapshot report it as `None`.
+Archived runs list normally without detail (`hydrate=False`). Their status,
+identity, timestamps, artifact links, and retained step projections remain
+available from SQL. Reading archived run, step, snapshot, or DAG detail returns
+**409** with instructions to restore the owning run. A detailed list that
+contains an archived row also returns **409**; list without detail or filter
+with `archive_bundle_id="isnull:"` to see only unarchived detail.
 
-A detailed list, such as runs with `hydrate=True`, loads at most **20 archive
-objects** per request, within a total size limit. A page that needs more
-returns **409**; use a smaller page, narrow the filter, or list without
-details.
+Writes that change archived detail, such as updating status or adding a step,
+also require restore. Metadata, tags, and pins still work. Deleting a snapshot
+archived with a run returns **409** while that run exists.
 
-Writes that change an archived run's detail, such as updating its status or
-adding a step, return **409** with the command that restores the run.
-Metadata, tags, and pins still work. Deleting a snapshot archived with a run
-returns **409** while that run exists.
-
-A storage failure returns **503** with `Retry-After`; lists without details
-keep working. An object that fails verification returns **500**.
+Ordinary reads never access archive storage, so an archive storage outage does
+not affect header reads. A restore during an outage returns **503** with
+`Retry-After`; an object that fails verification returns **500**. Either
+failure leaves the archived SQL rows unchanged.
 
 ## Restore
 
@@ -189,9 +188,10 @@ is protected from re-archiving for `restored_grace_days`.
 **Replay requires a restore first.** Replaying an archived run returns 409
 with the restore command.
 
-Deleting an archived run is **irreversible**. Its archive object is kept, so
-a snapshot archived with it stays readable, and that snapshot can then be
-deleted.
+Deleting an archived run is **irreversible**. Its archive object is kept, but
+the run can no longer be restored. A snapshot archived with it keeps its SQL
+header and can then be deleted; its archived detail cannot be restored without
+the owning run.
 
 ## API routes
 
@@ -206,10 +206,12 @@ The background worker checks authorization again before it starts a pass.
 ## Limitations
 
 1. **MySQL only.** SQLite servers cannot archive.
-2. **Restore is all-or-nothing** and needed before replaying or resuming an archived run.
+2. **Explicit restore is required** for archived detail and replay. Automatic
+   archived reads are deferred to a later version.
 3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs.
 4. **Only archive format version 1 exists.** Other versions are integrity errors; there are no format adapters.
-5. **Detailed lists load at most 20 archive objects** per request.
+5. **Detailed lists fail with 409 if they contain an archived row.** Use
+   `hydrate=False` or filter to unarchived rows.
 6. **Only the latest pass is recorded.** There is no operation history.
 7. **Metadata, hook invocations, and run wait conditions stay in the database.**
 

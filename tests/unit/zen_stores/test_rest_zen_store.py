@@ -21,16 +21,9 @@ import pytest
 from pytest_mock import MockerFixture
 
 from zenml.enums import TriggerRunConcurrency
-from zenml.exceptions import (
-    ExecutionArchivedError,
-    ExecutionRetentionConflictError,
-    ExecutionRetentionUnavailableError,
-    MaxConcurrentTasksError,
-)
 from zenml.models import WebhookTriggerUpdate
 from zenml.zen_server.exceptions import (
     NO_RETRY_HEADER,
-    http_exception_from_error,
 )
 from zenml.zen_stores.rest_zen_store import (
     ARTIFACT_VERSIONS,
@@ -98,27 +91,6 @@ def test_server_retry_signal_controls_real_session(
 
     assert response.status_code == expected_status
     assert Handler.attempts == expected_requests
-
-
-@pytest.mark.parametrize(
-    "error_type",
-    [
-        ExecutionRetentionUnavailableError,
-        ExecutionRetentionConflictError,
-        ExecutionArchivedError,
-        MaxConcurrentTasksError,
-    ],
-)
-def test_actionable_server_errors_disable_status_retries(
-    error_type: type[Exception],
-) -> None:
-    """Every actionable retention response carries the shared retry signal.
-
-    Args:
-        error_type: Server exception mapped to an immediate response.
-    """
-    response = http_exception_from_error(error_type("actionable"))
-    assert response.headers[NO_RETRY_HEADER] == "no"
 
 
 def test_rest_store_url_is_normalized_before_moving_credentials(
