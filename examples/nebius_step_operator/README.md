@@ -21,7 +21,12 @@ that image. ZenML then builds the step image, installs stack requirements, and
 pushes it to your registered remote registry. The example requests `linux/amd64`
 and sets `UV_SYSTEM_PYTHON=1` for uv when installing stack requirements into the
 PyTorch parent image's existing Conda Python.
-A working Docker builder and registry push credentials are required.
+A working Docker builder and registry push credentials are required. Use a short
+container-registry `default_repository`, such as `<registry-id-without-prefix>/zenml`
+for Nebius Container Registry: the complete image reference, including its
+`@sha256:` digest, must not exceed 128 characters. Longer references currently
+fail the provider's Compute-label validation; shortening the repository keeps
+the image pinned by digest.
 
 Connect to a ZenML server reachable from both the launcher and your Nebius subnet.
 Follow the [component guide](../../docs/book/component-guide/step-operators/nebius.md)

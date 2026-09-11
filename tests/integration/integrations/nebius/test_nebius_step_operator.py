@@ -596,3 +596,22 @@ def test_permission_denied_retains_safe_diagnostics_without_replaying(harness):
     with pytest.raises(RuntimeError, match="already has"):
         submit(harness)
     assert harness.cloud.creates == 1
+
+
+@pytest.mark.parametrize("length", [127, 128, 129, 143])
+def test_image_reference_length_boundary_before_submission(harness, length):
+    h = harness
+    suffix = "@sha256:" + "a" * 64
+    prefix = "registry.example/"
+    image = prefix + "x" * (length - len(prefix) - len(suffix)) + suffix
+    h.info.get_image = lambda key: image
+    if length <= 128:
+        submit(h)
+        assert h.cloud.request.spec.image == image
+        assert h.cloud.creates == 1
+    else:
+        with pytest.raises(ValueError, match="default_repository"):
+            submit(h)
+        assert h.cloud.creates == 0
+        assert h.store.writes == 0
+        assert RECEIPT_KEY not in h.run.run_metadata

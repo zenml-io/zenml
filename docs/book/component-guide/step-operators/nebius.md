@@ -128,6 +128,16 @@ installation enabled and ensure the image contains this integration. The
 operator requires an immutable `@sha256:` image reference from the ZenML build.
 A mutable tag is rejected before submission.
 
+Keep the complete image reference, including `@sha256:` and its 64-character
+digest, within **128 characters**. Live API checks accepted lengths 127 and 128
+but rejected 129 and 143 with a Compute-label validation error whose message
+incorrectly reported a 64-character limit. Use a short container-registry
+`default_repository`, such as `<registry-id-without-prefix>/zenml` for Nebius
+Container Registry, and rebuild with `DockerSettings(prevent_build_reuse=True)`
+if the reference is too long. The operator
+rejects oversized references before creating a submission receipt or Job;
+it does not truncate the reference or replace its digest with a mutable tag.
+
 The [example](https://github.com/zenml-io/zenml/tree/develop/examples/nebius_step_operator)
 shows Docker configuration and the complete pipeline. Runtime secrets are sent
 to the Job separately from the image. The operator does not copy your launcher's

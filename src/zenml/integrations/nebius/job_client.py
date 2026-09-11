@@ -254,6 +254,12 @@ def build_spec(
         raise ValueError(
             "Nebius requires a built image pinned by sha256 digest."
         )
+    if len(image) > 128:
+        raise ValueError(
+            "Nebius currently requires image references of at most 128 "
+            "characters, including the digest. Shorten the container "
+            "registry's default_repository and rebuild the image."
+        )
     variables = []
     for name, value in environment.items():
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) or "\0" in value:
