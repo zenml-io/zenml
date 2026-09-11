@@ -797,3 +797,87 @@ def test_gpu_arg_whitespace_type_treated_as_none_behavior() -> None:
 
     rs_none = ResourceSettingsStub(gpu_count=None)
     assert get_gpu_values(settings, rs_none) is None
+
+
+def test_get_modal_app_name() -> None:
+    app_name = sandbox_utils.get_modal_app_name("run-123", "train_model_step")
+    assert app_name == "zenml-run-123-train_model_step"
+    long_name = sandbox_utils.get_modal_app_name("run-123", "a" * 100)
+    assert len(long_name) == 64
+
+
+def test_cleanup_step_submission_disabled_by_default(monkeypatch) -> None:
+    recorded = []
+
+    def mock_stop_modal_app(*args, **kwargs):
+        recorded.append((args, kwargs))
+
+    monkeypatch.setattr(sandbox_utils, "stop_modal_app", mock_stop_modal_app)
+
+    operator = _make_operator(ModalStepOperatorConfig())
+    operator.get_settings = lambda _sr: ModalStepOperatorSettings(
+        stop_app=False
+    )
+
+    step_run = SimpleNamespace(id="step-id", name="step-name", run_metadata={})
+    operator.cleanup_step_submission(step_run)
+
+    assert len(recorded) == 0
+
+
+def test_cleanup_step_submission_enabled(monkeypatch) -> None:
+    recorded = []
+
+    def mock_stop_modal_app(*args, **kwargs):
+        recorded.append((args, kwargs))
+
+    monkeypatch.setattr(sandbox_utils, "stop_modal_app", mock_stop_modal_app)
+
+    config = ModalStepOperatorConfig(
+        token_id="ak-test", token_secret="as-test"
+    )
+    operator = _make_operator(config)
+    operator.get_settings = lambda _sr: ModalStepOperatorSettings(
+        stop_app=True
+    )
+
+    step_run = SimpleNamespace(
+        id="step-id",
+        name="step-name",
+        run_metadata={
+            modal_step_operator_module.STEP_MODAL_ENVIRONMENT_METADATA_KEY: "staging"
+        },
+    )
+    operator.cleanup_step_submission(step_run)
+
+    assert len(recorded) == 1
+    assert recorded[0] == (
+        ("zenml-step-id-step-name",),
+        {
+            "modal_environment": "staging",
+            "token_id": "ak-test",
+            "token_secret": "as-test",
+        },
+    )
+
+
+def test_cleanup_step_submission_logs_warning_on_failure(
+    monkeypatch, caplog
+) -> None:
+    def mock_stop_modal_app(*args, **kwargs):
+        raise RuntimeError("CLI failed")
+
+    monkeypatch.setattr(sandbox_utils, "stop_modal_app", mock_stop_modal_app)
+
+    operator = _make_operator(ModalStepOperatorConfig())
+    operator.get_settings = lambda _sr: ModalStepOperatorSettings(
+        stop_app=True
+    )
+
+    step_run = SimpleNamespace(id="step-id", name="step-name", run_metadata={})
+
+    with caplog.at_level("WARNING"):
+        operator.cleanup_step_submission(step_run)
+
+    assert "Failed to stop Modal app" in caplog.text
+

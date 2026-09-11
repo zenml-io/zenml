@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.integrations.modal.flavors.modal_base_flavor import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -36,6 +38,12 @@ __all__ = [
 
 class ModalStepOperatorSettings(ModalSettingsMixin):
     """Settings for the Modal step operator."""
+
+    stop_app: bool = Field(
+        False,
+        description="Stop the Modal app after the sandbox reaches a terminal "
+        "state.",
+    )
 
 
 class ModalStepOperatorConfig(

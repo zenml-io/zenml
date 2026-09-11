@@ -219,8 +219,11 @@ class ModalStepOperator(BaseStepOperator):
         )
         modal_client = self._get_modal_client()
 
+        app_name = sandbox_utils.get_modal_app_name(
+            info.step_run_id, info.pipeline_step_name
+        )
         app = sandbox_utils.lookup_modal_app(
-            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            app_name,
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
@@ -277,3 +280,47 @@ class ModalStepOperator(BaseStepOperator):
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
         modal_client = self._get_modal_client()
         sandbox_utils.terminate_sandbox(sandbox_id, modal_client=modal_client)
+
+    def cleanup_step_submission(self, step_run: "StepRunResponse") -> None:
+        """Stop the Modal app after a sandbox run completes.
+
+        Args:
+            step_run: The finished step run.
+        """
+        settings = cast(ModalStepOperatorSettings, self.get_settings(step_run))
+        if not settings.stop_app:
+            return
+
+        app_name = sandbox_utils.get_modal_app_name(
+            step_run.id, step_run.name
+        )
+        modal_environment = step_run.run_metadata.get(
+            STEP_MODAL_ENVIRONMENT_METADATA_KEY
+        )
+        if modal_environment is not None:
+            modal_environment = str(modal_environment)
+        else:
+            modal_environment = sandbox_utils.normalize_optional_config_value(
+                settings.modal_environment
+            )
+
+        try:
+            sandbox_utils.stop_modal_app(
+                app_name,
+                modal_environment=modal_environment,
+                token_id=self.config.token_id,
+                token_secret=self.config.token_secret,
+            )
+            logger.debug(
+                "Stopped Modal app '%s' for step run '%s'.",
+                app_name,
+                step_run.id,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to stop Modal app '%s' for step run '%s'. "
+                "The app may still appear in the Modal dashboard.",
+                app_name,
+                step_run.id,
+                exc_info=True,
+            )
