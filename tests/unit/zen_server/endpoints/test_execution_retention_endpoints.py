@@ -76,10 +76,10 @@ ROUTERS = (
 
 @pytest.fixture
 def http(retention_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
-    """Mount the real routers over one configured two-step SQL tree."""
-    tree = seed_run(retention_store, FROZEN_NOW)
+    """Mount the real routers over one configured two-step run."""
+    ids = seed_run(retention_store, FROZEN_NOW)
     retention_store.update_project(
-        tree["project"],
+        ids["project"],
         ProjectUpdate(retention=RetentionSettings(archive_after_days=90)),
     )
 
@@ -110,7 +110,7 @@ def http(retention_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
         yield SimpleNamespace(
             app=app,
             client=client,
-            tree=tree,
+            ids=ids,
             pending=pending,
             store=retention_store,
             storage=storage,
@@ -141,17 +141,17 @@ def test_execution_routes_deny_before_archive_io_or_dispatch(
     with http.store.engine.begin() as connection:
         connection.execute(
             update(PipelineRunSchema)
-            .where(PipelineRunSchema.id == http.tree["run"])
+            .where(PipelineRunSchema.id == http.ids["run"])
             .values(user_id=http.store.get_user("default").id)
         )
         connection.execute(
             update(PipelineSnapshotSchema)
-            .where(PipelineSnapshotSchema.id == http.tree["snapshot"])
+            .where(PipelineSnapshotSchema.id == http.ids["snapshot"])
             .values(user_id=http.store.get_user("default").id)
         )
     if cold:
         assert (
-            http.store.archive_project(http.tree["project"]).outcome.value
+            http.store.archive_project(http.ids["project"]).outcome.value
             == "succeeded"
         )
 
@@ -192,7 +192,7 @@ def test_execution_routes_deny_before_archive_io_or_dispatch(
             steps_endpoints, "verify_permission_for_model", route_permission
         )
 
-    ids = http.tree
+    ids = http.ids
     paths = {
         "run": ("get", f"runs/{ids['run']}"),
         "snapshot": ("get", f"pipeline_snapshots/{ids['snapshot']}"),
@@ -260,7 +260,7 @@ def test_operation_routes_deny_before_catalog(
     denied = Mock(side_effect=HTTPException(403, "Forbidden"))
     module = runs_endpoints if scope == "run" else projects_endpoints
     monkeypatch.setattr(module, "verify_permission_for_model", denied)
-    ids = http.tree
+    ids = http.ids
     route = (
         f"/api/v1/runs/{ids['run']}/restore"
         if scope == "run"
@@ -289,7 +289,7 @@ def test_operation_routes_deny_before_catalog(
 
 def test_archive_is_accepted_before_it_runs(http) -> None:
     """An archive pass returns its task ID before the pass finishes."""
-    project = http.tree["project"]
+    project = http.ids["project"]
     accepted = http.client.post(
         f"/api/v1/projects/{project}/retention/archive"
     )
@@ -303,8 +303,8 @@ def test_archive_is_accepted_before_it_runs(http) -> None:
 
 def test_restore_finishes_within_the_request(http) -> None:
     """Restore returns its result directly, and a second call is a no-op."""
-    http.store.archive_project(http.tree["project"])
-    route = f"/api/v1/runs/{http.tree['run']}/restore"
+    http.store.archive_project(http.ids["project"])
+    route = f"/api/v1/runs/{http.ids['run']}/restore"
     restored = http.client.post(route)
     assert restored.status_code == 200
     assert restored.json()["outcome"] == "restored"
@@ -315,7 +315,7 @@ def test_disabled_archive_names_no_private_switch(http, monkeypatch) -> None:
     """The server gate tells users to contact their administrator."""
     monkeypatch.delenv("ZENML_SERVER_ARCHIVE_URI")
     response = http.client.post(
-        f"/api/v1/projects/{http.tree['project']}/retention/archive"
+        f"/api/v1/projects/{http.ids['project']}/retention/archive"
     )
     assert response.status_code == 403
     assert "ask your server administrator to enable it" in response.text
@@ -336,7 +336,7 @@ def test_second_pass_is_rejected_while_the_first_runs(
         original(uri, data)
 
     monkeypatch.setattr(http.storage, "write", pause_upload)
-    route = f"/api/v1/projects/{http.tree['project']}/retention/archive"
+    route = f"/api/v1/projects/{http.ids['project']}/retention/archive"
     assert http.client.post(route).status_code == 202
     with ThreadPoolExecutor(1) as pool:
         running = pool.submit(http.pending.pop())
@@ -346,7 +346,7 @@ def test_second_pass_is_rejected_while_the_first_runs(
         finally:
             release.set()
         running.result(timeout=20)
-    status = http.store.get_retention_status(http.tree["project"])
+    status = http.store.get_retention_status(http.ids["project"])
     assert status.outcome.value == "succeeded"
 
 
@@ -369,12 +369,8 @@ def test_worker_reauthorization_failure_is_classified(
     """Only permission failures use the revoked classification."""
     abort = Mock()
     monkeypatch.setattr(utils, "submit_maintenance_task", lambda task: task())
-    utils.submit_reserved_operation(
-        Mock(),
-        execute=Mock(),
-        abort=abort,
-        reauthorize=Mock(side_effect=error),
-        operation_failure=RetentionFailure.ARCHIVE_FAILED,
+    utils.submit_archive_pass(
+        execute=Mock(), abort=abort, reauthorize=Mock(side_effect=error)
     )
     abort.assert_called_once_with(expected)
 

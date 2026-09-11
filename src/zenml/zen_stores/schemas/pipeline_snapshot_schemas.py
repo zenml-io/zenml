@@ -42,7 +42,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
 from zenml.zen_stores.schemas.archive_detail import (
     BundleDetail,
-    ConfigurationRecord,
+    ConfigurationPayload,
     SnapshotPayload,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -325,7 +325,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         self,
         include: Optional[List[str]] = None,
         detail: Optional["BundleDetail"] = None,
-    ) -> List[Union["StepConfigurationSchema", ConfigurationRecord]]:
+    ) -> List[Union["StepConfigurationSchema", ConfigurationPayload]]:
         """Get step configurations for the snapshot.
 
         Args:
@@ -372,7 +372,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         self,
         step_name: str,
         detail: Optional["BundleDetail"] = None,
-    ) -> Union["StepConfigurationSchema", ConfigurationRecord]:
+    ) -> Union["StepConfigurationSchema", ConfigurationPayload]:
         """Get a step configuration of the snapshot.
 
         Args:
@@ -390,7 +390,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
             include=[step_name], detail=detail
         )
         if len(step_configs) == 0:
-            if detail is not None and self.is_offloaded:
+            if detail is not None and self.is_archived:
                 raise ExecutionRetentionIntegrityError(
                     f"Archived configuration is missing for snapshot {self.id}, step {step_name}."
                 )
@@ -540,7 +540,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
             True if the snapshot is runnable from server.
         """
         return (
-            not self.is_offloaded
+            not self.is_archived
             and self.build is not None
             and not self.build.is_local
             and self.build.stack_id is not None
@@ -553,7 +553,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         Returns:
             Predicate equivalent to ``is_runnable`` without loading a build.
         """
-        return cls.not_offloaded() & col(cls.build_id).in_(
+        return cls.not_archived() & col(cls.build_id).in_(
             select(PipelineBuildSchema.id).where(
                 col(PipelineBuildSchema.is_local).is_(False),
                 col(PipelineBuildSchema.stack_id).is_not(None),
@@ -588,7 +588,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         """
         deployable = False
         if (
-            not self.is_offloaded
+            not self.is_archived
             and self.build
             and self.stack
             and self.stack.has_deployer

@@ -16,9 +16,7 @@ from uuid import UUID
 from sqlalchemy import inspect, select, update
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlmodel import Session, col
-from sqlmodel.sql.expression import SelectOfScalar
 
-from zenml.enums import RetentionFailure
 from zenml.exceptions import (
     ExecutionArchivedError,
     ExecutionRetentionConflictError,
@@ -80,53 +78,32 @@ def update_hot(session: Session, row: HotRow) -> None:
         set_committed_value(row, column_name, column_value)
 
 
-def protect_inserts(
-    session: Session,
-    run_ids: Union[Sequence[UUID], SelectOfScalar[UUID]],
-    *,
-    exclusive: bool = False,
-) -> None:
-    """Lock the runs that new detail will belong to and require them hot.
+def protect_run(session: Session, run_id: UUID) -> None:
+    """Lock the run new detail will belong to and require it in SQL.
+
+    Step creation locks its run anyway; this read doubles as that lock and
+    loads the run so the caller's later access costs no extra SELECT.
 
     Args:
-        session: Current transaction, before inserting any referenced detail.
-        run_ids: Target run IDs, or a scalar query that must identify exactly
-            one run; the query executes inside the locking read.
-        exclusive: Take an exclusive lock the writer needs anyway.
+        session: Current transaction, before inserting the detail.
+        run_id: Run that will own the new detail.
 
     Raises:
-        ExecutionArchivedError: If a target run is archived.
-        ExecutionRetentionConflictError: If a target run disappeared.
+        ExecutionArchivedError: If the run is archived.
+        ExecutionRetentionConflictError: If the run disappeared.
     """
-    if isinstance(run_ids, SelectOfScalar):
-        ids: Union[Sequence[UUID], SelectOfScalar[UUID]] = run_ids
-        expected_count = 1
-    else:
-        ids = sorted(set(run_ids))
-        expected_count = len(ids)
-        if not ids:
-            return
-    # Step creation expires its run before locking; hydrate that same identity
-    # here so accessing its current snapshot does not issue another SELECT.
-    rows = (
-        session.execute(
-            select(PipelineRunSchema)
-            .execution_options(populate_existing=True)
-            .where(col(PipelineRunSchema.id).in_(ids))
-            .order_by(col(PipelineRunSchema.id))
-            .with_for_update(read=not exclusive)
-        )
-        .scalars()
-        .all()
-    )
-    if len(rows) != expected_count:
+    run = session.execute(
+        select(PipelineRunSchema)
+        .execution_options(populate_existing=True)
+        .where(col(PipelineRunSchema.id) == run_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    if run is None:
         raise ExecutionRetentionConflictError(
-            "Execution disappeared before detail insertion.",
-            error_code=RetentionFailure.BUSY,
+            "Execution disappeared before detail insertion."
         )
-    for row in rows:
-        if row.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(row.id, row.id)
+    if run.archive_bundle_id is not None:
+        raise ExecutionArchivedError.for_entity(run.id, run.id)
 
 
 def protect_snapshot_owners(
@@ -157,8 +134,7 @@ def protect_snapshot_owners(
     ).all()
     if len(rows) != len(ids):
         raise ExecutionRetentionConflictError(
-            "Snapshot disappeared before ownership mutation.",
-            error_code=RetentionFailure.BUSY,
+            "Snapshot disappeared before ownership mutation."
         )
     for row in rows:
         if row.archive_bundle_id is not None:

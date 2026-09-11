@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import RestoreOutcome, RetentionOutcome
+from zenml.enums import RestoreOutcome, RetentionExclusion, RetentionOutcome
 
 
 class RetentionSettings(BaseModel):
@@ -20,26 +20,43 @@ class RetentionSettings(BaseModel):
     restored_grace_days: int = Field(default=30, ge=0)
     max_runs_per_pass: int = Field(default=200, gt=0)
 
+    @classmethod
+    def load(cls, raw: Optional[str]) -> "RetentionSettings":
+        """Parse a policy saved on a project row.
 
-class RetentionRunEstimate(BaseModel):
+        Args:
+            raw: Serialized policy, or None for a project without one.
+
+        Returns:
+            The saved policy, disabled when none was saved.
+        """
+        return cls.model_validate_json(raw) if raw else cls()
+
+
+class RetentionRunPreview(BaseModel):
     """Row count and single outcome for one examined pipeline run."""
 
     EXCLUSION_DESCRIPTIONS: ClassVar[Dict[str, str]] = {
-        "disabled": "Retention is disabled for this project.",
-        "not_eligible": (
+        RetentionExclusion.NOT_ELIGIBLE: (
             "The run, one of its steps, or one of its child runs is still "
             "active or inconsistent."
         ),
-        "not_old": "The run is too recent.",
-        "pinned": "The run is marked for retention.",
-        "resumable_failed": "The failed run can still be resumed.",
-        "root_active": (
+        RetentionExclusion.NOT_OLD: "The run is too recent.",
+        RetentionExclusion.PINNED: "The run is marked for retention.",
+        RetentionExclusion.RESUMABLE_FAILED: (
+            "The failed run can still be resumed."
+        ),
+        RetentionExclusion.ROOT_ACTIVE: (
             "The run belongs to a root run that is still active or can "
             "still be resumed."
         ),
-        "restored_grace": "The run was restored within its grace period.",
-        "model_link": "A model version links to this run.",
-        "oversized": "The run exceeds the archive size limits.",
+        RetentionExclusion.RESTORED_GRACE: (
+            "The run was restored within its grace period."
+        ),
+        RetentionExclusion.MODEL_LINK: "A model version links to this run.",
+        RetentionExclusion.OVERSIZED: (
+            "The run exceeds the archive size limits."
+        ),
     }
 
     model_config = ConfigDict(extra="forbid")
@@ -69,7 +86,7 @@ class RetentionDryRunResponse(BaseModel):
     eligible_run_count: int
     examined_run_count: int
     truncated: bool
-    runs: List[RetentionRunEstimate]
+    runs: List[RetentionRunPreview]
     effective_policy: RetentionSettings
 
 

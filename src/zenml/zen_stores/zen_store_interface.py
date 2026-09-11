@@ -3037,14 +3037,11 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
-    def retention_dry_run(
-        self,
-        project: ProjectResponse,
-    ) -> RetentionDryRunResponse:
+    def retention_dry_run(self, project_id: UUID) -> RetentionDryRunResponse:
         """Inspect the runs the next archive pass would examine.
 
         Args:
-            project: Resolved project with its saved retention policy.
+            project_id: Project whose saved retention policy is addressed.
 
         Returns:
             Per-run row counts and exclusion reasons, with no changes.

@@ -22,7 +22,7 @@ from zenml.models import (
     StepRunFilter,
 )
 from zenml.models.v2.misc.retention import (
-    RetentionRunEstimate,
+    RetentionRunPreview,
     RetentionSettings,
 )
 from zenml.zen_stores.retention import eligibility
@@ -120,7 +120,9 @@ def test_policy_round_trip_and_validation(retention_store) -> None:
     run = seed_run(retention_store, NOW)
     project = retention_store.get_project(run["project"])
     assert project.retention.archive_after_days is None
-    assert retention_store.retention_dry_run(project).examined_run_count == 0
+    assert (
+        retention_store.retention_dry_run(project.id).examined_run_count == 0
+    )
     policy = RetentionSettings(archive_after_days=180, max_runs_per_pass=20)
     retention_store.update_project(project.id, ProjectUpdate(retention=policy))
     assert retention_store.get_project(project.id).retention == policy
@@ -247,7 +249,7 @@ def test_each_exclusion(retention_store, rule: str, expected: str) -> None:
         session.commit()
 
     assert inspect(retention_store, run).exclusion == expected
-    assert expected in RetentionRunEstimate.EXCLUSION_DESCRIPTIONS
+    assert expected in RetentionRunPreview.EXCLUSION_DESCRIPTIONS
 
 
 @pytest.mark.parametrize("root_state", ["finished", "running", "resumable"])

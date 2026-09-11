@@ -468,7 +468,7 @@ from zenml.models.v2.misc.retention import (
     RestoreResponse,
     RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunEstimate,
+    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -658,6 +658,7 @@ WebhookStats.model_rebuild()
 WebhookResponseMetadata.model_rebuild()
 WebhookResponseResources.model_rebuild()
 WebhookResponse.model_rebuild()
+
 
 __all__ = [
     # V2 Base
@@ -964,7 +965,7 @@ __all__ = [
     "RestoreResponse",
     "RetentionDryRunResponse",
     "RetentionPassResponse",
-    "RetentionRunEstimate",
+    "RetentionRunPreview",
     "RetentionSettings",
     "RetentionStatusResponse",
     "AuthenticationMethodModel",

@@ -181,7 +181,7 @@ def add_run_context(
     helper: DAGGeneratorHelper,
     run: PipelineRunSchema,
 ) -> None:
-    """Add retained wait conditions and child runs to either DAG representation.
+    """Add a run's wait conditions and child runs to its DAG.
 
     Args:
         helper: The graph being built.

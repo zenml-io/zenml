@@ -34,16 +34,15 @@ def transaction(engine: Engine) -> Iterator[Session]:
     """Commit a short mutation transaction only after its body succeeds.
 
     Args:
-        engine: Metadata database.
+        engine: Metadata MySQL database.
 
     Yields:
         Caller-owned mutation session.
     """
     with engine.connect() as connection:
-        if engine.dialect.name == "mysql":
-            connection = connection.execution_options(
-                isolation_level="READ COMMITTED"
-            )
+        connection = connection.execution_options(
+            isolation_level="READ COMMITTED"
+        )
         with (
             connection.begin(),
             Session(connection, expire_on_commit=False) as session,

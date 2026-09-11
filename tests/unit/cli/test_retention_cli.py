@@ -18,7 +18,7 @@ from zenml.models.v2.misc.retention import (
     RestoreResponse,
     RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunEstimate,
+    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -32,10 +32,10 @@ def preview(eligible: int, truncated: bool = False) -> RetentionDryRunResponse:
         truncated=truncated,
         runs=[
             *(
-                RetentionRunEstimate(run_id=UUID(int=index + 1), rows=3)
+                RetentionRunPreview(run_id=UUID(int=index + 1), rows=3)
                 for index in range(eligible)
             ),
-            RetentionRunEstimate(
+            RetentionRunPreview(
                 run_id=UUID(int=99), rows=1, exclusion_reason="pinned"
             ),
         ],

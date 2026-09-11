@@ -73,7 +73,6 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ### Python Standards
 - Use Python 3.10+ compatible code
-- Use Pydantic `BaseModel` for internal value objects; do not introduce `dataclasses`.
 - Follow Google Python style for docstrings. Include `Args`, `Returns`,
   `Yields`, and `Raises` sections whenever the function contract requires them;
   do not use a summary-only docstring to omit applicable sections.

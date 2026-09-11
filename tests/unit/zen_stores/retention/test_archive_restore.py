@@ -21,7 +21,6 @@ from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     RestoreOutcome,
-    RetentionFailure,
     RetentionOutcome,
 )
 from zenml.exceptions import (
@@ -230,7 +229,7 @@ def test_step_added_while_archiving_is_never_lost(
     ids = run_factory(retention_store, "dynamic")
     name = f"late-{uuid4().hex[:8]}"
     guarded, release = Event(), Event()
-    original = fences.protect_inserts
+    original = fences.protect_run
 
     def pause_after_guard(*args, **kwargs):
         original(*args, **kwargs)
@@ -238,7 +237,7 @@ def test_step_added_while_archiving_is_never_lost(
             guarded.set()
             assert release.wait(20)
 
-    monkeypatch.setattr(fences, "protect_inserts", pause_after_guard)
+    monkeypatch.setattr(fences, "protect_run", pause_after_guard)
     with (
         ThreadPoolExecutor(1, thread_name_prefix="writer") as writers,
         ThreadPoolExecutor(1, thread_name_prefix="archive") as archivers,
@@ -499,9 +498,10 @@ def test_second_pass_is_rejected_while_the_first_holds_its_lease(
     """Only one pass per project runs at a time."""
     ids = run_factory(retention_store)
     retention_store.prepare_retention_pass(ids.project)
-    with pytest.raises(ExecutionRetentionConflictError) as error:
+    with pytest.raises(
+        ExecutionRetentionConflictError, match="already running"
+    ):
         retention_store.prepare_retention_pass(ids.project)
-    assert error.value.error_code == RetentionFailure.BUSY
 
 
 def test_abandoned_pass_is_replaced_after_its_lease(

@@ -128,7 +128,7 @@ class SnapshotPayload(Protocol):
         ...
 
 
-class ConfigurationRecord(Protocol):
+class ConfigurationPayload(Protocol):
     """Configuration fields consumed by SQL response models."""
 
     @property
@@ -194,10 +194,10 @@ class BundleDetail:
         self.runs: Dict[UUID, RunPayload] = {}
         self.steps: Dict[UUID, StepPayload] = {}
         self.snapshots: Dict[UUID, SnapshotPayload] = {}
-        self._configurations: Dict[UUID, List[ConfigurationRecord]] = {}
-        self._dynamic_configurations: Dict[UUID, ConfigurationRecord] = {}
+        self._configurations: Dict[UUID, List[ConfigurationPayload]] = {}
+        self._dynamic_configurations: Dict[UUID, ConfigurationPayload] = {}
 
-    def add_configuration(self, configuration: ConfigurationRecord) -> None:
+    def add_configuration(self, configuration: ConfigurationPayload) -> None:
         """Index one configuration under its snapshot or step owner.
 
         Args:
@@ -270,7 +270,7 @@ class BundleDetail:
 
     def step_configurations(
         self, snapshot_id: UUID, include: Optional[Sequence[str]] = None
-    ) -> Sequence[ConfigurationRecord]:
+    ) -> Sequence[ConfigurationPayload]:
         """Return ordered static definitions for one snapshot.
 
         Args:
@@ -290,7 +290,7 @@ class BundleDetail:
 
     def step_configuration(
         self, step_id: UUID
-    ) -> Optional[ConfigurationRecord]:
+    ) -> Optional[ConfigurationPayload]:
         """Return the definition owned by a dynamic step.
 
         Args:

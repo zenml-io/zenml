@@ -4,12 +4,11 @@
 Execution retention only runs on MySQL, so its tests use ``retention_store``:
 one disposable database per test session on the server named by
 ``ZENML_RETENTION_TEST_MYSQL_URL``, reset to the store's default rows before
-every test. Other store tests keep the SQLite ``sql_store``.
+every test.
 """
 
 import calendar
 import os
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterator, List
@@ -52,11 +51,7 @@ def NOW(monkeypatch: pytest.MonkeyPatch) -> Iterator[datetime]:
             connection: Newly connected database driver.
             record: SQLAlchemy connection lifecycle record.
         """
-        if isinstance(connection, sqlite3.Connection):
-            connection.create_function(
-                "current_timestamp", 0, lambda: now.isoformat(" ")
-            )
-        elif isinstance(connection, pymysql.connections.Connection):
+        if isinstance(connection, pymysql.connections.Connection):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SET @@session.time_zone = '+00:00', "
@@ -69,32 +64,6 @@ def NOW(monkeypatch: pytest.MonkeyPatch) -> Iterator[datetime]:
         yield now
     finally:
         event.remove(Engine, "connect", freeze)
-
-
-@pytest.fixture
-def sql_store(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, NOW: datetime
-) -> Iterator[SqlZenStore]:
-    """Create an isolated SQLite store.
-
-    Args:
-        tmp_path: Temporary test directory.
-        monkeypatch: Environment isolation fixture.
-        NOW: Shared retention evaluation time.
-
-    Yields:
-        The initialized store, disposed after the test.
-    """
-    config_path = tmp_path / "config"
-    monkeypatch.setenv("ZENML_CONFIG_PATH", str(config_path))
-    store = SqlZenStore(
-        config=SqlZenStoreConfiguration(url=f"sqlite:///{tmp_path / 'db'}"),
-        skip_default_registrations=False,
-    )
-    try:
-        yield store
-    finally:
-        store.engine.dispose()
 
 
 class RetentionDatabase(BaseModel):

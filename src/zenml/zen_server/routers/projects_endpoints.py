@@ -25,7 +25,6 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
-from zenml.enums import RetentionFailure, RetentionOutcome
 from zenml.models import (
     Page,
     PipelineFilter,
@@ -60,7 +59,7 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
-    submit_reserved_operation,
+    submit_archive_pass,
     zen_store,
 )
 
@@ -94,29 +93,25 @@ def archive_project(
     project_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
 ) -> RetentionPassResponse:
-    """Reserve and launch one bounded pass without object work in the request.
+    """Accept one bounded archive pass and run it in the background.
 
     Args:
         project_name_or_id: Project name or ID.
 
     Returns:
-        Durable accepted operation, distinct from its eventual outcome.
-
+        The accepted pass, distinct from its eventual outcome.
     """
     store = zen_store()
     project = store.get_project(project_name_or_id, hydrate=False)
     verify_permission_for_model(model=project, action=Action.UPDATE)
-    claimed = store.prepare_retention_pass(project.id)
-    accepted = RetentionPassResponse(outcome=RetentionOutcome.ACCEPTED)
-    return submit_reserved_operation(
-        accepted,
-        execute=lambda: store.execute_retention_pass(claimed),
-        abort=lambda code: store.abort_retention_pass(claimed, code),
+    archive_pass = store.prepare_retention_pass(project.id)
+    return submit_archive_pass(
+        execute=lambda: store.execute_retention_pass(archive_pass),
+        abort=lambda code: store.abort_retention_pass(archive_pass, code),
         reauthorize=lambda: verify_permission_for_model(
             model=store.get_project(project.id, hydrate=False),
             action=Action.UPDATE,
         ),
-        operation_failure=RetentionFailure.ARCHIVE_FAILED,
     )
 
 
@@ -129,13 +124,13 @@ def get_retention_status(
     project_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
 ) -> RetentionStatusResponse:
-    """Read latest progress after verifying project read permission.
+    """Read the latest archive pass after verifying project read permission.
 
     Args:
         project_name_or_id: Project name or ID.
 
     Returns:
-        Latest bounded operation summary without object access.
+        The latest pass outcome and counts, without reading storage.
     """
     store = zen_store()
     project = store.get_project(project_name_or_id, hydrate=False)
@@ -152,18 +147,18 @@ def retention_dry_run(
     project_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
 ) -> RetentionDryRunResponse:
-    """Preview a bounded batch after verifying project update permission.
+    """Preview the next archive pass after verifying update permission.
 
     Args:
         project_name_or_id: Project name or ID.
 
     Returns:
-        Inventory estimates for the examined roots, never project-wide totals.
+        The runs the next pass examines, with row counts and exclusions.
     """
     store = zen_store()
-    project = store.get_project(project_name_or_id)
+    project = store.get_project(project_name_or_id, hydrate=False)
     verify_permission_for_model(model=project, action=Action.UPDATE)
-    return store.retention_dry_run(project)
+    return store.retention_dry_run(project.id)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

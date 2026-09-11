@@ -32,7 +32,7 @@ class ArchivableSchema(SQLModel):
     archive_bundle_id: Optional[UUID] = Field(nullable=True, default=None)
 
     @property
-    def is_offloaded(self) -> bool:
+    def is_archived(self) -> bool:
         """Whether a bundle holds this entity's detail.
 
         Returns:
@@ -58,7 +58,7 @@ class ArchivableSchema(SQLModel):
         Raises:
             ExecutionArchivedError: Archived detail has not been loaded.
         """
-        if not self.is_offloaded:
+        if not self.is_archived:
             return None
         if detail is None:
             row = cast("BaseSchema", self)
@@ -66,7 +66,7 @@ class ArchivableSchema(SQLModel):
         return detail
 
     @classmethod
-    def not_offloaded(cls) -> ColumnElement[bool]:
+    def not_archived(cls) -> ColumnElement[bool]:
         """Select entities whose detail remains in SQL.
 
         Returns:

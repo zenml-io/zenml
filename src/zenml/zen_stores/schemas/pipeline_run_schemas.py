@@ -588,7 +588,7 @@ class PipelineRunSchema(
             ).pipeline_configuration
         else:
             if not run_payload.pipeline_configuration:
-                if self.is_offloaded:
+                if self.is_archived:
                     raise ExecutionRetentionIntegrityError(
                         f"Archived legacy configuration is missing for run {self.id}."
                     )
@@ -778,9 +778,9 @@ class PipelineRunSchema(
 
             is_templatable = False
             if (
-                not self.is_offloaded
+                not self.is_archived
                 and self.snapshot
-                and not self.snapshot.is_offloaded
+                and not self.snapshot.is_archived
                 and self.snapshot.build
                 and not self.snapshot.build.is_local
                 and self.snapshot.build.stack_id

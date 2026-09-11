@@ -1344,21 +1344,21 @@ class PipelineRunFilter(
                     # consider stacks with custom flavor components or local
                     # components, but the best we can do currently with our
                     # table columns.
-                    PipelineRunSchema.not_offloaded(),
+                    PipelineRunSchema.not_archived(),
                     PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.not_offloaded(),
+                    PipelineSnapshotSchema.not_archived(),
                     PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                     col(PipelineBuildSchema.is_local).is_(False),
                     col(PipelineBuildSchema.stack_id).is_not(None),
                 )
             else:
                 templatable_filter = or_(
-                    ~PipelineRunSchema.not_offloaded(),
+                    ~PipelineRunSchema.not_archived(),
                     col(PipelineRunSchema.snapshot_id).is_(None),
                     and_(
                         PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
-                        ~PipelineSnapshotSchema.not_offloaded(),
+                        ~PipelineSnapshotSchema.not_archived(),
                     ),
                     and_(
                         PipelineRunSchema.snapshot_id

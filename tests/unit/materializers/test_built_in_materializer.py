@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for the built-in container materializer."""
-
 import os
 from collections import Counter, defaultdict
 from tempfile import TemporaryDirectory
@@ -132,6 +130,7 @@ def test_dict_with_integer_keys_materialization():
 
 def test_dict_with_string_and_integer_keys_materialization():
     """Test materialization for dicts with mixed string and integer keys."""
+
     example = {1: "integer key", "string": "string key"}
     result = _test_materializer(
         step_output_type=dict,
@@ -238,7 +237,7 @@ def test_mixture_of_all_builtin_types():
         {
             "a": (42, 1.0, "aa", True),  # tuple of serializable basic types
             "b": {
-                "group_a": ["baa", "bab"],
+                "ba": ["baa", "bab"],
                 "bb": [3.7, 1.8],
             },  # dict of lists of serializable basic types
             "c": b"ca",  # bytes (non-serializable)
@@ -272,7 +271,6 @@ class CustomType:
     myname = "aria"
 
     def __eq__(self, __value: object) -> bool:
-        """Compare custom values by name."""
         if isinstance(__value, CustomType):
             return self.myname == __value.myname
         return False

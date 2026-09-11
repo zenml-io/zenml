@@ -22,7 +22,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Engine, bindparam, delete, select, update
 from sqlmodel import Session, SQLModel, col
 
-from zenml.enums import RetentionFailure, RetentionOutcome
+from zenml.enums import RetentionExclusion, RetentionFailure, RetentionOutcome
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
@@ -123,8 +123,7 @@ class ArchivePass:
             if self.state.is_live(now):
                 raise ExecutionRetentionConflictError(
                     "An archive pass is already running for this project. "
-                    "Retry after it finishes.",
-                    error_code=RetentionFailure.BUSY,
+                    "Retry after it finishes."
                 )
             self.state.start(self.operation_id)
             self._save(session, now)
@@ -140,11 +139,11 @@ class ArchivePass:
     def run(self) -> RetentionState:
         """Archive a bounded batch and record the outcome.
 
+        The pass must have been accepted first.
+
         Returns:
             The saved state after the pass.
         """
-        if self.state.operation_id != self.operation_id:
-            self.accept()
         started = monotonic()
         try:
             self._update(self._mark_running)
@@ -214,7 +213,7 @@ class ArchivePass:
                 evaluated_at,
             )
         outcome: RunOutcome
-        if run.exclusion == "oversized":
+        if run.exclusion == RetentionExclusion.OVERSIZED:
             outcome = "oversized"
         elif run.exclusion is not None:
             outcome = "skipped"
@@ -446,12 +445,7 @@ class ArchivePass:
         Returns:
             True when the saved policy equals this pass's policy.
         """
-        saved = (
-            RetentionSettings.model_validate_json(saved_raw)
-            if saved_raw
-            else RetentionSettings()
-        )
-        return saved == self.policy
+        return RetentionSettings.load(saved_raw) == self.policy
 
     def _load(self, session: Session) -> Optional[str]:
         """Read the project's saved state and policy.

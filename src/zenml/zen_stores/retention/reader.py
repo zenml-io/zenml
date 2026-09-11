@@ -82,6 +82,67 @@ class BundleReference(BaseModel):
     size_bytes: int
     content_hash: str
 
+    @classmethod
+    def from_schema(cls, bundle: ArchiveBundleSchema) -> "BundleReference":
+        """Detach a bundle row from the session that read it.
+
+        Args:
+            bundle: Bundle row.
+
+        Returns:
+            The reference.
+        """
+        return cls(
+            bundle_id=bundle.id,
+            project_id=bundle.project_id,
+            run_id=bundle.run_id,
+            uri=bundle.uri,
+            size_bytes=bundle.size_bytes,
+            content_hash=bundle.content_hash,
+        )
+
+    def download(self, storage: ArchiveStorage) -> bytes:
+        """Read this bundle's object, refusing a size other than recorded.
+
+        Args:
+            storage: Archive storage.
+
+        Returns:
+            The object bytes.
+
+        Raises:
+            ExecutionRetentionIntegrityError: The object's size differs from
+                the bundle row.
+        """
+        data = storage.read(self.uri, self.size_bytes)
+        if len(data) != self.size_bytes:
+            raise ExecutionRetentionIntegrityError(
+                "Archive object size differs from its bundle record."
+            )
+        return data
+
+    def verify(self, data: bytes) -> ArchiveDocument:
+        """Decode object bytes and require them to hold this bundle's run.
+
+        Args:
+            data: Object bytes from `download`.
+
+        Returns:
+            The verified document.
+
+        Raises:
+            ExecutionRetentionIntegrityError: The object is corrupt or holds
+                another run's detail.
+        """
+        document = decode(data, self.content_hash)
+        if document.project_id != self.project_id or (
+            self.run_id is not None and document.run_id != self.run_id
+        ):
+            raise ExecutionRetentionIntegrityError(
+                "Archive content belongs to another run."
+            )
+        return document
+
 
 def resolve_references(
     session: Session, rows: Iterable[ArchiveMarked]
@@ -119,14 +180,7 @@ def resolve_references(
                 raise ExecutionRetentionIntegrityError(
                     "Archive bundle belongs to another project."
                 )
-            references[bundle.id] = BundleReference(
-                bundle_id=bundle.id,
-                project_id=bundle.project_id,
-                run_id=bundle.run_id,
-                uri=bundle.uri,
-                size_bytes=bundle.size_bytes,
-                content_hash=bundle.content_hash,
-            )
+            references[bundle.id] = BundleReference.from_schema(bundle)
     if len(references) != len(projects):
         raise ExecutionRetentionIntegrityError(
             "Archive marker has no bundle record."
@@ -181,22 +235,12 @@ class FetchedBundles:
         Returns:
             The verified detail index.
 
-        Raises:
-            ExecutionRetentionIntegrityError: The object is corrupt or holds
-                another run's detail.
         """
         if self._current is not None and self._current[0] == bundle_id:
             return self._current[1]
         self._current = None
         reference = self.references[bundle_id]
-        document = decode(self._objects[bundle_id], reference.content_hash)
-        if document.project_id != reference.project_id or (
-            reference.run_id is not None
-            and document.run_id != reference.run_id
-        ):
-            raise ExecutionRetentionIntegrityError(
-                "Archive content belongs to another run."
-            )
+        document = reference.verify(self._objects[bundle_id])
         self._current = (bundle_id, index_document(document))
         return self._current[1]
 
@@ -254,8 +298,6 @@ class ArchiveReader:
         Raises:
             ExecutionArchivedError: The read needs more bundles or bytes than
                 one request may load.
-            ExecutionRetentionIntegrityError: An object's size differs from
-                its bundle row.
         """
         if (
             len(references) > MAX_BUNDLES_PER_READ
@@ -263,14 +305,10 @@ class ArchiveReader:
             > MAX_COMPRESSED_BYTES_PER_READ
         ):
             raise ExecutionArchivedError(NARROW_THE_READ)
-        objects: Dict[UUID, bytes] = {}
-        for bundle_id, reference in references.items():
-            data = self._storage.read(reference.uri, reference.size_bytes)
-            if len(data) != reference.size_bytes:
-                raise ExecutionRetentionIntegrityError(
-                    "Archive object size differs from its bundle record."
-                )
-            objects[bundle_id] = data
+        objects = {
+            bundle_id: reference.download(self._storage)
+            for bundle_id, reference in references.items()
+        }
         return FetchedBundles(references, objects)
 
 

@@ -836,7 +836,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 .exists()
             )
             deployable_filter = and_(
-                PipelineSnapshotSchema.not_offloaded(),
+                PipelineSnapshotSchema.not_archived(),
                 col(PipelineSnapshotSchema.build_id).is_not(None),
                 deployer_exists,
             )

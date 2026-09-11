@@ -4197,20 +4197,17 @@ class RestZenStore(BaseZenStore):
             )
         )
 
-    def retention_dry_run(
-        self,
-        project: ProjectResponse,
-    ) -> RetentionDryRunResponse:
-        """Request a non-destructive inventory from the server.
+    def retention_dry_run(self, project_id: UUID) -> RetentionDryRunResponse:
+        """Inspect the runs the next archive pass would examine.
 
         Args:
-            project: Resolved project with its saved retention policy.
+            project_id: Project whose saved retention policy is addressed.
 
         Returns:
             Per-run row counts and exclusion reasons, with no changes.
         """
         return RetentionDryRunResponse.model_validate(
-            self.post(f"{PROJECTS}/{project.id}/retention/dry-run")
+            self.post(f"{PROJECTS}/{project_id}/retention/dry-run")
         )
 
     def get_project(
@@ -5312,6 +5309,7 @@ class RestZenStore(BaseZenStore):
                     timeout=timeout or self.config.http_timeout,
                     **kwargs,
                 )
+
                 status_code = str(response.status_code)
                 return self._handle_response(response)
             except CredentialsNotValid as e:

@@ -116,17 +116,17 @@ def test_step_creation_guard_costs_no_more_than_develops_run_lock(
             dynamic_step(ids, f"step-{uuid4().hex[:8]}", NOW)
         )
 
-    def develop_run_lock(session, run_ids, *, exclusive=False):
+    def develop_run_lock(session, run_id):
         session.execute(
             select(PipelineRunSchema.id)
-            .where(PipelineRunSchema.id.in_(run_ids))
+            .where(PipelineRunSchema.id == run_id)
             .with_for_update()
         ).all()
 
     create_step()
     with count_statements(retention_store) as guarded:
         create_step()
-    monkeypatch.setattr(fences, "protect_inserts", develop_run_lock)
+    monkeypatch.setattr(fences, "protect_run", develop_run_lock)
     with count_statements(retention_store) as develop:
         create_step()
     # Loading the whole run row also saves a later lazy load of that run.

@@ -26,11 +26,9 @@ from zenml.models.v2.misc.retention import RestoreResponse
 from zenml.zen_stores.retention import transactions
 from zenml.zen_stores.retention.format import (
     ArchiveDocument,
-    ConfigurationRecord,
-    RunRecord,
+    Record,
     SnapshotRecord,
     StepRecord,
-    decode,
 )
 from zenml.zen_stores.retention.reader import BundleReference
 from zenml.zen_stores.retention.storage import ArchiveStorage
@@ -73,24 +71,9 @@ def restore_run(
             raise ExecutionRetentionIntegrityError(
                 "Archive marker has no bundle record."
             )
-        reference = BundleReference(
-            bundle_id=bundle.id,
-            project_id=bundle.project_id,
-            run_id=bundle.run_id,
-            uri=bundle.uri,
-            size_bytes=bundle.size_bytes,
-            content_hash=bundle.content_hash,
-        )
-    data = storage.read(reference.uri, reference.size_bytes)
-    if len(data) != reference.size_bytes:
-        raise ExecutionRetentionIntegrityError(
-            "Archive object size differs from its bundle record."
-        )
-    document = decode(data, reference.content_hash)
-    if (
-        document.run_id != run_id
-        or document.project_id != reference.project_id
-    ):
+        reference = BundleReference.from_schema(bundle)
+    document = reference.verify(reference.download(storage))
+    if document.run_id != run_id:
         raise ExecutionRetentionIntegrityError(
             "Archive content belongs to another run."
         )
@@ -292,9 +275,7 @@ def _write_back(
         )
 
 
-def _archived_values(
-    record: RunRecord | StepRecord | SnapshotRecord | ConfigurationRecord,
-) -> Dict[str, Any]:
+def _archived_values(record: Record) -> Dict[str, Any]:
     """Return the columns a record writes back to SQL.
 
     Args:

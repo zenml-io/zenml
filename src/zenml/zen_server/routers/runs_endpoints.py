@@ -750,20 +750,18 @@ def replay_run(
 ) -> PipelineRunResponse:
     """Replay a specific pipeline run.
 
-    Source authorization propagates ExecutionArchivedError when the run
-    needs an explicit restore.
-
     Args:
         run_id: The ID of the pipeline run to replay.
         run_configuration: The replay configuration.
         auth_context: The authentication context.
 
     Raises:
+        ExecutionArchivedError: If the run must be restored first.
         ValueError: If the run does not have a snapshot.
 
     Returns:
         The replayed pipeline run.
-    """
+    """  # noqa: DOC503
     from zenml.zen_server.pipeline_execution.utils import (
         run_snapshot,
     )

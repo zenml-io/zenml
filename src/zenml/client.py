@@ -1170,10 +1170,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The accepted submission, or the outcome of a local pass.
         """
-        selected = (
-            self.get_project(project) if project else self.active_project
-        )
-        return self.zen_store.archive_project(selected.id)
+        return self.zen_store.archive_project(self.get_project(project).id)
 
     def get_retention_status(
         self, project: Optional[Union[str, UUID]] = None
@@ -1186,10 +1183,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Latest pass outcome, counts, and archive configuration.
         """
-        selected = (
-            self.get_project(project) if project else self.active_project
+        return self.zen_store.get_retention_status(
+            self.get_project(project).id
         )
-        return self.zen_store.get_retention_status(selected.id)
 
     def restore_pipeline_run(
         self, name_id_or_prefix: Union[str, UUID]
@@ -1217,8 +1213,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Per-run row counts and exclusion reasons, with no changes.
         """
-        selected = self.get_project(project)
-        return self.zen_store.retention_dry_run(selected)
+        return self.zen_store.retention_dry_run(self.get_project(project).id)
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.

@@ -39,7 +39,7 @@ process itself.
 | `s3://` | An IAM role for the server's pod or instance, such as IRSA on EKS. |
 | `gs://` | Workload Identity or the service account attached to the server. |
 | `az://`, `abfs://` | A managed identity or the default Azure credential chain. |
-| A local path | Only for single-replica test servers; every replica must see the same files. |
+| A local path | For test servers. With several replicas, the path must be shared storage every replica sees. |
 
 The server image must include the matching integration, which the official
 images do. The credentials must allow reading, writing, and deleting objects
@@ -149,9 +149,9 @@ by a later pass. Runs whose archiving failed are counted in `failed`; the
 server log names the error type.
 
 Only one pass per project runs at a time: submitting while another pass holds
-its lease returns **409**. Each server process also has **one maintenance
-worker shared with artifact pruning**; a submission while it is busy returns
-**429**. Retry once the other work finishes.
+its lease returns **409**. Each server process runs maintenance jobs on **one
+worker**, so a submission while it is busy returns **429**. Retry once the
+other work finishes.
 
 ## What users see
 

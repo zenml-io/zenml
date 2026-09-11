@@ -64,7 +64,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
 from zenml.zen_stores.schemas.archive_detail import (
     BundleDetail,
-    ConfigurationRecord,
+    ConfigurationPayload,
     StepPayload,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -415,9 +415,9 @@ class StepRunSchema(
             Whether configuration decoding requires an execution restore.
         """
         return (
-            self.is_offloaded
-            or self.pipeline_run.is_offloaded
-            or (self.snapshot is not None and self.snapshot.is_offloaded)
+            self.is_archived
+            or self.pipeline_run.is_archived
+            or (self.snapshot is not None and self.snapshot.is_archived)
         )
 
     def _get_response_type(self, step: Optional[Step]) -> Optional[StepType]:
@@ -490,7 +490,7 @@ class StepRunSchema(
 
         if self.snapshot is not None:
             config_schema: Optional[
-                Union[StepConfigurationSchema, ConfigurationRecord]
+                Union[StepConfigurationSchema, ConfigurationPayload]
             ]
             archived_step = self.archived_detail(detail)
             if archived_step is not None:

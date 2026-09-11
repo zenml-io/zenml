@@ -48,6 +48,10 @@ class ErrorModel(BaseModel):
 
 error_response = dict(model=ErrorModel)
 
+# Retention errors a client should see at once rather than retry.
+RETENTION_RETRY_AFTER_SECONDS = 30
+NO_RETRY_HEADER = "X-ZenML-Retry"
+
 # Associates exceptions to HTTP status codes. This is used in two ways and the
 # order of the exceptions is important in both cases:
 #
@@ -71,9 +75,6 @@ error_response = dict(model=ErrorModel)
 # An exception may be associated with multiple status codes if the same
 # exception can be reconstructed from two or more HTTP error responses with
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
-RETENTION_RETRY_AFTER_SECONDS = 30
-NO_RETRY_HEADER = "X-ZenML-Retry"
-
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (ExecutionRetentionIntegrityError, 500),
     (ExecutionRetentionUnavailableError, 503),

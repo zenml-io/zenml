@@ -407,7 +407,7 @@ from zenml.models.v2.misc.retention import (
     RestoreResponse,
     RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunEstimate,
+    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -576,20 +576,6 @@ class _SchemaPage(BaseModel, Generic[_ExecutionReadValue]):
             index=self.index,
             max_size=self.max_size,
         )
-
-
-class _RunChild(BaseModel, Generic[AnySchema]):
-    """Pair a child with its permission owner selected by the same query."""
-
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
-
-    row: AnySchema
-    run: PipelineRunSchema
-
-
-_RUN_CHILD_AUTHORIZATION: Dict[str, Type[BaseSchema]] = {
-    "step": StepRunSchema,
-}
 
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -1269,14 +1255,6 @@ class SqlZenStore(BaseZenStore):
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
     _EXECUTION_READ_RETRIES: ClassVar[int] = 2
-    _RUN_OWNER_COLUMNS: ClassVar[
-        Dict[Type[BaseSchema], InstrumentedAttribute[UUID]]
-    ] = {
-        StepRunSchema: cast(
-            InstrumentedAttribute[UUID], StepRunSchema.pipeline_run_id
-        ),
-    }
-
     _RUN_HEADER_COLUMNS: ClassVar[Tuple[InstrumentedAttribute[Any], ...]] = (
         jl_arg(PipelineRunSchema.id),
         jl_arg(PipelineRunSchema.name),
@@ -5525,7 +5503,6 @@ class SqlZenStore(BaseZenStore):
                 included.
             include_config_schema: Whether to include the config schema in the
                 response.
-
             authorize: Optional permission check using the current SQL header.
 
         Returns:
@@ -5673,7 +5650,7 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(snapshot)
             return snapshot.to_model(
-                include_metadata=not snapshot.is_offloaded,
+                include_metadata=not snapshot.is_archived,
                 include_resources=True,
             )
 
@@ -6471,7 +6448,6 @@ class SqlZenStore(BaseZenStore):
             pipeline_run_id: The ID of the pipeline run.
             include_step_metadata: Run metadata keys for which to include the
                 values in the step nodes.
-
             authorize: Optional permission check using the current SQL header.
 
         Returns:
@@ -6572,7 +6548,7 @@ class SqlZenStore(BaseZenStore):
                 for name, configured_step in step_runs.items():
                     configuration = (
                         detail.step_configuration(configured_step.id)
-                        if detail is not None and configured_step.is_offloaded
+                        if detail is not None and configured_step.is_archived
                         else configured_step.dynamic_config
                     )
                     step_definition = (
@@ -7060,9 +7036,7 @@ class SqlZenStore(BaseZenStore):
             return bool(value)
 
     def _create_run(
-        self,
-        pipeline_run: PipelineRunRequest,
-        session: Session,
+        self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
@@ -7090,7 +7064,7 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-        if snapshot.is_offloaded:
+        if snapshot.is_archived:
             raise ExecutionArchivedError.for_entity(snapshot.id, None)
 
         index = self._get_next_run_index(
@@ -7239,7 +7213,6 @@ class SqlZenStore(BaseZenStore):
                 full metadata in the response.
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
-
             authorize: Optional permission check using the current SQL header.
 
         Returns:
@@ -7440,7 +7413,7 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
-        if run_schema.is_offloaded:
+        if run_schema.is_archived:
             raise ExecutionArchivedError.for_entity(
                 run_schema.id, run_schema.id
             )
@@ -7734,7 +7707,7 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
 
             return existing_run.to_model(
-                include_metadata=not existing_run.is_offloaded,
+                include_metadata=not existing_run.is_archived,
                 include_resources=True,
             )
 
@@ -8147,18 +8120,17 @@ class SqlZenStore(BaseZenStore):
                         status_reason="Waiting for input.",
                     )
 
-            run_id = schema.run_id
-            root_run_id = None
-            if (
-                lease_update.mode == RunWaitConditionLeaseMode.ABANDON
-                and schema.resolution
-                == RunWaitConditionResolution.CONTINUE.value
-            ):
-                root_run_id = schema.run.root_run_id or run_id
             session.add(schema)
             session.commit()
 
-        if root_run_id is not None:
+            resolution = schema.resolution
+            run_id = schema.run_id
+            root_run_id = schema.run.root_run_id or run_id
+
+        if (
+            lease_update.mode == RunWaitConditionLeaseMode.ABANDON
+            and resolution == RunWaitConditionResolution.CONTINUE.value
+        ):
             # The poller abandons the lease, and won't continue the run
             # even if the condition has been resolved. So we try to resume
             # the run from the server.
@@ -12390,9 +12362,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             # Match retention's run-before-snapshot lock order.
-            fences.protect_inserts(
-                session, [step_run.pipeline_run_id], exclusive=True
-            )
+            fences.protect_run(session, step_run.pipeline_run_id)
             if run.snapshot_id is None:
                 raise IllegalOperationError(
                     "Step creation requires a pipeline snapshot."
@@ -14360,15 +14330,6 @@ class SqlZenStore(BaseZenStore):
             )
         return ArchiveStorage.from_uri(uri)
 
-    @cached_property
-    def retention_reader(self) -> ArchiveReader:
-        """Bind the archive reader to this store's archive storage.
-
-        Returns:
-            Reader over the configured archive storage.
-        """
-        return ArchiveReader(self.archive_storage)
-
     def _list_execution_details(
         self,
         table: Type[AnySchema],
@@ -14568,7 +14529,7 @@ class SqlZenStore(BaseZenStore):
         """
         if authorize is not None and permission_owner is None:
             raise ExecutionRetentionIntegrityError(
-                "Historical authorization requires an explicit permission owner."
+                "Authorizing a read requires its permission owner."
             )
 
         def authorize_loaded(loaded: _ExecutionReadValue) -> None:
@@ -14594,7 +14555,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 if not references:
                     return convert(session, loaded, no_bundles())
-            fetched = self.retention_reader.fetch(references)
+            fetched = ArchiveReader(self.archive_storage).fetch(references)
             with Session(self.engine) as session:
                 loaded = load(session)
                 authorize_loaded(loaded)
@@ -14608,35 +14569,30 @@ class SqlZenStore(BaseZenStore):
             "Execution history changed while loading. Retry the read."
         )
 
-    def get_run_child_authorization(
-        self,
-        child_id: UUID,
-        child_type: Literal["step"],
-    ) -> PipelineRunResponse:
-        """Resolve a child's SQL-only permission owner with one joined query.
+    def get_step_run_owner(self, step_run_id: UUID) -> PipelineRunResponse:
+        """Load the header of the run that owns a step, in one query.
 
         Args:
-            child_id: Execution child identity.
-            child_type: Supported retained identity table.
+            step_run_id: Step run whose owner decides permissions.
 
         Returns:
-            Run header containing current project and user ownership.
+            Run header with its project and user ownership.
 
         Raises:
-            KeyError: If the child or its owning run no longer exists.
+            KeyError: If the step or its run no longer exists.
         """
-        table = _RUN_CHILD_AUTHORIZATION[child_type]
-        owner = self._RUN_OWNER_COLUMNS[table]
         with Session(self.engine) as session:
             run = session.exec(
                 select(PipelineRunSchema)
-                .join(table, col(PipelineRunSchema.id) == owner)
-                .where(col(table.id) == child_id)
+                .join(
+                    StepRunSchema,
+                    col(StepRunSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(col(StepRunSchema.id) == step_run_id)
             ).first()
             if run is None:
-                raise KeyError(
-                    f"Execution {child_type} '{child_id}' does not exist."
-                )
+                raise KeyError(f"Step run '{step_run_id}' does not exist.")
             return run.to_model(
                 include_metadata=False, include_resources=False
             )
@@ -14661,38 +14617,38 @@ class SqlZenStore(BaseZenStore):
                 "server administrator to enable it."
             )
         project = self.get_project(project_id)
-        claimed = ArchivePass(
+        archive_pass = ArchivePass(
             self.engine,
             self.archive_storage,
             project_id,
             project.retention,
         )
-        claimed.accept()
-        return claimed
+        archive_pass.accept()
+        return archive_pass
 
     def execute_retention_pass(
-        self, claimed: ArchivePass
+        self, archive_pass: ArchivePass
     ) -> RetentionPassResponse:
         """Run an accepted pass.
 
         Args:
-            claimed: Authorized pass accepted before submission.
+            archive_pass: Authorized pass accepted before submission.
 
         Returns:
             The pass outcome.
         """
-        return RetentionPassResponse(outcome=claimed.run().last_outcome)
+        return RetentionPassResponse(outcome=archive_pass.run().last_outcome)
 
     def abort_retention_pass(
-        self, claimed: ArchivePass, error_code: RetentionFailure
+        self, archive_pass: ArchivePass, error_code: RetentionFailure
     ) -> None:
         """Record a failed submission or revoked permission for a pass.
 
         Args:
-            claimed: Pass accepted by the submitting request.
+            archive_pass: Pass accepted by the submitting request.
             error_code: Safe failure classification.
         """
-        claimed.abort(error_code)
+        archive_pass.abort(error_code)
 
     def archive_project(self, project_id: UUID) -> RetentionPassResponse:
         """Run one archive pass in this process using the saved policy.
@@ -14726,13 +14682,7 @@ class SqlZenStore(BaseZenStore):
             ).one()
             now = transactions.database_now(session)
             state = RetentionState.load(project.retention_state)
-            policy = (
-                RetentionSettings.model_validate_json(
-                    project.retention_settings
-                )
-                if project.retention_settings
-                else RetentionSettings()
-            )
+            policy = RetentionSettings.load(project.retention_settings)
         configuration = ServerConfiguration.get_server_config()
         try:
             self.archive_storage
@@ -14761,29 +14711,26 @@ class SqlZenStore(BaseZenStore):
             return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
         return restore_run(self.engine, self.archive_storage, run.id)
 
-    def retention_dry_run(
-        self,
-        project: ProjectResponse,
-    ) -> RetentionDryRunResponse:
+    def retention_dry_run(self, project_id: UUID) -> RetentionDryRunResponse:
         """Inspect the runs the next archive pass would examine.
 
         Args:
-            project: Resolved project with its saved retention policy.
+            project_id: Authorized project.
 
         Returns:
             Per-run row counts and exclusion reasons, with no changes.
         """
-        policy = project.retention
         with Session(self.engine) as session:
-            saved = session.execute(
-                select(col(ProjectSchema.retention_state)).where(
-                    col(ProjectSchema.id) == project.id
+            project = session.exec(
+                select(ProjectSchema).where(
+                    col(ProjectSchema.id) == project_id
                 )
-            ).scalar_one()
-            state = RetentionState.load(saved)
+            ).one()
+            policy = RetentionSettings.load(project.retention_settings)
+            state = RetentionState.load(project.retention_state)
             selection = select_archivable_runs(
                 session,
-                project.id,
+                project_id,
                 policy,
                 transactions.database_now(session),
                 state.cursor,
@@ -14797,7 +14744,7 @@ class SqlZenStore(BaseZenStore):
             examined_run_count=len(selection.runs),
             truncated=selection.truncated,
             runs=[
-                RetentionRunEstimate(
+                RetentionRunPreview(
                     run_id=run.run_id,
                     rows=run.row_count,
                     exclusion_reason=run.exclusion,

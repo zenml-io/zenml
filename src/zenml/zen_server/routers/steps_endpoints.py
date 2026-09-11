@@ -98,7 +98,6 @@ def list_run_steps(
 
     Returns:
         The run steps according to query filters.
-
     """
     # A project scoped request must always be scoped to a specific
     # project. This is required for the RBAC check to work.
@@ -203,7 +202,7 @@ def update_step(
     """
     store = zen_store()
     verify_permission_for_model(
-        store.get_run_child_authorization(step_id, "step"),
+        store.get_step_run_owner(step_id),
         action=Action.UPDATE,
     )
 

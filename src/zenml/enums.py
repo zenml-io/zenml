@@ -635,11 +635,22 @@ class RetentionFailure(StrEnum):
     """Safe failure codes shared by wire models and archive passes."""
 
     ARCHIVE_FAILED = "archive_failed"
-    INTEGRITY = "integrity"
     STORAGE_CONFIGURATION = "storage_configuration"
     PERMISSION_REVOKED = "permission_revoked"
     SUBMISSION_FAILED = "submission_failed"
-    BUSY = "busy"
+    OVERSIZED = "oversized"
+
+
+class RetentionExclusion(StrEnum):
+    """Why an archive pass leaves a run's detail in the database."""
+
+    NOT_ELIGIBLE = "not_eligible"
+    NOT_OLD = "not_old"
+    PINNED = "pinned"
+    RESUMABLE_FAILED = "resumable_failed"
+    ROOT_ACTIVE = "root_active"
+    RESTORED_GRACE = "restored_grace"
+    MODEL_LINK = "model_link"
     OVERSIZED = "oversized"
 
 

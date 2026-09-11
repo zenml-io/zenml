@@ -22,7 +22,11 @@ from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, col
 
-from zenml.enums import ExecutionStatus, RunWaitConditionStatus
+from zenml.enums import (
+    ExecutionStatus,
+    RetentionExclusion,
+    RunWaitConditionStatus,
+)
 from zenml.models.v2.misc.retention import RetentionSettings
 from zenml.zen_stores.retention.format import MAX_RECORDS
 from zenml.zen_stores.retention.state import Cursor
@@ -51,7 +55,7 @@ class ArchivableRun(BaseModel):
     project_id: UUID
     snapshot_ids: List[UUID] = Field(default_factory=list)
     row_count: int = 0
-    exclusion: Optional[str] = None
+    exclusion: Optional[RetentionExclusion] = None
 
 
 class RetentionSelection(BaseModel):
@@ -138,9 +142,6 @@ def inspect_run(
         The run's owned snapshots, row count, and first exclusion, if any.
     """
     run = ArchivableRun(run_id=run_id, project_id=project_id)
-    if policy.archive_after_days is None:
-        run.exclusion = "disabled"
-        return run
     header = session.execute(
         select(
             col(PipelineRunSchema.project_id),
@@ -148,12 +149,12 @@ def inspect_run(
         ).where(col(PipelineRunSchema.id) == run_id)
     ).one_or_none()
     if header is None or header.project_id != project_id:
-        run.exclusion = "not_eligible"
+        run.exclusion = RetentionExclusion.NOT_ELIGIBLE
         return run
     run.exclusion = _first_exclusion(session, run_id, project_id, policy, now)
     _count_rows(session, run, header.snapshot_id)
     if run.exclusion is None and run.row_count > MAX_RECORDS:
-        run.exclusion = "oversized"
+        run.exclusion = RetentionExclusion.OVERSIZED
     return run
 
 
@@ -240,7 +241,7 @@ def _first_exclusion(
     project_id: UUID,
     policy: RetentionSettings,
     now: datetime,
-) -> Optional[str]:
+) -> Optional[RetentionExclusion]:
     """Return the most actionable exclusion reason in one SQL round trip.
 
     Args:
@@ -253,6 +254,7 @@ def _first_exclusion(
     Returns:
         The first matching reason in precedence order, or None.
     """
+    # Callers only inspect runs under an enabled policy.
     assert policy.archive_after_days is not None
     cutoff = now - timedelta(days=policy.archive_after_days)
     this_run = select(col(PipelineRunSchema.id)).where(
@@ -279,12 +281,12 @@ def _first_exclusion(
         .limit(1)
         .scalar_subquery()
     )
-    checks: Dict[str, ColumnElement[bool]] = {
-        "pinned": this_run.where(
+    checks: Dict[RetentionExclusion, ColumnElement[bool]] = {
+        RetentionExclusion.PINNED: this_run.where(
             col(PipelineRunSchema.retain).is_(True)
         ).exists(),
-        "resumable_failed": _resumable_failed(run_id),
-        "root_active": or_(
+        RetentionExclusion.RESUMABLE_FAILED: _resumable_failed(run_id),
+        RetentionExclusion.ROOT_ACTIVE: or_(
             select(col(root.id))
             .where(
                 col(root.id) == root_id,
@@ -297,7 +299,7 @@ def _first_exclusion(
             .exists(),
             _resumable_failed(root_id),
         ),
-        "restored_grace": select(col(ArchiveBundleSchema.id))
+        RetentionExclusion.RESTORED_GRACE: select(col(ArchiveBundleSchema.id))
         .where(
             col(ArchiveBundleSchema.id) == latest_bundle,
             col(ArchiveBundleSchema.restored_at)
@@ -306,11 +308,11 @@ def _first_exclusion(
         .exists(),
     }
     if not policy.archive_model_linked_runs:
-        checks["model_link"] = _model_link(run_id)
-    checks["not_old"] = this_run.where(
+        checks[RetentionExclusion.MODEL_LINK] = _model_link(run_id)
+    checks[RetentionExclusion.NOT_OLD] = this_run.where(
         col(PipelineRunSchema.end_time) >= cutoff
     ).exists()
-    checks["not_eligible"] = or_(
+    checks[RetentionExclusion.NOT_ELIGIBLE] = or_(
         this_run.where(
             or_(
                 col(PipelineRunSchema.status).not_in(TERMINAL_STATUSES),
@@ -349,14 +351,16 @@ def _first_exclusion(
         .exists(),
     )
     row = session.execute(
-        select(*(check.label(reason) for reason, check in checks.items()))
+        select(
+            *(check.label(reason.value) for reason, check in checks.items())
+        )
     ).one()
     return next(
         (reason for reason, matched in zip(checks, row) if matched), None
     )
 
 
-def owned_snapshots_query(
+def _owned_snapshots(
     run_id: UUID, candidates: Sequence[UUID], project_id: UUID
 ) -> Select[Any]:
     """Select the candidate snapshots that nothing outside the run uses.
@@ -435,7 +439,7 @@ def _count_rows(
     run.snapshot_ids = (
         list(
             session.execute(
-                owned_snapshots_query(
+                _owned_snapshots(
                     run.run_id, sorted(candidates), run.project_id
                 ).order_by(col(PipelineSnapshotSchema.id))
             ).scalars()
