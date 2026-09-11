@@ -91,8 +91,19 @@ def test_archive_marker_adds_no_header_read_statements(
     sql_store, tree_factory, archive_one_tree, operation
 ):
     """A marker adds no SQL work to an identity-only read."""
-    cold, hot = tree_factory(sql_store), tree_factory(sql_store)
+    cold = tree_factory(sql_store)
     archive_one_tree(sql_store, cold)
+    # Archival is project-wide, so the comparison tree must exist only after it.
+    hot = tree_factory(sql_store)
+    assert sql_store.get_run(cold.run, hydrate=False).archive_bundle_id
+    assert sql_store.get_snapshot(
+        cold.snapshot, hydrate=False
+    ).archive_bundle_id
+    assert sql_store.get_run(hot.run, hydrate=False).archive_bundle_id is None
+    assert (
+        sql_store.get_snapshot(hot.snapshot, hydrate=False).archive_bundle_id
+        is None
+    )
     with count_statements(sql_store) as hot_statements:
         header_read(sql_store, hot, operation)
     with count_statements(sql_store) as cold_statements:
