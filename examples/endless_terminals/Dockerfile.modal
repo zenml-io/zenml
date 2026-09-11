@@ -1,0 +1,12 @@
+# Use the published Dockerfile.native dependency image as the explicit base.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+COPY zenml-*.whl /tmp/zenml-wheels/
+RUN set -eu; \
+    set -- /tmp/zenml-wheels/zenml-*.whl; \
+    test "$#" -eq 1; \
+    test -f "$1"; \
+    pip install --no-cache-dir modal==1.5.5; \
+    pip install --no-cache-dir --no-deps --force-reinstall "$1"; \
+    rm -rf /tmp/zenml-wheels; \
+    pip check

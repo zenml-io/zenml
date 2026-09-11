@@ -14,6 +14,14 @@ materialized form of one of our project templates. If you like any of the
 examples here, and you want to set up something similar, just grab the template 
 and kickstart your own example. It's that simple!          |
 
+## Terminal Agent Evaluation and Training
+
+The [Endless Terminals example](endless_terminals/README.md) qualifies Docker
+tasks, evaluates a model checkpoint, trains a LoRA adapter with SkyRL, and
+publishes transcripts, audited scores, and an HTML report through ZenML
+pipelines. Native Modal and Kubernetes examples run task sandboxes and GPU
+training separately.
+
 ## More Projects & Practical Examples
 
 If you're eager to discover more projects leveraging ZenML, you can check out 
@@ -32,4 +40,3 @@ If you have questions or need assistance with any of the examples, feel free to
 [reach out to us on Slack](https://zenml.io/slack/)!
 
 Happy experimenting with ZenML!
-

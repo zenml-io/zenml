@@ -1,0 +1,47 @@
+{
+  "controller_image": "REGISTRY/controller@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "training": {
+    "mode": "native",
+    "task_ids": [
+      "task_000000_0228cd64"
+    ],
+    "training_task_ids": [
+      "task_000000_0228cd64"
+    ],
+    "groups": 1,
+    "group_size": 8,
+    "max_actions": 8,
+    "training_max_actions": 8,
+    "max_tokens": 512,
+    "episode_timeout": 90,
+    "max_context": 8192,
+    "zero_signal_patience": 1,
+    "prompt_variant": "concise_xml_v1",
+    "model_name": "Qwen/Qwen2.5-7B-Instruct",
+    "model_revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "sandbox": {
+    "modal_workspace": "YOUR_WORKSPACE",
+    "modal_environment": "dev",
+    "helper_image": "REGISTRY/helper@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "startup_timeout": 600,
+    "cleanup_timeout": 120,
+    "command_timeout": 30,
+    "episode_timeout": 300,
+    "task_ids": [
+      "task_000000_0228cd64"
+    ],
+    "modal_agent_image": "REGISTRY/modal-agent@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "service": {
+    "backend": "modal",
+    "training_image": "REGISTRY/training@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "workspace": "YOUR_WORKSPACE",
+    "modal_environment": "dev",
+    "gpu": "H200",
+    "memory_mib": 262144,
+    "cpu": 8,
+    "serving_deadline": 5400,
+    "inference_gpu_memory_utilization": 0.5
+  }
+}

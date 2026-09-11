@@ -32,7 +32,7 @@ class ModalIntegration(Integration):
     """Definition of Modal integration for ZenML."""
 
     NAME = MODAL
-    REQUIREMENTS = ["modal>=1.4,<2"]
+    REQUIREMENTS = ["modal>=1.4.3,<2"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
