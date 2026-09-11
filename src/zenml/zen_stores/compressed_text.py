@@ -37,6 +37,13 @@ COMPRESSED_TEXT_PREFIX = f"{COMPRESSED_TEXT_MARKER}zlib:v1:"
 # fit a payload that would not fit the column as plain text.
 MAX_DECOMPRESSED_TEXT_BYTES = 64 * 1024 * 1024
 
+# Base64 inflates the zlib stream by a third, so a value only gets smaller if
+# zlib beats a 0.75 ratio, which JSON payloads do not reach below a few
+# hundred bytes. Shorter values skip the attempt instead of paying for a
+# compression that is discarded, which matters for step configurations as the
+# most frequently written of these columns.
+MIN_COMPRESSIBLE_BYTES = 256
+
 
 class CompressedTextError(RuntimeError):
     """A stored value carries the compressed-text marker but cannot be decoded.
@@ -49,9 +56,6 @@ class CompressedTextError(RuntimeError):
 
 def encode_compressed_text(value: str) -> str:
     """Encode text in the compressed storage format.
-
-    No production writer uses this yet; see the module docstring for when
-    compressed writes may be enabled.
 
     Args:
         value: The text to encode.

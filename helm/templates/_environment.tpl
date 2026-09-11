@@ -81,6 +81,9 @@ pool_size: {{ .ZenML.database.poolSize | quote }}
 {{- if .ZenML.database.maxOverflow }}
 max_overflow: {{ .ZenML.database.maxOverflow | quote }}
 {{- end }}
+{{- if .ZenML.database.compressTextPayloads }}
+compress_text_payloads: {{ .ZenML.database.compressTextPayloads | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 
