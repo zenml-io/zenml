@@ -20,6 +20,8 @@ import pytest
 
 pytest.importorskip("nebius")
 
+from grpc import StatusCode
+from nebius.aio.service_error import RequestError, RequestStatusExtended
 from nebius.api.nebius.ai.v1 import Job, JobSpec, JobStatus, ListJobsResponse
 from nebius.api.nebius.common.v1 import ResourceMetadata
 
@@ -150,3 +152,30 @@ def test_sdk_is_closed_even_if_caller_fails(monkeypatch):
         with job_client.connect(SimpleNamespace(credentials_file=None), 5):
             raise ValueError("application failure")
     sdk.sync_close.assert_called_once_with(timeout=5)
+
+
+@pytest.mark.parametrize(
+    "request_id",
+    ["11111111-2222-4333-8444-555555555555", "sensitive-invalid-id"],
+)
+def test_submission_diagnostics_exclude_server_messages(request_id):
+    error = RequestError(
+        RequestStatusExtended(
+            code=StatusCode.PERMISSION_DENIED,
+            message="sensitive-server-message",
+            details=[],
+            service_errors=[],
+            request_id=request_id,
+            trace_id="sensitive-trace-value",
+        )
+    )
+    metadata = job_client.get_request_error_metadata(error)
+    assert metadata["submission_error_code"] == "PERMISSION_DENIED"
+    assert ("submission_request_id" in metadata) == (
+        request_id.startswith("11111111")
+    )
+    assert "sensitive" not in repr(metadata)
+
+
+def test_non_sdk_error_has_no_submission_diagnostics():
+    assert job_client.get_request_error_metadata(ValueError("sensitive")) == {}

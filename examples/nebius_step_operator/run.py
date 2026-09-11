@@ -39,6 +39,7 @@ def prepare() -> list[list[float]]:
         ),
         "docker": DockerSettings(
             dockerfile="Dockerfile",
+            environment={"UV_SYSTEM_PYTHON": "1"},
             build_context_root=".",
             parent_image_build_config=DockerBuildConfig(
                 dockerignore=".dockerignore",

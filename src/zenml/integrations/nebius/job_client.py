@@ -20,7 +20,9 @@ import time
 from contextlib import contextmanager
 from datetime import timedelta
 from typing import Callable, Dict, Iterator, List
+from uuid import UUID
 
+from nebius.aio.service_error import RequestError
 from nebius.api.nebius.ai.v1 import (
     CancelJobRequest,
     CreateJobRequest,
@@ -43,6 +45,25 @@ from zenml.integrations.nebius.submission import SubmissionReceipt
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def get_request_error_metadata(error: BaseException) -> Dict[str, str]:
+    """Extract safe submission diagnostics without retaining server messages.
+
+    Args:
+        error: The failed SDK request or another submission exception.
+
+    Returns:
+        The gRPC status name and a valid request UUID, when available.
+    """
+    if not isinstance(error, RequestError):
+        return {}
+    metadata = {"submission_error_code": error.status.code.name}
+    try:
+        metadata["submission_request_id"] = str(UUID(error.status.request_id))
+    except (ValueError, TypeError, AttributeError):
+        pass
+    return metadata
 
 
 class JobClient:

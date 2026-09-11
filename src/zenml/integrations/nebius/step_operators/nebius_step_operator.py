@@ -220,6 +220,20 @@ class NebiusStepOperator(BaseStepOperator):
                     acknowledged,
                 )
         except BaseException as error:
+            diagnostics = job_client.get_request_error_metadata(error)
+            if diagnostics:
+                receipt.submission_error_code = diagnostics.get(
+                    "submission_error_code"
+                )
+                receipt.submission_request_id = diagnostics.get(
+                    "submission_request_id"
+                )
+                try:
+                    self._save(info.step_run, receipt)
+                except Exception:
+                    logger.warning(
+                        "Cannot publish submission diagnostics; retaining the receipt locally."
+                    )
             if receipt.job_id:
                 self._best_effort_cancel(info.step_run, receipt)
             if not isinstance(error, Exception):

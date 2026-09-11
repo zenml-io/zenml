@@ -29,7 +29,10 @@ The launcher needs Nebius permissions to create, get, list, and cancel Jobs in
 one project. Use service-account credentials with token renewal. Keep their
 credentials file only on the launcher; never include it in the build context.
 The operator uses the standard Nebius SDK authentication chain when no
-`credentials_file` is configured.
+`credentials_file` is configured. When using native secret versions, that same
+identity must also be allowed to read their payloads; permission to create or
+inspect secret metadata is insufficient. Verify the credentials file belongs to
+the intended service account rather than assuming it matches your CLI profile.
 
 Install the optional integrations:
 
@@ -74,6 +77,9 @@ Private image pulls use the existing Nebius registry configuration or an
 explicit `registry_secret_version` on the step operator. For the SDK field,
 that secret version must contain `REGISTRY_USERNAME` and `REGISTRY_PASSWORD`.
 Build-time push credentials remain configured on the ZenML container registry.
+For Nebius Container Registry, use the registry path from its Docker commands
+(the registry ID without the `registry-` prefix), followed by your image namespace
+in `default_repository`. See the [registry quickstart](https://docs.nebius.com/container-registry/quickstart).
 Check both paths independently before launching expensive workloads.
 
 ## Select the GPU step
@@ -172,7 +178,9 @@ hits bypass submission normally.
 
 The `nebius_submission` run metadata contains a non-secret receipt: submission
 UUID/idempotency key, project, step/run/component identity, image digest, spec
-fingerprint, timestamps, operation ID, Job ID, and cleanup status. Inspect the
+fingerprint, timestamps, operation ID, Job ID, and cleanup status. Failed SDK
+submissions also retain the gRPC status name and a valid request UUID, without
+raw provider error messages. Inspect the
 receipt on the step run. The Job ID also appears in the launcher's log:
 
 ```shell

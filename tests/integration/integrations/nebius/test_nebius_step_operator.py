@@ -28,6 +28,8 @@ import pytest
 
 pytest.importorskip("nebius")
 
+from grpc import StatusCode
+from nebius.aio.service_error import RequestError, RequestStatusExtended
 from nebius.api.nebius.ai.v1 import Job, JobStatus
 from nebius.api.nebius.common.v1 import ResourceMetadata
 
@@ -144,6 +146,17 @@ def harness(monkeypatch):
                 spec=request.spec,
                 status=JobStatus(state=JobStatus.State.RUNNING),
             )
+            if cloud.mode == "permission_denied":
+                raise RequestError(
+                    RequestStatusExtended(
+                        code=StatusCode.PERMISSION_DENIED,
+                        message="sensitive-server-message",
+                        details=[],
+                        service_errors=[],
+                        request_id="11111111-2222-4333-8444-555555555555",
+                        trace_id="sensitive-trace-value",
+                    )
+                )
             if cloud.mode == "lost_ack":
                 raise OSError("secret-create-error")
             if cloud.mode == "operation_only":
@@ -567,3 +580,19 @@ def test_terminal_job_is_not_cancelled_when_metadata_is_offline(harness):
         h.run.run_metadata[RECEIPT_KEY]
     )
     assert saved.cleanup == "WORKLOAD_TERMINAL"
+
+
+def test_permission_denied_retains_safe_diagnostics_without_replaying(harness):
+    harness.cloud.mode = "permission_denied"
+    with pytest.raises(RuntimeError, match="PERMISSION_DENIED") as error:
+        submit(harness)
+    saved = receipt(harness)
+    assert saved.submission_error_code == "PERMISSION_DENIED"
+    assert (
+        saved.submission_request_id == "11111111-2222-4333-8444-555555555555"
+    )
+    assert saved.job_id is None
+    assert "sensitive" not in str(error.value)
+    with pytest.raises(RuntimeError, match="already has"):
+        submit(harness)
+    assert harness.cloud.creates == 1

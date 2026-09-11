@@ -18,7 +18,9 @@ cd examples/nebius_step_operator
 Use a Python version supported by this checkout. The worker parent image contains
 PyTorch with CUDA 12.8; the Dockerfile installs the same ZenML checkout wheel into
 that image. ZenML then builds the step image, installs stack requirements, and
-pushes it to your registered remote registry. The example requests `linux/amd64`.
+pushes it to your registered remote registry. The example requests `linux/amd64`
+and sets `UV_SYSTEM_PYTHON=1` for uv when installing stack requirements into the
+PyTorch parent image's existing Conda Python.
 A working Docker builder and registry push credentials are required.
 
 Connect to a ZenML server reachable from both the launcher and your Nebius subnet.

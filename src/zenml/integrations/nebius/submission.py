@@ -49,6 +49,8 @@ class SubmissionReceipt(BaseModel):
     poll_interval: int
     cancel_timeout: int
     publication_grace: int
+    submission_error_code: Optional[str] = None
+    submission_request_id: Optional[str] = None
     operation_id: Optional[str] = None
     job_id: Optional[str] = None
     provider_state: Optional[str] = None
