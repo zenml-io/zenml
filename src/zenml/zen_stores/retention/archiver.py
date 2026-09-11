@@ -173,7 +173,7 @@ class ArchivePass:
         self.engine, self.storage = engine, storage
         self.project_id, self.policy = project_id, policy.model_copy(deep=True)
         self.operation_id = uuid4()
-        self.owner = claims.Claim.owner_identity()
+        self.owner = claims.Claim.owner_identity(self.operation_id)
         self.claim: Optional[claims.ArchiveClaim] = None
         self.remaining_rows = policy.max_rows
         self.remaining_bytes = policy.max_bytes
@@ -744,7 +744,7 @@ class ArchivePass:
                     and self.state.last_outcome in self.ACTIVE_OUTCOMES
                     and self.state.operation_expires_at is not None
                     and self.state.operation_expires_at > current_time
-                    and not self._has_expired_claim(session)
+                    and not self._operation_claim_expired(session)
                 ):
                     return self.state
                 self.state.operation_id = self.operation_id
@@ -765,15 +765,21 @@ class ArchivePass:
             )
         return self.state
 
-    def _has_expired_claim(self, session: Session) -> bool:
-        """Check whether this project's current archive worker is replaceable.
+    def _operation_claim_expired(self, session: Session) -> bool:
+        """Check whether the recorded operation's own tree claim has expired.
+
+        A live project lease normally protects the running pass. Its tree
+        claim can expire earlier when the worker stalls mid-tree, so that
+        expiry allows an early takeover. Claims of other operations, such as
+        one abandoned on a root that is now excluded, must not count.
 
         Args:
             session: Transaction holding the project state update decision.
 
         Returns:
-            Whether a pending archive claim has expired by database time.
+            Whether a pending claim owned by the recorded operation expired.
         """
+        owner_suffix = f":{self.state.operation_id}"
         return (
             session.execute(
                 select(col(ArchiveBundleSchema.id))
@@ -782,6 +788,9 @@ class ArchivePass:
                     col(ArchiveBundleSchema.status)
                     == ArchiveBundleStatus.PENDING,
                     col(ArchiveBundleSchema.active_root_id).is_not(None),
+                    col(ArchiveBundleSchema.claimed_by).endswith(
+                        owner_suffix, autoescape=True
+                    ),
                     col(ArchiveBundleSchema.claim_expires_at)
                     <= transactions.database_now(session),
                 )

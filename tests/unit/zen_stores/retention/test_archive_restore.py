@@ -799,3 +799,31 @@ def test_archive_pass_advances_past_a_preview_page_of_pinned_roots(
             sql_store.get_run(tree.run, hydrate=False).archive_bundle_id
             is None
         )
+
+
+def test_unrelated_expired_claim_does_not_replace_a_live_pass(
+    sql_store, tree_factory, storage
+):
+    """Only the running operation's own expired claim permits early takeover."""
+    ids = tree_factory(sql_store)
+    running = sql_store.prepare_retention_pass(ids.project)
+    with Session(sql_store.engine) as session:
+        # An abandoned claim on a root that later passes no longer revisit.
+        session.add(
+            ArchiveBundleSchema(
+                project_id=ids.project,
+                active_root_id=uuid4(),
+                status=ArchiveBundleStatus.PENDING,
+                claim_expires_at=datetime(2000, 1, 1),
+                claimed_by=f"elsewhere:1:{uuid4()}",
+                format_version=1,
+            )
+        )
+        session.commit()
+
+    contender = sql_store.prepare_retention_pass(ids.project)
+    assert contender.state.operation_id == running.operation_id
+
+    outcome = sql_store.execute_retention_pass(running)
+    assert outcome.outcome == RetentionOutcome.SUCCEEDED
+    assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id

@@ -46,13 +46,21 @@ class Claim(BaseModel):
     STATUS: ClassVar[ArchiveBundleStatus]
 
     @classmethod
-    def owner_identity(cls) -> str:
-        """Return a process identity with a fresh per-operation nonce.
+    def owner_identity(cls, operation_id: Optional[UUID] = None) -> str:
+        """Return a process identity with a per-operation nonce.
+
+        Archive passes pass their operation ID so another process can tell
+        whether an expired claim belongs to the operation it would replace.
+
+        Args:
+            operation_id: Operation that owns the claim, or None for a fresh
+                nonce.
 
         Returns:
             Host, process and nonce joined into one worker identity.
         """
-        return f"{socket.gethostname()}:{os.getpid()}:{uuid4()}"
+        nonce = operation_id or uuid4()
+        return f"{socket.gethostname()}:{os.getpid()}:{nonce}"
 
     def _fenced_update(
         self,
