@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import io
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
@@ -94,6 +95,18 @@ from zenml.stack.stack_component import (
 from zenml.step_operators import BaseStepOperator, BaseStepOperatorConfig
 from zenml.steps import StepContext, step
 from zenml.steps.entrypoint_function_utils import StepArtifact
+
+
+class ReadTrackingBytesIO(io.BytesIO):
+    """BytesIO that records the size of every read call."""
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+        self.read_sizes: List[int] = []
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_sizes.append(size)
+        return super().read(size)
 
 
 @pytest.fixture
