@@ -25,8 +25,10 @@ from uuid import UUID, uuid4
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
-from zenml.exceptions import EntityExistsError
+from zenml.exceptions import (
+    ApiTransactionResultTooLargeError,
+    EntityExistsError,
+)
 from zenml.logger import get_logger
 from zenml.models import ApiTransactionRequest, ApiTransactionUpdate
 from zenml.utils.json_utils import pydantic_encoder
@@ -469,16 +471,6 @@ class RequestManager:
                                 f"for transaction {transaction_id}. Skipping "
                                 "caching."
                             )
-                        else:
-                            if len(result_to_cache) > MEDIUMTEXT_MAX_LENGTH:
-                                # If the result is too large, we also don't cache it.
-                                cache_result = False
-                                result_to_cache = None
-                                logger.error(
-                                    f"Result of {func.__name__} "
-                                    f"for transaction {transaction_id} is too "
-                                    "large. Skipping caching."
-                                )
 
                     if cache_result:
                         api_transaction_update = ApiTransactionUpdate(
@@ -493,6 +485,18 @@ class RequestManager:
                                 api_transaction_id=transaction_id,
                                 api_transaction_update=api_transaction_update,
                             )
+                        except ApiTransactionResultTooLargeError as e:
+                            logger.error(
+                                f"Result of {func.__name__} for transaction "
+                                f"{transaction_id} is too large. Skipping "
+                                f"caching: {e}"
+                            )
+                            try:
+                                zen_store().delete_api_transaction(
+                                    api_transaction_id=transaction_id,
+                                )
+                            except Exception:
+                                logger.exception("transaction.delete_failed")
                         except Exception:
                             logger.exception("transaction.finalize_failed")
                     else:

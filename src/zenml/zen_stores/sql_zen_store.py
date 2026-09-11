@@ -149,6 +149,7 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
+    MEDIUMBLOB_MAX_LENGTH,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -185,6 +186,7 @@ from zenml.enums import (
     VisualizationResourceTypes,
 )
 from zenml.exceptions import (
+    ApiTransactionResultTooLargeError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityCreationError,
@@ -2692,6 +2694,8 @@ class SqlZenStore(BaseZenStore):
             api_transaction_update: The update to be applied to the API transaction.
 
         Raises:
+            ApiTransactionResultTooLargeError: If the compressed result is too
+                large to store.
             KeyError: If the API transaction is not found.
         """
         with Session(self.engine) as session:
@@ -2704,6 +2708,13 @@ class SqlZenStore(BaseZenStore):
             if result_value is not None:
                 payload = result_value.encode("utf-8")
                 payload = gzip.compress(payload)
+                if len(payload) > MEDIUMBLOB_MAX_LENGTH:
+                    raise ApiTransactionResultTooLargeError(
+                        "Compressed result for API transaction "
+                        f"{api_transaction_id} is {len(payload)} bytes, which "
+                        "exceeds the maximum supported size of "
+                        f"{MEDIUMBLOB_MAX_LENGTH} bytes."
+                    )
                 result_schema = ApiTransactionResultSchema(
                     id=api_transaction_id,
                     result=payload,
