@@ -1,27 +1,28 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Bounded archive passes and atomic retirement of verified execution detail.
+"""Bounded archive passes and atomic retirement of verified run detail.
 
-Retirement deliberately does not refresh row ``updated`` timestamps because
-the locked recapture fingerprint uses them to detect concurrent changes.
+A pass examines up to ``max_runs_per_pass`` runs from the project's saved
+position, for at most ``MAX_SECONDS``. Each eligible run is captured, encoded,
+uploaded, and read back byte for byte before SQL changes. Retirement then
+runs in one transaction: it locks the run, its steps, its owned snapshots,
+and their configurations, captures the run again, and only proceeds if the
+document hash is unchanged. It inserts the bundle row and sets the markers
+together, so the database decides every race: two passes racing on one run
+leave one bundle, and the loser's object is removed.
+
+Retirement deliberately does not refresh ``updated`` on the retired rows, so
+their headers keep describing the execution rather than the archiving.
 """
 
-from __future__ import annotations
-
-from datetime import datetime, timedelta
-from pathlib import Path
-from shutil import copyfileobj
-from tempfile import TemporaryDirectory
+from datetime import datetime
 from time import monotonic
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Callable, ClassVar, Literal, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Engine, LargeBinary, cast, delete, or_, select, update
-from sqlmodel import Session, col
+from sqlalchemy import Engine, bindparam, delete, select, update
+from sqlmodel import Session, SQLModel, col
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.config.server_config import ServerConfiguration
-from zenml.enums import ArchiveBundleStatus, RetentionFailure, RetentionOutcome
+from zenml.enums import RetentionFailure, RetentionOutcome
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
@@ -29,139 +30,66 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.models.v2.misc.retention import RetentionSettings
-from zenml.zen_stores.retention import claims, transactions
-from zenml.zen_stores.retention.bundle import Bundle
-from zenml.zen_stores.retention.capture import CapturedTree, capture_tree
-from zenml.zen_stores.retention.catalog import Cursor, RetentionState
+from zenml.zen_stores.retention import transactions
+from zenml.zen_stores.retention.capture import capture_run
 from zenml.zen_stores.retention.eligibility import (
-    ArchivableTree,
-    canonical_root_predicate,
-    inspect_tree,
-    tree_limits,
+    ArchivableRun,
+    discover_runs,
+    inspect_run,
 )
-from zenml.zen_stores.retention.manifest import (
-    TABLE_ORDER,
-    ConfigurationRecord,
-    Manifest,
-    SnapshotRecord,
-    StepRecord,
+from zenml.zen_stores.retention.format import (
+    FORMAT_VERSION,
+    ArchiveDocument,
+    EncodedDocument,
     canonical_json,
-    sha256_hex,
+    encode,
 )
-from zenml.zen_stores.retention.schema_mapping import (
-    ARCHIVABLE_RECORD_SCHEMAS,
-    schema_for_record,
-)
+from zenml.zen_stores.retention.state import Cursor, RetentionState
+from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
-    ModelVersionPipelineRunSchema,
     PipelineRunSchema,
+    PipelineSnapshotSchema,
     ProjectSchema,
     StepConfigurationSchema,
+    StepRunSchema,
 )
 
 logger = get_logger(__name__)
 
+RunOutcome = Literal["archived", "skipped", "oversized", "failed"]
 
-def discover_archive_roots(
-    session: Session,
-    project_id: UUID,
-    policy: RetentionSettings,
-    now: datetime,
-    after: Optional[Cursor],
-    limit: int,
-) -> List[Cursor]:
-    """Return a keyset page of roots for the bounded archive pass.
-
-    Child and expensive exclusions remain part of per-tree eligibility.
-
-    Args:
-        session: Short read transaction.
-        project_id: Authorized project.
-        policy: Fixed cycle policy.
-        now: Fixed cycle evaluation time.
-        after: Last examined root, including failed or excluded trees.
-        limit: Maximum identities to fetch, including any lookahead.
-
-    Returns:
-        Ordered non-null end times and canonical root IDs.
-    """
-    if policy.archive_after_days is None:
-        return []
-    statement = select(
-        col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
-    ).where(
-        col(PipelineRunSchema.project_id) == project_id,
-        canonical_root_predicate(),
-        col(PipelineRunSchema.archive_bundle_id).is_(None),
-        col(PipelineRunSchema.retain).is_(False),
-        col(PipelineRunSchema.end_time)
-        < now - timedelta(days=policy.archive_after_days),
-    )
-    if not policy.archive_model_linked_runs:
-        statement = statement.where(
-            ~select(col(ModelVersionPipelineRunSchema.id))
-            .where(
-                col(ModelVersionPipelineRunSchema.pipeline_run_id)
-                == col(PipelineRunSchema.id)
-            )
-            .exists()
-        )
-    if after:
-        statement = statement.where(
-            or_(
-                col(PipelineRunSchema.end_time) > after.end_time,
-                (col(PipelineRunSchema.end_time) == after.end_time)
-                & (col(PipelineRunSchema.id) > after.run_id),
-            )
-        )
-    return [
-        Cursor(end_time=end_time, run_id=run_id)
-        for end_time, run_id in session.execute(
-            statement.order_by(
-                col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
-            ).limit(limit)
-        )
-        if end_time is not None
-    ]
+# Snapshot rows require these columns, so retirement stores empty objects.
+EMPTY_JSON = canonical_json({}).decode()
 
 
-class PreparedArchive(BaseModel):
-    """Read-back-verified bytes and the SQL authority that must still match."""
+class _PassReplaced(Exception):
+    """Another pass took over this project's state after its lease expired."""
 
-    model_config = ConfigDict(frozen=True)
 
-    claim: claims.ArchiveClaim
-    manifest: Manifest
-    fingerprint: str
-    evaluated_at: datetime
-    uri: str
-    policy_raw: Optional[str]
-    schema_revision: str
+class _PolicyChanged(Exception):
+    """The project's saved policy changed after this pass accepted it."""
 
 
 class ArchivePass:
-    """Own one scan's budgets, checkpoints, and fenced tree retirement."""
+    """One bounded archive pass over a project."""
 
     MAX_SECONDS: ClassVar[int] = 60
-    ACTIVE_OUTCOMES: ClassVar[frozenset[RetentionOutcome]] = frozenset(
-        {RetentionOutcome.ACCEPTED, RetentionOutcome.RUNNING}
-    )
 
     def __init__(
         self,
         engine: Engine,
-        storage: BaseArtifactStore,
+        storage: ArchiveStorage,
         project_id: UUID,
         policy: RetentionSettings,
     ) -> None:
-        """Bind an enabled policy and initialize one pass without database writes.
+        """Bind an enabled policy without touching the database.
 
         Args:
             engine: Metadata database.
-            storage: Registered artifact store, already resolved by the caller.
+            storage: Archive storage.
             project_id: Authorized project.
-            policy: Saved project policy for this invocation.
+            policy: Saved project policy for this pass.
 
         Raises:
             IllegalOperationError: The project has no archive age configured.
@@ -170,631 +98,555 @@ class ArchivePass:
             raise IllegalOperationError(
                 "Execution retention is disabled for this project."
             )
-        self.engine, self.storage = engine, storage
-        self.project_id, self.policy = project_id, policy.model_copy(deep=True)
+        self.engine = engine
+        self.storage = storage
+        self.project_id = project_id
+        self.policy = policy.model_copy(deep=True)
         self.operation_id = uuid4()
-        self.owner = claims.Claim.owner_identity(self.operation_id)
-        self.claim: Optional[claims.ArchiveClaim] = None
-        self.remaining_rows = policy.max_rows
-        self.remaining_bytes = policy.max_bytes
-        self.cursor: Optional[Cursor] = None
         self.state = RetentionState()
         self.state_raw: Optional[str] = None
-        self.policy_raw: Optional[str] = None
 
     def accept(self) -> None:
-        """Persist acceptance, propagating conflicts if the saved policy changed."""
-        self._write_outcome(RetentionOutcome.ACCEPTED)
+        """Take over the project's pass state for this pass.
+
+        Raises:
+            ExecutionRetentionConflictError: The policy changed, or another
+                pass still holds the lease.
+        """
+        with transactions.transaction(self.engine) as session:
+            saved_raw = self._load(session)
+            if not self._policy_matches(saved_raw):
+                raise ExecutionRetentionConflictError(
+                    "The retention policy changed before the pass started."
+                )
+            now = transactions.database_now(session)
+            if self.state.is_live(now):
+                raise ExecutionRetentionConflictError(
+                    "An archive pass is already running for this project. "
+                    "Retry after it finishes.",
+                    error_code=RetentionFailure.BUSY,
+                )
+            self.state.start(self.operation_id)
+            self._save(session, now)
 
     def abort(self, error_code: RetentionFailure) -> None:
-        """Record a failed submission without exposing persistence internals.
+        """Record a pass that failed before it started.
 
         Args:
-            error_code: Safe lifecycle failure classification.
+            error_code: Safe failure classification.
         """
-        self._write_outcome(RetentionOutcome.FAILED, error_code)
+        self._finish(RetentionOutcome.FAILED, error_code)
 
     def run(self) -> RetentionState:
-        """Archive a bounded scan, checkpointing rejected roots as well as successes.
+        """Archive a bounded batch and record the outcome.
 
         Returns:
-            Persisted succeeded, paused, or failed pass state.
+            The saved state after the pass.
         """
         if self.state.operation_id != self.operation_id:
             self.accept()
-        if self.state.operation_id != self.operation_id:
-            return self.state
         started = monotonic()
         try:
-            if not self._probe_storage():
-                return self._write_outcome(
+            self._update(self._mark_running)
+            if not self.storage.probe():
+                return self._finish(
                     RetentionOutcome.FAILED,
                     RetentionFailure.STORAGE_CONFIGURATION,
                 )
             with Session(self.engine) as session:
-                self.evaluated_at = transactions.database_now(session)
-                roots = discover_archive_roots(
+                evaluated_at = transactions.database_now(session)
+                candidates = discover_runs(
                     session,
                     self.project_id,
                     self.policy,
-                    self.evaluated_at,
-                    self.cursor,
-                    self.policy.max_trees + 1,
+                    evaluated_at,
+                    self.state.cursor,
+                    self.policy.max_runs_per_pass + 1,
+                    self.state.oversized_run_ids,
                 )
-            for cursor in roots[: self.policy.max_trees]:
-                if (
-                    monotonic() - started >= self.MAX_SECONDS
-                    or self.remaining_rows <= 0
-                    or self.remaining_bytes <= 0
-                ):
-                    return self._write_outcome(RetentionOutcome.PAUSED)
-                paused = self._process_root(cursor)
-                if paused is not None:
-                    return paused
-            outcome = (
+            for cursor in candidates[: self.policy.max_runs_per_pass]:
+                if monotonic() - started >= self.MAX_SECONDS:
+                    return self._finish(RetentionOutcome.PAUSED)
+                self._process(cursor, evaluated_at)
+            return self._finish(
                 RetentionOutcome.SUCCEEDED
-                if len(roots) <= self.policy.max_trees
+                if len(candidates) <= self.policy.max_runs_per_pass
                 else RetentionOutcome.PAUSED
             )
-            return self._write_outcome(outcome)
+        except _PassReplaced:
+            return self.state
+        except _PolicyChanged:
+            return self._finish(RetentionOutcome.PAUSED)
         except Exception as error:
+            # SQL errors can contain archived payloads; log only their type.
             logger.error(
-                "Retention pass for project %s failed (%s)",
+                "Retention pass for project %s failed (%s).",
                 self.project_id,
                 type(error).__name__,
             )
-            return self._write_outcome(
+            return self._finish(
                 RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
             )
 
-    def _probe_storage(self) -> bool:
-        """Check writable, readable storage and remove the temporary probe.
-
-        Returns:
-            Whether the read-back bytes match the unique probe.
-        """
-        probe = f"{self._storage_prefix()}/_retention-probes/{uuid4()}"
-        nonce = uuid4().hex.encode()
-        self.storage.makedirs(probe.rsplit("/", 1)[0])
-        try:
-            with self.storage.open(probe, "wb") as target:
-                target.write(nonce)
-            with self.storage.open(probe, "rb") as source:
-                return bool(source.read(len(nonce) + 1) == nonce)
-        finally:
-            if self.storage.exists(probe):
-                self.storage.remove(probe)
-
-    def _storage_prefix(self) -> str:
-        """Return the configured storage directory for this server's archives.
-
-        Returns:
-            Artifact store path with the configured archive prefix.
-
-        Raises:
-            IllegalOperationError: If the prefix contains a traversal segment.
-        """
-        prefix = (
-            ServerConfiguration.get_server_config().archive_path_prefix.strip(
-                "/"
-            )
-        )
-        parts = [part for part in prefix.split("/") if part]
-        if any(part in {".", ".."} for part in parts):
-            raise IllegalOperationError(
-                "Archive path prefix must not contain '.' or '..' segments."
-            )
-        prefix = "/".join(parts)
-        return f"{self.storage.path.rstrip('/')}/{prefix}".rstrip("/")
-
-    def _process_root(self, cursor: Cursor) -> Optional[RetentionState]:
-        """Archive or checkpoint one root without exceeding this pass's budget.
+    @staticmethod
+    def _mark_running(state: RetentionState, now: datetime) -> None:
+        """Record that the accepted pass started working.
 
         Args:
-            cursor: Discovered root in scan order.
+            state: Saved state owned by this pass.
+            now: Current database time.
+        """
+        state.last_outcome = RetentionOutcome.RUNNING
 
-        Returns:
-            Paused state when a whole tree cannot fit, otherwise None.
+    def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
+        """Archive or skip one run and save the position after it.
+
+        Args:
+            cursor: Run to examine.
+            evaluated_at: Evaluation time shared by the whole pass.
         """
         with Session(self.engine) as session:
-            tree = inspect_tree(
+            run = inspect_run(
                 session,
                 self.project_id,
                 cursor.run_id,
                 self.policy,
-                tree_limits(self.policy),
-                self.evaluated_at,
-                max_run_ids=self.remaining_rows,
+                evaluated_at,
             )
-        if tree.exclusion == RetentionFailure.PASS_BUDGET:
-            return self._write_outcome(RetentionOutcome.PAUSED)
-        self.cursor = cursor
-        if tree.exclusion is None:
-            try:
-                self._retire(self._archive_tree(cursor, tree))
-                return None
-            except ExecutionRetentionConflictError as error:
-                if error.error_code == RetentionFailure.PASS_BUDGET:
-                    return self._write_outcome(RetentionOutcome.PAUSED)
-                # Stale or busy trees are reconsidered in the next scan.
-            finally:
-                self._fail_claim(RetentionFailure.ARCHIVE_FAILED)
-        self.remaining_rows -= max(1, len(tree.tree_run_ids))
-        with transactions.transaction(self.engine) as session:
-            self._write_cursor(session, cursor)
-        return None
+        outcome: RunOutcome
+        if run.exclusion == "oversized":
+            outcome = "oversized"
+        elif run.exclusion is not None:
+            outcome = "skipped"
+        else:
+            outcome = self._archive(run, evaluated_at)
 
-    def _fail_claim(self, reason: RetentionFailure) -> None:
-        """Release this pass's pending archive unless its owner changed.
+        def record(state: RetentionState, now: datetime) -> None:
+            state.cursor = cursor
+            if outcome == "archived":
+                state.archived += 1
+            elif outcome == "oversized":
+                state.oversized += 1
+                if run.exclusion is None:
+                    # Found only by reading the run; skip it in later scans.
+                    state.remember_oversized(run.run_id)
+            elif outcome == "failed":
+                state.failed += 1
+            else:
+                state.skipped += 1
 
-        Args:
-            reason: Safe failure classification for the retained archive.
-        """
-        if self.claim is not None:
-            try:
-                with transactions.transaction(self.engine) as session:
-                    self.claim.fail(session, reason)
-            except ExecutionRetentionConflictError:
-                # A replacement owner already controls this archive.
-                pass
-            self.claim = None
+        self._update(record)
 
-    def _archive_tree(
-        self, cursor: Cursor, tree: ArchivableTree
-    ) -> PreparedArchive:
-        """Claim, capture, upload, and read back one previously inspected tree.
+    def _archive(
+        self, run: ArchivableRun, evaluated_at: datetime
+    ) -> RunOutcome:
+        """Capture, upload, verify, and retire one eligible run.
 
         Args:
-            cursor: Root to checkpoint only after verified retirement.
-            tree: Existing inventory whose eligibility is rechecked under final locks.
+            run: Inspected, eligible run.
+            evaluated_at: Evaluation time shared by the whole pass.
 
         Returns:
-            Immutable descriptor for atomic retirement.
+            How the attempt ended.
 
         Raises:
-            ExecutionRetentionConflictError: The captured tree exceeds the remaining budget.
-        """
-        self.cursor = cursor
-        if (
-            tree.row_count > self.remaining_rows
-            or tree.estimated_bytes > self.remaining_bytes
-        ):
-            raise ExecutionRetentionConflictError(
-                "Tree exceeds the remaining pass budget.",
-                error_code=RetentionFailure.PASS_BUDGET,
-            )
-        bundle_id = uuid4()
-        prefix = f"{self._storage_prefix()}/archive"
-        uri = f"{prefix}/{self.project_id}/{tree.root_run_id}/{bundle_id}"
-        with transactions.transaction(self.engine) as session:
-            claim = claims.ArchiveClaim.take(
-                session,
-                project_id=self.project_id,
-                root_id=tree.root_run_id,
-                bundle_id=bundle_id,
-                owner=self.owner,
-                uri=uri,
-            )
-            self.claim = claim
-            revision = transactions.writer_revision(session)
-            evaluated_at = transactions.database_now(session)
-        with Session(self.engine) as session:
-            captured = capture_tree(session, tree)
-            self._require_capture_budget(captured)
-        with TemporaryDirectory(prefix="zenml-retention-") as scratch:
-            bundle = Bundle.create(
-                captured.records,
-                Path(scratch),
-                bundle_id=bundle_id,
-                project_id=self.project_id,
-                root_run_id=tree.root_run_id,
-                created_at=evaluated_at,
-            )
-            with transactions.transaction(self.engine) as session:
-                claim.renew(session)
-            self._upload(bundle, uri)
-            with transactions.transaction(self.engine) as session:
-                claim.renew(session)
-            self._verify_upload(bundle, uri, Path(scratch))
-            with transactions.transaction(self.engine) as session:
-                claim.renew(session)
-        return PreparedArchive(
-            claim=claim,
-            manifest=bundle.manifest,
-            fingerprint=captured.fingerprint,
-            evaluated_at=evaluated_at,
-            uri=uri,
-            policy_raw=self.policy_raw,
-            schema_revision=revision,
-        )
-
-    def _upload(self, bundle: Bundle, uri: str) -> None:
-        """Upload the immutable object before publishing its manifest.
-
-        Args:
-            bundle: Locally verified archive and manifest.
-            uri: Reserved archive directory.
-        """
-        self.storage.makedirs(uri)
-        with (
-            bundle.path.open("rb") as source,
-            self.storage.open(f"{uri}/{bundle.path.name}", "wb") as target,
-        ):
-            copyfileobj(source, target)
-        with self.storage.open(f"{uri}/manifest.json", "wb") as target:
-            target.write(
-                canonical_json(bundle.manifest.model_dump(mode="json"))
-            )
-
-    def _verify_upload(self, bundle: Bundle, uri: str, scratch: Path) -> None:
-        """Read uploaded bytes directly and verify the complete archive again.
-
-        Args:
-            bundle: Expected local object descriptor.
-            uri: Uploaded immutable archive directory.
-            scratch: Current operation's private scratch directory.
-
-        Raises:
-            ExecutionRetentionIntegrityError: Uploaded manifest bytes differ.
-        """
-        manifest_bytes = canonical_json(
-            bundle.manifest.model_dump(mode="json")
-        )
-        with self.storage.open(f"{uri}/manifest.json", "rb") as source:
-            if source.read(len(manifest_bytes) + 1) != manifest_bytes:
-                raise ExecutionRetentionIntegrityError(
-                    "Uploaded manifest differs from the verified capture."
-                )
-        readback = scratch / "readback.tar.gz"
-        with self.storage.open(f"{uri}/{bundle.path.name}", "rb") as source:
-            readback.write_bytes(source.read(bundle.manifest.object_bytes + 1))
-        Bundle(manifest=bundle.manifest, path=readback).records(scratch)
-
-    def _retire(self, prepared: PreparedArchive) -> None:
-        """Commit detail removal, archive authority, and progress together.
-
-        Args:
-            prepared: Uploaded descriptor and captured authority.
-
-        Raises:
-            Exception: Any failed recheck or write rolls back the full tree.
-        """
-        previous_rows, previous_bytes = (
-            self.remaining_rows,
-            self.remaining_bytes,
-        )
+            _PolicyChanged: The saved policy changed during retirement.
+        """  # noqa: DOC503
         try:
-            with transactions.transaction(self.engine) as session:
-                captured = self._recapture(session, prepared)
-                self._retire_rows(session, prepared, captured)
-                self.state.last_outcome = RetentionOutcome.RUNNING
-                prepared.claim.complete(
-                    session,
-                    uri=prepared.uri,
-                    size_bytes=prepared.manifest.object_bytes,
-                    manifest_hash=sha256_hex(
-                        canonical_json(
-                            prepared.manifest.model_dump(mode="json")
-                        )
-                    ),
+            with Session(self.engine) as session:
+                encoded = encode(capture_run(session, run))
+        except ExecutionRetentionConflictError as error:
+            return self._conflict_outcome(error)
+        bundle_id = uuid4()
+        uri = self.storage.object_uri(self.project_id, run.run_id, bundle_id)
+        try:
+            self.storage.write(uri, encoded.data)
+            if self.storage.read(uri, len(encoded.data)) != encoded.data:
+                raise ExecutionRetentionIntegrityError(
+                    "Uploaded archive object differs from the capture."
                 )
-                self._write_cursor(session, self.cursor)
-        except Exception:
-            self.remaining_rows, self.remaining_bytes = (
-                previous_rows,
-                previous_bytes,
-            )
+            self._retire(run, bundle_id, uri, encoded, evaluated_at)
+            return "archived"
+        except _PolicyChanged:
+            self._discard(bundle_id, uri)
             raise
-        self.claim = None
+        except ExecutionRetentionConflictError as error:
+            self._discard(bundle_id, uri)
+            return self._conflict_outcome(error)
+        except Exception as error:
+            if self._discard(bundle_id, uri):
+                # The commit succeeded but its acknowledgement was lost.
+                return "archived"
+            if transactions.is_transient_lock_error(error):
+                return "skipped"
+            logger.error(
+                "Archiving run %s failed (%s).",
+                run.run_id,
+                type(error).__name__,
+            )
+            return "failed"
 
-    def _recapture(
-        self, session: Session, prepared: PreparedArchive
-    ) -> CapturedTree:
-        """Lock the tree and require the captured policy, schema, and content.
+    def _discard(self, bundle_id: UUID, uri: str) -> bool:
+        """Remove an uploaded object unless its bundle row committed.
+
+        A failed commit acknowledgement can hide a successful retirement, so
+        the bundle row decides. When the database cannot answer, the object
+        stays: an unreferenced object is harmless, a deleted referenced one
+        loses data.
 
         Args:
-            session: Final mutation transaction.
-            prepared: Original verified descriptor.
+            bundle_id: Bundle row the retirement would have inserted.
+            uri: Uploaded object.
 
         Returns:
-            A semantically identical capture under the shared lock order.
-
-        Raises:
-            ExecutionRetentionConflictError: Policy, revision, or content changed.
+            Whether the bundle row exists, so the run is archived.
         """
-        from zenml.zen_stores.retention.catalog import lock_tree
+        try:
+            with Session(self.engine) as session:
+                committed = (
+                    session.get(ArchiveBundleSchema, bundle_id) is not None
+                )
+        except Exception:
+            return False
+        if not committed:
+            self.storage.remove(uri)
+        return committed
 
-        lock_tree(
-            session,
-            prepared.claim,
-            {
-                section.table: section.ids
-                for section in prepared.manifest.sections
-            },
-        )
-        self._require_unchanged(session, prepared)
-        tree = inspect_tree(
-            session,
-            self.project_id,
-            prepared.claim.root_run_id,
-            self.policy,
-            tree_limits(self.policy),
-            prepared.evaluated_at,
-        )
-        required_rows = tree.row_count
-        required_bytes = tree.estimated_bytes
-        if (
-            required_rows > self.remaining_rows
-            or required_bytes > self.remaining_bytes
-        ):
-            raise ExecutionRetentionConflictError(
-                "Locked tree exceeds the remaining pass budget.",
-                error_code=RetentionFailure.PASS_BUDGET,
-            )
-        captured = capture_tree(session, tree)
-        self._require_capture_budget(captured)
-        if captured.fingerprint != prepared.fingerprint:
-            raise ExecutionRetentionConflictError(
-                "Execution content or membership changed after capture."
-            )
-        self.remaining_rows -= len(captured.records)
-        self.remaining_bytes -= required_bytes
-        return captured
-
-    def _require_capture_budget(self, captured: CapturedTree) -> None:
-        """Keep the actual record count within this pass's remaining allowance.
+    @staticmethod
+    def _conflict_outcome(
+        error: ExecutionRetentionConflictError,
+    ) -> RunOutcome:
+        """Classify a run that could not be archived as-is.
 
         Args:
-            captured: Detached records from either capture phase.
+            error: Conflict raised by capture or retirement.
 
-        Raises:
-            ExecutionRetentionConflictError: The complete capture exceeds the row budget.
+        Returns:
+            Oversized when the run exceeds a limit, otherwise skipped; a
+            changed run is reconsidered by a later pass.
         """
-        if len(captured.records) > self.remaining_rows:
-            raise ExecutionRetentionConflictError(
-                "Captured tree exceeds the remaining row budget.",
-                error_code=RetentionFailure.PASS_BUDGET,
-            )
+        if error.error_code == RetentionFailure.OVERSIZED:
+            return "oversized"
+        return "skipped"
 
-    def _require_unchanged(
-        self, session: Session, prepared: PreparedArchive
-    ) -> None:
-        """Require the policy and writer revision used to capture this tree.
-
-        Args:
-            session: Final mutation transaction holding the tree locks.
-            prepared: Captured policy and revision authority.
-
-        Raises:
-            ExecutionRetentionConflictError: Policy or writer revision changed.
-        """
-        raw = session.execute(
-            select(col(ProjectSchema.retention_settings)).where(
-                col(ProjectSchema.id) == self.project_id
-            )
-        ).scalar_one()
-        if raw != prepared.policy_raw:
-            raise ExecutionRetentionConflictError(
-                "Retention policy changed after capture."
-            )
-        if transactions.writer_revision(session) != prepared.schema_revision:
-            raise ExecutionRetentionConflictError(
-                "Database schema changed after capture."
-            )
-
-    def _retire_rows(
+    def _retire(
         self,
-        session: Session,
-        prepared: PreparedArchive,
-        capture: CapturedTree,
+        run: ArchivableRun,
+        bundle_id: UUID,
+        uri: str,
+        encoded: EncodedDocument,
+        evaluated_at: datetime,
     ) -> None:
-        """Clear allowlisted payloads and delete owned configuration records.
+        """Replace the run's SQL detail with the verified bundle atomically.
 
         Args:
-            session: Transaction holding the revalidated tree locks.
-            prepared: Archive acquiring SQL authority.
-            capture: Exact records re-read under those locks.
+            run: Run inspected before capture.
+            bundle_id: Identity of the uploaded object's bundle row.
+            uri: Uploaded object.
+            encoded: Uploaded bytes and their content hash.
+            evaluated_at: Evaluation time shared by the whole pass.
 
         Raises:
-            ExecutionRetentionConflictError: Captured configuration deletion differs.
+            ExecutionRetentionConflictError: The run changed or became
+                ineligible after capture.
+            _PolicyChanged: The saved policy changed after acceptance.
         """
-        marker = {"archive_bundle_id": prepared.claim.bundle_id}
-        ordered_records = sorted(
-            capture.records, key=lambda record: TABLE_ORDER.index(record.table)
-        )
-        for record in ordered_records:
-            if record.table == ConfigurationRecord.table:
-                continue
-            values: Dict[str, Any] = {
-                column: None for column in record.archived_columns
+        with transactions.transaction(self.engine) as session:
+            # Lock order shared with restore and writers: the run, its steps,
+            # every snapshot they reference, then configurations. Ownership
+            # is inspected only after the snapshot locks, so a new run that
+            # starts using a snapshot is visible here or blocked until after.
+            locked = session.execute(
+                select(
+                    col(PipelineRunSchema.project_id),
+                    col(PipelineRunSchema.snapshot_id),
+                    col(PipelineRunSchema.archive_bundle_id),
+                )
+                .where(col(PipelineRunSchema.id) == run.run_id)
+                .with_for_update()
+            ).one_or_none()
+            if (
+                locked is None
+                or locked.project_id != self.project_id
+                or locked.archive_bundle_id is not None
+            ):
+                raise ExecutionRetentionConflictError(
+                    "Run disappeared or was archived after capture."
+                )
+            step_snapshots = session.execute(
+                select(col(StepRunSchema.snapshot_id))
+                .where(col(StepRunSchema.pipeline_run_id) == run.run_id)
+                .order_by(col(StepRunSchema.id))
+                .with_for_update()
+            ).scalars()
+            referenced = {
+                snapshot_id
+                for snapshot_id in [locked.snapshot_id, *step_snapshots]
+                if snapshot_id is not None
             }
-            if type(record) in ARCHIVABLE_RECORD_SCHEMAS:
-                values.update(marker)
-            if record.table == SnapshotRecord.table:
-                values.update(
-                    pipeline_configuration=canonical_json({}).decode(),
-                    client_environment=canonical_json({}).decode(),
+            transactions.lock_ids(session, PipelineSnapshotSchema, referenced)
+            saved_raw = session.execute(
+                select(col(ProjectSchema.retention_settings)).where(
+                    col(ProjectSchema.id) == self.project_id
                 )
-            if isinstance(record, StepRecord):
-                values.update(
-                    step_type=record.step_type,
-                    substitutions=canonical_json(record.substitutions).decode()
-                    if record.substitutions is not None
-                    else None,
+            ).scalar_one()
+            if not self._policy_matches(saved_raw):
+                raise _PolicyChanged()
+            fresh = inspect_run(
+                session,
+                self.project_id,
+                run.run_id,
+                self.policy,
+                evaluated_at,
+            )
+            if fresh.exclusion is not None:
+                raise ExecutionRetentionConflictError(
+                    f"Run became ineligible after capture ({fresh.exclusion})."
                 )
-            transactions.update_identity(
-                session, schema_for_record(record), record.id, values
-            )
-        ids = [
-            record.id
-            for record in capture.records
-            if record.table == ConfigurationRecord.table
-        ]
-        deleted = sum(
-            session.connection()
-            .execute(
-                delete(StepConfigurationSchema).where(
-                    col(StepConfigurationSchema.id).in_(group)
+            session.execute(
+                select(col(StepConfigurationSchema.id))
+                .where(
+                    col(StepConfigurationSchema.step_run_id).in_(
+                        select(col(StepRunSchema.id)).where(
+                            col(StepRunSchema.pipeline_run_id) == run.run_id
+                        )
+                    )
+                    | col(StepConfigurationSchema.snapshot_id).in_(
+                        fresh.snapshot_ids
+                    )
+                )
+                .order_by(col(StepConfigurationSchema.id))
+                .with_for_update()
+            ).all()
+            document = capture_run(session, fresh)
+            if encode(document).content_hash != encoded.content_hash:
+                raise ExecutionRetentionConflictError(
+                    "Run detail changed after capture."
+                )
+            session.add(
+                ArchiveBundleSchema(
+                    id=bundle_id,
+                    project_id=self.project_id,
+                    run_id=run.run_id,
+                    uri=uri,
+                    size_bytes=len(encoded.data),
+                    content_hash=encoded.content_hash,
+                    format_version=FORMAT_VERSION,
                 )
             )
-            .rowcount
-            for group in transactions.batches(ids)
-        )
-        if deleted != len(ids):
-            raise ExecutionRetentionConflictError(
-                "Captured detail deletion count changed."
-            )
+            session.flush()
+            _clear_detail(session, document, bundle_id)
 
-    def _read_cursor(self, session: Session) -> Optional[Cursor]:
-        """Read the current project checkpoint and exact serialized policy.
+    def _policy_matches(self, saved_raw: Optional[str]) -> bool:
+        """Tell whether the saved policy is still the one this pass accepted.
 
         Args:
-            session: Caller-owned SQL transaction.
+            saved_raw: Serialized policy read from the project row.
 
         Returns:
-            Last committed root in the current scan.
+            True when the saved policy equals this pass's policy.
+        """
+        saved = (
+            RetentionSettings.model_validate_json(saved_raw)
+            if saved_raw
+            else RetentionSettings()
+        )
+        return saved == self.policy
+
+    def _load(self, session: Session) -> Optional[str]:
+        """Read the project's saved state and policy.
+
+        Args:
+            session: Current transaction.
+
+        Returns:
+            The serialized saved policy.
         """
         project = session.execute(
-            select(ProjectSchema).where(
-                col(ProjectSchema.id) == self.project_id
-            )
-        ).scalar_one()
+            select(
+                col(ProjectSchema.retention_state),
+                col(ProjectSchema.retention_settings),
+            ).where(col(ProjectSchema.id) == self.project_id)
+        ).one()
         self.state_raw = project.retention_state
-        self.policy_raw = project.retention_settings
-        self.state = (
-            RetentionState.model_validate_json(self.state_raw)
-            if self.state_raw
-            else RetentionState()
-        )
-        return self.state.cursor
+        self.state = RetentionState.load(self.state_raw)
+        saved_policy: Optional[str] = project.retention_settings
+        return saved_policy
 
-    def _write_cursor(
-        self, session: Session, cursor: Optional[Cursor]
-    ) -> None:
-        """Compare and replace the full policy-bound project checkpoint.
+    def _save(self, session: Session, now: datetime) -> None:
+        """Replace the saved state if nobody changed it since it was read.
 
         Args:
-            session: Mutation transaction, shared with retirement on success.
-            cursor: Root checkpoint, or None after exhausting the scan.
+            session: Current transaction.
+            now: Current database time, used for the pass lease.
 
         Raises:
-            ExecutionRetentionConflictError: Another writer changed state or policy.
+            ExecutionRetentionConflictError: The saved state changed.
         """
-        predicates = [col(ProjectSchema.id) == self.project_id]
-        for column, expected in (
-            (col(ProjectSchema.retention_state), self.state_raw),
-            (col(ProjectSchema.retention_settings), self.policy_raw),
-        ):
-            predicates.append(
-                column.is_(None)
-                if expected is None
-                else cast(column, LargeBinary) == expected.encode()
-            )
-        self.state.cursor = cursor
         self.state.operation_expires_at = (
-            transactions.database_now(session) + claims.Claim.LEASE
-            if self.state.last_outcome in self.ACTIVE_OUTCOMES
+            now + RetentionState.LEASE
+            if self.state.last_outcome in RetentionState.ACTIVE_OUTCOMES
             else None
         )
         serialized = self.state.model_dump_json()
+        expected = col(ProjectSchema.retention_state)
         statement = (
             update(ProjectSchema)
-            .where(*predicates)
+            .where(
+                col(ProjectSchema.id) == self.project_id,
+                expected.is_(None)
+                if self.state_raw is None
+                else expected == self.state_raw,
+            )
             .values(retention_state=serialized)
         )
         if session.connection().execute(statement).rowcount != 1:
             raise ExecutionRetentionConflictError(
-                "Retention state or policy changed during the pass."
+                "The project's retention state changed during the pass."
             )
         self.state_raw = serialized
 
-    def _write_outcome(
+    def _update(
+        self,
+        apply: Callable[[RetentionState, datetime], None],
+        *,
+        require_policy: bool = True,
+    ) -> None:
+        """Apply a change to the saved state this pass still owns.
+
+        Args:
+            apply: Change to the freshly read state, given the database
+                time.
+            require_policy: Stop the pass if the saved policy changed.
+
+        Raises:
+            _PassReplaced: Another pass took over the state.
+            _PolicyChanged: The saved policy changed.
+        """
+        with transactions.transaction(self.engine) as session:
+            saved_raw = self._load(session)
+            if self.state.operation_id != self.operation_id:
+                raise _PassReplaced()
+            if require_policy and not self._policy_matches(saved_raw):
+                raise _PolicyChanged()
+            now = transactions.database_now(session)
+            apply(self.state, now)
+            self._save(session, now)
+
+    def _finish(
         self,
         outcome: RetentionOutcome,
         failure: Optional[RetentionFailure] = None,
     ) -> RetentionState:
-        """Persist advisory progress while preserving another pass's checkpoint.
+        """Record the pass outcome unless another pass took over.
 
         Args:
-            outcome: Latest pass outcome.
-            failure: Fixed classification for server logs, never exception text.
+            outcome: Final outcome.
+            failure: Safe failure classification for the server logs.
 
         Returns:
-            The committed project state.
-
-        Raises:
-            ExecutionRetentionConflictError: The saved policy changed before acceptance.
+            The saved state.
         """
-        with transactions.transaction(self.engine) as session:
-            self.cursor = self._read_cursor(session)
-            current_time = transactions.database_now(session)
-            if outcome == RetentionOutcome.ACCEPTED:
-                saved_policy = (
-                    RetentionSettings.model_validate_json(self.policy_raw)
-                    if self.policy_raw
-                    else RetentionSettings()
-                )
-                if saved_policy != self.policy:
-                    raise ExecutionRetentionConflictError(
-                        "Retention policy changed before pass acceptance."
-                    )
-                if (
-                    self.state.operation_id is not None
-                    and self.state.operation_id != self.operation_id
-                    and self.state.last_outcome in self.ACTIVE_OUTCOMES
-                    and self.state.operation_expires_at is not None
-                    and self.state.operation_expires_at > current_time
-                    and not self._operation_claim_expired(session)
-                ):
-                    return self.state
-                self.state.operation_id = self.operation_id
-            elif self.state.operation_id != self.operation_id:
-                return self.state
-            self.state.last_outcome = outcome
-            self.state.last_finished_at = (
-                None if outcome in self.ACTIVE_OUTCOMES else current_time
-            )
+
+        def finish(state: RetentionState, now: datetime) -> None:
+            state.last_outcome = outcome
+            state.last_finished_at = now
             if outcome == RetentionOutcome.SUCCEEDED:
-                self.cursor = None
-            self._write_cursor(session, self.cursor)
+                state.cursor = None
+
+        try:
+            self._update(finish, require_policy=False)
+        except _PassReplaced:
+            pass
         if failure is not None:
             logger.warning(
-                "Retention pass failed for project %s (%s)",
+                "Retention pass for project %s failed (%s).",
                 self.project_id,
                 failure,
             )
         return self.state
 
-    def _operation_claim_expired(self, session: Session) -> bool:
-        """Check whether the recorded operation's own tree claim has expired.
 
-        A live project lease normally protects the running pass. Its tree
-        claim can expire earlier when the worker stalls mid-tree, so that
-        expiry allows an early takeover. Claims of other operations, such as
-        one abandoned on a root that is now excluded, must not count.
+def _clear_detail(
+    session: Session, document: ArchiveDocument, bundle_id: UUID
+) -> None:
+    """Clear archived columns, delete configurations, and set markers.
 
-        Args:
-            session: Transaction holding the project state update decision.
+    Args:
+        session: Retirement transaction holding the run's row locks.
+        document: Detail captured under those locks.
+        bundle_id: Bundle row inserted in the same transaction.
 
-        Returns:
-            Whether a pending claim owned by the recorded operation expired.
-        """
-        owner_suffix = f":{self.state.operation_id}"
-        return (
-            session.execute(
-                select(col(ArchiveBundleSchema.id))
-                .where(
-                    col(ArchiveBundleSchema.project_id) == self.project_id,
-                    col(ArchiveBundleSchema.status)
-                    == ArchiveBundleStatus.PENDING,
-                    col(ArchiveBundleSchema.active_root_id).is_not(None),
-                    col(ArchiveBundleSchema.claimed_by).endswith(
-                        owner_suffix, autoescape=True
-                    ),
-                    col(ArchiveBundleSchema.claim_expires_at)
-                    <= transactions.database_now(session),
-                )
-                .limit(1)
-            ).scalar_one_or_none()
-            is not None
+    Raises:
+        ExecutionRetentionConflictError: A locked row changed unexpectedly.
+    """
+    connection = session.connection()
+    run_cleared = connection.execute(
+        update(PipelineRunSchema)
+        .where(
+            col(PipelineRunSchema.id) == document.run_id,
+            col(PipelineRunSchema.archive_bundle_id).is_(None),
+        )
+        .values(
+            orchestrator_environment=None,
+            exception_info=None,
+            pipeline_configuration=None,
+            client_environment=None,
+            archive_bundle_id=bundle_id,
+        )
+    ).rowcount
+    if run_cleared != 1:
+        raise ExecutionRetentionConflictError("Run changed during retirement.")
+    if document.steps:
+        steps = SQLModel.metadata.tables[StepRunSchema.__tablename__]
+        connection.execute(
+            update(steps)
+            .where(steps.c.id == bindparam("step_id"))
+            .values(
+                exception_info=None,
+                step_configuration=None,
+                archive_bundle_id=bundle_id,
+                step_type=bindparam("projected_type"),
+                substitutions=bindparam("projected_substitutions"),
+            ),
+            [
+                {
+                    "step_id": step.id,
+                    "projected_type": step.step_type,
+                    "projected_substitutions": canonical_json(
+                        step.substitutions
+                    ).decode(),
+                }
+                for step in document.steps
+            ],
+        )
+    snapshot_ids = [snapshot.id for snapshot in document.snapshots]
+    if snapshot_ids:
+        cleared = connection.execute(
+            update(PipelineSnapshotSchema)
+            .where(
+                col(PipelineSnapshotSchema.id).in_(snapshot_ids),
+                col(PipelineSnapshotSchema.archive_bundle_id).is_(None),
+            )
+            .values(
+                pipeline_configuration=EMPTY_JSON,
+                client_environment=EMPTY_JSON,
+                pipeline_spec=None,
+                source_code=None,
+                description=None,
+                archive_bundle_id=bundle_id,
+            )
+        ).rowcount
+        if cleared != len(snapshot_ids):
+            raise ExecutionRetentionConflictError(
+                "Snapshot changed during retirement."
+            )
+    configuration_ids = [
+        configuration.id for configuration in document.configurations
+    ]
+    for group in transactions.batches(configuration_ids):
+        connection.execute(
+            delete(StepConfigurationSchema).where(
+                col(StepConfigurationSchema.id).in_(group)
+            )
         )

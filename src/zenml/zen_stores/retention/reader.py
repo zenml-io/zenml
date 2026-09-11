@@ -1,170 +1,283 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Verified archived detail loaded independently for every request."""
+"""Archived detail fetched and verified independently for every request.
 
-from collections.abc import Sequence
+A detailed read of archived rows happens in two phases around storage I/O.
+The first SQL phase resolves each row's bundle. The compressed objects are
+then downloaded outside any transaction, capped in count and total size. The
+second SQL phase checks that the rows still point at the same bundles and
+decodes them one at a time, so only one decoded document is alive at once.
+"""
+
+from typing import Dict, Iterable, Optional, Protocol, Sequence
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import select
+from sqlmodel import Session, col
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.exceptions import (
+    ExecutionArchivedError,
     ExecutionRetentionIntegrityError,
-    ExecutionRetentionUnavailableError,
 )
-from zenml.zen_stores.retention.bundle import Bundle
-from zenml.zen_stores.retention.manifest import (
-    Manifest,
-    Record,
-    RunRecord,
-    SnapshotRecord,
-    StepRecord,
+from zenml.zen_stores.retention.format import (
+    MAX_OBJECT_BYTES,
+    ArchiveDocument,
+    decode,
 )
+from zenml.zen_stores.retention.storage import ArchiveStorage
+from zenml.zen_stores.retention.transactions import batches
 from zenml.zen_stores.schemas import ArchiveBundleSchema
 from zenml.zen_stores.schemas.archive_detail import BundleDetail
 
+MAX_BUNDLES_PER_READ = 20
+MAX_COMPRESSED_BYTES_PER_READ = MAX_OBJECT_BYTES
 
-def index_records(records: Sequence[Record]) -> BundleDetail:
-    """Index verified records by their concrete archive record type.
+NARROW_THE_READ = (
+    "This read needs more archived detail than one request may load. List "
+    "without details (`hydrate=False`), use a smaller page, or narrow the "
+    "filter."
+)
 
-    Dispatching on the manifest classes lets the type checker confirm that
-    each record model satisfies the payload protocol conversion reads.
 
-    Args:
-        records: Records whose integrity and closure were verified.
+class ArchiveMarked(Protocol):
+    """A row that may carry an archive marker."""
 
-    Returns:
-        A typed request-local index.
-    """
-    detail = BundleDetail()
-    for record in records:
-        if isinstance(record, RunRecord):
-            detail.runs[record.id] = record
-        elif isinstance(record, StepRecord):
-            detail.steps[record.id] = record
-        elif isinstance(record, SnapshotRecord):
-            detail.snapshots[record.id] = record
-        else:
-            detail.add_configuration(record)
-    return detail
+    @property
+    def id(self) -> UUID:
+        """Row identity.
+
+        Returns:
+            The row ID.
+        """
+        ...
+
+    @property
+    def project_id(self) -> UUID:
+        """Owning project.
+
+        Returns:
+            The project ID.
+        """
+        ...
+
+    @property
+    def archive_bundle_id(self) -> Optional[UUID]:
+        """Bundle holding the row's detail.
+
+        Returns:
+            The bundle ID, or None while the detail is in SQL.
+        """
+        ...
 
 
 class BundleReference(BaseModel):
-    """Retain the authorized catalog descriptor after the SQL session closes."""
+    """A bundle row detached from the SQL session that read it."""
 
     model_config = ConfigDict(frozen=True)
 
-    project_id: UUID
     bundle_id: UUID
+    project_id: UUID
+    run_id: Optional[UUID]
     uri: str
-    manifest_hash: str
+    size_bytes: int
+    content_hash: str
 
-    @classmethod
-    def from_bundle(cls, bundle: ArchiveBundleSchema) -> "BundleReference":
-        """Return an authorized catalog descriptor detached from its session.
+
+def resolve_references(
+    session: Session, rows: Iterable[ArchiveMarked]
+) -> Dict[UUID, BundleReference]:
+    """Resolve the bundle rows that marked rows point to.
+
+    Args:
+        session: Current read transaction.
+        rows: Loaded rows, archived or not.
+
+    Returns:
+        References keyed by bundle ID; empty when every row is in SQL.
+
+    Raises:
+        ExecutionRetentionIntegrityError: A marker has no bundle row, or a
+            bundle spans projects.
+    """
+    projects: Dict[UUID, UUID] = {}
+    for row in rows:
+        bundle_id = row.archive_bundle_id
+        if bundle_id is None:
+            continue
+        if projects.setdefault(bundle_id, row.project_id) != row.project_id:
+            raise ExecutionRetentionIntegrityError(
+                "Archive bundle is referenced across project boundaries."
+            )
+    references: Dict[UUID, BundleReference] = {}
+    for group in batches(projects):
+        for bundle in session.execute(
+            select(ArchiveBundleSchema).where(
+                col(ArchiveBundleSchema.id).in_(group)
+            )
+        ).scalars():
+            if bundle.project_id != projects[bundle.id]:
+                raise ExecutionRetentionIntegrityError(
+                    "Archive bundle belongs to another project."
+                )
+            references[bundle.id] = BundleReference(
+                bundle_id=bundle.id,
+                project_id=bundle.project_id,
+                run_id=bundle.run_id,
+                uri=bundle.uri,
+                size_bytes=bundle.size_bytes,
+                content_hash=bundle.content_hash,
+            )
+    if len(references) != len(projects):
+        raise ExecutionRetentionIntegrityError(
+            "Archive marker has no bundle record."
+        )
+    return references
+
+
+def index_document(document: ArchiveDocument) -> BundleDetail:
+    """Index a verified document by record type and identity.
+
+    Args:
+        document: Decoded and validated archive document.
+
+    Returns:
+        A request-local index for response conversion.
+    """
+    detail = BundleDetail()
+    detail.runs[document.run.id] = document.run
+    for step in document.steps:
+        detail.steps[step.id] = step
+    for snapshot in document.snapshots:
+        detail.snapshots[snapshot.id] = snapshot
+    for configuration in document.configurations:
+        detail.add_configuration(configuration)
+    return detail
+
+
+class FetchedBundles:
+    """Compressed objects for one request, decoded on demand one at a time."""
+
+    def __init__(
+        self,
+        references: Dict[UUID, BundleReference],
+        objects: Dict[UUID, bytes],
+    ) -> None:
+        """Hold downloaded objects until the second SQL phase converts rows.
 
         Args:
-            bundle: Complete catalog record with its immutable descriptor.
+            references: Bundle rows resolved in the first SQL phase.
+            objects: Compressed object bytes keyed by bundle ID.
+        """
+        self.references = references
+        self._objects = objects
+        self._current: Optional[tuple[UUID, BundleDetail]] = None
+
+    def detail(self, bundle_id: UUID) -> BundleDetail:
+        """Decode one bundle, releasing the previously decoded one.
+
+        Args:
+            bundle_id: Bundle to decode.
 
         Returns:
-            Hashable descriptor used for read authorization and revalidation.
+            The verified detail index.
 
         Raises:
-            ExecutionRetentionIntegrityError: The object descriptor is incomplete.
+            ExecutionRetentionIntegrityError: The object is corrupt or holds
+                another run's detail.
         """
-        if bundle.uri is None or bundle.manifest_hash is None:
+        if self._current is not None and self._current[0] == bundle_id:
+            return self._current[1]
+        self._current = None
+        reference = self.references[bundle_id]
+        document = decode(self._objects[bundle_id], reference.content_hash)
+        if document.project_id != reference.project_id or (
+            reference.run_id is not None
+            and document.run_id != reference.run_id
+        ):
             raise ExecutionRetentionIntegrityError(
-                "Archive catalog descriptor is incomplete."
+                "Archive content belongs to another run."
             )
-        return cls(
-            project_id=bundle.project_id,
-            bundle_id=bundle.id,
-            uri=bundle.uri,
-            manifest_hash=bundle.manifest_hash,
-        )
+        self._current = (bundle_id, index_document(document))
+        return self._current[1]
+
+    def for_rows(
+        self, rows: Sequence[ArchiveMarked]
+    ) -> Optional[BundleDetail]:
+        """Return the detail of the single bundle a set of rows uses.
+
+        One run's rows always share a bundle: a snapshot is only archived
+        with a run when nothing outside that run uses it.
+
+        Args:
+            rows: Rows converted into one response.
+
+        Returns:
+            The detail index, or None when every row is in SQL.
+
+        Raises:
+            ExecutionRetentionIntegrityError: The rows span several bundles.
+        """
+        bundle_ids = {
+            row.archive_bundle_id
+            for row in rows
+            if row.archive_bundle_id is not None
+        }
+        if not bundle_ids:
+            return None
+        if len(bundle_ids) > 1:
+            raise ExecutionRetentionIntegrityError(
+                "One execution's archived detail spans several bundles."
+            )
+        return self.detail(bundle_ids.pop())
 
 
 class ArchiveReader:
-    """Download and verify the bundles needed by one request."""
+    """Download the bundles one request needs."""
 
-    def __init__(self, storage: BaseArtifactStore) -> None:
-        """Bind the registered archive destination.
+    def __init__(self, storage: ArchiveStorage) -> None:
+        """Bind the archive storage.
 
         Args:
-            storage: Loaded artifact store component.
+            storage: Storage rooted at the server's archive URI.
         """
         self._storage = storage
 
-    def detail_for(
-        self, references: Sequence[BundleReference]
-    ) -> BundleDetail:
-        """Fetch required bundles and assemble one request-local index.
+    def fetch(self, references: Dict[UUID, BundleReference]) -> FetchedBundles:
+        """Download compressed objects within the per-request limits.
 
         Args:
-            references: SQL-authorized descriptors needed by this request.
+            references: Bundle rows resolved in the first SQL phase.
 
         Returns:
-            A merged index of independently verified records.
-
-        """
-        distinct = {reference.bundle_id: reference for reference in references}
-        merged = BundleDetail()
-        for reference in distinct.values():
-            merged.merge(self._fetch(reference))
-        return merged
-
-    def _fetch(self, reference: BundleReference) -> BundleDetail:
-        """Download bounded bytes and verify the complete archived execution.
-
-        Args:
-            reference: Trusted catalog identity, path, and manifest checksum.
-
-        Returns:
-            Indexed records after object and relational verification.
+            The downloaded objects, not yet decoded.
 
         Raises:
-            ExecutionRetentionIntegrityError: Bytes, identity, or structure differ.
-            ExecutionRetentionUnavailableError: Storage could not be read.
-        """
-        try:
-            return index_records(
-                Bundle.fetch_records(
-                    self._storage,
-                    reference.uri,
-                    reference.manifest_hash,
-                    lambda manifest: self._require_identity(
-                        reference, manifest
-                    ),
-                )
-            )
-        except ExecutionRetentionIntegrityError:
-            raise
-        except ValueError as error:
-            raise ExecutionRetentionIntegrityError(
-                "Archived execution detail failed archive verification."
-            ) from error
-        except Exception as error:
-            raise ExecutionRetentionUnavailableError(
-                "Archived execution detail storage is unavailable. Retry "
-                "shortly."
-            ) from error
-
-    @staticmethod
-    def _require_identity(
-        reference: BundleReference, manifest: Manifest
-    ) -> None:
-        """Reject a manifest for another catalog record or project.
-
-        Args:
-            reference: Authorized catalog descriptor.
-            manifest: Downloaded manifest whose checksum was verified.
-
-        Raises:
-            ExecutionRetentionIntegrityError: The manifest has another identity.
+            ExecutionArchivedError: The read needs more bundles or bytes than
+                one request may load.
+            ExecutionRetentionIntegrityError: An object's size differs from
+                its bundle row.
         """
         if (
-            manifest.project_id != reference.project_id
-            or manifest.bundle_id != reference.bundle_id
+            len(references) > MAX_BUNDLES_PER_READ
+            or sum(reference.size_bytes for reference in references.values())
+            > MAX_COMPRESSED_BYTES_PER_READ
         ):
-            raise ExecutionRetentionIntegrityError(
-                "Manifest identity mismatch."
-            )
+            raise ExecutionArchivedError(NARROW_THE_READ)
+        objects: Dict[UUID, bytes] = {}
+        for bundle_id, reference in references.items():
+            data = self._storage.read(reference.uri, reference.size_bytes)
+            if len(data) != reference.size_bytes:
+                raise ExecutionRetentionIntegrityError(
+                    "Archive object size differs from its bundle record."
+                )
+            objects[bundle_id] = data
+        return FetchedBundles(references, objects)
+
+
+def no_bundles() -> FetchedBundles:
+    """Return the empty fetch used when every requested row is in SQL.
+
+    Returns:
+        A fetch that holds no objects.
+    """
+    return FetchedBundles({}, {})

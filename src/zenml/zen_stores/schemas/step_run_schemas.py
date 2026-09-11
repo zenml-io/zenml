@@ -461,15 +461,7 @@ class StepRunSchema(
         Returns:
             This row while unarchived, otherwise its archived step record.
         """
-        # The owning run is only needed to name the restore command, so hot
-        # rows never load the relationship.
-        archived = (
-            self.archived_detail(
-                detail, self.pipeline_run.root_run_id or self.pipeline_run.id
-            )
-            if self.is_offloaded
-            else None
-        )
+        archived = self.archived_detail(detail, self.pipeline_run_id)
         return self if archived is None else archived.step(self)
 
     def get_step_configuration(
@@ -489,11 +481,8 @@ class StepRunSchema(
             The step configuration.
         """
         if detail is None and self._has_archived_configuration():
-            archived_root_run_id = (
-                self.pipeline_run.root_run_id or self.pipeline_run.id
-            )
             raise ExecutionArchivedError.for_entity(
-                self.id, archived_root_run_id
+                self.id, self.pipeline_run_id
             )
 
         step_payload = self.step_payload(detail)

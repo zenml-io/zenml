@@ -43,13 +43,13 @@ class ArchivableSchema(SQLModel):
     def archived_detail(
         self,
         detail: Optional[BundleDetail],
-        root_run_id: Optional[UUID] = None,
+        run_id: Optional[UUID] = None,
     ) -> Optional[BundleDetail]:
         """Select where this entity's payload must be read from.
 
         Args:
             detail: Verified archived records, if the request loaded them.
-            root_run_id: Canonical run to name in a restore command.
+            run_id: Run to name in a restore command.
 
         Returns:
             The loaded archive index for an archived entity, or None when the
@@ -62,7 +62,7 @@ class ArchivableSchema(SQLModel):
             return None
         if detail is None:
             row = cast("BaseSchema", self)
-            raise ExecutionArchivedError.for_entity(row.id, root_run_id)
+            raise ExecutionArchivedError.for_entity(row.id, run_id)
         return detail
 
     @classmethod

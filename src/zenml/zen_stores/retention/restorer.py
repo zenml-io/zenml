@@ -1,419 +1,306 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Verify outside SQL, then restore all recorded detail atomically."""
+"""Synchronous, all-or-nothing restore of one archived run.
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Type, cast
+The bundle is downloaded and verified outside SQL. One transaction then
+locks the run, its steps, and its snapshots in the retirement lock order,
+requires every archived identity to still exist with this bundle's marker,
+writes the detail back, recreates the step configurations, and records the
+restore time on the bundle row. Any mismatch rolls the whole restore back.
+A concurrent second restore finds the marker already cleared and reports a
+no-op.
+"""
+
+from typing import Any, Dict, Sequence
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import (
-    Engine,
-    Insert,
-    RowMapping,
-    Table,
-    Update,
-    insert,
-    inspect,
-    select,
-)
+from sqlalchemy import Engine, bindparam, insert, or_, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, col
+from sqlmodel import Session, SQLModel, col
 
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.enums import RetentionFailure, RetentionOutcome
+from zenml.enums import RestoreOutcome
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
-    ExecutionRetentionUnavailableError,
 )
-from zenml.logger import get_logger
-from zenml.models.v2.misc.retention import RetentionOperationResponse
-from zenml.zen_stores.retention import catalog, claims, transactions
-from zenml.zen_stores.retention.bundle import Bundle
-from zenml.zen_stores.retention.manifest import (
-    RECORDS_BY_TABLE,
-    TABLE_ORDER,
+from zenml.models.v2.misc.retention import RestoreResponse
+from zenml.zen_stores.retention import transactions
+from zenml.zen_stores.retention.format import (
+    ArchiveDocument,
     ConfigurationRecord,
-    Manifest,
-    Record,
+    RunRecord,
+    SnapshotRecord,
+    StepRecord,
+    decode,
 )
-from zenml.zen_stores.retention.schema_mapping import (
-    ARCHIVABLE_RECORD_SCHEMAS,
-    RECORD_SCHEMAS,
-    schema_for_record,
+from zenml.zen_stores.retention.reader import BundleReference
+from zenml.zen_stores.retention.storage import ArchiveStorage
+from zenml.zen_stores.schemas import (
+    ArchiveBundleSchema,
+    PipelineRunSchema,
+    StepConfigurationSchema,
 )
-from zenml.zen_stores.schemas import BaseSchema, StepConfigurationSchema
 
 
-class PreparedRestore(BaseModel):
-    """Carry the reserved claim and its immutable object descriptor."""
+def restore_run(
+    engine: Engine, storage: ArchiveStorage, run_id: UUID
+) -> RestoreResponse:
+    """Write an archived run's detail back into SQL.
 
-    model_config = ConfigDict(frozen=True)
+    Args:
+        engine: Metadata database.
+        storage: Archive storage.
+        run_id: Authorized run.
 
-    claim: claims.RestoreClaim
-    operation_id: UUID
-    uri: str
-    manifest_hash: str
+    Returns:
+        Restored, or a no-op when the run's detail is already in SQL.
 
-    def accepted(self) -> RetentionOperationResponse:
-        """Describe the durable reservation before SQL detail is restored.
-
-        Returns:
-            The accepted bundle and root identities.
-        """
-        return RetentionOperationResponse(
-            bundle_id=self.operation_id,
-            root_run_id=self.claim.root_run_id,
-            outcome=RetentionOutcome.ACCEPTED,
-        )
-
-    def failed(self, code: RetentionFailure) -> RetentionOperationResponse:
-        """Describe a failed submitted operation without exposing its claim token.
-
-        Args:
-            code: Closed failure classification for the wire response.
-
-        Returns:
-            The failed outcome with its durable operation identity.
-        """
-        return RetentionOperationResponse(
-            bundle_id=self.operation_id,
-            root_run_id=self.claim.root_run_id,
-            outcome=RetentionOutcome.FAILED,
-            error_code=code,
-        )
-
-    def matches(self, manifest: Manifest) -> None:
-        """Require the authenticated manifest to describe the reserved tree.
-
-        Args:
-            manifest: Validated manifest whose bytes match the catalog hash.
-
-        Raises:
-            ExecutionRetentionIntegrityError: The manifest has another owner.
-        """
-        if (
-            manifest.project_id != self.claim.project_id
-            or manifest.root_run_id != self.claim.root_run_id
-            or manifest.bundle_id != self.claim.bundle_id
-        ):
+    Raises:
+        ExecutionRetentionIntegrityError: The marker has no bundle row, or
+            the object holds another run's detail.
+        ExecutionRetentionConflictError: A restored configuration identity
+            or owner is already in use.
+    """
+    with Session(engine) as session:
+        marker = session.execute(
+            select(col(PipelineRunSchema.archive_bundle_id)).where(
+                col(PipelineRunSchema.id) == run_id
+            )
+        ).scalar_one()
+        if marker is None:
+            return RestoreResponse(run_id=run_id, outcome=RestoreOutcome.NOOP)
+        bundle = session.get(ArchiveBundleSchema, marker)
+        if bundle is None:
             raise ExecutionRetentionIntegrityError(
-                "Restore manifest identity mismatch."
+                "Archive marker has no bundle record."
             )
+        reference = BundleReference(
+            bundle_id=bundle.id,
+            project_id=bundle.project_id,
+            run_id=bundle.run_id,
+            uri=bundle.uri,
+            size_bytes=bundle.size_bytes,
+            content_hash=bundle.content_hash,
+        )
+    data = storage.read(reference.uri, reference.size_bytes)
+    if len(data) != reference.size_bytes:
+        raise ExecutionRetentionIntegrityError(
+            "Archive object size differs from its bundle record."
+        )
+    document = decode(data, reference.content_hash)
+    if (
+        document.run_id != run_id
+        or document.project_id != reference.project_id
+    ):
+        raise ExecutionRetentionIntegrityError(
+            "Archive content belongs to another run."
+        )
+    try:
+        with transactions.transaction(engine) as session:
+            return _apply(session, document, reference.bundle_id)
+    except IntegrityError as error:
+        raise ExecutionRetentionConflictError(
+            "A restored configuration identity or owner is already in use."
+        ) from error
 
 
-class Restorer:
-    """Reserve, verify, and atomically restore one archived execution."""
+def _apply(
+    session: Session, document: ArchiveDocument, bundle_id: UUID
+) -> RestoreResponse:
+    """Check identities under locks, then write every record back.
 
-    def __init__(self, engine: Engine, storage: BaseArtifactStore) -> None:
-        """Bind the metadata database and registered archive component.
+    Args:
+        session: Restore transaction.
+        document: Verified archive document.
+        bundle_id: Bundle the run's marker must still name.
 
-        Args:
-            engine: Metadata database engine.
-            storage: Loaded artifact store containing archive objects.
-        """
-        self._engine = engine
-        self._storage = storage
-        self._logger = get_logger(__name__)
+    Returns:
+        The restored outcome, or a no-op when another restore won.
 
-    def reserve(
-        self, project_id: UUID, root_id: UUID, owner: str
-    ) -> Optional[PreparedRestore]:
-        """Claim an archived root before queuing its restore task.
-
-        Args:
-            project_id: Authorized project identity.
-            root_id: Authorized canonical execution root.
-            owner: Host, process, and nonce identifying this worker.
-
-        Returns:
-            The reserved descriptor, or None when the root is unarchived.
-
-        Raises:
-            ExecutionRetentionIntegrityError: The catalog descriptor is incomplete.
-        """
-        with transactions.transaction(self._engine) as session:
-            root = transactions.lock_root(session, project_id, root_id)
-            if root.archive_bundle_id is None:
-                return None
-            claim = claims.RestoreClaim.take(
-                session,
-                project_id=project_id,
-                root_id=root_id,
-                bundle_id=root.archive_bundle_id,
-                owner=owner,
-            )
-            descriptor = claim.require(session)
-            if descriptor.uri is None or descriptor.manifest_hash is None:
-                raise ExecutionRetentionIntegrityError(
-                    "Archive catalog descriptor is incomplete."
-                )
-            return PreparedRestore(
-                claim=claim,
-                operation_id=claim.bundle_id,
-                uri=descriptor.uri,
-                manifest_hash=descriptor.manifest_hash,
-            )
-
-    def abort(self, prepared: PreparedRestore, code: RetentionFailure) -> None:
-        """Return authority to the complete archive under the reservation fence.
-
-        Args:
-            prepared: Reserved archive and worker identity.
-            code: Fixed classification without SQL or exception contents.
-        """
-        with transactions.transaction(self._engine) as session:
-            prepared.claim.release(session, code)
-
-    def execute(self, prepared: PreparedRestore) -> RetentionOperationResponse:
-        """Restore every recorded payload in one transaction after verification.
-
-        Args:
-            prepared: Previously reserved and authorized restore operation.
-
-        Returns:
-            The succeeded outcome with the database restoration timestamp.
-
-        Raises:
-            ExecutionRetentionConflictError: SQL identities or owners changed.
-            Exception: Verification, storage, or transaction failures after cleanup.
-        """
-        claim = prepared.claim
-        try:
-            with transactions.transaction(self._engine) as session:
-                transactions.lock_root(
-                    session, claim.project_id, claim.root_run_id
-                )
-                claim.require(session)
-            records = self._fetch(prepared)
-            sections: Dict[str, Sequence[UUID]] = {
-                table: [
-                    record.id for record in records if record.table == table
-                ]
-                for table in TABLE_ORDER
-            }
-            with transactions.transaction(self._engine) as session:
-                catalog.lock_tree(session, claim, sections)
-                self._apply(session, claim, records)
-                restored_at = claim.complete(session)
-            return RetentionOperationResponse(
-                bundle_id=claim.bundle_id,
-                root_run_id=claim.root_run_id,
-                outcome=RetentionOutcome.SUCCEEDED,
-                restored_at=restored_at,
-            )
-        except Exception as error:
-            code = (
-                RetentionFailure.STORAGE_CONFIGURATION
-                if isinstance(error, ExecutionRetentionUnavailableError)
-                else RetentionFailure.BUSY
-                if isinstance(
-                    error, (ExecutionRetentionConflictError, IntegrityError)
-                )
-                else RetentionFailure.INTEGRITY
-                if isinstance(error, ExecutionRetentionIntegrityError)
-                else RetentionFailure.RESTORE_FAILED
-            )
-            try:
-                self.abort(prepared, code)
-            except Exception:
-                self._logger.error(
-                    "Restore cleanup rejected for bundle %s", claim.bundle_id
-                )
-            if isinstance(error, IntegrityError):
-                raise ExecutionRetentionConflictError(
-                    "Restore identity or configuration ownership changed."
-                ) from error
-            raise
-
-    def _fetch(self, prepared: PreparedRestore) -> List[Record]:
-        """Download bounded archive bytes, verify them, and renew the claim.
-
-        Args:
-            prepared: SQL-authenticated object descriptor and restore fence.
-
-        Returns:
-            Records after complete object and relational verification.
-
-        Raises:
-            ExecutionRetentionIntegrityError: Invalid manifest, object, or owners.
-            ExecutionRetentionUnavailableError: The artifact store cannot be read.
-        """
-        try:
-            records = Bundle.fetch_records(
-                self._storage,
-                prepared.uri,
-                prepared.manifest_hash,
-                prepared.matches,
-            )
-        except ExecutionRetentionIntegrityError:
-            raise
-        except ValueError as error:
-            raise ExecutionRetentionIntegrityError(
-                "Restore archive failed verification."
-            ) from error
-        except Exception as error:
-            raise ExecutionRetentionUnavailableError(
-                "Archive storage is unavailable; retry restore later."
-            ) from error
-        with transactions.transaction(self._engine) as session:
-            prepared.claim.renew(session)
-        return records
-
-    def _apply(
-        self,
-        session: Session,
-        claim: claims.RestoreClaim,
-        records: List[Record],
-    ) -> None:
-        """Check retained identities before restoring payloads and configurations.
-
-        Args:
-            session: Transaction holding the canonical tree and claim locks.
-            claim: Current restore authority.
-            records: Fully verified records from the archived execution.
-
-        Raises:
-            ExecutionRetentionConflictError: An identity or owner changed.
-        """
-        for record_type in RECORDS_BY_TABLE.values():
-            schema = RECORD_SCHEMAS[record_type]
-            archived = [
-                record for record in records if isinstance(record, record_type)
-            ]
-            current = _require_rows(
-                session,
-                schema,
-                record_type,
-                [record.id for record in archived],
-                claim,
-                archived,
-            )
-            for record in archived:
-                if record_type is ConfigurationRecord:
-                    continue
-                identity = current[record.id]
-                ownership = record.model_dump(
-                    include=set(type(record).model_fields).intersection(
-                        identity
-                    )
-                    - {"id", "archive_bundle_id"}
-                )
-                if any(
-                    identity[field] != expected
-                    for field, expected in ownership.items()
-                ):
-                    raise ExecutionRetentionConflictError(
-                        "Restore ownership changed."
-                    )
-        for record in records:
-            schema = schema_for_record(record)
-            values = record.model_dump(include=set(record.archived_columns))
-            command: Insert | Update
-            if isinstance(record, ConfigurationRecord):
-                command = insert(schema).values(**values)
-            else:
-                if type(record) in ARCHIVABLE_RECORD_SCHEMAS:
-                    values["archive_bundle_id"] = None
-                transactions.update_identity(
-                    session, schema, record.id, values
-                )
-                continue
-            transactions.require_one(session, command)
+    Raises:
+        ExecutionRetentionConflictError: The marker names another bundle.
+    """
+    marker = session.execute(
+        select(col(PipelineRunSchema.archive_bundle_id))
+        .where(col(PipelineRunSchema.id) == document.run_id)
+        .with_for_update()
+    ).scalar_one()
+    if marker is None:
+        return RestoreResponse(
+            run_id=document.run_id, outcome=RestoreOutcome.NOOP
+        )
+    if marker != bundle_id:
+        raise ExecutionRetentionConflictError(
+            "The run was archived again while restoring."
+        )
+    _require_rows(session, "step_run", document.steps, bundle_id)
+    _require_rows(session, "pipeline_snapshot", document.snapshots, bundle_id)
+    _require_free_configurations(session, document)
+    _write_back(session, document, bundle_id)
+    restored_at = transactions.database_now(session)
+    session.execute(
+        update(ArchiveBundleSchema)
+        .where(col(ArchiveBundleSchema.id) == bundle_id)
+        .values(restored_at=restored_at)
+    )
+    return RestoreResponse(
+        run_id=document.run_id,
+        outcome=RestoreOutcome.RESTORED,
+        restored_at=restored_at,
+    )
 
 
 def _require_rows(
     session: Session,
-    schema: Type[BaseSchema],
-    record_type: Type[Record],
-    ids: Sequence[UUID],
-    claim: claims.RestoreClaim,
-    archived: Sequence[Record],
-) -> Mapping[UUID, RowMapping]:
-    """Require retained identities and reject occupied configuration owners.
+    table_name: str,
+    records: Sequence[StepRecord | SnapshotRecord],
+    bundle_id: UUID,
+) -> None:
+    """Lock archived rows and require each with its marker and owners.
 
     Args:
-        session: Transaction holding the tree's ordered row locks.
-        schema: Live SQL schema paired with the archived record type.
-        record_type: Immutable record model for this section.
-        ids: Exact archived identities for that table.
-        claim: Restore operation whose markers authorize the payload writes.
-        archived: Manifest records for the current table.
-
-    Returns:
-        Retained row identities and ownership columns keyed by UUID.
+        session: Restore transaction.
+        table_name: Table holding the rows.
+        records: Archived records for that table.
+        bundle_id: Marker each row must carry.
 
     Raises:
-        ExecutionRetentionConflictError: A row, marker, or configuration conflicts.
+        ExecutionRetentionConflictError: A row is missing, marked by another
+            bundle, or owned differently than when it was archived.
     """
-    mapper = cast(Any, inspect(schema))
-    table = cast(Table, mapper.local_table)
-    fields = [
-        col(schema.id),
-        *[
-            column
-            for column in table.columns
-            if column.foreign_keys
-            and column.name in record_type.model_fields
-            and column.name not in record_type.archived_columns
-        ],
-    ]
-    marked = record_type in ARCHIVABLE_RECORD_SCHEMAS
-    if marked:
-        fields.append(
-            col(ARCHIVABLE_RECORD_SCHEMAS[record_type].archive_bundle_id)
-        )
-    predicates = [
-        col(schema.id).in_(group) for group in transactions.batches(ids)
-    ]
-    if record_type is ConfigurationRecord:
-        configurations = [
-            cast(ConfigurationRecord, record) for record in archived
-        ]
-        snapshot_ids = {
-            record.snapshot_id
-            for record in configurations
-            if record.snapshot_id
-        }
-        step_ids = {
-            record.step_run_id
-            for record in configurations
-            if record.step_run_id
-        }
-        predicates.extend(
-            col(StepConfigurationSchema.snapshot_id).in_(group)
-            for group in transactions.batches(snapshot_ids)
-        )
-        predicates.extend(
-            col(StepConfigurationSchema.step_run_id).in_(group)
-            for group in transactions.batches(step_ids)
-        )
-    current: Dict[UUID, RowMapping] = {}
-    for predicate in predicates:
-        current.update(
-            {
-                row["id"]: row
-                for row in session.execute(
-                    select(*fields)
-                    .where(predicate)
-                    .order_by(col(schema.id))
-                    .with_for_update()
-                ).mappings()
-            }
-        )
-    if record_type is ConfigurationRecord:
-        if current:
+    table = SQLModel.metadata.tables[table_name]
+    expected = {record.id: record for record in records}
+    found: Dict[UUID, Any] = {}
+    for group in transactions.batches(expected):
+        for locked in session.execute(
+            select(table)
+            .where(table.c.id.in_(group))
+            .order_by(table.c.id)
+            .with_for_update()
+        ).mappings():
+            found[locked["id"]] = locked
+    for identity, record in expected.items():
+        row = found.get(identity)
+        if row is None or row["archive_bundle_id"] != bundle_id:
             raise ExecutionRetentionConflictError(
-                "An archived configuration ID or owner is already occupied."
+                "Restore needs every archived row with its archive marker."
             )
-    elif (
-        len(current) != len(ids)
-        or marked
-        and any(
-            row["archive_bundle_id"] != claim.bundle_id
-            for row in current.values()
+        owners = record.model_dump(
+            include={"project_id", "pipeline_run_id", "snapshot_id"}
         )
-    ):
+        if any(row[column] != value for column, value in owners.items()):
+            raise ExecutionRetentionConflictError(
+                "An archived row changed its owner."
+            )
+
+
+def _require_free_configurations(
+    session: Session, document: ArchiveDocument
+) -> None:
+    """Require that no configuration was recreated for the archived owners.
+
+    Args:
+        session: Restore transaction.
+        document: Verified archive document.
+
+    Raises:
+        ExecutionRetentionConflictError: A configuration identity or owner is
+            already occupied.
+    """
+    if not document.configurations:
+        return
+    occupied = session.execute(
+        select(col(StepConfigurationSchema.id))
+        .where(
+            or_(
+                col(StepConfigurationSchema.id).in_(
+                    [
+                        configuration.id
+                        for configuration in document.configurations
+                    ]
+                ),
+                col(StepConfigurationSchema.snapshot_id).in_(
+                    [snapshot.id for snapshot in document.snapshots]
+                ),
+                col(StepConfigurationSchema.step_run_id).in_(
+                    [step.id for step in document.steps]
+                ),
+            )
+        )
+        .limit(1)
+    ).first()
+    if occupied is not None:
         raise ExecutionRetentionConflictError(
-            "Restore requires every recorded identity and its archive marker."
+            "A restored configuration identity or owner is already in use."
         )
-    return current
+
+
+def _write_back(
+    session: Session, document: ArchiveDocument, bundle_id: UUID
+) -> None:
+    """Restore archived columns, clear markers, and insert configurations.
+
+    Args:
+        session: Restore transaction holding the row locks.
+        document: Verified archive document.
+        bundle_id: Marker being cleared.
+    """
+    connection = session.connection()
+    connection.execute(
+        update(PipelineRunSchema)
+        .where(
+            col(PipelineRunSchema.id) == document.run_id,
+            col(PipelineRunSchema.archive_bundle_id) == bundle_id,
+        )
+        .values(**_archived_values(document.run), archive_bundle_id=None)
+    )
+    for table_name, records in (
+        ("step_run", document.steps),
+        ("pipeline_snapshot", document.snapshots),
+    ):
+        if not records:
+            continue
+        table = SQLModel.metadata.tables[table_name]
+        columns = type(records[0]).archived_columns
+        connection.execute(
+            update(table)
+            .where(table.c.id == bindparam("restored_id"))
+            .values(
+                archive_bundle_id=None,
+                **{
+                    column: bindparam(f"restored_{column}")
+                    for column in columns
+                },
+            ),
+            [
+                {
+                    "restored_id": record.id,
+                    **{
+                        f"restored_{column}": value
+                        for column, value in _archived_values(record).items()
+                    },
+                }
+                for record in records
+            ],
+        )
+    if document.configurations:
+        connection.execute(
+            insert(StepConfigurationSchema),
+            [
+                _archived_values(configuration)
+                for configuration in document.configurations
+            ],
+        )
+
+
+def _archived_values(
+    record: RunRecord | StepRecord | SnapshotRecord | ConfigurationRecord,
+) -> Dict[str, Any]:
+    """Return the columns a record writes back to SQL.
+
+    Args:
+        record: Verified archive record.
+
+    Returns:
+        Column values keyed by column name.
+    """
+    return record.model_dump(include=set(record.archived_columns))

@@ -1,52 +1,32 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""SQL transaction boundaries and the shared execution-detail lock order.
+"""Transactions and row locks for retention writes.
 
-Retention opens sessions directly so every phase controls its transaction from
-the first authority read. MySQL uses ``READ COMMITTED`` to avoid gap locks on
-unrelated trees; SQLite uses ``BEGIN IMMEDIATE`` for mutation phases so no
-writer can slip between validation and the first fenced update. The store's
-general session helpers do not provide these isolation guarantees.
+Execution retention only runs on MySQL. Retention opens sessions directly so
+each phase controls its transaction from the first read. Mutations use
+``READ COMMITTED`` so locking one run's rows takes no gap locks that would
+block writers of unrelated runs.
+
+Every retention mutation locks rows in the same order: the run, its steps,
+its owned snapshots, then their step configurations. Ordinary writers that
+lock a step before its run can still deadlock with retirement; MySQL then
+rolls one of them back and the archive pass skips that run.
 """
-
-from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime
-from sqlite3 import Connection as SQLiteConnection
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Iterable, Iterator, List, Type, TypeVar, cast
 from uuid import UUID
 
-from alembic.migration import MigrationContext
-from sqlalchemy import (
-    Connection,
-    Delete,
-    Engine,
-    Insert,
-    Update,
-    func,
-    select,
-    update,
-)
+from sqlalchemy import Engine, func, select
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, col
 
-from zenml.enums import RetentionFailure
-from zenml.exceptions import (
-    ExecutionRetentionConflictError,
-    ExecutionRetentionIntegrityError,
-)
-from zenml.zen_stores.schemas import BaseSchema, PipelineRunSchema
+from zenml.zen_stores.schemas import BaseSchema
 
 T = TypeVar("T")
+
+# MySQL error codes for a deadlock victim and a lock wait timeout.
+_TRANSIENT_LOCK_ERRORS = frozenset({1205, 1213})
 
 
 @contextmanager
@@ -54,14 +34,13 @@ def transaction(engine: Engine) -> Iterator[Session]:
     """Commit a short mutation transaction only after its body succeeds.
 
     Args:
-        engine: Metadata database for the retention mutation.
+        engine: Metadata database.
 
     Yields:
         Caller-owned mutation session.
     """
     with engine.connect() as connection:
-        if engine.dialect.name in ("mysql", "mariadb"):
-            # READ COMMITTED avoids gap locks blocking unrelated execution trees.
+        if engine.dialect.name == "mysql":
             connection = connection.execution_options(
                 isolation_level="READ COMMITTED"
             )
@@ -69,54 +48,33 @@ def transaction(engine: Engine) -> Iterator[Session]:
             connection.begin(),
             Session(connection, expire_on_commit=False) as session,
         ):
-            _begin_sqlite(connection, immediate=True)
             yield session
             session.flush()
 
 
-def _begin_sqlite(connection: Connection, *, immediate: bool = False) -> None:
-    """Begin an explicit SQLite read or mutation transaction.
+def is_transient_lock_error(error: BaseException) -> bool:
+    """Tell whether MySQL rolled a transaction back to resolve lock contention.
 
     Args:
-        connection: Current SQLAlchemy transaction connection.
-        immediate: Acquire write exclusion before reading mutation authority.
+        error: Exception raised by a retention transaction.
+
+    Returns:
+        True for a deadlock victim or a lock wait timeout.
     """
-    if connection.dialect.name == "sqlite":
-        driver = cast(
-            SQLiteConnection, connection.connection.driver_connection
-        )
-        if not driver.in_transaction:
-            connection.exec_driver_sql(
-                "BEGIN IMMEDIATE" if immediate else "BEGIN"
-            )
-
-
-def begin_read(session: Session) -> None:
-    """Read retention authority and detail from one consistent snapshot.
-
-    Args:
-        session: Caller-owned session for one phase of a retention detail read.
-    """
-    _begin_sqlite(session.connection())
-
-
-def begin_write(session: Session) -> None:
-    """Acquire SQLite write exclusion before reading mutation authority.
-
-    Args:
-        session: Caller-owned session for a guarded store mutation.
-    """
-    _begin_sqlite(session.connection(), immediate=True)
+    if not isinstance(error, OperationalError) or error.orig is None:
+        return False
+    arguments = error.orig.args
+    return bool(arguments) and arguments[0] in _TRANSIENT_LOCK_ERRORS
 
 
 def database_now(session: Session) -> datetime:
-    """Read the database clock shared by all workers.
+    """Read the database clock shared by all server replicas.
 
     Args:
         session: Current transaction.
 
     Returns:
-        Timestamp in the database session's configured time zone.
+        Timestamp in the database session's time zone.
     """
     return cast(
         datetime,
@@ -124,102 +82,30 @@ def database_now(session: Session) -> datetime:
     )
 
 
-def require_one(
-    session: Session, statement: Union[Insert, Update, Delete]
-) -> None:
-    """Execute a conditional mutation that must affect exactly one row.
-
-    Args:
-        session: Current transaction.
-        statement: Fenced row insertion, update or deletion.
-
-    Raises:
-        ExecutionRetentionConflictError: If the expected claim no longer matches.
-    """
-    if session.connection().execute(statement).rowcount != 1:
-        raise ExecutionRetentionConflictError(
-            "Retention claim expired or was replaced.",
-            error_code=RetentionFailure.BUSY,
-        )
-
-
-def update_identity(
-    session: Session,
-    schema: Type[BaseSchema],
-    identity: UUID,
-    values: Dict[str, Any],
-) -> None:
-    """Update exactly one known schema identity under the caller's fences.
-
-    Args:
-        session: Current mutation transaction.
-        schema: SQL schema selected from a typed record mapping.
-        identity: Retained row identity.
-        values: Explicit payload and marker assignments.
-    """
-    require_one(
-        session,
-        update(schema).where(col(schema.id) == identity).values(**values),
-    )
-
-
-def lock_root(
-    session: Session, project_id: UUID, root_id: UUID
-) -> PipelineRunSchema:
-    """Lock a surviving canonical root belonging to the authorized project.
-
-    Args:
-        session: Current mutation transaction.
-        project_id: Authorized project identity.
-        root_id: Canonical root identity.
-
-    Returns:
-        Refreshed root header.
-
-    Raises:
-        ExecutionRetentionConflictError: If the root disappeared or is not canonical.
-    """
-    root = session.execute(
-        select(PipelineRunSchema)
-        .filter_by(id=root_id, project_id=project_id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    ).scalar_one_or_none()
-    if (
-        root is None
-        or root.parent_run_id is not None
-        or root.root_run_id not in (None, root.id)
-    ):
-        raise ExecutionRetentionConflictError(
-            "Retention requires a surviving canonical execution root.",
-            error_code=RetentionFailure.BUSY,
-        )
-    return cast(PipelineRunSchema, root)
-
-
 def batches(values: Iterable[T]) -> Iterator[List[T]]:
-    """Yield deduplicated identities in stable, bind-limited batches.
+    """Yield deduplicated values in stable, bounded batches.
 
     Args:
-        values: Bounded identities or two-column definition keys.
+        values: Identities or composite keys.
 
     Yields:
-        At most 400 values, leaving room for paired keys and fixed binds.
+        At most 1,000 values, keeping each IN list well below MySQL's packet
+        limit.
     """
     ordered = sorted(set(values), key=str)
-    for start in range(0, len(ordered), 400):
-        yield ordered[start : start + 400]
+    for start in range(0, len(ordered), 1000):
+        yield ordered[start : start + 1000]
 
 
 def lock_ids(
     session: Session, schema: Type[BaseSchema], ids: Iterable[UUID]
 ) -> None:
-    """Lock one ordered identity set without transferring payload columns.
+    """Lock known rows in identity order without reading their payloads.
 
     Args:
-        session: Final mutation transaction.
-        schema: Explicit SQL schema selected by the caller.
-        ids: Previously captured identities.
+        session: Current mutation transaction.
+        schema: Table holding the rows.
+        ids: Row identities.
     """
     for group in batches(ids):
         session.execute(
@@ -228,25 +114,3 @@ def lock_ids(
             .order_by(col(schema.id))
             .with_for_update()
         ).all()
-
-
-def writer_revision(session: Session) -> str:
-    """Read the single Alembic revision from the mutation connection.
-
-    Args:
-        session: Current short SQL transaction.
-
-    Returns:
-        Writer revision checked before retirement or restore.
-
-    Raises:
-        ExecutionRetentionIntegrityError: If no versioned writer schema exists.
-    """
-    revision = MigrationContext.configure(
-        session.connection()
-    ).get_current_revision()
-    if revision is None:
-        raise ExecutionRetentionIntegrityError(
-            "Retention requires a versioned database schema."
-        )
-    return revision

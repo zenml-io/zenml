@@ -110,21 +110,21 @@ class ExecutionArchivedError(ZenMLBaseException):
 
     @classmethod
     def for_entity(
-        cls, entity_id: UUID, root_run_id: Optional[UUID]
+        cls, entity_id: UUID, run_id: Optional[UUID]
     ) -> "ExecutionArchivedError":
         """Build the restore instruction for an archived identity.
 
         Args:
             entity_id: Execution or snapshot identifier.
-            root_run_id: Canonical run to restore, if the caller can resolve it.
+            run_id: Run whose archive holds the detail, if known.
 
         Returns:
             An error explaining how to restore the requested execution detail.
         """
-        if root_run_id is not None:
+        if run_id is not None:
             return cls(
                 f"Execution detail '{entity_id}' is archived; restore its run "
-                f"with `zenml pipeline runs restore {root_run_id}` before "
+                f"with `zenml pipeline runs restore {run_id}` before "
                 "accessing or modifying detail."
             )
         return cls(

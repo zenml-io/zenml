@@ -214,21 +214,6 @@ class BundleDetail:
                 configuration
             )
 
-    def merge(self, other: "BundleDetail") -> None:
-        """Add another verified bundle's records to this index.
-
-        Args:
-            other: Independently verified bundle with distinct identities.
-        """
-        self.runs.update(other.runs)
-        self.steps.update(other.steps)
-        self.snapshots.update(other.snapshots)
-        for configurations in other._configurations.values():
-            for configuration in configurations:
-                self.add_configuration(configuration)
-        for configuration in other._dynamic_configurations.values():
-            self.add_configuration(configuration)
-
     def run(self, row: BaseSchema) -> RunPayload:
         """Return the archived detail of a retained run.
 

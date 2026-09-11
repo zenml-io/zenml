@@ -562,7 +562,7 @@ class PipelineRunSchema(
         Returns:
             This row while unarchived, otherwise its archived run record.
         """
-        archived = self.archived_detail(detail, self.root_run_id or self.id)
+        archived = self.archived_detail(detail, self.id)
         return self if archived is None else archived.run(self)
 
     def get_pipeline_configuration(
@@ -640,7 +640,7 @@ class PipelineRunSchema(
             RuntimeError: If the pipeline run has no snapshot or
                 the snapshot has no pipeline spec.
         """
-        self.archived_detail(detail, self.root_run_id or self.id)
+        self.archived_detail(detail, self.id)
         snapshot_detail = (
             self.snapshot.snapshot_payload(detail)
             if self.snapshot is not None

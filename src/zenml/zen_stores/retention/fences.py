@@ -1,29 +1,30 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Explicit writer fences: conditional updates and shared parent locks.
+"""Writer fences that keep ordinary writes off archived rows.
 
-Retirement and restore deliberately do not refresh row ``updated`` timestamps
-because the locked recapture fingerprint uses them as concurrency authority.
-SQLite acquires its RESERVED lock before each guard reads authority, rather than
-waiting for the later flush, so retirement cannot pass between the two actions.
+Updates to runs and steps carry a still-hot condition in the UPDATE itself.
+Writes that add detail to a run, or new uses to a snapshot, first lock the
+owner row and check its marker. Retirement locks the same rows, so either the
+write commits first and retirement's locked recapture sees it, or retirement
+commits first and the writer sees the marker. On SQLite nothing is ever
+archived, and ``FOR UPDATE`` compiles to nothing, so these fences cost only
+the reads.
 """
 
-from typing import Any, Dict, Sequence, Set, Union
+from typing import Any, Dict, Sequence, Union
 from uuid import UUID
 
-from sqlalchemy import func, inspect, or_, select, update
+from sqlalchemy import inspect, select, update
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlmodel import Session, col
 from sqlmodel.sql.expression import SelectOfScalar
 
-from zenml.enums import ArchiveBundleStatus, RetentionFailure
+from zenml.enums import RetentionFailure
 from zenml.exceptions import (
     ExecutionArchivedError,
     ExecutionRetentionConflictError,
     IllegalOperationError,
 )
-from zenml.zen_stores.retention import transactions
 from zenml.zen_stores.schemas import (
-    ArchiveBundleSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
     StepRunSchema,
@@ -36,10 +37,9 @@ def update_hot(session: Session, row: HotRow) -> None:
     """Carry the archive predicate in the existing row update, without a SELECT.
 
     Callers must modify the row and invoke this function inside no_autoflush
-    so an ORM flush cannot publish an unfenced update first.
-    Step updates can lock a step before their run while retirement locks the
-    run first; MySQL may reject either participant as a deadlock victim and the
-    archive pass retries that transient failure.
+    so an ORM flush cannot publish an unfenced update first. Step updates can
+    lock a step before its run while retirement locks the run first; MySQL
+    then rolls one of them back, and the archive pass skips that run.
 
     Args:
         session: Current transaction, before the row can autoflush.
@@ -71,12 +71,10 @@ def update_hot(session: Session, row: HotRow) -> None:
         .values(**changes)
     )
     if session.connection().execute(statement).rowcount != 1:
-        root_run_id = (
-            row.pipeline_run.root_run_id or row.pipeline_run.id
-            if isinstance(row, StepRunSchema)
-            else row.root_run_id or row.id
+        run_id = (
+            row.pipeline_run_id if isinstance(row, StepRunSchema) else row.id
         )
-        raise ExecutionArchivedError.for_entity(row.id, root_run_id)
+        raise ExecutionArchivedError.for_entity(row.id, run_id)
     # The conditional statement replaces this ORM flush, not an extra write.
     for column_name, column_value in changes.items():
         set_committed_value(row, column_name, column_value)
@@ -88,19 +86,18 @@ def protect_inserts(
     *,
     exclusive: bool = False,
 ) -> None:
-    """Hold target run locks and check one indexed active-slot query per batch.
+    """Lock the runs that new detail will belong to and require them hot.
 
     Args:
         session: Current transaction, before inserting any referenced detail.
-        run_ids: Authorized target IDs or a scalar child-owner query. A query
-            must identify exactly one run; it executes inside the locking read.
-        exclusive: Preserve an existing exclusive lock required by the writer.
+        run_ids: Target run IDs, or a scalar query that must identify exactly
+            one run; the query executes inside the locking read.
+        exclusive: Take an exclusive lock the writer needs anyway.
 
     Raises:
-        ExecutionArchivedError: If a target's detail is archived.
-        ExecutionRetentionConflictError: If a target disappeared or has an active claim.
+        ExecutionArchivedError: If a target run is archived.
+        ExecutionRetentionConflictError: If a target run disappeared.
     """
-    transactions.begin_write(session)
     if isinstance(run_ids, SelectOfScalar):
         ids: Union[Sequence[UUID], SelectOfScalar[UUID]] = run_ids
         expected_count = 1
@@ -127,33 +124,9 @@ def protect_inserts(
             "Execution disappeared before detail insertion.",
             error_code=RetentionFailure.BUSY,
         )
-    roots = sorted({row.root_run_id or row.id for row in rows})
     for row in rows:
         if row.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(
-                row.id, row.root_run_id or row.id
-            )
-    # The run locks already serialize retirement; locking the slot too would
-    # invert the archive lock order and can deadlock unrelated writers.
-    active = session.execute(
-        select(col(ArchiveBundleSchema.active_root_id)).where(
-            col(ArchiveBundleSchema.active_root_id).in_(roots),
-            col(ArchiveBundleSchema.status).in_(
-                ArchiveBundleStatus.writer_protected()
-            ),
-            or_(
-                col(ArchiveBundleSchema.status) != ArchiveBundleStatus.PENDING,
-                col(ArchiveBundleSchema.claim_expires_at).is_(None),
-                col(ArchiveBundleSchema.claim_expires_at)
-                > func.current_timestamp(),
-            ),
-        )
-    ).first()
-    if active is not None:
-        raise ExecutionRetentionConflictError(
-            f"Retention is in progress for execution root '{active[0]}'. Retry after the operation completes.",
-            error_code=RetentionFailure.BUSY,
-        )
+            raise ExecutionArchivedError.for_entity(row.id, row.id)
 
 
 def protect_snapshot_owners(
@@ -170,7 +143,6 @@ def protect_snapshot_owners(
         ExecutionRetentionConflictError: If an owner snapshot disappeared.
         ExecutionArchivedError: If new operational use targets archived detail.
     """
-    transactions.begin_write(session)
     if not snapshot_ids:
         return
     ids = sorted(set(snapshot_ids))
@@ -191,44 +163,3 @@ def protect_snapshot_owners(
     for row in rows:
         if row.archive_bundle_id is not None:
             raise ExecutionArchivedError.for_entity(row.id, None)
-
-
-def protect_membership(session: Session, run_ids: Sequence[UUID]) -> Set[UUID]:
-    """Lock canonical roots before adding a child, pin or model association.
-
-    Args:
-        session: Current mutation transaction.
-        run_ids: Existing association targets, resolved and authorized by caller.
-
-    Returns:
-        Roots whose detail is already archived.
-
-    Raises:
-        ExecutionRetentionConflictError: If none of the referenced roots survives.
-    """
-    transactions.begin_write(session)
-    if not run_ids:
-        return set()
-    roots = (
-        select(
-            func.coalesce(
-                col(PipelineRunSchema.root_run_id), col(PipelineRunSchema.id)
-            )
-        )
-        .where(col(PipelineRunSchema.id).in_(run_ids))
-        .distinct()
-    )
-    rows = session.execute(
-        select(
-            col(PipelineRunSchema.id), col(PipelineRunSchema.archive_bundle_id)
-        )
-        .where(col(PipelineRunSchema.id).in_(roots))
-        .order_by(col(PipelineRunSchema.id))
-        .with_for_update()
-    ).all()
-    if not rows:
-        raise ExecutionRetentionConflictError(
-            "Execution root disappeared before membership mutation.",
-            error_code=RetentionFailure.BUSY,
-        )
-    return {row.id for row in rows if row.archive_bundle_id is not None}

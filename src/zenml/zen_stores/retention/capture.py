@@ -1,27 +1,33 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Bounded SQL capture and source fingerprints for locked recapture."""
+"""Bounded capture of one run's archived detail from SQL.
 
-import hashlib
+Capture runs twice per archived run: once to build the uploaded document, and
+again inside the locked retirement transaction. Comparing the two documents'
+hashes detects any change in between, including rows that did not exist at
+the first capture, without relying on writers refreshing ``updated``.
+"""
+
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
-from pydantic import BaseModel, ConfigDict
 from sqlalchemy import RowMapping, Table, select, tuple_
 from sqlmodel import Session, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.exceptions import ExecutionRetentionConflictError
-from zenml.zen_stores.retention.eligibility import ArchivableTree
-from zenml.zen_stores.retention.manifest import (
+from zenml.enums import RetentionFailure
+from zenml.exceptions import (
+    ExecutionRetentionConflictError,
+    ExecutionRetentionIntegrityError,
+)
+from zenml.zen_stores.retention.eligibility import ArchivableRun
+from zenml.zen_stores.retention.format import (
     MAX_DECODED_BYTES,
     MAX_RECORDS,
-    TABLE_ORDER,
+    ArchiveDocument,
     ConfigurationRecord,
-    Record,
     RunRecord,
     SnapshotRecord,
     StepRecord,
-    record_bytes,
 )
 from zenml.zen_stores.retention.transactions import batches
 from zenml.zen_stores.schemas.step_configuration_utils import (
@@ -29,12 +35,10 @@ from zenml.zen_stores.schemas.step_configuration_utils import (
     run_pipeline_configuration,
 )
 
-# Bounds the decoded payload one capture may materialize, including shared
-# snapshot and configuration inputs that are read for projections but never
-# archived. The eligibility estimate uses fixed row weights, so without this
-# a tree with a few very large payloads could load far more than the archive
-# ceiling before serialization rejected it. Twice the archive ceiling leaves
-# room for shared inputs while keeping one tree's working set bounded.
+# Bounds the payload one capture may hold in memory, including shared
+# snapshot and configuration inputs read for projections but never archived.
+# Twice the document cap leaves room for those inputs while keeping one
+# run's working set bounded, however large its stored columns are.
 MAX_SOURCE_BYTES = 2 * MAX_DECODED_BYTES
 
 # Rows are streamed in small groups so an oversized source stops early
@@ -56,93 +60,80 @@ def source_row_bytes(row: RowMapping) -> int:
     )
 
 
-class CapturedTree(BaseModel):
-    """Detached records and a fingerprint of their exact captured content."""
+class RunCapturer:
+    """Read one run's archivable rows and the projections its steps keep."""
 
-    model_config = ConfigDict(frozen=True)
-
-    records: List[Record]
-    fingerprint: str
-
-
-class TreeCapturer:
-    """Accumulate one selected tree and its configuration projections."""
-
-    def __init__(self, session: Session, tree: ArchivableTree) -> None:
-        """Build a capturer bound to one transaction and tree inventory.
+    def __init__(self, session: Session, run: ArchivableRun) -> None:
+        """Bind a capture to one transaction and inspected run.
 
         Args:
-            session: Bounded read or final locked mutation transaction.
-            tree: Previously inspected root and exclusively owned snapshots.
+            session: Read session or the locked retirement transaction.
+            run: Eligible run with its exclusively owned snapshots.
         """
         self.session = session
-        self.tree = tree
-        self.records: List[Record] = []
-        self.size = 0
+        self.run = run
         self.source_bytes = 0
-        self.run_rows: Dict[Any, Dict[str, Any]] = {}
+        self.run_row: Dict[str, Any] = {}
         self.step_rows: List[Dict[str, Any]] = []
         self.snapshot_rows: Dict[Any, Dict[str, Any]] = {}
         self.static_configurations: Dict[Any, Dict[str, Any]] = {}
         self.dynamic_configurations: Dict[Any, Dict[str, Any]] = {}
+        self.owned_configurations: List[ConfigurationRecord] = []
         self.step_fields = [
             name
             for name in StepRecord.model_fields
             if name not in {"step_type", "substitutions"}
         ]
 
-    def capture(self) -> CapturedTree:
-        """Read eligible records in the format order and fingerprint them.
+    def capture(self) -> ArchiveDocument:
+        """Read the run's detail in record order.
 
         Returns:
-            Typed records and their content fingerprint.
+            The validated document.
 
         Raises:
-            ExecutionRetentionConflictError: The tree is excluded or oversized.
+            ExecutionRetentionConflictError: The run is excluded, changed, or
+                exceeds a capture limit.
         """
-        if self.tree.exclusion or not self.tree.tree_run_ids:
+        if self.run.exclusion is not None:
             raise ExecutionRetentionConflictError(
-                "Tree is not eligible for capture."
+                "Run is not eligible for archiving."
             )
-        if self.tree.estimated_bytes > MAX_DECODED_BYTES:
+        runs = SQLModel.metadata.tables["pipeline_run"]
+        steps = SQLModel.metadata.tables["step_run"]
+        found = self._read_table(
+            runs,
+            [*RunRecord.model_fields, "start_time", "archive_bundle_id"],
+            (runs.c.id, [self.run.run_id]),
+        )
+        if not found or found[0]["archive_bundle_id"] is not None:
             raise ExecutionRetentionConflictError(
-                "Tree source exceeds capture bounds."
+                "Run disappeared or was archived during capture."
             )
-        steps = SQLModel.metadata.tables[StepRecord.table]
+        self.run_row = found[0]
         self.step_rows = self._read_table(
             steps,
             [*self.step_fields, "archive_bundle_id"],
-            (steps.c.pipeline_run_id, self.tree.tree_run_ids),
+            (steps.c.pipeline_run_id, [self.run.run_id]),
         )
-        self._capture_runs()
-        self._capture_snapshots()
+        snapshots = self._capture_snapshots()
         self._capture_configurations()
-        self._capture_steps()
-        self.records.sort(
-            key=lambda record: (TABLE_ORDER.index(record.table), record.id)
+        document = ArchiveDocument(
+            project_id=self.run.project_id,
+            run_id=self.run.run_id,
+            run=RunRecord.model_validate(
+                {name: self.run_row[name] for name in RunRecord.model_fields}
+            ),
+            steps=self._capture_steps(),
+            snapshots=snapshots,
+            configurations=self.owned_configurations,
         )
-        fingerprint = hashlib.sha256()
-        for record in self.records:
-            fingerprint.update(record_bytes(record))
-        return CapturedTree(
-            records=self.records, fingerprint=fingerprint.hexdigest()
-        )
-
-    def _append(self, record: Record) -> None:
-        """Enforce the serialized byte and record limits before accumulation.
-
-        Args:
-            record: Validated source record.
-
-        Raises:
-            ExecutionRetentionConflictError: The indivisible tree exceeds a limit.
-        """
-        self.size += len(record_bytes(record))
-        if self.size > MAX_DECODED_BYTES or len(self.records) >= MAX_RECORDS:
+        if document.record_count > MAX_RECORDS:
             raise ExecutionRetentionConflictError(
-                "Tree exceeds decoded capture bounds."
+                "Run exceeds the archive record limit.",
+                error_code=RetentionFailure.OVERSIZED,
             )
-        self.records.append(record)
+        return document
 
     def _read_table(
         self,
@@ -150,12 +141,12 @@ class TreeCapturer:
         fields: Sequence[str],
         *predicates: Tuple[Any, Iterable[Any]],
     ) -> List[Dict[str, Any]]:
-        """Read allowlisted columns in bounded, deduplicated ownership batches.
+        """Stream allowlisted columns in bounded, deduplicated batches.
 
         Args:
-            table: Explicit source table.
+            table: Source table.
             fields: Columns needed for a record or its retained projection.
-            predicates: Ownership columns paired with bounded identity collections.
+            predicates: Owner columns paired with identity collections.
 
         Returns:
             Unique row mappings ordered by identity.
@@ -180,115 +171,37 @@ class TreeCapturer:
                         self.source_bytes += source_row_bytes(source_row)
                         if self.source_bytes > MAX_SOURCE_BYTES:
                             raise ExecutionRetentionConflictError(
-                                "Tree source exceeds capture byte limit."
+                                "Run source exceeds the capture byte limit.",
+                                error_code=RetentionFailure.OVERSIZED,
                             )
                         selected[source_row["id"]] = dict(source_row)
                         if len(selected) > MAX_RECORDS:
                             raise ExecutionRetentionConflictError(
-                                "Tree source exceeds capture record limit."
+                                "Run source exceeds the capture record limit.",
+                                error_code=RetentionFailure.OVERSIZED,
                             )
         return [selected[identity] for identity in sorted(selected)]
 
-    def _capture_runs(self) -> None:
-        """Capture run detail and retain start times for step substitutions.
+    def _capture_snapshots(self) -> List[SnapshotRecord]:
+        """Capture owned snapshots and read shared ones for projections.
+
+        Returns:
+            Records of the snapshots only this run uses.
 
         Raises:
-            ExecutionRetentionConflictError: A selected run is already archived.
+            ExecutionRetentionConflictError: An owned snapshot disappeared or
+                was archived.
         """
-        table = SQLModel.metadata.tables[RunRecord.table]
-        for run_row in self._read_table(
-            table,
-            [*RunRecord.model_fields, "start_time", "archive_bundle_id"],
-            (table.c.id, self.tree.tree_run_ids),
-        ):
-            if run_row["archive_bundle_id"] is not None:
-                raise ExecutionRetentionConflictError(
-                    "Tree already contains archived runs."
-                )
-            self.run_rows[run_row["id"]] = run_row
-            self._append(
-                RunRecord.model_validate(
-                    {name: run_row[name] for name in RunRecord.model_fields}
-                )
-            )
-
-    def _capture_steps(self) -> None:
-        """Capture steps using prefetched static, dynamic, or legacy definitions.
-
-        Raises:
-            ExecutionRetentionConflictError: A step or its definition owner is archived or missing.
-        """
-        pipelines: Dict[Any, PipelineConfiguration] = {}
-        for step_row in self.step_rows:
-            if step_row["archive_bundle_id"] is not None:
-                raise ExecutionRetentionConflictError(
-                    "Tree already contains archived steps."
-                )
-            owner = self.snapshot_rows.get(step_row["snapshot_id"])
-            definition = self.dynamic_configurations.get(
-                step_row["id"],
-                self.static_configurations.get(
-                    (step_row["snapshot_id"], step_row["name"])
-                ),
-            )
-            if step_row["snapshot_id"] is not None and (
-                owner is None or owner["archive_bundle_id"] is not None
-            ):
-                raise ExecutionRetentionConflictError(
-                    "Step configuration owner is missing or archived."
-                )
-            if owner is not None and definition is not None:
-                key = (step_row["snapshot_id"], step_row["pipeline_run_id"])
-                if key not in pipelines:
-                    pipelines[key] = run_pipeline_configuration(
-                        owner["pipeline_configuration"],
-                        self.run_rows[step_row["pipeline_run_id"]][
-                            "start_time"
-                        ],
-                    )
-                configuration = merge_step_configuration(
-                    definition["config"],
-                    pipelines[key],
-                    exclude_hook_sources=owner["is_dynamic"],
-                )
-            elif step_row["step_configuration"]:
-                configuration = Step.model_validate_json(
-                    step_row["step_configuration"]
-                )
-            else:
-                raise ExecutionRetentionConflictError(
-                    "Step configuration disappeared during capture."
-                )
-            self._append(
-                StepRecord.model_validate(
-                    {
-                        **{name: step_row[name] for name in self.step_fields},
-                        "step_type": configuration.config.step_type,
-                        "substitutions": configuration.config.substitutions,
-                    }
-                )
-            )
-
-    def _capture_snapshots(self) -> None:
-        """Capture only snapshots exclusively owned by the selected tree.
-
-        Raises:
-            ExecutionRetentionConflictError: An exclusive snapshot is missing or archived.
-        """
-        table = SQLModel.metadata.tables[SnapshotRecord.table]
-        owned_ids = set(self.tree.snapshot_ids)
-        step_snapshot_ids = {
+        table = SQLModel.metadata.tables["pipeline_snapshot"]
+        owned_ids = set(self.run.snapshot_ids)
+        referenced = {
             step_row["snapshot_id"]
             for step_row in self.step_rows
             if step_row["snapshot_id"] is not None
         }
         owned_rows = self._read_table(
             table,
-            [
-                *SnapshotRecord.model_fields,
-                "is_dynamic",
-                "archive_bundle_id",
-            ],
+            [*SnapshotRecord.model_fields, "is_dynamic", "archive_bundle_id"],
             (table.c.id, owned_ids),
         )
         shared_rows = self._read_table(
@@ -299,13 +212,14 @@ class TreeCapturer:
                 "archive_bundle_id",
                 "pipeline_configuration",
             ],
-            (table.c.id, step_snapshot_ids - owned_ids),
+            (table.c.id, referenced - owned_ids),
         )
         self.snapshot_rows = {
             snapshot_row["id"]: snapshot_row
             for snapshot_row in [*owned_rows, *shared_rows]
         }
-        for identity in self.tree.snapshot_ids:
+        records = []
+        for identity in self.run.snapshot_ids:
             snapshot_row = self.snapshot_rows.get(identity)
             if (
                 snapshot_row is None
@@ -314,7 +228,7 @@ class TreeCapturer:
                 raise ExecutionRetentionConflictError(
                     "Snapshot disappeared or was archived during capture."
                 )
-            self._append(
+            records.append(
                 SnapshotRecord.model_validate(
                     {
                         name: snapshot_row[name]
@@ -322,11 +236,12 @@ class TreeCapturer:
                     }
                 )
             )
+        return records
 
     def _capture_configurations(self) -> None:
-        """Retain owned definitions and separately bound shared projections."""
-        table = SQLModel.metadata.tables[ConfigurationRecord.table]
-        snapshots = set(self.tree.snapshot_ids)
+        """Capture owned definitions and read shared ones for projections."""
+        table = SQLModel.metadata.tables["step_configuration"]
+        snapshots = set(self.run.snapshot_ids)
         steps = {step_row["id"] for step_row in self.step_rows}
         shared_needed = {
             (step_row["snapshot_id"], step_row["name"])
@@ -345,7 +260,7 @@ class TreeCapturer:
             list(ConfigurationRecord.model_fields),
             (tuple_(table.c.snapshot_id, table.c.name), shared_needed),
         )
-        owned_configuration_ids = {row["id"] for row in owned_rows}
+        owned_ids = {row["id"] for row in owned_rows}
         for configuration_row in [*owned_rows, *shared_rows]:
             if configuration_row["snapshot_id"] is not None:
                 key = (
@@ -357,20 +272,93 @@ class TreeCapturer:
                 self.dynamic_configurations[
                     configuration_row["step_run_id"]
                 ] = configuration_row
-            if configuration_row["id"] in owned_configuration_ids:
-                self._append(
+            if configuration_row["id"] in owned_ids:
+                self.owned_configurations.append(
                     ConfigurationRecord.model_validate(configuration_row)
                 )
 
+    def _capture_steps(self) -> List[StepRecord]:
+        """Capture steps with the type and substitutions kept in SQL.
 
-def capture_tree(session: Session, tree: ArchivableTree) -> CapturedTree:
-    """Capture one previously inspected tree in the caller's transaction.
+        Returns:
+            Step records in identity order.
+
+        Raises:
+            ExecutionRetentionConflictError: A step or its configuration owner
+                is archived or missing.
+        """
+        pipeline_configurations: Dict[Any, PipelineConfiguration] = {}
+        records = []
+        for step_row in self.step_rows:
+            if step_row["archive_bundle_id"] is not None:
+                raise ExecutionRetentionConflictError(
+                    "Run already contains archived steps."
+                )
+            owner = self.snapshot_rows.get(step_row["snapshot_id"])
+            definition = self.dynamic_configurations.get(
+                step_row["id"],
+                self.static_configurations.get(
+                    (step_row["snapshot_id"], step_row["name"])
+                ),
+            )
+            if step_row["snapshot_id"] is not None and (
+                owner is None or owner["archive_bundle_id"] is not None
+            ):
+                raise ExecutionRetentionConflictError(
+                    "Step configuration owner is missing or archived."
+                )
+            if owner is not None and definition is not None:
+                snapshot_id = step_row["snapshot_id"]
+                if snapshot_id not in pipeline_configurations:
+                    pipeline_configurations[snapshot_id] = (
+                        run_pipeline_configuration(
+                            owner["pipeline_configuration"],
+                            self.run_row["start_time"],
+                        )
+                    )
+                configuration = merge_step_configuration(
+                    definition["config"],
+                    pipeline_configurations[snapshot_id],
+                    exclude_hook_sources=owner["is_dynamic"],
+                )
+            elif step_row["step_configuration"]:
+                configuration = Step.model_validate_json(
+                    step_row["step_configuration"]
+                )
+            else:
+                raise ExecutionRetentionConflictError(
+                    "Step configuration disappeared during capture."
+                )
+            records.append(
+                StepRecord.model_validate(
+                    {
+                        **{name: step_row[name] for name in self.step_fields},
+                        "step_type": configuration.config.step_type,
+                        "substitutions": configuration.config.substitutions,
+                    }
+                )
+            )
+        return records
+
+
+def capture_run(session: Session, run: ArchivableRun) -> ArchiveDocument:
+    """Capture one inspected run in the caller's transaction.
 
     Args:
-        session: Read snapshot or final locked transaction.
-        tree: Bounded eligibility inventory.
+        session: Read session or the locked retirement transaction.
+        run: Eligible run with its exclusively owned snapshots.
 
     Returns:
-        Detached records and their source fingerprint.
+        The run's archive document.
+
+    Raises:
+        ExecutionRetentionIntegrityError: The captured rows break the format.
     """
-    return TreeCapturer(session, tree).capture()
+    try:
+        return RunCapturer(session, run).capture()
+    except ValueError as error:
+        # Pydantic validation errors subclass ValueError; captured SQL rows
+        # that violate the document closure mean the database is inconsistent.
+        raise ExecutionRetentionIntegrityError(
+            "Captured run detail is inconsistent."
+        ) from error
