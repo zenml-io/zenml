@@ -228,11 +228,7 @@ class ProjectSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ProjectResponseMetadata(
-                retention=RetentionSettings.model_validate_json(
-                    self.retention_settings
-                )
-                if self.retention_settings
-                else RetentionSettings(),
+                retention=RetentionSettings.load(self.retention_settings),
                 description=self.description,
                 project_metadata=json.loads(self.project_metadata)
                 if self.project_metadata
