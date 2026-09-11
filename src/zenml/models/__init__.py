@@ -465,13 +465,12 @@ from zenml.models.v2.misc.param_groups import (
 )
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.retention import (
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionLimits,
-    RetentionOperationResponse,
     RetentionPassResponse,
+    RetentionRunEstimate,
     RetentionSettings,
     RetentionStatusResponse,
-    RetentionTreeEstimate,
 )
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
@@ -962,13 +961,12 @@ __all__ = [
     "TriggerDispatchErrorSeverity",
     "TriggerDispatchStatusCode",
     # V2 Misc
+    "RestoreResponse",
     "RetentionDryRunResponse",
-    "RetentionLimits",
-    "RetentionOperationResponse",
     "RetentionPassResponse",
+    "RetentionRunEstimate",
     "RetentionSettings",
     "RetentionStatusResponse",
-    "RetentionTreeEstimate",
     "AuthenticationMethodModel",
     "DeployedStack",
     "ServiceConnectorResourcesModel",

@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Project retention settings and bounded, non-destructive inventory models."""
+"""Project retention settings, previews, and archive operation outcomes."""
 
 from datetime import datetime
 from typing import ClassVar, Dict, List, Optional
@@ -7,51 +7,44 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import RetentionFailure, RetentionOutcome
+from zenml.enums import RestoreOutcome, RetentionOutcome
 
 
-class RetentionLimits(BaseModel):
-    """Proposed per-invocation bounds, including excluded roots examined."""
-
-    # These v1 limits are also used by preview before archive support is present.
-    MAX_RECORDS: ClassVar[int] = 10_000
-    MAX_DECODED_BYTES: ClassVar[int] = 16 * 1024 * 1024
+class RetentionSettings(BaseModel):
+    """Saved project policy; a null age disables retention."""
 
     model_config = ConfigDict(extra="forbid")
-
-    max_trees: int = Field(default=200, gt=0)
-    max_rows: int = Field(default=500_000, gt=0)
-    max_bytes: int = Field(default=512 * 1024 * 1024, gt=0)
-
-
-class RetentionSettings(RetentionLimits):
-    """Saved policy; a null age disables retention, regardless of limits."""
 
     archive_after_days: Optional[int] = Field(default=None, ge=7)
     archive_model_linked_runs: bool = False
     restored_grace_days: int = Field(default=30, ge=0)
+    max_runs_per_pass: int = Field(default=200, gt=0)
 
 
-class RetentionTreeEstimate(BaseModel):
-    """Row count and single outcome for one examined execution tree."""
+class RetentionRunEstimate(BaseModel):
+    """Row count and single outcome for one examined pipeline run."""
 
     EXCLUSION_DESCRIPTIONS: ClassVar[Dict[str, str]] = {
         "disabled": "Retention is disabled for this project.",
-        "not_eligible": "The tree is active, incomplete, or inconsistent.",
-        "not_old": "At least one run is too recent.",
-        "pinned": "At least one run is marked for retention.",
-        "in_progress_dependent": "An active run depends on this execution tree.",
-        "resumable_failed_root": "The failed root run can still be resumed.",
-        "restored_grace": "The latest archive was restored within its grace period.",
-        "model_link": "A model version still links to this execution tree.",
-        "row_limit": "The execution tree exceeds the row limit.",
-        "byte_limit": "The execution tree exceeds the byte limit.",
-        "pass_budget": "The retention pass reached its remaining row budget.",
+        "not_eligible": (
+            "The run, one of its steps, or one of its child runs is still "
+            "active or inconsistent."
+        ),
+        "not_old": "The run is too recent.",
+        "pinned": "The run is marked for retention.",
+        "resumable_failed": "The failed run can still be resumed.",
+        "root_active": (
+            "The run belongs to a root run that is still active or can "
+            "still be resumed."
+        ),
+        "restored_grace": "The run was restored within its grace period.",
+        "model_link": "A model version links to this run.",
+        "oversized": "The run exceeds the archive size limits.",
     }
 
     model_config = ConfigDict(extra="forbid")
 
-    root_run_id: UUID
+    run_id: UUID
     rows: int = 0
     exclusion_reason: Optional[str] = None
 
@@ -61,7 +54,7 @@ class RetentionTreeEstimate(BaseModel):
 
         Returns:
             The description for a known reason code, the raw code for an
-            unknown one from a newer server, or None for an eligible tree.
+            unknown one from a newer server, or None for an eligible run.
         """
         if self.exclusion_reason is None:
             return None
@@ -71,40 +64,39 @@ class RetentionTreeEstimate(BaseModel):
 
 
 class RetentionDryRunResponse(BaseModel):
-    """Inventory for the examined batch, never a claim to project-wide totals."""
+    """Runs the next archive pass would examine, never project-wide totals."""
 
-    eligible_tree_count: int
-    examined_tree_count: int
+    eligible_run_count: int
+    examined_run_count: int
     truncated: bool
-    trees: List[RetentionTreeEstimate]
-    estimated_bytes: int
-    retained_details: Dict[str, int]
+    runs: List[RetentionRunEstimate]
     effective_policy: RetentionSettings
 
 
-class RetentionOperationResponse(BaseModel):
-    """Catalog outcome; acceptance is distinct from completion."""
-
-    task_id: Optional[str] = None
-    bundle_id: Optional[UUID] = None
-    root_run_id: Optional[UUID] = None
-    outcome: RetentionOutcome
-    restored_at: Optional[datetime] = None
-    error_code: Optional[RetentionFailure] = None
-
-
 class RetentionPassResponse(BaseModel):
-    """Project pass outcome without restore-specific catalog fields."""
+    """Archive pass submission; acceptance is distinct from completion."""
 
     outcome: RetentionOutcome
     task_id: Optional[str] = None
 
 
 class RetentionStatusResponse(BaseModel):
-    """Latest project pass outcome without a catalog scan or object read."""
+    """Latest project pass outcome without scanning runs or storage."""
 
     outcome: RetentionOutcome = RetentionOutcome.IDLE
     archive_enabled: bool = False
     archive_configured: bool = False
     archive_after_days: Optional[int] = None
     finished_at: Optional[datetime] = None
+    archived: int = 0
+    skipped: int = 0
+    oversized: int = 0
+    failed: int = 0
+
+
+class RestoreResponse(BaseModel):
+    """Outcome of a synchronous restore of one pipeline run."""
+
+    run_id: UUID
+    outcome: RestoreOutcome
+    restored_at: Optional[datetime] = None

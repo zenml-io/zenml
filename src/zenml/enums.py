@@ -620,7 +620,7 @@ class ServiceState(StrEnum):
 
 
 class RetentionOutcome(StrEnum):
-    """Durable archive-pass and restore operation outcomes."""
+    """Outcome of the latest archive pass of a project."""
 
     IDLE = "idle"
     EXPIRED = "expired"
@@ -628,65 +628,26 @@ class RetentionOutcome(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
-    NOOP = "noop"
     PAUSED = "paused"
 
 
 class RetentionFailure(StrEnum):
-    """Safe lifecycle failure codes shared by wire models and SQL operations."""
+    """Safe failure codes shared by wire models and archive passes."""
 
-    LEASE_EXPIRED = "lease_expired"
     ARCHIVE_FAILED = "archive_failed"
-    RESTORE_FAILED = "restore_failed"
     INTEGRITY = "integrity"
     STORAGE_CONFIGURATION = "storage_configuration"
     PERMISSION_REVOKED = "permission_revoked"
     SUBMISSION_FAILED = "submission_failed"
     BUSY = "busy"
-    PASS_BUDGET = "pass_budget"
+    OVERSIZED = "oversized"
 
 
-class ArchiveBundleStatus(StrEnum):
-    """Lifecycle of an execution archive bundle catalog row.
+class RestoreOutcome(StrEnum):
+    """Outcome of restoring an archived pipeline run."""
 
-    The catalog row is created as PENDING before any object is uploaded, so a
-    crash at any point leaves either SQL authoritative (PENDING or FAILED) or
-    a cataloged, restorable bundle (COMPLETE). RESTORING and RESTORED mark
-    the inverse operation.
-    """
-
-    PENDING = "pending"
-    COMPLETE = "complete"
-    FAILED = "failed"
-    RESTORING = "restoring"
     RESTORED = "restored"
-
-    @classmethod
-    def authoritative(cls) -> frozenset["ArchiveBundleStatus"]:
-        """Return states whose archived detail remains authoritative.
-
-        Returns:
-            States that authorize archive reads and restore claims.
-        """
-        return frozenset({cls.COMPLETE, cls.RESTORING})
-
-    @classmethod
-    def writer_protected(cls) -> frozenset["ArchiveBundleStatus"]:
-        """Return states that can fence writes to covered detail.
-
-        Returns:
-            Authoritative states plus pending exports with live leases.
-        """
-        return cls.authoritative() | {cls.PENDING}
-
-    @classmethod
-    def retained_generations(cls) -> frozenset["ArchiveBundleStatus"]:
-        """Return states retained for archive eligibility and restore grace.
-
-        Returns:
-            Authoritative archives and successfully restored catalog records.
-        """
-        return cls.authoritative() | {cls.RESTORED}
+    NOOP = "noop"
 
 
 class DeploymentStatus(StrEnum):

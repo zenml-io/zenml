@@ -27,38 +27,23 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 
 class ArchiveBundleSchema(BaseSchema, table=True):
-    """Catalog row for one archived execution tree.
+    """Catalog row for one archived pipeline run.
 
-    A bundle holds the detail rows of a single root pipeline run tree that
-    were moved out of the database. Archived identity rows point back here
-    through their `archive_bundle_id` column, which is a plain UUID without a
-    foreign key: the index and foreign-key rollout on the three large identity
-    tables is deferred until it has been timed. Readers can identify archived
-    rows without joining the catalog. Catalog records are retained; an
-    expired pending claim is marked failed, never deleted.
+    A bundle holds the detail of one pipeline run, its steps, its
+    exclusively owned snapshots, and their step configurations. Archived
+    identity rows point back here through their `archive_bundle_id` column,
+    a plain UUID without a foreign key: the index and foreign-key rollout on
+    the three large identity tables is deferred until it has been timed.
 
-    `root_run_id` is SET NULL rather than CASCADE because a snapshot archived
-    in the same bundle can outlive the root run; a restore of a deleted run is
-    refused, never resurrected. Archive objects are never deleted by this
-    lifecycle.
+    The row is inserted in the same transaction that sets those markers, so
+    a row exists exactly when an object is authoritative. It is kept after a
+    restore, with `restored_at` set, to enforce the restore grace period.
+    `run_id` is SET NULL rather than CASCADE because a snapshot archived in
+    the same bundle can outlive its run. Archive objects are never deleted.
     """
 
     __tablename__ = "archive_bundle"
-    __table_args__ = (
-        Index(
-            "ix_archive_bundle_active_root_id", "active_root_id", unique=True
-        ),
-        Index(
-            "ix_archive_bundle_root_created_id", "root_run_id", "created", "id"
-        ),
-    )
-
-    active_root_id: Optional[UUID] = Field(default=None, nullable=True)
-    claim_token: int = Field(
-        default=1,
-        sa_column=Column(BigInteger, nullable=False, server_default="1"),
-    )
-    claim_expires_at: Optional[datetime] = Field(default=None, nullable=True)
+    __table_args__ = (Index("ix_archive_bundle_run_id", "run_id"),)
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -68,26 +53,16 @@ class ArchiveBundleSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    root_run_id: Optional[UUID] = build_foreign_key_field(
+    run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineRunSchema.__tablename__,
-        source_column="root_run_id",
+        source_column="run_id",
         target_column="id",
         ondelete="SET NULL",
         nullable=True,
     )
-
-    uri: Optional[str] = Field(
-        default=None, sa_column=Column(TEXT, nullable=True)
-    )
-    size_bytes: Optional[int] = Field(
-        default=None, sa_column=Column(BigInteger, nullable=True)
-    )
-    manifest_hash: Optional[str] = Field(default=None, nullable=True)
+    uri: str = Field(sa_column=Column(TEXT, nullable=False))
+    size_bytes: int = Field(sa_column=Column(BigInteger, nullable=False))
+    content_hash: str = Field(nullable=False)
     format_version: int = Field(nullable=False)
-    status: str = Field(nullable=False)
-    claimed_by: Optional[str] = Field(nullable=True, default=None)
-    status_reason: Optional[str] = Field(
-        sa_column=Column(TEXT, nullable=True), default=None
-    )
     restored_at: Optional[datetime] = Field(nullable=True, default=None)

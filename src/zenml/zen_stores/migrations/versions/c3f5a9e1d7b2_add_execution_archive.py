@@ -1,8 +1,8 @@
-"""Add execution archive markers [7a1c3d9e2b4f].
+"""Add execution archive [c3f5a9e1d7b2].
 
-Revision ID: 7a1c3d9e2b4f
+Revision ID: c3f5a9e1d7b2
 Revises: 9f2b8c7d6e5a
-Create Date: 2026-09-07 10:00:00.000000
+Create Date: 2026-09-11 10:00:00.000000
 
 """
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 
-revision = "7a1c3d9e2b4f"
+revision = "c3f5a9e1d7b2"
 down_revision = "9f2b8c7d6e5a"
 branch_labels = None
 depends_on = None
@@ -31,27 +31,15 @@ def upgrade() -> None:
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("project_id", sa.Uuid(), nullable=False),
-        sa.Column("root_run_id", sa.Uuid(), nullable=True),
-        sa.Column("active_root_id", sa.Uuid(), nullable=True),
+        sa.Column("run_id", sa.Uuid(), nullable=True),
+        sa.Column("uri", sa.TEXT(), nullable=False),
+        sa.Column("size_bytes", sa.BigInteger(), nullable=False),
         sa.Column(
-            "claim_token", sa.BigInteger(), nullable=False, server_default="1"
-        ),
-        sa.Column("claim_expires_at", sa.DateTime(), nullable=True),
-        sa.Column("uri", sa.TEXT(), nullable=True),
-        sa.Column("size_bytes", sa.BigInteger(), nullable=True),
-        sa.Column(
-            "manifest_hash",
+            "content_hash",
             sqlmodel.sql.sqltypes.AutoString(),
-            nullable=True,
+            nullable=False,
         ),
         sa.Column("format_version", sa.Integer(), nullable=False),
-        sa.Column(
-            "status", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
-        sa.Column(
-            "claimed_by", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
-        sa.Column("status_reason", sa.TEXT(), nullable=True),
         sa.Column("restored_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["project_id"],
@@ -60,25 +48,14 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["root_run_id"],
+            ["run_id"],
             ["pipeline_run.id"],
-            name="fk_archive_bundle_root_run_id_pipeline_run",
+            name="fk_archive_bundle_run_id_pipeline_run",
             ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-
-    op.create_index(
-        "ix_archive_bundle_active_root_id",
-        "archive_bundle",
-        ["active_root_id"],
-        unique=True,
-    )
-    op.create_index(
-        "ix_archive_bundle_root_created_id",
-        "archive_bundle",
-        ["root_run_id", "created", "id"],
-    )
+    op.create_index("ix_archive_bundle_run_id", "archive_bundle", ["run_id"])
     with op.batch_alter_table("project") as batch_op:
         batch_op.add_column(
             sa.Column("retention_settings", sa.TEXT(), nullable=True)
