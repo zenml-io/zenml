@@ -1,9 +1,9 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Relative retention costs and measured hot-read SQL canaries.
 
-The exact canaries were measured against the atomic metadata base
-``9d2e4ed85e`` (develop through resource pools v2) on 2026-09-11 using its
-store bodies with current schemas and dependencies. Other assertions compare paths
+The exact canaries were measured against develop ``10a0a3033e`` (through
+resource pools v2) on 2026-09-11 using its store bodies with current schemas
+and dependencies. Other assertions compare paths
 within this build so unrelated query changes do not inflate fixed ceilings.
 """
 
