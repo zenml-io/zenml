@@ -33,6 +33,7 @@ from zenml.exceptions import (
 from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
+    PipelineRunUpdate,
     PipelineSnapshotFilter,
     ProjectFilter,
     ProjectUpdate,
@@ -762,4 +763,39 @@ def test_wait_condition_metadata_publishes_after_guarded_insert(
                 )
             ).scalar_one()
             == condition.id
+        )
+
+
+def test_archive_pass_advances_past_a_preview_page_of_pinned_roots(
+    sql_store, tree_factory, storage, NOW
+):
+    """An empty truncated preview does not mean the pass has nothing to do."""
+    pinned = [tree_factory(sql_store) for _ in range(2)]
+    eligible = tree_factory(sql_store)
+    for tree in pinned:
+        sql_store.update_run(tree.run, PipelineRunUpdate(retain=True))
+    with Session(sql_store.engine) as session:
+        run = session.get(PipelineRunSchema, eligible.run)
+        run.end_time = NOW - timedelta(days=50)
+        session.add(run)
+        session.commit()
+    sql_store.update_project(
+        eligible.project,
+        ProjectUpdate(
+            retention=RetentionSettings(archive_after_days=7, max_trees=2)
+        ),
+    )
+
+    preview = sql_store.retention_dry_run(
+        sql_store.get_project(eligible.project)
+    )
+    assert preview.truncated and preview.eligible_tree_count == 0
+
+    outcome = sql_store.archive_project(eligible.project)
+    assert outcome.outcome == RetentionOutcome.SUCCEEDED
+    assert sql_store.get_run(eligible.run, hydrate=False).archive_bundle_id
+    for tree in pinned:
+        assert (
+            sql_store.get_run(tree.run, hydrate=False).archive_bundle_id
+            is None
         )

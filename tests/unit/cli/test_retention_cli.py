@@ -201,3 +201,57 @@ def test_exclusion_descriptions_come_from_the_public_model(
         root_run_id=UUID(int=1), exclusion_reason=reason
     )
     assert estimate.exclusion_description == description
+
+
+@pytest.mark.parametrize(
+    ("truncated", "arguments", "confirmation", "submitted"),
+    [
+        (True, ["--yes"], None, True),
+        (True, [], "y\n", True),
+        (False, ["--yes"], None, False),
+    ],
+)
+def test_empty_preview_blocks_submission_only_when_complete(
+    monkeypatch: pytest.MonkeyPatch,
+    truncated: bool,
+    arguments: list,
+    confirmation: str,
+    submitted: bool,
+) -> None:
+    """A truncated preview with no eligible trees still lets the pass advance.
+
+    Args:
+        monkeypatch: Isolate client calls.
+        truncated: Whether the preview stopped at its examination budget.
+        arguments: Extra command-line arguments.
+        confirmation: Interactive answer, if prompted.
+        submitted: Whether an archive pass must be submitted.
+    """
+    empty = RetentionDryRunResponse(
+        eligible_tree_count=0,
+        examined_tree_count=200,
+        truncated=truncated,
+        trees=[],
+        estimated_bytes=0,
+        retained_details={},
+        effective_policy=RetentionSettings(archive_after_days=90),
+    )
+    submit = Mock(
+        return_value=RetentionPassResponse(outcome=RetentionOutcome.ACCEPTED)
+    )
+    monkeypatch.setattr(Client, "retention_dry_run", Mock(return_value=empty))
+    monkeypatch.setattr(Client, "archive_project", submit)
+
+    result = CliRunner().invoke(
+        project,
+        ["retention", "archive", "demo", *arguments],
+        input=confirmation,
+    )
+
+    assert result.exit_code == 0, result.output
+    output = " ".join(unstyle(result.output).split())
+    assert submit.called is submitted
+    if truncated:
+        assert "examined only the oldest 200 execution tree(s)" in output
+    else:
+        assert "No execution trees are currently eligible" in output

@@ -289,12 +289,21 @@ def archive_project(
     if dry_run:
         cli_utils.declare("Preview only; no data was changed.")
         return
-    if preview.eligible_tree_count == 0:
+    prompt = f"{summary}. Do you want to archive them?"
+    if preview.truncated:
+        # The preview always restarts at the oldest roots and counts protected
+        # ones, while the pass skips them in SQL and resumes from its saved
+        # cursor, so an empty truncated preview says nothing about later roots.
+        cli_utils.declare(
+            f"The preview examined only the oldest "
+            f"{preview.examined_tree_count} execution tree(s). The archive "
+            "pass skips protected runs and continues from its saved position."
+        )
+        prompt = f"{summary} in the examined batch. Submit an archive pass?"
+    elif preview.eligible_tree_count == 0:
         cli_utils.declare("No execution trees are currently eligible.")
         return
-    if not yes and not cli_utils.confirmation(
-        f"{summary}. Do you want to archive them?"
-    ):
+    if not yes and not cli_utils.confirmation(prompt):
         cli_utils.declare("Execution retention canceled.")
         return
     result = client.archive_project(project=project_name_or_id)
