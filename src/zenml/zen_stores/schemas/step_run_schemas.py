@@ -65,6 +65,7 @@ from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
 from zenml.zen_stores.schemas.archive_detail import (
     BundleDetail,
     ConfigurationRecord,
+    StepPayload,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -451,6 +452,26 @@ class StepRunSchema(
             return cast(Dict[str, str], json.loads(self.substitutions))
         return None
 
+    def step_payload(self, detail: Optional["BundleDetail"]) -> StepPayload:
+        """Return this step's payload from SQL or its verified archive.
+
+        Args:
+            detail: Optional authoritative source for archived detail.
+
+        Returns:
+            This row while unarchived, otherwise its archived step record.
+        """
+        # The owning run is only needed to name the restore command, so hot
+        # rows never load the relationship.
+        archived = (
+            self.archived_detail(
+                detail, self.pipeline_run.root_run_id or self.pipeline_run.id
+            )
+            if self.is_offloaded
+            else None
+        )
+        return self if archived is None else archived.step(self)
+
     def get_step_configuration(
         self, detail: Optional["BundleDetail"] = None
     ) -> Step:
@@ -475,32 +496,24 @@ class StepRunSchema(
                 self.id, archived_root_run_id
             )
 
-        root_run_id = (
-            self.pipeline_run.root_run_id or self.pipeline_run.id
-            if self.is_offloaded
-            else None
-        )
-        detail_row = cast(
-            StepRunSchema,
-            self.offloaded_detail(detail, root_run_id),
-        )
+        step_payload = self.step_payload(detail)
         step = None
 
         if self.snapshot is not None:
             config_schema: Optional[
                 Union[StepConfigurationSchema, ConfigurationRecord]
             ]
-            if self.is_offloaded:
-                detail = cast(BundleDetail, detail)
-                config_schema = detail.step_configuration(self.id)
+            archived_step = self.archived_detail(detail)
+            if archived_step is not None:
+                config_schema = archived_step.step_configuration(self.id)
             else:
                 config_schema = self.dynamic_config
             if config_schema is None:
-                if self.snapshot.is_offloaded:
-                    detail = cast(BundleDetail, detail)
+                archived_snapshot = self.snapshot.archived_detail(detail)
+                if archived_snapshot is not None:
                     config_schema = next(
                         iter(
-                            detail.step_configurations(
+                            archived_snapshot.step_configurations(
                                 self.snapshot.id, include=[self.name]
                             )
                         ),
@@ -509,12 +522,10 @@ class StepRunSchema(
                 else:
                     config_schema = self.static_config
             if config_schema is not None:
-                snapshot_detail = cast(
-                    PipelineSnapshotSchema,
-                    self.snapshot.offloaded_detail(detail),
-                )
                 pipeline_configuration = run_pipeline_configuration(
-                    snapshot_detail.pipeline_configuration,
+                    self.snapshot.snapshot_payload(
+                        detail
+                    ).pipeline_configuration,
                     self.pipeline_run.start_time,
                 )
                 step = merge_step_configuration(
@@ -545,12 +556,12 @@ class StepRunSchema(
                         }
                     )
 
-        if not step and detail_row.step_configuration:
+        if not step and step_payload.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the
             # `Step` object directly without passing the pipeline
             # configuration.
-            step = Step.model_validate_json(detail_row.step_configuration)
+            step = Step.model_validate_json(step_payload.step_configuration)
         elif not step:
             if detail is not None and self._has_archived_configuration():
                 raise ExecutionRetentionIntegrityError(
@@ -610,15 +621,7 @@ class StepRunSchema(
         )
         metadata = None
         if include_metadata:
-            root_run_id = (
-                self.pipeline_run.root_run_id or self.pipeline_run.id
-                if self.is_offloaded
-                else None
-            )
-            detail_row = cast(
-                StepRunSchema,
-                self.offloaded_detail(detail, root_run_id),
-            )
+            step_payload = self.step_payload(detail)
             step = cast(Step, step)
             metadata = StepRunResponseMetadata(
                 config=step.config,
@@ -629,9 +632,9 @@ class StepRunSchema(
                 docstring=self.docstring,
                 source_code=self.source_code,
                 exception_info=ExceptionInfo.model_validate_json(
-                    detail_row.exception_info
+                    step_payload.exception_info
                 )
-                if detail_row.exception_info
+                if step_payload.exception_info
                 else None,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,

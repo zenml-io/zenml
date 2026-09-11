@@ -65,7 +65,7 @@ from zenml.utils.run_utils import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
-from zenml.zen_stores.schemas.archive_detail import BundleDetail
+from zenml.zen_stores.schemas.archive_detail import BundleDetail, RunPayload
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -553,6 +553,18 @@ class PipelineRunSchema(
             root_run_id=root_run_id,
         )
 
+    def run_payload(self, detail: Optional["BundleDetail"]) -> RunPayload:
+        """Return this run's payload from SQL or its verified archive.
+
+        Args:
+            detail: Optional authoritative source for archived detail.
+
+        Returns:
+            This row while unarchived, otherwise its archived run record.
+        """
+        archived = self.archived_detail(detail, self.root_run_id or self.id)
+        return self if archived is None else archived.run(self)
+
     def get_pipeline_configuration(
         self, detail: Optional["BundleDetail"] = None
     ) -> PipelineConfiguration:
@@ -569,17 +581,13 @@ class PipelineRunSchema(
         Returns:
             The pipeline configuration.
         """
-        detail_row = cast(
-            PipelineRunSchema,
-            self.offloaded_detail(detail, self.root_run_id or self.id),
-        )
+        run_payload = self.run_payload(detail)
         if self.snapshot:
-            snapshot_detail = cast(
-                PipelineSnapshotSchema, self.snapshot.offloaded_detail(detail)
-            )
-            configuration = snapshot_detail.pipeline_configuration
+            configuration = self.snapshot.snapshot_payload(
+                detail
+            ).pipeline_configuration
         else:
-            if not detail_row.pipeline_configuration:
+            if not run_payload.pipeline_configuration:
                 if self.is_offloaded:
                     raise ExecutionRetentionIntegrityError(
                         f"Archived legacy configuration is missing for run {self.id}."
@@ -587,7 +595,7 @@ class PipelineRunSchema(
                 raise RuntimeError(
                     "Pipeline run has no snapshot and no pipeline configuration."
                 )
-            configuration = detail_row.pipeline_configuration
+            configuration = run_payload.pipeline_configuration
         return run_pipeline_configuration(configuration, self.start_time)
 
     def get_step_configuration(
@@ -632,11 +640,9 @@ class PipelineRunSchema(
             RuntimeError: If the pipeline run has no snapshot or
                 the snapshot has no pipeline spec.
         """
-        self.offloaded_detail(detail, self.root_run_id or self.id)
+        self.archived_detail(detail, self.root_run_id or self.id)
         snapshot_detail = (
-            cast(
-                PipelineSnapshotSchema, self.snapshot.offloaded_detail(detail)
-            )
+            self.snapshot.snapshot_payload(detail)
             if self.snapshot is not None
             else None
         )
@@ -749,28 +755,21 @@ class PipelineRunSchema(
         )
         metadata = None
         if include_metadata:
-            detail_row = cast(
-                PipelineRunSchema,
-                self.offloaded_detail(detail, self.root_run_id or self.id),
-            )
+            run_payload = self.run_payload(detail)
             config = self.get_pipeline_configuration(detail)
             if self.snapshot is not None:
-                snapshot_detail = cast(
-                    PipelineSnapshotSchema,
-                    self.snapshot.offloaded_detail(detail),
-                )
                 client_environment = json.loads(
-                    snapshot_detail.client_environment
+                    self.snapshot.snapshot_payload(detail).client_environment
                 )
             else:
                 client_environment = (
-                    json.loads(detail_row.client_environment)
-                    if detail_row.client_environment
+                    json.loads(run_payload.client_environment)
+                    if run_payload.client_environment
                     else {}
                 )
             orchestrator_environment = (
-                json.loads(detail_row.orchestrator_environment)
-                if detail_row.orchestrator_environment
+                json.loads(run_payload.orchestrator_environment)
+                if run_payload.orchestrator_environment
                 else {}
             )
             if not include_python_packages:
@@ -822,8 +821,8 @@ class PipelineRunSchema(
                 is_templatable=is_templatable,
                 trigger_info=trigger_info,
                 enable_heartbeat=self.enable_heartbeat,
-                exception_info=json.loads(detail_row.exception_info)
-                if detail_row.exception_info
+                exception_info=json.loads(run_payload.exception_info)
+                if run_payload.exception_info
                 else None,
                 trigger_execution_info=json.loads(self.trigger_execution.info)
                 if self.trigger_execution and self.trigger_execution.info

@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Shared SQL authority marker for archived execution detail."""
 
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, cast
 from uuid import UUID
 
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, SQLModel, col
-from typing_extensions import Self
 
 from zenml.exceptions import ExecutionArchivedError
-from zenml.zen_stores.schemas.archive_detail import BundleDetail, Record
+from zenml.zen_stores.schemas.archive_detail import BundleDetail
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -41,29 +40,30 @@ class ArchivableSchema(SQLModel):
         """
         return self.archive_bundle_id is not None
 
-    def offloaded_detail(
+    def archived_detail(
         self,
         detail: Optional[BundleDetail],
         root_run_id: Optional[UUID] = None,
-    ) -> Union[Self, Record]:
-        """Select the authoritative payload without reading SQL or storage.
+    ) -> Optional[BundleDetail]:
+        """Select where this entity's payload must be read from.
 
         Args:
             detail: Verified archived records, if the request loaded them.
             root_run_id: Canonical run to name in a restore command.
 
         Returns:
-            This unarchived row or its matching immutable archived record.
+            The loaded archive index for an archived entity, or None when the
+            payload is still in this SQL row.
 
         Raises:
             ExecutionArchivedError: Archived detail has not been loaded.
         """
         if not self.is_offloaded:
-            return self
-        row = cast("BaseSchema", self)
+            return None
         if detail is None:
+            row = cast("BaseSchema", self)
             raise ExecutionArchivedError.for_entity(row.id, root_run_id)
-        return detail.record_for(row)
+        return detail
 
     @classmethod
     def not_offloaded(cls) -> ColumnElement[bool]:

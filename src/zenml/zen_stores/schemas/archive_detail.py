@@ -1,85 +1,287 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Index verified archived execution detail without storage dependencies."""
+"""Typed archived execution detail consumed by SQL response conversion.
 
-from typing import Any, ClassVar, Optional, Protocol, Sequence, cast
+Conversion reads a few payload columns either from the unarchived SQL row or
+from its archived record. The payload protocols name exactly those columns,
+so the ORM schemas and the frozen archive record models are checked against
+one contract, and a converter cannot start relying on an ORM-only attribute
+that archived reads would lack. Relationships stay on the retained SQL row.
+"""
+
+from typing import Dict, List, Mapping, Optional, Protocol, Sequence, TypeVar
 from uuid import UUID
 
 from zenml.exceptions import ExecutionRetentionIntegrityError
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
-
-class Record(Protocol):
-    """Describe the identity shared by all archived record models."""
-
-    id: UUID
-    table: ClassVar[str]
+PayloadT = TypeVar("PayloadT")
 
 
-class ConfigurationRecord(Record, Protocol):
-    """Describe the configuration fields consumed by SQL response models."""
+class RunPayload(Protocol):
+    """Run detail columns that response conversion reads."""
 
-    index: int
-    name: str
-    config: str
-    snapshot_id: Optional[UUID]
-    step_run_id: Optional[UUID]
+    @property
+    def pipeline_configuration(self) -> Optional[str]:
+        """Legacy inline pipeline configuration.
+
+        Returns:
+            Serialized configuration, or None when a snapshot owns it.
+        """
+        ...
+
+    @property
+    def client_environment(self) -> Optional[str]:
+        """Legacy inline client environment.
+
+        Returns:
+            Serialized environment, or None when a snapshot owns it.
+        """
+        ...
+
+    @property
+    def orchestrator_environment(self) -> Optional[str]:
+        """Orchestrator environment recorded for the run.
+
+        Returns:
+            Serialized environment, if recorded.
+        """
+        ...
+
+    @property
+    def exception_info(self) -> Optional[str]:
+        """Failure details recorded for the run.
+
+        Returns:
+            Serialized exception information, if the run failed.
+        """
+        ...
+
+
+class StepPayload(Protocol):
+    """Step detail columns that response conversion reads."""
+
+    @property
+    def exception_info(self) -> Optional[str]:
+        """Failure details recorded for the step.
+
+        Returns:
+            Serialized exception information, if the step failed.
+        """
+        ...
+
+    @property
+    def step_configuration(self) -> Optional[str]:
+        """Legacy inline step configuration.
+
+        Returns:
+            Serialized merged configuration, or None when a snapshot owns it.
+        """
+        ...
+
+
+class SnapshotPayload(Protocol):
+    """Snapshot detail columns that response conversion reads."""
+
+    @property
+    def pipeline_configuration(self) -> str:
+        """Pipeline configuration of the snapshot.
+
+        Returns:
+            Serialized configuration.
+        """
+        ...
+
+    @property
+    def client_environment(self) -> str:
+        """Client environment captured with the snapshot.
+
+        Returns:
+            Serialized environment.
+        """
+        ...
+
+    @property
+    def pipeline_spec(self) -> Optional[str]:
+        """Pipeline specification of the snapshot.
+
+        Returns:
+            Serialized specification, if recorded.
+        """
+        ...
+
+    @property
+    def source_code(self) -> Optional[str]:
+        """Pipeline source code captured with the snapshot.
+
+        Returns:
+            Source code, if recorded.
+        """
+        ...
+
+    @property
+    def description(self) -> Optional[str]:
+        """Snapshot description.
+
+        Returns:
+            Description, if set.
+        """
+        ...
+
+
+class ConfigurationRecord(Protocol):
+    """Configuration fields consumed by SQL response models."""
+
+    @property
+    def id(self) -> UUID:
+        """Configuration identity.
+
+        Returns:
+            The configuration ID.
+        """
+        ...
+
+    @property
+    def index(self) -> int:
+        """Position within the owning snapshot.
+
+        Returns:
+            The configuration index.
+        """
+        ...
+
+    @property
+    def name(self) -> str:
+        """Step invocation name.
+
+        Returns:
+            The configuration name.
+        """
+        ...
+
+    @property
+    def config(self) -> str:
+        """Serialized step configuration.
+
+        Returns:
+            The configuration JSON.
+        """
+        ...
+
+    @property
+    def snapshot_id(self) -> Optional[UUID]:
+        """Owning snapshot of a static configuration.
+
+        Returns:
+            The snapshot ID, or None for a dynamic configuration.
+        """
+        ...
+
+    @property
+    def step_run_id(self) -> Optional[UUID]:
+        """Owning step of a dynamic configuration.
+
+        Returns:
+            The step ID, or None for a static configuration.
+        """
+        ...
 
 
 class BundleDetail:
-    """Index one or more verified bundles by table and record identity."""
+    """Index verified archived detail by record type and identity."""
 
-    def __init__(self, records: Sequence[Any]) -> None:
-        """Build the record and configuration indexes.
+    def __init__(self) -> None:
+        """Start an empty request-local index."""
+        self.runs: Dict[UUID, RunPayload] = {}
+        self.steps: Dict[UUID, StepPayload] = {}
+        self.snapshots: Dict[UUID, SnapshotPayload] = {}
+        self._configurations: Dict[UUID, List[ConfigurationRecord]] = {}
+        self._dynamic_configurations: Dict[UUID, ConfigurationRecord] = {}
+
+    def add_configuration(self, configuration: ConfigurationRecord) -> None:
+        """Index one configuration under its snapshot or step owner.
 
         Args:
-            records: Records whose integrity and closure were verified.
+            configuration: Verified configuration with exactly one owner.
         """
-        self.records: dict[str, dict[UUID, Record]] = {}
-        self._configurations: dict[UUID, list[ConfigurationRecord]] = {}
-        self._dynamic_configurations: dict[UUID, ConfigurationRecord] = {}
-        self.extend(records)
+        if configuration.snapshot_id is not None:
+            owned = self._configurations.setdefault(
+                configuration.snapshot_id, []
+            )
+            owned.append(configuration)
+            owned.sort(key=lambda record: record.index)
+        elif configuration.step_run_id is not None:
+            self._dynamic_configurations[configuration.step_run_id] = (
+                configuration
+            )
 
-    def extend(self, records: Sequence[Any]) -> None:
-        """Merge verified records and order snapshot configurations.
+    def merge(self, other: "BundleDetail") -> None:
+        """Add another verified bundle's records to this index.
 
         Args:
-            records: Additional bundle records with globally unique identities.
+            other: Independently verified bundle with distinct identities.
         """
-        for candidate in records:
-            record = cast(Record, candidate)
-            self.records.setdefault(record.table, {})[record.id] = record
-            if record.table == "step_configuration":
-                configuration = cast(ConfigurationRecord, record)
-                if configuration.snapshot_id is not None:
-                    configurations = self._configurations.setdefault(
-                        configuration.snapshot_id, []
-                    )
-                    configurations.append(configuration)
-                elif configuration.step_run_id is not None:
-                    self._dynamic_configurations[configuration.step_run_id] = (
-                        configuration
-                    )
-        for configurations in self._configurations.values():
-            configurations.sort(key=lambda record: record.index)
+        self.runs.update(other.runs)
+        self.steps.update(other.steps)
+        self.snapshots.update(other.snapshots)
+        for configurations in other._configurations.values():
+            for configuration in configurations:
+                self.add_configuration(configuration)
+        for configuration in other._dynamic_configurations.values():
+            self.add_configuration(configuration)
 
-    def record_for(self, row: BaseSchema) -> Record:
-        """Return the archived payload for a retained SQL row.
+    def run(self, row: BaseSchema) -> RunPayload:
+        """Return the archived detail of a retained run.
 
         Args:
-            row: Retained identity and table name from SQL.
+            row: Retained run identity.
 
         Returns:
-            The verified payload with the same table and identity.
+            The verified run payload.
+        """
+        return self._require(self.runs, row)
+
+    def step(self, row: BaseSchema) -> StepPayload:
+        """Return the archived detail of a retained step.
+
+        Args:
+            row: Retained step identity.
+
+        Returns:
+            The verified step payload.
+        """
+        return self._require(self.steps, row)
+
+    def snapshot(self, row: BaseSchema) -> SnapshotPayload:
+        """Return the archived detail of a retained snapshot.
+
+        Args:
+            row: Retained snapshot identity.
+
+        Returns:
+            The verified snapshot payload.
+        """
+        return self._require(self.snapshots, row)
+
+    @staticmethod
+    def _require(index: Mapping[UUID, PayloadT], row: BaseSchema) -> PayloadT:
+        """Look up a retained row's payload, failing closed when absent.
+
+        Args:
+            index: Payloads of one record type.
+            row: Retained SQL identity.
+
+        Returns:
+            The verified payload with the same identity.
 
         Raises:
             ExecutionRetentionIntegrityError: The row is absent from the bundle.
         """
-        record = self.records.get(str(row.__tablename__), {}).get(row.id)
-        if record is None:
+        payload = index.get(row.id)
+        if payload is None:
             raise ExecutionRetentionIntegrityError(
                 f"Archived execution detail is missing for {row.id}."
             )
-        return record
+        return payload
 
     def step_configurations(
         self, snapshot_id: UUID, include: Optional[Sequence[str]] = None
@@ -93,7 +295,7 @@ class BundleDetail:
         Returns:
             Matching configurations, or an empty tuple for a dynamic snapshot.
         """
-        configurations = self._configurations.get(snapshot_id, ())
+        configurations = self._configurations.get(snapshot_id, [])
         if not include:
             return configurations
         names = set(include)

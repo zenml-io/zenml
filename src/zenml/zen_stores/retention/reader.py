@@ -12,9 +12,40 @@ from zenml.exceptions import (
     ExecutionRetentionUnavailableError,
 )
 from zenml.zen_stores.retention.bundle import Bundle
-from zenml.zen_stores.retention.manifest import Manifest
+from zenml.zen_stores.retention.manifest import (
+    Manifest,
+    Record,
+    RunRecord,
+    SnapshotRecord,
+    StepRecord,
+)
 from zenml.zen_stores.schemas import ArchiveBundleSchema
 from zenml.zen_stores.schemas.archive_detail import BundleDetail
+
+
+def index_records(records: Sequence[Record]) -> BundleDetail:
+    """Index verified records by their concrete archive record type.
+
+    Dispatching on the manifest classes lets the type checker confirm that
+    each record model satisfies the payload protocol conversion reads.
+
+    Args:
+        records: Records whose integrity and closure were verified.
+
+    Returns:
+        A typed request-local index.
+    """
+    detail = BundleDetail()
+    for record in records:
+        if isinstance(record, RunRecord):
+            detail.runs[record.id] = record
+        elif isinstance(record, StepRecord):
+            detail.steps[record.id] = record
+        elif isinstance(record, SnapshotRecord):
+            detail.snapshots[record.id] = record
+        else:
+            detail.add_configuration(record)
+    return detail
 
 
 class BundleReference(BaseModel):
@@ -76,16 +107,9 @@ class ArchiveReader:
 
         """
         distinct = {reference.bundle_id: reference for reference in references}
-        merged = BundleDetail([])
+        merged = BundleDetail()
         for reference in distinct.values():
-            detail = self._fetch(reference)
-            merged.extend(
-                [
-                    record
-                    for table in detail.records.values()
-                    for record in table.values()
-                ]
-            )
+            merged.merge(self._fetch(reference))
         return merged
 
     def _fetch(self, reference: BundleReference) -> BundleDetail:
@@ -102,7 +126,7 @@ class ArchiveReader:
             ExecutionRetentionUnavailableError: Storage could not be read.
         """
         try:
-            return BundleDetail(
+            return index_records(
                 Bundle.fetch_records(
                     self._storage,
                     reference.uri,
