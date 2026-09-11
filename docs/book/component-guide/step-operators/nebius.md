@@ -12,10 +12,12 @@ preserve step identity, artifact lineage, and downstream input loading.
 {% hint style="warning" %}
 This integration currently supports static pipelines with the **local
 orchestrator**, one regular GPU per Job, and **no automatic step retries**.
-Live Nebius validation is pending. It does not provision Endpoints or use Token
-Factory. Dynamic pipelines, command steps, preemptible instances, multi-node
-execution, resource pools, and automatic recovery after orchestrator loss are
-not supported.
+A live L40S smoke pipeline has verified GPU execution, private image pulls,
+native secret delivery, artifact round-trips, cache reuse, failure propagation,
+and cancellation. Long-running credential renewal and provider timeout remain
+unvalidated. It does not provision Endpoints or use Token Factory. Dynamic
+pipelines, command steps, preemptible instances, multi-node execution, resource
+pools, and automatic recovery after orchestrator loss are not supported.
 {% endhint %}
 
 ## Prerequisites

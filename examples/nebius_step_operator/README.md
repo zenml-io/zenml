@@ -62,7 +62,17 @@ underlying Compute resources if cancellation or submission is uncertain.
 ## Validation status
 
 The integration has local lifecycle, SDK serialization, and bootstrap tests.
-This CUDA example has not been executed on Nebius. Before production use, validate
-GPU execution, artifact round-trips, private pulls, token renewal, cancellation,
-and VM/boot-disk cleanup with your own project and credentials. Provider timeout
-and Job completion alone do not prove deletion of all underlying resources.
+On September 11, 2026, a live smoke pipeline using this CUDA image and scoring
+pattern passed on an NVIDIA L40S with CUDA 12.8. It verified private image pulls,
+native secret delivery, S3 artifact round-trips, downstream consumption, cache
+reuse without another Job, and deliberate failure propagation. Fresh-client
+cancellation during provisioning and SIGINT after worker startup also passed;
+SIGINT preserved `KeyboardInterrupt` and launcher exit code 130. Independent
+Compute API reads confirmed VM and boot-disk deletion for all four Jobs.
+The local orchestrator marked both cancelled-workload pipelines failed, while
+their provider Jobs reached `CANCELLED`.
+
+Long-running credential renewal and the provider timeout remain unvalidated.
+Before production use, validate lifecycle behavior with your own project and
+credentials. Provider timeout and Job completion alone do not prove deletion of
+all underlying resources.
