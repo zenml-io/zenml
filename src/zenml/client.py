@@ -157,7 +157,6 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestResponse,
     RestoreResponse,
-    RetentionDryRunResponse,
     RetentionPassResponse,
     RetentionSettings,
     RetentionStatusResponse,
@@ -1200,20 +1199,6 @@ class Client(metaclass=ClientMetaClass):
         """
         selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
         return self.zen_store.restore_pipeline_run(selected.id)
-
-    def retention_dry_run(
-        self,
-        project: Optional[Union[UUID, str]] = None,
-    ) -> RetentionDryRunResponse:
-        """Inspect the runs the next archive pass would examine.
-
-        Args:
-            project: Project name/ID/prefix, or the active project.
-
-        Returns:
-            Per-run row counts and exclusion reasons, with no changes.
-        """
-        return self.zen_store.retention_dry_run(self.get_project(project).id)
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.

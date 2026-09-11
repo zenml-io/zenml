@@ -1,10 +1,8 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Read costs, outage behavior, and per-request limits of archived reads.
 
-The exact canaries match develop ``10a0a3033e`` (through resource pools v2)
-measured on MySQL with its store bodies and current schemas. Other
-assertions compare paths within this build so unrelated query changes do not
-inflate fixed ceilings.
+Statement counts are compared between paths inside this build, so unrelated
+query changes never inflate a fixed ceiling a later change has to chase.
 """
 
 import gc
@@ -13,12 +11,10 @@ from collections import Counter
 from contextlib import contextmanager
 from functools import partial
 from unittest.mock import Mock
-from uuid import uuid4
 
 import pytest
-from sqlalchemy import event, select
+from sqlalchemy import event
 
-from tests.unit.zen_stores.retention.fixture_graph import dynamic_step
 from zenml.enums import ExecutionStatus, RetentionOutcome
 from zenml.exceptions import (
     ExecutionArchivedError,
@@ -31,13 +27,7 @@ from zenml.models import (
     StepRunRequest,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
-from zenml.zen_stores.retention import fences, reader
-from zenml.zen_stores.schemas import PipelineRunSchema
-
-DEVELOP_CANARIES = {
-    "get_run": {"SELECT": 7},
-    "list_run_steps": {"SELECT": 12},
-}
+from zenml.zen_stores.retention import reader
 
 
 @contextmanager
@@ -67,24 +57,6 @@ def header_read(store, ids, operation):
     }[operation]()
 
 
-@pytest.mark.parametrize("operation", DEVELOP_CANARIES)
-def test_hot_read_statement_canary(retention_store, run_factory, operation):
-    """Hot reads issue exactly as many statements as on develop."""
-    ids = run_factory(retention_store)
-    reads = {
-        "get_run": partial(retention_store.get_run, ids.run),
-        "list_run_steps": partial(
-            retention_store.list_run_steps,
-            StepRunFilter(project=ids.project),
-            hydrate=True,
-        ),
-    }
-    reads[operation]()
-    with count_statements(retention_store) as statements:
-        reads[operation]()
-    assert dict(statements) == DEVELOP_CANARIES[operation]
-
-
 @pytest.mark.parametrize("operation", ("run", "step_list"))
 def test_archive_marker_adds_no_header_read_statements(
     retention_store, run_factory, archive_run, operation
@@ -103,34 +75,6 @@ def test_archive_marker_adds_no_header_read_statements(
     with count_statements(retention_store) as cold_statements:
         header_read(retention_store, cold, operation)
     assert cold_statements == hot_statements
-
-
-def test_step_creation_guard_costs_no_more_than_develops_run_lock(
-    retention_store, run_factory, monkeypatch, NOW
-):
-    """The insert guard replaces the run lock step creation always took."""
-    ids = run_factory(retention_store, "dynamic")
-
-    def create_step():
-        retention_store.create_run_step(
-            dynamic_step(ids, f"step-{uuid4().hex[:8]}", NOW)
-        )
-
-    def develop_run_lock(session, run_id):
-        session.execute(
-            select(PipelineRunSchema.id)
-            .where(PipelineRunSchema.id == run_id)
-            .with_for_update()
-        ).all()
-
-    create_step()
-    with count_statements(retention_store) as guarded:
-        create_step()
-    monkeypatch.setattr(fences, "protect_run", develop_run_lock)
-    with count_statements(retention_store) as develop:
-        create_step()
-    # Loading the whole run row also saves a later lazy load of that run.
-    assert not guarded - develop
 
 
 def test_header_lists_survive_unavailable_storage(

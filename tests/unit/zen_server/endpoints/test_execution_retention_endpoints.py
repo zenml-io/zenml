@@ -250,7 +250,6 @@ def test_execution_routes_deny_before_archive_io_or_dispatch(
         ("post", "run", "restore"),
         ("post", "project", "archive"),
         ("get", "project", "status"),
-        ("post", "project", "dry-run"),
     ],
 )
 def test_operation_routes_deny_before_catalog(

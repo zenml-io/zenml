@@ -466,9 +466,7 @@ from zenml.models.v2.misc.param_groups import (
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.retention import (
     RestoreResponse,
-    RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -963,9 +961,7 @@ __all__ = [
     "TriggerDispatchStatusCode",
     # V2 Misc
     "RestoreResponse",
-    "RetentionDryRunResponse",
     "RetentionPassResponse",
-    "RetentionRunPreview",
     "RetentionSettings",
     "RetentionStatusResponse",
     "AuthenticationMethodModel",

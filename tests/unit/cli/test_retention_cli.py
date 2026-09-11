@@ -16,31 +16,10 @@ from zenml.client import Client
 from zenml.enums import RestoreOutcome, RetentionOutcome
 from zenml.models.v2.misc.retention import (
     RestoreResponse,
-    RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
-
-
-def preview(eligible: int, truncated: bool = False) -> RetentionDryRunResponse:
-    """Build a preview with `eligible` runs of three rows each."""
-    return RetentionDryRunResponse(
-        eligible_run_count=eligible,
-        examined_run_count=eligible + 1,
-        truncated=truncated,
-        runs=[
-            *(
-                RetentionRunPreview(run_id=UUID(int=index + 1), rows=3)
-                for index in range(eligible)
-            ),
-            RetentionRunPreview(
-                run_id=UUID(int=99), rows=1, exclusion_reason="pinned"
-            ),
-        ],
-        effective_policy=RetentionSettings(archive_after_days=90),
-    )
 
 
 @pytest.fixture
@@ -58,18 +37,30 @@ def output(result) -> str:
     return " ".join(unstyle(result.output).split())
 
 
-def test_archive_previews_then_submits(monkeypatch, submit) -> None:
-    """Dry-run stops after the preview; --yes submits and names status."""
+def saved_policy(monkeypatch: pytest.MonkeyPatch, days) -> None:
+    """Answer project reads with a policy that archives after `days`."""
     monkeypatch.setattr(
-        Client, "retention_dry_run", Mock(return_value=preview(2))
+        Client,
+        "get_project",
+        Mock(
+            return_value=SimpleNamespace(
+                retention=RetentionSettings(archive_after_days=days)
+            )
+        ),
     )
+
+
+def test_archive_confirms_then_submits(monkeypatch, submit) -> None:
+    """The prompt names the saved policy; --yes submits and names status."""
+    saved_policy(monkeypatch, 90)
     runner = CliRunner()
 
-    dry_run = runner.invoke(
-        project, ["retention", "archive", "demo", "--dry-run"]
+    canceled = runner.invoke(
+        project, ["retention", "archive", "demo"], input="n\n"
     )
-    assert dry_run.exit_code == 0, dry_run.output
-    assert "2 eligible run(s) covering 6 rows" in output(dry_run)
+    assert canceled.exit_code == 0, canceled.output
+    assert "finished more than 90 days ago" in output(canceled)
+    assert "Execution retention canceled" in canceled.output
     submit.assert_not_called()
 
     accepted = runner.invoke(
@@ -80,40 +71,17 @@ def test_archive_previews_then_submits(monkeypatch, submit) -> None:
     submit.assert_called_once()
 
 
-def test_archive_confirmation_can_cancel(monkeypatch, submit) -> None:
-    """A rejected confirmation submits nothing."""
-    monkeypatch.setattr(
-        Client, "retention_dry_run", Mock(return_value=preview(2))
-    )
-
-    result = CliRunner().invoke(
-        project, ["retention", "archive", "demo"], input="n\n"
-    )
-
-    assert result.exit_code == 0, result.output
-    assert "Execution retention canceled" in result.output
-    submit.assert_not_called()
-
-
-@pytest.mark.parametrize("truncated", [False, True])
-def test_empty_preview_submits_only_when_more_runs_follow(
-    monkeypatch, submit, truncated
-) -> None:
-    """A batch without eligible runs still moves a pass past it."""
-    monkeypatch.setattr(
-        Client,
-        "retention_dry_run",
-        Mock(return_value=preview(0, truncated=truncated)),
-    )
+def test_archive_without_a_policy_submits_nothing(monkeypatch, submit) -> None:
+    """A project with no saved policy is told how to set one."""
+    saved_policy(monkeypatch, None)
 
     result = CliRunner().invoke(
         project, ["retention", "archive", "demo", "--yes"]
     )
 
     assert result.exit_code == 0, result.output
-    assert submit.called is truncated
-    if not truncated:
-        assert "No pipeline runs are currently eligible" in output(result)
+    assert "zenml project retention set --archive-after-days" in output(result)
+    submit.assert_not_called()
 
 
 def test_set_merges_the_saved_policy(monkeypatch) -> None:

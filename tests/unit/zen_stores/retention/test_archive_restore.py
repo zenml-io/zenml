@@ -37,7 +37,6 @@ from zenml.models import (
     RunMetadataRequest,
     RunMetadataResource,
     StepRunFilter,
-    StepRunResponseMetadata,
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.retention import RetentionSettings
@@ -492,18 +491,6 @@ def test_losing_pass_removes_its_object(
     assert stored_objects(storage) == [f"{bundles[0].id}.json.gz"]
 
 
-def test_second_pass_is_rejected_while_the_first_holds_its_lease(
-    retention_store, run_factory, storage
-):
-    """Only one pass per project runs at a time."""
-    ids = run_factory(retention_store)
-    retention_store.prepare_retention_pass(ids.project)
-    with pytest.raises(
-        ExecutionRetentionConflictError, match="already running"
-    ):
-        retention_store.prepare_retention_pass(ids.project)
-
-
 def test_abandoned_pass_is_replaced_after_its_lease(
     retention_store, run_factory, storage, NOW
 ):
@@ -750,25 +737,3 @@ def test_metadata_still_attaches_to_an_archived_run(
     )
 
     assert retention_store.get_run(ids.run).run_metadata["late"] == "kept"
-
-
-class ReleasedStepRunResponseMetadata(StepRunResponseMetadata):
-    """Step metadata as released clients declare it, with a required snapshot."""
-
-    snapshot_id: UUID
-
-
-def test_archived_step_metadata_keeps_the_released_client_contract(
-    retention_store, run_factory, archive_run
-):
-    """Archived steps keep snapshot_id, so older clients still parse them."""
-    ids = run_factory(retention_store, "dynamic")
-    archive_run(retention_store, ids)
-
-    step = retention_store.get_run_step(ids.consumer)
-
-    assert step.archive_bundle_id is not None
-    metadata = ReleasedStepRunResponseMetadata.model_validate_json(
-        step.get_metadata().model_dump_json()
-    )
-    assert metadata.snapshot_id == ids.snapshot

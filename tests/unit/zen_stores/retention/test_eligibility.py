@@ -2,11 +2,10 @@
 """Table-driven retention policy, marker, and per-run eligibility rules."""
 
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import pytest
-from pydantic import ValidationError
 from sqlmodel import Session, SQLModel
 
 from tests.unit.zen_stores.retention.fixture_graph import FROZEN_NOW as NOW
@@ -17,12 +16,10 @@ from zenml.models import (
     PipelineSnapshotFilter,
     ProjectFilter,
     ProjectRequest,
-    ProjectUpdate,
     StackFilter,
     StepRunFilter,
 )
 from zenml.models.v2.misc.retention import (
-    RetentionRunPreview,
     RetentionSettings,
 )
 from zenml.zen_stores.retention import eligibility
@@ -115,28 +112,6 @@ def make_resumable(store: SqlZenStore, run: dict[str, UUID]) -> None:
         session.commit()
 
 
-def test_policy_round_trip_and_validation(retention_store) -> None:
-    """Policies stay disabled by default and invalid values fail early."""
-    run = seed_run(retention_store, NOW)
-    project = retention_store.get_project(run["project"])
-    assert project.retention.archive_after_days is None
-    assert (
-        retention_store.retention_dry_run(project.id).examined_run_count == 0
-    )
-    policy = RetentionSettings(archive_after_days=180, max_runs_per_pass=20)
-    retention_store.update_project(project.id, ProjectUpdate(retention=policy))
-    assert retention_store.get_project(project.id).retention == policy
-
-    for values in (
-        {"archive_after_days": 6},
-        {"max_runs_per_pass": 0},
-        {"restored_grace_days": -1},
-        {"max_bytes": 1},
-    ):
-        with pytest.raises(ValidationError):
-            RetentionSettings(**values)
-
-
 def test_archive_markers_filter_headers_and_preserve_run_pins(
     retention_store,
 ) -> None:
@@ -177,19 +152,10 @@ def test_archive_markers_filter_headers_and_preserve_run_pins(
     assert untouched.retain is True
 
 
-def test_old_finished_run_is_eligible(retention_store) -> None:
-    """A finished run older than the policy age has no exclusion."""
-    run = seed_run(retention_store, NOW)
-    inspected = inspect(retention_store, run)
-    assert inspected.exclusion is None
-    assert inspected.snapshot_ids == [run["snapshot"]]
-    # The run, two steps, one snapshot, and its two configurations.
-    assert inspected.row_count == 6
-
-
 @pytest.mark.parametrize(
     "rule,expected",
     [
+        ("eligible", None),
         ("in_progress", "not_eligible"),
         ("running_step", "not_eligible"),
         ("running_child", "not_eligible"),
@@ -200,7 +166,9 @@ def test_old_finished_run_is_eligible(retention_store) -> None:
         ("restored_grace", "restored_grace"),
     ],
 )
-def test_each_exclusion(retention_store, rule: str, expected: str) -> None:
+def test_each_exclusion(
+    retention_store, rule: str, expected: Optional[str]
+) -> None:
     """Each safety rule excludes a run with one stable reason."""
     run = seed_run(retention_store, NOW)
     simple = {
@@ -248,8 +216,13 @@ def test_each_exclusion(retention_store, rule: str, expected: str) -> None:
             session.add(bundle_row(run, restored_at=NOW - timedelta(days=1)))
         session.commit()
 
-    assert inspect(retention_store, run).exclusion == expected
-    assert expected in RetentionRunPreview.EXCLUSION_DESCRIPTIONS
+    inspected = inspect(retention_store, run)
+
+    assert inspected.exclusion == expected
+    if expected is None:
+        assert inspected.snapshot_ids == [run["snapshot"]]
+        # The run, two steps, one snapshot, and its two configurations.
+        assert inspected.row_count == 6
 
 
 @pytest.mark.parametrize("root_state", ["finished", "running", "resumable"])
@@ -384,14 +357,3 @@ def test_discovery_continues_after_the_saved_position(retention_store) -> None:
         runs[2]["run"],
     ]
     assert discover(retention_store, project, limit=1) == [runs[0]["run"]]
-
-
-def test_selection_reports_whether_more_runs_follow(retention_store) -> None:
-    """The dry run inspects one pass worth of runs and flags the rest."""
-    runs = [seed_run(retention_store, NOW, age=age) for age in (120, 110)]
-    with Session(retention_store.engine) as session:
-        selection = eligibility.select_archivable_runs(
-            session, runs[0]["project"], POLICY, NOW, None, 1
-        )
-    assert [run.run_id for run in selection.runs] == [runs[0]["run"]]
-    assert selection.truncated

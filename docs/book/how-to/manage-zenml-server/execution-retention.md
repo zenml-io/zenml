@@ -56,7 +56,7 @@ never deletes archive objects, and archived detail becomes unreadable if they
 disappear. Unsetting the URI stops new passes and makes archived detail
 unavailable until it is set again.
 
-## Save a policy and preview it
+## Save a policy
 
 The CLI merges supplied values into the saved policy, so omitted options keep
 their current values:
@@ -64,7 +64,6 @@ their current values:
 ```shell
 zenml project retention set default --archive-after-days 90
 zenml project retention show default
-zenml project retention dry-run default
 ```
 
 The project argument accepts a name or ID and defaults to the active project.
@@ -88,11 +87,11 @@ Client().update_project(
 | `restored_grace_days` | 30 | Days a restored run stays in the database before it may be archived again. |
 | `max_runs_per_pass` (`--max-runs`) | 200 | Runs one archive pass examines. |
 
-The preview lists exactly the runs the next archive pass will examine,
-starting from where the previous pass stopped. Runs that are pinned, too
-recent, or linked to a model version, when the policy protects them, are
-skipped before examination and never appear in the preview. Every examined
-run shows its row count and, if it is excluded, one reason:
+An archive pass examines runs in age order, starting from where the
+previous pass stopped. Runs that are pinned, too recent, or linked to a
+model version, when the policy protects them, are skipped before
+examination. Every other examined run is archived unless one of these
+applies, in which case a later pass reconsiders it:
 
 | Reason | Meaning |
 | --- | --- |
@@ -109,8 +108,8 @@ passes skip it.
 
 ## Archive and check status
 
-The archive command previews the next batch and asks for confirmation. Use
-`--dry-run` to stop after the preview or `--yes` for an unattended submit:
+The archive command names the saved policy and asks for confirmation. Use
+`--yes` for an unattended submit:
 
 ```shell
 zenml project retention archive default
@@ -119,9 +118,9 @@ zenml project retention status default
 
 A pass examines up to `max_runs_per_pass` runs for at most **60 seconds** and
 saves its position, so the next pass continues from there. There is no
-scheduler; run the command again, or from cron, until the preview shows no
-eligible runs. With a server connection, `accepted` means the pass was
-submitted, not finished.
+scheduler; run the command again, or from cron, until status stops
+reporting archived runs. With a server connection, `accepted` means the
+pass was submitted, not finished.
 
 Status shows the latest pass outcome, when it finished, how many runs it
 archived, skipped, found oversized, or failed on, and whether archiving is
@@ -198,7 +197,6 @@ deleted.
 
 | Method and route | Purpose | Permission |
 | --- | --- | --- |
-| `POST /api/v1/projects/{project}/retention/dry-run` | Preview the next pass. | Project update |
 | `POST /api/v1/projects/{project}/retention/archive` | Start a pass; returns 202. | Project update |
 | `GET /api/v1/projects/{project}/retention/status` | Read the latest pass. | Project read |
 | `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run update |

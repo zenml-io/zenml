@@ -34,7 +34,6 @@ from zenml.models import (
     ProjectResponse,
     ProjectStatistics,
     ProjectUpdate,
-    RetentionDryRunResponse,
     RetentionPassResponse,
     RetentionStatusResponse,
 )
@@ -136,29 +135,6 @@ def get_retention_status(
     project = store.get_project(project_name_or_id, hydrate=False)
     verify_permission_for_model(model=project, action=Action.READ)
     return store.get_retention_status(project.id)
-
-
-@router.post(
-    "/{project_name_or_id}/retention/dry-run",
-    responses={403: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def retention_dry_run(
-    project_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> RetentionDryRunResponse:
-    """Preview the next archive pass after verifying update permission.
-
-    Args:
-        project_name_or_id: Project name or ID.
-
-    Returns:
-        The runs the next pass examines, with row counts and exclusions.
-    """
-    store = zen_store()
-    project = store.get_project(project_name_or_id, hydrate=False)
-    verify_permission_for_model(model=project, action=Action.UPDATE)
-    return store.retention_dry_run(project.id)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

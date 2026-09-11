@@ -149,6 +149,37 @@ def with_version(version: Any) -> Callable[[Dict[str, Any]], None]:
     return change
 
 
+def tampered(document: ArchiveDocument) -> tuple[bytes, str]:
+    """Build changed content whose hash still records the original.
+
+    Args:
+        document: Document to tamper with after it was hashed.
+
+    Returns:
+        Sealed bytes and the hash of the untouched document.
+    """
+    fields = document.model_dump(mode="json")
+    fields["run"]["exception_info"] = "tampered"
+    return seal(fields)[0], encode(document).content_hash
+
+
+def damaged(damage: Callable[[bytes], bytes]) -> Callable:
+    """Build a test case from a valid object damaged after encoding.
+
+    Args:
+        damage: Change applied to the compressed bytes.
+
+    Returns:
+        A function producing damaged bytes and their recorded hash.
+    """
+
+    def build(document: ArchiveDocument) -> tuple[bytes, str]:
+        encoded = encode(document)
+        return damage(encoded.data), encoded.content_hash
+
+    return build
+
+
 @pytest.mark.parametrize(
     "build,message",
     [
@@ -157,6 +188,9 @@ def with_version(version: Any) -> Callable[[Dict[str, Any]], None]:
         (mutate(with_extra_field), "failed validation"),
         (mutate(with_version(2)), "format 2 requires a newer server"),
         (raw(b'{"run_id": 1, "run_id": 2}'), "not valid JSON"),
+        (tampered, "hash"),
+        (damaged(lambda data: data[:-8]), "truncated or has trailing data"),
+        (damaged(lambda data: b"not gzip" + data), "not valid gzip"),
     ],
     ids=[
         "step-of-another-run",
@@ -164,41 +198,19 @@ def with_version(version: Any) -> Callable[[Dict[str, Any]], None]:
         "extra-field",
         "newer-version",
         "duplicate-key",
+        "tampered",
+        "truncated",
+        "not-gzip",
     ],
 )
-def test_decode_rejects_invalid_content(document, build, message):
-    """Content that hashes correctly is still validated completely."""
+def test_decode_rejects_anything_but_the_recorded_content(
+    document, build, message
+):
+    """Only the exact bytes the hash records decode into a document."""
     data, content_hash = build(document)
 
     with pytest.raises(ExecutionRetentionIntegrityError, match=message):
         decode(data, content_hash)
-
-
-def test_decode_rejects_modified_content(document):
-    """Any change to the content breaks its recorded hash."""
-    encoded = encode(document)
-    fields = document.model_dump(mode="json")
-    fields["run"]["exception_info"] = "tampered"
-    data, _ = seal(fields)
-
-    with pytest.raises(ExecutionRetentionIntegrityError, match="hash"):
-        decode(data, encoded.content_hash)
-
-
-@pytest.mark.parametrize(
-    "corrupt,message",
-    [
-        (lambda data: data[:-8], "truncated or has trailing data"),
-        (lambda data: b"not gzip" + data, "not valid gzip"),
-    ],
-    ids=["truncated", "not-gzip"],
-)
-def test_decode_rejects_corrupt_objects(document, corrupt, message):
-    """Truncated, padded, or foreign bytes never reach the JSON parser."""
-    encoded = encode(document)
-
-    with pytest.raises(ExecutionRetentionIntegrityError, match=message):
-        decode(corrupt(encoded.data), encoded.content_hash)
 
 
 def test_decompression_stops_at_the_size_cap(monkeypatch):

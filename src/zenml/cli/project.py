@@ -30,7 +30,6 @@ from zenml.console import console
 from zenml.enums import CliCategories, RetentionOutcome
 from zenml.models import ProjectFilter, ProjectResponse
 from zenml.models.v2.misc.retention import (
-    RetentionDryRunResponse,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -72,49 +71,6 @@ def _print_retention_policy(
     cli_utils.print_table(_retention_policy_rows(policy), title=title)
 
 
-def _print_retention_dry_run(result: RetentionDryRunResponse) -> None:
-    """Print the runs the next archive pass would examine.
-
-    Args:
-        result: Typed preview returned by the client.
-    """
-    cli_utils.print_table(
-        [
-            {"property": "eligible runs", "value": result.eligible_run_count},
-            {"property": "examined runs", "value": result.examined_run_count},
-            {"property": "more runs follow", "value": result.truncated},
-        ],
-        title="Retention preview",
-    )
-    cli_utils.print_table(
-        [
-            {
-                "run": run.run_id,
-                "rows": run.rows,
-                "status": run.exclusion_reason or "eligible",
-                "reason": run.exclusion_description or "",
-            }
-            for run in result.runs
-        ],
-        title="Pipeline runs",
-    )
-    _print_retention_policy(result.effective_policy, title="Effective policy")
-    cli_utils.declare("Preview only; no data was changed.")
-
-
-def _retention_preview_summary(result: RetentionDryRunResponse) -> str:
-    """Return the compact confirmation summary for an archive pass.
-
-    Args:
-        result: Typed preview returned by the client.
-
-    Returns:
-        Eligible runs and the rows they cover.
-    """
-    rows = sum(run.rows for run in result.runs if run.exclusion_reason is None)
-    return f"{result.eligible_run_count} eligible run(s) covering {rows} rows"
-
-
 def _print_retention_status(result: RetentionStatusResponse) -> None:
     """Print project retention status as explicit scalar values.
 
@@ -149,18 +105,6 @@ def _print_retention_status(result: RetentionStatusResponse) -> None:
         ],
         title="Retention status",
     )
-
-
-@retention.command("dry-run")
-@click.argument("project_name_or_id", type=str, required=False)
-def retention_dry_run(project_name_or_id: Optional[str]) -> None:
-    """Show the runs the next archive pass would examine, without changes.
-
-    Args:
-        project_name_or_id: Project to inspect, or the active project.
-    """
-    result = Client().retention_dry_run(project=project_name_or_id)
-    _print_retention_dry_run(result)
 
 
 @retention.command("set")
@@ -241,41 +185,26 @@ def show_retention(project_name_or_id: Optional[str]) -> None:
 
 @retention.command("archive")
 @click.argument("project_name_or_id", type=str, required=False)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Print the current preview without submitting an archive pass.",
-)
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation.")
-def archive_project(
-    project_name_or_id: Optional[str], dry_run: bool, yes: bool
-) -> None:
+def archive_project(project_name_or_id: Optional[str], yes: bool) -> None:
     """Start an archive pass using the saved project policy.
 
     Args:
         project_name_or_id: Project to archive, or the active project.
-        dry_run: Whether to stop after the non-destructive preview.
         yes: Whether to submit without interactive confirmation.
     """
     client = Client()
-    preview = client.retention_dry_run(project=project_name_or_id)
-    summary = _retention_preview_summary(preview)
-    cli_utils.declare(summary)
-    if dry_run:
-        cli_utils.declare("Preview only; no data was changed.")
-        return
-    if preview.eligible_run_count == 0 and not preview.truncated:
-        cli_utils.declare("No pipeline runs are currently eligible.")
-        return
-    prompt = f"{summary}. Do you want to archive them?"
-    if preview.truncated:
-        # The pass records its position, so even a batch without eligible
-        # runs moves the next pass on to later runs.
+    policy = client.get_project(project_name_or_id).retention
+    if policy.archive_after_days is None:
         cli_utils.declare(
-            "More runs follow the examined batch; later passes continue "
-            "from where this one stops."
+            "No retention policy is saved for this project; set one with "
+            "`zenml project retention set --archive-after-days N`."
         )
-        prompt = f"{summary} in the next batch. Start an archive pass?"
+        return
+    prompt = (
+        f"Archive up to {policy.max_runs_per_pass} run(s) that finished more "
+        f"than {policy.archive_after_days} days ago?"
+    )
     if not yes and not cli_utils.confirmation(prompt):
         cli_utils.declare("Execution retention canceled.")
         return

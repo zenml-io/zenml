@@ -24,7 +24,6 @@ from zenml.zen_stores.resource_pools.store_interface import (
 )
 from zenml.zen_stores.retention import fences, transactions
 from zenml.zen_stores.retention.archiver import ArchivePass
-from zenml.zen_stores.retention.eligibility import select_archivable_runs
 from zenml.zen_stores.retention.reader import (
     ArchiveReader,
     FetchedBundles,
@@ -405,9 +404,7 @@ from zenml.models.v2.core.resource_request import (
 )
 from zenml.models.v2.misc.retention import (
     RestoreResponse,
-    RetentionDryRunResponse,
     RetentionPassResponse,
-    RetentionRunPreview,
     RetentionSettings,
     RetentionStatusResponse,
 )
@@ -14710,49 +14707,6 @@ class SqlZenStore(BaseZenStore):
         if run.archive_bundle_id is None:
             return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
         return restore_run(self.engine, self.archive_storage, run.id)
-
-    def retention_dry_run(self, project_id: UUID) -> RetentionDryRunResponse:
-        """Inspect the runs the next archive pass would examine.
-
-        Args:
-            project_id: Authorized project.
-
-        Returns:
-            Per-run row counts and exclusion reasons, with no changes.
-        """
-        with Session(self.engine) as session:
-            project = session.exec(
-                select(ProjectSchema).where(
-                    col(ProjectSchema.id) == project_id
-                )
-            ).one()
-            policy = RetentionSettings.load(project.retention_settings)
-            state = RetentionState.load(project.retention_state)
-            selection = select_archivable_runs(
-                session,
-                project_id,
-                policy,
-                transactions.database_now(session),
-                state.cursor,
-                policy.max_runs_per_pass,
-                state.oversized_run_ids,
-            )
-        return RetentionDryRunResponse(
-            eligible_run_count=sum(
-                run.exclusion is None for run in selection.runs
-            ),
-            examined_run_count=len(selection.runs),
-            truncated=selection.truncated,
-            runs=[
-                RetentionRunPreview(
-                    run_id=run.run_id,
-                    rows=run.row_count,
-                    exclusion_reason=run.exclusion,
-                )
-                for run in selection.runs
-            ],
-            effective_policy=policy,
-        )
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

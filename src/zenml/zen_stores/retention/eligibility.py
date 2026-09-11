@@ -3,10 +3,9 @@
 
 Discovery applies the filters that need no inspection: the project, runs
 still in SQL, runs not pinned, runs finished long enough ago, and the
-model-link rule. The dry run and the archive pass share it and start from
-the same saved position, so a preview lists exactly the runs the next pass
-examines. Inspection then gives each candidate at most one exclusion reason
-and counts the rows its bundle would hold.
+model-link rule, and continues from the pass's saved position. Inspection
+then gives each candidate at most one exclusion reason and counts the rows
+its bundle would hold.
 
 A child run is archived on its own, but only once its root run is finished
 and can no longer be resumed: resuming a root reruns its existing child runs
@@ -56,13 +55,6 @@ class ArchivableRun(BaseModel):
     snapshot_ids: List[UUID] = Field(default_factory=list)
     row_count: int = 0
     exclusion: Optional[RetentionExclusion] = None
-
-
-class RetentionSelection(BaseModel):
-    """Inspected runs in scan order and whether more remain after them."""
-
-    runs: List[ArchivableRun] = Field(default_factory=list)
-    truncated: bool = False
 
 
 def discover_runs(
@@ -156,41 +148,6 @@ def inspect_run(
     if run.exclusion is None and run.row_count > MAX_RECORDS:
         run.exclusion = RetentionExclusion.OVERSIZED
     return run
-
-
-def select_archivable_runs(
-    session: Session,
-    project_id: UUID,
-    policy: RetentionSettings,
-    now: datetime,
-    after: Optional[Cursor],
-    limit: int,
-    skip: Sequence[UUID] = (),
-) -> RetentionSelection:
-    """Inspect the runs the next archive pass would examine.
-
-    Args:
-        session: Read session.
-        project_id: Authorized project.
-        policy: Saved project policy.
-        now: Evaluation time.
-        after: Saved position of the project's archive passes.
-        limit: Maximum number of runs to inspect.
-        skip: Runs already known to exceed the byte budget.
-
-    Returns:
-        Inspected runs and whether more candidates follow them.
-    """
-    candidates = discover_runs(
-        session, project_id, policy, now, after, limit + 1, skip
-    )
-    return RetentionSelection(
-        runs=[
-            inspect_run(session, project_id, cursor.run_id, policy, now)
-            for cursor in candidates[:limit]
-        ],
-        truncated=len(candidates) > limit,
-    )
 
 
 def _model_link(run_id: Any) -> ColumnElement[bool]:
