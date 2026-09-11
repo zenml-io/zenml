@@ -5,7 +5,7 @@ import hashlib
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Table, select, tuple_
+from sqlalchemy import RowMapping, Table, select, tuple_
 from sqlmodel import Session, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -28,6 +28,32 @@ from zenml.zen_stores.schemas.step_configuration_utils import (
     merge_step_configuration,
     run_pipeline_configuration,
 )
+
+# Bounds the decoded payload one capture may materialize, including shared
+# snapshot and configuration inputs that are read for projections but never
+# archived. The eligibility estimate uses fixed row weights, so without this
+# a tree with a few very large payloads could load far more than the archive
+# ceiling before serialization rejected it. Twice the archive ceiling leaves
+# room for shared inputs while keeping one tree's working set bounded.
+MAX_SOURCE_BYTES = 2 * MAX_DECODED_BYTES
+
+# Rows are streamed in small groups so an oversized source stops early
+# instead of arriving as one fully buffered result.
+SOURCE_ROWS_PER_FETCH = 50
+
+
+def source_row_bytes(row: RowMapping) -> int:
+    """Measure the text and binary payload one fetched row holds in memory.
+
+    Args:
+        row: One mapping produced by a capture query.
+
+    Returns:
+        The combined length of its string and bytes values.
+    """
+    return sum(
+        len(value) for value in row.values() if isinstance(value, (str, bytes))
+    )
 
 
 class CapturedTree(BaseModel):
@@ -53,6 +79,7 @@ class TreeCapturer:
         self.tree = tree
         self.records: List[Record] = []
         self.size = 0
+        self.source_bytes = 0
         self.run_rows: Dict[Any, Dict[str, Any]] = {}
         self.step_rows: List[Dict[str, Any]] = []
         self.snapshot_rows: Dict[Any, Dict[str, Any]] = {}
@@ -134,7 +161,8 @@ class TreeCapturer:
             Unique row mappings ordered by identity.
 
         Raises:
-            ExecutionRetentionConflictError: More source rows exist than the format permits.
+            ExecutionRetentionConflictError: More source rows or payload bytes
+                exist than one capture permits.
         """
         columns = [table.c[name] for name in fields]
         selected: Dict[Any, Dict[str, Any]] = {}
@@ -145,13 +173,20 @@ class TreeCapturer:
                     .where(column.in_(group))
                     .order_by(table.c.id)
                     .limit(MAX_RECORDS + 1)
+                    .execution_options(yield_per=SOURCE_ROWS_PER_FETCH)
                 )
-                for source_row in self.session.execute(statement).mappings():
-                    selected[source_row["id"]] = dict(source_row)
-                    if len(selected) > MAX_RECORDS:
-                        raise ExecutionRetentionConflictError(
-                            "Tree source exceeds capture record limit."
-                        )
+                with self.session.execute(statement) as result:
+                    for source_row in result.mappings():
+                        self.source_bytes += source_row_bytes(source_row)
+                        if self.source_bytes > MAX_SOURCE_BYTES:
+                            raise ExecutionRetentionConflictError(
+                                "Tree source exceeds capture byte limit."
+                            )
+                        selected[source_row["id"]] = dict(source_row)
+                        if len(selected) > MAX_RECORDS:
+                            raise ExecutionRetentionConflictError(
+                                "Tree source exceeds capture record limit."
+                            )
         return [selected[identity] for identity in sorted(selected)]
 
     def _capture_runs(self) -> None:

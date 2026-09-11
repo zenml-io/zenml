@@ -42,8 +42,9 @@ from zenml.models import (
     StepRunFilter,
     StepRunRequest,
 )
+from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.models.v2.misc.retention import RetentionSettings
-from zenml.zen_stores.retention import fences, transactions
+from zenml.zen_stores.retention import capture, fences, transactions
 from zenml.zen_stores.retention.archiver import ArchivePass
 from zenml.zen_stores.retention.catalog import RetentionState
 from zenml.zen_stores.schemas import (
@@ -827,3 +828,47 @@ def test_unrelated_expired_claim_does_not_replace_a_live_pass(
     outcome = sql_store.execute_retention_pass(running)
     assert outcome.outcome == RetentionOutcome.SUCCEEDED
     assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id
+
+
+def test_capture_stops_at_the_source_byte_budget(
+    sql_store, tree_factory, storage, rows, monkeypatch
+):
+    """Fixed-weight estimates cannot hide stored payloads beyond the budget."""
+    ids = tree_factory(sql_store)
+    exception_info = ExceptionInfo(traceback="x" * 20 * 1024).model_dump_json()
+    with Session(sql_store.engine) as session:
+        steps = session.scalars(
+            select(StepRunSchema).where(
+                StepRunSchema.pipeline_run_id == ids.run
+            )
+        ).all()
+        assert len(steps) > 1
+        for step in steps:
+            step.exception_info = exception_info
+            session.add(step)
+        session.commit()
+    charged = []
+    measure = capture.source_row_bytes
+
+    def counted(row):
+        charged.append(row["id"])
+        return measure(row)
+
+    monkeypatch.setattr(capture, "source_row_bytes", counted)
+    monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 16 * 1024)
+    before = rows(sql_store)
+
+    outcome = sql_store.archive_project(ids.project)
+
+    assert outcome.outcome == RetentionOutcome.SUCCEEDED
+    # Capture aborted on the first oversized step, before reading the rest.
+    assert len(charged) == 1
+    assert sql_store.get_run(ids.run, hydrate=False).archive_bundle_id is None
+    assert rows(sql_store) == before
+    with Session(sql_store.engine) as session:
+        statuses = session.scalars(
+            select(ArchiveBundleSchema.status).where(
+                ArchiveBundleSchema.project_id == ids.project
+            )
+        ).all()
+    assert statuses == [ArchiveBundleStatus.FAILED]
