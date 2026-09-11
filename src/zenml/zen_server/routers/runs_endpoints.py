@@ -55,7 +55,7 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus, RetentionFailure, RetentionOutcome
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     ExecutionArchivedError,
 )
@@ -68,7 +68,7 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
-    RetentionOperationResponse,
+    RestoreResponse,
     RunStatisticsRequest,
     RunStatisticsResponse,
     StepRunFilter,
@@ -135,7 +135,6 @@ from zenml.zen_server.utils import (
     set_filter_project_scope,
     stream_broadcaster,
     stream_broker,
-    submit_reserved_operation,
     workload_manager,
     zen_store,
 )
@@ -782,9 +781,7 @@ def replay_run(
             )
         check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
         if source.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(
-                source.id, source.root_run_id or source.id
-            )
+            raise ExecutionArchivedError.for_entity(source.id, source.id)
 
     run = zen_store().get_run(
         run_id=run_id,
@@ -1044,35 +1041,13 @@ async def stream_run_events(
     )
 
 
-def _retention_root(
-    run_id: UUID, action: Action = Action.UPDATE
-) -> PipelineRunResponse:
-    """Authorize the canonical root before any catalog or object access.
-
-    Args:
-        run_id: Any surviving member of the requested tree.
-        action: Permission required on the canonical root.
-
-    Returns:
-        Root SQL projection authorized for the requested action.
-    """
-    store = zen_store()
-    run = store.get_run(run_id, hydrate=False)
-    if run.root_run_id and run.root_run_id != run.id:
-        run = store.get_run(run.root_run_id, hydrate=False)
-    verify_permission_for_model(model=run, action=action)
-    return run
-
-
 @router.post(
     "/{run_id}/restore",
-    status_code=202,
     responses={
         403: error_response,
         404: error_response,
         409: error_response,
         422: error_response,
-        429: error_response,
         503: error_response,
     },
 )
@@ -1080,48 +1055,19 @@ def _retention_root(
 def restore_pipeline_run(
     run_id: UUID,
     _: AuthContext = Security(authorize),
-) -> RetentionOperationResponse:
-    """Reserve explicit restore before launching the existing maintenance worker.
+) -> RestoreResponse:
+    """Write an archived run's detail back into the database.
+
+    The restore runs within the request and is all-or-nothing.
 
     Args:
-        run_id: Run handle; UPDATE is required on its root.
+        run_id: Run to restore; requires UPDATE permission on it.
 
     Returns:
-        Accepted restore identity or a no-op for an unarchived tree.
-
+        Restored, or a no-op when the run's detail is not archived.
     """
-    root = _retention_root(run_id)
     store = zen_store()
-    prepared = store.prepare_pipeline_run_restore(root.id)
-    if prepared is None:
-        return RetentionOperationResponse(
-            root_run_id=root.id, outcome=RetentionOutcome.NOOP
-        )
-    return submit_reserved_operation(
-        prepared.accepted(),
-        execute=lambda: store.execute_pipeline_run_restore(prepared),
-        abort=lambda code: store.abort_pipeline_run_restore(prepared, code),
-        reauthorize=lambda: _retention_root(root.id),
-        operation_failure=RetentionFailure.RESTORE_FAILED,
+    verify_permission_for_model(
+        model=store.get_run(run_id, hydrate=False), action=Action.UPDATE
     )
-
-
-@router.get(
-    "/{run_id}/restore",
-    responses={403: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def get_pipeline_run_restore_status(
-    run_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> RetentionOperationResponse:
-    """Read one restore outcome without reading archived content.
-
-    Args:
-        run_id: Run handle; READ is required on its root.
-
-    Returns:
-        Latest durable restore outcome.
-    """
-    root = _retention_root(run_id, Action.READ)
-    return zen_store().get_pipeline_run_restore_status(root.id)
+    return store.restore_pipeline_run(run_id)

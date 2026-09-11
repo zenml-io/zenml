@@ -34,7 +34,6 @@ from zenml.models.v2.misc.retention import (
     RetentionSettings,
     RetentionStatusResponse,
 )
-from zenml.utils.string_utils import get_human_readable_filesize
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -58,7 +57,6 @@ def _retention_policy_rows(policy: RetentionSettings) -> list[Dict[str, Any]]:
     """
     values = policy.model_dump()
     values["archive_after_days"] = values["archive_after_days"] or "disabled"
-    values["max_bytes"] = get_human_readable_filesize(values["max_bytes"])
     return [{"setting": key, "value": value} for key, value in values.items()]
 
 
@@ -75,52 +73,33 @@ def _print_retention_policy(
 
 
 def _print_retention_dry_run(result: RetentionDryRunResponse) -> None:
-    """Print a bounded retention preview without dictionary representations.
+    """Print the runs the next archive pass would examine.
 
     Args:
         result: Typed preview returned by the client.
     """
     cli_utils.print_table(
         [
-            {
-                "property": "eligible trees",
-                "value": result.eligible_tree_count,
-            },
-            {
-                "property": "examined trees",
-                "value": result.examined_tree_count,
-            },
-            {"property": "truncated", "value": result.truncated},
-            {
-                "property": "estimated archive size",
-                "value": get_human_readable_filesize(result.estimated_bytes),
-            },
+            {"property": "eligible runs", "value": result.eligible_run_count},
+            {"property": "examined runs", "value": result.examined_run_count},
+            {"property": "more runs follow", "value": result.truncated},
         ],
         title="Retention preview",
     )
     cli_utils.print_table(
         [
             {
-                "root run": tree.root_run_id,
-                "rows": tree.rows,
-                "status": tree.exclusion_reason or "eligible",
-                "reason": tree.exclusion_description or "",
+                "run": run.run_id,
+                "rows": run.rows,
+                "status": run.exclusion_reason or "eligible",
+                "reason": run.exclusion_description or "",
             }
-            for tree in result.trees
+            for run in result.runs
         ],
-        title="Execution trees",
-    )
-    cli_utils.print_table(
-        [
-            {"detail": detail, "count": count}
-            for detail, count in sorted(result.retained_details.items())
-        ],
-        title="Details retained in SQL",
+        title="Pipeline runs",
     )
     _print_retention_policy(result.effective_policy, title="Effective policy")
-    cli_utils.declare(
-        "Preview only; fixed-weight estimate; no data was changed."
-    )
+    cli_utils.declare("Preview only; no data was changed.")
 
 
 def _retention_preview_summary(result: RetentionDryRunResponse) -> str:
@@ -130,22 +109,17 @@ def _retention_preview_summary(result: RetentionDryRunResponse) -> str:
         result: Typed preview returned by the client.
 
     Returns:
-        Eligible trees, estimated MiB, and covered rows.
+        Eligible runs and the rows they cover.
     """
-    rows = sum(
-        tree.rows for tree in result.trees if tree.exclusion_reason is None
-    )
-    return (
-        f"{result.eligible_tree_count} eligible tree(s), about "
-        f"{result.estimated_bytes / (1024 * 1024):.1f} MiB across {rows} rows"
-    )
+    rows = sum(run.rows for run in result.runs if run.exclusion_reason is None)
+    return f"{result.eligible_run_count} eligible run(s) covering {rows} rows"
 
 
 def _print_retention_status(result: RetentionStatusResponse) -> None:
     """Print project retention status as explicit scalar values.
 
     Args:
-        result: Latest saved outcome and effective server configuration.
+        result: Latest pass outcome, counts, and server configuration.
     """
     cli_utils.print_table(
         [
@@ -156,6 +130,10 @@ def _print_retention_status(result: RetentionStatusResponse) -> None:
                 if result.finished_at
                 else "never",
             },
+            {"property": "archived", "value": result.archived},
+            {"property": "skipped", "value": result.skipped},
+            {"property": "oversized", "value": result.oversized},
+            {"property": "failed", "value": result.failed},
             {
                 "property": "archive_enabled",
                 "value": result.archive_enabled,
@@ -176,7 +154,7 @@ def _print_retention_status(result: RetentionStatusResponse) -> None:
 @retention.command("dry-run")
 @click.argument("project_name_or_id", type=str, required=False)
 def retention_dry_run(project_name_or_id: Optional[str]) -> None:
-    """Report a bounded inventory without changing any data or settings.
+    """Show the runs the next archive pass would examine, without changes.
 
     Args:
         project_name_or_id: Project to inspect, or the active project.
@@ -193,18 +171,19 @@ def retention_dry_run(project_name_or_id: Optional[str]) -> None:
     "--archive-model-linked-runs/--no-archive-model-linked-runs",
     default=None,
 )
-@click.option("--max-trees", type=int, default=None)
-@click.option("--max-rows", type=int, default=None)
-@click.option("--max-bytes", type=int, default=None)
+@click.option(
+    "--max-runs",
+    type=int,
+    default=None,
+    help="Maximum runs one archive pass examines.",
+)
 @click.option("--disable", is_flag=True, help="Clear and disable the policy.")
 def set_retention(
     project_name_or_id: Optional[str],
     archive_after_days: Optional[int],
     restored_grace_days: Optional[int],
     archive_model_linked_runs: Optional[bool],
-    max_trees: Optional[int],
-    max_rows: Optional[int],
-    max_bytes: Optional[int],
+    max_runs: Optional[int],
     disable: bool,
 ) -> None:
     """Update the saved retention policy while preserving unspecified values.
@@ -214,9 +193,7 @@ def set_retention(
         archive_after_days: Minimum completed-run age.
         restored_grace_days: Minimum age after the latest restore.
         archive_model_linked_runs: Whether model-linked runs may be archived.
-        max_trees: Maximum trees examined per pass.
-        max_rows: Maximum detail rows per pass.
-        max_bytes: Maximum fixed-weight estimated bytes per pass.
+        max_runs: Maximum runs one archive pass examines.
         disable: Clear the saved policy and disable retention.
 
     Raises:
@@ -226,9 +203,7 @@ def set_retention(
         "archive_after_days": archive_after_days,
         "restored_grace_days": restored_grace_days,
         "archive_model_linked_runs": archive_model_linked_runs,
-        "max_trees": max_trees,
-        "max_rows": max_rows,
-        "max_bytes": max_bytes,
+        "max_runs_per_pass": max_runs,
     }
     if disable and any(value is not None for value in updates.values()):
         raise click.UsageError(
@@ -275,7 +250,7 @@ def show_retention(project_name_or_id: Optional[str]) -> None:
 def archive_project(
     project_name_or_id: Optional[str], dry_run: bool, yes: bool
 ) -> None:
-    """Submit a bounded archive pass using the saved project policy.
+    """Start an archive pass using the saved project policy.
 
     Args:
         project_name_or_id: Project to archive, or the active project.
@@ -289,20 +264,18 @@ def archive_project(
     if dry_run:
         cli_utils.declare("Preview only; no data was changed.")
         return
+    if preview.eligible_run_count == 0 and not preview.truncated:
+        cli_utils.declare("No pipeline runs are currently eligible.")
+        return
     prompt = f"{summary}. Do you want to archive them?"
     if preview.truncated:
-        # The preview always restarts at the oldest roots and counts protected
-        # ones, while the pass skips them in SQL and resumes from its saved
-        # cursor, so an empty truncated preview says nothing about later roots.
+        # The pass records its position, so even a batch without eligible
+        # runs moves the next pass on to later runs.
         cli_utils.declare(
-            f"The preview examined only the oldest "
-            f"{preview.examined_tree_count} execution tree(s). The archive "
-            "pass skips protected runs and continues from its saved position."
+            "More runs follow the examined batch; later passes continue "
+            "from where this one stops."
         )
-        prompt = f"{summary} in the examined batch. Submit an archive pass?"
-    elif preview.eligible_tree_count == 0:
-        cli_utils.declare("No execution trees are currently eligible.")
-        return
+        prompt = f"{summary} in the next batch. Start an archive pass?"
     if not yes and not cli_utils.confirmation(prompt):
         cli_utils.declare("Execution retention canceled.")
         return
@@ -314,13 +287,15 @@ def archive_project(
             f"`zenml project retention status{suffix}`."
         )
     else:
-        cli_utils.print_pydantic_model("Retention", result)
+        _print_retention_status(
+            client.get_retention_status(project=project_name_or_id)
+        )
 
 
 @retention.command("status")
 @click.argument("project_name_or_id", type=str, required=False)
 def retention_status(project_name_or_id: Optional[str]) -> None:
-    """Show the latest bounded archive pass without reading object storage.
+    """Show the latest archive pass without reading object storage.
 
     Args:
         project_name_or_id: Project to inspect, or the active project.

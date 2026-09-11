@@ -4,63 +4,57 @@ description: Archive older execution details while keeping runs readable.
 
 # Execution retention
 
-Execution retention moves the details of eligible, completed executions from
-SQL into verified archive bundles. A **tree** means one canonical root run, its
-nested runs, their steps, and the snapshots and configurations owned only by
-those runs. Run identities, statuses, timestamps, artifact links, and all run
-metadata remain in SQL. Archived runs remain visible in ordinary lists, and
+Execution retention moves the details of old, finished pipeline runs out of
+the database into verified archive objects. Each archived run produces one
+object holding the run's configuration and environment, its steps' detail,
+the snapshots only that run uses, and their step configurations. Run
+identities, statuses, timestamps, artifact links, tags, and all run metadata
+stay in the database. Archived runs remain visible in ordinary lists, and
 detail reads load archived run, step, snapshot, and DAG data automatically.
 
 The schedule field `is_archived` is a separate scheduling concept and is
 unrelated to execution retention.
 
-Archiving is **disabled by default**. Upgrade every execution writer to support
-the archive write protections and validate archive, read, and restore behavior
-before enabling it.
+Archiving is **disabled by default** and requires a **MySQL** database. A
+server configured with an archive URI on SQLite refuses to start.
 
-Retention reduces future SQL detail growth. It does not delete artifact files,
-automatically reclaim database files, or shrink a database volume. Logical byte
-estimates are not physical disk savings.
+Retention reduces future database growth. It does not delete artifact files,
+automatically reclaim database files, or shrink a database volume.
 
-## Configure a registered artifact store
+## Configure archive storage
 
-Register an artifact store using the existing ZenML artifact-store workflow.
-Make its integration and credentials available to every server process that
-reads or writes execution data. For a local artifact store, every replica must
-see the same durable files.
-
-First set the registered component ID and, optionally, a path prefix, then
-restart the server processes:
+Point the server at a bucket prefix or directory and restart every server
+process:
 
 ```shell
-ZENML_SERVER_ARCHIVE_ARTIFACT_STORE_ID=<registered-artifact-store-uuid>
-ZENML_SERVER_ARCHIVE_PATH_PREFIX=execution-retention
+ZENML_SERVER_ARCHIVE_URI=s3://my-bucket/zenml-archive
 ```
 
-The component ID is required for archival and archived reads. The path prefix
-defaults to an empty prefix beneath the component's path. The server uses the
-registered component's credentials, timeouts, and retries. There is no separate
-archive flavor, URI, namespace, or credentials configuration.
+Setting the URI enables archiving. The server never stores credentials for
+it: the SDK behind the URI's scheme uses the credentials of the server
+process itself.
 
-The server checks storage once per archive pass by writing, reading, and
-removing a temporary object at
-`{store.path}/{prefix}/_retention-probes/{uuid}`. Bundles are stored below
-`{store.path}/{prefix}/archive/`; an empty prefix omits that path segment.
-Credentials scoped to the configured prefix must allow the probe operations as
-well as access to archive objects.
+| Scheme | Typical credentials |
+| --- | --- |
+| `s3://` | An IAM role for the server's pod or instance, such as IRSA on EKS. |
+| `gs://` | Workload Identity or the service account attached to the server. |
+| `az://`, `abfs://` | A managed identity or the default Azure credential chain. |
+| A local path | Only for single-replica test servers; every replica must see the same files. |
 
-After those deployment checks pass, enable archiving and restart the server
-processes again:
+The server image must include the matching integration, which the official
+images do. The credentials must allow reading, writing, and deleting objects
+below the URI.
 
-```shell
-ZENML_SERVER_ARCHIVE_ENABLED=true
-```
+At startup and before each archive pass, the server writes, reads back, and
+removes a probe object at `{uri}/_probes/{uuid}`. A failed startup probe only
+logs a warning, so a transient outage does not stop the server. Archive
+objects live at `{uri}/{project_id}/{run_id}/{bundle_id}.json.gz`; the
+database records each object's full URI.
 
-Setting the gate back to `false` prevents new archive passes. Archived reads and
-explicit restore remain available with the configured component. Keep its
-identity, access, and stored paths available while archives depend on it. Reads
-honor the full paths recorded in the SQL catalog; changing the prefix affects
-new bundles, not existing paths.
+Keep the storage and its objects available while any run is archived. ZenML
+never deletes archive objects, and archived detail becomes unreadable if they
+disappear. Unsetting the URI stops new passes and makes archived detail
+unavailable until it is set again.
 
 ## Save a policy and preview it
 
@@ -87,161 +81,141 @@ Client().update_project(
 )
 ```
 
-Choose an age appropriate to the data your team needs; 90 days above is an
-example. `archive_after_days` has a minimum of **7 days**. An age of `None`
-disables the project policy. Saving a complete `RetentionSettings` object with
-the Python client replaces the saved policy.
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `archive_after_days` | disabled | Minimum age of a finished run, at least **7 days**. |
+| `archive_model_linked_runs` | `False` | Whether runs linked to a model version may be archived. |
+| `restored_grace_days` | 30 | Days a restored run stays in the database before it may be archived again. |
+| `max_runs_per_pass` (`--max-runs`) | 200 | Runs one archive pass examines. |
 
-Preview uses the saved policy without request-level overrides or data changes.
-An unset policy returns no candidates. It reports eligible and examined trees,
-the covered row count and one exclusion reason for each tree, one overall
-estimated archive size, and whether its bounded batch was truncated. The size
-is a predictable planning estimate: runs and steps count as 4 KiB each, step
-configurations as 8 KiB, and snapshots as 16 KiB. It does not read payload
-lengths and is not a measurement of SQL storage or physical database savings.
+The preview lists exactly the runs the next archive pass will examine,
+starting from where the previous pass stopped. Runs that are pinned, too
+recent, or linked to a model version, when the policy protects them, are
+skipped before examination and never appear in the preview. Every examined
+run shows its row count and, if it is excluded, one reason:
 
-Active, pinned, recently restored, and otherwise protected trees are excluded.
-Model-linked runs are protected unless the saved policy permits their archival.
-A pin on any member protects the whole tree. Pinning an archived run does not
-restore it.
+| Reason | Meaning |
+| --- | --- |
+| `not_eligible` | The run, one of its steps, or one of its child runs is still active, or a wait condition is unresolved. |
+| `resumable_failed` | The failed run can still be resumed. |
+| `root_active` | The run is a child of a root run that is still active or can still be resumed. Resuming a root reruns its child runs, which needs their details. |
+| `restored_grace` | The run was restored within the grace period. |
+| `oversized` | The run exceeds 50,000 archived rows. |
 
-The policy limits `max_trees`, `max_rows`, and `max_bytes` default to 200
-examined trees, 500,000 covered rows, and a 512 MiB estimated-byte budget per
-invocation. `restored_grace_days` defaults to 30 days, and
-`archive_model_linked_runs` defaults to `False`. Each archive pass also has a
-**60-second budget**; it stops between trees and saves its progress. Each tree
-must fit within 10,000 records and 16 MiB of serialized, decoded archive detail.
-Trees are indivisible; a large tree can remain in SQL even when it is old enough.
-Capture also checks the actual serialized size before any SQL detail is removed.
+Each run is archived on its own, including child runs of dynamic pipelines. A
+run's archived detail must fit within 64 MiB. A run that turns out larger
+during capture stays in the database and counts as `oversized`, and later
+passes skip it.
 
 ## Archive and check status
 
-The archive command always previews the eligible data and asks for confirmation.
-Use `--dry-run` to stop after the preview or `--yes` for an unattended submit:
+The archive command previews the next batch and asks for confirmation. Use
+`--dry-run` to stop after the preview or `--yes` for an unattended submit:
 
 ```shell
 zenml project retention archive default
 zenml project retention status default
 ```
 
-With a server connection, `accepted` means the work was submitted, not
-completed. The response carries a maintenance `task_id`, and the command prints
-the status command to run next. Status shows the latest outcome and finish time,
-storage configuration, enablement, and policy age. It reads SQL and loads the
-registered component without opening archive objects.
+A pass examines up to `max_runs_per_pass` runs for at most **60 seconds** and
+saves its position, so the next pass continues from there. There is no
+scheduler; run the command again, or from cron, until the preview shows no
+eligible runs. With a server connection, `accepted` means the pass was
+submitted, not finished.
+
+Status shows the latest pass outcome, when it finished, how many runs it
+archived, skipped, found oversized, or failed on, and whether archiving is
+enabled and its storage usable. It never scans runs or reads archive objects.
 
 | Outcome | Meaning | Next action |
 | --- | --- | --- |
-| `idle` | No pass or restore is currently recorded. A completed archive can also be idle until a restore is requested. | Submit an archive pass or restore if needed. |
-| `expired` | An accepted restore worker lost its lease before completion. | Resubmit the restore. A new worker safely replaces the expired claim. |
-| `accepted` | The server reserved the operation and queued its maintenance task. | Poll the matching status command; use the returned `task_id` for server-log correlation. Resubmit if it remains unchanged after ten minutes. |
-| `running` | An archive pass has committed progress and is continuing. | Wait and poll status. Resubmit if it makes no progress for ten minutes. |
-| `succeeded` | The requested pass or restore completed. | No action is required. |
-| `failed` | The operation stopped and recorded a safe failure classification. | Use the failure table below, inspect server logs, correct the cause, and retry. |
-| `noop` | Restore found that the execution was already unarchived. | No action is required. |
-| `paused` | The 60-second pass budget or a saved row/byte bound stopped the pass between trees. | Submit the archive pass again; raise the saved limits if one tree cannot fit. |
+| `idle` | No pass has run for this project. | Start a pass. |
+| `accepted` | The server accepted the pass and queued it. | Poll status. |
+| `running` | The pass is working. | Poll status. |
+| `succeeded` | The pass reached the end of the eligible runs. | Start another pass later to archive newly eligible runs. |
+| `paused` | The pass stopped at its run or time budget, or because the policy changed. | Start another pass to continue. |
+| `failed` | The pass stopped early; the server log has the failure code. | Use the table below, correct the cause, and retry. |
+| `expired` | An accepted or running pass stopped updating for ten minutes, for example because its server process stopped. | Start a new pass; it takes over. |
 
 | Failure | Meaning | Next action |
 | --- | --- | --- |
-| `lease_expired` | The worker no longer owned its archive or restore lease. | Retry; the fencing token prevents the expired worker from committing. |
-| `archive_failed` | Capture, upload, verification, or SQL retirement failed. | Inspect server logs and storage/database health, then retry. |
-| `restore_failed` | The restore stopped outside the more specific failure classes below. | Inspect server logs, preserve the bundle, and retry after correcting the cause. |
-| `integrity` | The catalog, manifest, object bytes, or recorded ownership did not agree. | Do not overwrite the object. Investigate the catalog and bundle before retrying. |
-| `storage_configuration` | The registered archive component could not be loaded or read. | Restore the component ID, integration, credentials, and access, then retry. |
-| `permission_revoked` | Authorization changed after submission and before worker execution. | Restore the required permission and resubmit. |
-| `submission_failed` | The server reserved the operation but could not queue the task. | Check the server maintenance worker and logs, then resubmit. |
-| `busy` | Another operation owns the execution, or its identities changed during the attempt. | Wait for the other operation or resolve the change, then retry. |
-| `pass_budget` | The current time, row, or byte allowance could not cover the next unit of work. | Resubmit to continue, or increase the saved row/byte limits for an indivisible tree. |
+| `storage_configuration` | The storage probe failed. | Check the archive URI, the integration, and the server's credentials. |
+| `archive_failed` | The pass hit an unexpected error. | Inspect the server logs and retry. |
+| `permission_revoked` | Authorization changed between submission and execution. | Restore the permission and resubmit. |
+| `submission_failed` | The server accepted the pass but could not queue it. | Check the server's maintenance worker and logs, then resubmit. |
 
-Each server process has **one maintenance worker shared with artifact pruning**.
-A long artifact prune blocks restore because both use that worker. Archive or
-restore submissions while it is occupied receive **429**; retry after the
-current maintenance work finishes.
+A run that changed while it was being archived is skipped and reconsidered
+by a later pass. Runs whose archiving failed are counted in `failed`; the
+server log names the error type.
 
-There is no scheduler. Submit another pass to continue from the saved cursor.
-The cursor advances past examined roots, including excluded ones, so a protected
-root does not prevent progress through the rest of the project. Concurrent
-passes can repeat capture work; claims prevent two workers from committing the
-same archive. Accepted and running project state expires after ten minutes
-without committed progress, allowing a new submission to recover work abandoned
-by a stopped server process.
+Only one pass per project runs at a time: submitting while another pass holds
+its lease returns **409**. Each server process also has **one maintenance
+worker shared with artifact pruning**; a submission while it is busy returns
+**429**. Retry once the other work finishes.
 
 ## What users see
 
-Archived runs list normally when `hydrate=False`. Hydrated reads fetch and
-verify archived detail automatically, so an archived run, step, or snapshot
-returns the same response it returned before archiving. Archiving never clears
-a step's `snapshot_id`; only legacy steps recorded without a snapshot report it
-as `None`, archived or not.
-A hydrated run or step list returns detail only when all cold rows on its page
-belong to one bundle. A mixed-bundle page returns **409**; narrow the filter, or
-list without details with `hydrate=False` in the client and by omitting
-`--hydrate` in the CLI.
+Archived runs list normally. Detail reads fetch and verify the archive object
+automatically, so an archived run, step, or snapshot returns the same
+response as before archiving. Archiving never clears a step's `snapshot_id`;
+only legacy steps recorded without a snapshot report it as `None`.
 
-A storage failure returns 503 with `Retry-After`; lists without details remain
-available. Integrity failures return 500.
+A detailed list, such as runs with `hydrate=True`, loads at most **20 archive
+objects** per request, within a total size limit. A page that needs more
+returns **409**; use a smaller page, narrow the filter, or list without
+details.
+
+Writes that change an archived run's detail, such as updating its status or
+adding a step, return **409** with the command that restores the run.
+Metadata, tags, and pins still work. Deleting a snapshot archived with a run
+returns **409** while that run exists.
+
+A storage failure returns **503** with `Retry-After`; lists without details
+keep working. An object that fails verification returns **500**.
 
 ## Restore
 
-Restore writes the complete tree's detail back into SQL and clears its archive
-markers:
+Restore writes an archived run's detail back into the database:
 
 ```shell
 zenml pipeline runs restore my-run
-zenml pipeline runs restore-status my-run
 ```
 
-Both commands accept a run name, ID, or unique ID prefix. An already unarchived
-tree returns `noop`. Poll an accepted restore until it finishes. Restore requires
-every archived identity row to remain present with the expected bundle marker.
-A missing row, deleted root, or foreign marker causes a conflict and no detail
-is written. Resolve the conflict before retrying; restore does not recreate a
-deleted root.
+The command accepts a run name, ID, or unique ID prefix and finishes when the
+run is restored. Restore is all-or-nothing: it needs every archived row to
+still exist with its archive marker, and any mismatch returns **409** without
+changing anything. A run that is not archived returns `noop`. A restored run
+is protected from re-archiving for `restored_grace_days`.
 
-Deleting an archived run is **irreversible**. Deleting the root leaves the
-catalog row with a null root reference and retains the bundle object; a snapshot
-in that bundle remains readable. Restore cannot recreate the deleted root.
-Retention does not automatically delete these catalog rows or objects.
+**Replay requires a restore first.** Replaying an archived run returns 409
+with the restore command.
 
-**Replay requires explicit restore first.** Replaying an archived run returns
-409 with a restore instruction. After restore succeeds, replay uses the normal
-execution checks. Other operations that need writable detail also require
-restore.
+Deleting an archived run is **irreversible**. Its archive object is kept, so
+a snapshot archived with it stays readable, and that snapshot can then be
+deleted.
 
-## API lifecycle
+## API routes
 
-The lifecycle keeps five routes because preview is a synchronous report,
-archive and restore submit distinct asynchronous jobs, and each job needs a
-read-only status route that can be polled without resubmitting work. Accepted
-archive and restore responses carry the maintenance `task_id`; terminal status
-responses carry the durable outcome.
+| Method and route | Purpose | Permission |
+| --- | --- | --- |
+| `POST /api/v1/projects/{project}/retention/dry-run` | Preview the next pass. | Project update |
+| `POST /api/v1/projects/{project}/retention/archive` | Start a pass; returns 202. | Project update |
+| `GET /api/v1/projects/{project}/retention/status` | Read the latest pass. | Project read |
+| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run update |
 
-| Method and route | Purpose |
-| --- | --- |
-| `POST /api/v1/projects/{project}/retention/dry-run` | Preview the saved policy synchronously. |
-| `POST /api/v1/projects/{project}/retention/archive` | Submit the saved policy; no body. |
-| `GET /api/v1/projects/{project}/retention/status` | Read the latest pass outcome. |
-| `POST /api/v1/runs/{run_id}/restore` | Submit restore; no body. |
-| `GET /api/v1/runs/{run_id}/restore` | Read the restore outcome. |
+The background worker checks authorization again before it starts a pass.
 
-Preview and archive submission require project update permission. Restore
-submission requires update permission on the canonical root. Status requires
-read permission on the corresponding project or root. Background workers
-recheck authorization before executing accepted work.
+## Limitations
 
-## Accepted v0 limitations
-
-1. **Restore is all-or-nothing.** Conflicts fail clearly; operators resolve and retry. There are no partial restores.
-2. **Replay needs explicit restore first** for archived runs.
-3. **Storage is a registered component.** Its integration controls timeouts and retries. Deleting or breaking the component makes archived detail unavailable until the configured component identity, access, and recorded paths are restored administratively. Re-registering a component does not automatically recover the original ID.
-4. **Only archive format version 1 exists.** Unsupported versions are integrity errors, not retryable storage errors. There are no format adapters.
-5. **Hydrated run and step lists read one bundle.** A mixed-bundle page returns 409; narrow the filter or list without details.
-6. **Only the latest operation state is retained.** Restore status comes from the catalog; project state contains an operation ID and expiry, cursor, last outcome, and finish time. There is no operation history.
-7. **Metadata never leaves SQL.** Metadata filtering and cache inheritance continue to use SQL; bundles contain no metadata sections.
-8. **Hook invocations and run wait conditions remain hot.** V0 does not archive these rows or their detail; they stay in SQL when the owning execution is archived.
+1. **MySQL only.** SQLite servers cannot archive.
+2. **Restore is all-or-nothing** and needed before replaying or resuming an archived run.
+3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs.
+4. **Only archive format version 1 exists.** Other versions are integrity errors; there are no format adapters.
+5. **Detailed lists load at most 20 archive objects** per request.
+6. **Only the latest pass is recorded.** There is no operation history.
+7. **Metadata, hook invocations, and run wait conditions stay in the database.**
 
 Physical reclamation remains separate database administration work. Measure
-table and volume sizes after a verified archive batch, and use deployment-specific
-backup and maintenance procedures if rebuilding tables or migrating storage is
-required. ZenML does not automate table rebuilds, archive-object deletion, or
-volume shrinking.
+table and volume sizes after archiving, and use your own backup and
+maintenance procedures if you rebuild tables. ZenML does not rebuild tables
+or shrink volumes.

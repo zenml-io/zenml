@@ -60,10 +60,7 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger, get_logging_context, logging_context
 from zenml.models.v2.base.scoped import ProjectScopedFilter
-from zenml.models.v2.misc.retention import (
-    RetentionOperationResponse,
-    RetentionPassResponse,
-)
+from zenml.models.v2.misc.retention import RetentionPassResponse
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
@@ -98,9 +95,6 @@ if TYPE_CHECKING:
 
 P = ParamSpec("P")
 R = TypeVar("R")
-ReservationT = TypeVar(
-    "ReservationT", RetentionOperationResponse, RetentionPassResponse
-)
 
 
 logger = get_logger(__name__)
@@ -512,13 +506,13 @@ def submit_maintenance_task(task: Callable[[], Any]) -> str:
 
 
 def submit_reserved_operation(
-    reservation: ReservationT,
+    reservation: RetentionPassResponse,
     execute: Callable[[], Any],
     abort: Callable[[RetentionFailure], None],
     reauthorize: Callable[[], Any],
     operation_failure: RetentionFailure,
-) -> ReservationT:
-    """Submit an accepted operation with permission recheck and fenced cleanup.
+) -> RetentionPassResponse:
+    """Submit an accepted archive pass with permission recheck and cleanup.
 
     Args:
         reservation: Accepted response captured before background work starts.

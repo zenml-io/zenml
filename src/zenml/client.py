@@ -156,8 +156,8 @@ from zenml.models import (
     ProjectUpdate,
     ResourceRequestFilter,
     ResourceRequestResponse,
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionOperationResponse,
     RetentionPassResponse,
     RetentionSettings,
     RetentionStatusResponse,
@@ -1162,13 +1162,13 @@ class Client(metaclass=ClientMetaClass):
     def archive_project(
         self, project: Optional[Union[str, UUID]] = None
     ) -> RetentionPassResponse:
-        """Submit one bounded archive pass under the saved project policy.
+        """Start one bounded archive pass under the saved project policy.
 
         Args:
             project: Project name or ID; defaults to the active project.
 
         Returns:
-            Archive pass submission or completed local pass summary.
+            The accepted submission, or the outcome of a local pass.
         """
         selected = (
             self.get_project(project) if project else self.active_project
@@ -1184,7 +1184,7 @@ class Client(metaclass=ClientMetaClass):
             project: Project name or ID; defaults to the active project.
 
         Returns:
-            Latest saved pass outcome, completion time, and archive configuration.
+            Latest pass outcome, counts, and archive configuration.
         """
         selected = (
             self.get_project(project) if project else self.active_project
@@ -1193,43 +1193,29 @@ class Client(metaclass=ClientMetaClass):
 
     def restore_pipeline_run(
         self, name_id_or_prefix: Union[str, UUID]
-    ) -> RetentionOperationResponse:
-        """Restore the archive covering this pipeline run.
+    ) -> RestoreResponse:
+        """Write an archived pipeline run's detail back into the database.
 
         Args:
             name_id_or_prefix: Pipeline run name, ID or unique ID prefix.
 
         Returns:
-            Restore submission, completed local restore, or an unarchived no-op.
+            Restored, or a no-op when the run's detail is not archived.
         """
         selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
         return self.zen_store.restore_pipeline_run(selected.id)
-
-    def get_pipeline_run_restore_status(
-        self, name_id_or_prefix: Union[str, UUID]
-    ) -> RetentionOperationResponse:
-        """Read the latest restore outcome without object access.
-
-        Args:
-            name_id_or_prefix: Pipeline run name, ID or unique ID prefix.
-
-        Returns:
-            Latest saved restore outcome for the requested run.
-        """
-        selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
-        return self.zen_store.get_pipeline_run_restore_status(selected.id)
 
     def retention_dry_run(
         self,
         project: Optional[Union[UUID, str]] = None,
     ) -> RetentionDryRunResponse:
-        """Preview the saved retention policy without changing data.
+        """Inspect the runs the next archive pass would examine.
 
         Args:
             project: Project name/ID/prefix, or the active project.
 
         Returns:
-            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
+            Per-run row counts and exclusion reasons, with no changes.
         """
         selected = self.get_project(project)
         return self.zen_store.retention_dry_run(selected)

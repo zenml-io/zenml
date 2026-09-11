@@ -29,7 +29,7 @@ from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import (
     CliCategories,
     ExecutionStatus,
-    RetentionOutcome,
+    RestoreOutcome,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
 )
@@ -1189,33 +1189,18 @@ def _interactive_resolve_wait_conditions(
 @runs.command("restore")
 @click.argument("run_name_or_id", type=str, required=True)
 def restore_pipeline_run(run_name_or_id: str) -> None:
-    """Restore the archived execution tree covering a pipeline run.
+    """Write an archived pipeline run's detail back into the database.
 
     Args:
         run_name_or_id: Run name, ID or prefix.
     """
     result = Client().restore_pipeline_run(run_name_or_id)
-    if result.outcome == RetentionOutcome.ACCEPTED:
+    if result.outcome == RestoreOutcome.NOOP:
         cli_utils.declare(
-            "Restore accepted; check completion with "
-            f"`zenml pipeline runs restore-status {run_name_or_id}`."
+            f"Run `{result.run_id}` is not archived; nothing to restore."
         )
     else:
-        cli_utils.print_pydantic_model("Execution restore", result)
-
-
-@runs.command("restore-status")
-@click.argument("run_name_or_id", type=str, required=True)
-def pipeline_run_restore_status(run_name_or_id: str) -> None:
-    """Show the latest restore outcome without reading archived content.
-
-    Args:
-        run_name_or_id: Run name, ID or prefix.
-    """
-    cli_utils.print_pydantic_model(
-        "Restore status",
-        Client().get_pipeline_run_restore_status(run_name_or_id),
-    )
+        cli_utils.success(f"Restored run `{result.run_id}`.")
 
 
 @runs.command("stop")

@@ -241,8 +241,8 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRenewalRequest,
     ResourceRequestResponse,
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionOperationResponse,
     RetentionPassResponse,
     RetentionStatusResponse,
     RunMetadataRequest,
@@ -335,6 +335,9 @@ from zenml.zen_server.exceptions import (
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
+
+# Restoring a run happens within the request; see `restore_pipeline_run`.
+RESTORE_TIMEOUT_SECONDS = 300
 
 
 class _RouteAwareRetry(Retry):
@@ -4177,32 +4180,21 @@ class RestZenStore(BaseZenStore):
             self.get(f"{PROJECTS}/{project_id}/retention/status")
         )
 
-    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
-        """Restore the archive covering this pipeline run.
+    def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
+        """Write an archived pipeline run's detail back into the database.
 
         Args:
-            run_id: Pipeline run whose archived catalog record is addressed.
+            run_id: Pipeline run to restore.
 
         Returns:
-            Restore submission, completed local restore, or an unarchived no-op.
+            Restored, or a no-op when the run's detail is not archived.
         """
-        return RetentionOperationResponse.model_validate(
-            self.post(f"{RUNS}/{run_id}/restore")
-        )
-
-    def get_pipeline_run_restore_status(
-        self, run_id: UUID
-    ) -> RetentionOperationResponse:
-        """Read the latest restore outcome without object access.
-
-        Args:
-            run_id: Pipeline run whose archived catalog record is addressed.
-
-        Returns:
-            Latest saved restore outcome for the requested run.
-        """
-        return RetentionOperationResponse.model_validate(
-            self.get(f"{RUNS}/{run_id}/restore")
+        # The server restores within the request: a large run's download,
+        # verification, and write-back can outlast the default timeout.
+        return RestoreResponse.model_validate(
+            self.post(
+                f"{RUNS}/{run_id}/restore", timeout=RESTORE_TIMEOUT_SECONDS
+            )
         )
 
     def retention_dry_run(
@@ -4215,7 +4207,7 @@ class RestZenStore(BaseZenStore):
             project: Resolved project with its saved retention policy.
 
         Returns:
-            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
+            Per-run row counts and exclusion reasons, with no changes.
         """
         return RetentionDryRunResponse.model_validate(
             self.post(f"{PROJECTS}/{project.id}/retention/dry-run")

@@ -119,6 +119,7 @@ from zenml.zen_server.utils import (
     stop_event_loop_lag_monitor,
     zen_store,
 )
+from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
 
 def dashboard_directory() -> str:
@@ -155,15 +156,28 @@ def _configure_uvicorn_logging() -> None:
 
 
 def _check_archive_store_on_startup() -> None:
-    """Warn when enabled retention cannot load its configured artifact store."""
+    """Refuse archiving on SQLite and warn when the archive URI is unusable.
+
+    Raises:
+        RuntimeError: An archive URI is set on a SQLite database.
+    """
     if not server_config().archive_enabled:
         return
+    store = zen_store()
+    if store.config.driver != SQLDatabaseDriver.MYSQL:
+        raise RuntimeError(
+            "ZENML_SERVER_ARCHIVE_URI is set, but execution archiving "
+            "requires a MySQL database. Unset it or move the server to MySQL."
+        )
     try:
-        zen_store().archive_artifact_store
+        usable = store.archive_storage.probe()
     except Exception:
+        usable = False
+    if not usable:
         logger.warning(
-            "Execution retention is enabled, but "
-            "archive_artifact_store_id could not be loaded."
+            "Execution archiving is enabled, but the storage at "
+            "ZENML_SERVER_ARCHIVE_URI cannot be written and read back. Check "
+            "the URI and the server's cloud credentials."
         )
 
 

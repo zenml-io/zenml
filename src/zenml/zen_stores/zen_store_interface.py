@@ -104,8 +104,8 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionOperationResponse,
     RetentionPassResponse,
     RetentionStatusResponse,
     RunMetadataRequest,
@@ -3003,13 +3003,13 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def archive_project(self, project_id: UUID) -> RetentionPassResponse:
-        """Submit one bounded archive pass under the saved project policy.
+        """Start one bounded archive pass under the saved project policy.
 
         Args:
             project_id: Project whose saved retention policy is addressed.
 
         Returns:
-            Archive pass submission or completed local pass summary.
+            The accepted submission, or the outcome of a local pass.
         """
 
     @abstractmethod
@@ -3022,31 +3022,18 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             project_id: Project whose saved retention policy is addressed.
 
         Returns:
-            Latest saved pass outcome, completion time, and archive configuration.
+            Latest pass outcome, counts, and archive configuration.
         """
 
     @abstractmethod
-    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
-        """Restore the archive covering this pipeline run.
+    def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
+        """Write an archived pipeline run's detail back into the database.
 
         Args:
-            run_id: Pipeline run whose archive is addressed.
+            run_id: Pipeline run to restore.
 
         Returns:
-            Restore submission, completed local restore, or an active-run no-op.
-        """
-
-    @abstractmethod
-    def get_pipeline_run_restore_status(
-        self, run_id: UUID
-    ) -> RetentionOperationResponse:
-        """Read the latest restore outcome without object access.
-
-        Args:
-            run_id: Pipeline run whose archive is addressed.
-
-        Returns:
-            Latest saved restore outcome for the requested run.
+            Restored, or a no-op when the run's detail is not archived.
         """
 
     @abstractmethod
@@ -3054,14 +3041,13 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         self,
         project: ProjectResponse,
     ) -> RetentionDryRunResponse:
-        """Estimate a bounded project retention batch without changing data.
+        """Inspect the runs the next archive pass would examine.
 
         Args:
             project: Resolved project with its saved retention policy.
 
         Returns:
-            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
-
+            Per-run row counts and exclusion reasons, with no changes.
         """
 
     @abstractmethod

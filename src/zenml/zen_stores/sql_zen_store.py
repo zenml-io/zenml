@@ -22,12 +22,18 @@ from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
-from zenml.zen_stores.retention import catalog, claims, fences, transactions
+from zenml.zen_stores.retention import fences, transactions
 from zenml.zen_stores.retention.archiver import ArchivePass
-from zenml.zen_stores.retention.catalog import RetentionState
-from zenml.zen_stores.retention.eligibility import select_archivable_trees
-from zenml.zen_stores.retention.reader import ArchiveReader, BundleReference
-from zenml.zen_stores.retention.restorer import PreparedRestore, Restorer
+from zenml.zen_stores.retention.eligibility import select_archivable_runs
+from zenml.zen_stores.retention.reader import (
+    ArchiveReader,
+    FetchedBundles,
+    no_bundles,
+    resolve_references,
+)
+from zenml.zen_stores.retention.restorer import restore_run
+from zenml.zen_stores.retention.state import RetentionState
+from zenml.zen_stores.retention.storage import ArchiveStorage
 
 try:
     import sqlalchemy  # noqa
@@ -138,8 +144,6 @@ from zenml.analytics.utils import (
     track_decorator,
     track_handler,
 )
-from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.artifacts.utils import load_artifact_store
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
@@ -180,8 +184,8 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
+    RestoreOutcome,
     RetentionFailure,
-    RetentionOutcome,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -400,12 +404,12 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
 from zenml.models.v2.misc.retention import (
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionLimits,
-    RetentionOperationResponse,
     RetentionPassResponse,
+    RetentionRunEstimate,
+    RetentionSettings,
     RetentionStatusResponse,
-    RetentionTreeEstimate,
 )
 from zenml.orchestrators.legacy_dag_runner import reverse_dag
 from zenml.orchestrators.topsort import topsorted_layers
@@ -450,6 +454,7 @@ from zenml.zen_stores.schemas import (
     APIKeySchema,
     ApiTransactionResultSchema,
     ApiTransactionSchema,
+    ArchiveBundleSchema,
     ArtifactSchema,
     ArtifactVersionSchema,
     BaseSchema,
@@ -1267,14 +1272,8 @@ class SqlZenStore(BaseZenStore):
     _RUN_OWNER_COLUMNS: ClassVar[
         Dict[Type[BaseSchema], InstrumentedAttribute[UUID]]
     ] = {
-        PipelineRunSchema: cast(
-            InstrumentedAttribute[UUID], PipelineRunSchema.id
-        ),
         StepRunSchema: cast(
             InstrumentedAttribute[UUID], StepRunSchema.pipeline_run_id
-        ),
-        RunWaitConditionSchema: cast(
-            InstrumentedAttribute[UUID], RunWaitConditionSchema.run_id
         ),
     }
 
@@ -5683,6 +5682,10 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             snapshot_id: The ID of the snapshot to delete.
+
+        Raises:
+            ExecutionArchivedError: The snapshot's detail is archived with a
+                run that still exists; restore that run first.
         """
         with Session(self.engine) as session:
             snapshot = self._get_schema_by_id(
@@ -5691,15 +5694,24 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            run_ids = session.exec(
-                select(PipelineRunSchema.id).where(
-                    PipelineRunSchema.snapshot_id == snapshot_id
-                )
-            ).all()
-            fences.protect_membership(session, run_ids)
-            transactions.lock_ids(
-                session, PipelineSnapshotSchema, [snapshot_id]
-            )
+            # Lock before deleting so an archive pass cannot retire the
+            # snapshot in between. Once its run is deleted, nothing can
+            # restore an archived snapshot, so only then may it be deleted.
+            bundle_id = session.execute(
+                select(col(PipelineSnapshotSchema.archive_bundle_id))
+                .where(col(PipelineSnapshotSchema.id) == snapshot_id)
+                .with_for_update()
+            ).scalar_one()
+            if bundle_id is not None:
+                archived_run_id = session.execute(
+                    select(col(ArchiveBundleSchema.run_id)).where(
+                        col(ArchiveBundleSchema.id) == bundle_id
+                    )
+                ).scalar_one_or_none()
+                if archived_run_id is not None:
+                    raise ExecutionArchivedError.for_entity(
+                        snapshot_id, archived_run_id
+                    )
             session.delete(snapshot)
 
             # We set the reference of all snapshots to this snapshot to null
@@ -7047,30 +7059,6 @@ class SqlZenStore(BaseZenStore):
         else:
             return bool(value)
 
-    def _guard_run_sources(
-        self, pipeline_run: PipelineRunRequest, session: Session
-    ) -> Set[UUID]:
-        """Lock the snapshot and related roots a new run will reference.
-
-        Args:
-            pipeline_run: The pipeline run about to be created or replaced.
-            session: Transaction that must hold the locks until it commits.
-
-        Returns:
-            Related roots whose detail is already archived.
-        """
-        related_run_ids = [
-            run_id
-            for run_id in (
-                pipeline_run.parent_run_id,
-                pipeline_run.original_run_id,
-            )
-            if run_id is not None
-        ]
-        cold_roots = fences.protect_membership(session, related_run_ids)
-        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
-        return cold_roots
-
     def _create_run(
         self,
         pipeline_run: PipelineRunRequest,
@@ -7086,7 +7074,7 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            ExecutionArchivedError: The source snapshot or parent tree is archived.
+            ExecutionArchivedError: The source snapshot is archived.
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
@@ -7109,9 +7097,9 @@ class SqlZenStore(BaseZenStore):
             pipeline_id=snapshot.pipeline_id, session=session
         )
         # Allocating the index commits, which ends the transaction holding
-        # the caller's retention guards. Take them again so an archive pass
-        # cannot retire the snapshot or parent tree before the insert commits.
-        cold_roots = self._guard_run_sources(pipeline_run, session)
+        # the caller's snapshot lock. Take it again so an archive pass cannot
+        # retire the snapshot before the new run that uses it commits.
+        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
 
         if pipeline_run.original_run_id:
             self._get_reference_schema_by_id(
@@ -7132,9 +7120,6 @@ class SqlZenStore(BaseZenStore):
                 reference_type="parent run",
             )
             root_run_id = parent_run.root_run_id or parent_run.id
-
-        if root_run_id in cold_roots:
-            raise ExecutionArchivedError.for_entity(root_run_id, root_run_id)
 
         new_run = PipelineRunSchema.from_request(
             pipeline_run,
@@ -7457,7 +7442,7 @@ class SqlZenStore(BaseZenStore):
 
         if run_schema.is_offloaded:
             raise ExecutionArchivedError.for_entity(
-                run_schema.id, run_schema.root_run_id or run_schema.id
+                run_schema.id, run_schema.id
             )
         return run_schema.to_model(
             include_metadata=True, include_resources=True
@@ -7501,7 +7486,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            self._guard_run_sources(pipeline_run, session)
+            fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -7618,7 +7603,6 @@ class SqlZenStore(BaseZenStore):
             query_options_kwargs={
                 "include_full_metadata": include_full_metadata
             },
-            single_bundle=True,
         )
 
     def update_run(
@@ -7645,9 +7629,6 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-
-            if run_update.retain is not None:
-                fences.protect_membership(session, [run_id])
 
             if run_update.status is not None:
                 self._update_pipeline_run_status(
@@ -7764,7 +7745,6 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to delete.
         """
         with Session(self.engine) as session:
-            fences.protect_membership(session, [run_id])
             # Check if pipeline run with the given ID exists
             existing_run = self._get_schema_by_id(
                 resource_id=run_id,
@@ -7772,12 +7752,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if existing_run.snapshot_id:
-                transactions.lock_ids(
-                    session,
-                    PipelineSnapshotSchema,
-                    [existing_run.snapshot_id],
-                )
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
@@ -8360,7 +8334,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             RuntimeError: If the resource type is not supported.
-            ExecutionRetentionConflictError: An active claim blocks publication.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
@@ -8373,10 +8346,7 @@ class SqlZenStore(BaseZenStore):
                 reference_id=run_metadata.stack_component_id,
                 session=session,
             )
-            if not run_metadata.resources:
-                return
 
-            target_run_ids: List[UUID] = []
             for resource in run_metadata.resources:
                 reference_schema: Type[BaseSchema]
                 if resource.type == MetadataResourceTypes.PIPELINE_RUN:
@@ -8396,84 +8366,40 @@ class SqlZenStore(BaseZenStore):
                         f"Unknown resource type: {resource.type}"
                     )
 
-                owner_column = self._RUN_OWNER_COLUMNS.get(reference_schema)
-                if (
-                    len(run_metadata.resources) == 1
-                    and run_metadata.values
-                    and owner_column is not None
-                ):
-                    owner_query = select(owner_column).where(
-                        col(reference_schema.id) == resource.id,
-                        col(
-                            cast(
-                                Type[
-                                    Union[
-                                        PipelineRunSchema,
-                                        StepRunSchema,
-                                        RunWaitConditionSchema,
-                                    ]
-                                ],
-                                reference_schema,
-                            ).project_id
-                        )
-                        == run_metadata.project,
-                    )
-                    try:
-                        fences.protect_inserts(session, owner_query)
-                    except ExecutionRetentionConflictError:
-                        # Preserve missing and cross-project reference errors;
-                        # successful writes validate scope in the locking query.
-                        self._get_reference_schema_by_id(
-                            resource=run_metadata,
-                            reference_schema=reference_schema,
-                            reference_id=resource.id,
-                            session=session,
-                        )
-                        raise
-                    continue
-
-                target = self._get_reference_schema_by_id(
+                self._get_reference_schema_by_id(
                     resource=run_metadata,
                     reference_schema=reference_schema,
                     reference_id=resource.id,
                     session=session,
                 )
 
-                if target is not None and owner_column is not None:
-                    target_run_ids.append(
-                        owner_column.__get__(target, reference_schema)
+            if run_metadata.resources:
+                from zenml.utils.json_utils import pydantic_encoder
+
+                for key, value in run_metadata.values.items():
+                    type_ = run_metadata.types[key]
+
+                    run_metadata_schema = RunMetadataSchema(
+                        project_id=run_metadata.project,
+                        user_id=run_metadata.user,
+                        stack_component_id=run_metadata.stack_component_id,
+                        key=key,
+                        value=json.dumps(value, default=pydantic_encoder),
+                        type=type_,
+                        publisher_step_id=run_metadata.publisher_step_id,
                     )
 
-            if not run_metadata.values:
-                return
-            fences.protect_inserts(session, target_run_ids)
-
-            from zenml.utils.json_utils import pydantic_encoder
-
-            for key, value in run_metadata.values.items():
-                type_ = run_metadata.types[key]
-
-                run_metadata_schema = RunMetadataSchema(
-                    project_id=run_metadata.project,
-                    user_id=run_metadata.user,
-                    stack_component_id=run_metadata.stack_component_id,
-                    key=key,
-                    value=json.dumps(value, default=pydantic_encoder),
-                    type=type_,
-                    publisher_step_id=run_metadata.publisher_step_id,
-                )
-
-                session.add(run_metadata_schema)
-                session.commit()
-
-                for resource in run_metadata.resources:
-                    rm_resource_link = RunMetadataResourceSchema(
-                        resource_id=resource.id,
-                        resource_type=resource.type.value,
-                        run_metadata_id=run_metadata_schema.id,
-                    )
-                    session.add(rm_resource_link)
+                    session.add(run_metadata_schema)
                     session.commit()
+
+                    for resource in run_metadata.resources:
+                        rm_resource_link = RunMetadataResourceSchema(
+                            resource_id=resource.id,
+                            resource_type=resource.type.value,
+                            run_metadata_id=run_metadata_schema.id,
+                        )
+                        session.add(rm_resource_link)
+                        session.commit()
         return None
 
     # -------------------- Webhooks ---------------------
@@ -12978,7 +12904,6 @@ class SqlZenStore(BaseZenStore):
             hydrate=hydrate,
             authorize=authorize,
             permission_owner=lambda step: step.pipeline_run,
-            single_bundle=True,
         )
 
     # -------------------- Hook invocations --------------------
@@ -14413,22 +14338,36 @@ class SqlZenStore(BaseZenStore):
         return project_model
 
     @cached_property
-    def retention_reader(self) -> ArchiveReader:
-        """Construct the reader after leaving the SQL transaction.
+    def archive_storage(self) -> ArchiveStorage:
+        """Create the storage named by the server's archive URI.
 
         Returns:
-            Reader bound to the configured artifact store and its own cache.
+            Storage rooted at the archive URI.
+
+        Raises:
+            IllegalOperationError: The database is SQLite.
+            ExecutionRetentionUnavailableError: No archive URI is configured,
+                or its storage cannot be created.
         """
-        return ArchiveReader(self.archive_artifact_store)
+        if self.config.driver != SQLDatabaseDriver.MYSQL:
+            raise IllegalOperationError(
+                "Execution archiving requires a MySQL database."
+            )
+        uri = ServerConfiguration.get_server_config().archive_uri
+        if not uri:
+            raise ExecutionRetentionUnavailableError(
+                "Execution archiving is not configured on this server."
+            )
+        return ArchiveStorage.from_uri(uri)
 
     @cached_property
-    def retention_restorer(self) -> Restorer:
-        """Bind one restorer to this store's configured archive destination.
+    def retention_reader(self) -> ArchiveReader:
+        """Bind the archive reader to this store's archive storage.
 
         Returns:
-            Restorer shared by reservation, execution, and cancellation.
+            Reader over the configured archive storage.
         """
-        return Restorer(self.engine, self.archive_artifact_store)
+        return ArchiveReader(self.archive_storage)
 
     def _list_execution_details(
         self,
@@ -14442,23 +14381,24 @@ class SqlZenStore(BaseZenStore):
         permission_owner: Optional[
             Callable[[AnySchema], ExecutionDetailRow]
         ] = None,
-        single_bundle: bool = False,
     ) -> Page[AnyResponse]:
         """Convert one authorized SQL page after resolving archived detail.
+
+        Rows are converted grouped by bundle, so only one decoded bundle is
+        alive at a time however many bundles the page touches.
 
         Args:
             table: Execution identity table.
             filter_model: Project, authorization, and pagination constraints.
-            owners: Physical marker owners for each requested row.
+            owners: Rows whose markers decide where each row's detail is.
             convert: Response conversion from the authoritative payload.
-            hydrate: Whether metadata requires archive access.
+            hydrate: Whether responses include archived detail.
             query_options_kwargs: Additional eager-loading options.
             authorize: Optional permission check on each distinct owner header.
             permission_owner: Resolve the permission owner for each page row.
-            single_bundle: Reject pages whose cold rows span multiple bundles.
 
         Returns:
-            A filtered page converted once in its final read transaction.
+            A filtered page converted in its final read transaction.
         """
 
         def load(session: Session) -> _SchemaPage[AnySchema]:
@@ -14484,34 +14424,50 @@ class SqlZenStore(BaseZenStore):
             }
             return list(by_id.values())
 
-        def page_execution_owners(
+        def convert_page(
+            session: Session,
             page: _SchemaPage[AnySchema],
-        ) -> Sequence[ExecutionDetailRow]:
-            resolved = [owner for row in page.items for owner in owners(row)]
-            bundle_ids = {
-                owner.archive_bundle_id
-                for owner in resolved
-                if owner.archive_bundle_id is not None
-            }
-            if hydrate and single_bundle and len(bundle_ids) > 1:
-                raise ExecutionArchivedError(
-                    "Hydrated execution lists can read one archive bundle. "
-                    "Use a list without details (`hydrate=False`) or narrow "
-                    "the filter."
+            bundles: FetchedBundles,
+        ) -> Page[AnyResponse]:
+            groups: Dict[Optional[UUID], List[int]] = {}
+            for index, row in enumerate(page.items):
+                markers = {
+                    owner.archive_bundle_id
+                    for owner in owners(row)
+                    if owner.archive_bundle_id is not None
+                }
+                if len(markers) > 1:
+                    raise ExecutionRetentionIntegrityError(
+                        "One execution's archived detail spans several "
+                        "bundles."
+                    )
+                bundle_id = markers.pop() if markers and hydrate else None
+                groups.setdefault(bundle_id, []).append(index)
+            converted: Dict[int, AnyResponse] = {}
+            for bundle_id, indexes in groups.items():
+                detail = (
+                    bundles.detail(bundle_id)
+                    if bundle_id is not None
+                    else None
                 )
-            return resolved
+                for index in indexes:
+                    converted[index] = convert(page.items[index], detail)
+                # Release this bundle before the next one is decoded.
+                del detail
+            return Page[AnyResponse](
+                items=[converted[index] for index in range(len(page.items))],
+                total=page.total,
+                total_pages=page.total_pages,
+                index=page.index,
+                max_size=page.max_size,
+            )
 
-        return self._read_execution_detail(
+        return self._read_archived(
             load=load,
-            owners=page_execution_owners,
-            convert=lambda session, page, detail: page.to_page(
-                lambda row: convert(
-                    row,
-                    detail
-                    if any(owner.is_offloaded for owner in owners(row))
-                    else None,
-                )
-            ),
+            owners=lambda page: [
+                owner for row in page.items for owner in owners(row)
+            ],
+            convert=convert_page,
             hydrate=hydrate,
             authorize=authorize,
             permission_owner=(
@@ -14539,22 +14495,76 @@ class SqlZenStore(BaseZenStore):
             ]
         ] = None,
     ) -> _ExecutionReadResult:
-        """Load archived bytes outside SQL and recheck authority before conversion.
+        """Read one execution whose rows share at most one bundle.
 
         Args:
             load: Resolve requested identities under current filters.
-            owners: Physical marker owners needed by response conversion.
-            convert: Convert current rows and optional verified archive detail.
+            owners: Rows whose markers decide where the detail is.
+            convert: Convert current rows and optional verified detail.
             hydrate: Whether the response needs archived payloads.
-            authorize: Verify the permission header before conversion and archive I/O.
-            permission_owner: Resolve the permission header independently of markers.
+            authorize: Verify the permission header before conversion.
+            permission_owner: Resolve the permission header.
+
+        Returns:
+            Response produced from one current SQL snapshot.
+        """
+        return self._read_archived(
+            load=load,
+            owners=owners,
+            convert=lambda session, loaded, bundles: convert(
+                session,
+                loaded,
+                bundles.for_rows(owners(loaded)) if hydrate else None,
+            ),
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=permission_owner,
+        )
+
+    def _read_archived(
+        self,
+        load: Callable[[Session], _ExecutionReadValue],
+        owners: Callable[[_ExecutionReadValue], Sequence[ExecutionDetailRow]],
+        convert: Callable[
+            [Session, _ExecutionReadValue, FetchedBundles],
+            _ExecutionReadResult,
+        ],
+        *,
+        hydrate: bool,
+        authorize: Optional[Callable[[Any], None]],
+        permission_owner: Optional[
+            Callable[
+                [_ExecutionReadValue],
+                Union[ExecutionDetailRow, Sequence[ExecutionDetailRow]],
+            ]
+        ],
+    ) -> _ExecutionReadResult:
+        """Load archived objects outside SQL and recheck markers before use.
+
+        The first SQL phase authorizes the rows and resolves their bundles.
+        Objects are downloaded with no transaction open. The second SQL phase
+        reloads and reauthorizes the rows and converts them only if they
+        still point at the same bundles; a concurrent restore or archive
+        retries the read.
+
+        Args:
+            load: Resolve requested identities under current filters.
+            owners: Rows whose markers decide where the detail is.
+            convert: Convert current rows with the fetched bundles.
+            hydrate: Whether the response needs archived payloads.
+            authorize: Verify the permission header before conversion and
+                archive I/O.
+            permission_owner: Resolve the permission header independently of
+                markers.
 
         Returns:
             Response produced from one current SQL snapshot.
 
         Raises:
-            ExecutionRetentionConflictError: Repeated restores change the requested archive record.
-            ExecutionRetentionIntegrityError: Authorization has no declared permission owner.
+            ExecutionRetentionConflictError: Repeated restores or archives
+                changed the requested rows.
+            ExecutionRetentionIntegrityError: Authorization has no declared
+                permission owner.
         """
         if authorize is not None and permission_owner is None:
             raise ExecutionRetentionIntegrityError(
@@ -14575,30 +14585,25 @@ class SqlZenStore(BaseZenStore):
 
         for _ in range(self._EXECUTION_READ_RETRIES + 1):
             with Session(self.engine) as session:
-                transactions.begin_read(session)
-                loaded_rows = load(session)
-                rows = owners(loaded_rows)
-                authorize_loaded(loaded_rows)
-                if not hydrate or not any(row.is_offloaded for row in rows):
-                    return convert(session, loaded_rows, None)
-                bundles = catalog.execution_archive_ownership(session, rows)
-                references = {
-                    BundleReference.from_bundle(bundle) for bundle in bundles
-                }
-            detail = self.retention_reader.detail_for(list(references))
+                loaded = load(session)
+                authorize_loaded(loaded)
+                references = (
+                    resolve_references(session, owners(loaded))
+                    if hydrate
+                    else {}
+                )
+                if not references:
+                    return convert(session, loaded, no_bundles())
+            fetched = self.retention_reader.fetch(references)
             with Session(self.engine) as session:
-                transactions.begin_read(session)
-                loaded_rows = load(session)
-                rows = owners(loaded_rows)
-                authorize_loaded(loaded_rows)
-                if not any(row.is_offloaded for row in rows):
-                    return convert(session, loaded_rows, None)
-                current = catalog.execution_archive_ownership(session, rows)
-                if {
-                    BundleReference.from_bundle(bundle) for bundle in current
-                } != references:
+                loaded = load(session)
+                authorize_loaded(loaded)
+                current = resolve_references(session, owners(loaded))
+                if not current:
+                    return convert(session, loaded, no_bundles())
+                if current != references:
                     continue
-                return convert(session, loaded_rows, detail)
+                return convert(session, loaded, fetched)
         raise ExecutionRetentionConflictError(
             "Execution history changed while loading. Retry the read."
         )
@@ -14636,30 +14641,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=False, include_resources=False
             )
 
-    @cached_property
-    def archive_artifact_store(self) -> BaseArtifactStore:
-        """Load the registered archive destination without probing its objects.
-
-        Returns:
-            The configured artifact store component.
-
-        Raises:
-            ExecutionRetentionUnavailableError: The component is missing or unavailable.
-        """
-        configuration = ServerConfiguration.get_server_config()
-        if not configuration.archive_configured:
-            raise ExecutionRetentionUnavailableError(
-                "Archive artifact store is not configured."
-            )
-        try:
-            return load_artifact_store(
-                cast(UUID, configuration.archive_artifact_store_id), self
-            )
-        except Exception as error:
-            raise ExecutionRetentionUnavailableError(
-                "Configured archive artifact store could not be loaded."
-            ) from error
-
     def prepare_retention_pass(self, project_id: UUID) -> ArchivePass:
         """Accept an enabled project policy before submitting background work.
 
@@ -14667,14 +14648,14 @@ class SqlZenStore(BaseZenStore):
             project_id: Authorized project.
 
         Returns:
-            Pass with its accepted state persisted before submission.
+            Pass with its accepted state saved before submission.
 
         Raises:
-            IllegalOperationError: Archive operations or the project policy are disabled.
-            ExecutionRetentionConflictError: The saved policy changed before acceptance.
+            IllegalOperationError: Archiving or the project policy is disabled.
+            ExecutionRetentionConflictError: Another pass is running, or the
+                saved policy changed before acceptance.
         """  # noqa: DOC503
-        configuration = ServerConfiguration.get_server_config()
-        if not configuration.archive_enabled:
+        if not ServerConfiguration.get_server_config().archive_enabled:
             raise IllegalOperationError(
                 "Execution archiving is disabled on this server; ask your "
                 "server administrator to enable it."
@@ -14682,7 +14663,7 @@ class SqlZenStore(BaseZenStore):
         project = self.get_project(project_id)
         claimed = ArchivePass(
             self.engine,
-            self.archive_artifact_store,
+            self.archive_storage,
             project_id,
             project.retention,
         )
@@ -14692,46 +14673,35 @@ class SqlZenStore(BaseZenStore):
     def execute_retention_pass(
         self, claimed: ArchivePass
     ) -> RetentionPassResponse:
-        """Run a reserved pass in maintenance capacity.
+        """Run an accepted pass.
 
         Args:
             claimed: Authorized pass accepted before submission.
 
         Returns:
-            The pass's final advisory outcome.
+            The pass outcome.
         """
         return RetentionPassResponse(outcome=claimed.run().last_outcome)
 
     def abort_retention_pass(
         self, claimed: ArchivePass, error_code: RetentionFailure
     ) -> None:
-        """Record failed submission or revoked permission for an accepted pass.
+        """Record a failed submission or revoked permission for a pass.
 
         Args:
             claimed: Pass accepted by the submitting request.
-            error_code: Safe lifecycle failure classification.
+            error_code: Safe failure classification.
         """
         claimed.abort(error_code)
 
-    def abort_pipeline_run_restore(
-        self, prepared: PreparedRestore, error_code: RetentionFailure
-    ) -> None:
-        """Release only a restore reservation still owned by the caller.
-
-        Args:
-            prepared: Reserved restore operation.
-            error_code: Safe lifecycle failure classification.
-        """
-        self.retention_restorer.abort(prepared, error_code)
-
     def archive_project(self, project_id: UUID) -> RetentionPassResponse:
-        """Execute one local archive pass using the saved project policy.
+        """Run one archive pass in this process using the saved policy.
 
         Args:
             project_id: Authorized project.
 
         Returns:
-            Completed, paused, or failed local outcome.
+            The succeeded, paused, or failed outcome.
         """
         return self.execute_retention_pass(
             self.prepare_retention_pass(project_id)
@@ -14740,13 +14710,13 @@ class SqlZenStore(BaseZenStore):
     def get_retention_status(
         self, project_id: UUID
     ) -> RetentionStatusResponse:
-        """Read the project checkpoint without scanning archive records or objects.
+        """Read the latest pass without scanning runs or storage.
 
         Args:
             project_id: Authorized project.
 
         Returns:
-            Latest advisory progress and current configuration.
+            Latest pass outcome, counts, and archive configuration.
         """
         with Session(self.engine) as session:
             project = session.exec(
@@ -14754,124 +14724,86 @@ class SqlZenStore(BaseZenStore):
                     col(ProjectSchema.id) == project_id
                 )
             ).one()
-            configuration = ServerConfiguration.get_server_config()
-            try:
-                self.archive_artifact_store
-            except ExecutionRetentionUnavailableError:
-                archive_configured = False
-            else:
-                archive_configured = True
-            return RetentionState.from_project(
-                project,
-                configuration,
-                archive_configured=archive_configured,
+            now = transactions.database_now(session)
+            state = RetentionState.load(project.retention_state)
+            policy = (
+                RetentionSettings.model_validate_json(
+                    project.retention_settings
+                )
+                if project.retention_settings
+                else RetentionSettings()
             )
+        configuration = ServerConfiguration.get_server_config()
+        try:
+            self.archive_storage
+        except (ExecutionRetentionUnavailableError, IllegalOperationError):
+            archive_configured = False
+        else:
+            archive_configured = True
+        return state.to_response(
+            policy,
+            archive_enabled=configuration.archive_enabled,
+            archive_configured=archive_configured,
+            now=now,
+        )
 
-    def prepare_pipeline_run_restore(
-        self, run_id: UUID
-    ) -> Optional[PreparedRestore]:
-        """Resolve a surviving run handle and reserve its archived root.
+    def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
+        """Restore an archived run's detail in this request.
 
         Args:
-            run_id: Authorized run handle.
+            run_id: Authorized run.
 
         Returns:
-            Reserved operation, or None for an unarchived tree.
+            Restored, or a no-op when the run's detail is already in SQL.
         """
         run = self.get_run(run_id, hydrate=False)
         if run.archive_bundle_id is None:
-            return None
-        return self.retention_restorer.reserve(
-            run.project_id,
-            run.root_run_id or run.id,
-            claims.Claim.owner_identity(),
-        )
-
-    def execute_pipeline_run_restore(
-        self, prepared: PreparedRestore
-    ) -> RetentionOperationResponse:
-        """Restore a reserved archive outside the request's SQL session.
-
-        Args:
-            prepared: Authorized restore reservation.
-
-        Returns:
-            Durable restore completion.
-        """
-        return self.retention_restorer.execute(prepared)
-
-    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
-        """Restore locally or report an unarchived execution as a no-op.
-
-        Args:
-            run_id: Any surviving member of the authorized tree.
-
-        Returns:
-            Succeeded or no-op outcome.
-        """
-        prepared = self.prepare_pipeline_run_restore(run_id)
-        if prepared is None:
-            run = self.get_run(run_id, hydrate=False)
-            return RetentionOperationResponse(
-                root_run_id=run.root_run_id or run.id,
-                outcome=RetentionOutcome.NOOP,
-            )
-        return self.execute_pipeline_run_restore(prepared)
-
-    def get_pipeline_run_restore_status(
-        self, run_id: UUID
-    ) -> RetentionOperationResponse:
-        """Read the latest restore outcome without object access.
-
-        Args:
-            run_id: Surviving handle of the authorized tree.
-
-        Returns:
-            Latest durable restore identity and outcome.
-        """
-        run = self.get_run(run_id, hydrate=False)
-        with Session(self.engine) as session:
-            return catalog.pipeline_run_restore_status(
-                session, run.project_id, run.root_run_id or run.id
-            )
+            return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
+        return restore_run(self.engine, self.archive_storage, run.id)
 
     def retention_dry_run(
         self,
         project: ProjectResponse,
     ) -> RetentionDryRunResponse:
-        """Estimate a batch using only the saved project policy.
+        """Inspect the runs the next archive pass would examine.
 
         Args:
             project: Resolved project with its saved retention policy.
 
         Returns:
-            Per-tree row counts and one fixed-weight estimate, with no changes.
+            Per-run row counts and exclusion reasons, with no changes.
         """
         policy = project.retention
-        limits = RetentionLimits.model_validate(
-            policy.model_dump(include=set(RetentionLimits.model_fields))
-        )
         with Session(self.engine) as session:
-            selection = select_archivable_trees(
-                session, project.id, policy, limits
-            )
-        eligible = [
-            tree for tree in selection.candidates if tree.exclusion is None
-        ]
-        return RetentionDryRunResponse(
-            eligible_tree_count=len(eligible),
-            examined_tree_count=len(selection.candidates),
-            truncated=selection.truncated,
-            trees=[
-                RetentionTreeEstimate(
-                    root_run_id=tree.root_run_id,
-                    rows=tree.row_count,
-                    exclusion_reason=tree.exclusion,
+            saved = session.execute(
+                select(col(ProjectSchema.retention_state)).where(
+                    col(ProjectSchema.id) == project.id
                 )
-                for tree in selection.candidates
+            ).scalar_one()
+            state = RetentionState.load(saved)
+            selection = select_archivable_runs(
+                session,
+                project.id,
+                policy,
+                transactions.database_now(session),
+                state.cursor,
+                policy.max_runs_per_pass,
+                state.oversized_run_ids,
+            )
+        return RetentionDryRunResponse(
+            eligible_run_count=sum(
+                run.exclusion is None for run in selection.runs
+            ),
+            examined_run_count=len(selection.runs),
+            truncated=selection.truncated,
+            runs=[
+                RetentionRunEstimate(
+                    run_id=run.run_id,
+                    rows=run.row_count,
+                    exclusion_reason=run.exclusion,
+                )
+                for run in selection.runs
             ],
-            estimated_bytes=sum(tree.estimated_bytes for tree in eligible),
-            retained_details=dict(selection.retained_details),
             effective_policy=policy,
         )
 
@@ -16645,11 +16577,6 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=model_version_pipeline_run_link, session=session
-            )
-
-            fences.protect_membership(
-                session,
-                [model_version_pipeline_run_link.pipeline_run],
             )
 
             # If the link already exists, return it
