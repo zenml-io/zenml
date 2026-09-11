@@ -1,36 +1,33 @@
 # Frozen version-one restore fixture
 
-These files contain synthetic data only. `v1-manifest.json` and
-`v1-rows.tar.gz` freeze the four-section, metadata-free V1 format.
-`v1-sql.json` stores the source SQL expectations and retained dependencies once.
-The compatibility test derives the archived rows using an explicit frozen V1
-clearing contract, then restores through the public store API and compares every
-detail field, including retained `step_type` and finalized `substitutions`.
-Public run, step, snapshot, list, and DAG parity is covered by the separate
-round-trip test across static, dynamic, and legacy configuration ownership.
+These files contain synthetic data only:
 
-The behavior suite and generator share an independent schema-backed graph
-builder. That builder never reads these files or imports a test module. Behavior
-tests create fresh identities; explicit generation uses fixed synthetic identities
-and timestamps. Tests read frozen bytes for compatibility checks but never call
-the generation entry point.
+- `v1-document.json.gz` is the archive object of one two-step run in format
+  version 1.
+- `v1-bundle.json` describes its bundle row: identities, size, and the hash
+  of the decoded content.
+- `v1-sql.json` holds the run's SQL rows before archiving.
 
-For an intentional format-fixture replacement, use the existing local environment:
+The compatibility test clears the detail columns using the frozen version 1
+contract, inserts the bundle row, restores through the public store API, and
+compares every detail field with `v1-sql.json`.
+
+Version 1 was redefined before release, when archives became one JSON
+document per run. No deployed bundles predate this fixture. Do not regenerate
+it to make a later compatibility test pass; a format change needs a new
+version and adapters, not a new golden file.
+
+For an intentional replacement:
 
 ```sh
-PYTHONPATH=src python -m tests.unit.zen_stores.retention.fixture_graph
+PYTHONPATH=src:. python -m tests.unit.zen_stores.retention.fixture_graph
 ```
 
-Use `--output-dir /path/to/empty-directory` to inspect regeneration separately.
-Generation builds typed records directly, creates no database, and writes only
-the three V1 files after removing its temporary JSONL sections. Repeated generation
-produces byte-identical SQL expectations, compressed records, and manifest,
-including its fixed synthetic bundle ID. V1 timestamps are naive UTC, matching
-SQL storage.
+Use `--output-dir /path/to/empty-directory` to inspect regeneration
+separately. Generation uses fixed synthetic identities and timestamps and
+needs no database; repeated runs produce byte-identical files.
 
-This fixture was intentionally replaced while defining the initial V1 format;
-no deployed bundles predate it. Do not regenerate it merely to make a later
-compatibility test pass. There are no legacy metadata sections or adapters.
+## Running the suite
 
 Execution retention tests run only on MySQL. Point
 `ZENML_RETENTION_TEST_MYSQL_URL` at a disposable server; each test session

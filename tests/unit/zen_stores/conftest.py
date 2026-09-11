@@ -32,21 +32,18 @@ RETENTION_MYSQL_URL = "ZENML_RETENTION_TEST_MYSQL_URL"
 
 @pytest.fixture
 def NOW(monkeypatch: pytest.MonkeyPatch) -> Iterator[datetime]:
-    """Freeze the application clock and every new database session clock.
+    """Freeze the clock of every new database session.
+
+    Retention reads the database clock, so freezing it fixes every age,
+    lease, and grace period evaluated during a test.
 
     Args:
-        monkeypatch: Restore the application clock after the test.
+        monkeypatch: Unused; kept so dependent fixtures order after it.
 
     Yields:
         Deterministic naive UTC timestamp.
     """
     now = FROZEN_NOW
-    try:
-        from zenml.zen_stores.retention import eligibility
-    except ModuleNotFoundError:
-        eligibility = None
-    if eligibility is not None:
-        monkeypatch.setattr(eligibility, "utc_now", lambda: now)
 
     def freeze(connection: Any, record: Any) -> None:
         """Give the SQL clock the same time as the policy clock.

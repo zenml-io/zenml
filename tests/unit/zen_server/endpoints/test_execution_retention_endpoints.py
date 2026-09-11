@@ -2,8 +2,9 @@
 """HTTP authorization and lifecycle guarantees for execution retention."""
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from threading import Event, current_thread
+from threading import Event
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Iterator
 from unittest.mock import Mock
@@ -22,7 +23,7 @@ from tests.unit.zen_stores.conftest import (
     retention_store as retention_store_fixture,
 )
 from tests.unit.zen_stores.retention.conftest import storage as storage_fixture
-from tests.unit.zen_stores.retention.fixture_graph import FROZEN_NOW, seed_tree
+from tests.unit.zen_stores.retention.fixture_graph import FROZEN_NOW, seed_run
 
 from zenml.enums import RetentionFailure
 from zenml.exceptions import (
@@ -35,7 +36,6 @@ from zenml.zen_server import utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.middleware import record_requests
 from zenml.zen_server.pipeline_execution import utils as execution
-from zenml.zen_server.pipeline_execution.utils import BoundedThreadPoolExecutor
 from zenml.zen_server.rbac import utils as rbac_utils
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
@@ -77,7 +77,7 @@ ROUTERS = (
 @pytest.fixture
 def http(retention_store, storage, monkeypatch) -> Iterator[SimpleNamespace]:
     """Mount the real routers over one configured two-step SQL tree."""
-    tree = seed_tree(retention_store, FROZEN_NOW)
+    tree = seed_run(retention_store, FROZEN_NOW)
     retention_store.update_project(
         tree["project"],
         ProjectUpdate(retention=RetentionSettings(archive_after_days=90)),
@@ -177,7 +177,7 @@ def test_execution_routes_deny_before_archive_io_or_dispatch(
     blocked = Mock(
         side_effect=AssertionError("denied route crossed its boundary")
     )
-    monkeypatch.setattr(http.storage, "open", blocked)
+    monkeypatch.setattr(http.storage, "read", blocked)
     monkeypatch.setattr(execution, "run_snapshot", blocked)
     route_permission = None
     if operation == "step_list":
@@ -248,7 +248,6 @@ def test_execution_routes_deny_before_archive_io_or_dispatch(
     "method,scope,operation",
     [
         ("post", "run", "restore"),
-        ("get", "run", "restore"),
         ("post", "project", "archive"),
         ("get", "project", "status"),
         ("post", "project", "dry-run"),
@@ -288,87 +287,67 @@ def test_operation_routes_deny_before_catalog(
     )
 
 
-@pytest.mark.parametrize("scope", ["archive", "restore"])
-def test_public_submission_is_accepted_before_completion(
-    http, scope: str
-) -> None:
-    """Queued work returns its task ID before the terminal status."""
-    ids = http.tree
-    if scope == "restore":
-        http.store.archive_project(ids["project"])
-        submit = status = f"/api/v1/runs/{ids['run']}/restore"
-    else:
-        submit = f"/api/v1/projects/{ids['project']}/retention/archive"
-        status = f"/api/v1/projects/{ids['project']}/retention/status"
-    accepted = http.client.post(submit)
+def test_archive_is_accepted_before_it_runs(http) -> None:
+    """An archive pass returns its task ID before the pass finishes."""
+    project = http.tree["project"]
+    accepted = http.client.post(
+        f"/api/v1/projects/{project}/retention/archive"
+    )
     assert accepted.status_code == 202
-    assert accepted.json()["outcome"] == "accepted"
-    assert accepted.json()["task_id"] == "task"
-    assert len(http.pending) == 1
+    assert accepted.json() == {"outcome": "accepted", "task_id": "task"}
     http.pending.pop()()
-    assert http.client.get(status).json()["outcome"] == "succeeded"
+    status = http.client.get(f"/api/v1/projects/{project}/retention/status")
+    assert status.json()["outcome"] == "succeeded"
+    assert status.json()["archived"] == 1
+
+
+def test_restore_finishes_within_the_request(http) -> None:
+    """Restore returns its result directly, and a second call is a no-op."""
+    http.store.archive_project(http.tree["project"])
+    route = f"/api/v1/runs/{http.tree['run']}/restore"
+    restored = http.client.post(route)
+    assert restored.status_code == 200
+    assert restored.json()["outcome"] == "restored"
+    assert http.client.post(route).json()["outcome"] == "noop"
 
 
 def test_disabled_archive_names_no_private_switch(http, monkeypatch) -> None:
     """The server gate tells users to contact their administrator."""
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE_ENABLED", "false")
+    monkeypatch.delenv("ZENML_SERVER_ARCHIVE_URI")
     response = http.client.post(
         f"/api/v1/projects/{http.tree['project']}/retention/archive"
     )
     assert response.status_code == 403
     assert "ask your server administrator to enable it" in response.text
-    assert "ZENML_SERVER_ARCHIVE_ENABLED" not in response.text
+    assert "ZENML_SERVER_ARCHIVE_URI" not in response.text
     assert not http.pending
 
 
-def test_rejected_submission_cannot_clobber_the_running_pass(
+def test_second_pass_is_rejected_while_the_first_runs(
     http, monkeypatch
 ) -> None:
-    """A capacity rejection preserves the first pass's operation ID."""
-    started, release, finished = Event(), Event(), Event()
-    original_open = http.storage.open
-    original_execute = SqlZenStore.execute_retention_pass
+    """Only one pass per project runs; a second submission gets 409."""
+    uploading, release = Event(), Event()
+    original = http.storage.write
 
-    def block_upload(path: str, mode: str = "r") -> Any:
-        if (
-            current_thread().name.startswith("retention-state-test")
-            and mode == "wb"
-            and str(path).endswith("rows.tar.gz")
-        ):
-            started.set()
-            assert release.wait(10)
-        return original_open(path, mode)
+    def pause_upload(uri: str, data: bytes) -> None:
+        uploading.set()
+        assert release.wait(20)
+        original(uri, data)
 
-    def execute(store: SqlZenStore, claimed: Any) -> Any:
-        try:
-            return original_execute(store, claimed)
-        finally:
-            finished.set()
-
-    monkeypatch.setattr(http.storage, "open", block_upload)
-    monkeypatch.setattr(SqlZenStore, "execute_retention_pass", execute)
-    monkeypatch.setattr(utils, "submit_maintenance_task", http.original_submit)
-    executor = BoundedThreadPoolExecutor(
-        max_workers=1, thread_name_prefix="retention-state-test"
-    )
-    monkeypatch.setattr(utils, "_maintenance_executor", executor)
+    monkeypatch.setattr(http.storage, "write", pause_upload)
     route = f"/api/v1/projects/{http.tree['project']}/retention/archive"
-    try:
-        assert http.client.post(route).status_code == 202
-        assert started.wait(10)
-        assert http.client.post(route).status_code == 429
-        assert (
-            http.store.get_retention_status(http.tree["project"]).outcome.value
-            == "accepted"
-        )
-    finally:
-        release.set()
-        assert finished.wait(10)
-        executor.shutdown(wait=True)
-    assert (
-        http.store.get_retention_status(http.tree["project"]).outcome.value
-        == "succeeded"
-    )
+    assert http.client.post(route).status_code == 202
+    with ThreadPoolExecutor(1) as pool:
+        running = pool.submit(http.pending.pop())
+        try:
+            assert uploading.wait(20)
+            assert http.client.post(route).status_code == 409
+        finally:
+            release.set()
+        running.result(timeout=20)
+    status = http.store.get_retention_status(http.tree["project"])
+    assert status.outcome.value == "succeeded"
 
 
 @pytest.mark.parametrize(
@@ -400,18 +379,16 @@ def test_worker_reauthorization_failure_is_classified(
     abort.assert_called_once_with(expected)
 
 
-def test_status_reports_an_unloadable_store_as_unconfigured(
+def test_status_reports_unusable_storage_as_unconfigured(
     retention_store, monkeypatch
 ) -> None:
-    """Status distinguishes a configured ID from a loadable store."""
+    """Status distinguishes a set archive URI from usable storage."""
     project = retention_store.list_projects(ProjectFilter()).items[0].id
 
     def unavailable(_: SqlZenStore) -> None:
         raise ExecutionRetentionUnavailableError("unavailable")
 
-    monkeypatch.setattr(
-        SqlZenStore, "archive_artifact_store", property(unavailable)
-    )
+    monkeypatch.setattr(SqlZenStore, "archive_storage", property(unavailable))
     assert (
         retention_store.get_retention_status(project).archive_configured
         is False

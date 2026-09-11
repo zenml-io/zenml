@@ -13,126 +13,129 @@ from click.testing import CliRunner
 from zenml.cli.pipeline import runs
 from zenml.cli.project import project
 from zenml.client import Client
-from zenml.enums import RetentionOutcome
+from zenml.enums import RestoreOutcome, RetentionOutcome
 from zenml.models.v2.misc.retention import (
+    RestoreResponse,
     RetentionDryRunResponse,
-    RetentionOperationResponse,
     RetentionPassResponse,
+    RetentionRunEstimate,
     RetentionSettings,
     RetentionStatusResponse,
-    RetentionTreeEstimate,
 )
 
 
-@pytest.fixture
-def preview() -> RetentionDryRunResponse:
-    """Return a compact preview with stable totals for CLI assertions."""
+def preview(eligible: int, truncated: bool = False) -> RetentionDryRunResponse:
+    """Build a preview with `eligible` runs of three rows each."""
     return RetentionDryRunResponse(
-        eligible_tree_count=2,
-        examined_tree_count=3,
-        truncated=False,
-        trees=[
-            RetentionTreeEstimate(root_run_id=UUID(int=1), rows=3),
-            RetentionTreeEstimate(root_run_id=UUID(int=2), rows=4),
-            RetentionTreeEstimate(
-                root_run_id=UUID(int=3),
-                rows=1,
-                exclusion_reason="not_old",
+        eligible_run_count=eligible,
+        examined_run_count=eligible + 1,
+        truncated=truncated,
+        runs=[
+            *(
+                RetentionRunEstimate(run_id=UUID(int=index + 1), rows=3)
+                for index in range(eligible)
+            ),
+            RetentionRunEstimate(
+                run_id=UUID(int=99), rows=1, exclusion_reason="pinned"
             ),
         ],
-        estimated_bytes=1536 * 1024,
-        retained_details={},
         effective_policy=RetentionSettings(archive_after_days=90),
     )
 
 
-def test_archive_previews_before_dry_run_or_submission(
-    monkeypatch: pytest.MonkeyPatch, preview: RetentionDryRunResponse
-) -> None:
-    """Dry-run stops after preview and accepted submission prints no null table.
-
-    Args:
-        monkeypatch: Isolate client calls.
-        preview: Stable inventory response.
-    """
-    inventory = Mock(return_value=preview)
-    submit = Mock(
+@pytest.fixture
+def submit(monkeypatch: pytest.MonkeyPatch) -> Mock:
+    """Replace archive submission with an accepted response."""
+    accepted = Mock(
         return_value=RetentionPassResponse(outcome=RetentionOutcome.ACCEPTED)
     )
-    monkeypatch.setattr(Client, "retention_dry_run", inventory)
-    monkeypatch.setattr(Client, "archive_project", submit)
+    monkeypatch.setattr(Client, "archive_project", accepted)
+    return accepted
+
+
+def output(result) -> str:
+    """Return command output without styling or line wrapping."""
+    return " ".join(unstyle(result.output).split())
+
+
+def test_archive_previews_then_submits(monkeypatch, submit) -> None:
+    """Dry-run stops after the preview; --yes submits and names status."""
+    monkeypatch.setattr(
+        Client, "retention_dry_run", Mock(return_value=preview(2))
+    )
     runner = CliRunner()
 
     dry_run = runner.invoke(
         project, ["retention", "archive", "demo", "--dry-run"]
     )
     assert dry_run.exit_code == 0, dry_run.output
-    assert "2 eligible tree(s), about 1.5 MiB across 7 rows" in unstyle(
-        dry_run.output
-    )
-    assert "no data was changed" in dry_run.output
+    assert "2 eligible run(s) covering 6 rows" in output(dry_run)
     submit.assert_not_called()
 
     accepted = runner.invoke(
         project, ["retention", "archive", "demo", "--yes"]
     )
     assert accepted.exit_code == 0, accepted.output
-    assert "zenml project retention status demo" in " ".join(
-        unstyle(accepted.output).split()
-    )
-    assert "None" not in accepted.output
-    assert submit.call_count == 1
+    assert "zenml project retention status demo" in output(accepted)
+    submit.assert_called_once()
 
 
-def test_archive_confirmation_can_cancel(
-    monkeypatch: pytest.MonkeyPatch, preview: RetentionDryRunResponse
-) -> None:
-    """A rejected confirmation performs no archive submission.
-
-    Args:
-        monkeypatch: Isolate client calls.
-        preview: Stable inventory response.
-    """
-    submit = Mock()
+def test_archive_confirmation_can_cancel(monkeypatch, submit) -> None:
+    """A rejected confirmation submits nothing."""
     monkeypatch.setattr(
-        Client, "retention_dry_run", Mock(return_value=preview)
+        Client, "retention_dry_run", Mock(return_value=preview(2))
     )
-    monkeypatch.setattr(Client, "archive_project", submit)
 
     result = CliRunner().invoke(
         project, ["retention", "archive", "demo"], input="n\n"
     )
+
     assert result.exit_code == 0, result.output
     assert "Execution retention canceled" in result.output
     submit.assert_not_called()
 
 
-def test_set_and_show_merge_policy_and_reject_ambiguous_disable(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("truncated", [False, True])
+def test_empty_preview_submits_only_when_more_runs_follow(
+    monkeypatch, submit, truncated
 ) -> None:
-    """Set preserves unspecified values, show renders them, and disable is explicit."""
-    saved = RetentionSettings(archive_after_days=90, max_trees=7)
-    get_project = Mock(return_value=SimpleNamespace(retention=saved))
+    """A batch without eligible runs still moves a pass past it."""
+    monkeypatch.setattr(
+        Client,
+        "retention_dry_run",
+        Mock(return_value=preview(0, truncated=truncated)),
+    )
+
+    result = CliRunner().invoke(
+        project, ["retention", "archive", "demo", "--yes"]
+    )
+
+    assert result.exit_code == 0, result.output
+    assert submit.called is truncated
+    if not truncated:
+        assert "No pipeline runs are currently eligible" in output(result)
+
+
+def test_set_merges_the_saved_policy(monkeypatch) -> None:
+    """Set keeps unspecified values, and --disable cannot carry values."""
+    saved = RetentionSettings(archive_after_days=90, restored_grace_days=5)
+    monkeypatch.setattr(
+        Client,
+        "get_project",
+        Mock(return_value=SimpleNamespace(retention=saved)),
+    )
     update_project = Mock()
-    monkeypatch.setattr(Client, "get_project", get_project)
     monkeypatch.setattr(Client, "update_project", update_project)
     runner = CliRunner()
 
     result = runner.invoke(
-        project,
-        ["retention", "set", "demo", "--max-rows", "1234"],
+        project, ["retention", "set", "demo", "--max-runs", "50"]
     )
-    assert result.exit_code == 0, result.output
-    policy = update_project.call_args.kwargs["retention"]
-    assert (policy.archive_after_days, policy.max_trees, policy.max_rows) == (
-        90,
-        7,
-        1234,
-    )
-    shown = runner.invoke(project, ["retention", "show", "demo"])
-    assert shown.exit_code == 0
-    assert "Retention policy" in shown.output and "90" in shown.output
 
+    assert result.exit_code == 0, result.output
+    assert update_project.call_args.kwargs["retention"] == RetentionSettings(
+        archive_after_days=90, restored_grace_days=5, max_runs_per_pass=50
+    )
     invalid = runner.invoke(
         project,
         ["retention", "set", "--disable", "--archive-after-days", "90"],
@@ -141,117 +144,38 @@ def test_set_and_show_merge_policy_and_reject_ambiguous_disable(
     assert "cannot be combined" in invalid.output
 
 
-def test_status_and_restore_acceptance_are_scalar_and_actionable(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Status uses ISO scalars and accepted restore names its follow-up command.
-
-    Args:
-        monkeypatch: Isolate client calls.
-    """
+def test_status_and_restore_print_plain_results(monkeypatch) -> None:
+    """Status shows its counts; restore reports the restored run."""
     monkeypatch.setattr(
         Client,
         "get_retention_status",
         Mock(
             return_value=RetentionStatusResponse(
                 outcome=RetentionOutcome.SUCCEEDED,
-                archive_enabled=True,
-                archive_configured=True,
-                archive_after_days=90,
                 finished_at=datetime(2026, 1, 2, 3, 4, 5),
+                archived=4,
+                oversized=1,
             )
         ),
     )
     status = CliRunner().invoke(project, ["retention", "status", "demo"])
     assert status.exit_code == 0, status.output
     assert "2026-01-02T03:04:05" in status.output
-    assert "succeeded" in status.output
-    assert "{" not in status.output
+    assert "archived │ 4" in output(status) or "archived 4" in output(status)
 
-    monkeypatch.setattr(
-        Client,
-        "restore_pipeline_run",
-        Mock(
-            return_value=RetentionOperationResponse(
-                outcome=RetentionOutcome.ACCEPTED
-            )
-        ),
-    )
-    restore = CliRunner().invoke(runs, ["restore", "run-123"])
-    assert restore.exit_code == 0, restore.output
-    assert "zenml pipeline runs restore-status run-123" in " ".join(
-        unstyle(restore.output).split()
-    )
-    assert "None" not in restore.output
-
-
-@pytest.mark.parametrize(
-    ("reason", "description"),
-    [
-        ("not_old", "At least one run is too recent."),
-        ("reason_from_a_newer_server", "reason_from_a_newer_server"),
-        (None, None),
-    ],
-)
-def test_exclusion_descriptions_come_from_the_public_model(
-    reason, description
-) -> None:
-    """Display text is part of the shared model, not the SQL eligibility module."""
-    estimate = RetentionTreeEstimate(
-        root_run_id=UUID(int=1), exclusion_reason=reason
-    )
-    assert estimate.exclusion_description == description
-
-
-@pytest.mark.parametrize(
-    ("truncated", "arguments", "confirmation", "submitted"),
-    [
-        (True, ["--yes"], None, True),
-        (True, [], "y\n", True),
-        (False, ["--yes"], None, False),
-    ],
-)
-def test_empty_preview_blocks_submission_only_when_complete(
-    monkeypatch: pytest.MonkeyPatch,
-    truncated: bool,
-    arguments: list,
-    confirmation: str,
-    submitted: bool,
-) -> None:
-    """A truncated preview with no eligible trees still lets the pass advance.
-
-    Args:
-        monkeypatch: Isolate client calls.
-        truncated: Whether the preview stopped at its examination budget.
-        arguments: Extra command-line arguments.
-        confirmation: Interactive answer, if prompted.
-        submitted: Whether an archive pass must be submitted.
-    """
-    empty = RetentionDryRunResponse(
-        eligible_tree_count=0,
-        examined_tree_count=200,
-        truncated=truncated,
-        trees=[],
-        estimated_bytes=0,
-        retained_details={},
-        effective_policy=RetentionSettings(archive_after_days=90),
-    )
-    submit = Mock(
-        return_value=RetentionPassResponse(outcome=RetentionOutcome.ACCEPTED)
-    )
-    monkeypatch.setattr(Client, "retention_dry_run", Mock(return_value=empty))
-    monkeypatch.setattr(Client, "archive_project", submit)
-
-    result = CliRunner().invoke(
-        project,
-        ["retention", "archive", "demo", *arguments],
-        input=confirmation,
-    )
-
-    assert result.exit_code == 0, result.output
-    output = " ".join(unstyle(result.output).split())
-    assert submit.called is submitted
-    if truncated:
-        assert "examined only the oldest 200 execution tree(s)" in output
-    else:
-        assert "No execution trees are currently eligible" in output
+    for outcome, message in (
+        (RestoreOutcome.RESTORED, "Restored run"),
+        (RestoreOutcome.NOOP, "is not archived"),
+    ):
+        monkeypatch.setattr(
+            Client,
+            "restore_pipeline_run",
+            Mock(
+                return_value=RestoreResponse(
+                    run_id=UUID(int=1), outcome=outcome
+                )
+            ),
+        )
+        restore = CliRunner().invoke(runs, ["restore", "run-123"])
+        assert restore.exit_code == 0, restore.output
+        assert message in output(restore)

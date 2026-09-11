@@ -1,14 +1,14 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Relative retention costs and measured hot-read SQL canaries.
+"""Read costs, outage behavior, and per-request limits of archived reads.
 
-The exact canaries were measured against develop ``10a0a3033e`` (through
-resource pools v2) on 2026-09-11 using its store bodies with current schemas
-and dependencies. MySQL starts transactions implicitly, so no ``BEGIN`` is
-counted. Other assertions compare paths within this build so unrelated query
-changes do not inflate fixed ceilings.
+The exact canaries match develop ``10a0a3033e`` (through resource pools v2)
+measured on MySQL with its store bodies and current schemas. Other
+assertions compare paths within this build so unrelated query changes do not
+inflate fixed ceilings.
 """
 
-import re
+import gc
+import weakref
 from collections import Counter
 from contextlib import contextmanager
 from functools import partial
@@ -16,25 +16,25 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import event, select
 
-from zenml.enums import MetadataResourceTypes
+from tests.unit.zen_stores.retention.fixture_graph import dynamic_step
+from zenml.enums import ExecutionStatus, RetentionOutcome
 from zenml.exceptions import (
     ExecutionArchivedError,
     ExecutionRetentionUnavailableError,
 )
-from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     PipelineRunFilter,
     PipelineSnapshotFilter,
-    RunMetadataRequest,
-    RunMetadataResource,
     StepRunFilter,
+    StepRunRequest,
 )
 from zenml.zen_server.exceptions import http_exception_from_error
-from zenml.zen_stores.retention import fences
+from zenml.zen_stores.retention import fences, reader
+from zenml.zen_stores.schemas import PipelineRunSchema
 
-ATOMIC_BASE_CANARIES = {
+DEVELOP_CANARIES = {
     "get_run": {"SELECT": 7},
     "list_run_steps": {"SELECT": 12},
 }
@@ -59,8 +59,6 @@ def header_read(store, ids, operation):
     """Read one execution identity without archived detail."""
     return {
         "run": partial(store.get_run, ids.run, hydrate=False),
-        "step": partial(store.get_run_step, ids.producer, hydrate=False),
-        "snapshot": partial(store.get_snapshot, ids.snapshot, hydrate=False),
         "step_list": partial(
             store.list_run_steps,
             StepRunFilter(project=ids.project, pipeline_run_id=ids.run),
@@ -69,10 +67,10 @@ def header_read(store, ids, operation):
     }[operation]()
 
 
-@pytest.mark.parametrize("operation", ATOMIC_BASE_CANARIES)
-def test_hot_read_statement_canary(retention_store, tree_factory, operation):
-    """Keep two exact prerequisite comparisons as query-plan canaries."""
-    ids = tree_factory(retention_store)
+@pytest.mark.parametrize("operation", DEVELOP_CANARIES)
+def test_hot_read_statement_canary(retention_store, run_factory, operation):
+    """Hot reads issue exactly as many statements as on develop."""
+    ids = run_factory(retention_store)
     reads = {
         "get_run": partial(retention_store.get_run, ids.run),
         "list_run_steps": partial(
@@ -84,30 +82,20 @@ def test_hot_read_statement_canary(retention_store, tree_factory, operation):
     reads[operation]()
     with count_statements(retention_store) as statements:
         reads[operation]()
-    assert dict(statements) == ATOMIC_BASE_CANARIES[operation]
+    assert dict(statements) == DEVELOP_CANARIES[operation]
 
 
-@pytest.mark.parametrize("operation", ("run", "step", "snapshot", "step_list"))
+@pytest.mark.parametrize("operation", ("run", "step_list"))
 def test_archive_marker_adds_no_header_read_statements(
-    retention_store, tree_factory, archive_one_tree, operation
+    retention_store, run_factory, archive_run, operation
 ):
     """A marker adds no SQL work to an identity-only read."""
-    cold = tree_factory(retention_store)
-    archive_one_tree(retention_store, cold)
-    # Archival is project-wide, so the comparison tree must exist only after it.
-    hot = tree_factory(retention_store)
-    assert retention_store.get_run(cold.run, hydrate=False).archive_bundle_id
-    assert retention_store.get_snapshot(
-        cold.snapshot, hydrate=False
-    ).archive_bundle_id
+    cold = run_factory(retention_store)
+    archive_run(retention_store, cold)
+    # A pass archives every eligible run, so the hot run must come after it.
+    hot = run_factory(retention_store)
     assert (
         retention_store.get_run(hot.run, hydrate=False).archive_bundle_id
-        is None
-    )
-    assert (
-        retention_store.get_snapshot(
-            hot.snapshot, hydrate=False
-        ).archive_bundle_id
         is None
     )
     with count_statements(retention_store) as hot_statements:
@@ -117,47 +105,42 @@ def test_archive_marker_adds_no_header_read_statements(
     assert cold_statements == hot_statements
 
 
-def test_execution_insert_fence_adds_locking_statements(
-    retention_store, tree_factory, monkeypatch
+def test_step_creation_guard_costs_no_more_than_develops_run_lock(
+    retention_store, run_factory, monkeypatch, NOW
 ):
-    """The insert guard adds exactly two locking reads."""
-    ids = tree_factory(retention_store)
+    """The insert guard replaces the run lock step creation always took."""
+    ids = run_factory(retention_store, "dynamic")
 
-    def insert_metadata():
-        key = uuid4().hex
-        retention_store.create_run_metadata(
-            RunMetadataRequest(
-                project=ids.project,
-                resources=[
-                    RunMetadataResource(
-                        id=ids.run,
-                        type=MetadataResourceTypes.PIPELINE_RUN,
-                    )
-                ],
-                values={key: "kept"},
-                types={key: MetadataTypeEnum.STRING},
-            )
+    def create_step():
+        retention_store.create_run_step(
+            dynamic_step(ids, f"step-{uuid4().hex[:8]}", NOW)
         )
 
-    insert_metadata()
-    with count_statements(retention_store) as protected:
-        insert_metadata()
-    monkeypatch.setattr(
-        fences, "protect_inserts", lambda *args, **kwargs: None
-    )
-    with count_statements(retention_store) as unprotected:
-        insert_metadata()
-    assert protected == unprotected + Counter({"SELECT": 2})
+    def develop_run_lock(session, run_ids, *, exclusive=False):
+        session.execute(
+            select(PipelineRunSchema.id)
+            .where(PipelineRunSchema.id.in_(run_ids))
+            .with_for_update()
+        ).all()
+
+    create_step()
+    with count_statements(retention_store) as guarded:
+        create_step()
+    monkeypatch.setattr(fences, "protect_inserts", develop_run_lock)
+    with count_statements(retention_store) as develop:
+        create_step()
+    # Loading the whole run row also saves a later lazy load of that run.
+    assert not guarded - develop
 
 
 def test_header_lists_survive_unavailable_storage(
-    retention_store, tree_factory, archive_one_tree, storage, monkeypatch
+    retention_store, run_factory, archive_run, storage, monkeypatch
 ):
-    """Identity lists stay available while hydrated reads map outage to 503."""
-    ids = tree_factory(retention_store)
-    archive_one_tree(retention_store, ids)
+    """Lists without detail stay available while detailed reads return 503."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
     opened = Mock(side_effect=OSError("storage unavailable"))
-    monkeypatch.setattr(storage, "open", opened)
+    monkeypatch.setattr(storage.artifact_store, "open", opened)
     for method, filters in (
         (retention_store.list_runs, PipelineRunFilter(project=ids.project)),
         (retention_store.list_run_steps, StepRunFilter(project=ids.project)),
@@ -170,36 +153,99 @@ def test_header_lists_survive_unavailable_storage(
     opened.assert_not_called()
     with pytest.raises(ExecutionRetentionUnavailableError) as error:
         retention_store.get_run(ids.run)
-    assert http_exception_from_error(error.value).status_code == 503
+    exception = http_exception_from_error(error.value)
+    assert exception.status_code == 503
+    assert exception.headers["Retry-After"]
 
 
-@pytest.mark.parametrize("kind", ["runs", "steps"])
-def test_hydrated_lists_require_one_bundle(
-    retention_store, tree_factory, archive_one_tree, storage, monkeypatch, kind
-):
-    """Hydrate one bundle and reject mixed bundles before object access."""
-    trees = [tree_factory(retention_store), tree_factory(retention_store)]
-    for tree in trees:
-        archive_one_tree(retention_store, tree)
-    if kind == "runs":
-        read = retention_store.list_runs
-        one = PipelineRunFilter(snapshot_id=trees[0].snapshot)
-        mixed = PipelineRunFilter(project=trees[0].project, size=2)
-    else:
-        read = retention_store.list_run_steps
-        one = StepRunFilter(pipeline_run_id=trees[0].run)
-        mixed = StepRunFilter(project=trees[0].project, size=4)
-    assert read(one, hydrate=True).items
-    monkeypatch.setattr(
-        storage,
-        "open",
-        Mock(side_effect=AssertionError("mixed list downloaded an object")),
-    )
-    with pytest.raises(
-        ExecutionArchivedError,
-        match=re.escape(
-            "list without details (`hydrate=False`) or narrow the filter"
+def archive_runs(store, run_factory, count):
+    """Archive several runs, each into its own bundle."""
+    runs = [run_factory(store, age_days=100 + index) for index in range(count)]
+    outcome = store.archive_project(runs[0].project)
+    assert outcome.outcome == RetentionOutcome.SUCCEEDED
+    return runs
+
+
+@pytest.mark.parametrize(
+    "read",
+    [
+        lambda store, ids: store.list_runs(
+            PipelineRunFilter(project=ids.project), hydrate=True
         ),
-    ):
-        read(mixed, hydrate=True)
-    assert read(mixed, hydrate=False).items
+        lambda store, ids: store.list_snapshots(
+            PipelineSnapshotFilter(project=ids.project), hydrate=True
+        ),
+    ],
+    ids=["runs", "snapshots"],
+)
+def test_detailed_lists_load_several_bundles_up_to_the_cap(
+    retention_store, run_factory, storage, monkeypatch, read
+):
+    """A page may span bundles until it needs more than one request loads."""
+    runs = archive_runs(retention_store, run_factory, 3)
+    page = read(retention_store, runs[0])
+    assert len({item.body.archive_bundle_id for item in page.items}) == 3
+    assert all(item.metadata is not None for item in page.items)
+
+    monkeypatch.setattr(reader, "MAX_BUNDLES_PER_READ", 2)
+    downloads = Mock(side_effect=AssertionError("over-cap read downloaded"))
+    monkeypatch.setattr(storage, "read", downloads)
+    with pytest.raises(ExecutionArchivedError, match="hydrate=False"):
+        read(retention_store, runs[0])
+    downloads.assert_not_called()
+
+
+def test_detailed_lists_respect_the_compressed_byte_cap(
+    retention_store, run_factory, storage, monkeypatch
+):
+    """The total size of a page's objects is capped before any download."""
+    runs = archive_runs(retention_store, run_factory, 2)
+    monkeypatch.setattr(reader, "MAX_COMPRESSED_BYTES_PER_READ", 1)
+    with pytest.raises(ExecutionArchivedError, match="smaller page"):
+        retention_store.list_runs(
+            PipelineRunFilter(project=runs[0].project), hydrate=True
+        )
+
+
+def test_one_decoded_bundle_is_alive_at_a_time(
+    retention_store, run_factory, storage, monkeypatch
+):
+    """A page is converted bundle by bundle, releasing each before the next."""
+    runs = archive_runs(retention_store, run_factory, 3)
+    alive = weakref.WeakSet()
+    most_alive = 0
+    original = reader.index_document
+
+    def tracked(document):
+        nonlocal most_alive
+        gc.collect()
+        most_alive = max(most_alive, len(alive) + 1)
+        detail = original(document)
+        alive.add(detail)
+        return detail
+
+    monkeypatch.setattr(reader, "index_document", tracked)
+    page = retention_store.list_run_steps(
+        StepRunFilter(project=runs[0].project), hydrate=True
+    )
+    assert len({item.body.archive_bundle_id for item in page.items}) == 3
+    assert most_alive == 1
+
+
+def test_step_insert_into_an_archived_run_fails(
+    retention_store, run_factory, archive_run, NOW
+):
+    """Adding a step to an archived run needs a restore first."""
+    ids = run_factory(retention_store, "dynamic")
+    archive_run(retention_store, ids)
+    with pytest.raises(ExecutionArchivedError, match="pipeline runs restore"):
+        retention_store.create_run_step(
+            StepRunRequest(
+                project=ids.project,
+                name="late",
+                pipeline_run_id=ids.run,
+                status=ExecutionStatus.COMPLETED,
+                start_time=NOW,
+                end_time=NOW,
+            )
+        )

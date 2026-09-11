@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Independent typed graphs and explicit V1 fixture regeneration."""
+"""Independent typed graphs and explicit version 1 fixture regeneration."""
 
 import argparse
 import json
@@ -13,7 +13,7 @@ from sqlmodel import Session, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.source import Source
+from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import (
     InputSpec,
     Step,
@@ -25,14 +25,17 @@ from zenml.enums import (
     StepRunInputArtifactType,
     StepType,
 )
-from zenml.models import ProjectFilter, RetentionSettings
+from zenml.models import ProjectFilter, RetentionSettings, StepRunRequest
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores import schemas
-from zenml.zen_stores.retention.bundle import Bundle
-from zenml.zen_stores.retention.manifest import (
-    RECORDS_BY_TABLE,
-    TABLE_ORDER,
+from zenml.zen_stores.retention.format import (
+    ArchiveDocument,
+    ConfigurationRecord,
+    RunRecord,
+    SnapshotRecord,
+    StepRecord,
     canonical_json,
+    encode,
 )
 from zenml.zen_stores.sql_zen_store import (
     SqlZenStore,
@@ -40,6 +43,13 @@ from zenml.zen_stores.sql_zen_store import (
 
 FROZEN_NOW = datetime(2026, 1, 1)
 GOLDEN_NOW = datetime(2026, 1, 1, 12)
+GOLDEN_BUNDLE_ID = UUID(int=14)
+DETAIL_TABLES = (
+    "pipeline_run",
+    "step_run",
+    "pipeline_snapshot",
+    "step_configuration",
+)
 
 
 def graph_rows(
@@ -213,6 +223,34 @@ def graph_rows(
     return source
 
 
+def dynamic_step(ids: Any, name: str, now: datetime) -> StepRunRequest:
+    """Build a finished dynamic step for an existing run.
+
+    Args:
+        ids: Run identities.
+        name: Step name.
+        now: Step timestamps.
+
+    Returns:
+        The step request.
+    """
+    return StepRunRequest(
+        project=ids.project,
+        name=name,
+        pipeline_run_id=ids.run,
+        start_time=now,
+        end_time=now,
+        status=ExecutionStatus.COMPLETED,
+        dynamic_config=Step(
+            spec=StepSpec(
+                source=Source(module="tests", type=SourceType.INTERNAL),
+                upstream_steps=[],
+            ),
+            config=StepConfiguration(name=name),
+        ),
+    )
+
+
 def insert_rows(
     store: SqlZenStore, rows: dict[str, list[dict[str, Any]]]
 ) -> None:
@@ -228,7 +266,7 @@ def insert_rows(
                 connection.execute(table.insert().values(**values))
 
 
-def seed_tree(
+def seed_run(
     store: SqlZenStore,
     now: datetime,
     parent: UUID | None = None,
@@ -279,7 +317,7 @@ def read_tables(store: SqlZenStore) -> dict[str, list[dict[str, Any]]]:
     """
     result = {}
     with Session(store.engine) as session:
-        for name in TABLE_ORDER:
+        for name in DETAIL_TABLES:
             table = SQLModel.metadata.tables[name]
             result[name] = [
                 dict(row)
@@ -290,8 +328,52 @@ def read_tables(store: SqlZenStore) -> dict[str, list[dict[str, Any]]]:
     return result
 
 
+def golden_document(
+    source: dict[str, list[dict[str, Any]]],
+) -> ArchiveDocument:
+    """Build the archive document of the golden run from its SQL rows.
+
+    Args:
+        source: Golden graph rows with snapshot-owned configurations.
+
+    Returns:
+        The document an archive pass would capture for the run.
+    """
+
+    def fields(model: type, row: dict[str, Any]) -> dict[str, Any]:
+        return {name: row[name] for name in model.model_fields}
+
+    run = source["pipeline_run"][0]
+    return ArchiveDocument(
+        project_id=run["project_id"],
+        run_id=run["id"],
+        run=RunRecord.model_validate(fields(RunRecord, run)),
+        steps=[
+            StepRecord.model_validate(
+                {
+                    **fields(StepRecord, row),
+                    "substitutions": json.loads(row["substitutions"]),
+                }
+            )
+            for row in sorted(source["step_run"], key=lambda row: row["id"])
+        ],
+        snapshots=[
+            SnapshotRecord.model_validate(fields(SnapshotRecord, row))
+            for row in source["pipeline_snapshot"]
+        ],
+        configurations=[
+            ConfigurationRecord.model_validate(
+                fields(ConfigurationRecord, row)
+            )
+            for row in sorted(
+                source["step_configuration"], key=lambda row: row["id"]
+            )
+        ],
+    )
+
+
 def generate(destination: Path) -> None:
-    """Write three golden files from an independent graph and current serializer.
+    """Write the golden object, bundle row, and SQL rows for version 1.
 
     Args:
         destination: Output directory, which need not already exist.
@@ -301,7 +383,7 @@ def generate(destination: Path) -> None:
         id=UUID(int=1),
         name="golden",
         display_name="Golden",
-        description="Synthetic V1 compatibility fixture",
+        description="Synthetic version 1 compatibility fixture",
         created=when,
         updated=when,
         retention_settings=RetentionSettings(
@@ -310,27 +392,21 @@ def generate(destination: Path) -> None:
     )
     source = graph_rows(project.id, when, fixed=True)
     source["project"] = [project.model_dump()]
-    records = []
-    for table, model in RECORDS_BY_TABLE.items():
-        for row in source[table]:
-            fields = {name: row[name] for name in model.model_fields}
-            if table == "step_run":
-                fields["substitutions"] = json.loads(row["substitutions"])
-            records.append(model.model_validate(fields))
+    encoded = encode(golden_document(source))
     destination.mkdir(parents=True, exist_ok=True)
-    bundle = Bundle.create(
-        records,
-        destination,
-        bundle_id=UUID(int=14),
-        project_id=project.id,
-        root_run_id=UUID(int=4),
-        created_at=GOLDEN_NOW,
-    )
-    bundle.path.replace(destination / "v1-rows.tar.gz")
-    for table in TABLE_ORDER:
-        (destination / f"{table}.jsonl").unlink()
-    (destination / "v1-manifest.json").write_bytes(
-        canonical_json(bundle.manifest.model_dump(mode="json"))
+    (destination / "v1-document.json.gz").write_bytes(encoded.data)
+    (destination / "v1-bundle.json").write_bytes(
+        canonical_json(
+            {
+                "bundle_id": str(GOLDEN_BUNDLE_ID),
+                "content_hash": encoded.content_hash,
+                "created": GOLDEN_NOW.isoformat(),
+                "project_id": str(project.id),
+                "run_id": str(source["pipeline_run"][0]["id"]),
+                "size_bytes": len(encoded.data),
+            }
+        )
+        + b"\n"
     )
     (destination / "v1-sql.json").write_text(
         json.dumps(

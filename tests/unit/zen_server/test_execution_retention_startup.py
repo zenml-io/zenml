@@ -1,27 +1,21 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Execution retention startup diagnostics."""
+"""Execution retention startup checks."""
 
 import logging
 from types import SimpleNamespace
-from unittest.mock import Mock, PropertyMock
+from unittest.mock import Mock
 
 import pytest
 
 from zenml.zen_server import zen_server_api
+from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
 
-def test_enabled_retention_warns_when_archive_store_cannot_load(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    """A broken configured store is visible without failing server startup.
-
-    Args:
-        monkeypatch: Isolate server configuration and store access.
-        caplog: Capture the startup warning.
-    """
-    store = Mock()
-    type(store).archive_artifact_store = PropertyMock(
-        side_effect=RuntimeError("unavailable")
+def configure(monkeypatch: pytest.MonkeyPatch, driver, probe) -> None:
+    """Enable archiving over a store with the given driver and probe."""
+    store = SimpleNamespace(
+        config=SimpleNamespace(driver=driver),
+        archive_storage=SimpleNamespace(probe=probe),
     )
     monkeypatch.setattr(
         zen_server_api,
@@ -30,7 +24,20 @@ def test_enabled_retention_warns_when_archive_store_cannot_load(
     )
     monkeypatch.setattr(zen_server_api, "zen_store", Mock(return_value=store))
 
+
+def test_archive_uri_on_sqlite_stops_startup(monkeypatch) -> None:
+    """Archiving is MySQL-only, so a SQLite server refuses to start."""
+    configure(monkeypatch, SQLDatabaseDriver.SQLITE, Mock(return_value=True))
+
+    with pytest.raises(RuntimeError, match="requires a MySQL database"):
+        zen_server_api._check_archive_store_on_startup()
+
+
+def test_unusable_storage_only_warns(monkeypatch, caplog) -> None:
+    """A failed probe is logged without failing startup."""
+    configure(monkeypatch, SQLDatabaseDriver.MYSQL, Mock(return_value=False))
+
     with caplog.at_level(logging.WARNING):
         zen_server_api._check_archive_store_on_startup()
 
-    assert "archive_artifact_store_id could not be loaded" in caplog.text
+    assert "cannot be written and read back" in caplog.text

@@ -1,9 +1,9 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Small SQL trees and public archive operations for the MySQL retention suite."""
+"""Pipeline runs and archive storage for the MySQL retention suite."""
 
 from datetime import timedelta
 from typing import Any, Dict, List
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from pydantic import BaseModel, ConfigDict
@@ -13,47 +13,35 @@ from tests.unit.zen_stores.retention.fixture_graph import (
     insert_rows,
     read_tables,
 )
-from zenml.artifact_stores.local_artifact_store import (
-    LocalArtifactStore,
-    LocalArtifactStoreConfig,
-)
-from zenml.enums import RetentionOutcome, StackComponentType
+from zenml.enums import RetentionOutcome
 from zenml.models import ProjectFilter, ProjectUpdate
 from zenml.models.v2.misc.retention import RetentionSettings
+from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
-def storage(tmp_path, NOW, monkeypatch):
-    """Enable public archive operations against a temporary artifact store."""
-    component = LocalArtifactStore(
-        config=LocalArtifactStoreConfig(path=str(tmp_path / "objects")),
-        name="archive",
-        id=uuid4(),
-        flavor="local",
-        type=StackComponentType.ARTIFACT_STORE,
-        user=None,
-        created=NOW,
-        updated=NOW,
-    )
+def storage(tmp_path, monkeypatch) -> ArchiveStorage:
+    """Enable archiving against a temporary local directory."""
+    root = str(tmp_path / "objects")
+    archive = ArchiveStorage.from_uri(root)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE_URI", root)
     monkeypatch.setattr(
-        SqlZenStore, "archive_artifact_store", property(lambda _: component)
+        SqlZenStore, "archive_storage", property(lambda _: archive)
     )
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE_ENABLED", "true")
-    monkeypatch.setenv(
-        "ZENML_SERVER_ARCHIVE_ARTIFACT_STORE_ID", str(component.id)
-    )
-    return component
+    return archive
 
 
 @pytest.fixture
-def archive_one_tree(storage):
-    """Provide public archival after the storage fixture configures its destination."""
+def archive_run(storage):
+    """Archive a project with one eligible run and return its bundle ID."""
 
-    def archive(store, ids):
+    def archive(store: SqlZenStore, ids: "ExecutionRun") -> UUID:
         outcome = store.archive_project(ids.project)
         assert outcome.outcome == RetentionOutcome.SUCCEEDED
-        return store.get_run(ids.run, hydrate=False).archive_bundle_id
+        bundle_id = store.get_run(ids.run, hydrate=False).archive_bundle_id
+        assert bundle_id is not None
+        return bundle_id
 
     return archive
 
@@ -64,8 +52,8 @@ def rows():
     return read_tables
 
 
-class ExecutionTree(BaseModel):
-    """Identify the shared two-step execution graph."""
+class ExecutionRun(BaseModel):
+    """Identify the shared two-step pipeline run."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -109,28 +97,31 @@ def configure(source: FixtureRows, kind: str) -> None:
 
 
 @pytest.fixture
-def tree_factory(NOW):
-    """Provide independent snapshot, step, and inline definition factories."""
+def run_factory(NOW):
+    """Create two-step runs with snapshot, step, or inline definitions."""
 
-    def create(store: SqlZenStore, kind: str = "static") -> ExecutionTree:
-        """Build the selected ownership graph.
+    def create(
+        store: SqlZenStore, kind: str = "static", age_days: int = 100
+    ) -> ExecutionRun:
+        """Build the selected ownership graph and enable a 7-day policy.
 
         Args:
             store: Isolated metadata store.
             kind: Static, dynamic, or legacy configuration ownership.
+            age_days: How long ago the run finished.
 
         Returns:
             Created execution identities.
         """
         project = store.list_projects(ProjectFilter()).items[0].id
-        source = graph_rows(project, NOW - timedelta(days=100))
+        source = graph_rows(project, NOW - timedelta(days=age_days))
         configure(source, kind)
         insert_rows(store, source)
         store.update_project(
             project,
             ProjectUpdate(retention=RetentionSettings(archive_after_days=7)),
         )
-        return ExecutionTree(
+        return ExecutionRun(
             project=project,
             run=source["pipeline_run"][0]["id"],
             snapshot=source["pipeline_snapshot"][0]["id"],

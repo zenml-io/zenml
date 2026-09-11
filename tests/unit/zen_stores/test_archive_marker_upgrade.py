@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Populated marker upgrades through the FK-enabled CLI engine path."""
+"""The archive migration keeps populated tables through upgrade and downgrade."""
 
 from pathlib import Path
 from typing import Any
@@ -95,7 +95,7 @@ def test_marker_upgrade_preserves_referencing_rows(
 
     sa.event.listen(store.engine, "before_cursor_execute", record_statement)
     try:
-        migrations.upgrade("7a1c3d9e2b4f")
+        migrations.upgrade("c3f5a9e1d7b2")
     finally:
         sa.event.remove(
             store.engine, "before_cursor_execute", record_statement
@@ -119,29 +119,7 @@ def test_marker_upgrade_preserves_referencing_rows(
                 column["name"]: column
                 for column in inspector.get_columns(table)
             }
-            assert "offloaded_at" not in columns
             assert columns["archive_bundle_id"]["nullable"] is True
-            assert not any(
-                "archive_bundle_id" in index["column_names"]
-                for index in inspector.get_indexes(table)
-            )
-            assert not any(
-                "archive_bundle_id" in fk["constrained_columns"]
-                for fk in inspector.get_foreign_keys(table)
-            )
-        project_columns = {
-            column["name"]: column
-            for column in inspector.get_columns("project")
-        }
-        for name in ("retention_settings", "retention_state"):
-            assert isinstance(project_columns[name]["type"], sa.TEXT)
-            assert project_columns[name]["nullable"] is True
-        step_columns = {
-            column["name"]: column
-            for column in inspector.get_columns("step_run")
-        }
-        assert step_columns["step_type"]["nullable"] is True
-        assert step_columns["substitutions"]["nullable"] is True
         catalog_columns = {
             column["name"]: column
             for column in inspector.get_columns("archive_bundle")
@@ -151,26 +129,10 @@ def test_marker_upgrade_preserves_referencing_rows(
         )
         for column in ArchiveBundleSchema.__table__.columns:
             assert catalog_columns[column.name]["nullable"] == column.nullable
-        for name in ("uri", "size_bytes", "manifest_hash"):
-            assert catalog_columns[name]["nullable"] is True
-        assert (
-            str(catalog_columns["claim_token"]["default"]).strip("'\"") == "1"
-        )
-        indexes = {
-            index["name"]: index
+        assert [
+            index["column_names"]
             for index in inspector.get_indexes("archive_bundle")
-        }
-        assert set(indexes) == {
-            "ix_archive_bundle_active_root_id",
-            "ix_archive_bundle_root_created_id",
-        }
-        assert indexes["ix_archive_bundle_active_root_id"]["unique"]
-        assert indexes["ix_archive_bundle_active_root_id"]["column_names"] == [
-            "active_root_id"
-        ]
-        assert indexes["ix_archive_bundle_root_created_id"][
-            "column_names"
-        ] == ["root_run_id", "created", "id"]
+        ] == [["run_id"]]
         upgraded = sa.Table(
             "pipeline_run", sa.MetaData(), autoload_with=connection
         )
@@ -196,7 +158,7 @@ def test_marker_upgrade_preserves_referencing_rows(
     assert not any(
         "DROP TABLE" in statement.upper() for statement in statements
     )
-    assert migrations.current_revisions() == ["7a1c3d9e2b4f"]
+    assert migrations.current_revisions() == ["c3f5a9e1d7b2"]
 
     migrations.downgrade("9f2b8c7d6e5a")
     with store.engine.begin() as connection:
