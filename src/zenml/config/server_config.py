@@ -446,6 +446,27 @@ class ServerConfiguration(BaseModel):
     event_handler_sources: list[str] = []
     webhook_event_handler_sources: list[str] = []
 
+    archive_enabled: bool = Field(
+        default=False,
+        description="Enable execution archive and restore operations.",
+    )
+    archive_artifact_store_id: Optional[UUID] = Field(
+        default=None,
+        description="Registered artifact store for execution archives.",
+    )
+    archive_path_prefix: str = Field(
+        default="", description="Directory within the archive artifact store."
+    )
+
+    @property
+    def archive_configured(self) -> bool:
+        """Return whether execution archives have a registered destination.
+
+        Returns:
+            Whether an archive artifact store is configured.
+        """
+        return self.archive_artifact_store_id is not None
+
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
         self,

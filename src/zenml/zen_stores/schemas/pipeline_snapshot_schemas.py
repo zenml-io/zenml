@@ -14,20 +14,21 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union, cast
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
+from zenml.exceptions import ExecutionRetentionIntegrityError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotRequest,
@@ -38,6 +39,11 @@ from zenml.models import (
     PipelineSnapshotUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
+from zenml.zen_stores.schemas.archive_detail import (
+    BundleDetail,
+    ConfigurationRecord,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -51,6 +57,9 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+)
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
@@ -68,7 +77,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class PipelineSnapshotSchema(BaseSchema, table=True):
+class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
     """SQL Model for pipeline snapshots."""
 
     __tablename__ = "pipeline_snapshot"
@@ -298,21 +307,36 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
     def get_step_configurations(
-        self, include: Optional[List[str]] = None
-    ) -> List["StepConfigurationSchema"]:
+        self,
+        include: Optional[List[str]] = None,
+        detail: Optional["BundleDetail"] = None,
+    ) -> List[Union["StepConfigurationSchema", ConfigurationRecord]]:
         """Get step configurations for the snapshot.
 
         Args:
             include: List of step names to include. If not given, all step
                 configurations will be included.
+            detail: Optional authoritative source for archived detail.
 
         Raises:
+            ExecutionRetentionIntegrityError: Required archived detail is missing.
             RuntimeError: If no session for the schema exists.
 
         Returns:
             List of step configurations.
         """
+        if self.is_offloaded:
+            self.offloaded_detail(detail)
+            detail = cast(BundleDetail, detail)
+            configurations = detail.step_configurations(self.id)
+            if not self.is_dynamic and len(configurations) != self.step_count:
+                raise ExecutionRetentionIntegrityError(
+                    f"Archived configuration is missing for snapshot {self.id}."
+                )
+            return list(detail.step_configurations(self.id, include=include))
         if session := object_session(self):
+            if not include:
+                return list(self.step_configurations)
             query = (
                 select(StepConfigurationSchema)
                 .where(StepConfigurationSchema.snapshot_id == self.id)
@@ -331,21 +355,31 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
 
     def get_step_configuration(
-        self, step_name: str
-    ) -> "StepConfigurationSchema":
+        self,
+        step_name: str,
+        detail: Optional["BundleDetail"] = None,
+    ) -> Union["StepConfigurationSchema", ConfigurationRecord]:
         """Get a step configuration of the snapshot.
 
         Args:
             step_name: The name of the step to get the configuration for.
+            detail: Optional authoritative source for archived detail.
 
         Raises:
+            ExecutionRetentionIntegrityError: Required archived detail is missing.
             KeyError: If the step configuration is not found.
 
         Returns:
             The step configuration.
         """
-        step_configs = self.get_step_configurations(include=[step_name])
+        step_configs = self.get_step_configurations(
+            include=[step_name], detail=detail
+        )
         if len(step_configs) == 0:
+            if detail is not None and self.is_offloaded:
+                raise ExecutionRetentionIntegrityError(
+                    f"Archived configuration is missing for snapshot {self.id}, step {step_name}."
+                )
             raise KeyError(
                 f"Step configuration for step `{step_name}` not found."
             )
@@ -492,9 +526,24 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             True if the snapshot is runnable from server.
         """
         return (
-            self.build is not None
+            not self.is_offloaded
+            and self.build is not None
             and not self.build.is_local
             and self.build.stack_id is not None
+        )
+
+    @classmethod
+    def runnable_filter(cls) -> ColumnElement[bool]:
+        """Express the server's runnable-snapshot contract in SQL.
+
+        Returns:
+            Predicate equivalent to ``is_runnable`` without loading a build.
+        """
+        return cls.not_offloaded() & col(cls.build_id).in_(
+            select(PipelineBuildSchema.id).where(
+                col(PipelineBuildSchema.is_local).is_(False),
+                col(PipelineBuildSchema.stack_id).is_not(None),
+            )
         )
 
     def to_model(
@@ -504,6 +553,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         include_python_packages: bool = False,
         include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
+        detail: Optional["BundleDetail"] = None,
         **kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Convert schema to response.
@@ -516,13 +566,19 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            detail: Optional authoritative source for archived detail.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             The response.
         """
         deployable = False
-        if self.build and self.stack and self.stack.has_deployer:
+        if (
+            not self.is_offloaded
+            and self.build
+            and self.stack
+            and self.stack.has_deployer
+        ):
             deployable = True
 
         body = PipelineSnapshotResponseBody(
@@ -534,23 +590,30 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             deployable=deployable,
             is_dynamic=self.is_dynamic,
             pipeline_id=self.pipeline_id,
+            archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
         if include_metadata:
+            detail_row = cast(
+                PipelineSnapshotSchema, self.offloaded_detail(detail)
+            )
             pipeline_configuration = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
+                detail_row.pipeline_configuration
             )
             step_configurations = {}
             for step_configuration in self.get_step_configurations(
-                include=step_configuration_filter
+                include=step_configuration_filter,
+                detail=detail,
             ):
-                step_configurations[step_configuration.name] = Step.from_dict(
-                    json.loads(step_configuration.config),
-                    pipeline_configuration,
-                    exclude_hook_sources=self.is_dynamic,
+                step_configurations[step_configuration.name] = (
+                    merge_step_configuration(
+                        step_configuration.config,
+                        pipeline_configuration,
+                        exclude_hook_sources=self.is_dynamic,
+                    )
                 )
 
-            client_environment = json.loads(self.client_environment)
+            client_environment = json.loads(detail_row.client_environment)
             if not include_python_packages:
                 client_environment.pop("python_packages", None)
 
@@ -565,12 +628,14 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     # we still need to get all of them to generate the config
                     # template and schema
                     all_step_configurations = {
-                        step_configuration.name: Step.from_dict(
-                            json.loads(step_configuration.config),
+                        step_configuration.name: merge_step_configuration(
+                            step_configuration.config,
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
                         )
-                        for step_configuration in self.get_step_configurations()
+                        for step_configuration in self.get_step_configurations(
+                            detail=detail
+                        )
                     }
                 else:
                     all_step_configurations = step_configurations
@@ -587,8 +652,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 )
 
             metadata = PipelineSnapshotResponseMetadata(
-                description=self.description,
-                source_code=self.source_code,
+                description=detail_row.description,
+                source_code=detail_row.source_code,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
@@ -597,9 +662,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 server_version=self.server_version,
                 pipeline_version_hash=self.pipeline_version_hash,
                 pipeline_spec=PipelineSpec.model_validate_json(
-                    self.pipeline_spec
+                    detail_row.pipeline_spec
                 )
-                if self.pipeline_spec
+                if detail_row.pipeline_spec
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,

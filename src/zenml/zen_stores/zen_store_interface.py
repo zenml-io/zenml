@@ -104,6 +104,10 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    RetentionDryRunResponse,
+    RetentionOperationResponse,
+    RetentionPassResponse,
+    RetentionStatusResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
     RunStatisticsResponse,
@@ -2996,6 +3000,69 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     # -------------------- Projects --------------------
+
+    @abstractmethod
+    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
+        """Submit one bounded archive pass under the saved project policy.
+
+        Args:
+            project_id: Project whose saved retention policy is addressed.
+
+        Returns:
+            Archive pass submission or completed local pass summary.
+        """
+
+    @abstractmethod
+    def get_retention_status(
+        self, project_id: UUID
+    ) -> RetentionStatusResponse:
+        """Read the latest project retention pass without object access.
+
+        Args:
+            project_id: Project whose saved retention policy is addressed.
+
+        Returns:
+            Latest saved pass outcome, completion time, and archive configuration.
+        """
+
+    @abstractmethod
+    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
+        """Restore the archive covering this pipeline run.
+
+        Args:
+            run_id: Pipeline run whose archive is addressed.
+
+        Returns:
+            Restore submission, completed local restore, or an active-run no-op.
+        """
+
+    @abstractmethod
+    def get_pipeline_run_restore_status(
+        self, run_id: UUID
+    ) -> RetentionOperationResponse:
+        """Read the latest restore outcome without object access.
+
+        Args:
+            run_id: Pipeline run whose archive is addressed.
+
+        Returns:
+            Latest saved restore outcome for the requested run.
+        """
+
+    @abstractmethod
+    def retention_dry_run(
+        self,
+        project: ProjectResponse,
+    ) -> RetentionDryRunResponse:
+        """Estimate a bounded project retention batch without changing data.
+
+        Args:
+            project: Resolved project with its saved retention policy.
+
+        Returns:
+            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
+
+        """
 
     @abstractmethod
     def create_project(self, project: ProjectRequest) -> ProjectResponse:

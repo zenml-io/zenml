@@ -40,6 +40,7 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -229,7 +230,9 @@ class PipelineSnapshotUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
+class PipelineSnapshotResponseBody(
+    ProjectScopedResponseBody, ArchivableResponseBody
+):
     """Response body for pipeline snapshots."""
 
     runnable: bool = Field(
@@ -648,12 +651,26 @@ class PipelineSnapshotResponse(
         """
         return self.get_resources().latest_run_user
 
+    @property
+    def archive_bundle_id(self) -> Optional[UUID]:
+        """The archive bundle holding this entity's archived detail.
+
+        Returns:
+            The bundle ID, or None while detail remains in SQL.
+        """
+        return self.get_body().archive_bundle_id
+
 
 # ------------------ Filter Model ------------------
 
 
 class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     """Model for filtering pipeline snapshots."""
+
+    archive_bundle_id: UUIDFilterOption = Field(
+        default=None,
+        description="The bundle holding archived execution detail.",
+    )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
@@ -752,7 +769,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
         from zenml.zen_stores.schemas import (
             DeploymentSchema,
-            PipelineBuildSchema,
             PipelineSchema,
             PipelineSnapshotSchema,
             StackComponentSchema,
@@ -800,17 +816,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 )
 
         if self.runnable is True:
-            runnable_filter = and_(
-                # The following condition is not perfect as it does not
-                # consider stacks with custom flavor components or local
-                # components, but the best we can do currently with our
-                # table columns.
-                PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
-                col(PipelineBuildSchema.is_local).is_(False),
-                col(PipelineBuildSchema.stack_id).is_not(None),
-            )
-
-            custom_filters.append(runnable_filter)
+            custom_filters.append(PipelineSnapshotSchema.runnable_filter())
 
         if self.deployable is True:
             deployer_exists = (
@@ -830,6 +836,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 .exists()
             )
             deployable_filter = and_(
+                PipelineSnapshotSchema.not_offloaded(),
                 col(PipelineSnapshotSchema.build_id).is_not(None),
                 deployer_exists,
             )

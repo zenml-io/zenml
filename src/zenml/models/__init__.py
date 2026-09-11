@@ -464,6 +464,15 @@ from zenml.models.v2.misc.param_groups import (
     StepRunIdentifier,
 )
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunResponse,
+    RetentionLimits,
+    RetentionOperationResponse,
+    RetentionPassResponse,
+    RetentionSettings,
+    RetentionStatusResponse,
+    RetentionTreeEstimate,
+)
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
@@ -650,7 +659,6 @@ WebhookStats.model_rebuild()
 WebhookResponseMetadata.model_rebuild()
 WebhookResponseResources.model_rebuild()
 WebhookResponse.model_rebuild()
-
 
 __all__ = [
     # V2 Base
@@ -954,6 +962,13 @@ __all__ = [
     "TriggerDispatchErrorSeverity",
     "TriggerDispatchStatusCode",
     # V2 Misc
+    "RetentionDryRunResponse",
+    "RetentionLimits",
+    "RetentionOperationResponse",
+    "RetentionPassResponse",
+    "RetentionSettings",
+    "RetentionStatusResponse",
+    "RetentionTreeEstimate",
     "AuthenticationMethodModel",
     "DeployedStack",
     "ServiceConnectorResourcesModel",

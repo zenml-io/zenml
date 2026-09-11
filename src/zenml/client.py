@@ -156,6 +156,11 @@ from zenml.models import (
     ProjectUpdate,
     ResourceRequestFilter,
     ResourceRequestResponse,
+    RetentionDryRunResponse,
+    RetentionOperationResponse,
+    RetentionPassResponse,
+    RetentionSettings,
+    RetentionStatusResponse,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -1121,6 +1126,7 @@ class Client(metaclass=ClientMetaClass):
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
         project_metadata: Optional[Dict[str, Any]] = None,
+        retention: Optional[RetentionSettings] = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1130,6 +1136,7 @@ class Client(metaclass=ClientMetaClass):
             new_display_name: New display name of the project.
             new_description: New description of the project.
             project_metadata: New metadata for the project.
+            retention: Replacement retention settings; does not start archiving.
 
         Returns:
             The updated project.
@@ -1145,10 +1152,87 @@ class Client(metaclass=ClientMetaClass):
             project_update.description = new_description
         if project_metadata is not None:
             project_update.project_metadata = project_metadata
+        if retention is not None:
+            project_update.retention = retention
         return self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
         )
+
+    def archive_project(
+        self, project: Optional[Union[str, UUID]] = None
+    ) -> RetentionPassResponse:
+        """Submit one bounded archive pass under the saved project policy.
+
+        Args:
+            project: Project name or ID; defaults to the active project.
+
+        Returns:
+            Archive pass submission or completed local pass summary.
+        """
+        selected = (
+            self.get_project(project) if project else self.active_project
+        )
+        return self.zen_store.archive_project(selected.id)
+
+    def get_retention_status(
+        self, project: Optional[Union[str, UUID]] = None
+    ) -> RetentionStatusResponse:
+        """Read the latest project retention pass without object access.
+
+        Args:
+            project: Project name or ID; defaults to the active project.
+
+        Returns:
+            Latest saved pass outcome, completion time, and archive configuration.
+        """
+        selected = (
+            self.get_project(project) if project else self.active_project
+        )
+        return self.zen_store.get_retention_status(selected.id)
+
+    def restore_pipeline_run(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> RetentionOperationResponse:
+        """Restore the archive covering this pipeline run.
+
+        Args:
+            name_id_or_prefix: Pipeline run name, ID or unique ID prefix.
+
+        Returns:
+            Restore submission, completed local restore, or an unarchived no-op.
+        """
+        selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
+        return self.zen_store.restore_pipeline_run(selected.id)
+
+    def get_pipeline_run_restore_status(
+        self, name_id_or_prefix: Union[str, UUID]
+    ) -> RetentionOperationResponse:
+        """Read the latest restore outcome without object access.
+
+        Args:
+            name_id_or_prefix: Pipeline run name, ID or unique ID prefix.
+
+        Returns:
+            Latest saved restore outcome for the requested run.
+        """
+        selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
+        return self.zen_store.get_pipeline_run_restore_status(selected.id)
+
+    def retention_dry_run(
+        self,
+        project: Optional[Union[UUID, str]] = None,
+    ) -> RetentionDryRunResponse:
+        """Preview the saved retention policy without changing data.
+
+        Args:
+            project: Project name/ID/prefix, or the active project.
+
+        Returns:
+            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
+        """
+        selected = self.get_project(project)
+        return self.zen_store.retention_dry_run(selected)
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.
@@ -2914,9 +2998,11 @@ class Client(metaclass=ClientMetaClass):
                 "by ID to uniquely identify one of the snapshots."
             )
 
-        if hydrate and include_config_schema:
-            # The config schema cannot be fetched using the list
-            # call, so we make a second call to fetch it.
+        if hydrate and (
+            include_config_schema or snapshot.archive_bundle_id is not None
+        ):
+            # Lists omit config schemas and archived execution detail.
+            # Fetch the requested detail after resolving the snapshot identity.
             return self.zen_store.get_snapshot(
                 snapshot.id,
                 include_config_schema=include_config_schema,
@@ -2948,6 +3034,7 @@ class Client(metaclass=ClientMetaClass):
         tags: StringFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUID | None = None,
+        archive_bundle_id: UUIDFilterOption = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -2976,11 +3063,13 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             trigger_id: Filter by trigger ID (attached trigger to snapshot).
+            archive_bundle_id: Filter on the archive bundle holding detail.
 
         Returns:
             A page with snapshots fitting the filter description
         """
         snapshot_filter_model = PipelineSnapshotFilter(
+            archive_bundle_id=archive_bundle_id,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5109,7 +5198,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The pipeline run.
         """
-        return self._get_entity_by_id_or_name_or_prefix(
+        run = self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_run,
             list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
@@ -5118,6 +5207,19 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
             include_full_metadata=include_full_metadata,
         )
+        if (
+            hydrate
+            and not is_valid_uuid(name_id_or_prefix)
+            and run.archive_bundle_id is not None
+        ):
+            # Name and prefix resolution returns a SQL-only list projection.
+            # Load archived detail through the explicit getter after resolution.
+            return self.zen_store.get_run(
+                run.id,
+                hydrate=True,
+                include_full_metadata=include_full_metadata,
+            )
+        return run
 
     @_fail_for_sql_zen_store
     def replay_pipeline_run(
@@ -5231,6 +5333,7 @@ class Client(metaclass=ClientMetaClass):
         trigger_id: UUIDFilterOption = None,
         parent_run_id: UUIDFilterOption = None,
         root_runs_only: Optional[bool] = None,
+        archive_bundle_id: UUIDFilterOption = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5286,11 +5389,13 @@ class Client(metaclass=ClientMetaClass):
             trigger_id: The ID of the trigger that generated this run.
             parent_run_id: The parent run ID for nested child pipeline runs.
             root_runs_only: Whether to include only root runs. Ignored if False.
+            archive_bundle_id: Filter on the archive bundle holding detail.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
         """
         runs_filter_model = PipelineRunFilter(
+            archive_bundle_id=archive_bundle_id,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5505,6 +5610,7 @@ class Client(metaclass=ClientMetaClass):
         exclude_retried: Optional[bool] = None,
         version: IntegerFilterOption = None,
         hydrate: bool = False,
+        archive_bundle_id: UUIDFilterOption = None,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
 
@@ -5538,11 +5644,13 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            archive_bundle_id: Filter on the archive bundle holding detail.
 
         Returns:
             A page with Pipeline fitting the filter description
         """
         step_run_filter_model = StepRunFilter(
+            archive_bundle_id=archive_bundle_id,
             sort_by=sort_by,
             page=page,
             size=size,

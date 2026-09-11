@@ -22,6 +22,12 @@ from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
+from zenml.zen_stores.retention import catalog, claims, fences, transactions
+from zenml.zen_stores.retention.archiver import ArchivePass
+from zenml.zen_stores.retention.catalog import RetentionState
+from zenml.zen_stores.retention.eligibility import select_archivable_trees
+from zenml.zen_stores.retention.reader import ArchiveReader, BundleReference
+from zenml.zen_stores.retention.restorer import PreparedRestore, Restorer
 
 try:
     import sqlalchemy  # noqa
@@ -49,7 +55,7 @@ import time
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -59,6 +65,7 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
+    Generic,
     List,
     Literal,
     NoReturn,
@@ -77,6 +84,7 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
+    BaseModel,
     ConfigDict,
     Field,
     SerializeAsAny,
@@ -93,7 +101,9 @@ from sqlalchemy import (
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import (
+    InstrumentedAttribute,
     Mapped,
+    joinedload,
     load_only,
     noload,
     selectinload,
@@ -128,8 +138,9 @@ from zenml.analytics.utils import (
     track_decorator,
     track_handler,
 )
+from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.artifacts.utils import load_artifact_store
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
     ReplayRunConfiguration,
@@ -169,6 +180,8 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
+    RetentionFailure,
+    RetentionOutcome,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -189,6 +202,10 @@ from zenml.exceptions import (
     BackupSecretsStoreNotConfiguredError,
     EntityCreationError,
     EntityExistsError,
+    ExecutionArchivedError,
+    ExecutionRetentionConflictError,
+    ExecutionRetentionIntegrityError,
+    ExecutionRetentionUnavailableError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
 )
@@ -382,6 +399,16 @@ from zenml.models import (
 from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
+from zenml.models.v2.misc.retention import (
+    RetentionDryRunResponse,
+    RetentionLimits,
+    RetentionOperationResponse,
+    RetentionPassResponse,
+    RetentionStatusResponse,
+    RetentionTreeEstimate,
+)
+from zenml.orchestrators.legacy_dag_runner import reverse_dag
+from zenml.orchestrators.topsort import topsorted_layers
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -411,6 +438,7 @@ from zenml.zen_stores.dag.models import (
     DAGStepView,
 )
 from zenml.zen_stores.dag.utils import (
+    add_run_context,
     load_input_artifact_rows,
     load_output_artifact_rows,
     load_step_run_metadata,
@@ -470,6 +498,7 @@ from zenml.zen_stores.schemas import (
     WebhookSchema,
     WebhookStatsSchema,
 )
+from zenml.zen_stores.schemas.archive_detail import BundleDetail
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
@@ -494,6 +523,15 @@ if TYPE_CHECKING:
         TriggerExecutionInfo,
         UnScopedTriggerFilter,
     )
+_ExecutionReadValue = TypeVar("_ExecutionReadValue")
+_ExecutionReadResult = TypeVar("_ExecutionReadResult")
+ExecutionDetailRow = Union[
+    PipelineRunSchema,
+    StepRunSchema,
+    PipelineSnapshotSchema,
+]
+
+
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -502,6 +540,52 @@ AnyIdentifiedResponse = TypeVar(
     "AnyIdentifiedResponse",
     bound=BaseIdentifiedResponse,  # type: ignore[type-arg]  # noqa: F821
 )
+
+
+class _SchemaPage(BaseModel, Generic[_ExecutionReadValue]):
+    """Keep one filtered SQL page unconverted until its detail is available."""
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    items: Sequence[_ExecutionReadValue]
+    total: int
+    total_pages: int
+    index: int
+    max_size: int
+
+    def to_page(
+        self, convert: Callable[[_ExecutionReadValue], AnyResponse]
+    ) -> Page[AnyResponse]:
+        """Convert each SQL item exactly once.
+
+        Args:
+            convert: Response conversion within the current read transaction.
+
+        Returns:
+            Response page preserving the original pagination metadata.
+        """
+        return Page[AnyResponse](
+            items=[convert(item) for item in self.items],
+            total=self.total,
+            total_pages=self.total_pages,
+            index=self.index,
+            max_size=self.max_size,
+        )
+
+
+class _RunChild(BaseModel, Generic[AnySchema]):
+    """Pair a child with its permission owner selected by the same query."""
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    row: AnySchema
+    run: PipelineRunSchema
+
+
+_RUN_CHILD_AUTHORIZATION: Dict[str, Type[BaseSchema]] = {
+    "step": StepRunSchema,
+}
+
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
 # warning
@@ -1179,6 +1263,40 @@ class SqlZenStore(BaseZenStore):
 
     config: SqlZenStoreConfiguration
     skip_migrations: bool = False
+    _EXECUTION_READ_RETRIES: ClassVar[int] = 2
+    _RUN_OWNER_COLUMNS: ClassVar[
+        Dict[Type[BaseSchema], InstrumentedAttribute[UUID]]
+    ] = {
+        PipelineRunSchema: cast(
+            InstrumentedAttribute[UUID], PipelineRunSchema.id
+        ),
+        StepRunSchema: cast(
+            InstrumentedAttribute[UUID], StepRunSchema.pipeline_run_id
+        ),
+        RunWaitConditionSchema: cast(
+            InstrumentedAttribute[UUID], RunWaitConditionSchema.run_id
+        ),
+    }
+
+    _RUN_HEADER_COLUMNS: ClassVar[Tuple[InstrumentedAttribute[Any], ...]] = (
+        jl_arg(PipelineRunSchema.id),
+        jl_arg(PipelineRunSchema.name),
+        jl_arg(PipelineRunSchema.user_id),
+        jl_arg(PipelineRunSchema.project_id),
+        jl_arg(PipelineRunSchema.status),
+        jl_arg(PipelineRunSchema.status_reason),
+        jl_arg(PipelineRunSchema.created),
+        jl_arg(PipelineRunSchema.updated),
+        jl_arg(PipelineRunSchema.in_progress),
+        jl_arg(PipelineRunSchema.index),
+        jl_arg(PipelineRunSchema.pipeline_id),
+        jl_arg(PipelineRunSchema.child_key),
+        jl_arg(PipelineRunSchema.root_run_id),
+        jl_arg(PipelineRunSchema.retain),
+        jl_arg(PipelineRunSchema.archive_bundle_id),
+        jl_arg(PipelineRunSchema.start_time),
+    )
+
     TYPE: ClassVar[StoreType] = StoreType.SQL
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = SqlZenStoreConfiguration
 
@@ -1427,10 +1545,72 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The Domain Model representation of the DB resource
+        """
+        page = cls._filter_and_paginate_schemas(
+            session=session,
+            query=query,
+            table=table,
+            filter_model=filter_model,
+            custom_fetch=custom_fetch,
+            hydrate=hydrate,
+            apply_query_options_from_schema=apply_query_options_from_schema,
+            query_options_kwargs=query_options_kwargs,
+        )
+        return page.to_page(
+            custom_schema_to_model_conversion
+            or (
+                lambda schema: schema.to_model(
+                    include_metadata=hydrate, include_resources=True
+                )
+            )
+        )
+
+    @classmethod
+    def _filter_and_paginate_schemas(
+        cls,
+        session: Session,
+        query: Union[Select[Any], SelectOfScalar[Any]],
+        table: Type[AnySchema],
+        filter_model: BaseFilter,
+        custom_fetch: Optional[
+            Callable[
+                [
+                    Session,
+                    Union[Select[Any], SelectOfScalar[Any]],
+                    BaseFilter,
+                ],
+                Sequence[Any],
+            ]
+        ] = None,
+        hydrate: bool = False,
+        apply_query_options_from_schema: bool = False,
+        query_options_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> _SchemaPage[AnySchema]:
+        """Fetch one filtered page of SQL rows without converting responses.
+
+        Args:
+            session: The SQLModel Session
+            query: The query to execute
+            table: The table to select from
+            filter_model: The filter to use, including pagination and sorting
+            custom_fetch: Custom callable to use to fetch items from the
+                database for a given query. This is used if the items fetched
+                from the database need to be processed differently (e.g. to
+                perform additional filtering). The callable should take a
+                `Session`, a `Select` query and a `BaseFilterModel` filter as
+                arguments and return a `List` of items.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+            apply_query_options_from_schema: Flag deciding whether to apply
+                query options defined on the schema.
+            query_options_kwargs: Extra keyword arguments forwarded to the
+                schema's `get_query_options`.
+
+        Returns:
+            SQL rows and pagination metadata for deferred conversion
 
         Raises:
             ValueError: if the filtered page number is out of bounds.
-            RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
 
@@ -1511,30 +1691,10 @@ class SqlZenStore(BaseZenStore):
             )
             item_schemas = query_result.all()
 
-        # Convert this page of items from schemas to models.
-        items: List[AnyResponse] = []
-        for schema in item_schemas:
-            # If a custom conversion function is provided, use it.
-            if custom_schema_to_model_conversion:
-                items.append(custom_schema_to_model_conversion(schema))
-                continue
-            # Otherwise, try to use the `to_model` method of the schema.
-            to_model = getattr(schema, "to_model", None)
-            if callable(to_model):
-                items.append(
-                    to_model(include_metadata=hydrate, include_resources=True)
-                )
-                continue
-            # If neither of the above work, raise an error.
-            raise RuntimeError(
-                f"Cannot convert schema `{schema.__class__.__name__}` to model "
-                "since it does not have a `to_model` method."
-            )
-
-        return Page[Any](
+        return _SchemaPage(
+            items=item_schemas,
             total=total,
             total_pages=total_pages,
-            items=items,
             index=filter_model.page,
             max_size=filter_model.size,
         )
@@ -5291,13 +5451,17 @@ class SqlZenStore(BaseZenStore):
                 code_reference=snapshot.code_reference,
             )
 
+            if snapshot.source_snapshot:
+                fences.protect_snapshot_owners(
+                    session, [snapshot.source_snapshot]
+                )
             new_snapshot = PipelineSnapshotSchema.from_request(
                 snapshot, code_reference_id=code_reference_id
             )
 
             try:
                 session.add(new_snapshot)
-                session.commit()
+                session.flush()
             except IntegrityError as e:
                 session.rollback()
                 if new_snapshot.name and self._snapshot_exists(
@@ -5348,6 +5512,8 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
+        *,
+        authorize: Optional[Callable[[Any], None]] = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -5361,22 +5527,40 @@ class SqlZenStore(BaseZenStore):
             include_config_schema: Whether to include the config schema in the
                 response.
 
+            authorize: Optional permission check using the current SQL header.
+
         Returns:
             The snapshot.
         """
-        with Session(self.engine) as session:
-            snapshot = self._get_schema_by_id(
+
+        def load(session: Session) -> PipelineSnapshotSchema:
+            return self._get_schema_by_id(
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
 
+        def convert(
+            session: Session,
+            snapshot: PipelineSnapshotSchema,
+            detail: Optional[BundleDetail],
+        ) -> PipelineSnapshotResponse:
             return snapshot.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
                 include_config_schema=include_config_schema,
+                detail=detail,
             )
+
+        return self._read_execution_detail(
+            load=load,
+            owners=lambda snapshot: [snapshot],
+            convert=convert,
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=lambda snapshot: snapshot,
+        )
 
     def list_snapshots(
         self,
@@ -5394,20 +5578,17 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A page of all snapshots matching the filter criteria.
         """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=snapshot_filter_model,
-                session=session,
-            )
-            query = select(PipelineSnapshotSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineSnapshotSchema,
-                filter_model=snapshot_filter_model,
-                hydrate=hydrate,
-                apply_query_options_from_schema=True,
-            )
+        return self._list_execution_details(
+            table=PipelineSnapshotSchema,
+            filter_model=snapshot_filter_model,
+            owners=lambda snapshot: [snapshot],
+            convert=lambda snapshot, detail: snapshot.to_model(
+                include_metadata=hydrate,
+                include_resources=True,
+                detail=detail,
+            ),
+            hydrate=hydrate,
+        )
 
     def update_snapshot(
         self,
@@ -5434,6 +5615,13 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
+
+            if "description" in snapshot_update.model_fields_set:
+                fences.protect_snapshot_owners(session, [snapshot_id])
+            else:
+                transactions.lock_ids(
+                    session, PipelineSnapshotSchema, [snapshot_id]
+                )
 
             if isinstance(snapshot_update.name, str):
                 validate_name(snapshot_update)
@@ -5486,7 +5674,8 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(snapshot)
             return snapshot.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=not snapshot.is_offloaded,
+                include_resources=True,
             )
 
     def delete_snapshot(self, snapshot_id: UUID) -> None:
@@ -5502,6 +5691,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            run_ids = session.exec(
+                select(PipelineRunSchema.id).where(
+                    PipelineRunSchema.snapshot_id == snapshot_id
+                )
+            ).all()
+            fences.protect_membership(session, run_ids)
+            transactions.lock_ids(
+                session, PipelineSnapshotSchema, [snapshot_id]
+            )
             session.delete(snapshot)
 
             # We set the reference of all snapshots to this snapshot to null
@@ -5618,6 +5816,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="deployer",
             )
+            fences.protect_snapshot_owners(session, [deployment.snapshot_id])
             deployment_schema = DeploymentSchema.from_request(deployment)
             session.add(deployment_schema)
             session.commit()
@@ -5730,6 +5929,10 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if deployment_update.snapshot_id:
+                fences.protect_snapshot_owners(
+                    session, [deployment_update.snapshot_id]
+                )
             deployment.update(deployment_update)
             session.add(deployment)
             session.commit()
@@ -6068,6 +6271,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            fences.protect_snapshot_owners(session, [snapshot.id])
             template_utils.validate_snapshot_is_templatable(snapshot)
 
             template_schema = RunTemplateSchema.from_request(request=template)
@@ -6169,6 +6373,10 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if template.source_snapshot_id is not None:
+                fences.protect_snapshot_owners(
+                    session, [template.source_snapshot_id]
+                )
             template.update(template_update)
             session.add(template)
             session.commit()
@@ -6242,6 +6450,8 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run_id: UUID,
         include_step_metadata: Optional[List[str]] = None,
+        *,
+        authorize: Optional[Callable[[Any], None]] = None,
     ) -> PipelineRunDAG:
         """Get the DAG of a pipeline run.
 
@@ -6250,23 +6460,25 @@ class SqlZenStore(BaseZenStore):
             include_step_metadata: Run metadata keys for which to include the
                 values in the step nodes.
 
+            authorize: Optional permission check using the current SQL header.
+
         Returns:
             The DAG of the pipeline run.
         """
-        helper = DAGGeneratorHelper()
-        with Session(self.engine) as session:
-            run = self._get_schema_by_id(
+
+        def load(session: Session) -> PipelineRunSchema:
+            return self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
                     load_only(
-                        jl_arg(PipelineRunSchema.status),
-                        jl_arg(PipelineRunSchema.start_time),
+                        *self._RUN_HEADER_COLUMNS,
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
+                        jl_arg(PipelineSnapshotSchema.archive_bundle_id),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.snapshot)
@@ -6276,10 +6488,20 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).load_only(
+                        jl_arg(StepRunSchema.snapshot_id),
+                        jl_arg(StepRunSchema.project_id),
                         jl_arg(StepRunSchema.name),
                         jl_arg(StepRunSchema.status),
                         jl_arg(StepRunSchema.start_time),
                         jl_arg(StepRunSchema.end_time),
+                        jl_arg(StepRunSchema.step_type),
+                        jl_arg(StepRunSchema.archive_bundle_id),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .joinedload(jl_arg(StepRunSchema.snapshot))
+                    .load_only(
+                        jl_arg(PipelineSnapshotSchema.project_id),
+                        jl_arg(PipelineSnapshotSchema.archive_bundle_id),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -6306,51 +6528,67 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            assert run.snapshot is not None
+
+        def owners(run: PipelineRunSchema) -> Sequence[ExecutionDetailRow]:
+            rows: List[ExecutionDetailRow] = [run]
+            if run.snapshot is not None:
+                rows.append(run.snapshot)
+            for step in run.step_runs:
+                if step.status == ExecutionStatus.RETRIED.value:
+                    continue
+                rows.append(step)
+                if step.snapshot is not None:
+                    rows.append(step.snapshot)
+            return rows
+
+        def convert(
+            session: Session,
+            run: PipelineRunSchema,
+            detail: Optional[BundleDetail],
+        ) -> PipelineRunDAG:
+            helper = DAGGeneratorHelper()
+            add_run_context(helper=helper, run=run)
             snapshot = run.snapshot
-            for condition in run.wait_conditions:
-                node_metadata: Dict[str, Any] = {
-                    "status": condition.status,
-                    "type": condition.type,
-                    "created_at": condition.created.isoformat(),
-                }
-                if condition.resolution:
-                    node_metadata["resolution"] = condition.resolution
-                if condition.question:
-                    node_metadata["question"] = condition.question
-                if condition.resolved_at:
-                    node_metadata["resolved_at"] = (
-                        condition.resolved_at.isoformat()
-                    )
-
-                helper.add_wait_condition_node(
-                    node_id=helper.get_wait_condition_node_id(condition.name),
-                    id=condition.id,
-                    name=condition.name,
-                    **node_metadata,
-                )
-
             step_runs = {
                 step.name: step
                 for step in run.step_runs
                 if step.status != ExecutionStatus.RETRIED.value
             }
-
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                snapshot.pipeline_configuration
-            )
-            pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
-            )
-
-            if snapshot.is_dynamic:
-                # Ignore static config templates for dynamic pipeline DAGs
-                steps = {
-                    name: DAGStepView.from_dict(
-                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
+            pipeline_configuration = run.get_pipeline_configuration(detail)
+            if snapshot is None or snapshot.is_dynamic:
+                steps = {}
+                for name, configured_step in step_runs.items():
+                    configuration = (
+                        detail.step_configuration(configured_step.id)
+                        if detail is not None and configured_step.is_offloaded
+                        else configured_step.dynamic_config
+                    )
+                    step_definition = (
+                        json.loads(configuration.config)
+                        if configuration is not None
+                        else configured_step.get_step_configuration(
+                            detail
+                        ).model_dump(mode="json")
+                    )
+                    steps[name] = DAGStepView.from_dict(
+                        step_definition,
                         substitutions=pipeline_configuration.substitutions,
                     )
-                    for name, step_run in step_runs.items()
+                # SQL relationship order does not guarantee that a producer
+                # precedes a consumer that references its artifact nodes.
+                dependencies = {
+                    name: list(step.spec.upstream_steps)
+                    for name, step in steps.items()
+                }
+                downstream_steps = reverse_dag(dependencies)
+                layers = topsorted_layers(
+                    nodes=list(steps),
+                    get_node_id_fn=lambda name: name,
+                    get_parent_nodes=lambda name: dependencies[name],
+                    get_child_nodes=lambda name: downstream_steps[name],
+                )
+                steps = {
+                    name: steps[name] for layer in layers for name in layer
                 }
             else:
                 steps = {
@@ -6358,7 +6596,9 @@ class SqlZenStore(BaseZenStore):
                         json.loads(config_table.config),
                         substitutions=pipeline_configuration.substitutions,
                     )
-                    for config_table in snapshot.step_configurations
+                    for config_table in snapshot.get_step_configurations(
+                        detail=detail
+                    )
                 }
 
             input_artifact_rows = {}
@@ -6736,32 +6976,18 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
-            for child_run in run.child_runs:
-                child_run_metadata: Dict[str, Any] = {
-                    "status": child_run.status,
-                }
-                if child_run.start_time:
-                    child_run_metadata["start_time"] = (
-                        child_run.start_time.isoformat()
-                    )
-                    if child_run.end_time:
-                        child_run_metadata["end_time"] = (
-                            child_run.end_time.isoformat()
-                        )
-                        child_run_metadata["duration"] = (
-                            child_run.end_time - child_run.start_time
-                        ).total_seconds()
+            dag = helper.finalize_dag(
+                pipeline_run_id=pipeline_run_id,
+                status=ExecutionStatus(run.status),
+            )
+            return dag
 
-                helper.add_child_run_node(
-                    node_id=helper.get_child_run_node_id(child_run.name),
-                    id=child_run.id,
-                    name=child_run.name,
-                    **child_run_metadata,
-                )
-                # TODO: maybe include nodes for outputs and connect via edges?
-
-        return helper.finalize_dag(
-            pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
+        return self._read_execution_detail(
+            load,
+            owners,
+            convert,
+            authorize=authorize,
+            permission_owner=lambda run: run,
         )
 
     def _get_duplicate_run_name_error_message(
@@ -6822,18 +7048,23 @@ class SqlZenStore(BaseZenStore):
             return bool(value)
 
     def _create_run(
-        self, pipeline_run: PipelineRunRequest, session: Session
+        self,
+        pipeline_run: PipelineRunRequest,
+        session: Session,
+        cold_roots: Set[UUID],
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
             session: SQLAlchemy session.
+            cold_roots: Archived related roots found under the caller's locks.
 
         Returns:
             The created pipeline run.
 
         Raises:
+            ExecutionArchivedError: The source snapshot or parent tree is archived.
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
@@ -6848,6 +7079,9 @@ class SqlZenStore(BaseZenStore):
             reference_id=pipeline_run.snapshot,
             session=session,
         )
+
+        if snapshot.is_offloaded:
+            raise ExecutionArchivedError.for_entity(snapshot.id, None)
 
         if pipeline_run.original_run_id:
             self._get_reference_schema_by_id(
@@ -6868,6 +7102,9 @@ class SqlZenStore(BaseZenStore):
                 reference_type="parent run",
             )
             root_run_id = parent_run.root_run_id or parent_run.id
+
+        if root_run_id in cold_roots:
+            raise ExecutionArchivedError.for_entity(root_run_id, root_run_id)
 
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
@@ -6978,6 +7215,8 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         include_full_metadata: bool = False,
         include_python_packages: bool = False,
+        *,
+        authorize: Optional[Callable[[Any], None]] = None,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -6990,11 +7229,14 @@ class SqlZenStore(BaseZenStore):
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
 
+            authorize: Optional permission check using the current SQL header.
+
         Returns:
             The pipeline run.
         """
-        with Session(self.engine) as session:
-            run = self._get_schema_by_id(
+
+        def load(session: Session) -> PipelineRunSchema:
+            return self._get_schema_by_id(
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
@@ -7004,12 +7246,28 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
+
+        def convert(
+            session: Session,
+            run: PipelineRunSchema,
+            detail: Optional[BundleDetail],
+        ) -> PipelineRunResponse:
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
+                detail=detail,
             )
+
+        return self._read_execution_detail(
+            load=load,
+            owners=lambda run: [run, run.snapshot] if run.snapshot else [run],
+            convert=convert,
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=lambda run: run,
+        )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
         """Gets the status of a pipeline run.
@@ -7144,6 +7402,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If no run exists for the snapshot and orchestrator run
                 ID.
+            ExecutionArchivedError: If replay requires a restore.
 
         Returns:
             The pipeline run.
@@ -7170,6 +7429,10 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
+        if run_schema.is_offloaded:
+            raise ExecutionArchivedError.for_entity(
+                run_schema.id, run_schema.root_run_id or run_schema.id
+            )
         return run_schema.to_model(
             include_metadata=True, include_resources=True
         )
@@ -7212,13 +7475,16 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            # Acquire exclusive lock on the snapshot to prevent deadlocks
-            # during insertion
-            session.exec(
-                select(PipelineSnapshotSchema.id)
-                .with_for_update()
-                .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
-            )
+            related_run_ids = [
+                run_id
+                for run_id in (
+                    pipeline_run.parent_run_id,
+                    pipeline_run.original_run_id,
+                )
+                if run_id is not None
+            ]
+            cold_roots = fences.protect_membership(session, related_run_ids)
+            fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -7264,7 +7530,9 @@ class SqlZenStore(BaseZenStore):
                 #     unique constraint on those columns.
                 if pre_creation_hook:
                     pre_creation_hook()
-                return self._create_run(pipeline_run, session=session), True
+                return self._create_run(
+                    pipeline_run, session=session, cold_roots=cold_roots
+                ), True
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
                     # No orchestrator_run_id means this is likely a name conflict.
@@ -7321,31 +7589,22 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipeline runs matching the filter criteria.
         """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=runs_filter_model,
-                session=session,
-            )
-            query = select(PipelineRunSchema)
-
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=PipelineRunSchema,
-                filter_model=runs_filter_model,
-                hydrate=hydrate,
-                custom_schema_to_model_conversion=lambda schema: (
-                    schema.to_model(
-                        include_metadata=hydrate,
-                        include_resources=True,
-                        include_full_metadata=include_full_metadata,
-                    )
-                ),
-                apply_query_options_from_schema=True,
-                query_options_kwargs={
-                    "include_full_metadata": include_full_metadata
-                },
-            )
+        return self._list_execution_details(
+            table=PipelineRunSchema,
+            filter_model=runs_filter_model,
+            owners=lambda run: [run, run.snapshot] if run.snapshot else [run],
+            convert=lambda run, detail: run.to_model(
+                include_metadata=hydrate,
+                include_resources=True,
+                include_full_metadata=include_full_metadata,
+                detail=detail,
+            ),
+            hydrate=hydrate,
+            query_options_kwargs={
+                "include_full_metadata": include_full_metadata
+            },
+            single_bundle=True,
+        )
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
@@ -7371,6 +7630,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+
+            if run_update.retain is not None:
+                fences.protect_membership(session, [run_id])
 
             if run_update.status is not None:
                 self._update_pipeline_run_status(
@@ -7414,7 +7676,12 @@ class SqlZenStore(BaseZenStore):
                         reference_type="output artifact version",
                     )
 
-            existing_run.update(run_update=run_update)
+            with session.no_autoflush:
+                existing_run.update(run_update=run_update)
+                if run_update.model_fields_set.intersection(
+                    {"exception_info", "status"}
+                ):
+                    fences.update_hot(session, existing_run)
             session.add(existing_run)
             if run_update.outputs is not None:
                 session.execute(
@@ -7471,7 +7738,8 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
 
             return existing_run.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=not existing_run.is_offloaded,
+                include_resources=True,
             )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -7481,6 +7749,7 @@ class SqlZenStore(BaseZenStore):
             run_id: The ID of the pipeline run to delete.
         """
         with Session(self.engine) as session:
+            fences.protect_membership(session, [run_id])
             # Check if pipeline run with the given ID exists
             existing_run = self._get_schema_by_id(
                 resource_id=run_id,
@@ -7488,6 +7757,12 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if existing_run.snapshot_id:
+                transactions.lock_ids(
+                    session,
+                    PipelineSnapshotSchema,
+                    [existing_run.snapshot_id],
+                )
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
@@ -7883,17 +8158,18 @@ class SqlZenStore(BaseZenStore):
                         status_reason="Waiting for input.",
                     )
 
+            run_id = schema.run_id
+            root_run_id = None
+            if (
+                lease_update.mode == RunWaitConditionLeaseMode.ABANDON
+                and schema.resolution
+                == RunWaitConditionResolution.CONTINUE.value
+            ):
+                root_run_id = schema.run.root_run_id or run_id
             session.add(schema)
             session.commit()
 
-            resolution = schema.resolution
-            run_id = schema.run_id
-            root_run_id = schema.run.root_run_id or run_id
-
-        if (
-            lease_update.mode == RunWaitConditionLeaseMode.ABANDON
-            and resolution == RunWaitConditionResolution.CONTINUE.value
-        ):
+        if root_run_id is not None:
             # The poller abandons the lease, and won't continue the run
             # even if the condition has been resolved. So we try to resume
             # the run from the server.
@@ -8069,6 +8345,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             RuntimeError: If the resource type is not supported.
+            ExecutionRetentionConflictError: An active claim blocks publication.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
@@ -8081,7 +8358,10 @@ class SqlZenStore(BaseZenStore):
                 reference_id=run_metadata.stack_component_id,
                 session=session,
             )
+            if not run_metadata.resources:
+                return
 
+            target_run_ids: List[UUID] = []
             for resource in run_metadata.resources:
                 reference_schema: Type[BaseSchema]
                 if resource.type == MetadataResourceTypes.PIPELINE_RUN:
@@ -8101,40 +8381,84 @@ class SqlZenStore(BaseZenStore):
                         f"Unknown resource type: {resource.type}"
                     )
 
-                self._get_reference_schema_by_id(
+                owner_column = self._RUN_OWNER_COLUMNS.get(reference_schema)
+                if (
+                    len(run_metadata.resources) == 1
+                    and run_metadata.values
+                    and owner_column is not None
+                ):
+                    owner_query = select(owner_column).where(
+                        col(reference_schema.id) == resource.id,
+                        col(
+                            cast(
+                                Type[
+                                    Union[
+                                        PipelineRunSchema,
+                                        StepRunSchema,
+                                        RunWaitConditionSchema,
+                                    ]
+                                ],
+                                reference_schema,
+                            ).project_id
+                        )
+                        == run_metadata.project,
+                    )
+                    try:
+                        fences.protect_inserts(session, owner_query)
+                    except ExecutionRetentionConflictError:
+                        # Preserve missing and cross-project reference errors;
+                        # successful writes validate scope in the locking query.
+                        self._get_reference_schema_by_id(
+                            resource=run_metadata,
+                            reference_schema=reference_schema,
+                            reference_id=resource.id,
+                            session=session,
+                        )
+                        raise
+                    continue
+
+                target = self._get_reference_schema_by_id(
                     resource=run_metadata,
                     reference_schema=reference_schema,
                     reference_id=resource.id,
                     session=session,
                 )
 
-            if run_metadata.resources:
-                from zenml.utils.json_utils import pydantic_encoder
-
-                for key, value in run_metadata.values.items():
-                    type_ = run_metadata.types[key]
-
-                    run_metadata_schema = RunMetadataSchema(
-                        project_id=run_metadata.project,
-                        user_id=run_metadata.user,
-                        stack_component_id=run_metadata.stack_component_id,
-                        key=key,
-                        value=json.dumps(value, default=pydantic_encoder),
-                        type=type_,
-                        publisher_step_id=run_metadata.publisher_step_id,
+                if target is not None and owner_column is not None:
+                    target_run_ids.append(
+                        owner_column.__get__(target, reference_schema)
                     )
 
-                    session.add(run_metadata_schema)
-                    session.commit()
+            if not run_metadata.values:
+                return
+            fences.protect_inserts(session, target_run_ids)
 
-                    for resource in run_metadata.resources:
-                        rm_resource_link = RunMetadataResourceSchema(
-                            resource_id=resource.id,
-                            resource_type=resource.type.value,
-                            run_metadata_id=run_metadata_schema.id,
-                        )
-                        session.add(rm_resource_link)
-                        session.commit()
+            from zenml.utils.json_utils import pydantic_encoder
+
+            for key, value in run_metadata.values.items():
+                type_ = run_metadata.types[key]
+
+                run_metadata_schema = RunMetadataSchema(
+                    project_id=run_metadata.project,
+                    user_id=run_metadata.user,
+                    stack_component_id=run_metadata.stack_component_id,
+                    key=key,
+                    value=json.dumps(value, default=pydantic_encoder),
+                    type=type_,
+                    publisher_step_id=run_metadata.publisher_step_id,
+                )
+
+                session.add(run_metadata_schema)
+                session.commit()
+
+                for resource in run_metadata.resources:
+                    rm_resource_link = RunMetadataResourceSchema(
+                        resource_id=resource.id,
+                        resource_type=resource.type.value,
+                        run_metadata_id=run_metadata_schema.id,
+                    )
+                    session.add(rm_resource_link)
+                    session.commit()
         return None
 
     # -------------------- Webhooks ---------------------
@@ -8784,6 +9108,8 @@ class SqlZenStore(BaseZenStore):
 
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            fences.protect_snapshot_owners(session, [snapshot_id])
 
             trigger = session.get(TriggerSchema, trigger_id)
 
@@ -12122,18 +12448,18 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
-            # Acquire exclusive lock on the snapshot and run to prevent
-            # deadlocks during insertion
-            assert run.snapshot_id
+            # Match retention's run-before-snapshot lock order.
+            fences.protect_inserts(
+                session, [step_run.pipeline_run_id], exclusive=True
+            )
+            if run.snapshot_id is None:
+                raise IllegalOperationError(
+                    "Step creation requires a pipeline snapshot."
+                )
             session.exec(
                 select(PipelineSnapshotSchema.id)
                 .with_for_update()
                 .where(PipelineSnapshotSchema.id == run.snapshot_id)
-            )
-            session.exec(
-                select(PipelineRunSchema.id)
-                .with_for_update()
-                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
             )
 
             existing_step_runs = session.exec(
@@ -12239,6 +12565,45 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(step_configuration_schema)
 
+            # If cached, attach metadata of the original step
+            if (
+                step_run.status
+                in {ExecutionStatus.CACHED, ExecutionStatus.SKIPPED}
+                and step_run.original_step_run_id is not None
+            ):
+                with session.no_autoflush:
+                    original_metadata_links = session.exec(
+                        select(RunMetadataResourceSchema)
+                        .where(
+                            RunMetadataResourceSchema.run_metadata_id
+                            == RunMetadataSchema.id
+                        )
+                        .where(
+                            RunMetadataResourceSchema.resource_id
+                            == step_run.original_step_run_id
+                        )
+                        .where(
+                            RunMetadataResourceSchema.resource_type
+                            == MetadataResourceTypes.STEP_RUN
+                        )
+                        .where(
+                            RunMetadataSchema.publisher_step_id
+                            == step_run.original_step_run_id
+                        )
+                    ).all()
+
+                new_links = [
+                    RunMetadataResourceSchema(
+                        resource_id=step_schema.id,
+                        resource_type=link.resource_type,
+                        run_metadata_id=link.run_metadata_id,
+                    )
+                    for link in original_metadata_links
+                ]
+
+                if new_links:
+                    session.add_all(new_links)
+
             try:
                 session.commit()
             except IntegrityError:
@@ -12284,47 +12649,6 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                         verify=False,
                     )
-
-            # If cached, attach metadata of the original step
-            if (
-                step_run.status
-                in {ExecutionStatus.CACHED, ExecutionStatus.SKIPPED}
-                and step_run.original_step_run_id is not None
-            ):
-                original_metadata_links = session.exec(
-                    select(RunMetadataResourceSchema)
-                    .where(
-                        RunMetadataResourceSchema.run_metadata_id
-                        == RunMetadataSchema.id
-                    )
-                    .where(
-                        RunMetadataResourceSchema.resource_id
-                        == step_run.original_step_run_id
-                    )
-                    .where(
-                        RunMetadataResourceSchema.resource_type
-                        == MetadataResourceTypes.STEP_RUN
-                    )
-                    .where(
-                        RunMetadataSchema.publisher_step_id
-                        == step_run.original_step_run_id
-                    )
-                ).all()
-
-                # Create new links in a batch
-                new_links = [
-                    RunMetadataResourceSchema(
-                        resource_id=step_schema.id,
-                        resource_type=link.resource_type,
-                        run_metadata_id=link.run_metadata_id,
-                    )
-                    for link in original_metadata_links
-                ]
-
-                if new_links:
-                    session.add_all(new_links)
-                    session.commit()
-                    session.refresh(step_schema, ["run_metadata"])
 
             if step_run.status in {
                 ExecutionStatus.CACHED,
@@ -12546,7 +12870,11 @@ class SqlZenStore(BaseZenStore):
             return step_run_response
 
     def get_run_step(
-        self, step_run_id: UUID, hydrate: bool = True
+        self,
+        step_run_id: UUID,
+        hydrate: bool = True,
+        *,
+        authorize: Optional[Callable[[Any], None]] = None,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -12555,26 +12883,57 @@ class SqlZenStore(BaseZenStore):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
+            authorize: Optional permission check on the owning run header.
+
         Returns:
             The step run.
         """
-        with Session(self.engine) as session:
-            step_run = self._get_schema_by_id(
+
+        def load(session: Session) -> StepRunSchema:
+            return self._get_schema_by_id(
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
-                query_options=StepRunSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
-                ),
+                query_options=[
+                    *StepRunSchema.get_query_options(
+                        include_metadata=hydrate, include_resources=True
+                    ),
+                    joinedload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+                        *self._RUN_HEADER_COLUMNS
+                    ),
+                ],
             )
-            return step_run.to_model(
-                include_metadata=hydrate, include_resources=True
+
+        def convert(
+            session: Session,
+            step: StepRunSchema,
+            detail: Optional[BundleDetail],
+        ) -> StepRunResponse:
+            return step.to_model(
+                include_metadata=hydrate,
+                include_resources=True,
+                detail=detail,
             )
+
+        return self._read_execution_detail(
+            load=load,
+            owners=lambda step: (
+                [step.pipeline_run, step, step.snapshot]
+                if step.snapshot
+                else [step.pipeline_run, step]
+            ),
+            convert=convert,
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=lambda step: step.pipeline_run,
+        )
 
     def list_run_steps(
         self,
         step_run_filter_model: StepRunFilter,
         hydrate: bool = False,
+        *,
+        authorize: Optional[Callable[[Any], None]] = None,
     ) -> Page[StepRunResponse]:
         """List all step runs matching the given filter criteria.
 
@@ -12583,24 +12942,29 @@ class SqlZenStore(BaseZenStore):
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            authorize: Optional permission check on every owning run header.
 
         Returns:
             A list of all step runs matching the filter criteria.
         """
-        with Session(self.engine) as session:
-            self._set_filter_project_id(
-                filter_model=step_run_filter_model,
-                session=session,
-            )
-            query = select(StepRunSchema)
-            return self.filter_and_paginate(
-                session=session,
-                query=query,
-                table=StepRunSchema,
-                filter_model=step_run_filter_model,
-                hydrate=hydrate,
-                apply_query_options_from_schema=True,
-            )
+        return self._list_execution_details(
+            table=StepRunSchema,
+            filter_model=step_run_filter_model,
+            owners=lambda step: (
+                [step, step.pipeline_run, step.snapshot]
+                if step.snapshot
+                else [step, step.pipeline_run]
+            ),
+            convert=lambda step, detail: step.to_model(
+                include_metadata=hydrate,
+                include_resources=True,
+                detail=detail,
+            ),
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=lambda step: step.pipeline_run,
+            single_bundle=True,
+        )
 
     # -------------------- Hook invocations --------------------
 
@@ -12966,7 +13330,12 @@ class SqlZenStore(BaseZenStore):
                 step_run_update.status = ExecutionStatus.STOPPED
 
             # Update the step
-            existing_step_run.update(step_run_update)
+            with session.no_autoflush:
+                existing_step_run.update(step_run_update)
+                if step_run_update.model_fields_set.intersection(
+                    {"exception_info", "status", "start_time", "end_time"}
+                ):
+                    fences.update_hot(session, existing_step_run)
             session.add(existing_step_run)
 
             # Update the artifacts.
@@ -13277,9 +13646,11 @@ class SqlZenStore(BaseZenStore):
             )
         ).one()
         previous_status = ExecutionStatus(pipeline_run.status)
-        did_update = pipeline_run.update_status(
-            requested_status=requested_status, status_reason=status_reason
-        )
+        with session.no_autoflush:
+            did_update = pipeline_run.update_status(
+                requested_status=requested_status, status_reason=status_reason
+            )
+            fences.update_hot(session, pipeline_run)
         session.add(pipeline_run)
         return did_update, pipeline_run, previous_status
 
@@ -14025,6 +14396,469 @@ class SqlZenStore(BaseZenStore):
             )
 
         return project_model
+
+    @cached_property
+    def retention_reader(self) -> ArchiveReader:
+        """Construct the reader after leaving the SQL transaction.
+
+        Returns:
+            Reader bound to the configured artifact store and its own cache.
+        """
+        return ArchiveReader(self.archive_artifact_store)
+
+    @cached_property
+    def retention_restorer(self) -> Restorer:
+        """Bind one restorer to this store's configured archive destination.
+
+        Returns:
+            Restorer shared by reservation, execution, and cancellation.
+        """
+        return Restorer(self.engine, self.archive_artifact_store)
+
+    def _list_execution_details(
+        self,
+        table: Type[AnySchema],
+        filter_model: ProjectScopedFilter,
+        owners: Callable[[AnySchema], Sequence[ExecutionDetailRow]],
+        convert: Callable[[AnySchema, Optional[BundleDetail]], AnyResponse],
+        hydrate: bool,
+        query_options_kwargs: Optional[Dict[str, Any]] = None,
+        authorize: Optional[Callable[[Any], None]] = None,
+        permission_owner: Optional[
+            Callable[[AnySchema], ExecutionDetailRow]
+        ] = None,
+        single_bundle: bool = False,
+    ) -> Page[AnyResponse]:
+        """Convert one authorized SQL page after resolving archived detail.
+
+        Args:
+            table: Execution identity table.
+            filter_model: Project, authorization, and pagination constraints.
+            owners: Physical marker owners for each requested row.
+            convert: Response conversion from the authoritative payload.
+            hydrate: Whether metadata requires archive access.
+            query_options_kwargs: Additional eager-loading options.
+            authorize: Optional permission check on each distinct owner header.
+            permission_owner: Resolve the permission owner for each page row.
+            single_bundle: Reject pages whose cold rows span multiple bundles.
+
+        Returns:
+            A filtered page converted once in its final read transaction.
+        """
+
+        def load(session: Session) -> _SchemaPage[AnySchema]:
+            self._set_filter_project_id(filter_model, session)
+            return self._filter_and_paginate_schemas(
+                session=session,
+                query=select(table),
+                table=table,
+                filter_model=filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+                query_options_kwargs=query_options_kwargs,
+            )
+
+        def page_permission_owners(
+            page: _SchemaPage[AnySchema],
+        ) -> Sequence[ExecutionDetailRow]:
+            assert permission_owner is not None
+            by_id = {
+                owner.id: owner
+                for row in page.items
+                for owner in [permission_owner(row)]
+            }
+            return list(by_id.values())
+
+        def page_execution_owners(
+            page: _SchemaPage[AnySchema],
+        ) -> Sequence[ExecutionDetailRow]:
+            resolved = [owner for row in page.items for owner in owners(row)]
+            bundle_ids = {
+                owner.archive_bundle_id
+                for owner in resolved
+                if owner.archive_bundle_id is not None
+            }
+            if hydrate and single_bundle and len(bundle_ids) > 1:
+                raise ExecutionArchivedError(
+                    "Hydrated execution lists can read one archive bundle. "
+                    "Use a list without details (`hydrate=False`) or narrow "
+                    "the filter."
+                )
+            return resolved
+
+        return self._read_execution_detail(
+            load=load,
+            owners=page_execution_owners,
+            convert=lambda session, page, detail: page.to_page(
+                lambda row: convert(
+                    row,
+                    detail
+                    if any(owner.is_offloaded for owner in owners(row))
+                    else None,
+                )
+            ),
+            hydrate=hydrate,
+            authorize=authorize,
+            permission_owner=(
+                page_permission_owners
+                if permission_owner is not None
+                else None
+            ),
+        )
+
+    def _read_execution_detail(
+        self,
+        load: Callable[[Session], _ExecutionReadValue],
+        owners: Callable[[_ExecutionReadValue], Sequence[ExecutionDetailRow]],
+        convert: Callable[
+            [Session, _ExecutionReadValue, Optional[BundleDetail]],
+            _ExecutionReadResult,
+        ],
+        *,
+        hydrate: bool = True,
+        authorize: Optional[Callable[[Any], None]] = None,
+        permission_owner: Optional[
+            Callable[
+                [_ExecutionReadValue],
+                Union[ExecutionDetailRow, Sequence[ExecutionDetailRow]],
+            ]
+        ] = None,
+    ) -> _ExecutionReadResult:
+        """Load archived bytes outside SQL and recheck authority before conversion.
+
+        Args:
+            load: Resolve requested identities under current filters.
+            owners: Physical marker owners needed by response conversion.
+            convert: Convert current rows and optional verified archive detail.
+            hydrate: Whether the response needs archived payloads.
+            authorize: Verify the permission header before conversion and archive I/O.
+            permission_owner: Resolve the permission header independently of markers.
+
+        Returns:
+            Response produced from one current SQL snapshot.
+
+        Raises:
+            ExecutionRetentionConflictError: Repeated restores change the requested archive record.
+            ExecutionRetentionIntegrityError: Authorization has no declared permission owner.
+        """
+        if authorize is not None and permission_owner is None:
+            raise ExecutionRetentionIntegrityError(
+                "Historical authorization requires an explicit permission owner."
+            )
+
+        def authorize_loaded(loaded: _ExecutionReadValue) -> None:
+            if authorize is not None and permission_owner is not None:
+                headers = permission_owner(loaded)
+                if not isinstance(headers, Sequence):
+                    headers = [headers]
+                for header in headers:
+                    authorize(
+                        header.to_model(
+                            include_metadata=False, include_resources=False
+                        )
+                    )
+
+        for _ in range(self._EXECUTION_READ_RETRIES + 1):
+            with Session(self.engine) as session:
+                transactions.begin_read(session)
+                loaded_rows = load(session)
+                rows = owners(loaded_rows)
+                authorize_loaded(loaded_rows)
+                if not hydrate or not any(row.is_offloaded for row in rows):
+                    return convert(session, loaded_rows, None)
+                bundles = catalog.execution_archive_ownership(session, rows)
+                references = {
+                    BundleReference.from_bundle(bundle) for bundle in bundles
+                }
+            detail = self.retention_reader.detail_for(list(references))
+            with Session(self.engine) as session:
+                transactions.begin_read(session)
+                loaded_rows = load(session)
+                rows = owners(loaded_rows)
+                authorize_loaded(loaded_rows)
+                if not any(row.is_offloaded for row in rows):
+                    return convert(session, loaded_rows, None)
+                current = catalog.execution_archive_ownership(session, rows)
+                if {
+                    BundleReference.from_bundle(bundle) for bundle in current
+                } != references:
+                    continue
+                return convert(session, loaded_rows, detail)
+        raise ExecutionRetentionConflictError(
+            "Execution history changed while loading. Retry the read."
+        )
+
+    def get_run_child_authorization(
+        self,
+        child_id: UUID,
+        child_type: Literal["step"],
+    ) -> PipelineRunResponse:
+        """Resolve a child's SQL-only permission owner with one joined query.
+
+        Args:
+            child_id: Execution child identity.
+            child_type: Supported retained identity table.
+
+        Returns:
+            Run header containing current project and user ownership.
+
+        Raises:
+            KeyError: If the child or its owning run no longer exists.
+        """
+        table = _RUN_CHILD_AUTHORIZATION[child_type]
+        owner = self._RUN_OWNER_COLUMNS[table]
+        with Session(self.engine) as session:
+            run = session.exec(
+                select(PipelineRunSchema)
+                .join(table, col(PipelineRunSchema.id) == owner)
+                .where(col(table.id) == child_id)
+            ).first()
+            if run is None:
+                raise KeyError(
+                    f"Execution {child_type} '{child_id}' does not exist."
+                )
+            return run.to_model(
+                include_metadata=False, include_resources=False
+            )
+
+    @cached_property
+    def archive_artifact_store(self) -> BaseArtifactStore:
+        """Load the registered archive destination without probing its objects.
+
+        Returns:
+            The configured artifact store component.
+
+        Raises:
+            ExecutionRetentionUnavailableError: The component is missing or unavailable.
+        """
+        configuration = ServerConfiguration.get_server_config()
+        if not configuration.archive_configured:
+            raise ExecutionRetentionUnavailableError(
+                "Archive artifact store is not configured."
+            )
+        try:
+            return load_artifact_store(
+                cast(UUID, configuration.archive_artifact_store_id), self
+            )
+        except Exception as error:
+            raise ExecutionRetentionUnavailableError(
+                "Configured archive artifact store could not be loaded."
+            ) from error
+
+    def prepare_retention_pass(self, project_id: UUID) -> ArchivePass:
+        """Accept an enabled project policy before submitting background work.
+
+        Args:
+            project_id: Authorized project.
+
+        Returns:
+            Pass with its accepted state persisted before submission.
+
+        Raises:
+            IllegalOperationError: Archive operations or the project policy are disabled.
+            ExecutionRetentionConflictError: The saved policy changed before acceptance.
+        """  # noqa: DOC503
+        configuration = ServerConfiguration.get_server_config()
+        if not configuration.archive_enabled:
+            raise IllegalOperationError(
+                "Execution archiving is disabled on this server; ask your "
+                "server administrator to enable it."
+            )
+        project = self.get_project(project_id)
+        claimed = ArchivePass(
+            self.engine,
+            self.archive_artifact_store,
+            project_id,
+            project.retention,
+        )
+        claimed.accept()
+        return claimed
+
+    def execute_retention_pass(
+        self, claimed: ArchivePass
+    ) -> RetentionPassResponse:
+        """Run a reserved pass in maintenance capacity.
+
+        Args:
+            claimed: Authorized pass accepted before submission.
+
+        Returns:
+            The pass's final advisory outcome.
+        """
+        return RetentionPassResponse(outcome=claimed.run().last_outcome)
+
+    def abort_retention_pass(
+        self, claimed: ArchivePass, error_code: RetentionFailure
+    ) -> None:
+        """Record failed submission or revoked permission for an accepted pass.
+
+        Args:
+            claimed: Pass accepted by the submitting request.
+            error_code: Safe lifecycle failure classification.
+        """
+        claimed.abort(error_code)
+
+    def abort_pipeline_run_restore(
+        self, prepared: PreparedRestore, error_code: RetentionFailure
+    ) -> None:
+        """Release only a restore reservation still owned by the caller.
+
+        Args:
+            prepared: Reserved restore operation.
+            error_code: Safe lifecycle failure classification.
+        """
+        self.retention_restorer.abort(prepared, error_code)
+
+    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
+        """Execute one local archive pass using the saved project policy.
+
+        Args:
+            project_id: Authorized project.
+
+        Returns:
+            Completed, paused, or failed local outcome.
+        """
+        return self.execute_retention_pass(
+            self.prepare_retention_pass(project_id)
+        )
+
+    def get_retention_status(
+        self, project_id: UUID
+    ) -> RetentionStatusResponse:
+        """Read the project checkpoint without scanning archive records or objects.
+
+        Args:
+            project_id: Authorized project.
+
+        Returns:
+            Latest advisory progress and current configuration.
+        """
+        with Session(self.engine) as session:
+            project = session.exec(
+                select(ProjectSchema).where(
+                    col(ProjectSchema.id) == project_id
+                )
+            ).one()
+            configuration = ServerConfiguration.get_server_config()
+            try:
+                self.archive_artifact_store
+            except ExecutionRetentionUnavailableError:
+                archive_configured = False
+            else:
+                archive_configured = True
+            return RetentionState.from_project(
+                project,
+                configuration,
+                archive_configured=archive_configured,
+            )
+
+    def prepare_pipeline_run_restore(
+        self, run_id: UUID
+    ) -> Optional[PreparedRestore]:
+        """Resolve a surviving run handle and reserve its archived root.
+
+        Args:
+            run_id: Authorized run handle.
+
+        Returns:
+            Reserved operation, or None for an unarchived tree.
+        """
+        run = self.get_run(run_id, hydrate=False)
+        if run.archive_bundle_id is None:
+            return None
+        return self.retention_restorer.reserve(
+            run.project_id,
+            run.root_run_id or run.id,
+            claims.Claim.owner_identity(),
+        )
+
+    def execute_pipeline_run_restore(
+        self, prepared: PreparedRestore
+    ) -> RetentionOperationResponse:
+        """Restore a reserved archive outside the request's SQL session.
+
+        Args:
+            prepared: Authorized restore reservation.
+
+        Returns:
+            Durable restore completion.
+        """
+        return self.retention_restorer.execute(prepared)
+
+    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
+        """Restore locally or report an unarchived execution as a no-op.
+
+        Args:
+            run_id: Any surviving member of the authorized tree.
+
+        Returns:
+            Succeeded or no-op outcome.
+        """
+        prepared = self.prepare_pipeline_run_restore(run_id)
+        if prepared is None:
+            run = self.get_run(run_id, hydrate=False)
+            return RetentionOperationResponse(
+                root_run_id=run.root_run_id or run.id,
+                outcome=RetentionOutcome.NOOP,
+            )
+        return self.execute_pipeline_run_restore(prepared)
+
+    def get_pipeline_run_restore_status(
+        self, run_id: UUID
+    ) -> RetentionOperationResponse:
+        """Read the latest restore outcome without object access.
+
+        Args:
+            run_id: Surviving handle of the authorized tree.
+
+        Returns:
+            Latest durable restore identity and outcome.
+        """
+        run = self.get_run(run_id, hydrate=False)
+        with Session(self.engine) as session:
+            return catalog.pipeline_run_restore_status(
+                session, run.project_id, run.root_run_id or run.id
+            )
+
+    def retention_dry_run(
+        self,
+        project: ProjectResponse,
+    ) -> RetentionDryRunResponse:
+        """Estimate a batch using only the saved project policy.
+
+        Args:
+            project: Resolved project with its saved retention policy.
+
+        Returns:
+            Per-tree row counts and one fixed-weight estimate, with no changes.
+        """
+        policy = project.retention
+        limits = RetentionLimits.model_validate(
+            policy.model_dump(include=set(RetentionLimits.model_fields))
+        )
+        with Session(self.engine) as session:
+            selection = select_archivable_trees(
+                session, project.id, policy, limits
+            )
+        eligible = [
+            tree for tree in selection.candidates if tree.exclusion is None
+        ]
+        return RetentionDryRunResponse(
+            eligible_tree_count=len(eligible),
+            examined_tree_count=len(selection.candidates),
+            truncated=selection.truncated,
+            trees=[
+                RetentionTreeEstimate(
+                    root_run_id=tree.root_run_id,
+                    rows=tree.row_count,
+                    exclusion_reason=tree.exclusion,
+                )
+                for tree in selection.candidates
+            ],
+            estimated_bytes=sum(tree.estimated_bytes for tree in eligible),
+            retained_details=dict(selection.retained_details),
+            effective_policy=policy,
+        )
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True
@@ -15796,6 +16630,11 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=model_version_pipeline_run_link, session=session
+            )
+
+            fences.protect_membership(
+                session,
+                [model_version_pipeline_run_link.pipeline_run],
             )
 
             # If the link already exists, return it

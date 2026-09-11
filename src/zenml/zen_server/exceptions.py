@@ -24,6 +24,10 @@ from zenml.exceptions import (
     DoesNotExistException,
     EntityCreationError,
     EntityExistsError,
+    ExecutionArchivedError,
+    ExecutionRetentionConflictError,
+    ExecutionRetentionIntegrityError,
+    ExecutionRetentionUnavailableError,
     IllegalOperationError,
     MaxConcurrentTasksError,
     MethodNotAllowedError,
@@ -67,8 +71,15 @@ error_response = dict(model=ErrorModel)
 # An exception may be associated with multiple status codes if the same
 # exception can be reconstructed from two or more HTTP error responses with
 # different status codes (e.g. `ValueError` and the 400 and 422 status codes).
+RETENTION_RETRY_AFTER_SECONDS = 30
+NO_RETRY_HEADER = "X-ZenML-Retry"
+
 REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
+    (ExecutionRetentionIntegrityError, 500),
+    (ExecutionRetentionUnavailableError, 503),
     # 409 Conflict
+    (ExecutionArchivedError, 409),
+    (ExecutionRetentionConflictError, 409),
     (EntityExistsError, 409),
     # 403 Forbidden
     (IllegalOperationError, 403),
@@ -159,10 +170,7 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
 
             # This is not the first matching exception, so check if it is more
             # specific than the previous matching exception
-            if issubclass(
-                exception_type,
-                matching_exception_type,
-            ):
+            if issubclass(exception_type, matching_exception_type):
                 matching_exception_type = exception_type
                 status_code = exc_status_code
 
@@ -174,6 +182,18 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     # Attach request_id so clients can correlate error responses with
     # server-side logs
     headers: dict[str, str] = {}
+    if isinstance(error, ExecutionRetentionUnavailableError):
+        headers["Retry-After"] = str(RETENTION_RETRY_AFTER_SECONDS)
+    if isinstance(
+        error,
+        (
+            ExecutionRetentionUnavailableError,
+            ExecutionRetentionConflictError,
+            ExecutionArchivedError,
+            MaxConcurrentTasksError,
+        ),
+    ):
+        headers[NO_RETRY_HEADER] = "no"
     try:
         from zenml.logger import get_logging_context
 

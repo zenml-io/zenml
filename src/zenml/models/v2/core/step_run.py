@@ -46,6 +46,7 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -229,7 +230,7 @@ class StepRunUpdate(BaseUpdate):
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(ProjectScopedResponseBody):
+class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
     """Response body for step runs."""
 
     type: Optional[StepType] = Field(
@@ -321,8 +322,8 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    snapshot_id: UUID = Field(
-        title="The snapshot associated with the step run."
+    snapshot_id: Optional[UUID] = Field(
+        default=None, title="The snapshot associated with the step run."
     )
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
@@ -679,7 +680,7 @@ class StepRunResponse(
         return self.get_body().heartbeat_threshold
 
     @property
-    def snapshot_id(self) -> UUID:
+    def snapshot_id(self) -> Optional[UUID]:
         """The `snapshot_id` property.
 
         Returns:
@@ -768,12 +769,26 @@ class StepRunResponse(
         """
         return self.get_resources().resource_request
 
+    @property
+    def archive_bundle_id(self) -> Optional[UUID]:
+        """The archive bundle holding this entity's archived detail.
+
+        Returns:
+            The bundle ID, or None while detail remains in SQL.
+        """
+        return self.get_body().archive_bundle_id
+
 
 # ------------------ Filter Model ------------------
 
 
 class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Model to enable advanced filtering of step runs."""
+
+    archive_bundle_id: UUIDFilterOption = Field(
+        default=None,
+        description="The bundle holding archived execution detail.",
+    )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,

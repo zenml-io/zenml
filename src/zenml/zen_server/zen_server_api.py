@@ -99,6 +99,7 @@ from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_artifact_store_cache,
     initialize_feature_gate,
+    initialize_maintenance_executor,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
@@ -107,6 +108,7 @@ from zenml.zen_server.utils import (
     initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
+    maintenance_executor,
     register_event_handlers,
     register_webhook_event_handlers,
     server_config,
@@ -115,6 +117,7 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
 
@@ -151,6 +154,19 @@ def _configure_uvicorn_logging() -> None:
         _uvicorn_logger.propagate = True
 
 
+def _check_archive_store_on_startup() -> None:
+    """Warn when enabled retention cannot load its configured artifact store."""
+    if not server_config().archive_enabled:
+        return
+    try:
+        zen_store().archive_artifact_store
+    except Exception:
+        logger.warning(
+            "Execution retention is enabled, but "
+            "archive_artifact_store_id could not be loaded."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage the ZenML server application lifespan.
@@ -172,12 +188,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # avoid race conditions
         await initialize_request_manager()
         initialize_zen_store()
+        _check_archive_store_on_startup()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()
         initialize_rbac()
         initialize_feature_gate()
         initialize_workload_manager()
         initialize_snapshot_executor()
+        initialize_maintenance_executor()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
         await initialize_streaming()
@@ -199,6 +217,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         stop_event_loop_lag_monitor()
 
     try:
+        maintenance_executor().shutdown(wait=True)
         snapshot_executor().shutdown(wait=True)
         await shutdown_snapshot_run_dispatcher()
         await shutdown_streaming()

@@ -19,6 +19,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
+from types import TracebackType
 from typing import (
     Any,
     ClassVar,
@@ -46,6 +47,10 @@ from pydantic import (
     model_validator,
 )
 from requests.adapters import HTTPAdapter, Retry
+from typing_extensions import Self
+from urllib3.connectionpool import ConnectionPool
+from urllib3.exceptions import MaxRetryError, ResponseError
+from urllib3.response import BaseHTTPResponse
 
 import zenml
 from zenml.analytics import source_context
@@ -236,6 +241,10 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRenewalRequest,
     ResourceRequestResponse,
+    RetentionDryRunResponse,
+    RetentionOperationResponse,
+    RetentionPassResponse,
+    RetentionStatusResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
     RunStatisticsResponse,
@@ -319,10 +328,67 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.exceptions import exception_from_response
+from zenml.zen_server.exceptions import (
+    NO_RETRY_HEADER,
+    exception_from_response,
+)
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
+
+
+class _RouteAwareRetry(Retry):
+    """Honor server responses that explicitly disable HTTP status retries."""
+
+    def increment(
+        self,
+        method: Optional[str] = None,
+        url: Optional[str] = None,
+        response: Optional[BaseHTTPResponse] = None,
+        error: Optional[Exception] = None,
+        _pool: Optional[ConnectionPool] = None,
+        _stacktrace: Optional[TracebackType] = None,
+    ) -> Self:
+        """Stop retry recursion when the server marks an actionable response.
+
+        ``urllib3`` checks the status before passing the response to this
+        method. Raising its normal exhaustion signal makes the configured
+        ``raise_on_status=False`` adapter return that response immediately.
+
+        Args:
+            method: HTTP method used for the request.
+            url: URL used for the request.
+            response: HTTP response that may disable retries.
+            error: Error raised while sending the request, if any.
+            _pool: Connection pool used for the request.
+            _stacktrace: Traceback associated with the error, if any.
+
+        Returns:
+            The next retry state for an unmarked response.
+
+        Raises:
+            MaxRetryError: If the response disables retries.
+        """
+        if (
+            response is not None
+            and response.headers.get(NO_RETRY_HEADER, "").lower() == "no"
+            and _pool is not None
+            and url is not None
+        ):
+            raise MaxRetryError(
+                _pool,
+                url,
+                ResponseError("Server disabled retries for this response."),
+            )
+        return super().increment(
+            method=method,
+            url=url,
+            response=response,
+            error=error,
+            _pool=_pool,
+            _stacktrace=_stacktrace,
+        )
+
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
@@ -4083,6 +4149,78 @@ class RestZenStore(BaseZenStore):
             response_model=ProjectResponse,
         )
 
+    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
+        """Submit one bounded archive pass under the saved project policy.
+
+        Args:
+            project_id: Project whose saved retention policy is addressed.
+
+        Returns:
+            Archive pass submission or completed local pass summary.
+        """
+        return RetentionPassResponse.model_validate(
+            self.post(f"{PROJECTS}/{project_id}/retention/archive")
+        )
+
+    def get_retention_status(
+        self, project_id: UUID
+    ) -> RetentionStatusResponse:
+        """Read the latest project retention pass without object access.
+
+        Args:
+            project_id: Project whose saved retention policy is addressed.
+
+        Returns:
+            Latest saved pass outcome, completion time, and archive configuration.
+        """
+        return RetentionStatusResponse.model_validate(
+            self.get(f"{PROJECTS}/{project_id}/retention/status")
+        )
+
+    def restore_pipeline_run(self, run_id: UUID) -> RetentionOperationResponse:
+        """Restore the archive covering this pipeline run.
+
+        Args:
+            run_id: Pipeline run whose archived catalog record is addressed.
+
+        Returns:
+            Restore submission, completed local restore, or an unarchived no-op.
+        """
+        return RetentionOperationResponse.model_validate(
+            self.post(f"{RUNS}/{run_id}/restore")
+        )
+
+    def get_pipeline_run_restore_status(
+        self, run_id: UUID
+    ) -> RetentionOperationResponse:
+        """Read the latest restore outcome without object access.
+
+        Args:
+            run_id: Pipeline run whose archived catalog record is addressed.
+
+        Returns:
+            Latest saved restore outcome for the requested run.
+        """
+        return RetentionOperationResponse.model_validate(
+            self.get(f"{RUNS}/{run_id}/restore")
+        )
+
+    def retention_dry_run(
+        self,
+        project: ProjectResponse,
+    ) -> RetentionDryRunResponse:
+        """Request a non-destructive inventory from the server.
+
+        Args:
+            project: Resolved project with its saved retention policy.
+
+        Returns:
+            Per-tree rows, exclusion reasons, and one fixed-weight estimate.
+        """
+        return RetentionDryRunResponse.model_validate(
+            self.post(f"{PROJECTS}/{project.id}/retention/dry-run")
+        )
+
     def get_project(
         self, project_name_or_id: Union[UUID, str], hydrate: bool = True
     ) -> ProjectResponse:
@@ -4962,11 +5100,14 @@ class RestZenStore(BaseZenStore):
                 #     the timeout period.
                 #     Connection Refused: If the server refuses the connection.
                 #
-                retries = Retry(
+                retries = _RouteAwareRetry(
                     connect=5,
                     read=8,
                     redirect=3,
                     status=10,
+                    # Let the response mapper preserve typed server errors
+                    # after HTTP status retries are exhausted.
+                    raise_on_status=False,
                     allowed_methods=[
                         "HEAD",
                         "GET",
@@ -5179,7 +5320,6 @@ class RestZenStore(BaseZenStore):
                     timeout=timeout or self.config.http_timeout,
                     **kwargs,
                 )
-
                 status_code = str(response.status_code)
                 return self._handle_response(response)
             except CredentialsNotValid as e:
@@ -5317,7 +5457,7 @@ class RestZenStore(BaseZenStore):
     def post(
         self,
         path: str,
-        body: BaseModel,
+        body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
@@ -5337,7 +5477,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "POST",
             self.url + API + VERSION_1 + path,
-            json=body.model_dump(mode="json"),
+            json=body.model_dump(mode="json") if body is not None else None,
             params=params,
             timeout=timeout,
             **kwargs,

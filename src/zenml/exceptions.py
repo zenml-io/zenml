@@ -14,6 +14,9 @@
 """ZenML specific exception definitions."""
 
 from typing import Dict, Optional
+from uuid import UUID
+
+from zenml.enums import RetentionFailure
 
 
 class ZenMLBaseException(Exception):
@@ -102,6 +105,36 @@ class EntityExistsError(ZenMLBaseException):
     """Raised when trying to register an entity that already exists."""
 
 
+class ExecutionArchivedError(ZenMLBaseException):
+    """Raised when an operation requires restored execution detail."""
+
+    @classmethod
+    def for_entity(
+        cls, entity_id: UUID, root_run_id: Optional[UUID]
+    ) -> "ExecutionArchivedError":
+        """Build the restore instruction for an archived identity.
+
+        Args:
+            entity_id: Execution or snapshot identifier.
+            root_run_id: Canonical run to restore, if the caller can resolve it.
+
+        Returns:
+            An error explaining how to restore the requested execution detail.
+        """
+        if root_run_id is not None:
+            return cls(
+                f"Execution detail '{entity_id}' is archived; restore its run "
+                f"with `zenml pipeline runs restore {root_run_id}` before "
+                "accessing or modifying detail."
+            )
+        return cls(
+            f"Execution detail for snapshot '{entity_id}' is archived. Find "
+            "the run that produced this snapshot with "
+            f"`zenml pipeline runs list --snapshot_id {entity_id}`, then "
+            "restore that run."
+        )
+
+
 class EntityCreationError(ZenMLBaseException, RuntimeError):
     """Raised when failing to create an entity."""
 
@@ -120,6 +153,30 @@ class GitNotFoundError(ImportError):
 
 class IllegalOperationError(ZenMLBaseException):
     """Raised when an illegal operation is attempted."""
+
+
+class ExecutionRetentionConflictError(ZenMLBaseException):
+    """Raised when retention is busy or SQL ownership conflicts with an operation."""
+
+    def __init__(
+        self, message: str, error_code: Optional[RetentionFailure] = None
+    ) -> None:
+        """Describe a conflict with an optional stable lifecycle code.
+
+        Args:
+            message: Explanation safe for the caller.
+            error_code: Closed classification for retry and operation status.
+        """
+        super().__init__(message)
+        self.error_code = error_code
+
+
+class ExecutionRetentionIntegrityError(ZenMLBaseException):
+    """Raised when an execution bundle or its SQL authority is inconsistent."""
+
+
+class ExecutionRetentionUnavailableError(ZenMLBaseException):
+    """Raised when the configured retention destination cannot be accessed."""
 
 
 class RunStoppedException(ZenMLBaseException):

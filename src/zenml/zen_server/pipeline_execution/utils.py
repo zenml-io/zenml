@@ -45,7 +45,11 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
+from zenml.exceptions import (
+    ExecutionArchivedError,
+    IllegalOperationError,
+    MaxConcurrentTasksError,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -414,8 +418,11 @@ def prepare_snapshot_run(
         The durable execution request.
 
     Raises:
-        ValueError: If replay execution has no original run.
+        ExecutionArchivedError: The snapshot requires explicit restore.
+        ValueError: Replay execution has no original run.
     """
+    if snapshot.archive_bundle_id is not None:
+        raise ExecutionArchivedError.for_entity(snapshot.id, None)
     if replay_configuration and not original_run:
         raise ValueError("Original run is required to replay a pipeline run.")
 

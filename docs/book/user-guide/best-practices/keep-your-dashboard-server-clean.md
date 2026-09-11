@@ -62,6 +62,11 @@ if __name__ == "__main__":
 
 For different time ranges you can update this as appropriate.
 
+For long-lived servers where older runs must stay visible, use
+[execution retention](../../how-to/manage-zenml-server/execution-retention.md)
+to move eligible execution details out of SQL while preserving normal listings
+and on-demand reads.
+
 ## Pipelines
 
 ### Deleting Pipelines

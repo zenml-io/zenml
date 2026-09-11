@@ -59,7 +59,6 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
-    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -99,6 +98,7 @@ def list_run_steps(
 
     Returns:
         The run steps according to query filters.
+
     """
     # A project scoped request must always be scoped to a specific
     # project. This is required for the RBAC check to work.
@@ -115,7 +115,11 @@ def list_run_steps(
     )
 
     page = zen_store().list_run_steps(
-        step_run_filter_model=step_run_filter_model, hydrate=hydrate
+        step_run_filter_model=step_run_filter_model,
+        hydrate=hydrate,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
     )
     return dehydrate_page(page)
 
@@ -137,7 +141,7 @@ def create_run_step(
     Returns:
         The created run step.
     """
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
 
     return verify_permissions_and_create_entity(
         request_model=step,
@@ -166,15 +170,14 @@ def get_step(
     Returns:
         The step.
     """
-    # We always fetch the step hydrated because we need the pipeline_run_id
-    # for the permission checks. If the user requested an unhydrated response,
-    # we later remove the metadata
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
-    if hydrate is False:
-        step.metadata = None
+    store = zen_store()
+    step = store.get_run_step(
+        step_id,
+        hydrate=hydrate,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
+    )
 
     return dehydrate_response_model(step)
 
@@ -198,9 +201,11 @@ def update_step(
     Returns:
         The updated step model.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+    store = zen_store()
+    verify_permission_for_model(
+        store.get_run_child_authorization(step_id, "step"),
+        action=Action.UPDATE,
+    )
 
     updated_step = zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
@@ -261,9 +266,14 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
+    store = zen_store()
+    step = store.get_run_step(
+        step_id,
+        hydrate=True,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
+    )
 
     return step.config.model_dump()
 
@@ -285,9 +295,14 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
+    store = zen_store()
+    step = store.get_run_step(
+        step_id,
+        hydrate=False,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
+    )
 
     return step.status
 
@@ -330,13 +345,12 @@ def get_step_logs(
 
     store = zen_store()
 
-    step = store.get_run_step(step_id, hydrate=True)
-
-    verify_permission(
-        resource_type=ResourceType.PIPELINE_RUN,
-        action=Action.READ,
-        resource_id=step.pipeline_run_id,
-        project_id=step.project_id,
+    step = store.get_run_step(
+        step_id,
+        hydrate=False,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
     )
 
     if step.log_collection:

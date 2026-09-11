@@ -18,6 +18,9 @@ from zenml.zen_stores.schemas.api_transaction_schemas import (
     ApiTransactionResultSchema,
     ApiTransactionSchema,
 )
+from zenml.zen_stores.schemas.archive_bundle_schemas import (
+    ArchiveBundleSchema,
+)
 from zenml.zen_stores.schemas.artifact_schemas import (
     ArtifactSchema,
     ArtifactVersionSchema,
@@ -104,6 +107,7 @@ from zenml.zen_stores.schemas.webhook_schemas import (
 
 __all__ = [
     "APIKeySchema",
+    "ArchiveBundleSchema",
     "ArtifactSchema",
     "ArtifactVersionSchema",
     "ArtifactVisualizationSchema",

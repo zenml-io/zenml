@@ -55,7 +55,10 @@ from zenml.constants import (
     STOP,
     VERSION_1,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, RetentionFailure, RetentionOutcome
+from zenml.exceptions import (
+    ExecutionArchivedError,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     LogsResponse,
@@ -65,6 +68,7 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    RetentionOperationResponse,
     RunStatisticsRequest,
     RunStatisticsResponse,
     StepRunFilter,
@@ -102,6 +106,9 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
+from zenml.zen_server.routers.workload_manager_gate import (
+    workload_manager_enabled,
+)
 from zenml.zen_server.streaming.broadcaster import (
     BroadcasterShuttingDownError,
     StreamCapacityError,
@@ -128,6 +135,7 @@ from zenml.zen_server.utils import (
     set_filter_project_scope,
     stream_broadcaster,
     stream_broker,
+    submit_reserved_operation,
     workload_manager,
     zen_store,
 )
@@ -310,12 +318,16 @@ def get_run(
         The pipeline run.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=hydrate,
-        include_python_packages=include_python_packages,
-        include_full_metadata=include_full_metadata,
+    run = dehydrate_response_model(
+        store.get_run(
+            run_id,
+            hydrate=hydrate,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+            include_python_packages=include_python_packages,
+            include_full_metadata=include_full_metadata,
+        )
     )
 
     if refresh_status:
@@ -379,7 +391,7 @@ def delete_run(
     """
     verify_permissions_and_delete_entity(
         id=run_id,
-        get_method=zen_store().get_run,
+        get_method=lambda id, _: zen_store().get_run(id, hydrate=False),
         delete_method=zen_store().delete_run,
     )
 
@@ -430,8 +442,14 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    run = verify_permissions_and_get_entity(
-        id=run_id, get_method=zen_store().get_run, hydrate=True
+    run = dehydrate_response_model(
+        zen_store().get_run(
+            run_id,
+            hydrate=True,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+        )
     )
     return run.config.model_dump()
 
@@ -479,14 +497,13 @@ def get_run_dag(
     Returns:
         The DAG of the pipeline run.
     """
-    # TODO: Maybe avoid calling get_run twice?
-    verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=zen_store().get_run,
-        hydrate=False,
-    )
-    return zen_store().get_pipeline_run_dag(
-        pipeline_run_id=run_id, include_step_metadata=include_step_metadata
+    store = zen_store()
+    return store.get_pipeline_run_dag(
+        pipeline_run_id=run_id,
+        include_step_metadata=include_step_metadata,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
     )
 
 
@@ -508,10 +525,14 @@ def refresh_run_status(
             the status of individual steps.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity(
-        id=run_id,
-        get_method=store.get_run,
-        hydrate=True,
+    run = dehydrate_response_model(
+        store.get_run(
+            run_id,
+            hydrate=True,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+        )
     )
     run_utils.refresh_run_status(
         run=run, include_step_updates=include_steps, zen_store=store
@@ -535,10 +556,16 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    run = zen_store().get_run(run_id, hydrate=True)
-    verify_permission_for_model(run, action=Action.READ)
+    run = dehydrate_response_model(
+        zen_store().get_run(
+            run_id,
+            hydrate=True,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+        )
+    )
     verify_permission_for_model(run, action=Action.UPDATE)
-    dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 
 
@@ -582,8 +609,14 @@ def run_logs(
 
     store = zen_store()
 
-    run = verify_permissions_and_get_entity(
-        id=run_id, get_method=store.get_run, hydrate=True
+    run = dehydrate_response_model(
+        store.get_run(
+            run_id,
+            hydrate=True,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+        )
     )
 
     logs: Optional["LogsResponse"] = None
@@ -700,68 +733,74 @@ def disable_run_heartbeat(
     zen_store().disable_run_heartbeat(run_id=run_id)
 
 
-if server_config().workload_manager_enabled:
+@router.post(
+    "/{run_id}" + REPLAY,
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def replay_run(
+    run_id: UUID,
+    run_configuration: Optional[ReplayRunConfiguration] = None,
+    auth_context: AuthContext = Security(authorize),
+    _: None = Depends(workload_manager_enabled),
+) -> PipelineRunResponse:
+    """Replay a specific pipeline run.
 
-    @router.post(
-        "/{run_id}" + REPLAY,
-        responses={
-            400: error_response,
-            401: error_response,
-            404: error_response,
-            422: error_response,
-        },
+    Source authorization propagates ExecutionArchivedError when the run
+    needs an explicit restore.
+
+    Args:
+        run_id: The ID of the pipeline run to replay.
+        run_configuration: The replay configuration.
+        auth_context: The authentication context.
+
+    Raises:
+        ValueError: If the run does not have a snapshot.
+
+    Returns:
+        The replayed pipeline run.
+    """
+    from zenml.zen_server.pipeline_execution.utils import (
+        run_snapshot,
     )
-    @async_fastapi_endpoint_wrapper
-    def replay_run(
-        run_id: UUID,
-        run_configuration: Optional[ReplayRunConfiguration] = None,
-        auth_context: AuthContext = Security(authorize),
-    ) -> PipelineRunResponse:
-        """Replay a specific pipeline run.
 
-        Args:
-            run_id: The ID of the pipeline run to replay.
-            run_configuration: The replay configuration.
-            auth_context: The authentication context.
-
-        Raises:
-            ValueError: If the run does not have a snapshot.
-
-        Returns:
-            The replayed pipeline run.
-        """
-        from zenml.zen_server.pipeline_execution.utils import (
-            run_snapshot,
-        )
-
-        run = verify_permissions_and_get_entity(
-            id=run_id,
-            get_method=zen_store().get_run,
-            hydrate=True,
-        )
-
-        if not run.snapshot:
-            raise ValueError("Cannot replay a run without a snapshot.")
-
-        verify_permission(
-            resource_type=ResourceType.PIPELINE_SNAPSHOT,
-            action=Action.CREATE,
-            project_id=run.project_id,
-        )
-        verify_permission(
-            resource_type=ResourceType.PIPELINE_RUN,
-            action=Action.CREATE,
-            project_id=run.project_id,
-        )
-
+    def authorize_source(source: PipelineRunResponse) -> None:
+        verify_permission_for_model(source, action=Action.READ)
+        for resource_type in (
+            ResourceType.PIPELINE_SNAPSHOT,
+            ResourceType.PIPELINE_RUN,
+        ):
+            verify_permission(
+                resource_type=resource_type,
+                action=Action.CREATE,
+                project_id=source.project_id,
+            )
         check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
+        if source.archive_bundle_id is not None:
+            raise ExecutionArchivedError.for_entity(
+                source.id, source.root_run_id or source.id
+            )
 
-        return run_snapshot(
-            snapshot=run.snapshot,
-            auth_context=auth_context,
-            replay_configuration=run_configuration,
-            original_run=run,
-        )
+    run = zen_store().get_run(
+        run_id=run_id,
+        hydrate=True,
+        authorize=authorize_source,
+    )
+    run = dehydrate_response_model(run)
+    if not run.snapshot:
+        raise ValueError("Cannot replay a run without a snapshot.")
+
+    return run_snapshot(
+        snapshot=run.snapshot,
+        auth_context=auth_context,
+        replay_configuration=run_configuration,
+        original_run=run,
+    )
 
 
 def streaming_enabled() -> None:
@@ -1003,3 +1042,86 @@ async def stream_run_events(
         media_type="text/event-stream",
         headers=SSE_RESPONSE_HEADERS,
     )
+
+
+def _retention_root(
+    run_id: UUID, action: Action = Action.UPDATE
+) -> PipelineRunResponse:
+    """Authorize the canonical root before any catalog or object access.
+
+    Args:
+        run_id: Any surviving member of the requested tree.
+        action: Permission required on the canonical root.
+
+    Returns:
+        Root SQL projection authorized for the requested action.
+    """
+    store = zen_store()
+    run = store.get_run(run_id, hydrate=False)
+    if run.root_run_id and run.root_run_id != run.id:
+        run = store.get_run(run.root_run_id, hydrate=False)
+    verify_permission_for_model(model=run, action=action)
+    return run
+
+
+@router.post(
+    "/{run_id}/restore",
+    status_code=202,
+    responses={
+        403: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+        429: error_response,
+        503: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def restore_pipeline_run(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> RetentionOperationResponse:
+    """Reserve explicit restore before launching the existing maintenance worker.
+
+    Args:
+        run_id: Run handle; UPDATE is required on its root.
+
+    Returns:
+        Accepted restore identity or a no-op for an unarchived tree.
+
+    """
+    root = _retention_root(run_id)
+    store = zen_store()
+    prepared = store.prepare_pipeline_run_restore(root.id)
+    if prepared is None:
+        return RetentionOperationResponse(
+            root_run_id=root.id, outcome=RetentionOutcome.NOOP
+        )
+    return submit_reserved_operation(
+        prepared.accepted(),
+        execute=lambda: store.execute_pipeline_run_restore(prepared),
+        abort=lambda code: store.abort_pipeline_run_restore(prepared, code),
+        reauthorize=lambda: _retention_root(root.id),
+        operation_failure=RetentionFailure.RESTORE_FAILED,
+    )
+
+
+@router.get(
+    "/{run_id}/restore",
+    responses={403: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def get_pipeline_run_restore_status(
+    run_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> RetentionOperationResponse:
+    """Read one restore outcome without reading archived content.
+
+    Args:
+        run_id: Run handle; READ is required on its root.
+
+    Returns:
+        Latest durable restore outcome.
+    """
+    root = _retention_root(run_id, Action.READ)
+    return zen_store().get_pipeline_run_restore_status(root.id)

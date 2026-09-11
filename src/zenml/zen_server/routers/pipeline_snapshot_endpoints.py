@@ -60,19 +60,22 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
+    dehydrate_response_model,
     verify_permission,
+    verify_permission_for_model,
+)
+from zenml.zen_server.routers.workload_manager_gate import (
+    workload_manager_enabled,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
-    server_config,
     zen_store,
 )
 
@@ -174,12 +177,16 @@ def get_pipeline_snapshot(
     Returns:
         A specific snapshot object.
     """
-    return verify_permissions_and_get_entity(
-        id=snapshot_id,
-        get_method=zen_store().get_snapshot,
-        hydrate=hydrate,
-        step_configuration_filter=step_configuration_filter,
-        include_config_schema=include_config_schema,
+    return dehydrate_response_model(
+        zen_store().get_snapshot(
+            snapshot_id,
+            hydrate=hydrate,
+            authorize=lambda header: verify_permission_for_model(
+                header, action=Action.READ
+            ),
+            step_configuration_filter=step_configuration_filter,
+            include_config_schema=include_config_schema,
+        )
     )
 
 
@@ -226,7 +233,7 @@ def delete_pipeline_snapshot(
     """
     verify_permissions_and_delete_entity(
         id=snapshot_id,
-        get_method=zen_store().get_snapshot,
+        get_method=lambda id, _: zen_store().get_snapshot(id, hydrate=False),
         delete_method=zen_store().delete_snapshot,
     )
 
@@ -237,6 +244,7 @@ def delete_pipeline_snapshot(
         400: error_response,
         401: error_response,
         404: error_response,
+        409: error_response,
         422: error_response,
     },
 )
@@ -258,8 +266,11 @@ def get_snapshot_code_download_token(
     """
     store = zen_store()
     snapshot = store.get_snapshot(
-        snapshot_id,
+        snapshot_id=snapshot_id,
         hydrate=True,
+        authorize=lambda header: verify_permission_for_model(
+            header, action=Action.READ
+        ),
         step_configuration_filter=[],
         include_config_schema=False,
     )
@@ -348,64 +359,68 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
     )
 
 
-if server_config().workload_manager_enabled:
+@router.post(
+    "/{snapshot_id}/runs",
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+        429: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def create_snapshot_run(
+    snapshot_id: UUID,
+    run_request: PipelineSnapshotRunRequest,
+    auth_context: AuthContext = Security(authorize),
+    _: None = Depends(workload_manager_enabled),
+) -> PipelineRunResponse:
+    """Run a pipeline from a snapshot.
 
-    @router.post(
-        "/{snapshot_id}/runs",
-        responses={
-            401: error_response,
-            404: error_response,
-            422: error_response,
-            429: error_response,
-        },
+    Args:
+        snapshot_id: The ID of the snapshot.
+        run_request: Run request.
+        auth_context: Authentication context.
+
+    Returns:
+        The created pipeline run.
+    """
+    from zenml.zen_server.pipeline_execution.utils import (
+        run_snapshot,
     )
-    @async_fastapi_endpoint_wrapper
-    def create_snapshot_run(
-        snapshot_id: UUID,
-        run_request: PipelineSnapshotRunRequest,
-        auth_context: AuthContext = Security(authorize),
-    ) -> PipelineRunResponse:
-        """Run a pipeline from a snapshot.
 
-        Args:
-            snapshot_id: The ID of the snapshot.
-            run_request: Run request.
-            auth_context: Authentication context.
+    with track_handler(
+        event=AnalyticsEvent.EXECUTED_SNAPSHOT,
+    ) as analytics_handler:
+        snapshot = dehydrate_response_model(
+            zen_store().get_snapshot(
+                snapshot_id,
+                hydrate=True,
+                authorize=lambda header: verify_permission_for_model(
+                    header, action=Action.READ
+                ),
+            )
+        )
+        analytics_handler.metadata = {
+            "project_id": snapshot.project_id,
+        }
 
-        Returns:
-            The created pipeline run.
-        """
-        from zenml.zen_server.pipeline_execution.utils import (
-            run_snapshot,
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_SNAPSHOT,
+            action=Action.CREATE,
+            project_id=snapshot.project_id,
+        )
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_RUN,
+            action=Action.CREATE,
+            project_id=snapshot.project_id,
         )
 
-        with track_handler(
-            event=AnalyticsEvent.EXECUTED_SNAPSHOT,
-        ) as analytics_handler:
-            snapshot = verify_permissions_and_get_entity(
-                id=snapshot_id,
-                get_method=zen_store().get_snapshot,
-                hydrate=True,
-            )
-            analytics_handler.metadata = {
-                "project_id": snapshot.project_id,
-            }
+        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
-            verify_permission(
-                resource_type=ResourceType.PIPELINE_SNAPSHOT,
-                action=Action.CREATE,
-                project_id=snapshot.project_id,
-            )
-            verify_permission(
-                resource_type=ResourceType.PIPELINE_RUN,
-                action=Action.CREATE,
-                project_id=snapshot.project_id,
-            )
-
-            check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
-
-            return run_snapshot(
-                snapshot=snapshot,
-                auth_context=auth_context,
-                request=run_request,
-            )
+        return run_snapshot(
+            snapshot=snapshot,
+            auth_context=auth_context,
+            request=run_request,
+        )

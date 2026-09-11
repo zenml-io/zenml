@@ -13,13 +13,25 @@
 #  permissions and limitations under the License.
 """Tests for the REST ZenML store."""
 
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 from uuid import uuid4
 
 import pytest
 from pytest_mock import MockerFixture
 
 from zenml.enums import TriggerRunConcurrency
+from zenml.exceptions import (
+    ExecutionArchivedError,
+    ExecutionRetentionConflictError,
+    ExecutionRetentionUnavailableError,
+    MaxConcurrentTasksError,
+)
 from zenml.models import WebhookTriggerUpdate
+from zenml.zen_server.exceptions import (
+    NO_RETRY_HEADER,
+    http_exception_from_error,
+)
 from zenml.zen_stores.rest_zen_store import (
     ARTIFACT_VERSIONS,
     TRIGGERS,
@@ -30,6 +42,83 @@ from zenml.zen_stores.rest_zen_store import (
 
 SERVER_URL = "https://server.example"
 SERVER_URL_WITH_SLASH = f"{SERVER_URL}/"
+
+
+@pytest.mark.parametrize(
+    ("path", "expected_status", "expected_requests"),
+    [
+        ("/marked-503", 503, 1),
+        ("/marked-429", 429, 1),
+        ("/unmarked-503", 200, 2),
+    ],
+)
+def test_server_retry_signal_controls_real_session(
+    path: str, expected_status: int, expected_requests: int
+) -> None:
+    """Marked failures return once while ordinary 503 responses still retry.
+
+    Args:
+        path: Test response behavior selected by the request path.
+        expected_status: Final status returned by the session.
+        expected_requests: Number of requests observed by the server.
+    """
+
+    class Handler(BaseHTTPRequestHandler):
+        attempts = 0
+
+        def do_GET(self) -> None:
+            """Return a marked failure or one transient unmarked failure."""
+            type(self).attempts += 1
+            if self.path == "/unmarked-503" and self.attempts > 1:
+                status = 200
+            else:
+                status = 429 if self.path == "/marked-429" else 503
+            self.send_response(status)
+            if self.path.startswith("/marked-"):
+                self.send_header(NO_RETRY_HEADER, "no")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, format: str, *args: object) -> None:
+            """Suppress local HTTP server logs during the unit test."""
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_port}"
+        store = RestZenStore.model_construct(
+            config=RestZenStoreConfiguration(url=url)
+        )
+        response = store.session.get(f"{url}{path}", timeout=2)
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert response.status_code == expected_status
+    assert Handler.attempts == expected_requests
+
+
+@pytest.mark.parametrize(
+    "error_type",
+    [
+        ExecutionRetentionUnavailableError,
+        ExecutionRetentionConflictError,
+        ExecutionArchivedError,
+        MaxConcurrentTasksError,
+    ],
+)
+def test_actionable_server_errors_disable_status_retries(
+    error_type: type[Exception],
+) -> None:
+    """Every actionable retention response carries the shared retry signal.
+
+    Args:
+        error_type: Server exception mapped to an immediate response.
+    """
+    response = http_exception_from_error(error_type("actionable"))
+    assert response.headers[NO_RETRY_HEADER] == "no"
 
 
 def test_rest_store_url_is_normalized_before_moving_credentials(

@@ -25,6 +25,7 @@ from zenml.constants import (
     VERSION_1,
     WORKSPACES,
 )
+from zenml.enums import RetentionFailure, RetentionOutcome
 from zenml.models import (
     Page,
     PipelineFilter,
@@ -34,6 +35,9 @@ from zenml.models import (
     ProjectResponse,
     ProjectStatistics,
     ProjectUpdate,
+    RetentionDryRunResponse,
+    RetentionPassResponse,
+    RetentionStatusResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -47,14 +51,16 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
+    submit_reserved_operation,
     zen_store,
 )
 
@@ -69,6 +75,95 @@ router = APIRouter(
     tags=["projects"],
     responses={401: error_response},
 )
+
+
+@router.post(
+    "/{project_name_or_id}/retention/archive",
+    status_code=202,
+    responses={
+        403: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+        429: error_response,
+        503: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def archive_project(
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize),
+) -> RetentionPassResponse:
+    """Reserve and launch one bounded pass without object work in the request.
+
+    Args:
+        project_name_or_id: Project name or ID.
+
+    Returns:
+        Durable accepted operation, distinct from its eventual outcome.
+
+    """
+    store = zen_store()
+    project = store.get_project(project_name_or_id, hydrate=False)
+    verify_permission_for_model(model=project, action=Action.UPDATE)
+    claimed = store.prepare_retention_pass(project.id)
+    accepted = RetentionPassResponse(outcome=RetentionOutcome.ACCEPTED)
+    return submit_reserved_operation(
+        accepted,
+        execute=lambda: store.execute_retention_pass(claimed),
+        abort=lambda code: store.abort_retention_pass(claimed, code),
+        reauthorize=lambda: verify_permission_for_model(
+            model=store.get_project(project.id, hydrate=False),
+            action=Action.UPDATE,
+        ),
+        operation_failure=RetentionFailure.ARCHIVE_FAILED,
+    )
+
+
+@router.get(
+    "/{project_name_or_id}/retention/status",
+    responses={403: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper(deduplicate=True)
+def get_retention_status(
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize),
+) -> RetentionStatusResponse:
+    """Read latest progress after verifying project read permission.
+
+    Args:
+        project_name_or_id: Project name or ID.
+
+    Returns:
+        Latest bounded operation summary without object access.
+    """
+    store = zen_store()
+    project = store.get_project(project_name_or_id, hydrate=False)
+    verify_permission_for_model(model=project, action=Action.READ)
+    return store.get_retention_status(project.id)
+
+
+@router.post(
+    "/{project_name_or_id}/retention/dry-run",
+    responses={403: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def retention_dry_run(
+    project_name_or_id: Union[str, UUID],
+    _: AuthContext = Security(authorize),
+) -> RetentionDryRunResponse:
+    """Preview a bounded batch after verifying project update permission.
+
+    Args:
+        project_name_or_id: Project name or ID.
+
+    Returns:
+        Inventory estimates for the examined roots, never project-wide totals.
+    """
+    store = zen_store()
+    project = store.get_project(project_name_or_id)
+    verify_permission_for_model(model=project, action=Action.UPDATE)
+    return store.retention_dry_run(project)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

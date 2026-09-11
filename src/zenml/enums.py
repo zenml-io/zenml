@@ -619,6 +619,76 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
+class RetentionOutcome(StrEnum):
+    """Durable archive-pass and restore operation outcomes."""
+
+    IDLE = "idle"
+    EXPIRED = "expired"
+    ACCEPTED = "accepted"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    NOOP = "noop"
+    PAUSED = "paused"
+
+
+class RetentionFailure(StrEnum):
+    """Safe lifecycle failure codes shared by wire models and SQL operations."""
+
+    LEASE_EXPIRED = "lease_expired"
+    ARCHIVE_FAILED = "archive_failed"
+    RESTORE_FAILED = "restore_failed"
+    INTEGRITY = "integrity"
+    STORAGE_CONFIGURATION = "storage_configuration"
+    PERMISSION_REVOKED = "permission_revoked"
+    SUBMISSION_FAILED = "submission_failed"
+    BUSY = "busy"
+    PASS_BUDGET = "pass_budget"
+
+
+class ArchiveBundleStatus(StrEnum):
+    """Lifecycle of an execution archive bundle catalog row.
+
+    The catalog row is created as PENDING before any object is uploaded, so a
+    crash at any point leaves either SQL authoritative (PENDING or FAILED) or
+    a cataloged, restorable bundle (COMPLETE). RESTORING and RESTORED mark
+    the inverse operation.
+    """
+
+    PENDING = "pending"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    RESTORING = "restoring"
+    RESTORED = "restored"
+
+    @classmethod
+    def authoritative(cls) -> frozenset["ArchiveBundleStatus"]:
+        """Return states whose archived detail remains authoritative.
+
+        Returns:
+            States that authorize archive reads and restore claims.
+        """
+        return frozenset({cls.COMPLETE, cls.RESTORING})
+
+    @classmethod
+    def writer_protected(cls) -> frozenset["ArchiveBundleStatus"]:
+        """Return states that can fence writes to covered detail.
+
+        Returns:
+            Authoritative states plus pending exports with live leases.
+        """
+        return cls.authoritative() | {cls.PENDING}
+
+    @classmethod
+    def retained_generations(cls) -> frozenset["ArchiveBundleStatus"]:
+        """Return states retained for archive eligibility and restore grace.
+
+        Returns:
+            Authoritative archives and successfully restored catalog records.
+        """
+        return cls.authoritative() | {cls.RESTORED}
+
+
 class DeploymentStatus(StrEnum):
     """Status of a deployment."""
 

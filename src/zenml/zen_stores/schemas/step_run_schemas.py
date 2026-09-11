@@ -15,7 +15,16 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -25,7 +34,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
@@ -33,6 +41,11 @@ from zenml.enums import (
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
     StepRunInputArtifactType,
+    StepType,
+)
+from zenml.exceptions import (
+    ExecutionArchivedError,
+    ExecutionRetentionIntegrityError,
 )
 from zenml.models import (
     ExceptionInfo,
@@ -48,6 +61,11 @@ from zenml.models.v2.core.step_run import (
     StepRunResponseResources,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
+from zenml.zen_stores.schemas.archive_detail import (
+    BundleDetail,
+    ConfigurationRecord,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -59,6 +77,10 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
+)
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+    run_pipeline_configuration,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
@@ -73,7 +95,9 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
-class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
+class StepRunSchema(
+    ArchivableSchema, NamedSchema, RunMetadataInterface, table=True
+):
     """SQL Model for steps of pipeline runs."""
 
     __tablename__ = "step_run"
@@ -112,6 +136,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         description="The latest execution heartbeat.",
     )
     status: str = Field(nullable=False)
+
+    # Archived lists cannot recover these projections from cleared configuration.
+    step_type: Optional[str] = Field(nullable=True, default=None)
+    substitutions: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True), default=None
+    )
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
@@ -287,9 +317,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
                 jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                 jl_arg(PipelineSnapshotSchema.is_dynamic),
+                jl_arg(PipelineSnapshotSchema.archive_bundle_id),
             ),
             single_loader(jl_arg(StepRunSchema.pipeline_run)).load_only(
-                jl_arg(PipelineRunSchema.start_time)
+                jl_arg(PipelineRunSchema.start_time),
+                jl_arg(PipelineRunSchema.archive_bundle_id),
             ),
             single_loader(jl_arg(StepRunSchema.static_config)),
             single_loader(jl_arg(StepRunSchema.dynamic_config)),
@@ -375,31 +407,119 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             else None,
         )
 
-    def get_step_configuration(self) -> Step:
+    def _has_archived_configuration(self) -> bool:
+        """Check the step and both possible owners of its configuration.
+
+        Returns:
+            Whether configuration decoding requires an execution restore.
+        """
+        return (
+            self.is_offloaded
+            or self.pipeline_run.is_offloaded
+            or (self.snapshot is not None and self.snapshot.is_offloaded)
+        )
+
+    def _get_response_type(self, step: Optional[Step]) -> Optional[StepType]:
+        """Resolve the live step type or its retained projection.
+
+        Args:
+            step: The decoded live configuration, or None for archived payload.
+
+        Returns:
+            The recorded step type, if available.
+        """
+        if step is not None:
+            return step.config.step_type
+        if self.step_type is not None:
+            return StepType(self.step_type)
+        return None
+
+    def _get_response_substitutions(
+        self, step: Optional[Step]
+    ) -> Optional[Dict[str, str]]:
+        """Resolve live substitutions or their retained projection.
+
+        Args:
+            step: The decoded live configuration, or None for archived payload.
+
+        Returns:
+            Recorded substitutions, preserving None for a missing projection.
+        """
+        if step is not None:
+            return step.config.substitutions
+        if self.substitutions is not None:
+            return cast(Dict[str, str], json.loads(self.substitutions))
+        return None
+
+    def get_step_configuration(
+        self, detail: Optional["BundleDetail"] = None
+    ) -> Step:
         """Get the step configuration for the step run.
 
+        Args:
+            detail: Optional authoritative source for archived detail.
+
         Raises:
-            ValueError: If the step run has no step configuration.
+            ExecutionRetentionIntegrityError: Required archived detail is missing.
+            ExecutionArchivedError: If the step configuration is archived.
+            ValueError: If the live step configuration is unavailable.
 
         Returns:
             The step configuration.
         """
+        if detail is None and self._has_archived_configuration():
+            archived_root_run_id = (
+                self.pipeline_run.root_run_id or self.pipeline_run.id
+            )
+            raise ExecutionArchivedError.for_entity(
+                self.id, archived_root_run_id
+            )
+
+        root_run_id = (
+            self.pipeline_run.root_run_id or self.pipeline_run.id
+            if self.is_offloaded
+            else None
+        )
+        detail_row = cast(
+            StepRunSchema,
+            self.offloaded_detail(detail, root_run_id),
+        )
         step = None
 
         if self.snapshot is not None:
-            if config_schema := (self.dynamic_config or self.static_config):
-                pipeline_configuration = (
-                    PipelineConfiguration.model_validate_json(
-                        self.snapshot.pipeline_configuration
+            config_schema: Optional[
+                Union[StepConfigurationSchema, ConfigurationRecord]
+            ]
+            if self.is_offloaded:
+                detail = cast(BundleDetail, detail)
+                config_schema = detail.step_configuration(self.id)
+            else:
+                config_schema = self.dynamic_config
+            if config_schema is None:
+                if self.snapshot.is_offloaded:
+                    detail = cast(BundleDetail, detail)
+                    config_schema = next(
+                        iter(
+                            detail.step_configurations(
+                                self.snapshot.id, include=[self.name]
+                            )
+                        ),
+                        None,
                     )
+                else:
+                    config_schema = self.static_config
+            if config_schema is not None:
+                snapshot_detail = cast(
+                    PipelineSnapshotSchema,
+                    self.snapshot.offloaded_detail(detail),
                 )
-                pipeline_configuration.finalize_substitutions(
-                    start_time=self.pipeline_run.start_time,
-                    inplace=True,
+                pipeline_configuration = run_pipeline_configuration(
+                    snapshot_detail.pipeline_configuration,
+                    self.pipeline_run.start_time,
                 )
-                step = Step.from_dict(
-                    json.loads(config_schema.config),
-                    pipeline_configuration=pipeline_configuration,
+                step = merge_step_configuration(
+                    config_schema.config,
+                    pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
 
@@ -425,13 +545,17 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         }
                     )
 
-        if not step and self.step_configuration:
+        if not step and detail_row.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the
             # `Step` object directly without passing the pipeline
             # configuration.
-            step = Step.model_validate_json(self.step_configuration)
+            step = Step.model_validate_json(detail_row.step_configuration)
         elif not step:
+            if detail is not None and self._has_archived_configuration():
+                raise ExecutionRetentionIntegrityError(
+                    f"Archived configuration is missing for step {self.id}."
+                )
             raise ValueError(
                 f"Unable to load the configuration for step `{self.name}` from "
                 "the database. To solve this please delete the pipeline run "
@@ -445,6 +569,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        detail: Optional["BundleDetail"] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -452,18 +577,23 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            detail: Optional authoritative source for archived detail.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
         Returns:
             The created StepRunResponse.
         """
-        step = self.get_step_configuration()
+        step = (
+            self.get_step_configuration(detail)
+            if include_metadata or not self._has_archived_configuration()
+            else None
+        )
 
         body = StepRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
-            type=step.config.step_type,
+            type=self._get_response_type(step),
             status=ExecutionStatus(self.status),
             version=self.version,
             is_retriable=self.is_retriable,
@@ -474,11 +604,22 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             updated=self.updated,
             model_version_id=self.model_version_id,
             resource_request_id=self.resource_request_id,
-            substitutions=step.config.substitutions,
+            substitutions=self._get_response_substitutions(step),
             heartbeat_threshold=self.heartbeat_threshold,
+            archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
         if include_metadata:
+            root_run_id = (
+                self.pipeline_run.root_run_id or self.pipeline_run.id
+                if self.is_offloaded
+                else None
+            )
+            detail_row = cast(
+                StepRunSchema,
+                self.offloaded_detail(detail, root_run_id),
+            )
+            step = cast(Step, step)
             metadata = StepRunResponseMetadata(
                 config=step.config,
                 spec=step.spec,
@@ -488,9 +629,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 docstring=self.docstring,
                 source_code=self.source_code,
                 exception_info=ExceptionInfo.model_validate_json(
-                    self.exception_info
+                    detail_row.exception_info
                 )
-                if self.exception_info
+                if detail_row.exception_info
                 else None,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,

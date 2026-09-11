@@ -35,6 +35,7 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
     BaseRequest,
+    BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
 )
@@ -609,6 +610,15 @@ class TaggableFilter(BaseFilter):
             return query
 
         return super().apply_sorting(query=query, table=table)
+
+
+class ArchivableResponseBody(BaseResponseBody):
+    """Response body fields shared by entities whose detail can be archived."""
+
+    archive_bundle_id: Optional[UUID] = Field(
+        default=None,
+        title="The archive bundle that holds archived detail, if any.",
+    )
 
 
 class RunMetadataFilterMixin(BaseFilter):

@@ -41,6 +41,7 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
+    ArchivableResponseBody,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -266,6 +267,10 @@ class PipelineRunUpdate(BaseUpdate):
     add_logs: Optional[List[LogsRequest]] = Field(
         default=None, title="New logs to add to the pipeline run."
     )
+    retain: Optional[bool] = Field(
+        default=None,
+        title="Whether to pin the run so it is never archived.",
+    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -273,7 +278,9 @@ class PipelineRunUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineRunResponseBody(ProjectScopedResponseBody):
+class PipelineRunResponseBody(
+    ProjectScopedResponseBody, ArchivableResponseBody
+):
     """Response body for pipeline runs."""
 
     status: ExecutionStatus = Field(
@@ -302,6 +309,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     root_run_id: Optional[UUID] = Field(
         default=None,
         title="The ID of the top-level parent run of this run's nesting tree.",
+    )
+    retain: bool = Field(
+        default=False,
+        title="Whether the run is pinned and excluded from archival.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -841,6 +852,24 @@ class PipelineRunResponse(
         """
         return self.get_body().root_run_id
 
+    @property
+    def retain(self) -> bool:
+        """The `retain` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().retain
+
+    @property
+    def archive_bundle_id(self) -> Optional[UUID]:
+        """The archive bundle holding this entity's archived detail.
+
+        Returns:
+            The bundle ID, or None while detail remains in SQL.
+        """
+        return self.get_body().archive_bundle_id
+
 
 # ------------------ Filter Model ------------------
 
@@ -849,6 +878,11 @@ class PipelineRunFilter(
     ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
 ):
     """Model to enable advanced filtering of all pipeline runs."""
+
+    archive_bundle_id: UUIDFilterOption = Field(
+        default=None,
+        description="The bundle holding archived execution detail.",
+    )
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -1310,14 +1344,22 @@ class PipelineRunFilter(
                     # consider stacks with custom flavor components or local
                     # components, but the best we can do currently with our
                     # table columns.
+                    PipelineRunSchema.not_offloaded(),
                     PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
+                    PipelineSnapshotSchema.not_offloaded(),
                     PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
                     col(PipelineBuildSchema.is_local).is_(False),
                     col(PipelineBuildSchema.stack_id).is_not(None),
                 )
             else:
                 templatable_filter = or_(
+                    ~PipelineRunSchema.not_offloaded(),
                     col(PipelineRunSchema.snapshot_id).is_(None),
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        ~PipelineSnapshotSchema.not_offloaded(),
+                    ),
                     and_(
                         PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
