@@ -59,6 +59,7 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
+    Iterator,
     List,
     Literal,
     NoReturn,
@@ -514,6 +515,25 @@ _WEBHOOK_SECRET_VALUE_KEY = "secret"
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
+
+# ID lists are split into chunks of this size before they are bound into an
+# `IN (...)` clause: SQLite allows at most 999 bound parameters per statement
+# before version 3.32 and MySQL statements are kept reasonably small.
+SQL_IN_CLAUSE_BATCH_SIZE = 500
+
+
+def _batched(ids: Sequence[UUID], size: int) -> Iterator[Sequence[UUID]]:
+    """Split a list of IDs into consecutive slices of at most `size` items.
+
+    Args:
+        ids: The IDs to split.
+        size: The maximum number of IDs per slice.
+
+    Yields:
+        The slices, in order. Nothing is yielded for an empty list.
+    """
+    for offset in range(0, len(ids), size):
+        yield ids[offset : offset + size]
 
 
 def exponential_backoff_with_jitter(
@@ -3074,6 +3094,14 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ArtifactSchema,
                 session=session,
             )
+            version_ids = session.exec(
+                select(ArtifactVersionSchema.id).where(
+                    ArtifactVersionSchema.artifact_id == artifact_id
+                )
+            ).all()
+            self._delete_run_metadata(
+                session=session, resource_ids=version_ids
+            )
             session.delete(existing_artifact)
             session.commit()
 
@@ -3468,6 +3496,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ArtifactVersionSchema,
                 session=session,
             )
+            self._delete_run_metadata(
+                session=session, resource_ids=[artifact_version_id]
+            )
             session.delete(artifact_version)
             session.commit()
 
@@ -3515,6 +3546,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 ).fetchall()
             ]
+            self._delete_run_metadata(
+                session=session, resource_ids=unused_artifact_versions
+            )
             session.execute(
                 delete(ArtifactVersionSchema).where(
                     col(ArtifactVersionSchema.id).in_(
@@ -4968,6 +5002,29 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            # Deleting a pipeline cascades to its schedules and to the runs
+            # of its snapshots.
+            schedule_ids = session.exec(
+                select(ScheduleSchema.id).where(
+                    ScheduleSchema.pipeline_id == pipeline_id
+                )
+            ).all()
+            run_ids = session.exec(
+                select(PipelineRunSchema.id).where(
+                    col(PipelineRunSchema.snapshot_id).in_(
+                        select(PipelineSnapshotSchema.id).where(
+                            PipelineSnapshotSchema.pipeline_id == pipeline_id
+                        )
+                    )
+                )
+            ).all()
+            self._delete_run_metadata(
+                session=session,
+                resource_ids=[
+                    *schedule_ids,
+                    *self._get_run_resource_ids(session, run_ids),
+                ],
+            )
             session.delete(pipeline)
             session.commit()
 
@@ -5502,26 +5559,35 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            run_ids = session.exec(
+                select(PipelineRunSchema.id).where(
+                    PipelineRunSchema.snapshot_id == snapshot_id
+                )
+            ).all()
+            self._delete_run_metadata(
+                session=session,
+                resource_ids=self._get_run_resource_ids(session, run_ids),
+            )
             session.delete(snapshot)
 
             # We set the reference of all snapshots to this snapshot to null
             # manually as we can't have a foreign key there to avoid a cycle
-            snapshots = session.exec(
+            referencing_snapshots = session.exec(
                 select(PipelineSnapshotSchema).where(
                     PipelineSnapshotSchema.source_snapshot_id == snapshot_id
                 )
             ).all()
 
-            for snapshot in snapshots:
-                snapshot.source_snapshot_id = None
-                session.add(snapshot)
+            for referencing_snapshot in referencing_snapshots:
+                referencing_snapshot.source_snapshot_id = None
+                session.add(referencing_snapshot)
 
             # Remove the attached trigger snapshots
 
             session.execute(
                 delete(TriggerSnapshotSchema).where(
                     col(TriggerSnapshotSchema.snapshot_id).in_(
-                        [s.id for s in snapshots]
+                        [s.id for s in referencing_snapshots]
                     )
                 )
             )
@@ -7488,9 +7554,105 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Delete the pipeline run
+            self._delete_run_metadata(
+                session=session,
+                resource_ids=self._get_run_resource_ids(session, [run_id]),
+            )
             session.delete(existing_run)
             session.commit()
+
+    @staticmethod
+    def _get_run_resource_ids(
+        session: Session, run_ids: Sequence[UUID]
+    ) -> List[UUID]:
+        """Get the IDs of pipeline runs and of everything deleted with them.
+
+        Args:
+            session: The active database session.
+            run_ids: The IDs of the pipeline runs.
+
+        Returns:
+            The IDs of the runs, their step runs and their wait conditions,
+            which are the resources of a run that can carry run metadata.
+        """
+        resource_ids = list(run_ids)
+        for batch in _batched(run_ids, SQL_IN_CLAUSE_BATCH_SIZE):
+            resource_ids.extend(
+                session.exec(
+                    select(StepRunSchema.id).where(
+                        col(StepRunSchema.pipeline_run_id).in_(batch)
+                    )
+                ).all()
+            )
+            resource_ids.extend(
+                session.exec(
+                    select(RunWaitConditionSchema.id).where(
+                        col(RunWaitConditionSchema.run_id).in_(batch)
+                    )
+                ).all()
+            )
+        return resource_ids
+
+    def _delete_run_metadata(
+        self, session: Session, resource_ids: Sequence[UUID]
+    ) -> None:
+        """Delete the run metadata of resources that are about to be deleted.
+
+        Call this in the same session right before deleting resources that
+        can carry run metadata. The metadata links of the resources are
+        removed and every value that lost its last link is deleted. Values
+        that other resources still link to are kept: a cached step run, for
+        example, links to the values its original step run published instead
+        of publishing them again.
+
+        The links are removed with a bulk delete, so the caller must not
+        have the `run_metadata` relationship of the resources loaded, or the
+        ORM would try to delete the already removed links again on flush.
+
+        Args:
+            session: The session the resources are deleted in.
+            resource_ids: The IDs of the resources being deleted.
+        """
+        # `run_metadata_resource.resource_id` has no foreign key, so the
+        # links are the only record of which values the resources hold.
+        metadata_ids: Set[UUID] = set()
+        for batch in _batched(resource_ids, SQL_IN_CLAUSE_BATCH_SIZE):
+            metadata_ids.update(
+                session.exec(
+                    select(RunMetadataResourceSchema.run_metadata_id).where(
+                        col(RunMetadataResourceSchema.resource_id).in_(batch)
+                    )
+                ).all()
+            )
+            # Bulk deletes of resources never touch the links and ORM deletes
+            # would load and delete them one by one while cascading.
+            session.execute(
+                delete(RunMetadataResourceSchema).where(
+                    col(RunMetadataResourceSchema.resource_id).in_(batch)
+                )
+            )
+
+        # The delete locks the candidate rows, so a concurrent insert that
+        # links to one of them (e.g. a cached step run reusing the value)
+        # waits and then fails its foreign key check instead of being
+        # cascaded away. Sorting keeps the lock order the same across
+        # concurrent cleanups.
+        for batch in _batched(sorted(metadata_ids), SQL_IN_CLAUSE_BATCH_SIZE):
+            session.execute(
+                delete(RunMetadataSchema)
+                .where(
+                    col(RunMetadataSchema.id).in_(batch),
+                    ~select(RunMetadataResourceSchema.id)
+                    .where(
+                        RunMetadataResourceSchema.run_metadata_id
+                        == RunMetadataSchema.id
+                    )
+                    .exists(),
+                )
+                # The default `auto` strategy cannot evaluate `EXISTS` in
+                # Python and would re-run the query to sync the session.
+                .execution_options(synchronize_session=False)
+            )
 
     def count_runs(self, filter_model: PipelineRunFilter) -> int:
         """Count all pipeline runs.
@@ -8064,9 +8226,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             run_metadata: The run metadata to create.
 
-        Returns:
-            The created run metadata.
-
         Raises:
             RuntimeError: If the resource type is not supported.
         """
@@ -8108,34 +8267,40 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
-            if run_metadata.resources:
-                from zenml.utils.json_utils import pydantic_encoder
+            if not (run_metadata.resources and run_metadata.values):
+                return
 
-                for key, value in run_metadata.values.items():
-                    type_ = run_metadata.types[key]
+            from zenml.utils.json_utils import pydantic_encoder
 
-                    run_metadata_schema = RunMetadataSchema(
-                        project_id=run_metadata.project,
-                        user_id=run_metadata.user,
-                        stack_component_id=run_metadata.stack_component_id,
-                        key=key,
-                        value=json.dumps(value, default=pydantic_encoder),
-                        type=type_,
-                        publisher_step_id=run_metadata.publisher_step_id,
-                    )
+            metadata_schemas = [
+                RunMetadataSchema(
+                    project_id=run_metadata.project,
+                    user_id=run_metadata.user,
+                    stack_component_id=run_metadata.stack_component_id,
+                    key=key,
+                    value=json.dumps(value, default=pydantic_encoder),
+                    type=run_metadata.types[key],
+                    publisher_step_id=run_metadata.publisher_step_id,
+                )
+                for key, value in run_metadata.values.items()
+            ]
+            session.add_all(metadata_schemas)
+            # The links have a foreign key to the values but no ORM
+            # relationship, so the unit of work does not order the inserts
+            # and may write the links first. Flushing the values makes their
+            # rows exist before the links are added.
+            session.flush()
 
-                    session.add(run_metadata_schema)
-                    session.commit()
-
-                    for resource in run_metadata.resources:
-                        rm_resource_link = RunMetadataResourceSchema(
-                            resource_id=resource.id,
-                            resource_type=resource.type.value,
-                            run_metadata_id=run_metadata_schema.id,
-                        )
-                        session.add(rm_resource_link)
-                        session.commit()
-        return None
+            session.add_all(
+                RunMetadataResourceSchema(
+                    resource_id=resource.id,
+                    resource_type=resource.type.value,
+                    run_metadata_id=metadata_schema.id,
+                )
+                for metadata_schema in metadata_schemas
+                for resource in run_metadata.resources
+            )
+            session.commit()
 
     # -------------------- Webhooks ---------------------
 
@@ -9272,7 +9437,9 @@ class SqlZenStore(BaseZenStore):
             )
 
             if not soft:
-                # Hard delete the schedule
+                self._delete_run_metadata(
+                    session=session, resource_ids=[schedule_id]
+                )
                 session.delete(schedule)
             else:
                 # Soft deletion - set is_archived
@@ -14950,7 +15117,14 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ModelSchema,
                 session=session,
             )
-
+            version_ids = session.exec(
+                select(ModelVersionSchema.id).where(
+                    ModelVersionSchema.model_id == model_id
+                )
+            ).all()
+            self._delete_run_metadata(
+                session=session, resource_ids=version_ids
+            )
             session.delete(model)
             session.commit()
 
@@ -15523,6 +15697,9 @@ class SqlZenStore(BaseZenStore):
                     f"`{model_version_id}`: "
                     "No model version with this id found."
                 )
+            self._delete_run_metadata(
+                session=session, resource_ids=[model_version_id]
+            )
             session.delete(model_version)
             session.commit()
 
@@ -15751,19 +15928,20 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             if not only_links:
-                artifact_version_ids = session.execute(
+                artifact_version_ids = session.exec(
                     select(
                         ModelVersionArtifactSchema.artifact_version_id
                     ).where(
                         ModelVersionArtifactSchema.model_version_id
                         == model_version_id
                     )
-                ).fetchall()
+                ).all()
+                self._delete_run_metadata(
+                    session=session, resource_ids=artifact_version_ids
+                )
                 session.execute(
                     delete(ArtifactVersionSchema).where(
-                        col(ArtifactVersionSchema.id).in_(
-                            [a[0] for a in artifact_version_ids]
-                        )
+                        col(ArtifactVersionSchema.id).in_(artifact_version_ids)
                     ),
                 )
             session.execute(
