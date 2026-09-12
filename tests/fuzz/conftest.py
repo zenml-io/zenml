@@ -39,5 +39,6 @@ for profile_name, max_examples in (
     settings.register_profile(
         profile_name,
         max_examples=max_examples,
+        deadline=None,
         print_blob=True,
     )
