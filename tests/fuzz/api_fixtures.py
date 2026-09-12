@@ -15,7 +15,8 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Generator, Mapping, Optional, TypeVar
+from typing import Any, Callable, Generator, Mapping, Optional, TypeVar, cast
+from uuid import uuid4
 
 import requests
 from tests.fuzz.api_server import REQUEST_TIMEOUT_SECONDS, RunningApiServer
@@ -206,6 +207,35 @@ class ApiHarness:
             method, path, expected_status=expected_status, **kwargs
         )
         return response.json()
+
+    def call_case(self, case: Any) -> requests.Response:
+        """Execute a Schemathesis case with fixed authentication and tracing.
+
+        Args:
+            case: Schemathesis case generated from the live server schema.
+
+        Returns:
+            The HTTP response.
+
+        Raises:
+            RuntimeError: If the harness was quarantined after cleanup failed.
+        """
+        if self._contaminated:
+            raise RuntimeError(
+                "API harness cannot be reused after a restoration failure"
+            )
+        return cast(
+            requests.Response,
+            case.call(
+                base_url=self.server.base_url,
+                session=self._session,
+                headers={
+                    "Authorization": f"Bearer {self.server.token}",
+                    "X-Request-ID": f"fuzz-{uuid4()}",
+                },
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            ),
+        )
 
     def seed_baseline(self) -> BaselineIds:
         """Create the reusable project, pipeline, snapshot, run, and tags.

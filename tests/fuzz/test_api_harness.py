@@ -13,6 +13,7 @@
 #  limitations under the License.
 """Deterministic tests for the authenticated API fuzz harness."""
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -30,6 +31,15 @@ from tests.fuzz.api_server import (
     build_server_command,
     build_server_environment,
     running_api_server,
+)
+from tests.fuzz.api_strategies import (
+    API_ALLOWLIST,
+    CoverageTracker,
+    EvidenceRecorder,
+    is_known_malformed_json_422,
+    load_allowed_operations,
+    redact,
+    schema_with_datetime_format_exclusion,
 )
 from tests.fuzz.database import DisposableDatabase
 
@@ -119,6 +129,125 @@ def test_cleanup_preserves_original_and_cleanup_failures() -> None:
     assert str(error_info.value.original_error) == "original failure"
     assert isinstance(error_info.value.cleanup_error, RuntimeError)
     assert str(error_info.value.cleanup_error) == "cleanup failed"
+
+
+def test_allowlist_rejects_a_missing_live_operation() -> None:
+    """A stale or incomplete server schema cannot silently reduce coverage."""
+    schema = {
+        "openapi": "3.0.2",
+        "info": {"title": "Incomplete", "version": "1"},
+        "paths": {},
+    }
+
+    with pytest.raises(RuntimeError, match="Allowlisted operation is missing"):
+        load_allowed_operations(schema)
+
+
+def test_zero_case_coverage_does_not_qualify() -> None:
+    """A collected suite with no completed examples remains failed."""
+    tracker = CoverageTracker()
+
+    with pytest.raises(AssertionError, match=API_ALLOWLIST[0].operation_id):
+        tracker.qualify()
+
+
+def test_datetime_exclusion_preserves_input_and_other_formats() -> None:
+    """The known timestamp exclusion leaves UUID validation enabled."""
+    schema = {
+        "properties": {
+            "created": {"type": "string", "format": "date-time"},
+            "id": {"type": "string", "format": "uuid"},
+            "homepage": {"type": "string", "format": "uri"},
+        }
+    }
+
+    adjusted = schema_with_datetime_format_exclusion(schema)
+
+    assert schema["properties"]["created"]["format"] == "date-time"
+    assert "format" not in adjusted["properties"]["created"]
+    assert adjusted["properties"]["id"]["format"] == "uuid"
+    assert adjusted["properties"]["homepage"]["format"] == "uri"
+
+
+@pytest.mark.parametrize(
+    ("operation_id", "mode", "status_code", "payload"),
+    [
+        ("operation_outside_allowlist", "negative", 422, ["ValueError"]),
+        ("create_tag_api_v1_tags_post", "positive", 422, ["ValueError"]),
+        ("create_tag_api_v1_tags_post", "negative", 400, ["ValueError"]),
+        ("create_tag_api_v1_tags_post", "negative", 422, ["OtherError"]),
+        ("create_tag_api_v1_tags_post", "negative", 422, []),
+        ("create_tag_api_v1_tags_post", "negative", 422, {"detail": []}),
+    ],
+)
+def test_422_exclusion_does_not_match_other_responses(
+    operation_id: str, mode: str, status_code: int, payload: object
+) -> None:
+    """Every response outside issue #5269 keeps structural validation."""
+    assert not is_known_malformed_json_422(
+        operation_id, mode, status_code, payload
+    )
+
+
+@pytest.mark.parametrize(
+    "operation_id", [spec.operation_id for spec in API_ALLOWLIST]
+)
+def test_422_exclusion_matches_each_allowlisted_operation(
+    operation_id: str,
+) -> None:
+    """The malformed validation array matches for every live-confirmed route."""
+    assert is_known_malformed_json_422(
+        operation_id,
+        "negative",
+        422,
+        ["ValueError", "validation detail"],
+    )
+
+
+def test_partial_coverage_can_be_written_before_qualification(
+    tmp_path: Path,
+) -> None:
+    """A failing run can retain counters collected before its assertion."""
+    tracker = CoverageTracker()
+    tracker.record(API_ALLOWLIST[0].operation_id, "positive", 500)
+    recorder = EvidenceRecorder(tmp_path)
+
+    recorder.write_coverage(tracker)
+
+    coverage = json.loads((tmp_path / "api-coverage.json").read_text())
+    assert coverage[API_ALLOWLIST[0].operation_id]["positive"] == 1
+    assert coverage[API_ALLOWLIST[0].operation_id]["successful_2xx"] == 0
+
+
+def test_evidence_redaction_is_recursive_and_keeps_request_ids() -> None:
+    """Nested secrets are removed without discarding correlation IDs."""
+    evidence = {
+        "headers": {
+            "Authorization": "Bearer secret",
+            "X-Request-ID": "fuzz-123",
+        },
+        "nested": [
+            {
+                "access_token": "secret",
+                "token": "secret",
+                "result": "visible",
+            }
+        ],
+    }
+
+    assert redact(evidence) == {
+        "headers": {
+            "Authorization": "[REDACTED]",
+            "X-Request-ID": "fuzz-123",
+        },
+        "nested": [
+            {
+                "access_token": "[REDACTED]",
+                "token": "[REDACTED]",
+                "result": "visible",
+            }
+        ],
+    }
 
 
 def test_cleanup_failure_quarantines_api_harness(

@@ -106,6 +106,9 @@ access.
 
 ## Classify findings
 
+The current issue-linked exclusions are recorded in
+[known failures](known_failures.md).
+
 Keep every failure visible until it has one of these dispositions:
 
 - Correct a generator or oracle that contradicts an established contract, and
