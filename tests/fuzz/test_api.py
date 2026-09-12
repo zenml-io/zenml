@@ -35,6 +35,7 @@ from tests.fuzz.api_fixtures import ApiHarness, BaselineIds
 from tests.fuzz.api_server import running_api_server
 from tests.fuzz.api_strategies import (
     API_ALLOWLIST,
+    CoverageMode,
     CoverageTracker,
     EvidenceRecorder,
     is_known_malformed_json_422,
@@ -77,7 +78,7 @@ def api_runtime(
         harness = ApiHarness(server)
         try:
             harness.seed_baseline()
-            _, operations = load_allowed_operations(harness.openapi_schema())
+            operations = load_allowed_operations(harness.openapi_schema())
             yield ApiRuntime(
                 harness=harness,
                 operations=operations,
@@ -90,7 +91,7 @@ def api_runtime(
 
 def _evidence(
     operation_id: str,
-    mode: str,
+    mode: CoverageMode,
     case: Any,
     response: Response | None = None,
     error: BaseException | None = None,
@@ -128,7 +129,7 @@ def _evidence(
 
 @contextmanager
 def _executed_case(
-    runtime: ApiRuntime, operation_id: str, mode: str, case: Any
+    runtime: ApiRuntime, operation_id: str, mode: CoverageMode, case: Any
 ) -> Generator[Response, None, None]:
     """Execute, validate, count, and retain evidence for one isolated case."""
     response = None
@@ -203,7 +204,7 @@ def test_semantically_valid_operation_succeeds(
     """Every allowlisted operation has an authenticated successful request."""
     with api_runtime.harness.isolated_example() as baseline:
         operation = api_runtime.operations[spec.operation_id]
-        case = semantic_case(operation, spec.operation_id, baseline, "smoke")
+        case = semantic_case(operation, spec.operation_id, baseline)
         with _executed_case(
             api_runtime, spec.operation_id, "semantic", case
         ) as response:
@@ -369,7 +370,11 @@ def test_generated_requests_explore_the_allowlist(
         ),
         label=f"explore {spec.operation_id}",
     )
-    mode = generation_mode.value
+    mode: CoverageMode = (
+        "positive"
+        if generation_mode is GenerationMode.POSITIVE
+        else "negative"
+    )
     with api_runtime.harness.isolated_example() as baseline:
         if generation_mode is GenerationMode.POSITIVE:
             substitute_fixture_ids(case, baseline)

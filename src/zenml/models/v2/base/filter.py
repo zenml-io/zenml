@@ -396,24 +396,17 @@ class StrFilter(Filter):
         Returns:
             The query condition.
         """
-        from sqlalchemy import false, or_
-
-        conditions = []
-
         assert isinstance(self.value, list)
 
-        if not self.value:
-            return false()
-
+        values: List[str] = []
         for value in self.value:
             if is_json_encoded:
-                # For JSON encoded columns, add conditions for both raw and JSON-quoted values
-                conditions.append(column == value)
-                conditions.append(column == f'"{value}"')
+                # JSON columns can return raw or JSON-quoted scalar values.
+                values.extend((value, f'"{value}"'))
             else:
-                conditions.append(column == value)
+                values.append(value)
 
-        return or_(*conditions)
+        return column.in_(values)
 
     def _handle_not_oneof(self, column: Any, is_json_encoded: bool) -> Any:
         """Handle the NOT_ONEOF operation.

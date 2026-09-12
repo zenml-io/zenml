@@ -160,7 +160,13 @@ def test_matrix_install_run_and_artifact_contract(
         step.get("run", "") for step in job["steps"] if "run" in step
     )
     assert "tests/fuzz/requirements.txt" in commands
-    assert '-e ".[server]"' in commands
+    for suite, target in {
+        "api": ".[server]",
+        "filters": ".[local]",
+        "cli": ".",
+    }.items():
+        assert f"{suite}) zenml_target='{target}'" in commands
+    assert '-e "${zenml_target}"' in commands
     assert "python scripts/fuzz.py" in commands
     assert '--suite "${FUZZ_SUITE}"' in commands
     assert '--backend "${FUZZ_BACKEND}"' in commands
@@ -171,9 +177,17 @@ def test_matrix_install_run_and_artifact_contract(
     assert upload["with"]["retention-days"] == "14"
     assert upload["with"]["include-hidden-files"] == "true"
     assert upload["with"]["if-no-files-found"] == "error"
+    dependency_cache = next(
+        step
+        for step in job["steps"]
+        if step.get("name") == "Restore dependency cache"
+    )
+    assert "${{ matrix.suite }}" in dependency_cache["with"]["key"]
+    assert "${{ matrix.backend }}" not in dependency_cache["with"]["key"]
+    assert "pyproject.toml" in dependency_cache["with"]["key"]
     expected_paths = ["${{ env.FUZZ_OUTPUT_DIR }}"]
     if path == NIGHTLY_WORKFLOW:
-        expected_paths.append("${{ env.FUZZ_CORPUS_DIR }}")
+        expected_paths.append("${{ env.ZENML_FUZZ_CORPUS_DIR }}")
     assert upload["with"]["path"].splitlines() == expected_paths
 
 
@@ -216,10 +230,7 @@ def test_nightly_resolves_one_ref_for_every_matrix_row() -> None:
         if step.get("name") == "Restore Hypothesis corpus"
     )
     assert corpus_cache["uses"] == CACHE_ACTION
-    assert corpus_cache["with"]["path"] == "${{ env.FUZZ_CORPUS_DIR }}"
-    assert fuzz_job["env"]["FUZZ_CORPUS_DIR"] == (
-        ".fuzz-corpus/${{ matrix.suite }}-${{ matrix.backend }}"
-    )
+    assert corpus_cache["with"]["path"] == ("${{ env.ZENML_FUZZ_CORPUS_DIR }}")
     assert fuzz_job["env"]["ZENML_FUZZ_CORPUS_DIR"] == (
         ".fuzz-corpus/${{ matrix.suite }}-${{ matrix.backend }}"
     )

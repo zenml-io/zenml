@@ -245,8 +245,6 @@ def _filter_database(
         FilterRow.__table__.create(  # type: ignore[attr-defined]
             engine, checkfirst=False
         )
-        with engine.connect():
-            pass
         _record_configuration(engine, output_directory)
         yield engine
     finally:

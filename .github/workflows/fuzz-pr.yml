@@ -85,16 +85,22 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/uv
-          key: fuzz-pr-uv-${{ runner.os }}-${{ matrix.suite }}-${{ matrix.backend
-            }}-${{ hashFiles('uv.lock', 'tests/fuzz/requirements.txt') }}
+          key: fuzz-pr-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml',
+            'uv.lock', 'tests/fuzz/requirements.txt') }}
           restore-keys: |
-            fuzz-pr-uv-${{ runner.os }}-${{ matrix.suite }}-${{ matrix.backend }}-
+            fuzz-pr-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-
       - name: Install dedicated fuzz environment
         run: |
+          case "${FUZZ_SUITE}" in
+            api) zenml_target='.[server]' ;;
+            filters) zenml_target='.[local]' ;;
+            cli) zenml_target='.' ;;
+            *) exit 2 ;;
+          esac
           uv venv --python 3.11 .venv-fuzz
           uv pip install --python .venv-fuzz/bin/python \
             --requirement tests/fuzz/requirements.txt \
-            -e ".[server]"
+            -e "${zenml_target}"
           uv pip check --python .venv-fuzz/bin/python
       - name: Run bounded fuzz suite
         run: |

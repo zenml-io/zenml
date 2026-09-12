@@ -34,6 +34,7 @@ from tests.fuzz.api_server import (
 )
 from tests.fuzz.api_strategies import (
     API_ALLOWLIST,
+    CoverageMode,
     CoverageTracker,
     EvidenceRecorder,
     is_known_malformed_json_422,
@@ -181,7 +182,10 @@ def test_datetime_exclusion_preserves_input_and_other_formats() -> None:
     ],
 )
 def test_422_exclusion_does_not_match_other_responses(
-    operation_id: str, mode: str, status_code: int, payload: object
+    operation_id: str,
+    mode: CoverageMode,
+    status_code: int,
+    payload: object,
 ) -> None:
     """Every response outside issue #5269 keeps structural validation."""
     assert not is_known_malformed_json_422(

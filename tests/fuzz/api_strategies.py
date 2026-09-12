@@ -17,12 +17,21 @@ import json
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Literal,
+    Mapping,
+    MutableMapping,
+    Optional,
+)
 
 import schemathesis
 from schemathesis.schemas import APIOperation
-from schemathesis.specs.openapi.schemas import OpenApiSchema
 from tests.fuzz.api_fixtures import BaselineIds
+
+CoverageMode = Literal["semantic", "positive", "negative"]
 
 
 @dataclass(frozen=True)
@@ -64,14 +73,14 @@ API_ALLOWLIST = (
 
 def load_allowed_operations(
     raw_schema: Dict[str, Any],
-) -> tuple[OpenApiSchema, Dict[str, APIOperation[Any, Any, Any, Any]]]:
+) -> Dict[str, APIOperation[Any, Any, Any, Any]]:
     """Load and verify every operation in the fixed API allowlist.
 
     Args:
         raw_schema: OpenAPI document fetched from the running server.
 
     Returns:
-        The Schemathesis schema and operations keyed by operation ID.
+        Operations keyed by operation ID.
 
     Raises:
         RuntimeError: If an operation is absent or has a stale operation ID.
@@ -94,7 +103,7 @@ def load_allowed_operations(
                 f"expected {spec.operation_id!r}, got {live_operation_id!r}"
             )
         operations[spec.operation_id] = operation
-    return schema, operations
+    return operations
 
 
 def schema_with_datetime_format_exclusion(
@@ -129,7 +138,7 @@ def schema_with_datetime_format_exclusion(
 
 
 def is_known_malformed_json_422(
-    operation_id: str, mode: str, status_code: int, payload: Any
+    operation_id: str, mode: CoverageMode, status_code: int, payload: Any
 ) -> bool:
     """Return whether a response matches the exact issue #5269 exclusion.
 
@@ -156,7 +165,6 @@ def semantic_case(
     operation: APIOperation[Any, Any, Any, Any],
     operation_id: str,
     baseline: BaselineIds,
-    unique_suffix: str,
 ) -> Any:
     """Build a request with valid domain values and current fixture IDs.
 
@@ -164,7 +172,6 @@ def semantic_case(
         operation: Schemathesis operation used to construct the case.
         operation_id: Stable OpenAPI operation ID.
         baseline: IDs restored for this generated invocation.
-        unique_suffix: Small value used to avoid tag-name collisions.
 
     Returns:
         A Schemathesis case for the operation.
@@ -176,10 +183,10 @@ def semantic_case(
     if "__tag_id__" in operation_id:
         path_parameters = {"tag_id": baseline.tag_ids["primary"]}
     if operation_id == "create_tag_api_v1_tags_post":
-        body = {"name": f"generated-{unique_suffix}", "color": "green"}
+        body = {"name": "generated-smoke", "color": "green"}
         media_type = "application/json"
     elif operation_id == "update_tag_api_v1_tags__tag_id__put":
-        body = {"name": f"updated-{unique_suffix}", "color": "blue"}
+        body = {"name": "updated-smoke", "color": "blue"}
         media_type = "application/json"
     elif operation_id == "list_tags_api_v1_tags_get":
         query = {"page": 1, "size": 100}
@@ -246,7 +253,9 @@ class CoverageTracker:
         default_factory=dict
     )
 
-    def record(self, operation_id: str, mode: str, status_code: int) -> None:
+    def record(
+        self, operation_id: str, mode: CoverageMode, status_code: int
+    ) -> None:
         """Record one completed request.
 
         Args:
@@ -254,13 +263,14 @@ class CoverageTracker:
             mode: ``semantic``, ``positive``, or ``negative``.
             status_code: HTTP response status.
 
-        Raises:
-            ValueError: If ``mode`` is unknown.
         """
-        if mode not in {"semantic", "positive", "negative"}:
-            raise ValueError(f"Unknown API generation mode: {mode}")
         coverage = self.counts.setdefault(operation_id, OperationCoverage())
-        setattr(coverage, mode, getattr(coverage, mode) + 1)
+        if mode == "semantic":
+            coverage.semantic += 1
+        elif mode == "positive":
+            coverage.positive += 1
+        else:
+            coverage.negative += 1
         if 200 <= status_code < 300:
             coverage.successful_2xx += 1
 

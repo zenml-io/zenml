@@ -284,16 +284,9 @@ def _runner_environment(
     environment.update(
         {
             "ZENML_FUZZ": "1",
-            "ZENML_FUZZ_SUITE": config.suite,
             "ZENML_FUZZ_BACKEND": config.backend,
-            "ZENML_FUZZ_PROFILE": config.profile,
             "ZENML_FUZZ_BATCH": str(batch_number),
             "ZENML_FUZZ_OUTPUT_DIR": str(config.output_dir),
-            "ZENML_FUZZ_BUDGET_SECONDS": str(
-                GENERATION_BUDGET_SECONDS[
-                    (config.suite, config.backend, config.profile)
-                ]
-            ),
             "HYPOTHESIS_STORAGE_DIRECTORY": str(
                 _hypothesis_storage_directory(config)
             ),

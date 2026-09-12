@@ -65,7 +65,6 @@ jobs:
     env:
       AUTO_OPEN_DASHBOARD: 'false'
       FUZZ_BACKEND: ${{ matrix.backend }}
-      FUZZ_CORPUS_DIR: .fuzz-corpus/${{ matrix.suite }}-${{ matrix.backend }}
       FUZZ_OUTPUT_DIR: fuzz-results/${{ matrix.suite }}-${{ matrix.backend }}
       FUZZ_PROFILE: nightly
       FUZZ_SUITE: ${{ matrix.suite }}
@@ -96,24 +95,30 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/uv
-          key: fuzz-nightly-uv-${{ runner.os }}-${{ matrix.suite }}-${{ matrix.backend
-            }}-${{ hashFiles('uv.lock', 'tests/fuzz/requirements.txt') }}
+          key: fuzz-nightly-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml',
+            'uv.lock', 'tests/fuzz/requirements.txt') }}
           restore-keys: |
-            fuzz-nightly-uv-${{ runner.os }}-${{ matrix.suite }}-${{ matrix.backend }}-
+            fuzz-nightly-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-
       - name: Restore Hypothesis corpus
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
-          path: ${{ env.FUZZ_CORPUS_DIR }}
+          path: ${{ env.ZENML_FUZZ_CORPUS_DIR }}
           key: fuzz-nightly-corpus-${{ matrix.suite }}-${{ matrix.backend }}-${{ needs.resolve.outputs.sha
             }}-${{ github.run_id }}
           restore-keys: |
             fuzz-nightly-corpus-${{ matrix.suite }}-${{ matrix.backend }}-
       - name: Install dedicated fuzz environment
         run: |
+          case "${FUZZ_SUITE}" in
+            api) zenml_target='.[server]' ;;
+            filters) zenml_target='.[local]' ;;
+            cli) zenml_target='.' ;;
+            *) exit 2 ;;
+          esac
           uv venv --python 3.11 .venv-fuzz
           uv pip install --python .venv-fuzz/bin/python \
             --requirement tests/fuzz/requirements.txt \
-            -e ".[server]"
+            -e "${zenml_target}"
           uv pip check --python .venv-fuzz/bin/python
       - name: Run bounded fuzz suite
         run: |
@@ -142,7 +147,7 @@ jobs:
           name: fuzz-nightly-${{ matrix.suite }}-${{ matrix.backend }}
           path: |
             ${{ env.FUZZ_OUTPUT_DIR }}
-            ${{ env.FUZZ_CORPUS_DIR }}
+            ${{ env.ZENML_FUZZ_CORPUS_DIR }}
           retention-days: 14
           include-hidden-files: true
           if-no-files-found: error

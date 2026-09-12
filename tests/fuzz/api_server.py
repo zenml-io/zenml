@@ -16,7 +16,6 @@
 import json
 import os
 import signal
-import socket
 import subprocess
 import sys
 import time
@@ -28,6 +27,8 @@ from typing import Dict, Generator, Optional
 import requests
 from sqlalchemy.engine import make_url
 from tests.fuzz.database import DisposableDatabase, api_database
+
+from zenml.utils.networking_utils import find_available_port
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 CONTROL_USERNAME = "zenml-fuzz-control"
@@ -144,17 +145,6 @@ def build_server_environment(
         }
     )
     return environment
-
-
-def _available_port() -> int:
-    """Ask the operating system for an available loopback port.
-
-    Returns:
-        An available TCP port number.
-    """
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
-        listener.bind(("127.0.0.1", 0))
-        return int(listener.getsockname()[1])
 
 
 def _source_revision() -> str:
@@ -376,7 +366,7 @@ def running_api_server(
     database = database_context.__enter__()
     process: Optional[subprocess.Popen[bytes]] = None
     try:
-        port = _available_port()
+        port = find_available_port()
         base_url = f"http://127.0.0.1:{port}"
         log_path = output_directory / "api-server.log"
         with log_path.open("wb") as log_file:
