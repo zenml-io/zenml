@@ -85,9 +85,38 @@ def load_allowed_operations(
     Raises:
         RuntimeError: If an operation is absent or has a stale operation ID.
     """
+    schema = schemathesis.openapi.from_dict(raw_schema)
+    return _verified_allowed_operations(schema)
+
+
+def load_response_validation_operations(
+    raw_schema: Dict[str, Any],
+) -> Dict[str, APIOperation[Any, Any, Any, Any]]:
+    """Load operations from the response-validation schema.
+
+    This separate schema is used only to validate responses. Request generation
+    continues to use the unmodified live schema, including all date-time
+    formats.
+
+    Args:
+        raw_schema: OpenAPI document fetched from the running server.
+
+    Returns:
+        Response-validation operations keyed by operation ID.
+
+    Raises:
+        RuntimeError: If an operation is absent or has a stale operation ID.
+    """
     schema = schemathesis.openapi.from_dict(
-        schema_with_datetime_format_exclusion(raw_schema)
+        schema_without_datetime_formats(raw_schema)
     )
+    return _verified_allowed_operations(schema)
+
+
+def _verified_allowed_operations(
+    schema: Any,
+) -> Dict[str, APIOperation[Any, Any, Any, Any]]:
+    """Return the fixed allowlist after verifying the loaded schema."""
     operations: Dict[str, APIOperation[Any, Any, Any, Any]] = {}
     for spec in API_ALLOWLIST:
         try:
@@ -106,20 +135,22 @@ def load_allowed_operations(
     return operations
 
 
-def schema_with_datetime_format_exclusion(
+def schema_without_datetime_formats(
     raw_schema: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Copy a schema and remove only the known broken date-time formats.
+    """Build the dedicated response-validation schema for issue #5270.
 
     ZenML emits timezone-less timestamps for fields documented as RFC 3339
-    date-times. This narrow zenml-io/zenml#5270 exclusion retains validation
-    for every other format, including UUIDs and URIs.
+    date-times. This copy is loaded only for response validation. Request
+    generation uses the original schema and therefore retains every format.
+    The copied schema retains every non-date-time format, including UUIDs and
+    URIs.
 
     Args:
         raw_schema: Live OpenAPI document that must remain unchanged.
 
     Returns:
-        A copied schema without ``format: date-time`` keywords.
+        A copied response-validation schema without ``format: date-time``.
     """
     schema = deepcopy(raw_schema)
 
@@ -156,8 +187,10 @@ def is_known_malformed_json_422(
         and mode == "negative"
         and status_code == 422
         and isinstance(payload, list)
-        and bool(payload)
+        and len(payload) == 2
+        and isinstance(payload[0], str)
         and payload[0] == "ValueError"
+        and isinstance(payload[1], str)
     )
 
 

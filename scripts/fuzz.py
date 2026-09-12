@@ -77,6 +77,12 @@ PYTEST_PLUGIN_BLOCKLIST = (
     "no:xdist",
 )
 TOOL_DISTRIBUTIONS = ("zenml", "pytest", "hypothesis", "schemathesis")
+SUPPORT_TEST_PATHS = (
+    FUZZ_ROOT / "test_runner.py",
+    FUZZ_ROOT / "test_workflow_contract.py",
+)
+API_SUPPORT_TEST_PATHS = (FUZZ_ROOT / "test_api_harness.py",)
+PROCESS_TERMINATION_TIMEOUT_SECONDS = 5
 
 
 @dataclass(frozen=True)
@@ -87,7 +93,7 @@ class RunConfig:
     backend: str
     profile: str
     output_dir: Path
-    batches: int
+    batches: Optional[int]
     seed: Optional[int]
     reproduce: Optional[str]
 
@@ -162,7 +168,7 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
         "--backend", choices=("sqlite", "mysql", "none"), default=None
     )
     parser.add_argument("--profile", choices=PROFILES, default="local")
-    parser.add_argument("--batches", type=_positive_integer, default=1)
+    parser.add_argument("--batches", type=_positive_integer)
     parser.add_argument("--seed", type=int)
     parser.add_argument(
         "--reproduce",
@@ -174,14 +180,18 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
         help="New directory in which to preserve run evidence.",
     )
     parsed = parser.parse_args(arguments)
+    if parsed.suite == "api" and os.name != "posix":
+        parser.error(
+            "suite 'api' requires a POSIX host for process-group cleanup"
+        )
     backend = parsed.backend or ("none" if parsed.suite == "cli" else "sqlite")
     allowed_backends = SUITE_BACKENDS[parsed.suite]
     if backend not in allowed_backends:
         allowed = " or ".join(f"'{item}'" for item in allowed_backends)
         parser.error(f"suite '{parsed.suite}' requires backend {allowed}")
-    if parsed.seed is not None and parsed.batches != 1:
+    if parsed.seed is not None and parsed.batches not in (None, 1):
         parser.error("--seed requires --batches 1 for an exact reproduction")
-    if parsed.reproduce is not None and parsed.batches != 1:
+    if parsed.reproduce is not None and parsed.batches not in (None, 1):
         parser.error("--reproduce requires --batches 1")
     reproduction = _normalize_reproduction(
         parser, parsed.suite, parsed.reproduce
@@ -254,12 +264,17 @@ def _write_metadata(output_dir: Path, metadata: Mapping[str, object]) -> None:
 
 def build_pytest_command(config: RunConfig, batch_number: int) -> List[str]:
     """Build the isolated pytest command for one batch."""
-    target = config.reproduce or str(SUITE_PATHS[config.suite])
+    targets = [config.reproduce or str(SUITE_PATHS[config.suite])]
+    exact_run = config.seed is not None or config.reproduce is not None
+    if batch_number == 1 and not exact_run:
+        targets.extend(str(path) for path in SUPPORT_TEST_PATHS)
+        if config.suite == "api":
+            targets.extend(str(path) for path in API_SUPPORT_TEST_PATHS)
     command = [
         sys.executable,
         "-m",
         "pytest",
-        target,
+        *targets,
         "--confcutdir",
         str(FUZZ_ROOT),
         "-q",
@@ -269,7 +284,7 @@ def build_pytest_command(config: RunConfig, batch_number: int) -> List[str]:
         command.extend(("-p", plugin))
     if config.seed is not None:
         command.append(f"--hypothesis-seed={config.seed}")
-    if config.batches > 1:
+    if config.batches is None or config.batches > 1:
         command.append(
             f"--junitxml={config.output_dir / f'batch-{batch_number}.xml'}"
         )
@@ -313,25 +328,36 @@ def _hypothesis_storage_directory(config: RunConfig) -> Path:
     return config.output_dir / "hypothesis"
 
 
-def terminate_process(process: subprocess.Popen[bytes]) -> None:
-    """Terminate an owned pytest process group, escalating if necessary."""
+def terminate_process(process: subprocess.Popen[bytes]) -> bool:
+    """Terminate an owned pytest process group, escalating if necessary.
+
+    Returns:
+        Whether the process exited within the bounded teardown period.
+    """
     if process.poll() is not None:
-        return
+        return True
     try:
         if os.name == "posix":
             os.killpg(process.pid, signal.SIGTERM)
         else:
             process.terminate()
     except ProcessLookupError:
-        return
+        return True
     try:
-        process.wait(timeout=5)
+        process.wait(timeout=PROCESS_TERMINATION_TIMEOUT_SECONDS)
     except subprocess.TimeoutExpired:
-        if os.name == "posix":
-            os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
-        process.wait()
+        try:
+            if os.name == "posix":
+                os.killpg(process.pid, signal.SIGKILL)
+            else:
+                process.kill()
+        except ProcessLookupError:
+            return True
+        try:
+            process.wait(timeout=PROCESS_TERMINATION_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            return False
+    return True
 
 
 def run_pytest(
@@ -356,12 +382,12 @@ def run_pytest(
         try:
             return_code = process.wait(timeout=timeout_seconds)
         except subprocess.TimeoutExpired:
-            terminate_process(process)
+            terminated = terminate_process(process)
             return BatchResult(
                 command=command,
                 duration_seconds=time.monotonic() - started,
-                return_code=124,
-                status="timed_out",
+                return_code=124 if terminated else 125,
+                status="timed_out" if terminated else "teardown_failed",
                 log_path=str(log_path),
             )
         except KeyboardInterrupt:
@@ -414,7 +440,12 @@ def _initial_metadata(config: RunConfig) -> Dict[str, object]:
 def _aggregate_status(batch_results: Sequence[BatchResult]) -> str:
     """Return an overall status without allowing later success to mask failure."""
     statuses = {result.status for result in batch_results}
-    for status in ("timed_out", "empty_collection", "failed"):
+    for status in (
+        "teardown_failed",
+        "timed_out",
+        "empty_collection",
+        "failed",
+    ):
         if status in statuses:
             return status
     return "passed"
@@ -462,11 +493,27 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
         return 2
 
     batch_results: List[BatchResult] = []
-    deadline = time.monotonic() + HARD_TIMEOUT_SECONDS[config.profile]
+    started = time.monotonic()
+    hard_deadline = started + HARD_TIMEOUT_SECONDS[config.profile]
+    generation_deadline = (
+        started
+        + GENERATION_BUDGET_SECONDS[
+            (config.suite, config.backend, config.profile)
+        ]
+    )
+    exact_run = config.seed is not None or config.reproduce is not None
+    fixed_batches = 1 if exact_run else config.batches
+    batch_number = 1
     try:
-        for batch_number in range(1, config.batches + 1):
+        while fixed_batches is None or batch_number <= fixed_batches:
+            if (
+                fixed_batches is None
+                and batch_number > 1
+                and time.monotonic() >= generation_deadline
+            ):
+                break
             command = build_pytest_command(config, batch_number)
-            remaining_seconds = math.ceil(deadline - time.monotonic())
+            remaining_seconds = math.ceil(hard_deadline - time.monotonic())
             if remaining_seconds <= 0:
                 batch_results.append(
                     BatchResult(
@@ -490,8 +537,13 @@ def main(arguments: Optional[Sequence[str]] = None) -> int:
             metadata["batches"] = [asdict(item) for item in batch_results]
             metadata["status"] = _aggregate_status(batch_results)
             _write_metadata(config.output_dir, metadata)
-            if result.status in {"timed_out", "empty_collection"}:
+            if result.status in {
+                "teardown_failed",
+                "timed_out",
+                "empty_collection",
+            }:
                 break
+            batch_number += 1
     except KeyboardInterrupt:
         metadata.update(
             {

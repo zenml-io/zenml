@@ -41,6 +41,12 @@ export ZENML_FUZZ_MYSQL_URL='mysql+pymysql://root:password@127.0.0.1:3306/mysql'
 
 Use `--output-dir` to choose a new evidence directory. The runner refuses to
 reuse an existing directory so an earlier failure cannot be overwritten.
+Without `--batches`, a normal run starts new bounded batches until its
+generation budget expires, then stops between batches. The first batch also
+runs the runner and workflow contract tests; API runs include the API harness
+tests. Pass `--batches N` for a fixed-count diagnostic run, even when that count
+takes longer than the generation budget. Exact `--seed` and `--reproduce` runs
+always execute one generated-test batch and skip the support tests.
 
 ## Reproduce a failure
 
@@ -57,16 +63,18 @@ Hypothesis example database. Rerun a single property using its pytest node ID:
   --output-dir fuzz-replay
 ```
 
-If `run.json` contains a seed, pass it with `--seed` and `--batches 1` using
-the same suite, backend, profile, and dependency lock. For a minimized failure
-printed as a Hypothesis `@reproduce_failure(...)` blob, temporarily apply that
-decorator to the named property and run the same node ID. Use a fresh output
-directory for every replay.
+If `run.json` contains a seed, pass it with `--seed` using the same suite,
+backend, profile, and dependency lock. For a minimized failure printed as a
+Hypothesis `@reproduce_failure(...)` blob, temporarily apply that decorator to
+the named property and run the same node ID. Use a fresh output directory for
+every replay.
 
 The API suite starts the current checkout with Uvicorn, activates password
 authentication, and uses a new SQLite file or MySQL database. The temporary
 control credential is confined to that disposable server. Do not substitute a
-personal ZenML server or database URL.
+personal ZenML server or database URL. Run this suite on a POSIX host so the
+runner can interrupt pytest and Uvicorn as one process group and finish database
+cleanup after a timeout.
 
 ## CI behavior and budgets
 

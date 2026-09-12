@@ -17,13 +17,13 @@ import os
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generator, Mapping
+from typing import Any, Generator, Mapping, cast
 
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from requests import Response
-from schemathesis import GenerationMode
+from schemathesis import CheckFunction, GenerationMode
 from schemathesis.checks import not_a_server_error
 from schemathesis.schemas import APIOperation
 from schemathesis.specs.openapi.checks import (
@@ -40,16 +40,20 @@ from tests.fuzz.api_strategies import (
     EvidenceRecorder,
     is_known_malformed_json_422,
     load_allowed_operations,
+    load_response_validation_operations,
     semantic_case,
     substitute_fixture_ids,
 )
 
-_RESPONSE_CHECKS = [
-    not_a_server_error,
-    content_type_conformance,
-    response_headers_conformance,
-    response_schema_conformance,
-]
+_RESPONSE_CHECKS = cast(
+    list[CheckFunction],
+    [
+        not_a_server_error,
+        content_type_conformance,
+        response_headers_conformance,
+        response_schema_conformance,
+    ],
+)
 
 
 @dataclass
@@ -58,6 +62,9 @@ class ApiRuntime:
 
     harness: ApiHarness
     operations: Mapping[str, APIOperation[Any, Any, Any, Any]]
+    response_validation_operations: Mapping[
+        str, APIOperation[Any, Any, Any, Any]
+    ]
     coverage: CoverageTracker
     evidence: EvidenceRecorder
 
@@ -78,10 +85,15 @@ def api_runtime(
         harness = ApiHarness(server)
         try:
             harness.seed_baseline()
-            operations = load_allowed_operations(harness.openapi_schema())
+            raw_schema = harness.openapi_schema()
+            operations = load_allowed_operations(raw_schema)
+            response_validation_operations = (
+                load_response_validation_operations(raw_schema)
+            )
             yield ApiRuntime(
                 harness=harness,
                 operations=operations,
+                response_validation_operations=response_validation_operations,
                 coverage=CoverageTracker(),
                 evidence=EvidenceRecorder(output_directory),
             )
@@ -154,17 +166,32 @@ def _executed_case(
         # rejects with domain validators absent from OpenAPI (for example an
         # empty or UUID-like tag name). Validate every documented response but
         # do not turn those expected 4xx results into generator failures.
-        checks = _RESPONSE_CHECKS
-        # zenml-io/zenml#5269 tracks this exact malformed-JSON response.
-        if is_known_malformed_json_422(
-            operation_id, mode, response.status_code, payload
-        ):
-            checks = [
-                check
-                for check in checks
-                if check is not response_schema_conformance
-            ]
+        checks = [
+            check
+            for check in _RESPONSE_CHECKS
+            if check is not response_schema_conformance
+        ]
         case.validate_response(response, checks=checks)
+        # zenml-io/zenml#5269 tracks this exact malformed-JSON response.
+        known_malformed_json = is_known_malformed_json_422(
+            operation_id, mode, response.status_code, payload
+        )
+        if not known_malformed_json:
+            validation_operation = runtime.response_validation_operations[
+                operation_id
+            ]
+            validation_case = validation_operation.Case(
+                path_parameters=case.path_parameters,
+                headers=case.headers,
+                cookies=case.cookies,
+                query=case.query,
+                body=case.body,
+                media_type=case.media_type,
+            )
+            validation_case.validate_response(
+                response,
+                checks=[cast(CheckFunction, response_schema_conformance)],
+            )
         yield response
     except BaseException as error:
         if response is None:

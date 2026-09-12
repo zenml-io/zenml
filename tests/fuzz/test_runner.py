@@ -14,10 +14,12 @@
 """Tests for the opt-in fuzz test runner."""
 
 import json
+import os
+import signal
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pytest
 from scripts import fuzz
@@ -67,6 +69,27 @@ def test_invalid_selection_fails_before_output_creation(
     assert not output_path.exists()
 
 
+def test_api_suite_rejects_hosts_without_process_group_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    """API fuzzing fails closed when timeout cleanup cannot be guaranteed."""
+    monkeypatch.setattr("scripts.fuzz.os.name", "nt")
+
+    with pytest.raises(SystemExit):
+        fuzz.parse_args(
+            [
+                "--suite",
+                "api",
+                "--output-dir",
+                str(tmp_path / "api"),
+            ]
+        )
+
+    assert "requires a POSIX host" in capsys.readouterr().err
+
+
 def test_pytest_command_is_isolated_and_selects_one_suite(
     tmp_path: Path,
 ) -> None:
@@ -94,6 +117,115 @@ def test_pytest_command_is_isolated_and_selects_one_suite(
     assert "no:rerunfailures" in command
     assert "no:randomly" in command
     assert "test_cli.py" not in " ".join(command)
+
+
+@pytest.mark.parametrize(
+    ("suite", "expected_support_test"),
+    [
+        ("filters", None),
+        ("cli", None),
+        ("api", "test_api_harness.py"),
+    ],
+)
+def test_first_batch_runs_support_tests(
+    suite: str, expected_support_test: Optional[str], tmp_path: Path
+) -> None:
+    """Normal first batches exercise runner and workflow support contracts."""
+    config = fuzz.RunConfig(
+        suite=suite,
+        backend="none" if suite == "cli" else "sqlite",
+        profile="local",
+        output_dir=tmp_path,
+        batches=None,
+        seed=None,
+        reproduce=None,
+    )
+
+    first_command = fuzz.build_pytest_command(config, batch_number=1)
+    later_command = fuzz.build_pytest_command(config, batch_number=2)
+
+    assert str(fuzz.FUZZ_ROOT / "test_runner.py") in first_command
+    assert str(fuzz.FUZZ_ROOT / "test_workflow_contract.py") in first_command
+    if expected_support_test:
+        assert str(fuzz.FUZZ_ROOT / expected_support_test) in first_command
+    else:
+        assert str(fuzz.FUZZ_ROOT / "test_api_harness.py") not in first_command
+    assert later_command.count(str(fuzz.SUITE_PATHS[suite])) == 1
+    assert not any(
+        str(path) in later_command
+        for path in (*fuzz.SUPPORT_TEST_PATHS, *fuzz.API_SUPPORT_TEST_PATHS)
+    )
+
+
+@pytest.mark.parametrize("exact_option", ["seed", "reproduce"])
+def test_exact_runs_only_select_the_generated_suite(
+    exact_option: str, tmp_path: Path
+) -> None:
+    """Seeded and node-specific reproduction runs stay single-targeted."""
+    config = fuzz.RunConfig(
+        suite="filters",
+        backend="sqlite",
+        profile="local",
+        output_dir=tmp_path,
+        batches=None,
+        seed=42 if exact_option == "seed" else None,
+        reproduce=(
+            str(fuzz.SUITE_PATHS["filters"]) + "::test_example"
+            if exact_option == "reproduce"
+            else None
+        ),
+    )
+
+    command = fuzz.build_pytest_command(config, batch_number=1)
+
+    assert not any(
+        str(path) in command
+        for path in (*fuzz.SUPPORT_TEST_PATHS, *fuzz.API_SUPPORT_TEST_PATHS)
+    )
+
+
+@pytest.mark.parametrize(
+    "exact_arguments",
+    [
+        ["--seed", "42"],
+        [
+            "--reproduce",
+            "tests/fuzz/test_filters.py::test_example",
+        ],
+    ],
+)
+def test_exact_runs_execute_one_batch(
+    exact_arguments: List[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Exact runs execute once even without an explicit batch count."""
+    commands = []
+    monkeypatch.setattr(fuzz, "missing_dependencies", lambda suite: [])
+
+    def run_batch(
+        command: List[str],
+        environment: object,
+        timeout_seconds: int,
+        output_dir: Path,
+    ) -> fuzz.BatchResult:
+        commands.append(command)
+        return _result(0)
+
+    monkeypatch.setattr(fuzz, "run_pytest", run_batch)
+
+    return_code = fuzz.main(
+        [
+            "--suite",
+            "filters",
+            *exact_arguments,
+            "--output-dir",
+            str(tmp_path / exact_arguments[0].removeprefix("--")),
+        ]
+    )
+
+    assert return_code == 0
+    assert len(commands) == 1
 
 
 def test_runner_can_reuse_an_external_hypothesis_corpus(
@@ -124,6 +256,8 @@ def test_runner_can_reuse_an_external_hypothesis_corpus(
             "filters",
             "--profile",
             "nightly",
+            "--batches",
+            "1",
             "--output-dir",
             str(output_path),
         ]
@@ -171,6 +305,8 @@ def test_missing_dependency_is_actionable_and_recorded(
         [
             "--suite",
             "filters",
+            "--batches",
+            "1",
             "--output-dir",
             str(output_path),
         ]
@@ -189,6 +325,7 @@ def test_missing_dependency_is_actionable_and_recorded(
         (_result(5, "empty_collection"), "empty_collection"),
         (_result(1, "failed"), "failed"),
         (_result(124, "timed_out"), "timed_out"),
+        (_result(125, "teardown_failed"), "teardown_failed"),
     ],
 )
 def test_nonzero_batch_outcomes_are_recorded(
@@ -208,6 +345,8 @@ def test_nonzero_batch_outcomes_are_recorded(
         [
             "--suite",
             "filters",
+            "--batches",
+            "1",
             "--output-dir",
             str(output_path),
         ]
@@ -330,6 +469,45 @@ def test_hard_timeout_is_shared_across_batches(
     assert observed_timeouts == [800, 50]
 
 
+def test_default_run_repeats_completed_batches_until_generation_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The generation deadline is checked only between default batches."""
+    observed_batches = []
+    monotonic_values = iter([0.0, 0.0, 59.0, 59.0, 61.0])
+    monkeypatch.setattr(
+        "scripts.fuzz.time.monotonic", lambda: next(monotonic_values)
+    )
+    monkeypatch.setattr(fuzz, "missing_dependencies", lambda suite: [])
+
+    def run_batch(
+        command: List[str],
+        environment: object,
+        timeout_seconds: int,
+        output_dir: Path,
+    ) -> fuzz.BatchResult:
+        assert isinstance(environment, dict)
+        observed_batches.append(environment["ZENML_FUZZ_BATCH"])
+        return _result(0)
+
+    monkeypatch.setattr(fuzz, "run_pytest", run_batch)
+
+    return_code = fuzz.main(
+        [
+            "--suite",
+            "filters",
+            "--profile",
+            "local",
+            "--output-dir",
+            str(tmp_path / "generation-deadline"),
+        ]
+    )
+
+    assert return_code == 0
+    assert observed_batches == ["1", "2"]
+
+
 def test_interrupted_run_preserves_evidence(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -425,8 +603,15 @@ def test_interruption_terminates_owned_process(
     monkeypatch.setattr(
         "scripts.fuzz.subprocess.Popen", lambda *args, **kwargs: process
     )
+
+    def terminate(child: object) -> bool:
+        terminated.append(child)
+        return True
+
     monkeypatch.setattr(
-        fuzz, "terminate_process", lambda child: terminated.append(child)
+        fuzz,
+        "terminate_process",
+        terminate,
     )
 
     if exception is KeyboardInterrupt:
@@ -438,3 +623,88 @@ def test_interruption_terminates_owned_process(
         assert result.return_code != 0
 
     assert terminated == [process]
+
+
+class _UnkillableProcess:
+    """Process double that remains alive after SIGKILL."""
+
+    pid = 1002
+    returncode = None
+
+    def __init__(self) -> None:
+        self.wait_timeouts: List[int] = []
+
+    def poll(self) -> None:
+        """Report that the process is still running."""
+        return None
+
+    def wait(self, timeout: int) -> int:
+        """Record every bounded wait and continue timing out."""
+        self.wait_timeouts.append(timeout)
+        raise subprocess.TimeoutExpired("pytest", timeout)
+
+
+def test_sigkill_wait_is_bounded_and_teardown_failure_is_nonzero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A process surviving SIGKILL cannot hang the fuzz runner."""
+    process = _UnkillableProcess()
+    signals = []
+    monkeypatch.setattr(
+        "scripts.fuzz.subprocess.Popen", lambda *args, **kwargs: process
+    )
+    monkeypatch.setattr(
+        "scripts.fuzz.os.killpg",
+        lambda pid, sent_signal: signals.append((pid, sent_signal)),
+    )
+
+    result = fuzz.run_pytest(["pytest"], {}, 1, tmp_path)
+
+    assert result.status == "teardown_failed"
+    assert result.return_code != 0
+    assert process.wait_timeouts == [
+        1,
+        fuzz.PROCESS_TERMINATION_TIMEOUT_SECONDS,
+        fuzz.PROCESS_TERMINATION_TIMEOUT_SECONDS,
+    ]
+    assert signals == [
+        (process.pid, signal.SIGTERM),
+        (process.pid, signal.SIGKILL),
+    ]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="POSIX process groups only"
+)
+def test_timeout_unwinds_pytest_cleanup(tmp_path: Path) -> None:
+    """SIGTERM lets the fuzz child finish cleanup before it exits."""
+    marker = tmp_path / "cleanup-marker"
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "ZENML_FUZZ": "1",
+            "ZENML_FUZZ_TIMEOUT_CLEANUP_MARKER": str(marker),
+        }
+    )
+    result = fuzz.run_pytest(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            str(fuzz.FUZZ_ROOT / "timeout_cleanup_probe.py"),
+            "--confcutdir",
+            str(fuzz.FUZZ_ROOT),
+            "-q",
+            *(
+                item
+                for plugin in fuzz.PYTEST_PLUGIN_BLOCKLIST
+                for item in ("-p", plugin)
+            ),
+        ],
+        environment,
+        timeout_seconds=1,
+        output_dir=tmp_path,
+    )
+
+    assert result.status == "timed_out"
+    assert marker.read_text() == "cleaned\n"

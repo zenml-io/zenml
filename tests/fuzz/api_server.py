@@ -15,7 +15,6 @@
 
 import json
 import os
-import signal
 import subprocess
 import sys
 import time
@@ -123,6 +122,8 @@ def build_server_environment(
             or key.startswith("ZENML_STORE_")
             or key.startswith("ZENML_SERVER_")
             or key.startswith("ZENML_ACTIVE_")
+            or key.startswith("ZENML_SECRETS_STORE_")
+            or key.startswith("ZENML_BACKUP_SECRETS_STORE_")
         )
     }
     existing_python_path = environment.get("PYTHONPATH")
@@ -164,7 +165,7 @@ def _source_revision() -> str:
 
 
 def _stop_process(process: subprocess.Popen[bytes]) -> None:
-    """Stop the server process group and wait for owned children.
+    """Stop the server process and wait for it to exit.
 
     Args:
         process: Server process to stop.
@@ -172,19 +173,13 @@ def _stop_process(process: subprocess.Popen[bytes]) -> None:
     if process.poll() is not None:
         return
     try:
-        if os.name == "posix":
-            os.killpg(process.pid, signal.SIGTERM)
-        else:
-            process.terminate()
+        process.terminate()
     except ProcessLookupError:
         return
     try:
         process.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        if os.name == "posix":
-            os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
+        process.kill()
         process.wait(timeout=5)
 
 
@@ -376,7 +371,6 @@ def running_api_server(
                 env=build_server_environment(database, output_directory),
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
-                start_new_session=os.name == "posix",
             )
         _wait_until_ready(process, base_url)
         token = _authenticate(base_url)

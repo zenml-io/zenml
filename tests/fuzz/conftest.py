@@ -14,6 +14,9 @@
 """Configuration shared only by explicitly selected fuzz tests."""
 
 import os
+import signal
+from types import FrameType
+from typing import NoReturn, Optional
 
 import pytest
 
@@ -29,6 +32,17 @@ except ModuleNotFoundError as error:
         "Hypothesis is required for fuzz tests. Install "
         "tests/fuzz/requirements.txt beside the editable checkout."
     ) from error
+
+
+def _terminate_with_cleanup(
+    _signum: int, _frame: Optional[FrameType]
+) -> NoReturn:
+    """Interrupt pytest so fixture finalizers run after runner termination."""
+    raise KeyboardInterrupt
+
+
+if os.name == "posix":
+    signal.signal(signal.SIGTERM, _terminate_with_cleanup)
 
 
 for profile_name, max_examples in (

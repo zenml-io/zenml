@@ -21,6 +21,11 @@ from types import SimpleNamespace
 from typing import cast
 
 import pytest
+import tests.fuzz.api_strategies as api_strategies
+from requests import Request
+from schemathesis import CheckFunction
+from schemathesis.core.transport import Response
+from schemathesis.specs.openapi.checks import response_schema_conformance
 from tests.fuzz.api_fixtures import (
     ApiCleanupError,
     ApiHarness,
@@ -39,8 +44,9 @@ from tests.fuzz.api_strategies import (
     EvidenceRecorder,
     is_known_malformed_json_422,
     load_allowed_operations,
+    load_response_validation_operations,
     redact,
-    schema_with_datetime_format_exclusion,
+    schema_without_datetime_formats,
 )
 from tests.fuzz.database import DisposableDatabase
 
@@ -56,11 +62,14 @@ def test_server_command_runs_current_source_directly(tmp_path: Path) -> None:
 
 
 def test_server_environment_is_child_only_and_authenticated(
-    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Server configuration stays under the run and keeps bearer auth on."""
     target = DisposableDatabase.sqlite(tmp_path / "api.sqlite3", tmp_path)
     original_config = os.environ.get("ZENML_CONFIG_PATH")
+    monkeypatch.setenv("ZENML_SECRETS_STORE_TYPE", "aws")
+    monkeypatch.setenv("ZENML_SECRETS_STORE_AUTH_KEY", "not-for-fuzzing")
+    monkeypatch.setenv("ZENML_BACKUP_SECRETS_STORE_TYPE", "gcp")
 
     environment = build_server_environment(target, tmp_path)
 
@@ -72,6 +81,11 @@ def test_server_environment_is_child_only_and_authenticated(
     )
     assert environment["ZENML_SERVER_AUTO_ACTIVATE"] == "false"
     assert environment["ZENML_ANALYTICS_OPT_IN"] == "false"
+    assert not any(
+        key.startswith("ZENML_SECRETS_STORE_")
+        or key.startswith("ZENML_BACKUP_SECRETS_STORE_")
+        for key in environment
+    )
     assert os.environ.get("ZENML_CONFIG_PATH") == original_config
 
 
@@ -162,12 +176,89 @@ def test_datetime_exclusion_preserves_input_and_other_formats() -> None:
         }
     }
 
-    adjusted = schema_with_datetime_format_exclusion(schema)
+    adjusted = schema_without_datetime_formats(schema)
 
     assert schema["properties"]["created"]["format"] == "date-time"
     assert "format" not in adjusted["properties"]["created"]
     assert adjusted["properties"]["id"]["format"] == "uuid"
     assert adjusted["properties"]["homepage"]["format"] == "uri"
+
+
+def test_datetime_exclusion_is_used_only_for_response_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Request generation keeps date-time while naive responses are exempted."""
+    operation_spec = api_strategies.OperationSpec(
+        "create_event", "POST", "/events"
+    )
+    monkeypatch.setattr(api_strategies, "API_ALLOWLIST", (operation_spec,))
+    datetime_schema = {"type": "string", "format": "date-time"}
+    schema = {
+        "openapi": "3.0.2",
+        "info": {"title": "Events", "version": "1"},
+        "paths": {
+            "/events": {
+                "post": {
+                    "operationId": "create_event",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"at": datetime_schema},
+                                    "required": ["at"],
+                                }
+                            }
+                        },
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Created event",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {"at": datetime_schema},
+                                        "required": ["at"],
+                                    }
+                                }
+                            },
+                        }
+                    },
+                }
+            }
+        },
+    }
+
+    generation_operation = load_allowed_operations(schema)["create_event"]
+    validation_operation = load_response_validation_operations(schema)[
+        "create_event"
+    ]
+
+    request_schema = generation_operation.definition.raw["requestBody"][
+        "content"
+    ]["application/json"]["schema"]
+    assert request_schema["properties"]["at"]["format"] == "date-time"
+    response = Response(
+        status_code=200,
+        headers={"content-type": ["application/json"]},
+        content=b'{"at":"2026-09-12T11:52:44.045303"}',
+        request=Request("POST", "http://example.test/events").prepare(),
+        elapsed=0.01,
+        verify=True,
+        message="OK",
+        http_version="1.1",
+        encoding="utf-8",
+    )
+    validation_case = validation_operation.Case(
+        body={"at": "2026-09-12T11:52:44Z"},
+        media_type="application/json",
+    )
+
+    validation_case.validate_response(
+        response, checks=[cast(CheckFunction, response_schema_conformance)]
+    )
 
 
 @pytest.mark.parametrize(
@@ -177,6 +268,13 @@ def test_datetime_exclusion_preserves_input_and_other_formats() -> None:
         ("create_tag_api_v1_tags_post", "positive", 422, ["ValueError"]),
         ("create_tag_api_v1_tags_post", "negative", 400, ["ValueError"]),
         ("create_tag_api_v1_tags_post", "negative", 422, ["OtherError"]),
+        (
+            "create_tag_api_v1_tags_post",
+            "negative",
+            422,
+            ["ValueError", "validation detail", "extra"],
+        ),
+        ("create_tag_api_v1_tags_post", "negative", 422, ["ValueError", 1]),
         ("create_tag_api_v1_tags_post", "negative", 422, []),
         ("create_tag_api_v1_tags_post", "negative", 422, {"detail": []}),
     ],
@@ -290,6 +388,8 @@ def test_sqlite_cleanup_after_server_already_exited(tmp_path: Path) -> None:
         sqlite_path = server.database.sqlite_path
         assert sqlite_path is not None
         assert sqlite_path.exists()
+        if os.name == "posix":
+            assert os.getpgid(server.process.pid) == os.getpgrp()
         server.process.terminate()
         server.process.wait(timeout=10)
 
