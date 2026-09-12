@@ -114,6 +114,11 @@ class ArchiveSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # `backend` is deliberately redundant with the URI scheme, which is what
+    # actually selects the artifact store flavor. It exists as an interlock:
+    # archiving is server-wide with no opt-out, so enabling it takes two
+    # explicit variables rather than one stray URI, and the validator below
+    # can name a scheme that disagrees with the stated intent.
     backend: ArchiveBackend = ArchiveBackend.DISABLED
     uri: Optional[str] = None
     connector_id: Optional[UUID] = None
