@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to administer projects of the ZenML CLI and server."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import click
 
@@ -27,211 +27,13 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.console import console
-from zenml.enums import CliCategories, RetentionOutcome
+from zenml.enums import CliCategories
 from zenml.models import ProjectFilter, ProjectResponse
-from zenml.models.v2.misc.retention import (
-    RetentionSettings,
-    RetentionStatusResponse,
-)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
-
-
-@project.group("retention")
-def retention() -> None:
-    """Manage project execution retention."""
-
-
-def _retention_policy_rows(policy: RetentionSettings) -> list[Dict[str, Any]]:
-    """Build readable key/value rows for a retention policy.
-
-    Args:
-        policy: Saved or effective retention policy.
-
-    Returns:
-        Ordered setting rows suitable for the shared table printer.
-    """
-    values = policy.model_dump()
-    values["archive_after_days"] = values["archive_after_days"] or "disabled"
-    return [{"setting": key, "value": value} for key, value in values.items()]
-
-
-def _print_retention_policy(
-    policy: RetentionSettings, title: str = "Retention policy"
-) -> None:
-    """Print a retention policy as a key/value table.
-
-    Args:
-        policy: Saved or effective retention policy.
-        title: Table title.
-    """
-    cli_utils.print_table(_retention_policy_rows(policy), title=title)
-
-
-def _print_retention_status(result: RetentionStatusResponse) -> None:
-    """Print project retention status as explicit scalar values.
-
-    Args:
-        result: Latest pass outcome, counts, and server configuration.
-    """
-    cli_utils.print_table(
-        [
-            {"property": "outcome", "value": result.outcome.value},
-            {
-                "property": "finished_at",
-                "value": result.finished_at.isoformat()
-                if result.finished_at
-                else "never",
-            },
-            {"property": "archived", "value": result.archived},
-            {"property": "skipped", "value": result.skipped},
-            {"property": "oversized", "value": result.oversized},
-            {"property": "failed", "value": result.failed},
-            {
-                "property": "archive_enabled",
-                "value": result.archive_enabled,
-            },
-            {
-                "property": "archive_configured",
-                "value": result.archive_configured,
-            },
-            {
-                "property": "archive_after_days",
-                "value": result.archive_after_days or "disabled",
-            },
-        ],
-        title="Retention status",
-    )
-
-
-@retention.command("set")
-@click.argument("project_name_or_id", type=str, required=False)
-@click.option("--archive-after-days", type=int, default=None)
-@click.option("--restored-grace-days", type=int, default=None)
-@click.option(
-    "--archive-model-linked-runs/--no-archive-model-linked-runs",
-    default=None,
-)
-@click.option(
-    "--max-runs",
-    type=int,
-    default=None,
-    help="Maximum runs one archive pass examines.",
-)
-@click.option("--disable", is_flag=True, help="Clear and disable the policy.")
-def set_retention(
-    project_name_or_id: Optional[str],
-    archive_after_days: Optional[int],
-    restored_grace_days: Optional[int],
-    archive_model_linked_runs: Optional[bool],
-    max_runs: Optional[int],
-    disable: bool,
-) -> None:
-    """Update the saved retention policy while preserving unspecified values.
-
-    Args:
-        project_name_or_id: Project to update, or the active project.
-        archive_after_days: Minimum completed-run age.
-        restored_grace_days: Minimum age after the latest restore.
-        archive_model_linked_runs: Whether model-linked runs may be archived.
-        max_runs: Maximum runs one archive pass examines.
-        disable: Clear the saved policy and disable retention.
-
-    Raises:
-        click.UsageError: If disable is combined with policy values.
-    """
-    updates = {
-        "archive_after_days": archive_after_days,
-        "restored_grace_days": restored_grace_days,
-        "archive_model_linked_runs": archive_model_linked_runs,
-        "max_runs_per_pass": max_runs,
-    }
-    if disable and any(value is not None for value in updates.values()):
-        raise click.UsageError(
-            "--disable cannot be combined with policy values."
-        )
-    client = Client()
-    saved = client.get_project(project_name_or_id).retention
-    if disable:
-        policy = RetentionSettings()
-    else:
-        values = saved.model_dump()
-        values.update(
-            {key: value for key, value in updates.items() if value is not None}
-        )
-        policy = RetentionSettings(**values)
-    client.update_project(
-        name_id_or_prefix=project_name_or_id,
-        retention=policy,
-    )
-    cli_utils.success("Retention policy updated.")
-    _print_retention_policy(policy)
-
-
-@retention.command("show")
-@click.argument("project_name_or_id", type=str, required=False)
-def show_retention(project_name_or_id: Optional[str]) -> None:
-    """Show the saved retention policy for a project.
-
-    Args:
-        project_name_or_id: Project to inspect, or the active project.
-    """
-    saved = Client().get_project(project_name_or_id).retention
-    _print_retention_policy(saved)
-
-
-@retention.command("archive")
-@click.argument("project_name_or_id", type=str, required=False)
-@click.option("--yes", "-y", is_flag=True, help="Skip confirmation.")
-def archive_project(project_name_or_id: Optional[str], yes: bool) -> None:
-    """Start an archive pass using the saved project policy.
-
-    Args:
-        project_name_or_id: Project to archive, or the active project.
-        yes: Whether to submit without interactive confirmation.
-    """
-    client = Client()
-    policy = client.get_project(project_name_or_id).retention
-    if policy.archive_after_days is None:
-        cli_utils.declare(
-            "No retention policy is saved for this project; set one with "
-            "`zenml project retention set --archive-after-days N`."
-        )
-        return
-    prompt = (
-        f"Archive up to {policy.max_runs_per_pass} run(s) that finished more "
-        f"than {policy.archive_after_days} days ago?"
-    )
-    if not yes and not cli_utils.confirmation(prompt):
-        cli_utils.declare("Execution retention canceled.")
-        return
-    result = client.archive_project(project=project_name_or_id)
-    if result.outcome == RetentionOutcome.ACCEPTED:
-        suffix = f" {project_name_or_id}" if project_name_or_id else ""
-        cli_utils.declare(
-            "Archive pass accepted; check completion with "
-            f"`zenml project retention status{suffix}`."
-        )
-    else:
-        _print_retention_status(
-            client.get_retention_status(project=project_name_or_id)
-        )
-
-
-@retention.command("status")
-@click.argument("project_name_or_id", type=str, required=False)
-def retention_status(project_name_or_id: Optional[str]) -> None:
-    """Show the latest archive pass without reading object storage.
-
-    Args:
-        project_name_or_id: Project to inspect, or the active project.
-    """
-    _print_retention_status(
-        Client().get_retention_status(project=project_name_or_id)
-    )
 
 
 @project.command("list")
@@ -400,9 +202,8 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
         else:
             warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
     cli_utils.print_pydantic_models(
-        [project_], exclude_columns=["created", "updated", "retention"]
+        [project_], exclude_columns=["created", "updated"]
     )
-    _print_retention_policy(project_.retention)
 
 
 @project.command("delete")

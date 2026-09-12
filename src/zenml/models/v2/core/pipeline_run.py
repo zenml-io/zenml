@@ -267,11 +267,6 @@ class PipelineRunUpdate(BaseUpdate):
     add_logs: Optional[List[LogsRequest]] = Field(
         default=None, title="New logs to add to the pipeline run."
     )
-    retain: Optional[bool] = Field(
-        default=None,
-        title="Whether to pin the run so it is never archived.",
-    )
-
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -310,11 +305,6 @@ class PipelineRunResponseBody(
         default=None,
         title="The ID of the top-level parent run of this run's nesting tree.",
     )
-    retain: bool = Field(
-        default=False,
-        title="Whether the run is pinned and excluded from archival.",
-    )
-
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -851,15 +841,6 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().root_run_id
-
-    @property
-    def retain(self) -> bool:
-        """The `retain` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().retain
 
     @property
     def archive_bundle_id(self) -> Optional[UUID]:

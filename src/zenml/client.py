@@ -97,6 +97,8 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ArchiveRequest,
+    ArchiveResponse,
     ArtifactFilter,
     ArtifactResponse,
     ArtifactUpdate,
@@ -157,8 +159,6 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestResponse,
     RestoreResponse,
-    RetentionPassResponse,
-    RetentionSettings,
     RetentionStatusResponse,
     RunMetadataRequest,
     RunMetadataResource,
@@ -1125,7 +1125,6 @@ class Client(metaclass=ClientMetaClass):
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
         project_metadata: Optional[Dict[str, Any]] = None,
-        retention: Optional[RetentionSettings] = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1135,7 +1134,6 @@ class Client(metaclass=ClientMetaClass):
             new_display_name: New display name of the project.
             new_description: New description of the project.
             project_metadata: New metadata for the project.
-            retention: Replacement retention settings; does not start archiving.
 
         Returns:
             The updated project.
@@ -1151,40 +1149,49 @@ class Client(metaclass=ClientMetaClass):
             project_update.description = new_description
         if project_metadata is not None:
             project_update.project_metadata = project_metadata
-        if retention is not None:
-            project_update.retention = retention
         return self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
         )
 
-    def archive_project(
-        self, project: Optional[Union[str, UUID]] = None
-    ) -> RetentionPassResponse:
-        """Start one bounded archive pass under the saved project policy.
+    def archive_runs(
+        self,
+        run_ids: Optional[List[UUID]] = None,
+        pipeline: Optional[Union[str, UUID]] = None,
+        project: Optional[Union[str, UUID]] = None,
+    ) -> ArchiveResponse:
+        """Archive runs now, without waiting for the server's next sweep.
+
+        Exactly one target is archived. Naming a pipeline or a project
+        archives a bounded batch of its oldest finished runs, so repeat the
+        call while the result is still `pending`.
 
         Args:
-            project: Project name or ID; defaults to the active project.
+            run_ids: Runs to archive.
+            pipeline: Pipeline whose runs to archive, by name or ID.
+            project: Project whose runs to archive, by name or ID.
 
         Returns:
-            The accepted submission, or the outcome of a local pass.
+            Counts and the runs that were refused, each with a reason.
         """
-        return self.zen_store.archive_project(self.get_project(project).id)
-
-    def get_retention_status(
-        self, project: Optional[Union[str, UUID]] = None
-    ) -> RetentionStatusResponse:
-        """Read the latest project retention pass without object access.
-
-        Args:
-            project: Project name or ID; defaults to the active project.
-
-        Returns:
-            Latest pass outcome, counts, and archive configuration.
-        """
-        return self.zen_store.get_retention_status(
-            self.get_project(project).id
+        request = ArchiveRequest(
+            run_ids=run_ids,
+            pipeline_id=self.get_pipeline(pipeline).id
+            if pipeline is not None
+            else None,
+            project_id=self.get_project(project).id
+            if project is not None
+            else None,
         )
+        return self.zen_store.archive_runs(request)
+
+    def get_retention_status(self) -> RetentionStatusResponse:
+        """Read the server's latest archive sweep without object access.
+
+        Returns:
+            Latest sweep outcome, counts, and archive configuration.
+        """
+        return self.zen_store.get_retention_status()
 
     def restore_pipeline_run(
         self, name_id_or_prefix: Union[str, UUID]

@@ -24,8 +24,17 @@ def test_marker_upgrade_preserves_referencing_rows(tmp_path, monkeypatch):
     )
     metadata = sa.MetaData()
     tables = {}
-    for name in ("project", "pipeline_snapshot", "pipeline_run", "step_run"):
+    for name in (
+        "project",
+        "server_settings",
+        "pipeline_snapshot",
+        "pipeline_run",
+        "step_run",
+    ):
         columns = [sa.Column("id", sa.Uuid(), primary_key=True)]
+        if name == "pipeline_run":
+            # The sweep's keyset index is built over this column.
+            columns.append(sa.Column("end_time", sa.DateTime()))
         if name == "step_run":
             columns.extend(
                 [
@@ -73,11 +82,14 @@ def test_marker_upgrade_preserves_referencing_rows(tmp_path, monkeypatch):
         upgraded = sa.Table(
             "pipeline_run", sa.MetaData(), autoload_with=connection
         )
-        # A rolling deployment's old writer omits the new retain field.
+        # A rolling deployment's old writer omits the marker column.
         connection.execute(tables["pipeline_run"].insert().values(id=uuid4()))
         assert connection.execute(
-            sa.select(upgraded.c.retain)
-        ).scalars().all() == [False, False]
+            sa.select(upgraded.c.archive_bundle_id)
+        ).scalars().all() == [None, None]
+        assert {
+            index["name"] for index in inspector.get_indexes("pipeline_run")
+        } >= {"ix_pipeline_run_end_time_id"}
         assert (
             connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
         )

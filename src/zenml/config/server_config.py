@@ -16,7 +16,7 @@
 import json
 import os
 from secrets import token_hex
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from pydantic import (
@@ -68,7 +68,7 @@ from zenml.constants import (
     MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     VERSION_1,
 )
-from zenml.enums import AuthScheme
+from zenml.enums import ArchiveBackend, AuthScheme
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
 from zenml.utils.pydantic_utils import before_validator_handler
@@ -93,6 +93,93 @@ def generate_jwt_secret_key() -> str:
         A random JWT secret key.
     """
     return token_hex(32)
+
+
+ARCHIVE_BACKEND_SCHEMES: Dict[ArchiveBackend, Tuple[str, ...]] = {
+    ArchiveBackend.S3: ("s3://",),
+    ArchiveBackend.GCS: ("gs://",),
+    ArchiveBackend.AZURE: ("abfs://", "az://"),
+}
+
+
+class ArchiveSettings(BaseModel):
+    """Execution archive configuration and retention policy for the server.
+
+    Every value comes from one nested environment group, for example
+    `ZENML_SERVER_ARCHIVE__BACKEND` and `ZENML_SERVER_ARCHIVE__URI`.
+    Archiving stays off until a backend other than `disabled` is chosen, so
+    an incomplete group cannot silently start moving execution detail out of
+    the database.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    backend: ArchiveBackend = ArchiveBackend.DISABLED
+    uri: Optional[str] = None
+    connector_id: Optional[UUID] = None
+    after_days: int = Field(default=90, ge=7)
+    model_linked_runs: bool = False
+    restored_grace_days: int = Field(default=30, ge=0)
+    max_runs_per_pass: int = Field(default=200, gt=0)
+    schedule: str = "0 3 * * *"
+
+    @property
+    def enabled(self) -> bool:
+        """Return whether this server archives execution detail.
+
+        Returns:
+            Whether a backend other than `disabled` is configured.
+        """
+        return self.backend != ArchiveBackend.DISABLED
+
+    @property
+    def root_uri(self) -> str:
+        """Return the configured archive root.
+
+        Returns:
+            The archive root URI; empty while archiving is disabled.
+        """
+        return self.uri or ""
+
+    @model_validator(mode="after")
+    def _validate_archive_settings(self) -> "ArchiveSettings":
+        """Name the exact variable that is missing or inconsistent.
+
+        Returns:
+            The validated settings.
+
+        Raises:
+            ValueError: The group is incomplete, the URI does not match the
+                backend, or the schedule is not a cron expression.
+        """
+        if not self.enabled:
+            return self
+        if not self.uri:
+            raise ValueError(
+                f"ZENML_SERVER_ARCHIVE__BACKEND is '{self.backend.value}', so "
+                "ZENML_SERVER_ARCHIVE__URI must be set to the archive root."
+            )
+        schemes = ARCHIVE_BACKEND_SCHEMES.get(self.backend)
+        if schemes is None:
+            if "://" in self.uri:
+                raise ValueError(
+                    "ZENML_SERVER_ARCHIVE__URI must be a local directory "
+                    "path for the 'local' backend."
+                )
+        elif not self.uri.startswith(schemes):
+            raise ValueError(
+                "ZENML_SERVER_ARCHIVE__URI must start with "
+                f"{' or '.join(schemes)} for the "
+                f"'{self.backend.value}' backend."
+            )
+        from croniter import croniter
+
+        if not croniter.is_valid(self.schedule):
+            raise ValueError(
+                "ZENML_SERVER_ARCHIVE__SCHEDULE is not a valid cron "
+                f"expression: '{self.schedule}'."
+            )
+        return self
 
 
 class ServerConfiguration(BaseModel):
@@ -446,23 +533,16 @@ class ServerConfiguration(BaseModel):
     event_handler_sources: list[str] = []
     webhook_event_handler_sources: list[str] = []
 
-    archive_uri: Optional[str] = Field(
-        default=None,
-        description="Root URI for execution archive objects, for example "
-        "`s3://bucket/zenml-archive` or a local directory. Setting it "
-        "enables execution archiving; the server's ambient cloud "
-        "credentials must allow reading and writing below it. Requires a "
-        "MySQL database.",
-    )
+    archive: ArchiveSettings = Field(default_factory=ArchiveSettings)
 
     @property
     def archive_enabled(self) -> bool:
         """Return whether execution archiving is enabled on this server.
 
         Returns:
-            Whether an archive URI is configured.
+            Whether an archive backend is configured.
         """
-        return bool(self.archive_uri)
+        return self.archive.enabled
 
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(
@@ -860,9 +940,16 @@ class ServerConfiguration(BaseModel):
                 # Skip Pro configuration
                 continue
             if k.startswith(ENV_ZENML_SERVER_PREFIX):
-                env_server_config[
-                    k[len(ENV_ZENML_SERVER_PREFIX) :].lower()
-                ] = v
+                name = k[len(ENV_ZENML_SERVER_PREFIX) :].lower()
+                # A double underscore addresses one field of a nested
+                # settings group, as in ZENML_SERVER_ARCHIVE__URI.
+                group, delimiter, field = name.partition("__")
+                if delimiter:
+                    nested = env_server_config.setdefault(group, {})
+                    if isinstance(nested, dict):
+                        nested[field] = v
+                else:
+                    env_server_config[name] = v
             elif k in SUPPORTED_STANDARD_OTEL_ENV_VARS:
                 env_server_config.setdefault(k.lower(), v)
 

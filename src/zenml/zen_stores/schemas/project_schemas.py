@@ -16,7 +16,7 @@
 import json
 from typing import TYPE_CHECKING, Any, List, Optional
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import Column, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, String
 
@@ -29,7 +29,6 @@ from zenml.models import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
-from zenml.models.v2.misc.retention import RetentionSettings
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -64,13 +63,6 @@ class ProjectSchema(NamedSchema, table=True):
             "name",
             name="unique_project_name",
         ),
-    )
-
-    retention_settings: Optional[str] = Field(
-        default=None, sa_column=Column(TEXT, nullable=True)
-    )
-    retention_state: Optional[str] = Field(
-        default=None, sa_column=Column(TEXT, nullable=True)
     )
 
     display_name: str
@@ -191,13 +183,7 @@ class ProjectSchema(NamedSchema, table=True):
         for field, value in project_update.model_dump(
             exclude_unset=True
         ).items():
-            if field == "retention":
-                self.retention_settings = (
-                    RetentionSettings.model_validate(value).model_dump_json()
-                    if value is not None
-                    else None
-                )
-            elif field == "project_metadata":
+            if field == "project_metadata":
                 if value is not None:
                     self.project_metadata = json.dumps(
                         value, default=pydantic_encoder
@@ -228,7 +214,6 @@ class ProjectSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ProjectResponseMetadata(
-                retention=RetentionSettings.load(self.retention_settings),
                 description=self.description,
                 project_metadata=json.loads(self.project_metadata)
                 if self.project_metadata

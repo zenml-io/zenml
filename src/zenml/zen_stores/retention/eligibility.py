@@ -1,11 +1,16 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Per-run archive eligibility, evaluated in SQL without reading payloads.
 
-Discovery applies the filters that need no inspection: the project, runs
-still in SQL, runs not pinned, runs finished long enough ago, and the
-model-link rule, and continues from the pass's saved position. Inspection
-then gives each candidate at most one exclusion reason and counts the rows
-its bundle would hold.
+Discovery walks every project oldest first and applies the filters that need
+no inspection: runs still in SQL, runs finished long enough ago, and the
+model-link rule, continuing from the sweep's saved position. Inspection then
+gives each candidate at most one exclusion reason and counts the rows its
+bundle would hold.
+
+A targeted archive inspects runs with ``force``, which ignores the age, the
+model-link rule, and the restore grace period. It never ignores the rules
+that keep a run readable while something is still using it: those would
+strip configuration a running orchestrator depends on.
 
 A child run is archived on its own, but only once its root run is finished
 and can no longer be resumed: resuming a root reruns its existing child runs
@@ -21,12 +26,12 @@ from sqlalchemy import ColumnElement, Select, func, or_, select
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, col
 
+from zenml.config.server_config import ArchiveSettings
 from zenml.enums import (
     ExecutionStatus,
     RetentionExclusion,
     RunWaitConditionStatus,
 )
-from zenml.models.v2.misc.retention import RetentionSettings
 from zenml.zen_stores.retention.format import MAX_RECORDS
 from zenml.zen_stores.retention.state import Cursor
 from zenml.zen_stores.schemas import (
@@ -59,19 +64,17 @@ class ArchivableRun(BaseModel):
 
 def discover_runs(
     session: Session,
-    project_id: UUID,
-    policy: RetentionSettings,
+    settings: ArchiveSettings,
     now: datetime,
     after: Optional[Cursor],
     limit: int,
     skip: Sequence[UUID] = (),
 ) -> List[Cursor]:
-    """Return the next candidates in end-time and identity order.
+    """Return the next candidates across every project, oldest first.
 
     Args:
         session: Read session.
-        project_id: Authorized project.
-        policy: Saved project policy.
+        settings: The server's archive settings.
         now: Evaluation time.
         after: Last examined run, or None to start from the oldest.
         limit: Maximum number of candidates.
@@ -80,19 +83,15 @@ def discover_runs(
     Returns:
         Candidate positions, oldest first.
     """
-    if policy.archive_after_days is None:
-        return []
     statement = select(
         col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
     ).where(
-        col(PipelineRunSchema.project_id) == project_id,
         col(PipelineRunSchema.archive_bundle_id).is_(None),
-        col(PipelineRunSchema.retain).is_(False),
         col(PipelineRunSchema.end_time).is_not(None),
         col(PipelineRunSchema.end_time)
-        < now - timedelta(days=policy.archive_after_days),
+        < now - timedelta(days=settings.after_days),
     )
-    if not policy.archive_model_linked_runs:
+    if not settings.model_linked_runs:
         statement = statement.where(~_model_link(col(PipelineRunSchema.id)))
     if skip:
         statement = statement.where(col(PipelineRunSchema.id).not_in(skip))
@@ -116,34 +115,41 @@ def discover_runs(
 
 def inspect_run(
     session: Session,
-    project_id: UUID,
     run_id: UUID,
-    policy: RetentionSettings,
+    settings: ArchiveSettings,
     now: datetime,
+    *,
+    force: bool = False,
 ) -> ArchivableRun:
     """Evaluate every rule for one run in the caller's transaction.
 
     Args:
         session: Caller-owned session, including the locked retire session.
-        project_id: Authorized project.
         run_id: Candidate run.
-        policy: Saved project policy.
+        settings: The server's archive settings.
         now: Evaluation time.
+        force: Ignore the age, the model-link rule, and the restore grace
+            period, as a targeted archive does.
 
     Returns:
         The run's owned snapshots, row count, and first exclusion, if any.
     """
-    run = ArchivableRun(run_id=run_id, project_id=project_id)
     header = session.execute(
         select(
             col(PipelineRunSchema.project_id),
             col(PipelineRunSchema.snapshot_id),
         ).where(col(PipelineRunSchema.id) == run_id)
     ).one_or_none()
-    if header is None or header.project_id != project_id:
-        run.exclusion = RetentionExclusion.NOT_ELIGIBLE
-        return run
-    run.exclusion = _first_exclusion(session, run_id, project_id, policy, now)
+    if header is None:
+        return ArchivableRun(
+            run_id=run_id,
+            project_id=UUID(int=0),
+            exclusion=RetentionExclusion.NOT_ELIGIBLE,
+        )
+    run = ArchivableRun(run_id=run_id, project_id=header.project_id)
+    run.exclusion = _first_exclusion(
+        session, run_id, header.project_id, settings, now, force
+    )
     _count_rows(session, run, header.snapshot_id)
     if run.exclusion is None and run.row_count > MAX_RECORDS:
         run.exclusion = RetentionExclusion.OVERSIZED
@@ -196,24 +202,24 @@ def _first_exclusion(
     session: Session,
     run_id: UUID,
     project_id: UUID,
-    policy: RetentionSettings,
+    settings: ArchiveSettings,
     now: datetime,
+    force: bool,
 ) -> Optional[RetentionExclusion]:
     """Return the most actionable exclusion reason in one SQL round trip.
 
     Args:
         session: Caller-owned session.
         run_id: Candidate run.
-        project_id: Authorized project.
-        policy: Saved project policy with an archive age.
+        project_id: Project owning the run.
+        settings: The server's archive settings.
         now: Evaluation time.
+        force: Drop the age, model-link, and restore-grace rules.
 
     Returns:
         The first matching reason in precedence order, or None.
     """
-    # Callers only inspect runs under an enabled policy.
-    assert policy.archive_after_days is not None
-    cutoff = now - timedelta(days=policy.archive_after_days)
+    cutoff = now - timedelta(days=settings.after_days)
     this_run = select(col(PipelineRunSchema.id)).where(
         col(PipelineRunSchema.id) == run_id
     )
@@ -239,9 +245,6 @@ def _first_exclusion(
         .scalar_subquery()
     )
     checks: Dict[RetentionExclusion, ColumnElement[bool]] = {
-        RetentionExclusion.PINNED: this_run.where(
-            col(PipelineRunSchema.retain).is_(True)
-        ).exists(),
         RetentionExclusion.RESUMABLE_FAILED: _resumable_failed(run_id),
         RetentionExclusion.ROOT_ACTIVE: or_(
             select(col(root.id))
@@ -256,19 +259,22 @@ def _first_exclusion(
             .exists(),
             _resumable_failed(root_id),
         ),
-        RetentionExclusion.RESTORED_GRACE: select(col(ArchiveBundleSchema.id))
-        .where(
-            col(ArchiveBundleSchema.id) == latest_bundle,
-            col(ArchiveBundleSchema.restored_at)
-            > now - timedelta(days=policy.restored_grace_days),
-        )
-        .exists(),
     }
-    if not policy.archive_model_linked_runs:
-        checks[RetentionExclusion.MODEL_LINK] = _model_link(run_id)
-    checks[RetentionExclusion.NOT_OLD] = this_run.where(
-        col(PipelineRunSchema.end_time) >= cutoff
-    ).exists()
+    if not force:
+        checks[RetentionExclusion.RESTORED_GRACE] = (
+            select(col(ArchiveBundleSchema.id))
+            .where(
+                col(ArchiveBundleSchema.id) == latest_bundle,
+                col(ArchiveBundleSchema.restored_at)
+                > now - timedelta(days=settings.restored_grace_days),
+            )
+            .exists()
+        )
+        if not settings.model_linked_runs:
+            checks[RetentionExclusion.MODEL_LINK] = _model_link(run_id)
+        checks[RetentionExclusion.NOT_OLD] = this_run.where(
+            col(PipelineRunSchema.end_time) >= cutoff
+        ).exists()
     checks[RetentionExclusion.NOT_ELIGIBLE] = or_(
         this_run.where(
             or_(
@@ -276,7 +282,6 @@ def _first_exclusion(
                 col(PipelineRunSchema.in_progress).is_(True),
                 col(PipelineRunSchema.end_time).is_(None),
                 col(PipelineRunSchema.archive_bundle_id).is_not(None),
-                col(PipelineRunSchema.project_id) != project_id,
             )
         ).exists(),
         # Cached and skipped steps can be terminal without an end time.

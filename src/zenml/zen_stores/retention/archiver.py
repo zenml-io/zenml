@@ -1,36 +1,46 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Bounded archive passes and atomic retirement of verified run detail.
+"""Archiving one run at a time, on a schedule or on demand.
 
-A pass examines up to ``max_runs_per_pass`` runs from the project's saved
-position, for at most ``MAX_SECONDS``. Each eligible run is captured, encoded,
-uploaded, and read back byte for byte before SQL changes. Retirement then
-runs in one transaction: it locks the run, its steps, its owned snapshots,
-and their configurations, captures the run again, and only proceeds if the
-document hash is unchanged. It inserts the bundle row and sets the markers
-together, so the database decides every race: two passes racing on one run
-leave one bundle, and the loser's object is removed.
+Every run travels the same path: capture, encode, upload, and read back byte
+for byte before SQL changes. Retirement then runs in one transaction: it
+locks the run, its steps, its owned snapshots, and their configurations,
+captures the run again, and only proceeds if the document hash is unchanged.
+It inserts the bundle row and sets the markers together, so the database
+decides every race: two archivers racing on one run leave one bundle, and the
+loser's object is removed.
+
+``ArchivePass`` adds the scheduled sweep on top: one lease across all
+replicas, a saved position, and counts. ``archive_runs`` is the targeted
+form, which forces past the age and model-link rules for named runs and
+needs no lease, because each run is still retired under its own row locks.
 
 Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 from time import monotonic
-from typing import ClassVar, Iterator, Literal, Optional
+from typing import ClassVar, Iterator, List, Literal, Optional, Sequence
 from uuid import UUID, uuid4
 
+from pydantic import BaseModel
 from sqlalchemy import Engine, bindparam, delete, select, update
 from sqlmodel import Session, SQLModel, col
 
+from zenml.config.server_config import ArchiveSettings
 from zenml.enums import RetentionExclusion, RetentionFailure, RetentionOutcome
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
-    IllegalOperationError,
 )
 from zenml.logger import get_logger
-from zenml.models.v2.misc.retention import RetentionSettings
+from zenml.models.v2.misc.retention import (
+    MAX_REFUSALS,
+    ArchiveRefusal,
+    ArchiveResponse,
+)
 from zenml.zen_stores.retention import transactions
 from zenml.zen_stores.retention.capture import capture_run
 from zenml.zen_stores.retention.eligibility import (
@@ -51,7 +61,7 @@ from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
-    ProjectSchema,
+    ServerSettingsSchema,
     StepConfigurationSchema,
     StepRunSchema,
 )
@@ -63,215 +73,124 @@ RunOutcome = Literal["archived", "skipped", "oversized", "failed"]
 # Snapshot rows require these columns, so retirement stores empty objects.
 EMPTY_JSON = canonical_json({}).decode()
 
+# Targeted archiving overlaps storage round trips without opening enough
+# database sessions to matter against the server's connection pool.
+MAX_ARCHIVE_WORKERS = 4
+
+
+class ArchiveAttempt(BaseModel):
+    """How one run's archiving ended, and the reason if it was refused."""
+
+    run_id: UUID
+    outcome: RunOutcome
+    exclusion: Optional[RetentionExclusion] = None
+
 
 class _PassReplaced(Exception):
-    """Another pass took over this project's state after its lease expired."""
+    """Another sweep took over the saved state after its lease expired."""
 
 
-class _PolicyChanged(Exception):
-    """The project's saved policy changed after this pass accepted it."""
-
-
-class ArchivePass:
-    """One bounded archive pass over a project."""
-
-    MAX_SECONDS: ClassVar[int] = 60
+class RunArchiver:
+    """Archives runs one at a time against one configured archive storage."""
 
     def __init__(
         self,
         engine: Engine,
         storage: ArchiveStorage,
-        project_id: UUID,
-        policy: RetentionSettings,
+        settings: ArchiveSettings,
     ) -> None:
-        """Bind an enabled policy without touching the database.
+        """Bind the database and storage without touching either.
 
         Args:
             engine: Metadata database.
             storage: Archive storage.
-            project_id: Authorized project.
-            policy: Saved project policy for this pass.
-
-        Raises:
-            IllegalOperationError: The project has no archive age configured.
+            settings: The server's archive settings.
         """
-        if policy.archive_after_days is None:
-            raise IllegalOperationError(
-                "Execution retention is disabled for this project."
-            )
         self.engine = engine
         self.storage = storage
-        self.project_id = project_id
-        self.policy = policy.model_copy(deep=True)
-        self.operation_id = uuid4()
-        self.state = RetentionState()
+        self.settings = settings
 
-    def accept(self) -> None:
-        """Take over the project's pass state for this pass.
-
-        Raises:
-            ExecutionRetentionConflictError: The policy changed, or another
-                pass still holds the lease.
-        """
-        with transactions.transaction(self.engine) as session:
-            if self._load(session) != self.policy:
-                raise ExecutionRetentionConflictError(
-                    "The retention policy changed before the pass started."
-                )
-            now = transactions.database_now(session)
-            if self.state.is_live(now):
-                raise ExecutionRetentionConflictError(
-                    "An archive pass is already running for this project. "
-                    "Retry after it finishes."
-                )
-            self.state.start(self.operation_id)
-            self._save(session, now)
-
-    def abort(self, error_code: RetentionFailure) -> None:
-        """Record a pass that failed before it started.
+    def archive(
+        self, run_id: UUID, evaluated_at: datetime, *, force: bool = False
+    ) -> ArchiveAttempt:
+        """Inspect one run and archive it when every rule allows it.
 
         Args:
-            error_code: Safe failure classification.
-        """
-        self._finish(RetentionOutcome.FAILED, error_code)
-
-    def run(self) -> RetentionState:
-        """Archive a bounded batch and record the outcome.
-
-        The pass must have been accepted first.
+            run_id: Candidate run.
+            evaluated_at: Evaluation time shared by the whole batch.
+            force: Ignore the age, model-link, and restore-grace rules.
 
         Returns:
-            The saved state after the pass.
+            How the attempt ended, with a reason when the run was refused.
         """
-        started = monotonic()
         try:
-            with self._update() as state:
-                state.last_outcome = RetentionOutcome.RUNNING
-            if not self.storage.probe():
-                return self._finish(
-                    RetentionOutcome.FAILED,
-                    RetentionFailure.STORAGE_CONFIGURATION,
-                )
             with Session(self.engine) as session:
-                evaluated_at = transactions.database_now(session)
-                candidates = discover_runs(
-                    session,
-                    self.project_id,
-                    self.policy,
-                    evaluated_at,
-                    self.state.cursor,
-                    self.policy.max_runs_per_pass + 1,
-                    self.state.oversized_run_ids,
+                run = inspect_run(
+                    session, run_id, self.settings, evaluated_at, force=force
                 )
-            for cursor in candidates[: self.policy.max_runs_per_pass]:
-                if monotonic() - started >= self.MAX_SECONDS:
-                    return self._finish(RetentionOutcome.PAUSED)
-                self._process(cursor, evaluated_at)
-            return self._finish(
-                RetentionOutcome.SUCCEEDED
-                if len(candidates) <= self.policy.max_runs_per_pass
-                else RetentionOutcome.PAUSED
-            )
-        except _PassReplaced:
-            return self.state
-        except _PolicyChanged:
-            return self._finish(RetentionOutcome.PAUSED)
+            if run.exclusion is RetentionExclusion.OVERSIZED:
+                return ArchiveAttempt(
+                    run_id=run_id, outcome="oversized", exclusion=run.exclusion
+                )
+            if run.exclusion is not None:
+                return ArchiveAttempt(
+                    run_id=run_id, outcome="skipped", exclusion=run.exclusion
+                )
+            return self._archive(run, evaluated_at, force)
         except Exception as error:
             # SQL errors can contain archived payloads; log only their type.
             logger.error(
-                "Retention pass for project %s failed (%s).",
-                self.project_id,
-                type(error).__name__,
+                "Archiving run %s failed (%s).", run_id, type(error).__name__
             )
-            return self._finish(
-                RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
-            )
-
-    def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
-        """Archive or skip one run and save the position after it.
-
-        Args:
-            cursor: Run to examine.
-            evaluated_at: Evaluation time shared by the whole pass.
-        """
-        with Session(self.engine) as session:
-            run = inspect_run(
-                session,
-                self.project_id,
-                cursor.run_id,
-                self.policy,
-                evaluated_at,
-            )
-        outcome: RunOutcome
-        if run.exclusion == RetentionExclusion.OVERSIZED:
-            outcome = "oversized"
-        elif run.exclusion is not None:
-            outcome = "skipped"
-        else:
-            outcome = self._archive(run, evaluated_at)
-
-        with self._update() as state:
-            state.cursor = cursor
-            if outcome == "archived":
-                state.archived += 1
-            elif outcome == "oversized":
-                state.oversized += 1
-                if run.exclusion is None:
-                    # Found only by reading the run; skip it in later scans.
-                    state.remember_oversized(run.run_id)
-            elif outcome == "failed":
-                state.failed += 1
-            else:
-                state.skipped += 1
+            return ArchiveAttempt(run_id=run_id, outcome="failed")
 
     def _archive(
-        self, run: ArchivableRun, evaluated_at: datetime
-    ) -> RunOutcome:
+        self, run: ArchivableRun, evaluated_at: datetime, force: bool
+    ) -> ArchiveAttempt:
         """Capture, upload, verify, and retire one eligible run.
 
         Args:
             run: Inspected, eligible run.
-            evaluated_at: Evaluation time shared by the whole pass.
+            evaluated_at: Evaluation time shared by the whole batch.
+            force: Rule set to reapply under the retirement locks.
 
         Returns:
             How the attempt ended.
 
         Raises:
-            _PolicyChanged: The saved policy changed during retirement.
-        """  # noqa: DOC503
+            ExecutionRetentionIntegrityError: The uploaded object does not
+                match the capture; caught below and reported as a failure.
+        """  # noqa: DOC502
         try:
             with Session(self.engine) as session:
                 encoded = encode(capture_run(session, run))
         except ExecutionRetentionConflictError as error:
-            return self._conflict_outcome(error)
+            return self._conflict_attempt(run.run_id, error)
         bundle_id = uuid4()
-        uri = self.storage.object_uri(self.project_id, run.run_id, bundle_id)
+        uri = self.storage.object_uri(run.project_id, run.run_id, bundle_id)
         try:
             self.storage.write(uri, encoded.data)
             if self.storage.read(uri, len(encoded.data)) != encoded.data:
                 raise ExecutionRetentionIntegrityError(
                     "Uploaded archive object differs from the capture."
                 )
-            self._retire(run, bundle_id, uri, encoded, evaluated_at)
-            return "archived"
-        except _PolicyChanged:
-            self._discard(bundle_id, uri)
-            raise
+            self._retire(run, bundle_id, uri, encoded, evaluated_at, force)
+            return ArchiveAttempt(run_id=run.run_id, outcome="archived")
         except ExecutionRetentionConflictError as error:
             self._discard(bundle_id, uri)
-            return self._conflict_outcome(error)
+            return self._conflict_attempt(run.run_id, error)
         except Exception as error:
             if self._discard(bundle_id, uri):
                 # The commit succeeded but its acknowledgement was lost.
-                return "archived"
+                return ArchiveAttempt(run_id=run.run_id, outcome="archived")
             if transactions.is_transient_lock_error(error):
-                return "skipped"
+                return ArchiveAttempt(run_id=run.run_id, outcome="skipped")
             logger.error(
                 "Archiving run %s failed (%s).",
                 run.run_id,
                 type(error).__name__,
             )
-            return "failed"
+            return ArchiveAttempt(run_id=run.run_id, outcome="failed")
 
     def _discard(self, bundle_id: UUID, uri: str) -> bool:
         """Remove an uploaded object unless its bundle row committed.
@@ -300,21 +219,30 @@ class ArchivePass:
         return committed
 
     @staticmethod
-    def _conflict_outcome(
-        error: ExecutionRetentionConflictError,
-    ) -> RunOutcome:
-        """Classify a run that could not be archived as-is.
+    def _conflict_attempt(
+        run_id: UUID, error: ExecutionRetentionConflictError
+    ) -> ArchiveAttempt:
+        """Classify a run that could not be archived as captured.
 
         Args:
+            run_id: Run that conflicted.
             error: Conflict raised by capture or retirement.
 
         Returns:
             Oversized when the run exceeds a limit, otherwise skipped; a
-            changed run is reconsidered by a later pass.
+            changed run is reconsidered by a later attempt.
         """
         if error.error_code == RetentionFailure.OVERSIZED:
-            return "oversized"
-        return "skipped"
+            return ArchiveAttempt(
+                run_id=run_id,
+                outcome="oversized",
+                exclusion=RetentionExclusion.OVERSIZED,
+            )
+        return ArchiveAttempt(
+            run_id=run_id,
+            outcome="skipped",
+            exclusion=RetentionExclusion.NOT_ELIGIBLE,
+        )
 
     def _retire(
         self,
@@ -323,6 +251,7 @@ class ArchivePass:
         uri: str,
         encoded: EncodedDocument,
         evaluated_at: datetime,
+        force: bool,
     ) -> None:
         """Replace the run's SQL detail with the verified bundle atomically.
 
@@ -331,12 +260,12 @@ class ArchivePass:
             bundle_id: Identity of the uploaded object's bundle row.
             uri: Uploaded object.
             encoded: Uploaded bytes and their content hash.
-            evaluated_at: Evaluation time shared by the whole pass.
+            evaluated_at: Evaluation time shared by the whole batch.
+            force: Rule set the run was inspected under.
 
         Raises:
             ExecutionRetentionConflictError: The run changed or became
                 ineligible after capture.
-            _PolicyChanged: The saved policy changed after acceptance.
         """
         with transactions.transaction(self.engine) as session:
             # Lock order shared with restore and writers: the run, its steps,
@@ -354,7 +283,7 @@ class ArchivePass:
             ).one_or_none()
             if (
                 locked is None
-                or locked.project_id != self.project_id
+                or locked.project_id != run.project_id
                 or locked.archive_bundle_id is not None
             ):
                 raise ExecutionRetentionConflictError(
@@ -372,19 +301,12 @@ class ArchivePass:
                 if snapshot_id is not None
             }
             transactions.lock_ids(session, PipelineSnapshotSchema, referenced)
-            saved_raw = session.execute(
-                select(col(ProjectSchema.retention_settings)).where(
-                    col(ProjectSchema.id) == self.project_id
-                )
-            ).scalar_one()
-            if RetentionSettings.load(saved_raw) != self.policy:
-                raise _PolicyChanged()
             fresh = inspect_run(
                 session,
-                self.project_id,
                 run.run_id,
-                self.policy,
+                self.settings,
                 evaluated_at,
+                force=force,
             )
             if fresh.exclusion is not None:
                 raise ExecutionRetentionConflictError(
@@ -413,7 +335,7 @@ class ArchivePass:
             session.add(
                 ArchiveBundleSchema(
                     id=bundle_id,
-                    project_id=self.project_id,
+                    project_id=run.project_id,
                     run_id=run.run_id,
                     uri=uri,
                     size_bytes=len(encoded.data),
@@ -424,8 +346,169 @@ class ArchivePass:
             session.flush()
             _clear_detail(session, document, bundle_id)
 
-    def _load(self, session: Session) -> RetentionSettings:
-        """Lock the project while changing its latest pass state.
+
+def archive_runs(
+    engine: Engine,
+    storage: ArchiveStorage,
+    settings: ArchiveSettings,
+    run_ids: Sequence[UUID],
+) -> ArchiveResponse:
+    """Archive named runs now, ignoring age, model links, and restore grace.
+
+    The safety rules still apply, so a run that is unfinished, resumable, or
+    owned by an active root stays in the database with its reason. No lease
+    is taken: every run is retired under its own row locks, so a targeted
+    archive and the scheduled sweep can only ever duplicate work, never
+    corrupt each other.
+
+    Args:
+        engine: Metadata database.
+        storage: Archive storage.
+        settings: The server's archive settings.
+        run_ids: Runs to archive, already authorized by the caller.
+
+    Returns:
+        Counts and a capped list of the runs that were refused.
+    """
+    archiver = RunArchiver(engine, storage, settings)
+    with Session(engine) as session:
+        evaluated_at = transactions.database_now(session)
+    result = ArchiveResponse()
+    refusals: List[ArchiveRefusal] = []
+    with ThreadPoolExecutor(max_workers=MAX_ARCHIVE_WORKERS) as pool:
+        attempts = pool.map(
+            lambda run_id: archiver.archive(run_id, evaluated_at, force=True),
+            run_ids,
+        )
+        for attempt in attempts:
+            if attempt.outcome == "archived":
+                result.archived += 1
+            elif attempt.outcome == "oversized":
+                result.oversized += 1
+            elif attempt.outcome == "failed":
+                result.failed += 1
+            else:
+                result.skipped += 1
+            if attempt.exclusion is not None:
+                refusals.append(
+                    ArchiveRefusal(
+                        run_id=attempt.run_id, reason=attempt.exclusion
+                    )
+                )
+    result.refusals = refusals[:MAX_REFUSALS]
+    result.refusals_truncated = len(refusals) > MAX_REFUSALS
+    return result
+
+
+class ArchivePass(RunArchiver):
+    """One bounded archive sweep over every project, oldest runs first."""
+
+    MAX_SECONDS: ClassVar[int] = 60
+
+    def __init__(
+        self,
+        engine: Engine,
+        storage: ArchiveStorage,
+        settings: ArchiveSettings,
+    ) -> None:
+        """Prepare a sweep without touching the database.
+
+        Args:
+            engine: Metadata database.
+            storage: Archive storage.
+            settings: The server's archive settings.
+        """
+        super().__init__(engine, storage, settings)
+        self.operation_id = uuid4()
+        self.settings_id: Optional[UUID] = None
+        self.state = RetentionState()
+
+    def accept(self) -> None:
+        """Take the server-wide sweep lease.
+
+        Raises:
+            ExecutionRetentionConflictError: Another replica is sweeping.
+        """
+        with transactions.transaction(self.engine) as session:
+            self._load(session)
+            now = transactions.database_now(session)
+            if self.state.is_live(now):
+                raise ExecutionRetentionConflictError(
+                    "An archive sweep is already running on this server. "
+                    "Retry after it finishes."
+                )
+            self.state.start(self.operation_id)
+            self._save(session, now)
+
+    def run(self) -> RetentionState:
+        """Archive a bounded batch and record the outcome.
+
+        The sweep must have taken the lease first.
+
+        Returns:
+            The saved state after the sweep.
+        """
+        started = monotonic()
+        try:
+            if not self.storage.probe():
+                return self._finish(
+                    RetentionOutcome.FAILED,
+                    RetentionFailure.STORAGE_CONFIGURATION,
+                )
+            with Session(self.engine) as session:
+                evaluated_at = transactions.database_now(session)
+                candidates = discover_runs(
+                    session,
+                    self.settings,
+                    evaluated_at,
+                    self.state.cursor,
+                    self.settings.max_runs_per_pass + 1,
+                    self.state.oversized_run_ids,
+                )
+            for cursor in candidates[: self.settings.max_runs_per_pass]:
+                if monotonic() - started >= self.MAX_SECONDS:
+                    return self._finish(RetentionOutcome.PAUSED)
+                self._process(cursor, evaluated_at)
+            return self._finish(
+                RetentionOutcome.SUCCEEDED
+                if len(candidates) <= self.settings.max_runs_per_pass
+                else RetentionOutcome.PAUSED
+            )
+        except _PassReplaced:
+            return self.state
+        except Exception as error:
+            # SQL errors can contain archived payloads; log only their type.
+            logger.error(
+                "Archive sweep failed (%s).",
+                type(error).__name__,
+            )
+            return self._finish(
+                RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
+            )
+
+    def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
+        """Archive or skip one run and save the position after it.
+
+        Args:
+            cursor: Run to examine.
+            evaluated_at: Evaluation time shared by the whole sweep.
+        """
+        attempt = self.archive(cursor.run_id, evaluated_at)
+        with self._update() as state:
+            state.cursor = cursor
+            if attempt.outcome == "archived":
+                state.archived += 1
+            elif attempt.outcome == "oversized":
+                state.oversized += 1
+                # Runs over the byte budget are only found by reading them.
+                state.remember_oversized(attempt.run_id)
+            elif attempt.outcome == "failed":
+                state.failed += 1
+            else:
+                state.skipped += 1
+
+    def _load(self, session: Session) -> None:
+        """Lock the settings row while changing the latest sweep state.
 
         This lock is held only for progress updates, never during capture,
         storage I/O, or retirement. The operation ID still prevents a replaced
@@ -433,26 +516,24 @@ class ArchivePass:
 
         Args:
             session: Current short progress transaction.
-
-        Returns:
-            The saved project policy.
         """
-        project = session.execute(
+        row = session.execute(
             select(
-                col(ProjectSchema.retention_state),
-                col(ProjectSchema.retention_settings),
-            )
-            .where(col(ProjectSchema.id) == self.project_id)
-            .with_for_update()
+                col(ServerSettingsSchema.id),
+                col(ServerSettingsSchema.retention_state),
+            ).with_for_update()
         ).one()
-        self.state = RetentionState.load(project.retention_state)
-        return RetentionSettings.load(project.retention_settings)
+        self.settings_id = row.id
+        self.state = RetentionState.load(row.retention_state)
 
     def _save(self, session: Session, now: datetime) -> None:
-        """Save progress while holding the project row lock.
+        """Save progress while holding the settings row lock.
+
+        The statement writes only ``retention_state``, so sweep progress
+        never looks like a settings change to clients watching ``updated``.
 
         Args:
-            session: Transaction that locked and loaded the project.
+            session: Transaction that locked and loaded the settings row.
             now: Current database time for the lease and finish timestamp.
         """
         active = self.state.last_outcome in RetentionState.ACTIVE_OUTCOMES
@@ -461,33 +542,25 @@ class ArchivePass:
         )
         self.state.last_finished_at = None if active else now
         session.execute(
-            update(ProjectSchema)
-            .where(col(ProjectSchema.id) == self.project_id)
+            update(ServerSettingsSchema)
+            .where(col(ServerSettingsSchema.id) == self.settings_id)
             .values(retention_state=self.state.model_dump_json())
         )
 
     @contextmanager
-    def _update(
-        self, *, require_policy: bool = True
-    ) -> Iterator[RetentionState]:
-        """Change progress only while this pass still owns it.
-
-        Args:
-            require_policy: Stop if the project's policy changed.
+    def _update(self) -> Iterator[RetentionState]:
+        """Change progress only while this sweep still owns it.
 
         Yields:
             Locked state to update before committing the short transaction.
 
         Raises:
-            _PassReplaced: Another pass took over the state.
-            _PolicyChanged: The saved policy changed.
+            _PassReplaced: Another sweep took over the state.
         """
         with transactions.transaction(self.engine) as session:
-            policy = self._load(session)
+            self._load(session)
             if self.state.operation_id != self.operation_id:
                 raise _PassReplaced()
-            if require_policy and policy != self.policy:
-                raise _PolicyChanged()
             yield self.state
             self._save(session, transactions.database_now(session))
 
@@ -496,7 +569,7 @@ class ArchivePass:
         outcome: RetentionOutcome,
         failure: Optional[RetentionFailure] = None,
     ) -> RetentionState:
-        """Record the pass outcome unless another pass took over.
+        """Record the sweep outcome unless another sweep took over.
 
         Args:
             outcome: Final outcome.
@@ -506,18 +579,14 @@ class ArchivePass:
             The saved state.
         """
         try:
-            with self._update(require_policy=False) as state:
+            with self._update() as state:
                 state.last_outcome = outcome
                 if outcome == RetentionOutcome.SUCCEEDED:
                     state.cursor = None
         except _PassReplaced:
             pass
         if failure is not None:
-            logger.warning(
-                "Retention pass for project %s failed (%s).",
-                self.project_id,
-                failure,
-            )
+            logger.warning("Archive sweep failed (%s).", failure)
         return self.state
 
 

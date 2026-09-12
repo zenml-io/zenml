@@ -23,7 +23,7 @@ from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
 from zenml.zen_stores.retention import fences, transactions
-from zenml.zen_stores.retention.archiver import ArchivePass
+from zenml.zen_stores.retention.archiver import ArchivePass, archive_runs
 from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.retention.storage import ArchiveStorage
@@ -141,7 +141,7 @@ from zenml.config.pipeline_run_configuration import (
     ReplayRunConfiguration,
 )
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.config.server_config import ServerConfiguration
+from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
@@ -176,7 +176,7 @@ from zenml.enums import (
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
     RestoreOutcome,
-    RetentionFailure,
+    RetentionOutcome,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -393,9 +393,9 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
 from zenml.models.v2.misc.retention import (
+    ArchiveRequest,
+    ArchiveResponse,
     RestoreResponse,
-    RetentionPassResponse,
-    RetentionSettings,
     RetentionStatusResponse,
 )
 from zenml.orchestrators.legacy_dag_runner import reverse_dag
@@ -1216,7 +1216,6 @@ class SqlZenStore(BaseZenStore):
         jl_arg(PipelineRunSchema.pipeline_id),
         jl_arg(PipelineRunSchema.child_key),
         jl_arg(PipelineRunSchema.root_run_id),
-        jl_arg(PipelineRunSchema.retain),
         jl_arg(PipelineRunSchema.archive_bundle_id),
         jl_arg(PipelineRunSchema.start_time),
     )
@@ -10908,8 +10907,16 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: If the service connector is still referenced
-                by one or more stack components.
+                by one or more stack components, or by the execution archive.
         """
+        archive = ServerConfiguration.get_server_config().archive
+        if archive.connector_id == service_connector_id:
+            raise IllegalOperationError(
+                f"Service connector with ID {service_connector_id} cannot be "
+                "deleted as this server archives execution detail with it. "
+                "Unset ZENML_SERVER_ARCHIVE__CONNECTOR_ID before deleting it, "
+                "or archived runs become unreadable."
+            )
         with Session(self.engine) as session:
             service_connector = self._get_schema_by_id(
                 resource_id=service_connector_id,
@@ -14186,26 +14193,44 @@ class SqlZenStore(BaseZenStore):
 
     @cached_property
     def archive_storage(self) -> ArchiveStorage:
-        """Create the storage named by the server's archive URI.
+        """Create the storage named by the server's archive settings.
 
         Returns:
-            Storage rooted at the archive URI.
+            Storage rooted at the configured archive URI.
+
+        Raises:
+            ExecutionRetentionUnavailableError: Archiving is disabled or the
+                storage cannot be created.
+        """  # noqa: DOC502
+        settings = self.archive_settings
+        return ArchiveStorage.from_uri(
+            settings.root_uri, connector_id=settings.connector_id
+        )
+
+    @property
+    def archive_settings(self) -> ArchiveSettings:
+        """Read the server's archive settings, refusing a disabled server.
+
+        Returns:
+            The enabled archive settings.
 
         Raises:
             IllegalOperationError: The database is SQLite.
-            ExecutionRetentionUnavailableError: No archive URI is configured,
-                or its storage cannot be created.
+            ExecutionRetentionUnavailableError: Archiving is disabled.
         """
         if self.config.driver != SQLDatabaseDriver.MYSQL:
             raise IllegalOperationError(
                 "Execution archiving requires a MySQL database."
             )
-        uri = ServerConfiguration.get_server_config().archive_uri
-        if not uri:
+        settings = ServerConfiguration.get_server_config().archive
+        if not settings.enabled:
             raise ExecutionRetentionUnavailableError(
-                "Execution archiving is not configured on this server."
+                "Execution archiving is not configured on this server; ask "
+                "your server administrator to set "
+                "ZENML_SERVER_ARCHIVE__BACKEND and "
+                "ZENML_SERVER_ARCHIVE__URI."
             )
-        return ArchiveStorage.from_uri(uri)
+        return settings
 
     def get_step_run_owner(self, step_run_id: UUID) -> PipelineRunResponse:
         """Load the header of the run that owns a step, in one query.
@@ -14235,104 +14260,110 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=False, include_resources=False
             )
 
-    def prepare_retention_pass(self, project_id: UUID) -> ArchivePass:
-        """Accept an enabled project policy before submitting background work.
-
-        Args:
-            project_id: Authorized project.
+    def run_archive_sweep(self) -> RetentionOutcome:
+        """Run one bounded archive sweep, if no other replica is sweeping.
 
         Returns:
-            Pass with its accepted state saved before submission.
+            The sweep outcome.
 
         Raises:
-            IllegalOperationError: Archiving or the project policy is disabled.
-            ExecutionRetentionConflictError: Another pass is running, or the
-                saved policy changed before acceptance.
-        """  # noqa: DOC503
-        if not ServerConfiguration.get_server_config().archive_enabled:
-            raise IllegalOperationError(
-                "Execution archiving is disabled on this server; ask your "
-                "server administrator to enable it."
-            )
-        project = self.get_project(project_id)
+            ExecutionRetentionConflictError: Another replica holds the lease.
+        """  # noqa: DOC502,DOC503
         archive_pass = ArchivePass(
-            self.engine,
-            self.archive_storage,
-            project_id,
-            project.retention,
+            self.engine, self.archive_storage, self.archive_settings
         )
         archive_pass.accept()
-        return archive_pass
+        return archive_pass.run().last_outcome
 
-    def execute_retention_pass(
-        self, archive_pass: ArchivePass
-    ) -> RetentionPassResponse:
-        """Run an accepted pass.
+    def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
+        """Archive the requested runs now, past the age and model-link rules.
 
         Args:
-            archive_pass: Authorized pass accepted before submission.
+            request: Authorized runs, pipeline, or project to archive.
 
         Returns:
-            The pass outcome.
+            Counts and the runs that were refused, each with a reason.
         """
-        return RetentionPassResponse(outcome=archive_pass.run().last_outcome)
-
-    def abort_retention_pass(
-        self, archive_pass: ArchivePass, error_code: RetentionFailure
-    ) -> None:
-        """Record a failed submission or revoked permission for a pass.
-
-        Args:
-            archive_pass: Pass accepted by the submitting request.
-            error_code: Safe failure classification.
-        """
-        archive_pass.abort(error_code)
-
-    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
-        """Run one archive pass in this process using the saved policy.
-
-        Args:
-            project_id: Authorized project.
-
-        Returns:
-            The succeeded, paused, or failed outcome.
-        """
-        return self.execute_retention_pass(
-            self.prepare_retention_pass(project_id)
+        settings = self.archive_settings
+        run_ids, more = self._expand_archive_target(request, settings)
+        result = archive_runs(
+            self.engine, self.archive_storage, settings, run_ids
         )
+        # Expansion always returns the oldest runs, so a batch that archived
+        # nothing would return the same permanently refused runs forever.
+        # Only promise progress when repeating can actually make some.
+        result.pending = more and result.archived > 0
+        return result
 
-    def get_retention_status(
-        self, project_id: UUID
-    ) -> RetentionStatusResponse:
-        """Read the latest pass without scanning runs or storage.
+    def _expand_archive_target(
+        self, request: ArchiveRequest, settings: ArchiveSettings
+    ) -> Tuple[List[UUID], bool]:
+        """Resolve one archive target to a bounded batch of run IDs.
+
+        Runs already archived, still running, or never finished are left out
+        here so the batch is spent on runs that can actually move.
 
         Args:
-            project_id: Authorized project.
+            request: Validated target.
+            settings: The server's archive settings.
 
         Returns:
-            Latest pass outcome, counts, and archive configuration.
+            The runs to attempt, oldest first, and whether more remain.
+        """
+        if request.run_ids is not None:
+            # A repeated ID would otherwise be archived on one thread and
+            # refused on another, counting one run twice.
+            return list(dict.fromkeys(request.run_ids)), False
+        statement = select(
+            col(PipelineRunSchema.id), col(PipelineRunSchema.end_time)
+        ).where(
+            col(PipelineRunSchema.archive_bundle_id).is_(None),
+            col(PipelineRunSchema.end_time).is_not(None),
+        )
+        if request.pipeline_id is not None:
+            statement = statement.where(
+                col(PipelineRunSchema.pipeline_id) == request.pipeline_id
+            )
+        else:
+            statement = statement.where(
+                col(PipelineRunSchema.project_id) == request.project_id
+            )
+        limit = settings.max_runs_per_pass
+        with Session(self.engine) as session:
+            rows = session.execute(
+                statement.order_by(
+                    col(PipelineRunSchema.end_time),
+                    col(PipelineRunSchema.id),
+                ).limit(limit + 1)
+            ).all()
+        return [row.id for row in rows[:limit]], len(rows) > limit
+
+    def get_retention_status(self) -> RetentionStatusResponse:
+        """Read the latest sweep without scanning runs or storage.
+
+        Returns:
+            Latest sweep outcome, counts, and archive configuration.
         """
         with Session(self.engine) as session:
-            project = session.exec(
-                select(ProjectSchema).where(
-                    col(ProjectSchema.id) == project_id
-                )
-            ).one()
+            raw = session.execute(
+                select(col(ServerSettingsSchema.retention_state))
+            ).scalar_one()
             now = transactions.database_now(session)
-            state = RetentionState.load(project.retention_state)
-            policy = RetentionSettings.load(project.retention_settings)
-        configuration = ServerConfiguration.get_server_config()
+        state = RetentionState.load(raw)
         try:
-            self.archive_storage
+            settings = self.archive_settings
         except (ExecutionRetentionUnavailableError, IllegalOperationError):
+            settings = ServerConfiguration.get_server_config().archive
             archive_configured = False
         else:
-            archive_configured = True
+            try:
+                self.archive_storage
+            except ExecutionRetentionUnavailableError:
+                archive_configured = False
+            else:
+                archive_configured = True
         return state.to_response(
-            policy,
-            archive_enabled=configuration.archive_enabled,
-            archive_configured=archive_configured,
-            now=now,
+            settings, archive_configured=archive_configured, now=now
         )
 
     def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:

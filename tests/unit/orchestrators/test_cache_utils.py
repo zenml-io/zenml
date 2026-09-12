@@ -26,6 +26,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
+from zenml.exceptions import ExecutionArchivedError
 from zenml.models import Page, PipelineRequest
 from zenml.orchestrators import cache_utils
 from zenml.pipelines.pipeline_definition import Pipeline
@@ -293,10 +294,14 @@ def test_fetching_cached_step_run_queries_cache_candidates(
         cache_key="cache_key",
         cache_expired=False,
         status=ExecutionStatus.COMPLETED,
+        archive_bundle_id="isnull:",
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
         hydrate=True,
     )
+
+    mock_list_run_steps.side_effect = ExecutionArchivedError("archived")
+    assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
 
 
 def test_fetching_cached_step_run_uses_latest_candidate(
@@ -306,7 +311,8 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_step_request_model,
 ):
     """Tests that the latest step run with the same cache key is used for
-    caching."""
+    caching.
+    """
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
             name="sample_pipeline",

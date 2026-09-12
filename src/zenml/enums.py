@@ -619,12 +619,21 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
+class ArchiveBackend(StrEnum):
+    """Where the server writes archived execution detail."""
+
+    DISABLED = "disabled"
+    LOCAL = "local"
+    S3 = "s3"
+    GCS = "gcs"
+    AZURE = "azure"
+
+
 class RetentionOutcome(StrEnum):
-    """Outcome of the latest archive pass of a project."""
+    """Outcome of the server's latest archive sweep."""
 
     IDLE = "idle"
     EXPIRED = "expired"
-    ACCEPTED = "accepted"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
@@ -636,8 +645,6 @@ class RetentionFailure(StrEnum):
 
     ARCHIVE_FAILED = "archive_failed"
     STORAGE_CONFIGURATION = "storage_configuration"
-    PERMISSION_REVOKED = "permission_revoked"
-    SUBMISSION_FAILED = "submission_failed"
     OVERSIZED = "oversized"
 
 
@@ -646,7 +653,6 @@ class RetentionExclusion(StrEnum):
 
     NOT_ELIGIBLE = "not_eligible"
     NOT_OLD = "not_old"
-    PINNED = "pinned"
     RESUMABLE_FAILED = "resumable_failed"
     ROOT_ACTIVE = "root_active"
     RESTORED_GRACE = "restored_grace"

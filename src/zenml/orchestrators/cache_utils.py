@@ -21,6 +21,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.enums import ExecutionStatus, SorterOps
+from zenml.exceptions import ExecutionArchivedError
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
 from zenml.utils import source_code_utils, source_utils
@@ -226,7 +227,8 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     """If a given step can be cached, get the corresponding existing step run.
 
     A step run can be cached if there is an existing step run in the same
-    project which has the same cache key and was successfully executed.
+    project which has the same cache key, was successfully executed, and has
+    not been archived.
 
     Args:
         cache_key: The cache key of the step.
@@ -236,15 +238,20 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     """
     client = Client()
 
-    cache_candidates = client.list_run_steps(
-        project=client.active_project.id,
-        cache_key=cache_key,
-        cache_expired=False,
-        status=ExecutionStatus.COMPLETED,
-        sort_by=f"{SorterOps.DESCENDING}:created",
-        size=1,
-        hydrate=True,
-    ).items
+    try:
+        cache_candidates = client.list_run_steps(
+            project=client.active_project.id,
+            cache_key=cache_key,
+            cache_expired=False,
+            status=ExecutionStatus.COMPLETED,
+            archive_bundle_id="isnull:",
+            sort_by=f"{SorterOps.DESCENDING}:created",
+            size=1,
+            hydrate=True,
+        ).items
+    except ExecutionArchivedError:
+        # Retirement can race with loading a candidate's configuration.
+        return None
 
     if cache_candidates:
         return cache_candidates[0]

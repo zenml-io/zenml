@@ -1,11 +1,13 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Archive object storage built from the server's archive URI.
+"""Archive object storage built from the server's archive settings.
 
 The URI names a bucket prefix or a local directory, for example
-``s3://bucket/zenml-archive``. Credentials are never configured here: the
-artifact store flavor that owns the URI's scheme is instantiated without
-any, so its SDK uses the ambient credential chain of the server process,
-such as an IAM role, workload identity, or managed identity.
+``s3://bucket/zenml-archive``. By default no credentials are configured
+here: the artifact store flavor that owns the URI's scheme is instantiated
+without any, so its SDK uses the ambient credential chain of the server
+process, such as an IAM role, workload identity, or managed identity. A
+server may instead name a ZenML service connector, which that artifact store
+connects and refreshes exactly as a registered component would.
 
 Archive I/O never goes through ``zenml.io.fileio``. That module dispatches on
 a process-wide filesystem registry, and outside the server every artifact
@@ -13,7 +15,7 @@ store instantiation re-registers its scheme with its own credentials. This
 wrapper keeps one artifact store instance and calls its methods directly.
 """
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID, uuid4, uuid5
 
 from zenml.artifact_stores.base_artifact_store import (
@@ -96,11 +98,20 @@ class ArchiveStorage:
         self.artifact_store = artifact_store
 
     @classmethod
-    def from_uri(cls, uri: str) -> "ArchiveStorage":
+    def from_uri(
+        cls, uri: str, connector_id: Optional[UUID] = None
+    ) -> "ArchiveStorage":
         """Instantiate the artifact store flavor that owns an archive URI.
+
+        Without a connector the store authenticates with the server process's
+        ambient credentials. A connector ID hands it a ZenML service
+        connector instead, which the artifact store refreshes on its own once
+        the credentials expire.
 
         Args:
             uri: Archive root URI or local directory.
+            connector_id: Service connector to authenticate with, or None to
+                use ambient credentials.
 
         Returns:
             Storage rooted at the URI.
@@ -125,12 +136,14 @@ class ArchiveStorage:
                 user=None,
                 created=now,
                 updated=now,
+                connector=connector_id,
+                connector_requirements=flavor.service_connector_requirements,
             )
         except Exception as error:
             raise ExecutionRetentionUnavailableError(
                 "The execution archive URI cannot be used; check "
-                "ZENML_SERVER_ARCHIVE_URI and the server's installed "
-                "integrations."
+                "ZENML_SERVER_ARCHIVE__URI, ZENML_SERVER_ARCHIVE__CONNECTOR_ID"
+                " and the server's installed integrations."
             ) from error
         return cls(store)
 

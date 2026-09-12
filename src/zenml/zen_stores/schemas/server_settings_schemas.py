@@ -46,6 +46,11 @@ class ServerSettingsSchema(SQLModel, table=True):
     onboarding_state: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
+    # Position, lease, and counts of the server-wide archive sweep. Written
+    # by the sweep alone, never through `ServerSettingsUpdate`.
+    retention_state: Optional[str] = Field(
+        default=None, sa_column=Column(TEXT, nullable=True)
+    )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
 

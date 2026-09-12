@@ -9,11 +9,9 @@ import pytest
 from sqlalchemy import update
 from sqlmodel import Session, SQLModel
 
+from zenml.config.server_config import ArchiveSettings
 from zenml.models import (
     StackFilter,
-)
-from zenml.models.v2.misc.retention import (
-    RetentionSettings,
 )
 from zenml.zen_stores.retention import eligibility
 from zenml.zen_stores.schemas import (
@@ -29,7 +27,7 @@ from zenml.zen_stores.schemas import (
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-POLICY = RetentionSettings(archive_after_days=90)
+SETTINGS = ArchiveSettings(backend="local", uri="/tmp", after_days=90)
 
 
 def update_record(
@@ -43,12 +41,12 @@ def update_record(
 
 
 def inspect(
-    store: SqlZenStore, run, now, policy=POLICY
+    store: SqlZenStore, run, now, settings=SETTINGS, force=False
 ) -> eligibility.ArchivableRun:
-    """Inspect one run with the fixed test policy and clock."""
+    """Inspect one run with the fixed test settings and clock."""
     with Session(store.engine) as session:
         return eligibility.inspect_run(
-            session, run.project, run.run, policy, now
+            session, run.run, settings, now, force=force
         )
 
 
@@ -78,7 +76,6 @@ def make_resumable(store: SqlZenStore, run) -> None:
         ("running_step", "not_eligible"),
         ("running_child", "not_eligible"),
         ("not_old", "not_old"),
-        ("pinned", "pinned"),
         ("model_link", "model_link"),
         ("resumable_failed", "resumable_failed"),
         ("restored_grace", "restored_grace"),
@@ -97,7 +94,6 @@ def test_each_exclusion(
             run.run,
             {"end_time": NOW - timedelta(days=90)},
         ),
-        "pinned": (PipelineRunSchema, run.run, {"retain": True}),
     }
     if mutation := simple.get(rule):
         update_record(retention_store, mutation[0], mutation[1], **mutation[2])

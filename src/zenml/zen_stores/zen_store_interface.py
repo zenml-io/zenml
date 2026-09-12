@@ -30,6 +30,8 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ArchiveRequest,
+    ArchiveResponse,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -105,7 +107,6 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RestoreResponse,
-    RetentionPassResponse,
     RetentionStatusResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
@@ -2998,30 +2999,25 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             KeyError: If no user with the given ID exists.
         """
 
-    # -------------------- Projects --------------------
+    # -------------------- Execution retention --------------------
 
     @abstractmethod
-    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
-        """Start one bounded archive pass under the saved project policy.
+    def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
+        """Archive the requested runs now, without waiting for a sweep.
 
         Args:
-            project_id: Project whose saved retention policy is addressed.
+            request: Runs, pipeline, or project to archive.
 
         Returns:
-            The accepted submission, or the outcome of a local pass.
+            Counts and the runs that were refused, each with a reason.
         """
 
     @abstractmethod
-    def get_retention_status(
-        self, project_id: UUID
-    ) -> RetentionStatusResponse:
-        """Read the latest project retention pass without object access.
-
-        Args:
-            project_id: Project whose saved retention policy is addressed.
+    def get_retention_status(self) -> RetentionStatusResponse:
+        """Read the server's latest archive sweep without object access.
 
         Returns:
-            Latest pass outcome, counts, and archive configuration.
+            Latest sweep outcome, counts, and archive configuration.
         """
 
     @abstractmethod

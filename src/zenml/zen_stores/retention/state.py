@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Latest archive pass state, stored as JSON on the project row."""
+"""Latest archive sweep state, stored as JSON on the server settings row."""
 
 from datetime import datetime, timedelta
 from typing import ClassVar, FrozenSet, List, Optional
@@ -7,11 +7,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml.config.server_config import ArchiveSettings
 from zenml.enums import RetentionOutcome
-from zenml.models.v2.misc.retention import (
-    RetentionSettings,
-    RetentionStatusResponse,
-)
+from zenml.models.v2.misc.retention import RetentionStatusResponse
 
 
 class Cursor(BaseModel):
@@ -22,18 +20,19 @@ class Cursor(BaseModel):
 
 
 class RetentionState(BaseModel):
-    """One project's saved position and the latest pass outcome and counts.
+    """The server's saved position and the latest sweep outcome and counts.
 
-    ``operation_id`` fences every write to this state: only the pass that
-    accepted it can record progress, and a new pass may replace it only once
-    its lease has expired.
+    One sweep runs at a time across every replica: ``operation_id`` fences
+    every write to this state, so only the sweep holding it can record
+    progress, and another replica may take over only once its lease has
+    expired.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     LEASE: ClassVar[timedelta] = timedelta(minutes=10)
     ACTIVE_OUTCOMES: ClassVar[FrozenSet[RetentionOutcome]] = frozenset(
-        {RetentionOutcome.ACCEPTED, RetentionOutcome.RUNNING}
+        {RetentionOutcome.RUNNING}
     )
     # Runs over the byte budget are only found by reading them. Remembering
     # a bounded number of them keeps every full scan from re-reading each
@@ -53,10 +52,10 @@ class RetentionState(BaseModel):
 
     @classmethod
     def load(cls, raw: Optional[str]) -> "RetentionState":
-        """Parse the saved project state.
+        """Parse the saved sweep state.
 
         Args:
-            raw: Serialized state, or None for a project never archived.
+            raw: Serialized state, or None on a server that never swept.
 
         Returns:
             The saved state.
@@ -64,13 +63,13 @@ class RetentionState(BaseModel):
         return cls.model_validate_json(raw) if raw else cls()
 
     def is_live(self, now: datetime) -> bool:
-        """Tell whether an accepted or running pass still holds its lease.
+        """Tell whether a running sweep still holds its lease.
 
         Args:
             now: Current database time.
 
         Returns:
-            True while another pass must not replace this one.
+            True while another sweep must not replace this one.
         """
         return (
             self.last_outcome in self.ACTIVE_OUTCOMES
@@ -79,13 +78,13 @@ class RetentionState(BaseModel):
         )
 
     def start(self, operation_id: UUID) -> None:
-        """Hand the state to a newly accepted pass and reset its counts.
+        """Hand the state to a newly started sweep and reset its counts.
 
         Args:
-            operation_id: Identity of the accepted pass.
+            operation_id: Identity of the sweep taking the lease.
         """
         self.operation_id = operation_id
-        self.last_outcome = RetentionOutcome.ACCEPTED
+        self.last_outcome = RetentionOutcome.RUNNING
         self.last_finished_at = None
         self.archived = self.skipped = self.oversized = self.failed = 0
 
@@ -101,19 +100,17 @@ class RetentionState(BaseModel):
 
     def to_response(
         self,
-        policy: RetentionSettings,
+        settings: ArchiveSettings,
         *,
-        archive_enabled: bool,
         archive_configured: bool,
         now: datetime,
     ) -> RetentionStatusResponse:
-        """Describe the latest pass and the current configuration.
+        """Describe the latest sweep and the current configuration.
 
         Args:
-            policy: The project's saved policy.
-            archive_enabled: Whether the server sets an archive URI.
-            archive_configured: Whether that URI's storage can be created.
-            now: Current database time, to report an abandoned pass.
+            settings: The server's archive settings.
+            archive_configured: Whether the configured storage can be created.
+            now: Current database time, to report an abandoned sweep.
 
         Returns:
             The status response.
@@ -124,9 +121,12 @@ class RetentionState(BaseModel):
         return RetentionStatusResponse(
             outcome=outcome,
             finished_at=self.last_finished_at,
-            archive_enabled=archive_enabled,
+            archive_enabled=settings.enabled,
             archive_configured=archive_configured,
-            archive_after_days=policy.archive_after_days,
+            archive_after_days=settings.after_days
+            if settings.enabled
+            else None,
+            schedule=settings.schedule if settings.enabled else None,
             archived=self.archived,
             skipped=self.skipped,
             oversized=self.oversized,

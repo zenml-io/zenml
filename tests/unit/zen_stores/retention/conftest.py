@@ -12,8 +12,7 @@ from tests.unit.zen_stores.retention.fixture_graph import (
     insert_rows,
 )
 from zenml.enums import RetentionOutcome
-from zenml.models import ProjectFilter, ProjectUpdate
-from zenml.models.v2.misc.retention import RetentionSettings
+from zenml.models import ProjectFilter
 from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -23,7 +22,9 @@ def storage(tmp_path, monkeypatch) -> ArchiveStorage:
     """Enable archiving against a temporary local directory."""
     root = str(tmp_path / "objects")
     archive = ArchiveStorage.from_uri(root)
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE_URI", root)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "local")
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", root)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "7")
     monkeypatch.setattr(
         SqlZenStore, "archive_storage", property(lambda _: archive)
     )
@@ -32,11 +33,10 @@ def storage(tmp_path, monkeypatch) -> ArchiveStorage:
 
 @pytest.fixture
 def archive_run(storage):
-    """Archive a project with one eligible run and return its bundle ID."""
+    """Sweep one eligible run out of SQL and return its bundle ID."""
 
     def archive(store: SqlZenStore, ids: "ExecutionRun") -> UUID:
-        outcome = store.archive_project(ids.project)
-        assert outcome.outcome == RetentionOutcome.SUCCEEDED
+        assert store.run_archive_sweep() == RetentionOutcome.SUCCEEDED
         bundle_id = store.get_run(ids.run, hydrate=False).archive_bundle_id
         assert bundle_id is not None
         return bundle_id
@@ -73,10 +73,6 @@ def run_factory(NOW):
             parent_run_id=parent, root_run_id=parent
         )
         insert_rows(store, source)
-        store.update_project(
-            project,
-            ProjectUpdate(retention=RetentionSettings(archive_after_days=7)),
-        )
         return ExecutionRun(
             project=project,
             pipeline=source["pipeline"][0]["id"],

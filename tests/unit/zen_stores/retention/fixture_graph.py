@@ -93,6 +93,7 @@ def graph_rows(project_id: UUID, when: datetime, kind: str) -> dict:
             s.StepRunSchema(
                 id=step_ids[index],
                 name=name,
+                cache_key=str(step_ids[index]),
                 pipeline_run_id=run.id,
                 snapshot_id=None if kind == "legacy" else snapshot.id,
                 step_configuration=definition.model_dump_json()

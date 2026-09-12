@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import Boolean, String, UniqueConstraint
+from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import (
     Session,
@@ -167,11 +167,6 @@ class PipelineRunSchema(
         )
     )
     child_key: Optional[str] = Field(nullable=True, default=None)
-    # Pinned runs are never eligible for archival, whatever their age.
-    retain: bool = Field(
-        default=False,
-        sa_column=Column(Boolean, nullable=False, server_default="0"),
-    )
 
     # Foreign keys
     snapshot_id: Optional[UUID] = build_foreign_key_field(
@@ -720,7 +715,6 @@ class PipelineRunSchema(
             pipeline_id=self.pipeline_id,
             child_key=self.child_key,
             root_run_id=self.root_run_id,
-            retain=self.retain,
             archive_bundle_id=self.archive_bundle_id,
         )
         metadata = None
@@ -921,9 +915,6 @@ class PipelineRunSchema(
 
         if run_update.exception_info:
             self.exception_info = run_update.exception_info.model_dump_json()
-
-        if run_update.retain is not None:
-            self.retain = run_update.retain
 
         self.updated = utc_now()
         return self

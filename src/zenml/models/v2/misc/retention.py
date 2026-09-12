@@ -1,57 +1,83 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Project retention settings and archive operation outcomes."""
+"""Wire models for archive sweeps, targeted archiving, and restore."""
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, model_validator
 
-from zenml.enums import RestoreOutcome, RetentionOutcome
+from zenml.enums import RestoreOutcome, RetentionExclusion, RetentionOutcome
 
-
-class RetentionSettings(BaseModel):
-    """Saved project policy; a null age disables retention."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    archive_after_days: Optional[int] = Field(default=None, ge=7)
-    archive_model_linked_runs: bool = False
-    restored_grace_days: int = Field(default=30, ge=0)
-    max_runs_per_pass: int = Field(default=200, gt=0)
-
-    @classmethod
-    def load(cls, raw: Optional[str]) -> "RetentionSettings":
-        """Parse a policy saved on a project row.
-
-        Args:
-            raw: Serialized policy, or None for a project without one.
-
-        Returns:
-            The saved policy, disabled when none was saved.
-        """
-        return cls.model_validate_json(raw) if raw else cls()
-
-
-class RetentionPassResponse(BaseModel):
-    """Archive pass submission; acceptance is distinct from completion."""
-
-    outcome: RetentionOutcome
-    task_id: Optional[str] = None
+# An archive result is stored as an API transaction result, so a project-wide
+# request must not be able to write an unbounded refusal list to the database.
+MAX_REFUSALS = 100
 
 
 class RetentionStatusResponse(BaseModel):
-    """Latest project pass outcome without scanning runs or storage."""
+    """Latest sweep outcome without scanning runs or storage."""
 
     outcome: RetentionOutcome = RetentionOutcome.IDLE
     archive_enabled: bool = False
     archive_configured: bool = False
     archive_after_days: Optional[int] = None
+    schedule: Optional[str] = None
     finished_at: Optional[datetime] = None
     archived: int = 0
     skipped: int = 0
     oversized: int = 0
     failed: int = 0
+
+
+class ArchiveRequest(BaseModel):
+    """Runs to archive now, named directly or through their owner."""
+
+    run_ids: Optional[List[UUID]] = Field(default=None, max_length=100)
+    pipeline_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
+
+    @model_validator(mode="after")
+    def _validate_target(self) -> "ArchiveRequest":
+        """Require exactly one target.
+
+        Returns:
+            The validated request.
+
+        Raises:
+            ValueError: No target or more than one target was given.
+        """
+        targets = [self.run_ids, self.pipeline_id, self.project_id]
+        if sum(target is not None for target in targets) != 1:
+            raise ValueError(
+                "Name exactly one of `run_ids`, `pipeline_id`, or "
+                "`project_id`."
+            )
+        if self.run_ids is not None and not self.run_ids:
+            raise ValueError("`run_ids` must name at least one run.")
+        return self
+
+
+class ArchiveRefusal(BaseModel):
+    """One run that stayed in the database, and why."""
+
+    run_id: UUID
+    reason: RetentionExclusion
+
+
+class ArchiveResponse(BaseModel):
+    """Counts for a targeted archive, with the runs it refused.
+
+    Successful runs are counted, never listed: only the refusals carry a
+    reason an operator can act on.
+    """
+
+    archived: int = 0
+    skipped: int = 0
+    oversized: int = 0
+    failed: int = 0
+    refusals: List[ArchiveRefusal] = Field(default_factory=list)
+    refusals_truncated: bool = False
+    pending: bool = False
 
 
 class RestoreResponse(BaseModel):

@@ -1,6 +1,7 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Archived headers remain usable; detail requires an explicit restore."""
 
+from functools import partial
 from unittest.mock import Mock
 
 import pytest
@@ -27,21 +28,18 @@ def test_reads_need_no_archive_storage(
     opened = Mock(side_effect=OSError("storage unavailable"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
     calls = [
-        lambda hydrate: retention_store.get_run(ids.run, hydrate=hydrate),
-        lambda hydrate: retention_store.get_run_step(
-            ids.consumer, hydrate=hydrate
+        partial(retention_store.get_run, ids.run),
+        partial(retention_store.get_run_step, ids.consumer),
+        partial(retention_store.get_snapshot, ids.snapshot),
+        partial(
+            retention_store.list_runs, PipelineRunFilter(project=ids.project)
         ),
-        lambda hydrate: retention_store.get_snapshot(
-            ids.snapshot, hydrate=hydrate
+        partial(
+            retention_store.list_run_steps, StepRunFilter(project=ids.project)
         ),
-        lambda hydrate: retention_store.list_runs(
-            PipelineRunFilter(project=ids.project), hydrate=hydrate
-        ),
-        lambda hydrate: retention_store.list_run_steps(
-            StepRunFilter(project=ids.project), hydrate=hydrate
-        ),
-        lambda hydrate: retention_store.list_snapshots(
-            PipelineSnapshotFilter(project=ids.project), hydrate=hydrate
+        partial(
+            retention_store.list_snapshots,
+            PipelineSnapshotFilter(project=ids.project),
         ),
     ]
     for call in calls:

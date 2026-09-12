@@ -56,18 +56,14 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_archive_bundle_run_id", "archive_bundle", ["run_id"])
-    with op.batch_alter_table("project") as batch_op:
-        batch_op.add_column(
-            sa.Column("retention_settings", sa.TEXT(), nullable=True)
-        )
+    with op.batch_alter_table("server_settings") as batch_op:
         batch_op.add_column(
             sa.Column("retention_state", sa.TEXT(), nullable=True)
         )
 
     # The marker columns carry no foreign key and no index on purpose: these
     # are among the largest tables, so index and constraint rollout needs its
-    # own migration timing. The server default on `retain` lets older
-    # server replicas keep inserting runs during a rolling upgrade.
+    # own migration timing.
     for table in ARCHIVABLE_TABLES:
         with op.batch_alter_table(table, schema=None) as batch_op:
             batch_op.add_column(
@@ -84,31 +80,43 @@ def upgrade() -> None:
                 batch_op.add_column(
                     sa.Column("substitutions", sa.TEXT(), nullable=True)
                 )
-            if table == "pipeline_run":
-                batch_op.add_column(
-                    sa.Column(
-                        "retain",
-                        sa.Boolean(),
-                        nullable=False,
-                        # A literal keeps SQLite on native ADD COLUMN; an
-                        # expression forces recreation and can cascade-delete
-                        # referencing rows on FK-enabled migration connections.
-                        server_default="0",
-                    )
-                )
+
+    # The sweep walks every project's runs in this order, so without this
+    # index each pass filesorts the whole table. MySQL builds secondary
+    # indexes online, but on a large `pipeline_run` it still takes time.
+    op.create_index(
+        "ix_pipeline_run_end_time_id", "pipeline_run", ["end_time", "id"]
+    )
 
 
 def downgrade() -> None:
-    """Downgrade database schema and/or data back to the previous revision."""
+    """Downgrade database schema and/or data back to the previous revision.
+
+    Raises:
+        RuntimeError: Detail has already been archived, so dropping the
+            markers would leave those rows empty and unlocatable.
+    """
+    archived = (
+        op.get_bind()
+        .execute(sa.text("SELECT 1 FROM archive_bundle LIMIT 1"))
+        .first()
+    )
+    if archived is not None:
+        raise RuntimeError(
+            "Execution detail has been archived on this server. Downgrading "
+            "would drop the `archive_bundle` table and the markers pointing "
+            "at it, leaving those runs permanently empty. Restore every "
+            "archived run with `zenml pipeline runs restore` before "
+            "downgrading."
+        )
+
+    op.drop_index("ix_pipeline_run_end_time_id", table_name="pipeline_run")
     for table in ARCHIVABLE_TABLES:
         if table == "step_run":
             op.drop_column(table, "substitutions")
             op.drop_column(table, "step_type")
-        if table == "pipeline_run":
-            op.drop_column(table, "retain")
         op.drop_column(table, "archive_bundle_id")
 
     op.drop_table("archive_bundle")
-    # Native DROP avoids rebuilding project and cascading its dependent rows.
-    op.drop_column("project", "retention_state")
-    op.drop_column("project", "retention_settings")
+    # Native DROP avoids rebuilding the table and cascading dependent rows.
+    op.drop_column("server_settings", "retention_state")

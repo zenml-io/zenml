@@ -34,8 +34,6 @@ from zenml.models import (
     ProjectResponse,
     ProjectStatistics,
     ProjectUpdate,
-    RetentionPassResponse,
-    RetentionStatusResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -49,16 +47,14 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.rbac.utils import (
     get_allowed_resource_ids,
-    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     server_config,
-    submit_archive_pass,
     zen_store,
 )
 
@@ -73,68 +69,6 @@ router = APIRouter(
     tags=["projects"],
     responses={401: error_response},
 )
-
-
-@router.post(
-    "/{project_name_or_id}/retention/archive",
-    status_code=202,
-    responses={
-        403: error_response,
-        404: error_response,
-        409: error_response,
-        422: error_response,
-        429: error_response,
-        503: error_response,
-    },
-)
-@async_fastapi_endpoint_wrapper
-def archive_project(
-    project_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> RetentionPassResponse:
-    """Accept one bounded archive pass and run it in the background.
-
-    Args:
-        project_name_or_id: Project name or ID.
-
-    Returns:
-        The accepted pass, distinct from its eventual outcome.
-    """
-    store = zen_store()
-    project = store.get_project(project_name_or_id, hydrate=False)
-    verify_permission_for_model(model=project, action=Action.UPDATE)
-    archive_pass = store.prepare_retention_pass(project.id)
-    return submit_archive_pass(
-        execute=lambda: store.execute_retention_pass(archive_pass),
-        abort=lambda code: store.abort_retention_pass(archive_pass, code),
-        reauthorize=lambda: verify_permission_for_model(
-            model=store.get_project(project.id, hydrate=False),
-            action=Action.UPDATE,
-        ),
-    )
-
-
-@router.get(
-    "/{project_name_or_id}/retention/status",
-    responses={403: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper(deduplicate=True)
-def get_retention_status(
-    project_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
-) -> RetentionStatusResponse:
-    """Read the latest archive pass after verifying project read permission.
-
-    Args:
-        project_name_or_id: Project name or ID.
-
-    Returns:
-        The latest pass outcome and counts, without reading storage.
-    """
-    store = zen_store()
-    project = store.get_project(project_name_or_id, hydrate=False)
-    verify_permission_for_model(model=project, action=Action.READ)
-    return store.get_retention_status(project.id)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

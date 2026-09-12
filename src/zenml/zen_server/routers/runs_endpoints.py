@@ -738,7 +738,9 @@ def disable_run_heartbeat(
         400: error_response,
         401: error_response,
         404: error_response,
+        409: error_response,
         422: error_response,
+        501: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper
@@ -1046,6 +1048,7 @@ async def stream_run_events(
         404: error_response,
         409: error_response,
         422: error_response,
+        500: error_response,
         503: error_response,
     },
 )

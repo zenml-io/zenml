@@ -21,6 +21,7 @@ from pathlib import Path
 from threading import RLock
 from types import TracebackType
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -50,7 +51,6 @@ from requests.adapters import HTTPAdapter, Retry
 from typing_extensions import Self
 from urllib3.connectionpool import ConnectionPool
 from urllib3.exceptions import MaxRetryError, ResponseError
-from urllib3.response import BaseHTTPResponse
 
 import zenml
 from zenml.analytics import source_context
@@ -99,6 +99,7 @@ from zenml.constants import (
     REPLAY,
     RESOLVE,
     RESOURCE_REQUESTS,
+    RETENTION,
     RUN_METADATA,
     RUN_TEMPLATES,
     RUN_WAIT_CONDITIONS,
@@ -160,6 +161,8 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
+    ArchiveRequest,
+    ArchiveResponse,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -242,7 +245,6 @@ from zenml.models import (
     ResourceRequestRenewalRequest,
     ResourceRequestResponse,
     RestoreResponse,
-    RetentionPassResponse,
     RetentionStatusResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
@@ -333,6 +335,9 @@ from zenml.zen_server.exceptions import (
 )
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
+if TYPE_CHECKING:
+    from urllib3.response import BaseHTTPResponse
+
 logger = get_logger(__name__)
 
 # Restoring a run happens within the request; see `restore_pipeline_run`.
@@ -346,7 +351,7 @@ class _RouteAwareRetry(Retry):
         self,
         method: Optional[str] = None,
         url: Optional[str] = None,
-        response: Optional[BaseHTTPResponse] = None,
+        response: Optional["BaseHTTPResponse"] = None,
         error: Optional[Exception] = None,
         _pool: Optional[ConnectionPool] = None,
         _stacktrace: Optional[TracebackType] = None,
@@ -4151,32 +4156,33 @@ class RestZenStore(BaseZenStore):
             response_model=ProjectResponse,
         )
 
-    def archive_project(self, project_id: UUID) -> RetentionPassResponse:
-        """Submit one bounded archive pass under the saved project policy.
+    def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
+        """Archive the requested runs now, without waiting for a sweep.
 
         Args:
-            project_id: Project whose saved retention policy is addressed.
+            request: Runs, pipeline, or project to archive.
 
         Returns:
-            Archive pass submission or completed local pass summary.
+            Counts and the runs that were refused, each with a reason.
         """
-        return RetentionPassResponse.model_validate(
-            self.post(f"{PROJECTS}/{project_id}/retention/archive")
+        # The server archives within the request: capture, upload, and
+        # read-back verification of a batch can outlast the default timeout.
+        return ArchiveResponse.model_validate(
+            self.post(
+                f"{RETENTION}/archive",
+                body=request,
+                timeout=RESTORE_TIMEOUT_SECONDS,
+            )
         )
 
-    def get_retention_status(
-        self, project_id: UUID
-    ) -> RetentionStatusResponse:
-        """Read the latest project retention pass without object access.
-
-        Args:
-            project_id: Project whose saved retention policy is addressed.
+    def get_retention_status(self) -> RetentionStatusResponse:
+        """Read the server's latest archive sweep without object access.
 
         Returns:
-            Latest saved pass outcome, completion time, and archive configuration.
+            Latest saved sweep outcome, completion time, and configuration.
         """
         return RetentionStatusResponse.model_validate(
-            self.get(f"{PROJECTS}/{project_id}/retention/status")
+            self.get(f"{RETENTION}/status")
         )
 
     def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:

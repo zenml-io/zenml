@@ -36,7 +36,7 @@ from typing import (
     Union,
     overload,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import psutil
 from pydantic import BaseModel, ValidationError
@@ -51,16 +51,12 @@ from zenml.constants import (
     INFO,
     VERSION_1,
 )
-from zenml.enums import RetentionFailure, RetentionOutcome
 from zenml.exceptions import (
-    ExecutionRetentionUnavailableError,
     IllegalOperationError,
-    MaxConcurrentTasksError,
     OAuthError,
 )
-from zenml.logger import get_logger, get_logging_context, logging_context
+from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
-from zenml.models.v2.misc.retention import RetentionPassResponse
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
@@ -105,7 +101,6 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
-_maintenance_executor: Optional["BoundedThreadPoolExecutor"] = None
 _snapshot_run_dispatcher: Optional[SnapshotRunDispatcher] = None
 _request_manager: Optional[RequestManager] = None
 _stream_broker: Optional[StreamBroker] = None
@@ -422,146 +417,6 @@ def initialize_snapshot_executor() -> None:
     _snapshot_executor = BoundedThreadPoolExecutor(
         max_workers=server_config().max_concurrent_snapshot_runs,
         thread_name_prefix="zenml-snapshot-executor",
-    )
-
-
-def maintenance_executor() -> "BoundedThreadPoolExecutor":
-    """Return the initialized maintenance executor.
-
-    Raises:
-        RuntimeError: If the maintenance executor is not initialized.
-
-    Returns:
-        The maintenance executor.
-    """
-    global _maintenance_executor
-    if _maintenance_executor is None:
-        raise RuntimeError("Maintenance executor not initialized")
-
-    return _maintenance_executor
-
-
-def initialize_maintenance_executor() -> None:
-    """Initialize the maintenance executor.
-
-    Maintenance jobs such as archive passes scan large tables and are not
-    expected to overlap, so a single worker serializes them per server
-    process and rejects a job while another one is still running.
-    """
-    global _maintenance_executor
-    from zenml.zen_server.pipeline_execution.utils import (
-        BoundedThreadPoolExecutor,
-    )
-
-    _maintenance_executor = BoundedThreadPoolExecutor(
-        max_workers=1,
-        thread_name_prefix="zenml-maintenance-executor",
-    )
-
-
-def submit_maintenance_task(task: Callable[[], Any]) -> str:
-    """Run a task on the maintenance executor.
-
-    The task runs detached from the request that submitted it, so its outcome
-    is only reported through the server logs. Every log record it emits
-    carries the returned task ID and the ID of the submitting request, and
-    the request's authentication context is available to the task for
-    permission checks.
-
-    Args:
-        task: The task to run.
-
-    Raises:
-        MaxConcurrentTasksError: If another maintenance task is still running.
-
-    Returns:
-        The ID of the scheduled task.
-    """
-    task_id = str(uuid4())
-    request_id = get_logging_context().get("request_id")
-    auth_context = get_auth_context()
-
-    def _run() -> None:
-        # The worker thread outlives the task, so the context is reset
-        # afterwards instead of leaking into the next task.
-        token = _auth_context.set(auth_context)
-        try:
-            with logging_context(task_id=task_id, request_id=request_id):
-                try:
-                    task()
-                except Exception:
-                    logger.exception("Maintenance task failed.")
-        finally:
-            _auth_context.reset(token)
-
-    try:
-        maintenance_executor().submit(_run)
-    except MaxConcurrentTasksError:
-        raise MaxConcurrentTasksError(
-            "Another maintenance task is still running. Retry once it has "
-            "finished."
-        ) from None
-
-    return task_id
-
-
-def submit_archive_pass(
-    execute: Callable[[], Any],
-    abort: Callable[[RetentionFailure], None],
-    reauthorize: Callable[[], Any],
-) -> RetentionPassResponse:
-    """Queue an accepted archive pass, rechecking permission before it runs.
-
-    Args:
-        execute: Runs the accepted pass.
-        abort: Records a failed pass with a safe failure code.
-        reauthorize: Verifies the submitter's permission again.
-
-    Returns:
-        The accepted response with the maintenance task ID.
-
-    Raises:
-        ExecutionRetentionUnavailableError: Maintenance capacity is shutting
-            down.
-        Exception: Submission failures, after recording them on the pass.
-    """
-
-    def record_failure(code: RetentionFailure) -> None:
-        try:
-            abort(code)
-        except Exception as error:
-            logger.error(
-                "Recording the failed archive pass was rejected (%s, %s).",
-                code,
-                type(error).__name__,
-            )
-
-    def run() -> None:
-        try:
-            reauthorize()
-        except IllegalOperationError:
-            record_failure(RetentionFailure.PERMISSION_REVOKED)
-            return
-        except Exception:
-            record_failure(RetentionFailure.ARCHIVE_FAILED)
-            return
-        try:
-            execute()
-        except Exception as error:
-            # SQL errors can contain archived payloads; log only their type.
-            logger.error("Archive pass failed (%s).", type(error).__name__)
-
-    try:
-        task_id = submit_maintenance_task(run)
-    except Exception as error:
-        record_failure(RetentionFailure.SUBMISSION_FAILED)
-        if isinstance(error, RuntimeError):
-            raise ExecutionRetentionUnavailableError(
-                "Maintenance capacity is shutting down; retry later."
-            ) from error
-        raise
-    return RetentionPassResponse(
-        outcome=RetentionOutcome.ACCEPTED, task_id=task_id
     )
 
 

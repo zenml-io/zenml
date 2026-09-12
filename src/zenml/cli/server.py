@@ -16,6 +16,7 @@
 import ipaddress
 import re
 from typing import List, Optional, Union
+from uuid import UUID
 
 import click
 from rich.errors import MarkupError
@@ -778,3 +779,124 @@ def show(local: bool = False, ngrok_token: Optional[str] = None) -> None:
         zenml.show(ngrok_token=ngrok_token)
     except RuntimeError as e:
         cli_utils.exception(e)
+
+
+@server.group("retention")
+def retention() -> None:
+    """Inspect and trigger execution archiving on the connected server."""
+
+
+@retention.command("status")
+def retention_status() -> None:
+    """Show the latest archive sweep without reading object storage."""
+    result = Client().get_retention_status()
+    cli_utils.print_table(
+        [
+            {"property": "outcome", "value": result.outcome.value},
+            {
+                "property": "finished_at",
+                "value": result.finished_at.isoformat()
+                if result.finished_at
+                else "never",
+            },
+            {"property": "archived", "value": result.archived},
+            {"property": "skipped", "value": result.skipped},
+            {"property": "oversized", "value": result.oversized},
+            {"property": "failed", "value": result.failed},
+            {"property": "archive_enabled", "value": result.archive_enabled},
+            {
+                "property": "archive_configured",
+                "value": result.archive_configured,
+            },
+            {
+                "property": "archive_after_days",
+                "value": result.archive_after_days or "disabled",
+            },
+            {"property": "schedule", "value": result.schedule or "disabled"},
+        ],
+        title="Execution archive status",
+    )
+
+
+@retention.command("archive")
+@click.option(
+    "--run-id",
+    "run_ids",
+    type=click.UUID,
+    multiple=True,
+    help="Run to archive. Repeat to name several runs.",
+)
+@click.option(
+    "--pipeline",
+    type=str,
+    default=None,
+    help="Archive the oldest finished runs of this pipeline.",
+)
+@click.option(
+    "--project",
+    type=str,
+    default=None,
+    help="Archive the oldest finished runs of this project.",
+)
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation.")
+def archive_runs(
+    run_ids: tuple[UUID, ...],
+    pipeline: Optional[str],
+    project: Optional[str],
+    yes: bool,
+) -> None:
+    """Archive runs now instead of waiting for the next scheduled sweep.
+
+    The run age, model-version links, and the restore grace period are
+    ignored. Runs that something is still using are listed with a reason
+    rather than archived.
+
+    Args:
+        run_ids: Runs to archive.
+        pipeline: Pipeline whose runs to archive.
+        project: Project whose runs to archive.
+        yes: Whether to archive without interactive confirmation.
+    """
+    targets = [bool(run_ids), pipeline is not None, project is not None]
+    if sum(targets) != 1:
+        cli_utils.error(
+            "Name exactly one of --run-id, --pipeline, or --project."
+        )
+    target = (
+        f"{len(run_ids)} run(s)"
+        if run_ids
+        else f"pipeline '{pipeline}'"
+        if pipeline
+        else f"project '{project}'"
+    )
+    if not yes and not cli_utils.confirmation(
+        f"Archive execution detail of {target}? Archived runs must be "
+        "restored before their configuration and logs can be read again."
+    ):
+        cli_utils.declare("Archiving canceled.")
+        return
+    result = Client().archive_runs(
+        run_ids=list(run_ids) or None, pipeline=pipeline, project=project
+    )
+    cli_utils.declare(
+        f"Archived {result.archived}, skipped {result.skipped}, "
+        f"oversized {result.oversized}, failed {result.failed}."
+    )
+    if result.refusals:
+        cli_utils.print_table(
+            [
+                {"run_id": str(refusal.run_id), "reason": refusal.reason.value}
+                for refusal in result.refusals
+            ],
+            title="Runs left in the database",
+        )
+    if result.refusals_truncated:
+        cli_utils.declare("More runs were refused than are listed here.")
+    if result.pending:
+        cli_utils.declare(
+            "More runs are still eligible; repeat the command to continue."
+        )
+    elif result.refusals and not result.archived:
+        cli_utils.declare(
+            "Nothing moved; resolve the reasons above to archive these runs."
+        )

@@ -367,6 +367,7 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
         409: error_response,
         422: error_response,
         429: error_response,
+        501: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper

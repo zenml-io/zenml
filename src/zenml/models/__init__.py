@@ -465,9 +465,10 @@ from zenml.models.v2.misc.param_groups import (
 )
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.retention import (
+    ArchiveRefusal,
+    ArchiveRequest,
+    ArchiveResponse,
     RestoreResponse,
-    RetentionPassResponse,
-    RetentionSettings,
     RetentionStatusResponse,
 )
 from zenml.models.v2.misc.run_metadata import (
@@ -960,9 +961,10 @@ __all__ = [
     "TriggerDispatchErrorSeverity",
     "TriggerDispatchStatusCode",
     # V2 Misc
+    "ArchiveRefusal",
+    "ArchiveRequest",
+    "ArchiveResponse",
     "RestoreResponse",
-    "RetentionPassResponse",
-    "RetentionSettings",
     "RetentionStatusResponse",
     "AuthenticationMethodModel",
     "DeployedStack",

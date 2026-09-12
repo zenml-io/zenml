@@ -25,7 +25,7 @@ import os
 from asyncio.log import logger
 from contextlib import asynccontextmanager
 from genericpath import isfile
-from typing import Any, AsyncGenerator, List
+from typing import Any, AsyncGenerator, List, Optional
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -48,6 +48,7 @@ from zenml.enums import AuthScheme
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
+from zenml.zen_server.archive_scheduler import ArchiveScheduler
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
@@ -71,6 +72,7 @@ from zenml.zen_server.routers import (
     pipelines_endpoints,
     projects_endpoints,
     resource_requests_endpoints,
+    retention_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
     run_wait_conditions_endpoints,
@@ -99,7 +101,6 @@ from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_artifact_store_cache,
     initialize_feature_gate,
-    initialize_maintenance_executor,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
@@ -108,7 +109,6 @@ from zenml.zen_server.utils import (
     initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
-    maintenance_executor,
     register_event_handlers,
     register_webhook_event_handlers,
     server_config,
@@ -159,14 +159,14 @@ def _check_archive_store_on_startup() -> None:
     """Refuse archiving on SQLite and warn when the archive URI is unusable.
 
     Raises:
-        RuntimeError: An archive URI is set on a SQLite database.
+        RuntimeError: Archiving is enabled on a SQLite database.
     """
     if not server_config().archive_enabled:
         return
     store = zen_store()
     if store.config.driver != SQLDatabaseDriver.MYSQL:
         raise RuntimeError(
-            "ZENML_SERVER_ARCHIVE_URI is set, but execution archiving "
+            "ZENML_SERVER_ARCHIVE__BACKEND is set, but execution archiving "
             "requires a MySQL database. Unset it or move the server to MySQL."
         )
     try:
@@ -176,9 +176,23 @@ def _check_archive_store_on_startup() -> None:
     if not usable:
         logger.warning(
             "Execution archiving is enabled, but the storage at "
-            "ZENML_SERVER_ARCHIVE_URI cannot be written and read back. Check "
-            "the URI and the server's cloud credentials."
+            "ZENML_SERVER_ARCHIVE__URI cannot be written and read back. "
+            "Check the URI and the server's credentials."
         )
+
+
+def _start_archive_scheduler() -> Optional[ArchiveScheduler]:
+    """Start the scheduled archive sweep when archiving is enabled.
+
+    Returns:
+        The running scheduler, or None while archiving is disabled.
+    """
+    archive = server_config().archive
+    if not archive.enabled:
+        return None
+    scheduler = ArchiveScheduler(archive.schedule)
+    scheduler.start()
+    return scheduler
 
 
 @asynccontextmanager
@@ -203,13 +217,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await initialize_request_manager()
         initialize_zen_store()
         _check_archive_store_on_startup()
+        archive_scheduler = _start_archive_scheduler()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()
         initialize_rbac()
         initialize_feature_gate()
         initialize_workload_manager()
         initialize_snapshot_executor()
-        initialize_maintenance_executor()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
         await initialize_streaming()
@@ -231,7 +245,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         stop_event_loop_lag_monitor()
 
     try:
-        maintenance_executor().shutdown(wait=True)
+        if archive_scheduler is not None:
+            await archive_scheduler.shutdown()
         snapshot_executor().shutdown(wait=True)
         await shutdown_snapshot_run_dispatcher()
         await shutdown_streaming()
@@ -354,6 +369,7 @@ app.include_router(pipelines_endpoints.router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
+app.include_router(retention_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
 app.include_router(run_wait_conditions_endpoints.router)
