@@ -24,6 +24,7 @@ from zenml.zen_stores.resource_pools.store_interface import (
 )
 from zenml.zen_stores.retention import fences, transactions
 from zenml.zen_stores.retention.archiver import ArchivePass, archive_runs
+from zenml.zen_stores.retention.eligibility import expand_target
 from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.retention.storage import ArchiveStorage
@@ -14285,58 +14286,16 @@ class SqlZenStore(BaseZenStore):
             Counts and the runs that were refused, each with a reason.
         """
         settings = self.archive_settings
-        run_ids, more = self._expand_archive_target(request, settings)
+        with Session(self.engine) as session:
+            batch = expand_target(session, request, settings)
         result = archive_runs(
-            self.engine, self.archive_storage, settings, run_ids
+            self.engine, self.archive_storage, settings, batch.run_ids
         )
         # Expansion always returns the oldest runs, so a batch that archived
         # nothing would return the same permanently refused runs forever.
         # Only promise progress when repeating can actually make some.
-        result.pending = more and result.archived > 0
+        result.pending = batch.more and result.archived > 0
         return result
-
-    def _expand_archive_target(
-        self, request: ArchiveRequest, settings: ArchiveSettings
-    ) -> Tuple[List[UUID], bool]:
-        """Resolve one archive target to a bounded batch of run IDs.
-
-        Runs already archived, still running, or never finished are left out
-        here so the batch is spent on runs that can actually move.
-
-        Args:
-            request: Validated target.
-            settings: The server's archive settings.
-
-        Returns:
-            The runs to attempt, oldest first, and whether more remain.
-        """
-        if request.run_ids is not None:
-            # A repeated ID would otherwise be archived on one thread and
-            # refused on another, counting one run twice.
-            return list(dict.fromkeys(request.run_ids)), False
-        statement = select(
-            col(PipelineRunSchema.id), col(PipelineRunSchema.end_time)
-        ).where(
-            col(PipelineRunSchema.archive_bundle_id).is_(None),
-            col(PipelineRunSchema.end_time).is_not(None),
-        )
-        if request.pipeline_id is not None:
-            statement = statement.where(
-                col(PipelineRunSchema.pipeline_id) == request.pipeline_id
-            )
-        else:
-            statement = statement.where(
-                col(PipelineRunSchema.project_id) == request.project_id
-            )
-        limit = settings.max_runs_per_pass
-        with Session(self.engine) as session:
-            rows = session.execute(
-                statement.order_by(
-                    col(PipelineRunSchema.end_time),
-                    col(PipelineRunSchema.id),
-                ).limit(limit + 1)
-            ).all()
-        return [row.id for row in rows[:limit]], len(rows) > limit
 
     def get_retention_status(self) -> RetentionStatusResponse:
         """Read the latest sweep without scanning runs or storage.
@@ -14350,18 +14309,15 @@ class SqlZenStore(BaseZenStore):
             ).scalar_one()
             now = transactions.database_now(session)
         state = RetentionState.load(raw)
+        # `archive_storage` starts by reading `archive_settings`, so one
+        # guard covers a disabled server and unusable storage alike.
         try:
-            settings = self.archive_settings
+            self.archive_storage
         except (ExecutionRetentionUnavailableError, IllegalOperationError):
-            settings = ServerConfiguration.get_server_config().archive
             archive_configured = False
         else:
-            try:
-                self.archive_storage
-            except ExecutionRetentionUnavailableError:
-                archive_configured = False
-            else:
-                archive_configured = True
+            archive_configured = True
+        settings = ServerConfiguration.get_server_config().archive
         return state.to_response(
             settings, archive_configured=archive_configured, now=now
         )

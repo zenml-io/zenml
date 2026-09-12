@@ -161,7 +161,7 @@ def _check_archive_store_on_startup() -> None:
     Raises:
         RuntimeError: Archiving is enabled on a SQLite database.
     """
-    if not server_config().archive_enabled:
+    if not server_config().archive.enabled:
         return
     store = zen_store()
     if store.config.driver != SQLDatabaseDriver.MYSQL:

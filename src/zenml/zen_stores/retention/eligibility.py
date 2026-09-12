@@ -32,6 +32,7 @@ from zenml.enums import (
     RetentionExclusion,
     RunWaitConditionStatus,
 )
+from zenml.models.v2.misc.retention import ArchiveRequest
 from zenml.zen_stores.retention.format import MAX_RECORDS
 from zenml.zen_stores.retention.state import Cursor
 from zenml.zen_stores.schemas import (
@@ -53,13 +54,102 @@ TERMINAL_STATUSES = [
 
 
 class ArchivableRun(BaseModel):
-    """One inspected run: its owned snapshots, row count, and exclusion."""
+    """One inspected run: its owned snapshots, row count, and exclusion.
+
+    ``project_id`` is None only for a run that no longer exists, which is
+    always excluded, so an eligible run always names its project.
+    """
 
     run_id: UUID
-    project_id: UUID
+    project_id: Optional[UUID] = None
     snapshot_ids: List[UUID] = Field(default_factory=list)
     row_count: int = 0
     exclusion: Optional[RetentionExclusion] = None
+
+    @property
+    def project(self) -> UUID:
+        """Project that owns this run, for an eligible run only.
+
+        Returns:
+            The owning project.
+
+        Raises:
+            RuntimeError: The run no longer exists, so nothing can be
+                archived for it.
+        """
+        if self.project_id is None:
+            raise RuntimeError(
+                f"Run {self.run_id} no longer exists and has no project."
+            )
+        return self.project_id
+
+
+class ArchiveBatch(BaseModel):
+    """One bounded batch of runs to archive, and whether more remain."""
+
+    run_ids: List[UUID] = Field(default_factory=list)
+    more: bool = False
+
+
+def _finished_unarchived(limit: int) -> Select[Any]:
+    """Select finished runs whose detail is still in SQL, oldest first.
+
+    Both scans page by ``(end_time, id)``: the sweep continues from its saved
+    position, a targeted archive takes the oldest batch of one owner.
+
+    Args:
+        limit: Maximum number of rows.
+
+    Returns:
+        Ordered, limited keyset query over run positions.
+    """
+    return (
+        select(col(PipelineRunSchema.end_time), col(PipelineRunSchema.id))
+        .where(
+            col(PipelineRunSchema.archive_bundle_id).is_(None),
+            col(PipelineRunSchema.end_time).is_not(None),
+        )
+        .order_by(col(PipelineRunSchema.end_time), col(PipelineRunSchema.id))
+        .limit(limit)
+    )
+
+
+def expand_target(
+    session: Session, request: ArchiveRequest, settings: ArchiveSettings
+) -> ArchiveBatch:
+    """Resolve one targeted archive request to a bounded batch of runs.
+
+    Named runs are taken as given, deduplicated so one run cannot be counted
+    twice. A pipeline or project yields its oldest finished runs that are
+    still in SQL, bounded by the same budget the sweep uses, because a
+    project-wide request must not run unbounded inside one HTTP request.
+
+    Args:
+        session: Read session.
+        request: Validated target.
+        settings: The server's archive settings.
+
+    Returns:
+        The runs to attempt and whether the owner has more of them.
+    """
+    if request.run_ids is not None:
+        # A repeated ID would otherwise be archived on one thread and
+        # refused on another, counting one run twice.
+        return ArchiveBatch(run_ids=list(dict.fromkeys(request.run_ids)))
+    limit = settings.max_runs_per_pass
+    statement = _finished_unarchived(limit + 1)
+    if request.pipeline_id is not None:
+        statement = statement.where(
+            col(PipelineRunSchema.pipeline_id) == request.pipeline_id
+        )
+    else:
+        statement = statement.where(
+            col(PipelineRunSchema.project_id) == request.project_id
+        )
+    rows = session.execute(statement).all()
+    return ArchiveBatch(
+        run_ids=[run_id for _, run_id in rows[:limit]], more=len(rows) > limit
+    )
 
 
 def discover_runs(
@@ -83,11 +173,7 @@ def discover_runs(
     Returns:
         Candidate positions, oldest first.
     """
-    statement = select(
-        col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
-    ).where(
-        col(PipelineRunSchema.archive_bundle_id).is_(None),
-        col(PipelineRunSchema.end_time).is_not(None),
+    statement = _finished_unarchived(limit).where(
         col(PipelineRunSchema.end_time)
         < now - timedelta(days=settings.after_days),
     )
@@ -103,11 +189,7 @@ def discover_runs(
                 & (col(PipelineRunSchema.id) > after.run_id),
             )
         )
-    rows = session.execute(
-        statement.order_by(
-            col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
-        ).limit(limit)
-    ).all()
+    rows = session.execute(statement).all()
     return [
         Cursor(end_time=end_time, run_id=run_id) for end_time, run_id in rows
     ]
@@ -142,9 +224,7 @@ def inspect_run(
     ).one_or_none()
     if header is None:
         return ArchivableRun(
-            run_id=run_id,
-            project_id=UUID(int=0),
-            exclusion=RetentionExclusion.NOT_ELIGIBLE,
+            run_id=run_id, exclusion=RetentionExclusion.NOT_ELIGIBLE
         )
     run = ArchivableRun(run_id=run_id, project_id=header.project_id)
     run.exclusion = _first_exclusion(
@@ -402,7 +482,7 @@ def _count_rows(
         list(
             session.execute(
                 _owned_snapshots(
-                    run.run_id, sorted(candidates), run.project_id
+                    run.run_id, sorted(candidates), run.project
                 ).order_by(col(PipelineSnapshotSchema.id))
             ).scalars()
         )

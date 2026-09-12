@@ -134,12 +134,17 @@ class ArchiveSettings(BaseModel):
 
     @property
     def root_uri(self) -> str:
-        """Return the configured archive root.
+        """Return the configured archive root, for an enabled server only.
 
         Returns:
-            The archive root URI; empty while archiving is disabled.
+            The archive root URI.
+
+        Raises:
+            RuntimeError: Archiving is disabled, so there is no root.
         """
-        return self.uri or ""
+        if self.uri is None:
+            raise RuntimeError("Execution archiving is not configured.")
+        return self.uri
 
     @model_validator(mode="after")
     def _validate_archive_settings(self) -> "ArchiveSettings":
@@ -534,15 +539,6 @@ class ServerConfiguration(BaseModel):
     webhook_event_handler_sources: list[str] = []
 
     archive: ArchiveSettings = Field(default_factory=ArchiveSettings)
-
-    @property
-    def archive_enabled(self) -> bool:
-        """Return whether execution archiving is enabled on this server.
-
-        Returns:
-            Whether an archive backend is configured.
-        """
-        return self.archive.enabled
 
     @model_validator(mode="after")
     def _validate_api_transaction_cleanup_settings(

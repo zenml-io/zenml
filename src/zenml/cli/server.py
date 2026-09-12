@@ -789,32 +789,8 @@ def retention() -> None:
 @retention.command("status")
 def retention_status() -> None:
     """Show the latest archive sweep without reading object storage."""
-    result = Client().get_retention_status()
-    cli_utils.print_table(
-        [
-            {"property": "outcome", "value": result.outcome.value},
-            {
-                "property": "finished_at",
-                "value": result.finished_at.isoformat()
-                if result.finished_at
-                else "never",
-            },
-            {"property": "archived", "value": result.archived},
-            {"property": "skipped", "value": result.skipped},
-            {"property": "oversized", "value": result.oversized},
-            {"property": "failed", "value": result.failed},
-            {"property": "archive_enabled", "value": result.archive_enabled},
-            {
-                "property": "archive_configured",
-                "value": result.archive_configured,
-            },
-            {
-                "property": "archive_after_days",
-                "value": result.archive_after_days or "disabled",
-            },
-            {"property": "schedule", "value": result.schedule or "disabled"},
-        ],
-        title="Execution archive status",
+    cli_utils.print_pydantic_model(
+        "Execution archive status", Client().get_retention_status()
     )
 
 

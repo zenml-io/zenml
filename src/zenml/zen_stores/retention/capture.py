@@ -119,7 +119,7 @@ class RunCapturer:
         snapshots = self._capture_snapshots()
         self._capture_configurations()
         document = ArchiveDocument(
-            project_id=self.run.project_id,
+            project_id=self.run.project,
             run_id=self.run.run_id,
             run=RunRecord.model_validate(
                 {name: self.run_row[name] for name in RunRecord.model_fields}

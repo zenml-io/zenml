@@ -22,7 +22,15 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 from time import monotonic
-from typing import ClassVar, Iterator, List, Literal, Optional, Sequence
+from typing import (
+    ClassVar,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Sequence,
+)
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -84,6 +92,32 @@ class ArchiveAttempt(BaseModel):
     run_id: UUID
     outcome: RunOutcome
     exclusion: Optional[RetentionExclusion] = None
+
+
+class RunCounts(Protocol):
+    """The four per-run outcome counters, tallied the same way everywhere."""
+
+    archived: int
+    skipped: int
+    oversized: int
+    failed: int
+
+
+def tally(counts: RunCounts, outcome: RunOutcome) -> None:
+    """Count one attempt against a sweep's state or a targeted result.
+
+    Args:
+        counts: Counters to advance.
+        outcome: How the attempt ended.
+    """
+    if outcome == "archived":
+        counts.archived += 1
+    elif outcome == "oversized":
+        counts.oversized += 1
+    elif outcome == "failed":
+        counts.failed += 1
+    else:
+        counts.skipped += 1
 
 
 class _PassReplaced(Exception):
@@ -167,7 +201,7 @@ class RunArchiver:
         except ExecutionRetentionConflictError as error:
             return self._conflict_attempt(run.run_id, error)
         bundle_id = uuid4()
-        uri = self.storage.object_uri(run.project_id, run.run_id, bundle_id)
+        uri = self.storage.object_uri(run.project, run.run_id, bundle_id)
         try:
             self.storage.write(uri, encoded.data)
             if self.storage.read(uri, len(encoded.data)) != encoded.data:
@@ -283,7 +317,7 @@ class RunArchiver:
             ).one_or_none()
             if (
                 locked is None
-                or locked.project_id != run.project_id
+                or locked.project_id != run.project
                 or locked.archive_bundle_id is not None
             ):
                 raise ExecutionRetentionConflictError(
@@ -335,7 +369,7 @@ class RunArchiver:
             session.add(
                 ArchiveBundleSchema(
                     id=bundle_id,
-                    project_id=run.project_id,
+                    project_id=run.project,
                     run_id=run.run_id,
                     uri=uri,
                     size_bytes=len(encoded.data),
@@ -381,14 +415,7 @@ def archive_runs(
             run_ids,
         )
         for attempt in attempts:
-            if attempt.outcome == "archived":
-                result.archived += 1
-            elif attempt.outcome == "oversized":
-                result.oversized += 1
-            elif attempt.outcome == "failed":
-                result.failed += 1
-            else:
-                result.skipped += 1
+            tally(result, attempt.outcome)
             if attempt.exclusion is not None:
                 refusals.append(
                     ArchiveRefusal(
@@ -400,8 +427,14 @@ def archive_runs(
     return result
 
 
-class ArchivePass(RunArchiver):
-    """One bounded archive sweep over every project, oldest runs first."""
+class ArchivePass:
+    """One bounded archive sweep over every project, oldest runs first.
+
+    The sweep owns the lease, the saved position and the counts, and hands
+    each candidate to a ``RunArchiver``. It deliberately does not inherit
+    that archiver: forcing one arbitrary run past the age and model-link
+    rules is not something a bounded sweep should be able to do.
+    """
 
     MAX_SECONDS: ClassVar[int] = 60
 
@@ -418,7 +451,10 @@ class ArchivePass(RunArchiver):
             storage: Archive storage.
             settings: The server's archive settings.
         """
-        super().__init__(engine, storage, settings)
+        self.engine = engine
+        self.storage = storage
+        self.settings = settings
+        self.archiver = RunArchiver(engine, storage, settings)
         self.operation_id = uuid4()
         self.settings_id: Optional[UUID] = None
         self.state = RetentionState()
@@ -493,19 +529,13 @@ class ArchivePass(RunArchiver):
             cursor: Run to examine.
             evaluated_at: Evaluation time shared by the whole sweep.
         """
-        attempt = self.archive(cursor.run_id, evaluated_at)
+        attempt = self.archiver.archive(cursor.run_id, evaluated_at)
         with self._update() as state:
             state.cursor = cursor
-            if attempt.outcome == "archived":
-                state.archived += 1
-            elif attempt.outcome == "oversized":
-                state.oversized += 1
+            tally(state, attempt.outcome)
+            if attempt.outcome == "oversized":
                 # Runs over the byte budget are only found by reading them.
                 state.remember_oversized(attempt.run_id)
-            elif attempt.outcome == "failed":
-                state.failed += 1
-            else:
-                state.skipped += 1
 
     def _load(self, session: Session) -> None:
         """Lock the settings row while changing the latest sweep state.

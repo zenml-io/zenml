@@ -73,7 +73,7 @@ class ArchiveScheduler:
                 pass
             try:
                 outcome = await asyncio.get_event_loop().run_in_executor(
-                    None, _sweep
+                    None, self._sweep
                 )
             except Exception:
                 logger.exception("Error during the archive sweep")
@@ -83,6 +83,21 @@ class ArchiveScheduler:
                 if outcome == RetentionOutcome.PAUSED
                 else self._seconds_until_next_sweep()
             )
+
+    def _sweep(self) -> RetentionOutcome:
+        """Run one bounded sweep, unless another replica is already sweeping.
+
+        Returns:
+            The sweep outcome, or `RUNNING` when another replica holds the
+            lease.
+        """
+        from zenml.zen_server.utils import zen_store
+
+        try:
+            return zen_store().run_archive_sweep()
+        except ExecutionRetentionConflictError:
+            logger.debug("Another replica is running the archive sweep.")
+            return RetentionOutcome.RUNNING
 
     def _seconds_until_next_sweep(self) -> float:
         """Return how long to wait for the next cron occurrence.
@@ -94,18 +109,3 @@ class ArchiveScheduler:
         occurrence = next_occurrence_for_cron(self.schedule, base=now)
         jitter = random.uniform(0, MAX_JITTER_SECONDS)
         return max((occurrence - now).total_seconds(), 0.0) + jitter
-
-
-def _sweep() -> RetentionOutcome:
-    """Run one bounded sweep, unless another replica is already sweeping.
-
-    Returns:
-        The sweep outcome, or `RUNNING` when another replica holds the lease.
-    """
-    from zenml.zen_server.utils import zen_store
-
-    try:
-        return zen_store().run_archive_sweep()
-    except ExecutionRetentionConflictError:
-        logger.debug("Another replica is running the archive sweep.")
-        return RetentionOutcome.RUNNING

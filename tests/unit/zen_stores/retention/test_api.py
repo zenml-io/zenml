@@ -88,12 +88,10 @@ def test_denied_before_detail_storage_or_dispatch(
         side_effect=AssertionError("denied request crossed boundary")
     )
     for module in ROUTERS:
-        for name in (
-            "verify_permission_for_model",
-            "batch_verify_permissions_for_models",
-        ):
-            if hasattr(module, name):
-                monkeypatch.setattr(module, name, denied)
+        monkeypatch.setattr(module, "verify_permission_for_model", denied)
+    monkeypatch.setattr(
+        retention_endpoints, "batch_verify_permissions_for_models", denied
+    )
     monkeypatch.setattr(
         steps_endpoints, "get_allowed_resource_ids", lambda **_: []
     )

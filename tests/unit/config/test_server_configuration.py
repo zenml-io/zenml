@@ -110,7 +110,7 @@ def test_archive_is_disabled_without_a_backend() -> None:
     """A server that names no backend never archives, whatever else is set."""
     config = ServerConfiguration(archive={"uri": "s3://bucket/archive"})
 
-    assert not config.archive_enabled
+    assert not config.archive.enabled
     assert config.archive.backend == ArchiveBackend.DISABLED
 
 
@@ -123,7 +123,7 @@ def test_archive_settings_come_from_one_nested_group(monkeypatch) -> None:
 
     config = ServerConfiguration.get_server_config()
 
-    assert config.archive_enabled
+    assert config.archive.enabled
     assert config.archive.uri == "s3://bucket/archive"
     assert config.archive.after_days == 45
     assert config.archive.schedule == "0 3 * * 0"
