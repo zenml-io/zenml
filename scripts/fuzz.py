@@ -295,7 +295,7 @@ def _runner_environment(
                 ]
             ),
             "HYPOTHESIS_STORAGE_DIRECTORY": str(
-                config.output_dir / "hypothesis"
+                _hypothesis_storage_directory(config)
             ),
             "ZENML_ANALYTICS_OPT_IN": "false",
             "ZENML_DEBUG": "true",
@@ -303,6 +303,21 @@ def _runner_environment(
         }
     )
     return environment
+
+
+def _hypothesis_storage_directory(config: RunConfig) -> Path:
+    """Resolve the reusable Hypothesis corpus directory for a run.
+
+    Args:
+        config: Selected fuzz run configuration.
+
+    Returns:
+        The external corpus path when configured, otherwise the run-owned path.
+    """
+    configured = os.environ.get("ZENML_FUZZ_CORPUS_DIR")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return config.output_dir / "hypothesis"
 
 
 def terminate_process(process: subprocess.Popen[bytes]) -> None:
@@ -384,6 +399,9 @@ def _initial_metadata(config: RunConfig) -> Dict[str, object]:
             (config.suite, config.backend, config.profile)
         ],
         "hard_timeout_seconds": HARD_TIMEOUT_SECONDS[config.profile],
+        "hypothesis_storage_directory": str(
+            _hypothesis_storage_directory(config)
+        ),
         "invocation": build_pytest_command(config, 1),
         "output_dir": str(config.output_dir),
         "profile": config.profile,

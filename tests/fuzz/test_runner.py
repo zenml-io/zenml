@@ -17,7 +17,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 import pytest
 from scripts import fuzz
@@ -94,6 +94,47 @@ def test_pytest_command_is_isolated_and_selects_one_suite(
     assert "no:rerunfailures" in command
     assert "no:randomly" in command
     assert "test_cli.py" not in " ".join(command)
+
+
+def test_runner_can_reuse_an_external_hypothesis_corpus(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Nightly runs can restore a corpus outside the new evidence directory."""
+    corpus_path = tmp_path / "restored-corpus"
+    output_path = tmp_path / "new-evidence"
+    observed_environment: Dict[str, str] = {}
+    monkeypatch.setenv("ZENML_FUZZ_CORPUS_DIR", str(corpus_path))
+    monkeypatch.setattr(fuzz, "missing_dependencies", lambda suite: [])
+
+    def run_batch(
+        command: List[str],
+        environment: object,
+        timeout_seconds: int,
+        output_dir: Path,
+    ) -> fuzz.BatchResult:
+        assert isinstance(environment, dict)
+        observed_environment.update(environment)
+        return _result(0)
+
+    monkeypatch.setattr(fuzz, "run_pytest", run_batch)
+
+    return_code = fuzz.main(
+        [
+            "--suite",
+            "filters",
+            "--profile",
+            "nightly",
+            "--output-dir",
+            str(output_path),
+        ]
+    )
+    metadata = json.loads((output_path / "run.json").read_text())
+
+    assert return_code == 0
+    assert observed_environment["HYPOTHESIS_STORAGE_DIRECTORY"] == str(
+        corpus_path
+    )
+    assert metadata["hypothesis_storage_directory"] == str(corpus_path)
 
 
 def test_reproduction_must_belong_to_selected_suite(tmp_path: Path) -> None:
@@ -256,7 +297,9 @@ def test_hard_timeout_is_shared_across_batches(
     """Repeated batches share one runner deadline."""
     observed_timeouts = []
     monotonic_values = iter([0.0, 100.0, 850.0])
-    monkeypatch.setattr(fuzz.time, "monotonic", lambda: next(monotonic_values))
+    monkeypatch.setattr(
+        "scripts.fuzz.time.monotonic", lambda: next(monotonic_values)
+    )
     monkeypatch.setattr(fuzz, "missing_dependencies", lambda suite: [])
 
     def run_batch(
