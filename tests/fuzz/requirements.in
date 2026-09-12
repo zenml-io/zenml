@@ -2,5 +2,6 @@
 # uv pip compile --universal --python-version 3.10 \
 #   tests/fuzz/requirements.in -o tests/fuzz/requirements.txt
 hypothesis>=6.140,<7
+cryptography>=44,<51
 pytest>=9.0.3,<10
 schemathesis>=4.0,<5
