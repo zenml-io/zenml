@@ -68,7 +68,10 @@ def _load_workflow(path: Path) -> Dict[str, Any]:
     Returns:
         Parsed workflow mapping.
     """
-    loaded = yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+    # BaseLoader constructs strings only and preserves workflow keys like `on`.
+    loaded = yaml.load(  # nosec B506
+        path.read_text(), Loader=yaml.BaseLoader
+    )
     assert isinstance(loaded, dict)
     return cast(Dict[str, Any], loaded)
 

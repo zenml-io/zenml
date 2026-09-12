@@ -75,7 +75,9 @@ def test_api_suite_rejects_hosts_without_process_group_cleanup(
     tmp_path: Path,
 ) -> None:
     """API fuzzing fails closed when timeout cleanup cannot be guaranteed."""
-    monkeypatch.setattr("scripts.fuzz.os.name", "nt")
+    monkeypatch.setattr(
+        "scripts.fuzz._supports_process_group_cleanup", lambda: False
+    )
 
     with pytest.raises(SystemExit):
         fuzz.parse_args(

@@ -180,7 +180,7 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
         help="New directory in which to preserve run evidence.",
     )
     parsed = parser.parse_args(arguments)
-    if parsed.suite == "api" and os.name != "posix":
+    if parsed.suite == "api" and not _supports_process_group_cleanup():
         parser.error(
             "suite 'api' requires a POSIX host for process-group cleanup"
         )
@@ -208,6 +208,11 @@ def parse_args(arguments: Optional[Sequence[str]] = None) -> RunConfig:
         seed=parsed.seed,
         reproduce=reproduction,
     )
+
+
+def _supports_process_group_cleanup() -> bool:
+    """Return whether this host supports process-group cleanup."""
+    return os.name == "posix"
 
 
 def missing_dependencies(suite: str) -> List[str]:
