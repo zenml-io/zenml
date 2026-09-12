@@ -466,9 +466,9 @@ flowchart TB
 **Test scenarios:**
 
 1. Covers AE1. Unlabeled PR jobs skip before service or dependency setup; adding the label starts the short matrix.
-2. A labelled draft works; subsequent commits use the new head SHA.
+2. A labeled draft works; subsequent commits use the new head SHA.
 3. An unrelated label neither launches nor cancels fuzzing; removing `run-fuzz` cancels its own PR work.
-4. Reopening a labelled PR triggers; manual and nightly runs cannot cancel PR runs.
+4. Reopening a labeled PR triggers; manual and nightly runs cannot cancel PR runs.
 5. All jobs in a scheduled run use one resolved `develop` SHA.
 6. Failure/timeout yields a failed or incomplete summary and retained artifacts; missing artifacts cannot erase the failure.
 7. No path through the workflow grants repository secrets/write credentials to PR-controlled code.
