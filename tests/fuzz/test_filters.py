@@ -27,6 +27,7 @@ from tests.fuzz.filter_strategies import (
     MALFORMED_MEMBERSHIP_VALUES,
     FilterCase,
     FilterSpec,
+    RowValues,
     expected_ids,
     filter_cases,
 )
@@ -107,6 +108,24 @@ def test_result_oracle_rejects_an_injected_mismatch() -> None:
     """Prove that successful execution with an extra ID cannot pass."""
     with pytest.raises(AssertionError, match="oracle expected"):
         _assert_matching_ids([1, 2], [1])
+
+
+def test_string_filter_comparison_is_case_sensitive(
+    filter_engine: Engine,
+) -> None:
+    """MySQL and SQLite match the Python oracle for case distinctions."""
+    case = FilterCase(
+        rows=[
+            RowValues(id=1, name="A", number=None),
+            RowValues(id=2, name="a", number=None),
+        ],
+        filters=[FilterSpec(column="name", operation="equals", value="A")],
+        logical_operator="and",
+    )
+
+    _assert_matching_ids(
+        _execute_case(filter_engine, case), expected_ids(case)
+    )
 
 
 @given(case=filter_cases())

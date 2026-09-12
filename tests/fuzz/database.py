@@ -27,6 +27,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlmodel import Field, SQLModel
 
 TEST_DATABASE_PREFIX = "zenml_fuzz_"
+MYSQL_FILTER_COLLATION = "utf8mb4_bin"
 
 
 @dataclass(frozen=True)
@@ -232,7 +233,7 @@ def _filter_database(
             connection.execute(
                 text(
                     f"CREATE DATABASE {quoted_name} CHARACTER SET utf8mb4 "
-                    "COLLATE utf8mb4_unicode_ci"
+                    f"COLLATE {MYSQL_FILTER_COLLATION}"
                 )
             )
         engine = create_engine(database_url, pool_pre_ping=True)

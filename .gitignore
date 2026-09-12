@@ -51,6 +51,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 /.fuzz-results/
+/.fuzz-corpus/
 
 # Translations
 *.mo

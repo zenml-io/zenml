@@ -21,6 +21,7 @@ import yaml
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_ROOT = REPOSITORY_ROOT / ".github" / "workflows"
+ROOT_GITIGNORE = REPOSITORY_ROOT / ".gitignore"
 PR_WORKFLOW = WORKFLOW_ROOT / "fuzz-pr.yml"
 NIGHTLY_WORKFLOW = WORKFLOW_ROOT / "fuzz-nightly.yml"
 CHECKOUT_ACTION = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
@@ -247,6 +248,13 @@ def test_nightly_resolves_one_ref_for_every_matrix_row() -> None:
         "${{ matrix.suite }}-${{ matrix.backend }}"
         in (corpus_cache["with"]["restore-keys"])
     )
+
+
+def test_nightly_corpus_root_is_ignored() -> None:
+    """Restored nightly corpora cannot dirty the checkout."""
+    ignore_rules = ROOT_GITIGNORE.read_text().splitlines()
+
+    assert "/.fuzz-corpus/" in ignore_rules
 
 
 @pytest.mark.parametrize("path", [PR_WORKFLOW, NIGHTLY_WORKFLOW])
