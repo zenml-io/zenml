@@ -87,3 +87,18 @@ or `docker-server`.
    database.
 - Try running a pipeline, and/or try to replicate whatever you did to the
   database to see if it works.
+
+## Execution archives
+
+Execution details can live in retained v1 archive objects instead of SQL.
+A migration that transforms execution configuration, changes archived columns,
+or changes retained run/step/snapshot identities must account for those objects.
+A SQL payload update does not update archived copies.
+
+Preserve the frozen v1 fixtures in
+`tests/unit/zen_stores/retention/fixtures/` and run their MySQL restoration
+tests against the new schema. Add a specific compatible read/restore conversion
+when the migration requires it; do not replace old fixtures with output from the
+new encoder. Test the populated migration with archived identities as well as
+unarchived runs. Additive schema changes that do not affect these contracts do
+not require a new archive format.

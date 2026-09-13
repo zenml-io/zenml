@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class ArchivableSchema(SQLModel):
-    """Retain identity in SQL while detail lives in an immutable bundle."""
+    """Retain identity in SQL while detail lives in an archive bundle."""
 
     archive_bundle_id: Optional[UUID] = Field(nullable=True, default=None)
 

@@ -3,33 +3,33 @@
 
 import gzip
 import hashlib
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlmodel import Session
 
 from zenml.exceptions import (
     ExecutionRetentionIntegrityError,
 )
 from zenml.zen_stores.retention import format as archive_format
 from zenml.zen_stores.retention.format import (
+    ArchiveDocument,
     canonical_json,
     decode,
 )
-from zenml.zen_stores.schemas import ArchiveBundleSchema
 
 
 @pytest.fixture
-def document(retention_store, run_factory, archive_run, storage):
-    """Read the document emitted by a real archive pass."""
-    ids = run_factory(retention_store)
-    bundle_id = archive_run(retention_store, ids)
-    with Session(retention_store.engine) as session:
-        bundle = session.get(ArchiveBundleSchema, bundle_id)
-    document = decode(
-        storage.read(bundle.uri, bundle.size_bytes), bundle.content_hash
-    )
-    return document
+def document() -> ArchiveDocument:
+    """Read a frozen archive without depending on a running database.
+
+    Returns:
+        The verified v1 document.
+    """
+    raw = (
+        Path(__file__).with_name("fixtures") / "archive_v1_static.json"
+    ).read_bytes()
+    return decode(gzip.compress(raw, mtime=0), hashlib.sha256(raw).hexdigest())
 
 
 @pytest.mark.parametrize(

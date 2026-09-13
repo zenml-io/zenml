@@ -41,6 +41,7 @@ from zenml.models.v2.base.filter import (
 )
 from zenml.models.v2.base.scoped import (
     ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -230,6 +231,18 @@ class PipelineSnapshotUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
+class PipelineSnapshotArchiveDescriptor(ExecutionArchiveDescriptor):
+    """Retained SQL summary for an archived pipeline snapshot."""
+
+    run_name_template: str
+    client_version: Optional[str] = None
+    server_version: Optional[str] = None
+    pipeline_version_hash: Optional[str] = None
+    code_path: Optional[str] = None
+    template_id: Optional[UUID] = None
+    source_snapshot_id: Optional[UUID] = None
+
+
 class PipelineSnapshotResponseBody(
     ProjectScopedResponseBody, ArchivableResponseBody
 ):
@@ -248,6 +261,7 @@ class PipelineSnapshotResponseBody(
         default=None,
         title="The ID of the pipeline associated with the snapshot.",
     )
+    archive: Optional[PipelineSnapshotArchiveDescriptor] = None
 
 
 class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
@@ -439,6 +453,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.run_name_template
         return self.get_metadata().run_name_template
 
     @property
@@ -475,6 +492,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.client_version
         return self.get_metadata().client_version
 
     @property
@@ -484,6 +504,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.server_version
         return self.get_metadata().server_version
 
     @property
@@ -493,6 +516,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.pipeline_version_hash
         return self.get_metadata().pipeline_version_hash
 
     @property
@@ -511,6 +537,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.code_path
         return self.get_metadata().code_path
 
     @property
@@ -520,6 +549,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.template_id
         return self.get_metadata().template_id
 
     @property
@@ -529,6 +561,9 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.source_snapshot_id
         return self.get_metadata().source_snapshot_id
 
     @property
@@ -659,6 +694,15 @@ class PipelineSnapshotResponse(
             The bundle ID, or None while detail remains in SQL.
         """
         return self.get_body().archive_bundle_id
+
+    @property
+    def archive(self) -> Optional[PipelineSnapshotArchiveDescriptor]:
+        """The retained archive summary, if this snapshot is archived.
+
+        Returns:
+            The archive summary, or None while detail remains in SQL.
+        """
+        return self.get_body().archive
 
 
 # ------------------ Filter Model ------------------

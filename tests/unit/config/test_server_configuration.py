@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.config.server_config import ServerConfiguration
+from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.enums import ArchiveBackend
 
 
@@ -110,7 +110,9 @@ def test_archive_is_disabled_without_a_backend() -> None:
     """A server that names no backend never archives, whatever else is set."""
     config = ServerConfiguration(archive={"uri": "s3://bucket/archive"})
 
-    assert not config.archive.enabled
+    assert not config.archive.configured
+    assert not config.archive.new_archives_enabled
+    assert not config.archive.scheduled
     assert config.archive.backend == ArchiveBackend.DISABLED
 
 
@@ -120,11 +122,26 @@ def test_archive_settings_come_from_one_nested_group(monkeypatch) -> None:
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", "s3://bucket/archive")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "45")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE", "0 3 * * 0")
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "false")
 
     config = ServerConfiguration.get_server_config()
 
-    assert config.archive.enabled
+    assert config.archive.configured
+    assert config.archive.new_archives_enabled
+    assert not config.archive.scheduled
     assert config.archive.uri == "s3://bucket/archive"
     assert config.archive.after_days == 45
     assert config.archive.schedule == "0 3 * * 0"
     assert config.archive.max_runs_per_pass == 200
+
+
+def test_archive_can_pause_new_writes_without_losing_storage() -> None:
+    """Storage configuration remains available while new archives are paused."""
+    archive = ArchiveSettings(
+        backend="local", uri="/tmp/archive", enabled=False
+    )
+
+    assert archive.configured
+    assert not archive.new_archives_enabled
+    assert not archive.scheduled
+    assert archive.root_uri == "/tmp/archive"

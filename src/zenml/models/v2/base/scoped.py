@@ -38,6 +38,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
+    BaseZenModel,
 )
 from zenml.models.v2.base.filter import (
     AnyQuery,
@@ -612,12 +613,26 @@ class TaggableFilter(BaseFilter):
         return super().apply_sorting(query=query, table=table)
 
 
+class ExecutionArchiveDescriptor(BaseZenModel):
+    """SQL-backed location of archived execution detail."""
+
+    bundle_id: UUID = Field(title="The bundle that holds the archived detail.")
+    restore_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The run to restore before accessing cold detail.",
+    )
+
+
 class ArchivableResponseBody(BaseResponseBody):
     """Response body fields shared by entities whose detail can be archived."""
 
     archive_bundle_id: Optional[UUID] = Field(
         default=None,
         title="The archive bundle that holds archived detail, if any.",
+    )
+    archive: Optional[ExecutionArchiveDescriptor] = Field(
+        default=None,
+        title="SQL-backed information for discovering archived detail.",
     )
 
 

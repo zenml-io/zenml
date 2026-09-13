@@ -834,6 +834,7 @@ def runs() -> None:
         "run_name",
         "pipeline",
         "status",
+        "archived",
         "stack",
         "owner",
     ],
@@ -1200,7 +1201,10 @@ def restore_pipeline_run(run_name_or_id: str) -> None:
             f"Run `{result.run_id}` is not archived; nothing to restore."
         )
     else:
-        cli_utils.success(f"Restored run `{result.run_id}`.")
+        cli_utils.success(
+            f"Restored run `{result.run_id}`. Configuration, DAG inspection, "
+            "and replay are available again."
+        )
 
 
 @runs.command("stop")

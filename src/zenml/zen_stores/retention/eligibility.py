@@ -7,10 +7,10 @@ model-link rule, continuing from the sweep's saved position. Inspection then
 gives each candidate at most one exclusion reason and counts the rows its
 bundle would hold.
 
-A targeted archive inspects runs with ``force``, which ignores the age, the
-model-link rule, and the restore grace period. It never ignores the rules
-that keep a run readable while something is still using it: those would
-strip configuration a running orchestrator depends on.
+A targeted archive applies the same policy by default. Operators can request
+``force`` explicitly to ignore the age, model-link, and restore-grace rules.
+It never ignores the rules that keep a run readable while something is still
+using it: those would strip configuration a running orchestrator depends on.
 
 A child run is archived on its own, but only once its root run is finished
 and can no longer be resumed: resuming a root reruns its existing child runs
@@ -89,6 +89,7 @@ class ArchiveBatch(BaseModel):
 
     run_ids: List[UUID] = Field(default_factory=list)
     more: bool = False
+    next_after_run_id: Optional[UUID] = None
 
 
 def _finished_unarchived(limit: int) -> Select[Any]:
@@ -131,6 +132,10 @@ def expand_target(
 
     Returns:
         The runs to attempt and whether the owner has more of them.
+
+    Raises:
+        KeyError: The continuation run was deleted or does not belong to the
+            requested pipeline or project.
     """
     if request.run_ids is not None:
         # A repeated ID would otherwise be archived on one thread and
@@ -146,9 +151,38 @@ def expand_target(
         statement = statement.where(
             col(PipelineRunSchema.project_id) == request.project_id
         )
+    if request.after_run_id is not None:
+        cursor_statement = select(
+            col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
+        ).where(col(PipelineRunSchema.id) == request.after_run_id)
+        if request.pipeline_id is not None:
+            cursor_statement = cursor_statement.where(
+                col(PipelineRunSchema.pipeline_id) == request.pipeline_id
+            )
+        else:
+            cursor_statement = cursor_statement.where(
+                col(PipelineRunSchema.project_id) == request.project_id
+            )
+        cursor = session.execute(cursor_statement).one_or_none()
+        if cursor is None or cursor.end_time is None:
+            raise KeyError(
+                f"Archive continuation run '{request.after_run_id}' is not "
+                "available for this target; restart without `after_run_id`."
+            )
+        statement = statement.where(
+            or_(
+                col(PipelineRunSchema.end_time) > cursor.end_time,
+                (col(PipelineRunSchema.end_time) == cursor.end_time)
+                & (col(PipelineRunSchema.id) > cursor.id),
+            )
+        )
     rows = session.execute(statement).all()
+    selected = rows[:limit]
+    more = len(rows) > limit
     return ArchiveBatch(
-        run_ids=[run_id for _, run_id in rows[:limit]], more=len(rows) > limit
+        run_ids=[run_id for _, run_id in selected],
+        more=more,
+        next_after_run_id=selected[-1].id if more and selected else None,
     )
 
 

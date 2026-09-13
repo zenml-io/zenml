@@ -41,7 +41,7 @@ from zenml.models import (
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
-from zenml.zen_stores.retention import archiver, fences
+from zenml.zen_stores.retention import archiver, eligibility, fences
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
@@ -307,6 +307,24 @@ def test_sweep_continues_from_its_saved_position(
     assert saved_state(retention_store).cursor is None
 
 
+def test_status_reports_storage_failure_without_probing(
+    retention_store, storage, monkeypatch
+):
+    """Status reads safe saved diagnostics even while storage is unavailable."""
+    monkeypatch.setattr(storage, "probe", lambda: False)
+    assert retention_store.run_archive_sweep() == RetentionOutcome.FAILED
+    monkeypatch.setattr(
+        storage,
+        "probe",
+        lambda: pytest.fail("status probed archive storage"),
+    )
+
+    status = retention_store.get_retention_status()
+
+    assert status.archive_configured and status.archive_enabled
+    assert status.outcome == RetentionOutcome.FAILED
+
+
 def test_archived_snapshot_is_deleted_only_after_its_run(
     retention_store, run_factory, archive_run, storage
 ):
@@ -441,10 +459,10 @@ def test_restore_conflict_rolls_back_all_detail(
     assert rows(retention_store) == before
 
 
-def test_targeted_archive_ignores_age_but_not_safety(
+def test_targeted_archive_requires_explicit_policy_override(
     retention_store, run_factory, storage
 ):
-    """Archiving now forces past the age and still refuses an active run."""
+    """Manual archiving follows policy until force is explicit."""
     fresh = run_factory(retention_store, age_days=0)
     active = run_factory(retention_store, age_days=0)
     with retention_store.engine.begin() as connection:
@@ -454,12 +472,17 @@ def test_targeted_archive_ignores_age_but_not_safety(
             .values(status=ExecutionStatus.RUNNING.value)
         )
 
-    result = retention_store.archive_runs(
-        ArchiveRequest(run_ids=[fresh.run, active.run])
+    normal = retention_store.archive_runs(ArchiveRequest(run_ids=[fresh.run]))
+    forced = retention_store.archive_runs(
+        ArchiveRequest(run_ids=[fresh.run, active.run], force=True)
     )
 
-    assert result.archived == 1 and result.skipped == 1
-    assert result.refusals == [
+    assert normal.archived == 0 and normal.skipped == 1
+    assert normal.refusals == [
+        ArchiveRefusal(run_id=fresh.run, reason=RetentionExclusion.NOT_OLD)
+    ]
+    assert forced.archived == 1 and forced.skipped == 1
+    assert forced.refusals == [
         ArchiveRefusal(
             run_id=active.run, reason=RetentionExclusion.NOT_ELIGIBLE
         )
@@ -475,18 +498,26 @@ def test_targeted_archive_is_bounded_and_reports_more_work(
     retention_store, run_factory, storage, monkeypatch
 ):
     """A project-wide archive does one batch and says more runs remain."""
-    runs = [run_factory(retention_store, age_days=index) for index in range(2)]
+    runs = [
+        run_factory(retention_store, age_days=100 - index)
+        for index in range(2)
+    ]
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
 
     first = retention_store.archive_runs(
         ArchiveRequest(project_id=runs[0].project)
     )
     second = retention_store.archive_runs(
-        ArchiveRequest(project_id=runs[0].project)
+        ArchiveRequest(
+            project_id=runs[0].project,
+            after_run_id=first.next_after_run_id,
+        )
     )
 
     assert (first.archived, first.pending) == (1, True)
+    assert first.next_after_run_id == runs[0].run
     assert (second.archived, second.pending) == (1, False)
+    assert second.next_after_run_id is None
     assert all(
         retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
         for ids in runs
@@ -502,22 +533,163 @@ def test_archive_connector_cannot_be_deleted(retention_store, monkeypatch):
         retention_store.delete_service_connector(connector_id)
 
 
-def test_targeted_archive_does_not_promise_impossible_progress(
+@pytest.mark.parametrize("refusal", ["active", "oversized"])
+def test_targeted_archive_continues_past_refusal_only_batches(
+    retention_store, run_factory, storage, monkeypatch, NOW, refusal
+):
+    """A continuation reaches later runs after a fully refused page."""
+    oldest = run_factory(
+        retention_store,
+        kind="dynamic" if refusal == "oversized" else "static",
+        age_days=100,
+    )
+    later = run_factory(retention_store, age_days=99)
+    if refusal == "active":
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                update(PipelineRunSchema)
+                .where(PipelineRunSchema.id == oldest.run)
+                .values(status=ExecutionStatus.RUNNING.value)
+            )
+    else:
+        retention_store.create_run_step(dynamic_step(oldest, "extra", NOW))
+        monkeypatch.setattr(eligibility, "MAX_RECORDS", 6)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+
+    first = retention_store.archive_runs(
+        ArchiveRequest(project_id=oldest.project)
+    )
+    second = retention_store.archive_runs(
+        ArchiveRequest(
+            project_id=oldest.project,
+            after_run_id=first.next_after_run_id,
+        )
+    )
+
+    assert first.archived == 0
+    assert first.skipped + first.oversized == 1
+    assert first.pending and first.next_after_run_id == oldest.run
+    assert (second.archived, second.pending) == (1, False)
+    assert retention_store.get_run(later.run, hydrate=False).archive_bundle_id
+
+
+def test_archive_preview_is_bounded_and_side_effect_free(
     retention_store, run_factory, storage, monkeypatch
 ):
-    """A batch that archives nothing must not ask the caller to repeat."""
-    runs = [run_factory(retention_store, age_days=index) for index in range(2)]
+    """Dry-run uses eligibility without storage access or database writes."""
+    eligible = run_factory(retention_store, age_days=100)
+    active = run_factory(retention_store, age_days=99)
     with retention_store.engine.begin() as connection:
         connection.execute(
             update(PipelineRunSchema)
-            .where(PipelineRunSchema.id == runs[1].run)
+            .where(PipelineRunSchema.id == active.run)
             .values(status=ExecutionStatus.RUNNING.value)
         )
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+    before = rows(retention_store)
+
+    def blocked(*_, **__):
+        pytest.fail("dry-run accessed archive storage")
+
+    monkeypatch.setattr(storage, "probe", blocked)
+    monkeypatch.setattr(storage, "read", blocked)
+    monkeypatch.setattr(storage, "write", blocked)
 
     result = retention_store.archive_runs(
-        ArchiveRequest(project_id=runs[0].project)
+        ArchiveRequest(project_id=eligible.project, dry_run=True)
     )
 
-    assert (result.archived, result.skipped) == (0, 1)
-    assert not result.pending
+    assert result.dry_run
+    assert (result.eligible, result.skipped, result.archived) == (1, 1, 0)
+    assert result.refusals == [
+        ArchiveRefusal(
+            run_id=active.run, reason=RetentionExclusion.NOT_ELIGIBLE
+        )
+    ]
+    assert rows(retention_store) == before
+
+
+def test_pausing_new_archives_keeps_preview_and_restore_available(
+    retention_store, run_factory, archive_run, storage, monkeypatch
+):
+    """The write gate does not remove configured recovery access."""
+    archived = run_factory(retention_store)
+    archive_run(retention_store, archived)
+    candidate = run_factory(retention_store)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
+
+    status = retention_store.get_retention_status()
+    assert status.archive_configured
+    assert not status.archive_enabled
+    assert not status.archive_scheduled
+    with pytest.raises(ExecutionRetentionConflictError, match="paused"):
+        retention_store.archive_runs(
+            ArchiveRequest(run_ids=[candidate.run], force=True)
+        )
+    with pytest.raises(ExecutionRetentionConflictError, match="paused"):
+        retention_store.run_archive_sweep()
+    preview = retention_store.archive_runs(
+        ArchiveRequest(run_ids=[candidate.run], dry_run=True)
+    )
+    assert preview.eligible == 1
+    assert retention_store.restore_pipeline_run(archived.run).outcome == (
+        RestoreOutcome.RESTORED
+    )
+
+
+def test_manual_only_configuration_rejects_sweeps(
+    retention_store, run_factory, storage, monkeypatch
+):
+    """Disabling the schedule preserves manual archiving."""
+    ids = run_factory(retention_store)
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "false")
+
+    with pytest.raises(ExecutionRetentionConflictError, match="manual"):
+        retention_store.run_archive_sweep()
+    result = retention_store.archive_runs(ArchiveRequest(run_ids=[ids.run]))
+
+    assert result.archived == 1
+    status = retention_store.get_retention_status()
+    assert status.archive_enabled and not status.archive_scheduled
+    assert status.schedule is None
+
+
+def test_deleted_archive_continuation_has_a_clear_error(
+    retention_store, run_factory, storage, monkeypatch
+):
+    """A stale continuation asks the caller to restart the bounded scan."""
+    runs = [
+        run_factory(retention_store, age_days=100 - index)
+        for index in range(2)
+    ]
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+    first = retention_store.archive_runs(
+        ArchiveRequest(project_id=runs[0].project, dry_run=True)
+    )
+    assert first.next_after_run_id == runs[0].run
+    retention_store.delete_run(runs[0].run)
+
+    with pytest.raises(KeyError, match="restart without `after_run_id`"):
+        retention_store.archive_runs(
+            ArchiveRequest(
+                project_id=runs[0].project,
+                after_run_id=first.next_after_run_id,
+                dry_run=True,
+            )
+        )
+
+
+def test_archive_continuation_is_scoped_to_its_target(
+    retention_store, run_factory, storage
+):
+    """A cursor from another owner cannot move this target's scan."""
+    target = run_factory(retention_store)
+    other = run_factory(retention_store)
+
+    with pytest.raises(KeyError, match="not available for this target"):
+        retention_store.archive_runs(
+            ArchiveRequest(
+                pipeline_id=target.pipeline,
+                after_run_id=other.run,
+                dry_run=True,
+            )
+        )

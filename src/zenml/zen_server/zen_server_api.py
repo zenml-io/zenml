@@ -156,17 +156,17 @@ def _configure_uvicorn_logging() -> None:
 
 
 def _check_archive_store_on_startup() -> None:
-    """Refuse archiving on SQLite and warn when the archive URI is unusable.
+    """Validate configured archive storage, including while writes are paused.
 
     Raises:
-        RuntimeError: Archiving is enabled on a SQLite database.
+        RuntimeError: Archive storage is configured on a SQLite database.
     """
-    if not server_config().archive.enabled:
+    if not server_config().archive.configured:
         return
     store = zen_store()
     if store.config.driver != SQLDatabaseDriver.MYSQL:
         raise RuntimeError(
-            "ZENML_SERVER_ARCHIVE__BACKEND is set, but execution archiving "
+            "ZENML_SERVER_ARCHIVE__BACKEND is set, but execution archives "
             "requires a MySQL database. Unset it or move the server to MySQL."
         )
     try:
@@ -175,20 +175,20 @@ def _check_archive_store_on_startup() -> None:
         usable = False
     if not usable:
         logger.warning(
-            "Execution archiving is enabled, but the storage at "
+            "Execution archive storage is configured, but "
             "ZENML_SERVER_ARCHIVE__URI cannot be written and read back. "
             "Check the URI and the server's credentials."
         )
 
 
 def _start_archive_scheduler() -> Optional[ArchiveScheduler]:
-    """Start the scheduled archive sweep when archiving is enabled.
+    """Start archive sweeps only when scheduled archiving is enabled.
 
     Returns:
-        The running scheduler, or None while archiving is disabled.
+        The running scheduler, or None while scheduling is disabled.
     """
     archive = server_config().archive
-    if not archive.enabled:
+    if not archive.scheduled:
         return None
     scheduler = ArchiveScheduler(archive.schedule)
     scheduler.start()

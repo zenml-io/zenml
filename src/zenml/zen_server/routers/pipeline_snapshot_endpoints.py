@@ -153,7 +153,12 @@ def list_pipeline_snapshots(
 
 @router.get(
     "/{snapshot_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_pipeline_snapshot(

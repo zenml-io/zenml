@@ -47,6 +47,7 @@ from zenml.models.v2.base.filter import (
 )
 from zenml.models.v2.base.scoped import (
     ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -230,6 +231,16 @@ class StepRunUpdate(BaseUpdate):
 
 
 # ------------------ Response Model ------------------
+class StepRunArchiveDescriptor(ExecutionArchiveDescriptor):
+    """Retained SQL summary for an archived step run."""
+
+    snapshot_id: Optional[UUID] = None
+    pipeline_run_id: UUID
+    original_step_run_id: Optional[UUID] = None
+    parent_step_ids: Optional[List[UUID]] = None
+    run_metadata: Optional[Dict[str, MetadataType]] = None
+
+
 class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
     """Response body for step runs."""
 
@@ -274,6 +285,7 @@ class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
         title="The applied heartbeat healthiness threshold ",
         default=None,
     )
+    archive: Optional[StepRunArchiveDescriptor] = None
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -686,6 +698,9 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.snapshot_id
         return self.get_metadata().snapshot_id
 
     @property
@@ -695,6 +710,9 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.pipeline_run_id
         return self.get_metadata().pipeline_run_id
 
     @property
@@ -704,6 +722,9 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.original_step_run_id
         return self.get_metadata().original_step_run_id
 
     @property
@@ -712,7 +733,19 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            RuntimeError: If parent step IDs were not included in the archived
+                summary.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            if archive.parent_step_ids is None:
+                raise RuntimeError(
+                    "Parent step IDs were not included in this archived "
+                    "summary."
+                )
+            return archive.parent_step_ids
         return self.get_metadata().parent_step_ids
 
     @property
@@ -730,7 +763,18 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            RuntimeError: If metadata was not included in the archived
+                summary.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            if archive.run_metadata is None:
+                raise RuntimeError(
+                    "Run metadata was not included in this archived summary."
+                )
+            return archive.run_metadata
         return self.get_metadata().run_metadata
 
     @property
@@ -777,6 +821,15 @@ class StepRunResponse(
             The bundle ID, or None while detail remains in SQL.
         """
         return self.get_body().archive_bundle_id
+
+    @property
+    def archive(self) -> Optional[StepRunArchiveDescriptor]:
+        """The retained archive summary, if this step is archived.
+
+        Returns:
+            The archive summary, or None while detail remains in SQL.
+        """
+        return self.get_body().archive
 
 
 # ------------------ Filter Model ------------------

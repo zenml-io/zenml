@@ -107,9 +107,9 @@ class ArchiveSettings(BaseModel):
 
     Every value comes from one nested environment group, for example
     `ZENML_SERVER_ARCHIVE__BACKEND` and `ZENML_SERVER_ARCHIVE__URI`.
-    Archiving stays off until a backend other than `disabled` is chosen, so
-    an incomplete group cannot silently start moving execution detail out of
-    the database.
+    Archive storage is configured independently from permission to create new
+    archives. This keeps existing objects restorable while new archiving is
+    paused, and allows operators to run archiving manually without a schedule.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -122,6 +122,8 @@ class ArchiveSettings(BaseModel):
     backend: ArchiveBackend = ArchiveBackend.DISABLED
     uri: Optional[str] = None
     connector_id: Optional[UUID] = None
+    enabled: bool = True
+    schedule_enabled: bool = True
     after_days: int = Field(default=90, ge=7)
     model_linked_runs: bool = False
     restored_grace_days: int = Field(default=30, ge=0)
@@ -129,8 +131,8 @@ class ArchiveSettings(BaseModel):
     schedule: str = "0 3 * * *"
 
     @property
-    def enabled(self) -> bool:
-        """Return whether this server archives execution detail.
+    def configured(self) -> bool:
+        """Return whether archive storage is configured.
 
         Returns:
             Whether a backend other than `disabled` is configured.
@@ -138,17 +140,35 @@ class ArchiveSettings(BaseModel):
         return self.backend != ArchiveBackend.DISABLED
 
     @property
+    def new_archives_enabled(self) -> bool:
+        """Return whether this server may create new archives.
+
+        Returns:
+            Whether storage is configured and new archiving is enabled.
+        """
+        return self.configured and self.enabled
+
+    @property
+    def scheduled(self) -> bool:
+        """Return whether this server schedules archive sweeps.
+
+        Returns:
+            Whether new archiving and scheduled sweeps are both enabled.
+        """
+        return self.new_archives_enabled and self.schedule_enabled
+
+    @property
     def root_uri(self) -> str:
-        """Return the configured archive root, for an enabled server only.
+        """Return the configured archive root, including while writes are paused.
 
         Returns:
             The archive root URI.
 
         Raises:
-            RuntimeError: Archiving is disabled, so there is no root.
+            RuntimeError: Archive storage is not configured.
         """
         if self.uri is None:
-            raise RuntimeError("Execution archiving is not configured.")
+            raise RuntimeError("Execution archive storage is not configured.")
         return self.uri
 
     @model_validator(mode="after")
@@ -162,7 +182,7 @@ class ArchiveSettings(BaseModel):
             ValueError: The group is incomplete, the URI does not match the
                 backend, or the schedule is not a cron expression.
         """
-        if not self.enabled:
+        if not self.configured:
             return self
         if not self.uri:
             raise ValueError(

@@ -109,7 +109,7 @@ class RetentionState(BaseModel):
 
         Args:
             settings: The server's archive settings.
-            archive_configured: Whether the configured storage can be created.
+            archive_configured: Whether archive storage settings are present.
             now: Current database time, to report an abandoned sweep.
 
         Returns:
@@ -121,12 +121,13 @@ class RetentionState(BaseModel):
         return RetentionStatusResponse(
             outcome=outcome,
             finished_at=self.last_finished_at,
-            archive_enabled=settings.enabled,
+            archive_enabled=settings.new_archives_enabled,
             archive_configured=archive_configured,
+            archive_scheduled=settings.scheduled,
             archive_after_days=settings.after_days
-            if settings.enabled
+            if settings.configured
             else None,
-            schedule=settings.schedule if settings.enabled else None,
+            schedule=settings.schedule if settings.scheduled else None,
             archived=self.archived,
             skipped=self.skipped,
             oversized=self.oversized,

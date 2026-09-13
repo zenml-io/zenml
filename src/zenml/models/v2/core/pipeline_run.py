@@ -42,6 +42,7 @@ from zenml.models.v2.base.filter import (
 )
 from zenml.models.v2.base.scoped import (
     ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -273,6 +274,14 @@ class PipelineRunUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
+class PipelineRunArchiveDescriptor(ExecutionArchiveDescriptor):
+    """Retained SQL summary for an archived pipeline run."""
+
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    run_metadata: Optional[Dict[str, MetadataType]] = None
+
+
 class PipelineRunResponseBody(
     ProjectScopedResponseBody, ArchivableResponseBody
 ):
@@ -305,6 +314,7 @@ class PipelineRunResponseBody(
         default=None,
         title="The ID of the top-level parent run of this run's nesting tree.",
     )
+    archive: Optional[PipelineRunArchiveDescriptor] = None
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -520,7 +530,18 @@ class PipelineRunResponse(
 
         Returns:
             the value of the property.
+
+        Raises:
+            RuntimeError: If metadata was not included in the archived
+                summary.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            if archive.run_metadata is None:
+                raise RuntimeError(
+                    "Run metadata was not included in this archived summary."
+                )
+            return archive.run_metadata
         return self.get_metadata().run_metadata
 
     @property
@@ -558,6 +579,9 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.start_time
         return self.get_metadata().start_time
 
     @property
@@ -567,6 +591,9 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
+        archive = self.get_body().archive
+        if archive is not None:
+            return archive.end_time
         return self.get_metadata().end_time
 
     @property
@@ -850,6 +877,15 @@ class PipelineRunResponse(
             The bundle ID, or None while detail remains in SQL.
         """
         return self.get_body().archive_bundle_id
+
+    @property
+    def archive(self) -> Optional[PipelineRunArchiveDescriptor]:
+        """The retained archive summary, if this run is archived.
+
+        Returns:
+            The archive summary, or None while detail remains in SQL.
+        """
+        return self.get_body().archive
 
 
 # ------------------ Filter Model ------------------

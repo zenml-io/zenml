@@ -105,9 +105,9 @@ def downgrade() -> None:
         raise RuntimeError(
             "Execution detail has been archived on this server. Downgrading "
             "would drop the `archive_bundle` table and the markers pointing "
-            "at it, leaving those runs permanently empty. Restore every "
-            "archived run with `zenml pipeline runs restore` before "
-            "downgrading."
+            "at it. Downgrading after archiving is unsupported, including "
+            "after restoring runs: archive catalog records are retained. "
+            "Keep the current database schema."
         )
 
     op.drop_index("ix_pipeline_run_end_time_id", table_name="pipeline_run")

@@ -37,6 +37,7 @@ from zenml.models.v2.base.filter import (
 )
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
+    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -228,6 +229,7 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponseResources,
 )
 from zenml.models.v2.core.pipeline_run import (
+    PipelineRunArchiveDescriptor,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
@@ -238,6 +240,7 @@ from zenml.models.v2.core.pipeline_run import (
     PipelineRunUpdate,
 )
 from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotArchiveDescriptor,
     PipelineSnapshotBase,
     PipelineSnapshotFilter,
     PipelineSnapshotRequest,
@@ -358,6 +361,7 @@ from zenml.models.v2.core.stack import (
 from zenml.models.v2.core.step_run import (
     StepHeartbeatRequest,
     StepHeartbeatResponse,
+    StepRunArchiveDescriptor,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -669,6 +673,7 @@ __all__ = [
     "BaseResponseMetadata",
     "BaseResponseResources",
     "BaseDatedResponseBody",
+    "ExecutionArchiveDescriptor",
     "BaseZenModel",
     "UserScopedRequest",
     "UserScopedFilter",
@@ -826,6 +831,7 @@ __all__ = [
     "PipelineBuildResponseMetadata",
     "PipelineBuildResponseResources",
     "PipelineSnapshotBase",
+    "PipelineSnapshotArchiveDescriptor",
     "PipelineSnapshotRequest",
     "PipelineSnapshotUpdate",
     "PipelineSnapshotFilter",
@@ -835,6 +841,7 @@ __all__ = [
     "PipelineSnapshotResponseResources",
     "PipelineSnapshotRunRequest",
     "PipelineRunRequest",
+    "PipelineRunArchiveDescriptor",
     "PipelineRunUpdate",
     "PipelineRunFilter",
     "PipelineRunResponse",
@@ -920,6 +927,7 @@ __all__ = [
     "StackResponseMetadata",
     "StackResponseResources",
     "StepRunRequest",
+    "StepRunArchiveDescriptor",
     "StepRunUpdate",
     "StepRunFilter",
     "StepRunResponse",

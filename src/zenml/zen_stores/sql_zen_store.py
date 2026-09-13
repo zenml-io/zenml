@@ -23,7 +23,11 @@ from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
 from zenml.zen_stores.retention import fences, transactions
-from zenml.zen_stores.retention.archiver import ArchivePass, archive_runs
+from zenml.zen_stores.retention.archiver import (
+    ArchivePass,
+    archive_runs,
+    preview_runs,
+)
 from zenml.zen_stores.retention.eligibility import expand_target
 from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
@@ -199,6 +203,7 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     ExecutionArchivedError,
+    ExecutionRetentionConflictError,
     ExecutionRetentionUnavailableError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
@@ -1234,6 +1239,75 @@ class SqlZenStore(BaseZenStore):
     _default_user: Optional[UserResponse] = None
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
 
+    @staticmethod
+    def _populate_archived_run_summaries(
+        session: Session, page: Page[PipelineRunResponse]
+    ) -> None:
+        """Batch-load metadata only when a page contains archived runs.
+
+        Args:
+            session: The current database session.
+            page: Converted run page whose archive summaries need metadata.
+        """
+        run_ids = [
+            run.id
+            for run in page.items
+            if run.archive is not None and run.archive.run_metadata is None
+        ]
+        if not run_ids:
+            return
+        schemas = session.exec(
+            select(PipelineRunSchema)
+            .where(col(PipelineRunSchema.id).in_(run_ids))
+            .options(selectinload(jl_arg(PipelineRunSchema.run_metadata)))
+        ).all()
+        metadata = {schema.id: schema.fetch_metadata() for schema in schemas}
+        for run in page.items:
+            if run.archive is not None and run.id in metadata:
+                run.archive.run_metadata = metadata[run.id]
+
+    @staticmethod
+    def _populate_archived_step_summaries(
+        session: Session, page: Page[StepRunResponse]
+    ) -> None:
+        """Batch-load metadata and parent IDs for archived steps in a page.
+
+        Args:
+            session: The current database session.
+            page: Converted step page whose archive summaries need detail.
+        """
+        step_ids = [
+            step.id
+            for step in page.items
+            if step.archive is not None
+            and (
+                step.archive.run_metadata is None
+                or step.archive.parent_step_ids is None
+            )
+        ]
+        if not step_ids:
+            return
+        schemas = session.exec(
+            select(StepRunSchema)
+            .where(col(StepRunSchema.id).in_(step_ids))
+            .options(
+                selectinload(jl_arg(StepRunSchema.run_metadata)),
+                selectinload(jl_arg(StepRunSchema.parents)),
+            )
+        ).all()
+        summaries = {
+            schema.id: (
+                schema.fetch_metadata(),
+                [parent.parent_id for parent in schema.parents],
+            )
+            for schema in schemas
+        }
+        for step in page.items:
+            if step.archive is not None and step.id in summaries:
+                run_metadata, parent_step_ids = summaries[step.id]
+                step.archive.run_metadata = run_metadata
+                step.archive.parent_step_ids = parent_step_ids
+
     @property
     def secrets_store(self) -> "BaseSecretsStore":
         """The secrets store associated with this store.
@@ -1938,6 +2012,10 @@ class SqlZenStore(BaseZenStore):
         model = super().get_store_info()
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
+        model.execution_archiving_enabled = (
+            model.database_type == ServerDatabaseType.MYSQL
+            and ServerConfiguration.get_server_config().archive.new_archives_enabled
+        )
         settings = self.get_server_settings(hydrate=True)
         # Fetch the deployment ID from the database and use it to replace
         # the one fetched from the global configuration
@@ -5412,7 +5490,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The snapshot.
-        """
+
+        Raises:
+            ExecutionArchivedError: If hydrated archived detail is requested.
+        """  # noqa: DOC503
         with Session(self.engine) as session:
             snapshot = self._get_schema_by_id(
                 resource_id=snapshot_id,
@@ -5425,11 +5506,45 @@ class SqlZenStore(BaseZenStore):
                         include_metadata=False, include_resources=False
                     )
                 )
+            archive_restore_run_id = None
+            if snapshot.archive_bundle_id is not None:
+                archive_restore_run_id = session.scalar(
+                    select(col(ArchiveBundleSchema.run_id)).where(
+                        col(ArchiveBundleSchema.id)
+                        == snapshot.archive_bundle_id
+                    )
+                )
+                if (
+                    archive_restore_run_id is not None
+                    and authorize is not None
+                ):
+                    owner = self._get_schema_by_id(
+                        resource_id=archive_restore_run_id,
+                        schema_class=PipelineRunSchema,
+                        session=session,
+                        query_options=[load_only(*self._RUN_HEADER_COLUMNS)],
+                    )
+                    authorize(
+                        owner.to_model(
+                            include_metadata=False, include_resources=False
+                        )
+                    )
+                if hydrate:
+                    if archive_restore_run_id is None:
+                        raise ExecutionArchivedError(
+                            f"Execution detail for snapshot '{snapshot.id}' "
+                            "is archived, but no restore run is recorded. The "
+                            "archived detail cannot be restored."
+                        )
+                    raise ExecutionArchivedError.for_entity(
+                        snapshot.id, archive_restore_run_id
+                    )
             return snapshot.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
                 include_config_schema=include_config_schema,
+                archive_restore_run_id=archive_restore_run_id,
             )
 
     def list_snapshots(
@@ -7088,7 +7203,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The pipeline run.
-        """
+
+        Raises:
+            ExecutionArchivedError: If hydrated archived detail is requested.
+        """  # noqa: DOC503
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
                 resource_id=run_id,
@@ -7106,11 +7224,16 @@ class SqlZenStore(BaseZenStore):
                         include_metadata=False, include_resources=False
                     )
                 )
+            if hydrate and run.is_archived:
+                raise ExecutionArchivedError.for_entity(run.id, run.id)
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
+                archive_metadata=run.fetch_metadata()
+                if run.is_archived
+                else None,
             )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
@@ -7429,7 +7552,7 @@ class SqlZenStore(BaseZenStore):
             )
             query = select(PipelineRunSchema)
 
-            return self.filter_and_paginate(
+            page = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineRunSchema,
@@ -7437,9 +7560,12 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 custom_schema_to_model_conversion=lambda schema: (
                     schema.to_model(
-                        include_metadata=hydrate,
+                        include_metadata=hydrate and not schema.is_archived,
                         include_resources=True,
                         include_full_metadata=include_full_metadata,
+                        archive_metadata=schema.fetch_metadata()
+                        if hydrate and schema.is_archived
+                        else None,
                     )
                 ),
                 apply_query_options_from_schema=True,
@@ -7447,6 +7573,9 @@ class SqlZenStore(BaseZenStore):
                     "include_full_metadata": include_full_metadata
                 },
             )
+            if not hydrate:
+                self._populate_archived_run_summaries(session, page)
+            return page
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
@@ -12676,7 +12805,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The step run.
-        """
+
+        Raises:
+            ExecutionArchivedError: If hydrated archived detail is requested.
+        """  # noqa: DOC503
         with Session(self.engine) as session:
             step = self._get_schema_by_id(
                 resource_id=step_run_id,
@@ -12697,9 +12829,18 @@ class SqlZenStore(BaseZenStore):
                         include_metadata=False, include_resources=False
                     )
                 )
+            archived = step.has_archived_configuration
+            if hydrate and archived:
+                raise ExecutionArchivedError.for_entity(
+                    step.id, step.pipeline_run_id
+                )
             return step.to_model(
-                include_metadata=hydrate,
+                include_metadata=hydrate and not archived,
                 include_resources=True,
+                archive_metadata=step.fetch_metadata() if archived else None,
+                archive_parent_step_ids=[p.parent_id for p in step.parents]
+                if archived
+                else None,
             )
 
     def list_run_steps(
@@ -12735,8 +12876,16 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
                 authorized.add(step.pipeline_run_id)
+            archived = step.has_archived_configuration
             return step.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate and not archived,
+                include_resources=True,
+                archive_metadata=step.fetch_metadata()
+                if hydrate and archived
+                else None,
+                archive_parent_step_ids=[p.parent_id for p in step.parents]
+                if hydrate and archived
+                else None,
             )
 
         with Session(self.engine) as session:
@@ -12751,7 +12900,7 @@ class SqlZenStore(BaseZenStore):
                         *self._RUN_HEADER_COLUMNS
                     )
                 )
-            return self.filter_and_paginate(
+            page = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StepRunSchema,
@@ -12760,6 +12909,9 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
             )
+            if not hydrate:
+                self._populate_archived_step_summaries(session, page)
+            return page
 
     # -------------------- Hook invocations --------------------
 
@@ -14200,8 +14352,8 @@ class SqlZenStore(BaseZenStore):
             Storage rooted at the configured archive URI.
 
         Raises:
-            ExecutionRetentionUnavailableError: Archiving is disabled or the
-                storage cannot be created.
+            ExecutionRetentionUnavailableError: Archive storage is not
+                configured or cannot be created.
         """  # noqa: DOC502
         settings = self.archive_settings
         return ArchiveStorage.from_uri(
@@ -14210,23 +14362,24 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def archive_settings(self) -> ArchiveSettings:
-        """Read the server's archive settings, refusing a disabled server.
+        """Read the server's configured archive storage settings.
 
         Returns:
-            The enabled archive settings.
+            The configured archive settings.
 
         Raises:
             IllegalOperationError: The database is SQLite.
-            ExecutionRetentionUnavailableError: Archiving is disabled.
+            ExecutionRetentionUnavailableError: Archive storage is not
+                configured.
         """
         if self.config.driver != SQLDatabaseDriver.MYSQL:
             raise IllegalOperationError(
                 "Execution archiving requires a MySQL database."
             )
         settings = ServerConfiguration.get_server_config().archive
-        if not settings.enabled:
+        if not settings.configured:
             raise ExecutionRetentionUnavailableError(
-                "Execution archiving is not configured on this server; ask "
+                "Execution archive storage is not configured on this server; ask "
                 "your server administrator to set "
                 "ZENML_SERVER_ARCHIVE__BACKEND and "
                 "ZENML_SERVER_ARCHIVE__URI."
@@ -14270,31 +14423,66 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ExecutionRetentionConflictError: Another replica holds the lease.
         """  # noqa: DOC502,DOC503
-        archive_pass = ArchivePass(
-            self.engine, self.archive_storage, self.archive_settings
-        )
+        settings = self.archive_settings
+        if not settings.enabled:
+            raise ExecutionRetentionConflictError(
+                "New execution archiving is paused by "
+                "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
+                "restorable."
+            )
+        if not settings.schedule_enabled:
+            raise ExecutionRetentionConflictError(
+                "Scheduled execution archiving is disabled by "
+                "ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED. Use a manual archive "
+                "request instead."
+            )
+        archive_pass = ArchivePass(self.engine, self.archive_storage, settings)
         archive_pass.accept()
         return archive_pass.run().last_outcome
 
     def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
-        """Archive the requested runs now, past the age and model-link rules.
+        """Archive or preview the requested runs under the configured policy.
 
         Args:
             request: Authorized runs, pipeline, or project to archive.
 
         Returns:
             Counts and the runs that were refused, each with a reason.
+
+        Raises:
+            IllegalOperationError: The metadata database is not MySQL.
+            ExecutionRetentionConflictError: New archive creation is paused.
         """
-        settings = self.archive_settings
+        if request.dry_run:
+            if self.config.driver != SQLDatabaseDriver.MYSQL:
+                raise IllegalOperationError(
+                    "Execution archive previews require a MySQL database."
+                )
+            settings = ServerConfiguration.get_server_config().archive
+        else:
+            settings = self.archive_settings
+            if not settings.enabled:
+                raise ExecutionRetentionConflictError(
+                    "New execution archiving is paused by "
+                    "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
+                    "restorable; use `dry_run` to preview the current policy."
+                )
         with Session(self.engine) as session:
             batch = expand_target(session, request, settings)
-        result = archive_runs(
-            self.engine, self.archive_storage, settings, batch.run_ids
-        )
-        # Expansion always returns the oldest runs, so a batch that archived
-        # nothing would return the same permanently refused runs forever.
-        # Only promise progress when repeating can actually make some.
-        result.pending = batch.more and result.archived > 0
+        if request.dry_run:
+            result = preview_runs(
+                self.engine, settings, batch.run_ids, force=request.force
+            )
+        else:
+            result = archive_runs(
+                self.engine,
+                self.archive_storage,
+                settings,
+                batch.run_ids,
+                force=request.force,
+            )
+        result.pending = batch.more
+        result.next_after_run_id = batch.next_after_run_id
         return result
 
     def get_retention_status(self) -> RetentionStatusResponse:
@@ -14309,17 +14497,9 @@ class SqlZenStore(BaseZenStore):
             ).scalar_one()
             now = transactions.database_now(session)
         state = RetentionState.load(raw)
-        # `archive_storage` starts by reading `archive_settings`, so one
-        # guard covers a disabled server and unusable storage alike.
-        try:
-            self.archive_storage
-        except (ExecutionRetentionUnavailableError, IllegalOperationError):
-            archive_configured = False
-        else:
-            archive_configured = True
         settings = ServerConfiguration.get_server_config().archive
         return state.to_response(
-            settings, archive_configured=archive_configured, now=now
+            settings, archive_configured=settings.configured, now=now
         )
 
     def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:

@@ -7,7 +7,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
-from zenml.enums import RestoreOutcome, RetentionExclusion, RetentionOutcome
+from zenml.enums import (
+    RestoreOutcome,
+    RetentionExclusion,
+    RetentionOutcome,
+)
 
 # An archive result is stored as an API transaction result, so a project-wide
 # request must not be able to write an unbounded refusal list to the database.
@@ -20,6 +24,7 @@ class RetentionStatusResponse(BaseModel):
     outcome: RetentionOutcome = RetentionOutcome.IDLE
     archive_enabled: bool = False
     archive_configured: bool = False
+    archive_scheduled: bool = False
     archive_after_days: Optional[int] = None
     schedule: Optional[str] = None
     finished_at: Optional[datetime] = None
@@ -30,11 +35,14 @@ class RetentionStatusResponse(BaseModel):
 
 
 class ArchiveRequest(BaseModel):
-    """Runs to archive now, named directly or through their owner."""
+    """Runs to archive or preview, named directly or through their owner."""
 
     run_ids: Optional[List[UUID]] = Field(default=None, max_length=100)
     pipeline_id: Optional[UUID] = None
     project_id: Optional[UUID] = None
+    after_run_id: Optional[UUID] = None
+    force: bool = False
+    dry_run: bool = False
 
     @model_validator(mode="after")
     def _validate_target(self) -> "ArchiveRequest":
@@ -54,6 +62,10 @@ class ArchiveRequest(BaseModel):
             )
         if self.run_ids is not None and not self.run_ids:
             raise ValueError("`run_ids` must name at least one run.")
+        if self.after_run_id is not None and self.run_ids is not None:
+            raise ValueError(
+                "`after_run_id` is only valid for a pipeline or project target."
+            )
         return self
 
 
@@ -65,12 +77,14 @@ class ArchiveRefusal(BaseModel):
 
 
 class ArchiveResponse(BaseModel):
-    """Counts for a targeted archive, with the runs it refused.
+    """Counts for a targeted archive or preview, with refused runs.
 
-    Successful runs are counted, never listed: only the refusals carry a
-    reason an operator can act on.
+    Successful or eligible runs are counted, never listed: only the refusals
+    carry a reason an operator can act on.
     """
 
+    dry_run: bool = False
+    eligible: int = 0
     archived: int = 0
     skipped: int = 0
     oversized: int = 0
@@ -78,6 +92,7 @@ class ArchiveResponse(BaseModel):
     refusals: List[ArchiveRefusal] = Field(default_factory=list)
     refusals_truncated: bool = False
     pending: bool = False
+    next_after_run_id: Optional[UUID] = None
 
 
 class RestoreResponse(BaseModel):

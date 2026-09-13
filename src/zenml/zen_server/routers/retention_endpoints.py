@@ -71,39 +71,41 @@ def archive_runs(
     request: ArchiveRequest,
     _: AuthContext = Security(authorize),
 ) -> ArchiveResponse:
-    """Archive the named runs now, without waiting for the next sweep.
+    """Archive or preview the named runs without waiting for a sweep.
 
-    The age, the model-link rule, and the restore grace period are ignored,
-    but a run that something is still using stays in the database with its
-    reason. A pipeline or project target archives a bounded batch of its
-    oldest runs; repeat the request while `pending` is true.
+    Normal retention policy applies unless `force` explicitly overrides age,
+    model-link, and restore-grace rules. Execution-safety exclusions always
+    apply. A pipeline or project request is bounded; continue with the returned
+    `next_after_run_id` while `pending` is true. A dry run performs the same
+    selection and eligibility checks without archiving execution data or
+    accessing archive storage.
 
     Args:
-        request: Runs, pipeline, or project to archive. Naming runs directly
-            requires UPDATE permission on each of them; naming a pipeline or
-            a project requires UPDATE permission on that resource.
+        request: Runs, pipeline, or project to archive. Mutating requests need
+            UPDATE permission on the target; dry runs need READ permission.
 
     Returns:
-        Counts and the runs that were refused, each with a reason.
+        Eligible or archived counts and refused runs with their reasons.
     """
     store = zen_store()
+    action = Action.READ if request.dry_run else Action.UPDATE
     if request.run_ids is not None:
         batch_verify_permissions_for_models(
             models=[
                 store.get_run(run_id, hydrate=False)
                 for run_id in request.run_ids
             ],
-            action=Action.UPDATE,
+            action=action,
         )
     elif request.pipeline_id is not None:
         verify_permission_for_model(
             model=store.get_pipeline(request.pipeline_id, hydrate=False),
-            action=Action.UPDATE,
+            action=action,
         )
     else:
         assert request.project_id is not None
         verify_permission_for_model(
             model=store.get_project(request.project_id, hydrate=False),
-            action=Action.UPDATE,
+            action=action,
         )
     return store.archive_runs(request)

@@ -289,7 +289,12 @@ def get_run_statistics(
 
 @router.get(
     "/{run_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_run(
@@ -426,7 +431,12 @@ def get_run_steps(
 
 @router.get(
     "/{run_id}" + PIPELINE_CONFIGURATION,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_pipeline_configuration(
@@ -478,7 +488,12 @@ def get_run_status(
 
 @router.get(
     "/{run_id}/dag",
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_run_dag(
@@ -611,7 +626,7 @@ def run_logs(
     run = dehydrate_response_model(
         store.get_run(
             run_id,
-            hydrate=True,
+            hydrate=False,
             authorize=lambda header: verify_permission_for_model(
                 header, action=Action.READ
             ),
@@ -1062,13 +1077,13 @@ def restore_pipeline_run(
     The restore runs within the request and is all-or-nothing.
 
     Args:
-        run_id: Run to restore; requires UPDATE permission on it.
+        run_id: Run to restore; requires READ permission on it.
 
     Returns:
         Restored, or a no-op when the run's detail is not archived.
     """
     store = zen_store()
     verify_permission_for_model(
-        model=store.get_run(run_id, hydrate=False), action=Action.UPDATE
+        model=store.get_run(run_id, hydrate=False), action=Action.READ
     )
     return store.restore_pipeline_run(run_id)

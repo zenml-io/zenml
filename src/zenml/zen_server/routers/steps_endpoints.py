@@ -151,7 +151,12 @@ def create_run_step(
 
 @router.get(
     "/{step_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def get_step(
@@ -250,7 +255,12 @@ def update_heartbeat(
 
 @router.get(
     "/{step_id}" + STEP_CONFIGURATION,
-    responses={401: error_response, 404: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        404: error_response,
+        409: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_step_configuration(

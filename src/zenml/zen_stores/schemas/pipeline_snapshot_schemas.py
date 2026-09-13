@@ -37,6 +37,9 @@ from zenml.models import (
     PipelineSnapshotResponseResources,
     PipelineSnapshotUpdate,
 )
+from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotArchiveDescriptor,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -525,6 +528,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         include_python_packages: bool = False,
         include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
+        archive_restore_run_id: Optional[UUID] = None,
         **kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Convert schema to response.
@@ -537,6 +541,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            archive_restore_run_id: Run that owns this snapshot's archive.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -551,6 +556,20 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         ):
             deployable = True
 
+        archive = None
+        if self.archive_bundle_id is not None:
+            archive = PipelineSnapshotArchiveDescriptor(
+                bundle_id=self.archive_bundle_id,
+                restore_run_id=archive_restore_run_id,
+                run_name_template=self.run_name_template,
+                client_version=self.client_version,
+                server_version=self.server_version,
+                pipeline_version_hash=self.pipeline_version_hash,
+                code_path=self.code_path,
+                template_id=self.template_id,
+                source_snapshot_id=self.source_snapshot_id,
+            )
+
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -561,10 +580,10 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
             is_dynamic=self.is_dynamic,
             pipeline_id=self.pipeline_id,
             archive_bundle_id=self.archive_bundle_id,
+            archive=archive,
         )
         metadata = None
-        if include_metadata:
-            self.require_hot()
+        if include_metadata and archive is None:
             pipeline_configuration = PipelineConfiguration.model_validate_json(
                 self.pipeline_configuration
             )

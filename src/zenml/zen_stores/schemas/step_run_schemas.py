@@ -56,6 +56,7 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import (
+    StepRunArchiveDescriptor,
     StepRunInputResponse,
     StepRunResponseResources,
 )
@@ -410,6 +411,15 @@ class StepRunSchema(
             or (self.snapshot is not None and self.snapshot.is_archived)
         )
 
+    @property
+    def has_archived_configuration(self) -> bool:
+        """Whether decoding this step's configuration requires a restore.
+
+        Returns:
+            True when the step or one of its configuration owners is archived.
+        """
+        return self._has_archived_configuration()
+
     def _get_response_type(self, step: Optional[Step]) -> Optional[StepType]:
         """Resolve the live step type or its retained projection.
 
@@ -517,6 +527,8 @@ class StepRunSchema(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
+        archive_metadata: Optional[Dict[str, Any]] = None,
+        archive_parent_step_ids: Optional[List[UUID]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -524,17 +536,43 @@ class StepRunSchema(
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
+            archive_metadata: Retained run metadata for an archived summary.
+            archive_parent_step_ids: Retained parent step IDs for an archived
+                summary.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
         Returns:
             The created StepRunResponse.
         """
-        step = (
-            self.get_step_configuration()
-            if include_metadata or not self._has_archived_configuration()
-            else None
-        )
+        archived = self._has_archived_configuration()
+        step = None if archived else self.get_step_configuration()
+
+        archive = None
+        if archived:
+            bundle_id = (
+                self.archive_bundle_id
+                or self.pipeline_run.archive_bundle_id
+                or (
+                    self.snapshot.archive_bundle_id
+                    if self.snapshot is not None
+                    else None
+                )
+            )
+            assert bundle_id is not None
+            if archive_metadata is None and include_metadata:
+                archive_metadata = self.fetch_metadata()
+            if archive_parent_step_ids is None and include_metadata:
+                archive_parent_step_ids = [p.parent_id for p in self.parents]
+            archive = StepRunArchiveDescriptor(
+                bundle_id=bundle_id,
+                restore_run_id=self.pipeline_run_id,
+                snapshot_id=self.snapshot_id,
+                pipeline_run_id=self.pipeline_run_id,
+                original_step_run_id=self.original_step_run_id,
+                parent_step_ids=archive_parent_step_ids,
+                run_metadata=archive_metadata,
+            )
 
         body = StepRunResponseBody(
             user_id=self.user_id,
@@ -553,10 +591,10 @@ class StepRunSchema(
             substitutions=self._get_response_substitutions(step),
             heartbeat_threshold=self.heartbeat_threshold,
             archive_bundle_id=self.archive_bundle_id,
+            archive=archive,
         )
         metadata = None
-        if include_metadata:
-            self.require_hot()
+        if include_metadata and archive is None:
             step = cast(Step, step)
             metadata = StepRunResponseMetadata(
                 config=step.config,

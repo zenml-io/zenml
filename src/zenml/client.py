@@ -1159,17 +1159,23 @@ class Client(metaclass=ClientMetaClass):
         run_ids: Optional[List[UUID]] = None,
         pipeline: Optional[Union[str, UUID]] = None,
         project: Optional[Union[str, UUID]] = None,
+        after_run_id: Optional[UUID] = None,
+        force: bool = False,
+        dry_run: bool = False,
     ) -> ArchiveResponse:
-        """Archive runs now, without waiting for the server's next sweep.
+        """Archive or preview runs without waiting for the next sweep.
 
         Exactly one target is archived. Naming a pipeline or a project
-        archives a bounded batch of its oldest finished runs, so repeat the
-        call while the result is still `pending`.
+        handles a bounded batch of its oldest finished runs. Continue with the
+        returned `next_after_run_id` while the result is `pending`.
 
         Args:
             run_ids: Runs to archive.
             pipeline: Pipeline whose runs to archive, by name or ID.
             project: Project whose runs to archive, by name or ID.
+            after_run_id: Last examined run from a prior owner-wide request.
+            force: Override age, model-link, and restore-grace protections.
+            dry_run: Inspect eligibility without archiving runs or storage access.
 
         Returns:
             Counts and the runs that were refused, each with a reason.
@@ -1182,6 +1188,9 @@ class Client(metaclass=ClientMetaClass):
             project_id=self.get_project(project).id
             if project is not None
             else None,
+            after_run_id=after_run_id,
+            force=force,
+            dry_run=dry_run,
         )
         return self.zen_store.archive_runs(request)
 

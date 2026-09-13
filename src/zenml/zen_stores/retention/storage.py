@@ -172,7 +172,7 @@ class ArchiveStorage:
         return f"{self.root}/{project_id}/{run_id}/{bundle_id}.json.gz"
 
     def write(self, uri: str, data: bytes) -> None:
-        """Write one immutable object.
+        """Write one uniquely named archive object.
 
         Args:
             uri: Object URI below the archive root.

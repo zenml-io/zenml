@@ -2452,6 +2452,7 @@ def generate_pipeline_run_row(
         "pipeline": pipeline_name,
         "run_name": pipeline_run.name,
         "status": status_emoji if output_format == "table" else str(status),
+        "archived": pipeline_run.archive is not None,
         "stack": stack_name,
         "owner": user_name,
     }

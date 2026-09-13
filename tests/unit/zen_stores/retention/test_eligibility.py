@@ -143,6 +143,11 @@ def test_each_exclusion(
     inspected = inspect(retention_store, run, NOW)
 
     assert inspected.exclusion == expected
+    forced = inspect(retention_store, run, NOW, force=True)
+    if rule in {"not_old", "model_link", "restored_grace"}:
+        assert forced.exclusion is None
+    else:
+        assert forced.exclusion == expected
     if expected is None:
         assert inspected.snapshot_ids == [run.snapshot]
         # The run, two steps, one snapshot, and its two configurations.

@@ -11,8 +11,8 @@ loser's object is removed.
 
 ``ArchivePass`` adds the scheduled sweep on top: one lease across all
 replicas, a saved position, and counts. ``archive_runs`` is the targeted
-form, which forces past the age and model-link rules for named runs and
-needs no lease, because each run is still retired under its own row locks.
+form and needs no lease, because each run is still retired under its own row
+locks. It follows normal policy unless the caller explicitly requests force.
 
 Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
@@ -386,8 +386,10 @@ def archive_runs(
     storage: ArchiveStorage,
     settings: ArchiveSettings,
     run_ids: Sequence[UUID],
+    *,
+    force: bool = False,
 ) -> ArchiveResponse:
-    """Archive named runs now, ignoring age, model links, and restore grace.
+    """Archive named runs now under normal policy or an explicit override.
 
     The safety rules still apply, so a run that is unfinished, resumable, or
     owned by an active root stays in the database with its reason. No lease
@@ -400,6 +402,8 @@ def archive_runs(
         storage: Archive storage.
         settings: The server's archive settings.
         run_ids: Runs to archive, already authorized by the caller.
+        force: Ignore age, model links, and restore grace while preserving all
+            execution-safety exclusions.
 
     Returns:
         Counts and a capped list of the runs that were refused.
@@ -411,7 +415,7 @@ def archive_runs(
     refusals: List[ArchiveRefusal] = []
     with ThreadPoolExecutor(max_workers=MAX_ARCHIVE_WORKERS) as pool:
         attempts = pool.map(
-            lambda run_id: archiver.archive(run_id, evaluated_at, force=True),
+            lambda run_id: archiver.archive(run_id, evaluated_at, force=force),
             run_ids,
         )
         for attempt in attempts:
@@ -422,6 +426,59 @@ def archive_runs(
                         run_id=attempt.run_id, reason=attempt.exclusion
                     )
                 )
+    result.refusals = refusals[:MAX_REFUSALS]
+    result.refusals_truncated = len(refusals) > MAX_REFUSALS
+    return result
+
+
+def preview_runs(
+    engine: Engine,
+    settings: ArchiveSettings,
+    run_ids: Sequence[UUID],
+    *,
+    force: bool = False,
+) -> ArchiveResponse:
+    """Inspect a bounded set without reading objects or changing state.
+
+    Args:
+        engine: Metadata database.
+        settings: The server's archive settings.
+        run_ids: Runs to inspect, already authorized by the caller.
+        force: Ignore age, model links, and restore grace while preserving all
+            execution-safety exclusions.
+
+    Returns:
+        Eligible and excluded counts with a capped refusal list.
+    """
+    result = ArchiveResponse(dry_run=True)
+    refusals: List[ArchiveRefusal] = []
+    with Session(engine) as session:
+        evaluated_at = transactions.database_now(session)
+        for run_id in run_ids:
+            try:
+                run = inspect_run(
+                    session, run_id, settings, evaluated_at, force=force
+                )
+            except Exception as error:
+                logger.error(
+                    "Previewing run %s failed (%s).",
+                    run_id,
+                    type(error).__name__,
+                )
+                result.failed += 1
+                continue
+            if run.exclusion is None:
+                result.eligible += 1
+                continue
+            outcome: RunOutcome = (
+                "oversized"
+                if run.exclusion == RetentionExclusion.OVERSIZED
+                else "skipped"
+            )
+            tally(result, outcome)
+            refusals.append(
+                ArchiveRefusal(run_id=run_id, reason=run.exclusion)
+            )
     result.refusals = refusals[:MAX_REFUSALS]
     result.refusals_truncated = len(refusals) > MAX_REFUSALS
     return result

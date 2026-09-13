@@ -74,6 +74,10 @@ class ServerModel(BaseModel):
         ServerDatabaseType.OTHER,
         title="The database type that the server is using.",
     )
+    execution_archiving_enabled: bool = Field(
+        False,
+        title="Whether the server can create new execution archives.",
+    )
     secrets_store_type: SecretsStoreType = Field(
         SecretsStoreType.NONE,
         title="The type of secrets store that the server is using.",

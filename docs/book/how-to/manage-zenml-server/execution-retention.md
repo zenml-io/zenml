@@ -9,9 +9,11 @@ the database into verified archive objects. Each archived run produces one
 object holding the run's configuration and environment, its steps' detail,
 the snapshots only that run uses, and their step configurations. Run
 identities, statuses, timestamps, artifact links, tags, and all run metadata
-stay in the database. Archived runs remain visible in ordinary lists. Restore
-a run explicitly before reading its archived detail, inspecting its DAG, or
-replaying it.
+stay in the database. Archived summaries remain readable, including in mixed
+lists of archived and unarchived runs. API, SDK, and CLI callers restore a run
+explicitly before reading its archived configuration, inspecting its DAG, or
+replaying it. The bundled dashboard performs that restore when a user opens run
+detail.
 
 The schedule field `is_archived` is a separate scheduling concept and is
 unrelated to execution retention.
@@ -19,13 +21,15 @@ unrelated to execution retention.
 Archiving is **disabled by default** and requires a **MySQL** database. A
 server with archiving enabled on SQLite refuses to start.
 
-Retention reduces future database growth. It does not delete artifact files,
-automatically reclaim database files, or shrink a database volume.
+Retention reduces growth from selected execution details. Retained rows,
+metadata, indexes, and shared snapshots can continue growing. It does not
+delete artifact files, automatically reclaim database files, or shrink a
+database volume.
 
 {% hint style="warning" %}
 Archiving is server-wide and has **no opt-out**. Once enabled, the scheduled
-sweep archives every finished run past `after_days`, in every project, for
-every team on the server. There is no per-project switch and no way to pin a
+sweep considers eligible finished runs past `after_days` in every project,
+for every team on the server, subject to the protections below. There is no per-project switch and no way to pin a
 run. Choose `after_days` with that in mind before enabling it.
 {% endhint %}
 
@@ -43,7 +47,9 @@ ZENML_SERVER_ARCHIVE__SCHEDULE="0 3 * * *"
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `BACKEND` | `disabled` | `disabled`, `local`, `s3`, `gcs`, or `azure`. Anything but `disabled` turns archiving on and requires `URI`. |
+| `BACKEND` | `disabled` | `disabled`, `local`, `s3`, `gcs`, or `azure`. A non-disabled backend configures storage and requires `URI`. |
+| `ENABLED` | `true` | Allow new archives when storage is configured. Set `false` to pause new archiving while keeping restore available. |
+| `SCHEDULE_ENABLED` | `true` | Run automatic sweeps when new archiving is enabled. Set `false` for manual-only operation. |
 | `URI` | unset | Archive root. Its scheme must match the backend. |
 | `AFTER_DAYS` | 90 | Minimum age of a finished run, at least **7 days**. |
 | `SCHEDULE` | `0 3 * * *` | Cron expression for the sweep, in UTC. |
@@ -56,10 +62,13 @@ An incomplete or inconsistent group fails startup naming the exact variable,
 so a typo cannot silently leave archiving half-configured.
 
 {% hint style="info" %}
-**During a rolling upgrade, keep `BACKEND` at `disabled` until every replica
-runs the new version.** The migration is additive and safe to apply first, but
-an old replica cannot see the archive markers and would serve archived runs as
-if their detail were still there.
+**During a rolling upgrade, keep `BACKEND` disabled or unset until every
+replica runs the new version.** Do not introduce the new `ENABLED` or
+`SCHEDULE_ENABLED` settings into a mixed-version deployment: older replicas
+reject unknown archive settings. The migration is additive and safe to apply
+first, but an old replica cannot see archive markers and would serve archived
+runs as if their detail were still there. After all replicas are upgraded,
+configure storage; set `ENABLED=false` if new archiving should remain paused.
 {% endhint %}
 
 ### Credentials
@@ -79,9 +88,8 @@ instead; the server connects and refreshes it exactly as a registered stack
 component would. A connector named there cannot be deleted while it is
 configured, because deleting it would make archived runs unreadable.
 
-The server image must include the matching integration, which the official
-images do. The credentials must allow reading, writing, and deleting objects
-below the URI.
+The server image must include the matching storage integration. The credentials
+must allow reading, writing, and deleting objects below the URI.
 
 At startup and before each sweep, the server writes, reads back, and removes
 a probe object at `{uri}/_probes/{uuid}`. A failed startup probe only logs a
@@ -91,8 +99,21 @@ each object's full URI.
 
 Keep the storage and its objects available while any run is archived. ZenML
 keeps committed archive objects, and restoring their detail becomes impossible
-if they disappear. Disabling the backend stops new sweeps and prevents
-restores until it is enabled again.
+if they disappear. Keep the backend, URI, and credentials configured when
+pausing archiving:
+
+```shell
+ZENML_SERVER_ARCHIVE__ENABLED=false
+```
+
+This blocks new manual and scheduled archives after restart. Summaries and
+restore remain available. Set `ENABLED=true` and `SCHEDULE_ENABLED=false` for
+manual-only archiving. Setting `BACKEND=disabled` removes access to archive
+storage and therefore also prevents restore; use `ENABLED=false` to pause.
+
+Changing the configured URI or provider does not migrate existing objects.
+Their recorded URIs must remain accessible with the configured adapter and
+credentials.
 
 ## What the sweep archives
 
@@ -138,23 +159,49 @@ zenml server retention archive --run-id <uuid> --run-id <uuid>
 zenml server retention archive --project default
 ```
 
-This **ignores** the run age, model-version links, and the restore grace
-period. It never ignores the rules that keep a run readable while something
-is still using it: archiving an active run would strip configuration the
-orchestrator is reading. Runs it refuses are listed with their reason.
+Manual archiving applies the same age, model-link, and restore-grace policy
+as the scheduled sweep. To deliberately override those three rules, add
+`--force`. The confirmation identifies the override. Active runs, resumable
+runs, and other execution-safety exclusions remain protected even with force.
 
-A pipeline or project target archives a bounded batch of its oldest finished
-runs and reports whether more remain, so repeat the command until it stops
-saying so. Naming runs directly requires update permission on each run;
-naming a pipeline or project requires update permission on that resource.
+A pipeline or project target examines a bounded batch of its oldest finished
+runs. The response includes `pending` and `next_after_run_id`. When more
+candidates remain, pass the returned ID with `--after-run-id` on the next
+command. This advances past refused runs too; a page that archives nothing
+can still have more work after it. The CLI prints the continuation ID.
+
+Naming runs directly requires update permission on each run; naming a
+pipeline or project requires update permission on that resource. A continuation
+ID must belong to the same target. If that run has been deleted, restart the
+scan without a continuation ID.
+
+Preview the same selection without archiving execution data or accessing
+archive storage:
+
+```shell
+zenml server retention archive --project default --dry-run
+```
+
+Preview works while new archiving is paused and requires read permission on
+the target. It reports eligible candidates and exclusion reasons, with the
+same continuation behavior. It does not fetch payloads to estimate bytes;
+a candidate can still exceed the byte limit during actual capture or change
+before archiving.
 
 The same is available from the Python client:
 
 ```python
 from zenml.client import Client
 
-result = Client().archive_runs(pipeline="my-pipeline")
-print(result.archived, result.refusals)
+client = Client()
+result = client.archive_runs(pipeline="my-pipeline", dry_run=True)
+print(result.eligible, result.refusals)
+if result.pending:
+    next_page = client.archive_runs(
+        pipeline="my-pipeline",
+        dry_run=True,
+        after_run_id=result.next_after_run_id,
+    )
 ```
 
 ## Check status
@@ -164,8 +211,11 @@ zenml server retention status
 ```
 
 Status shows the latest sweep outcome, when it finished, how many runs it
-archived, skipped, found oversized, or failed on, and whether archiving is
-enabled and its storage usable. It never scans runs or reads archive objects.
+archived, skipped, found oversized, or failed on, and whether storage is
+configured, new archives are enabled, and automatic sweeps are enabled.
+`archive_configured` means storage settings are present; status does not
+construct an adapter or check the health of stored objects. It never scans
+runs or reads archive objects.
 Reading it requires a server admin.
 
 | Outcome | Meaning | Next action |
@@ -174,7 +224,7 @@ Reading it requires a server admin.
 | `running` | A sweep is working. | Check again shortly. |
 | `succeeded` | The sweep reached the end of the eligible runs. | Nothing; the next scheduled sweep picks up newly eligible runs. |
 | `paused` | The sweep stopped at its run or time budget. | Nothing; it resumes automatically. |
-| `failed` | The sweep stopped early; the server log has the failure code. | Use the table below and correct the cause. |
+| `failed` | The sweep stopped early; the server log has the failure code. | Read the failure code in server logs and correct the cause. |
 | `expired` | A running sweep stopped updating for ten minutes, for example because its server process stopped. | The next sweep takes over. |
 
 | Failure | Meaning | Next action |
@@ -190,12 +240,29 @@ reconsidered by the next sweep.
 
 ## What users see
 
-Archived runs list normally without detail (`hydrate=False`). Their status,
-identity, timestamps, artifact links, and retained step projections remain
-available from SQL. Reading archived run, step, snapshot, or DAG detail returns
-**409** with instructions to restore the owning run. A detailed list that
-contains an archived row also returns **409**; list without detail or filter
-with `archive_bundle_id="isnull:"` to see only unarchived detail.
+Archived responses include an `archive` descriptor with the bundle ID and,
+when available, the owning restore run ID. Snapshot lists omit the owner;
+request an individual snapshot summary to obtain its restore run ID after
+authorization. SQL-backed summaries remain available with
+`hydrate=False`, including retained execution times and metadata. A detailed
+list hydrates unarchived rows and returns explicitly marked summaries for
+archived rows; one archived row does not fail the entire page.
+
+Single-entity reads that request cold configuration, source, or DAG detail
+return **409** with restore instructions. Request the summary to inspect the
+retained information without restoring. The SDK's retained summary properties
+do not trigger a detail fetch. Artifact links and log references stay in SQL;
+log reads that do not need cold configuration do not require restore. The
+artifact or log store must still be available to read its contents.
+
+The bundled dashboard restores archived detail as part of the ordinary loading
+state when a user deliberately opens a run page, a triggered child run's detail
+sheet, or a create-snapshot page. Run lists and background refreshes remain
+read-only and do not initiate a restore. Other dashboards and API clients must
+handle the archived-detail 409 and call the restore route explicitly.
+
+Use `archive_bundle_id="isnull:"` to filter to unarchived runs when a caller
+specifically requires full detail for every row.
 
 Archived steps are excluded from cache lookups. New runs execute those steps
 again unless an unarchived cache candidate is available.
@@ -221,7 +288,13 @@ The command accepts a run name, ID, or unique ID prefix and finishes when the
 run is restored. Restore is all-or-nothing: it needs every archived row to
 still exist with its archive marker, and any mismatch returns **409** without
 changing anything. A run that is not archived returns `noop`. A restored run
-is protected from re-archiving for `restored_grace_days`.
+is protected from scheduled and normal manual archiving for
+`restored_grace_days`; an explicit `--force` overrides this grace period.
+
+Restore requires read permission on the run, so a user who can open a run can
+also make its cold detail available. Restoring one run does not recursively
+restore its child runs. Updating any run detail still requires update
+permission.
 
 **Replay requires a restore first.** Replaying an archived run returns 409
 with the restore command.
@@ -235,30 +308,49 @@ the owning run.
 
 | Method and route | Purpose | Permission |
 | --- | --- | --- |
-| `POST /api/v1/retention/archive` | Archive named runs, a pipeline, or a project now. | Update on each run, or on the named pipeline or project |
+| `POST /api/v1/retention/archive` | Archive or preview named runs, a pipeline, or a project. | Update on the target; read for `dry_run=true` |
 | `GET /api/v1/retention/status` | Read the latest sweep. | Server admin |
-| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run update |
+| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run read |
 
-Archiving runs happens within the request and can take a while. The route
-honors an `Idempotency-Key` header: a client that sends one and reuses it on
-retry gets the stored result instead of archiving a second batch. The ZenML
-CLI and Python client do not send one, so a retried pipeline or project
-request archives the *next* batch. Named runs are unaffected, because an
-already archived run is simply refused.
+Archiving and restoring can take a while. The shared SDK request layer sends
+an `Idempotency-Key`; transport retries of that request reuse its result.
+A separate SDK call or CLI invocation gets a new key. For project and
+pipeline scans, use `next_after_run_id` to continue deliberately; retrying an
+operation and advancing the scan are separate actions.
+
+## Archive compatibility
+
+Version 1 objects remain readable when the server is upgraded. Changes to
+execution payloads or SQL columns must preserve restoration of existing v1
+objects; an SQL migration cannot transform copies already in object storage.
+The compatibility tests restore frozen static, dynamic, and legacy v1 archives
+into the current migrated schema and read their current response models.
+A future incompatible format requires a specific compatible reader or restore
+conversion before that release can support existing archives.
+
+Do not remove archive objects as part of a server upgrade. Downgrading the
+archive migration after archiving is unsupported, including after restoring
+runs, because archive catalog records remain.
 
 ## Limitations
 
 1. **MySQL only.** SQLite servers cannot archive.
-2. **Explicit restore is required** for archived detail and replay. Automatic
-   archived reads are deferred to a later version.
+2. **API, SDK, and CLI callers restore explicitly** before reading archived
+   detail or replaying a run. The bundled dashboard performs the same restore
+   only during deliberate run-detail loading; lists and background refreshes
+   remain read-only.
 3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs.
 4. **Only archive format version 1 exists.** Other versions are integrity errors; there are no format adapters.
-5. **Detailed lists fail with 409 if they contain an archived row.** Use
-   `hydrate=False` or filter to unarchived rows.
+5. **Archived entries in detailed lists are summaries.** Check the archive
+   descriptor before accessing cold detail; API clients restore explicitly
+   when needed.
 6. **Only the latest sweep is recorded.** There is no operation history.
 7. **There is no opt-out.** Archiving is server-wide, and no project or run
    can be excluded once it is enabled.
 8. **Metadata, hook invocations, and run wait conditions stay in the database.**
+9. **Shared snapshots stay in SQL,** including snapshots referenced by other
+   archived runs. This keeps each run independently restorable but limits
+   the payload that archiving can remove.
 
 Physical reclamation remains separate database administration work. Measure
 table and volume sizes after archiving, and use your own backup and

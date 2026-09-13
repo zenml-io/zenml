@@ -4157,13 +4157,13 @@ class RestZenStore(BaseZenStore):
         )
 
     def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
-        """Archive the requested runs now, without waiting for a sweep.
+        """Archive or preview a bounded manual retention request.
 
         Args:
             request: Runs, pipeline, or project to archive.
 
         Returns:
-            Counts and the runs that were refused, each with a reason.
+            Eligible or archived counts and refused runs with their reasons.
         """
         # The server archives within the request: capture, upload, and
         # read-back verification of a batch can outlast the default timeout.
