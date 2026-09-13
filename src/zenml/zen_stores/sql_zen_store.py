@@ -1240,14 +1240,33 @@ class SqlZenStore(BaseZenStore):
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
 
     @staticmethod
+    def _archived_run_metadata(
+        run: PipelineRunSchema, include_full_metadata: bool
+    ) -> Dict[str, "MetadataType"]:
+        """Build the retained metadata projection for an archived run.
+
+        Args:
+            run: Archived run schema attached to an active session.
+            include_full_metadata: Whether step and schedule metadata is included.
+
+        Returns:
+            The requested SQL-backed metadata projection.
+        """
+        return run.fetch_metadata(include_full_metadata=include_full_metadata)
+
+    @classmethod
     def _populate_archived_run_summaries(
-        session: Session, page: Page[PipelineRunResponse]
+        cls,
+        session: Session,
+        page: Page[PipelineRunResponse],
+        include_full_metadata: bool,
     ) -> None:
         """Batch-load metadata only when a page contains archived runs.
 
         Args:
             session: The current database session.
             page: Converted run page whose archive summaries need metadata.
+            include_full_metadata: Whether step and schedule metadata is included.
         """
         run_ids = [
             run.id
@@ -1256,12 +1275,29 @@ class SqlZenStore(BaseZenStore):
         ]
         if not run_ids:
             return
+        options = [selectinload(jl_arg(PipelineRunSchema.run_metadata))]
+        if include_full_metadata:
+            options.extend(
+                [
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.run_metadata)),
+                    selectinload(jl_arg(PipelineRunSchema.snapshot))
+                    .selectinload(jl_arg(PipelineSnapshotSchema.schedule))
+                    .selectinload(jl_arg(ScheduleSchema.run_metadata)),
+                ]
+            )
         schemas = session.exec(
             select(PipelineRunSchema)
             .where(col(PipelineRunSchema.id).in_(run_ids))
-            .options(selectinload(jl_arg(PipelineRunSchema.run_metadata)))
+            .options(*options)
         ).all()
-        metadata = {schema.id: schema.fetch_metadata() for schema in schemas}
+        metadata = {
+            schema.id: cls._archived_run_metadata(
+                schema, include_full_metadata=include_full_metadata
+            )
+            for schema in schemas
+        }
         for run in page.items:
             if run.archive is not None and run.id in metadata:
                 run.archive.run_metadata = metadata[run.id]
@@ -5604,7 +5640,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if "description" in snapshot_update.model_fields_set:
+            # The schema update treats both None and an empty string as no-ops.
+            if snapshot_update.description:
                 fences.protect_snapshot_owners(session, [snapshot_id])
             else:
                 transactions.lock_ids(
@@ -7231,7 +7268,9 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
-                archive_metadata=run.fetch_metadata()
+                archive_metadata=self._archived_run_metadata(
+                    run, include_full_metadata=include_full_metadata
+                )
                 if run.is_archived
                 else None,
             )
@@ -7563,7 +7602,10 @@ class SqlZenStore(BaseZenStore):
                         include_metadata=hydrate and not schema.is_archived,
                         include_resources=True,
                         include_full_metadata=include_full_metadata,
-                        archive_metadata=schema.fetch_metadata()
+                        archive_metadata=self._archived_run_metadata(
+                            schema,
+                            include_full_metadata=include_full_metadata,
+                        )
                         if hydrate and schema.is_archived
                         else None,
                     )
@@ -7574,7 +7616,11 @@ class SqlZenStore(BaseZenStore):
                 },
             )
             if not hydrate:
-                self._populate_archived_run_summaries(session, page)
+                self._populate_archived_run_summaries(
+                    session,
+                    page,
+                    include_full_metadata=include_full_metadata,
+                )
             return page
 
     def update_run(

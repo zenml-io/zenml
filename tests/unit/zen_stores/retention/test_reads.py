@@ -5,7 +5,7 @@ import json
 from functools import partial
 from typing import Any
 from unittest.mock import Mock
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import update
@@ -25,8 +25,10 @@ from zenml.models import (
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_stores.schemas import (
     PipelineRunSchema,
+    PipelineSnapshotSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
+    ScheduleSchema,
 )
 
 
@@ -56,6 +58,34 @@ def _add_metadata(
             )
         )
         session.commit()
+
+
+def _attach_schedule(store: Any, ids: Any) -> UUID:
+    """Attach a retained schedule to the fixture snapshot."""
+    schedule = ScheduleSchema(
+        name=str(uuid4()),
+        project_id=ids.project,
+        user_id=None,
+        pipeline_id=ids.pipeline,
+        orchestrator_id=None,
+        active=False,
+        cron_expression=None,
+        start_time=None,
+        end_time=None,
+        interval_second=None,
+        catchup=False,
+        run_once_start_time=None,
+    )
+    with Session(store.engine) as session:
+        session.add(schedule)
+        session.flush()
+        schedule_id = schedule.id
+        snapshot = session.get(PipelineSnapshotSchema, ids.snapshot)
+        assert snapshot is not None
+        snapshot.schedule_id = schedule_id
+        session.add(snapshot)
+        session.commit()
+    return schedule_id
 
 
 def test_archived_summaries_need_no_archive_storage(
@@ -139,6 +169,76 @@ def test_archived_summaries_need_no_archive_storage(
     assert exception.headers["Retry-After"]
     with pytest.raises(ExecutionArchivedError, match="pipeline runs restore"):
         retention_store.create_run_step(dynamic_step(ids, "late", NOW))
+
+
+@pytest.mark.parametrize(
+    "read_path", ["single", "hydrated_list", "unhydrated_list"]
+)
+@pytest.mark.parametrize("include_full_metadata", [False, True])
+def test_archived_run_summaries_preserve_full_metadata_option(
+    retention_store: Any,
+    run_factory: Any,
+    archive_run: Any,
+    storage: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    read_path: str,
+    include_full_metadata: bool,
+) -> None:
+    """Every archived summary path applies the same metadata projection."""
+    ids = run_factory(retention_store)
+    schedule_id = _attach_schedule(retention_store, ids)
+    _add_metadata(
+        retention_store,
+        ids.project,
+        ids.run,
+        MetadataResourceTypes.PIPELINE_RUN,
+        "run-summary",
+        "run",
+    )
+    _add_metadata(
+        retention_store,
+        ids.project,
+        ids.consumer,
+        MetadataResourceTypes.STEP_RUN,
+        "step-summary",
+        "step",
+    )
+    _add_metadata(
+        retention_store,
+        ids.project,
+        schedule_id,
+        MetadataResourceTypes.SCHEDULE,
+        "schedule-summary",
+        "schedule",
+    )
+    archive_run(retention_store, ids)
+    opened = Mock(side_effect=AssertionError("summary read archive storage"))
+    monkeypatch.setattr(storage.artifact_store, "open", opened)
+
+    if read_path == "single":
+        run = retention_store.get_run(
+            ids.run,
+            hydrate=False,
+            include_full_metadata=include_full_metadata,
+        )
+    else:
+        page = retention_store.list_runs(
+            PipelineRunFilter(project=ids.project),
+            hydrate=read_path == "hydrated_list",
+            include_full_metadata=include_full_metadata,
+        )
+        run = page.items[0]
+
+    expected = {"run-summary": "run"}
+    if include_full_metadata:
+        expected.update(
+            {
+                "consumer::step-summary": "step",
+                "schedule:schedule-summary": "schedule",
+            }
+        )
+    assert run.run_metadata == expected
+    opened.assert_not_called()
 
 
 def test_mixed_hydrated_pages_keep_hot_detail_and_cold_summaries(

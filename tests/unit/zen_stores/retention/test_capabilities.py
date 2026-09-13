@@ -5,11 +5,13 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import inspect
 
 from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.enums import AuthScheme
 from zenml.models import ServerModel
 from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.migrations.alembic import Alembic
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -19,6 +21,23 @@ def test_server_model_archive_capability_defaults_to_false() -> None:
 
     assert model.execution_archiving_enabled is False
     assert model.model_dump()["execution_archiving_enabled"] is False
+
+
+def test_fresh_database_has_sweep_index(
+    retention_store: SqlZenStore,
+) -> None:
+    """Fresh create-all databases have the same index as upgraded databases."""
+    indexes = {
+        index["name"]: index["column_names"]
+        for index in inspect(retention_store.engine).get_indexes(
+            "pipeline_run"
+        )
+    }
+
+    assert Alembic(retention_store.engine).current_revisions() == [
+        "c3f5a9e1d7b2"
+    ]
+    assert indexes["ix_pipeline_run_end_time_id"] == ["end_time", "id"]
 
 
 @pytest.mark.parametrize(

@@ -6,6 +6,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import timedelta
 from pathlib import Path
 from threading import Event, current_thread
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -41,7 +42,14 @@ from zenml.models import (
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
-from zenml.zen_stores.retention import archiver, eligibility, fences
+from zenml.zen_stores.retention import (
+    archiver,
+    eligibility,
+    fences,
+)
+from zenml.zen_stores.retention import (
+    format as archive_format,
+)
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
@@ -123,6 +131,93 @@ def test_archive_restore_round_trip(
     assert sql_after == sql_before
     with Session(retention_store.engine) as session:
         assert session.get(ArchiveBundleSchema, bundle_id).restored_at
+
+
+@pytest.mark.parametrize("identifier_kind", ["uuid", "name", "id_prefix"])
+def test_client_deletes_archived_run_from_retained_identity(
+    retention_store,
+    run_factory,
+    archive_run,
+    storage,
+    monkeypatch,
+    identifier_kind,
+):
+    """SDK deletion resolves archived UUIDs, names, and ID prefixes in SQL."""
+    ids = run_factory(retention_store)
+    run_name = "archived-delete-run"
+    with retention_store.engine.begin() as connection:
+        connection.execute(
+            update(PipelineRunSchema)
+            .where(PipelineRunSchema.id == ids.run)
+            .values(name=run_name)
+        )
+    archive_run(retention_store, ids)
+    opened = Mock(side_effect=AssertionError("delete read archive storage"))
+    monkeypatch.setattr(storage.artifact_store, "open", opened)
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
+    client = object.__new__(Client)
+    identifier = {
+        "uuid": ids.run,
+        "name": run_name,
+        "id_prefix": str(ids.run)[:12],
+    }[identifier_kind]
+
+    client.delete_pipeline_run(identifier, project=ids.project)
+
+    with pytest.raises(KeyError):
+        retention_store.get_run(ids.run, hydrate=False)
+    opened.assert_not_called()
+
+
+def test_client_updates_archived_snapshot_tags_without_restore(
+    retention_store,
+    run_factory,
+    archive_run,
+    storage,
+    monkeypatch,
+):
+    """SDK tag updates remain hot while cold description edits stay fenced."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    opened = Mock(side_effect=AssertionError("update read archive storage"))
+    monkeypatch.setattr(storage.artifact_store, "open", opened)
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
+    client = object.__new__(Client)
+
+    added = client.update_snapshot(ids.snapshot, add_tags=["cold-tag"])
+    assert {tag.name for tag in added.tags} == {"cold-tag"}
+    removed = client.update_snapshot(ids.snapshot, remove_tags=["cold-tag"])
+    assert removed.tags == []
+    with pytest.raises(ExecutionArchivedError):
+        client.update_snapshot(ids.snapshot, description="cold edit")
+    opened.assert_not_called()
+
+
+def test_retirement_compresses_only_the_uploaded_capture(
+    retention_store,
+    run_factory,
+    archive_run,
+    monkeypatch,
+):
+    """The locked recapture hashes canonical bytes without recompressing them."""
+    ids = run_factory(retention_store)
+    original = archive_format.gzip.compress
+    compression_count = 0
+
+    def count_compression(*args, **kwargs):
+        nonlocal compression_count
+        compression_count += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(archive_format.gzip, "compress", count_compression)
+
+    archive_run(retention_store, ids)
+
+    assert compression_count == 1
 
 
 def test_update_after_retirement_fails_with_the_restore_command(

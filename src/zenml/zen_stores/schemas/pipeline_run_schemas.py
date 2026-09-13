@@ -137,6 +137,10 @@ class PipelineRunSchema(
             table_name=__tablename__,
             column_names=["project_id", "created", "id"],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["end_time", "id"],
+        ),
         # Composite index for sorting pipelines by their latest run (UI default)
         build_index(
             table_name=__tablename__,

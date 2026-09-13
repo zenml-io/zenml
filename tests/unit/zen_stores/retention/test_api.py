@@ -12,17 +12,19 @@ from sqlalchemy import event, update
 from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from zenml.enums import ExecutionStatus
-from zenml.models import UserFilter
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.models import PipelineSnapshotResponse, UserFilter
 from zenml.zen_server import utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.middleware import record_requests
 from zenml.zen_server.pipeline_execution import utils as execution
 from zenml.zen_server.rbac import endpoint_utils
-from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac import utils as rbac_utils
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import (
     pipeline_snapshot_endpoints,
     retention_endpoints,
+    run_metadata_endpoints,
     runs_endpoints,
     steps_endpoints,
 )
@@ -33,6 +35,7 @@ from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
 
 ROUTERS = (
     retention_endpoints,
+    run_metadata_endpoints,
     runs_endpoints,
     steps_endpoints,
     pipeline_snapshot_endpoints,
@@ -192,6 +195,119 @@ def test_archive_restore_http_lifecycle(http, monkeypatch):
     )
     assert http.client.get(detail).status_code == 200
     assert http.client.post(detail + "/restore").json()["outcome"] == "noop"
+
+
+@pytest.mark.parametrize(
+    ("resource_attribute", "resource_type"),
+    [
+        ("run", MetadataResourceTypes.PIPELINE_RUN),
+        ("producer", MetadataResourceTypes.STEP_RUN),
+    ],
+)
+@pytest.mark.parametrize("archived", [False, True])
+@pytest.mark.parametrize("denied_action", [None, Action.UPDATE, Action.CREATE])
+def test_metadata_writes_authorize_retained_run_headers(
+    http,
+    storage,
+    monkeypatch,
+    resource_attribute,
+    resource_type,
+    archived,
+    denied_action,
+):
+    """Metadata writes require owning-run and project permissions, hot or cold."""
+    if archived:
+        http.store.run_archive_sweep()
+    resource_id = getattr(http.ids, resource_attribute)
+    opened = Mock(side_effect=AssertionError("metadata read archive storage"))
+    monkeypatch.setattr(storage.artifact_store, "open", opened)
+    permissions = Mock(
+        side_effect=lambda *, user, resources, action: {
+            resource: action != denied_action for resource in resources
+        }
+    )
+    monkeypatch.setattr(
+        rbac_utils,
+        "server_config",
+        lambda: SimpleNamespace(rbac_enabled=True),
+    )
+    # Fixture runs are server-owned; exercise the non-owner permission path.
+    monkeypatch.setattr(
+        rbac_utils, "is_owned_by_authenticated_user", lambda _: False
+    )
+    monkeypatch.setattr(
+        rbac_utils,
+        "rbac",
+        lambda: SimpleNamespace(check_permissions=permissions),
+    )
+
+    response = http.client.post(
+        "/api/v1/run-metadata",
+        json={
+            "project": str(http.ids.project),
+            "resources": [
+                {"id": str(resource_id), "type": resource_type.value}
+            ],
+            "values": {"retained": "cold"},
+            "types": {"retained": "str"},
+        },
+    )
+
+    assert response.status_code == (200 if denied_action is None else 403), (
+        response.text
+    )
+    update_check = permissions.call_args_list[0].kwargs
+    assert update_check["action"] == Action.UPDATE
+    assert {
+        (resource.type, resource.id, resource.project_id)
+        for resource in update_check["resources"]
+    } == {(ResourceType.PIPELINE_RUN, http.ids.run, http.ids.project)}
+    if denied_action == Action.UPDATE:
+        assert permissions.call_count == 1
+    else:
+        assert permissions.call_count == 2
+        create_check = permissions.call_args_list[1].kwargs
+        assert create_check["action"] == Action.CREATE
+        assert {
+            (resource.type, resource.project_id)
+            for resource in create_check["resources"]
+        } == {(ResourceType.RUN_METADATA, http.ids.project)}
+    if resource_type == MetadataResourceTypes.PIPELINE_RUN:
+        resource = http.store.get_run(resource_id, hydrate=not archived)
+    else:
+        resource = http.store.get_run_step(resource_id, hydrate=not archived)
+    assert resource.run_metadata == (
+        {"retained": "cold"} if denied_action is None else {}
+    )
+    opened.assert_not_called()
+
+
+def test_archived_snapshot_rest_updates_follow_description_semantics(http):
+    """REST permits tag changes but rejects real cold-description writes."""
+    http.store.run_archive_sweep()
+    path = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
+
+    added = http.client.put(
+        path,
+        json={"description": None, "add_tags": ["cold-tag"]},
+    )
+    assert added.status_code == 200, added.text
+    snapshot = PipelineSnapshotResponse.model_validate(added.json())
+    assert {tag.name for tag in snapshot.tags} == {"cold-tag"}
+
+    removed = http.client.put(
+        path,
+        json={"description": None, "remove_tags": ["cold-tag"]},
+    )
+    assert removed.status_code == 200, removed.text
+    snapshot = PipelineSnapshotResponse.model_validate(removed.json())
+    assert snapshot.tags == []
+
+    noop = http.client.put(path, json={"description": ""})
+    assert noop.status_code == 200, noop.text
+
+    blocked = http.client.put(path, json={"description": "cold edit"})
+    assert blocked.status_code == 409, blocked.text
 
 
 def test_archived_http_summaries_and_logs_need_no_storage(

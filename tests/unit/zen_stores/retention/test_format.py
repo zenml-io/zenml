@@ -4,18 +4,22 @@
 import gzip
 import hashlib
 from pathlib import Path
+from typing import Callable
 from uuid import uuid4
 
 import pytest
 
 from zenml.exceptions import (
+    ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
 )
 from zenml.zen_stores.retention import format as archive_format
 from zenml.zen_stores.retention.format import (
     ArchiveDocument,
     canonical_json,
+    compute_content_hash,
     decode,
+    encode,
 )
 
 
@@ -80,3 +84,36 @@ def test_decompression_stops_at_the_size_cap(monkeypatch):
 
     with pytest.raises(ExecutionRetentionIntegrityError, match="size limit"):
         decode(bomb, "0" * 64)
+
+
+def test_content_hash_matches_encode_without_compression(
+    document: ArchiveDocument, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Hash-only validation uses the encoded object's exact canonical hash."""
+    encoded = encode(document)
+
+    def fail_compression(*args, **kwargs):
+        pytest.fail("content hashing compressed the document")
+
+    monkeypatch.setattr(archive_format.gzip, "compress", fail_compression)
+
+    assert compute_content_hash(document) == encoded.content_hash
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [encode, compute_content_hash],
+    ids=["encode", "hash"],
+)
+def test_encode_and_hash_apply_the_same_size_limit(
+    document: ArchiveDocument,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: Callable[[ArchiveDocument], object],
+) -> None:
+    """Compression and comparison reject the same oversized canonical input."""
+    monkeypatch.setattr(archive_format, "MAX_DECODED_BYTES", 1)
+
+    with pytest.raises(
+        ExecutionRetentionConflictError, match="archive size limit"
+    ):
+        operation(document)

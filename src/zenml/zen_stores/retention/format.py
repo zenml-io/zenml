@@ -253,6 +253,43 @@ def canonical_json(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _serialize_and_hash(document: ArchiveDocument) -> tuple[bytes, str]:
+    """Serialize, bound, and hash one archive document canonically.
+
+    Args:
+        document: Captured run detail.
+
+    Returns:
+        The canonical bytes and their SHA-256 hash.
+
+    Raises:
+        ExecutionRetentionConflictError: The document exceeds the size cap.
+    """
+    decoded = canonical_json(document.model_dump(mode="json"))
+    if len(decoded) > MAX_DECODED_BYTES:
+        raise ExecutionRetentionConflictError(
+            "Run exceeds the archive size limit.",
+            error_code=RetentionFailure.OVERSIZED,
+        )
+    return decoded, hashlib.sha256(decoded).hexdigest()
+
+
+def compute_content_hash(document: ArchiveDocument) -> str:
+    """Compute the bounded canonical content hash without compression.
+
+    Args:
+        document: Captured run detail.
+
+    Returns:
+        The SHA-256 hash used by encoded archive objects.
+
+    Raises:
+        ExecutionRetentionConflictError: The document exceeds the size cap.
+    """  # noqa: DOC502
+    _, content_hash = _serialize_and_hash(document)
+    return content_hash
+
+
 def encode(document: ArchiveDocument) -> EncodedDocument:
     """Serialize and compress a document deterministically.
 
@@ -264,16 +301,11 @@ def encode(document: ArchiveDocument) -> EncodedDocument:
 
     Raises:
         ExecutionRetentionConflictError: The document exceeds the size cap.
-    """
-    decoded = canonical_json(document.model_dump(mode="json"))
-    if len(decoded) > MAX_DECODED_BYTES:
-        raise ExecutionRetentionConflictError(
-            "Run exceeds the archive size limit.",
-            error_code=RetentionFailure.OVERSIZED,
-        )
+    """  # noqa: DOC502
+    decoded, content_hash = _serialize_and_hash(document)
     return EncodedDocument(
         data=gzip.compress(decoded, mtime=0),
-        content_hash=hashlib.sha256(decoded).hexdigest(),
+        content_hash=content_hash,
     )
 
 

@@ -75,9 +75,11 @@ def create_run_metadata(
     verify_models: List[Any] = []
     for resource in run_metadata.resources:
         if resource.type == MetadataResourceTypes.PIPELINE_RUN:
-            verify_models.append(zen_store().get_run(resource.id))
+            verify_models.append(
+                zen_store().get_run(resource.id, hydrate=False)
+            )
         elif resource.type == MetadataResourceTypes.STEP_RUN:
-            verify_models.append(zen_store().get_run_step(resource.id))
+            verify_models.append(zen_store().get_step_run_owner(resource.id))
         elif resource.type == MetadataResourceTypes.ARTIFACT_VERSION:
             verify_models.append(zen_store().get_artifact_version(resource.id))
         elif resource.type == MetadataResourceTypes.MODEL_VERSION:

@@ -61,6 +61,7 @@ from zenml.zen_stores.retention.format import (
     ArchiveDocument,
     EncodedDocument,
     canonical_json,
+    compute_content_hash,
     encode,
 )
 from zenml.zen_stores.retention.state import Cursor, RetentionState
@@ -362,7 +363,7 @@ class RunArchiver:
                 .with_for_update()
             ).all()
             document = capture_run(session, fresh)
-            if encode(document).content_hash != encoded.content_hash:
+            if compute_content_hash(document) != encoded.content_hash:
                 raise ExecutionRetentionConflictError(
                     "Run detail changed after capture."
                 )

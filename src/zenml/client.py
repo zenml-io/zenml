@@ -5440,6 +5440,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
             project=project,
+            hydrate=False,
         )
         self.zen_store.delete_run(run_id=run.id)
 
