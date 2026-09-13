@@ -1,17 +1,29 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Execution archive capability discovery tests."""
 
+import inspect as python_inspect
 from types import SimpleNamespace
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import inspect
 
+from zenml.artifact_stores.base_artifact_store import (
+    BaseArtifactStore,
+    BaseArtifactStoreConfig,
+)
 from zenml.config.server_config import ArchiveSettings, ServerConfiguration
-from zenml.enums import AuthScheme
+from zenml.constants import ENV_ZENML_SERVER
+from zenml.enums import AuthScheme, StackComponentType
+from zenml.io import fileio, filesystem_registry
+from zenml.io.local_filesystem import LocalFilesystem
 from zenml.models import ServerModel
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.migrations.alembic import Alembic
+from zenml.zen_stores.retention import storage as storage_module
+from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -101,3 +113,62 @@ def test_store_info_reports_manual_archive_capability(
     info = store.get_store_info()
 
     assert info.execution_archiving_enabled is expected
+
+
+def test_archive_storage_does_not_replace_global_fileio_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Internal archive construction keeps an ordinary store registered."""
+    monkeypatch.delenv(ENV_ZENML_SERVER, raising=False)
+
+    class TestConfig(BaseArtifactStoreConfig):
+        SUPPORTED_SCHEMES = {"s3://"}
+        config_kwargs: Optional[Dict[str, Any]] = None
+
+    def no_io(self, *args, **kwargs):
+        return self.path
+
+    implementation = type(
+        "RetentionTestArtifactStore",
+        (BaseArtifactStore,),
+        {
+            name: no_io
+            for name, method in python_inspect.getmembers(BaseArtifactStore)
+            if getattr(method, "__isabstractmethod__", False)
+        },
+    )
+    flavor = SimpleNamespace(
+        name="retention-test",
+        implementation_class=implementation,
+        config_class=TestConfig,
+        service_connector_requirements=None,
+    )
+    registry = filesystem_registry.FileIORegistry()
+    registry.register(LocalFilesystem)
+    monkeypatch.setattr(
+        filesystem_registry, "default_filesystem_registry", registry
+    )
+    monkeypatch.setattr(fileio, "default_filesystem_registry", registry)
+    monkeypatch.setattr(storage_module, "_flavor_for", lambda _: flavor)
+    now = utc_now()
+    implementation(
+        name="ordinary",
+        id=uuid4(),
+        config=TestConfig(path="s3://ordinary"),
+        flavor=flavor.name,
+        type=StackComponentType.ARTIFACT_STORE,
+        user=None,
+        created=now,
+        updated=now,
+    )
+    before = registry.get_filesystem_for_path("s3://ordinary/object")
+
+    archive = ArchiveStorage.from_uri("s3://archive")
+
+    after = registry.get_filesystem_for_path("s3://ordinary/object")
+    assert after is before
+    assert archive.artifact_store.config.config_kwargs == {
+        "connect_timeout": 10,
+        "read_timeout": 60,
+        "retries": {"mode": "standard", "total_max_attempts": 3},
+    }

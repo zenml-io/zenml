@@ -135,7 +135,8 @@ jobs:
         if: inputs.os == 'ubuntu-latest'
         run: |
           docker run --name zenml-retention-mysql --rm -d -p 3306:3306 \
-            -e MYSQL_ROOT_PASSWORD=password mysql:8
+            -e MYSQL_ROOT_PASSWORD=password \
+            mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
           # A TCP ping only answers once initialization has finished, because
           # the temporary bootstrap server listens on the socket only.
           for _ in $(seq 1 90); do

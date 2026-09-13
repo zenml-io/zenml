@@ -210,3 +210,42 @@ def test_run_over_the_record_cap_is_oversized(
     run = run_factory(retention_store)
     monkeypatch.setattr(eligibility, "MAX_RECORDS", 5)
     assert inspect(retention_store, run, NOW).exclusion == "oversized"
+
+
+def test_restore_grace_uses_any_recent_restoration(
+    retention_store, run_factory, NOW
+) -> None:
+    """UUID ordering cannot hide a more recently restored bundle."""
+    run = run_factory(retention_store)
+    with Session(retention_store.engine) as session:
+        session.add_all(
+            [
+                ArchiveBundleSchema(
+                    id=UUID(int=100),
+                    created=NOW - timedelta(days=31),
+                    updated=NOW,
+                    project_id=run.project,
+                    run_id=run.run,
+                    uri="unused-old",
+                    size_bytes=1,
+                    content_hash="0" * 64,
+                    format_version=1,
+                    restored_at=NOW - timedelta(days=30),
+                ),
+                ArchiveBundleSchema(
+                    id=UUID(int=10),
+                    created=NOW - timedelta(days=31),
+                    updated=NOW,
+                    project_id=run.project,
+                    run_id=run.run,
+                    uri="unused-recent",
+                    size_bytes=1,
+                    content_hash="0" * 64,
+                    format_version=1,
+                    restored_at=NOW - timedelta(hours=1),
+                ),
+            ]
+        )
+        session.commit()
+
+    assert inspect(retention_store, run, NOW).exclusion == "restored_grace"

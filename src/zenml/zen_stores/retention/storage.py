@@ -15,7 +15,7 @@ store instantiation re-registers its scheme with its own credentials. This
 wrapper keeps one artifact store instance and calls its methods directly.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4, uuid5
 
 from zenml.artifact_stores.base_artifact_store import (
@@ -32,6 +32,13 @@ logger = get_logger(__name__)
 
 # Stable identity so log lines and path sanitization name the same store.
 _ARCHIVE_STORE_NAMESPACE = UUID("5c1f3a4e-9b2d-4c6e-8f7a-0d1e2b3c4a5f")
+
+# S3 exposes per-request transport controls through its artifact-store config.
+# These do not bound a complete multipart archive operation, but they prevent
+# one connection or socket read from waiting forever during shutdown.
+_S3_CONNECT_TIMEOUT_SECONDS = 10
+_S3_READ_TIMEOUT_SECONDS = 60
+_S3_TOTAL_ATTEMPTS = 3
 
 
 def _artifact_store_flavors() -> List[Flavor]:
@@ -126,11 +133,26 @@ class ArchiveStorage:
             implementation = flavor.implementation_class
             if not issubclass(implementation, BaseArtifactStore):
                 raise TypeError(f"Flavor {flavor.name} is no artifact store.")
+            config_values: Dict[str, Any] = {"path": root}
+            if root.startswith("s3://"):
+                if "config_kwargs" not in flavor.config_class.model_fields:
+                    raise TypeError(
+                        "The S3 archive flavor does not expose transport "
+                        "configuration."
+                    )
+                config_values["config_kwargs"] = {
+                    "connect_timeout": _S3_CONNECT_TIMEOUT_SECONDS,
+                    "read_timeout": _S3_READ_TIMEOUT_SECONDS,
+                    "retries": {
+                        "mode": "standard",
+                        "total_max_attempts": _S3_TOTAL_ATTEMPTS,
+                    },
+                }
             now = utc_now()
             store = implementation(
                 name="execution-archive",
                 id=uuid5(_ARCHIVE_STORE_NAMESPACE, root),
-                config=flavor.config_class(path=root),
+                config=flavor.config_class(**config_values),
                 flavor=flavor.name,
                 type=StackComponentType.ARTIFACT_STORE,
                 user=None,
@@ -138,6 +160,7 @@ class ArchiveStorage:
                 updated=now,
                 connector=connector_id,
                 connector_requirements=flavor.service_connector_requirements,
+                register_filesystem=False,
             )
         except Exception as error:
             raise ExecutionRetentionUnavailableError(

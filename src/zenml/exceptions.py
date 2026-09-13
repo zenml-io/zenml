@@ -156,7 +156,7 @@ class IllegalOperationError(ZenMLBaseException):
 
 
 class ExecutionRetentionConflictError(ZenMLBaseException):
-    """Raised when retention is busy or SQL ownership conflicts with an operation."""
+    """Raised when SQL ownership conflicts with a retention operation."""
 
     def __init__(
         self, message: str, error_code: Optional[RetentionFailure] = None
@@ -177,6 +177,10 @@ class ExecutionRetentionIntegrityError(ZenMLBaseException):
 
 class ExecutionRetentionUnavailableError(ZenMLBaseException):
     """Raised when the configured retention destination cannot be accessed."""
+
+
+class ExecutionRetentionBusyError(ZenMLBaseException):
+    """Raised when a replica cannot admit more retention payload work."""
 
 
 class RunStoppedException(ZenMLBaseException):

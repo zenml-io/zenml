@@ -27,6 +27,7 @@ T = TypeVar("T")
 
 # MySQL error codes for a deadlock victim and a lock wait timeout.
 _TRANSIENT_LOCK_ERRORS = frozenset({1205, 1213})
+_ROLLBACK_CONFIRMED = "zenml_retention_rollback_confirmed"
 
 
 @contextmanager
@@ -38,27 +39,50 @@ def transaction(engine: Engine) -> Iterator[Session]:
 
     Yields:
         Caller-owned mutation session.
+
+    Raises:
+        BaseException: The transaction body, rollback, or commit failed.
     """
     with engine.connect() as connection:
         connection = connection.execution_options(
             isolation_level="READ COMMITTED"
         )
-        with (
-            connection.begin(),
-            Session(connection, expire_on_commit=False) as session,
-        ):
-            yield session
-            session.flush()
+        database_transaction = connection.begin()
+        with Session(connection, expire_on_commit=False) as session:
+            try:
+                yield session
+                session.flush()
+            except BaseException:
+                database_transaction.rollback()
+                session.info[_ROLLBACK_CONFIRMED] = True
+                raise
+            else:
+                # A failure here has an unknown server-side outcome. Do not
+                # attempt to turn it into a claimed rollback after COMMIT began.
+                database_transaction.commit()
+
+
+def rollback_was_confirmed(session: Session) -> bool:
+    """Tell whether ``transaction`` completed rollback for this session.
+
+    Args:
+        session: Session yielded by ``transaction``.
+
+    Returns:
+        Whether its failed body was rolled back before the error escaped.
+    """
+    return session.info.get(_ROLLBACK_CONFIRMED) is True
 
 
 def is_transient_lock_error(error: BaseException) -> bool:
-    """Tell whether MySQL rolled a transaction back to resolve lock contention.
+    """Classify a MySQL deadlock or lock-wait timeout error.
 
     Args:
         error: Exception raised by a retention transaction.
 
     Returns:
-        True for a deadlock victim or a lock wait timeout.
+        True for a deadlock victim or a lock wait timeout. Callers decide
+        rollback certainty separately.
     """
     if not isinstance(error, OperationalError) or error.orig is None:
         return False

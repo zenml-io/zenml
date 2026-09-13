@@ -28,6 +28,10 @@ from zenml.zen_stores.retention.archiver import (
     archive_runs,
     preview_runs,
 )
+from zenml.zen_stores.retention.capacity import (
+    MAX_CONCURRENT_RETENTION_OPERATIONS,
+    RetentionCapacity,
+)
 from zenml.zen_stores.retention.eligibility import expand_target
 from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
@@ -61,6 +65,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from functools import cached_property, lru_cache
 from pathlib import Path
+from threading import Event
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1224,6 +1229,10 @@ class SqlZenStore(BaseZenStore):
         jl_arg(PipelineRunSchema.root_run_id),
         jl_arg(PipelineRunSchema.archive_bundle_id),
         jl_arg(PipelineRunSchema.start_time),
+        jl_arg(PipelineRunSchema.end_time),
+    )
+    _RETENTION_CAPACITY: ClassVar[RetentionCapacity] = RetentionCapacity(
+        MAX_CONCURRENT_RETENTION_OPERATIONS
     )
 
     TYPE: ClassVar[StoreType] = StoreType.SQL
@@ -13365,10 +13374,11 @@ class SqlZenStore(BaseZenStore):
                     session, existing_step_run.id
                 )
 
-            self._update_pipeline_run_status(
-                pipeline_run_id=existing_step_run.pipeline_run_id,
-                session=session,
-            )
+            if existing_step_run.archive_bundle_id is None:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=existing_step_run.pipeline_run_id,
+                    session=session,
+                )
 
             # Add logs if specified
             if step_run_update.add_logs:
@@ -14460,13 +14470,20 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=False, include_resources=False
             )
 
-    def run_archive_sweep(self) -> RetentionOutcome:
+    def run_archive_sweep(
+        self, cancel_event: Optional[Event] = None
+    ) -> RetentionOutcome:
         """Run one bounded archive sweep, if no other replica is sweeping.
+
+        Args:
+            cancel_event: Cooperative scheduler shutdown signal.
 
         Returns:
             The sweep outcome.
 
         Raises:
+            ExecutionRetentionBusyError: This replica has no retention
+                capacity available.
             ExecutionRetentionConflictError: Another replica holds the lease.
         """  # noqa: DOC502,DOC503
         settings = self.archive_settings
@@ -14482,9 +14499,15 @@ class SqlZenStore(BaseZenStore):
                 "ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED. Use a manual archive "
                 "request instead."
             )
-        archive_pass = ArchivePass(self.engine, self.archive_storage, settings)
-        archive_pass.accept()
-        return archive_pass.run().last_outcome
+        with self._RETENTION_CAPACITY.claim():
+            archive_pass = ArchivePass(
+                self.engine,
+                self.archive_storage,
+                settings,
+                cancel_event=cancel_event,
+            )
+            archive_pass.accept()
+            return archive_pass.run().last_outcome
 
     def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
         """Archive or preview the requested runs under the configured policy.
@@ -14497,8 +14520,10 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: The metadata database is not MySQL.
+            ExecutionRetentionBusyError: This replica has no retention
+                capacity available.
             ExecutionRetentionConflictError: New archive creation is paused.
-        """
+        """  # noqa: DOC503
         if request.dry_run:
             if self.config.driver != SQLDatabaseDriver.MYSQL:
                 raise IllegalOperationError(
@@ -14520,13 +14545,14 @@ class SqlZenStore(BaseZenStore):
                 self.engine, settings, batch.run_ids, force=request.force
             )
         else:
-            result = archive_runs(
-                self.engine,
-                self.archive_storage,
-                settings,
-                batch.run_ids,
-                force=request.force,
-            )
+            with self._RETENTION_CAPACITY.claim():
+                result = archive_runs(
+                    self.engine,
+                    self.archive_storage,
+                    settings,
+                    batch.run_ids,
+                    force=request.force,
+                )
         result.pending = batch.more
         result.next_after_run_id = batch.next_after_run_id
         return result
@@ -14556,11 +14582,21 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             Restored, or a no-op when the run's detail is already in SQL.
-        """
+
+        Raises:
+            ExecutionRetentionBusyError: This replica has no retention
+                capacity available or this run is already being restored.
+        """  # noqa: DOC502
         run = self.get_run(run_id, hydrate=False)
         if run.archive_bundle_id is None:
             return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
-        return restore_run(self.engine, self.archive_storage, run.id)
+        with self._RETENTION_CAPACITY.claim(key=("restore", run.id)):
+            run = self.get_run(run.id, hydrate=False)
+            if run.archive_bundle_id is None:
+                return RestoreResponse(
+                    run_id=run.id, outcome=RestoreOutcome.NOOP
+                )
+            return restore_run(self.engine, self.archive_storage, run.id)
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

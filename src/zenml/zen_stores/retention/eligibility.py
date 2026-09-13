@@ -348,16 +348,6 @@ def _first_exclusion(
         .where(col(PipelineRunSchema.id) == run_id)
         .scalar_subquery()
     )
-    latest_bundle = (
-        select(col(ArchiveBundleSchema.id))
-        .where(col(ArchiveBundleSchema.run_id) == run_id)
-        .order_by(
-            col(ArchiveBundleSchema.created).desc(),
-            col(ArchiveBundleSchema.id).desc(),
-        )
-        .limit(1)
-        .scalar_subquery()
-    )
     checks: Dict[RetentionExclusion, ColumnElement[bool]] = {
         RetentionExclusion.RESUMABLE_FAILED: _resumable_failed(run_id),
         RetentionExclusion.ROOT_ACTIVE: or_(
@@ -378,7 +368,7 @@ def _first_exclusion(
         checks[RetentionExclusion.RESTORED_GRACE] = (
             select(col(ArchiveBundleSchema.id))
             .where(
-                col(ArchiveBundleSchema.id) == latest_bundle,
+                col(ArchiveBundleSchema.run_id) == run_id,
                 col(ArchiveBundleSchema.restored_at)
                 > now - timedelta(days=settings.restored_grace_days),
             )

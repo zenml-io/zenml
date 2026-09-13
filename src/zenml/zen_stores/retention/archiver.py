@@ -18,9 +18,9 @@ Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
 """
 
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
+from threading import Event
 from time import monotonic
 from typing import (
     ClassVar,
@@ -50,6 +50,9 @@ from zenml.models.v2.misc.retention import (
     ArchiveResponse,
 )
 from zenml.zen_stores.retention import transactions
+from zenml.zen_stores.retention.capacity import (
+    MAX_CONCURRENT_RETENTION_OPERATIONS,
+)
 from zenml.zen_stores.retention.capture import capture_run
 from zenml.zen_stores.retention.eligibility import (
     ArchivableRun,
@@ -82,9 +85,9 @@ RunOutcome = Literal["archived", "skipped", "oversized", "failed"]
 # Snapshot rows require these columns, so retirement stores empty objects.
 EMPTY_JSON = canonical_json({}).decode()
 
-# Targeted archiving overlaps storage round trips without opening enough
-# database sessions to matter against the server's connection pool.
-MAX_ARCHIVE_WORKERS = 4
+# Backward-compatible name for the aggregate per-process capacity. Manual
+# batches are sequential; concurrency comes from independently admitted calls.
+MAX_ARCHIVE_WORKERS = MAX_CONCURRENT_RETENTION_OPERATIONS
 
 
 class ArchiveAttempt(BaseModel):
@@ -125,6 +128,50 @@ class _PassReplaced(Exception):
     """Another sweep took over the saved state after its lease expired."""
 
 
+class _RetentionCancelled(Exception):
+    """Cooperative stop requested before another retirement starts."""
+
+
+class _RetirementRolledBack(Exception):
+    """Retirement body failed and its transaction rollback completed."""
+
+    def __init__(self, error: Exception) -> None:
+        """Keep the original error for outcome classification.
+
+        Args:
+            error: Error whose transaction was rolled back.
+        """
+        super().__init__(str(error))
+        self.error = error
+
+
+@contextmanager
+def _retirement_transaction(engine: Engine) -> Iterator[Session]:
+    """Expose positive rollback evidence without hiding commit ambiguity.
+
+    Args:
+        engine: Metadata database.
+
+    Yields:
+        Retirement session.
+
+    Raises:
+        _RetirementRolledBack: The transaction body failed and rollback was
+            confirmed.
+        Exception: The transaction outcome is unknown or rollback failed.
+    """
+    session: Optional[Session] = None
+    try:
+        with transactions.transaction(engine) as session:
+            yield session
+    except Exception as error:
+        if session is not None and transactions.rollback_was_confirmed(
+            session
+        ):
+            raise _RetirementRolledBack(error) from error
+        raise
+
+
 class RunArchiver:
     """Archives runs one at a time against one configured archive storage."""
 
@@ -133,6 +180,7 @@ class RunArchiver:
         engine: Engine,
         storage: ArchiveStorage,
         settings: ArchiveSettings,
+        cancel_event: Optional[Event] = None,
     ) -> None:
         """Bind the database and storage without touching either.
 
@@ -140,10 +188,21 @@ class RunArchiver:
             engine: Metadata database.
             storage: Archive storage.
             settings: The server's archive settings.
+            cancel_event: Cooperative cancellation signal for a sweep.
         """
         self.engine = engine
         self.storage = storage
         self.settings = settings
+        self.cancel_event = cancel_event
+
+    def _check_cancelled(self) -> None:
+        """Stop before beginning another irreversible phase.
+
+        Raises:
+            _RetentionCancelled: If the owning sweep is shutting down.
+        """
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            raise _RetentionCancelled()
 
     def archive(
         self, run_id: UUID, evaluated_at: datetime, *, force: bool = False
@@ -157,12 +216,17 @@ class RunArchiver:
 
         Returns:
             How the attempt ended, with a reason when the run was refused.
+
+        Raises:
+            _RetentionCancelled: The owning sweep is shutting down.
         """
+        self._check_cancelled()
         try:
             with Session(self.engine) as session:
                 run = inspect_run(
                     session, run_id, self.settings, evaluated_at, force=force
                 )
+            self._check_cancelled()
             if run.exclusion is RetentionExclusion.OVERSIZED:
                 return ArchiveAttempt(
                     run_id=run_id, outcome="oversized", exclusion=run.exclusion
@@ -172,6 +236,8 @@ class RunArchiver:
                     run_id=run_id, outcome="skipped", exclusion=run.exclusion
                 )
             return self._archive(run, evaluated_at, force)
+        except _RetentionCancelled:
+            raise
         except Exception as error:
             # SQL errors can contain archived payloads; log only their type.
             logger.error(
@@ -195,31 +261,64 @@ class RunArchiver:
         Raises:
             ExecutionRetentionIntegrityError: The uploaded object does not
                 match the capture; caught below and reported as a failure.
+            _RetentionCancelled: The owning sweep is shutting down.
         """  # noqa: DOC502
+        self._check_cancelled()
         try:
             with Session(self.engine) as session:
-                encoded = encode(capture_run(session, run))
+                encoded = encode(
+                    capture_run(
+                        session, run, check_cancelled=self._check_cancelled
+                    )
+                )
         except ExecutionRetentionConflictError as error:
             return self._conflict_attempt(run.run_id, error)
+        self._check_cancelled()
         bundle_id = uuid4()
         uri = self.storage.object_uri(run.project, run.run_id, bundle_id)
+        retirement_started = False
+        object_written = False
         try:
             self.storage.write(uri, encoded.data)
+            object_written = True
+            self._check_cancelled()
             if self.storage.read(uri, len(encoded.data)) != encoded.data:
                 raise ExecutionRetentionIntegrityError(
                     "Uploaded archive object differs from the capture."
                 )
+            self._check_cancelled()
+            retirement_started = True
             self._retire(run, bundle_id, uri, encoded, evaluated_at, force)
             return ArchiveAttempt(run_id=run.run_id, outcome="archived")
+        except _RetentionCancelled:
+            if object_written and not retirement_started:
+                self.storage.remove(uri)
+            raise
+        except _RetirementRolledBack as failure:
+            self.storage.remove(uri)
+            cause = failure.error
+            if isinstance(cause, ExecutionRetentionConflictError):
+                return self._conflict_attempt(run.run_id, cause)
+            if transactions.is_transient_lock_error(cause):
+                return ArchiveAttempt(run_id=run.run_id, outcome="skipped")
+            logger.error(
+                "Archiving run %s failed (%s).",
+                run.run_id,
+                type(cause).__name__,
+            )
+            return ArchiveAttempt(run_id=run.run_id, outcome="failed")
         except ExecutionRetentionConflictError as error:
-            self._discard(bundle_id, uri)
+            if not retirement_started:
+                self.storage.remove(uri)
+            elif self._bundle_committed(bundle_id):
+                return ArchiveAttempt(run_id=run.run_id, outcome="archived")
             return self._conflict_attempt(run.run_id, error)
         except Exception as error:
-            if self._discard(bundle_id, uri):
+            if not retirement_started:
+                self.storage.remove(uri)
+            elif self._bundle_committed(bundle_id):
                 # The commit succeeded but its acknowledgement was lost.
                 return ArchiveAttempt(run_id=run.run_id, outcome="archived")
-            if transactions.is_transient_lock_error(error):
-                return ArchiveAttempt(run_id=run.run_id, outcome="skipped")
             logger.error(
                 "Archiving run %s failed (%s).",
                 run.run_id,
@@ -227,17 +326,15 @@ class RunArchiver:
             )
             return ArchiveAttempt(run_id=run.run_id, outcome="failed")
 
-    def _discard(self, bundle_id: UUID, uri: str) -> bool:
-        """Remove an uploaded object unless its bundle row committed.
+    def _bundle_committed(self, bundle_id: UUID) -> bool:
+        """Check only for positive evidence that retirement committed.
 
-        A failed commit acknowledgement can hide a successful retirement, so
-        the bundle row decides. When the database cannot answer, the object
-        stays: an unreferenced object is harmless, a deleted referenced one
-        loses data.
+        A missing row is inconclusive while a failed commit may still be in
+        progress on another connection. The caller therefore retains the
+        object unless this lookup positively recovers a committed retirement.
 
         Args:
             bundle_id: Bundle row the retirement would have inserted.
-            uri: Uploaded object.
 
         Returns:
             Whether the bundle row exists, so the run is archived.
@@ -249,8 +346,6 @@ class RunArchiver:
                 )
         except Exception:
             return False
-        if not committed:
-            self.storage.remove(uri)
         return committed
 
     @staticmethod
@@ -302,7 +397,7 @@ class RunArchiver:
             ExecutionRetentionConflictError: The run changed or became
                 ineligible after capture.
         """
-        with transactions.transaction(self.engine) as session:
+        with _retirement_transaction(self.engine) as session:
             # Lock order shared with restore and writers: the run, its steps,
             # every snapshot they reference, then configurations. Ownership
             # is inspected only after the snapshot locks, so a new run that
@@ -414,19 +509,13 @@ def archive_runs(
         evaluated_at = transactions.database_now(session)
     result = ArchiveResponse()
     refusals: List[ArchiveRefusal] = []
-    with ThreadPoolExecutor(max_workers=MAX_ARCHIVE_WORKERS) as pool:
-        attempts = pool.map(
-            lambda run_id: archiver.archive(run_id, evaluated_at, force=force),
-            run_ids,
-        )
-        for attempt in attempts:
-            tally(result, attempt.outcome)
-            if attempt.exclusion is not None:
-                refusals.append(
-                    ArchiveRefusal(
-                        run_id=attempt.run_id, reason=attempt.exclusion
-                    )
-                )
+    for run_id in run_ids:
+        attempt = archiver.archive(run_id, evaluated_at, force=force)
+        tally(result, attempt.outcome)
+        if attempt.exclusion is not None:
+            refusals.append(
+                ArchiveRefusal(run_id=attempt.run_id, reason=attempt.exclusion)
+            )
     result.refusals = refusals[:MAX_REFUSALS]
     result.refusals_truncated = len(refusals) > MAX_REFUSALS
     return result
@@ -501,6 +590,7 @@ class ArchivePass:
         engine: Engine,
         storage: ArchiveStorage,
         settings: ArchiveSettings,
+        cancel_event: Optional[Event] = None,
     ) -> None:
         """Prepare a sweep without touching the database.
 
@@ -508,11 +598,15 @@ class ArchivePass:
             engine: Metadata database.
             storage: Archive storage.
             settings: The server's archive settings.
+            cancel_event: Cooperative cancellation signal from the scheduler.
         """
         self.engine = engine
         self.storage = storage
         self.settings = settings
-        self.archiver = RunArchiver(engine, storage, settings)
+        self.cancel_event = cancel_event
+        self.archiver = RunArchiver(
+            engine, storage, settings, cancel_event=cancel_event
+        )
         self.operation_id = uuid4()
         self.settings_id: Optional[UUID] = None
         self.state = RetentionState()
@@ -544,6 +638,7 @@ class ArchivePass:
         """
         started = monotonic()
         try:
+            self._check_cancelled()
             if not self.storage.probe():
                 return self._finish(
                     RetentionOutcome.FAILED,
@@ -560,6 +655,7 @@ class ArchivePass:
                     self.state.oversized_run_ids,
                 )
             for cursor in candidates[: self.settings.max_runs_per_pass]:
+                self._check_cancelled()
                 if monotonic() - started >= self.MAX_SECONDS:
                     return self._finish(RetentionOutcome.PAUSED)
                 self._process(cursor, evaluated_at)
@@ -568,6 +664,8 @@ class ArchivePass:
                 if len(candidates) <= self.settings.max_runs_per_pass
                 else RetentionOutcome.PAUSED
             )
+        except _RetentionCancelled:
+            return self._finish(RetentionOutcome.PAUSED)
         except _PassReplaced:
             return self.state
         except Exception as error:
@@ -579,6 +677,15 @@ class ArchivePass:
             return self._finish(
                 RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
             )
+
+    def _check_cancelled(self) -> None:
+        """Stop the pass before beginning more payload work.
+
+        Raises:
+            _RetentionCancelled: If scheduler shutdown was requested.
+        """
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            raise _RetentionCancelled()
 
     def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
         """Archive or skip one run and save the position after it.

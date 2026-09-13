@@ -2,6 +2,7 @@
 """Authorization precedes archive access; HTTP exposes explicit restore."""
 
 from contextlib import asynccontextmanager
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -31,7 +32,9 @@ from zenml.zen_server.routers import (
 from zenml.zen_server.routers.workload_manager_gate import (
     workload_manager_enabled,
 )
+from zenml.zen_stores.retention.capacity import RetentionCapacity
 from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 ROUTERS = (
     retention_endpoints,
@@ -517,3 +520,47 @@ def test_paused_archive_request_is_not_advertised_as_retryable(
     restored = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
     assert restored.status_code == 200
     assert restored.json()["outcome"] == "restored"
+
+
+def test_retention_capacity_returns_actionable_busy_response(
+    http, monkeypatch
+):
+    """Retention saturation is explicit and bypasses client status retries."""
+    capacity = RetentionCapacity(1)
+    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+
+    with capacity.claim():
+        response = http.client.post(
+            "/api/v1/retention/archive",
+            json={"run_ids": [str(http.ids.run)]},
+        )
+
+    assert response.status_code == 429, response.text
+    assert response.headers["X-ZenML-Retry"] == "no"
+
+
+def test_unrelated_capacity_response_keeps_retry_policy(http, monkeypatch):
+    """Snapshot-execution saturation is not marked as a retention failure."""
+    executor = execution.BoundedThreadPoolExecutor(max_workers=1)
+    release = Event()
+    active = executor.submit(release.wait, 5)
+
+    def saturated(*args, **kwargs):
+        executor.submit(lambda: None)
+        return http.store.get_run(http.ids.run)
+
+    monkeypatch.setattr(execution, "run_snapshot", saturated)
+    monkeypatch.setattr(
+        pipeline_snapshot_endpoints, "check_entitlement", lambda **_: None
+    )
+    try:
+        response = http.client.post(
+            f"/api/v1/pipeline_snapshots/{http.ids.snapshot}/runs", json={}
+        )
+    finally:
+        release.set()
+        active.result(timeout=5)
+        executor.shutdown()
+
+    assert response.status_code == 429, response.text
+    assert response.headers.get("X-ZenML-Retry") != "no"

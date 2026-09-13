@@ -455,11 +455,18 @@ class BaseArtifactStore(StackComponent):
         """
 
     # --- Internal interface ---
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        register_filesystem: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Initiate the Pydantic object and register the corresponding filesystem.
 
         Args:
             *args: The positional arguments to pass to the Pydantic object.
+            register_filesystem: Whether to register this store for global
+                ``fileio`` dispatch outside a server process.
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
@@ -468,7 +475,7 @@ class BaseArtifactStore(StackComponent):
 
         # If running in a ZenML server environment, we don't register
         # the filesystems. We always use the artifact stores directly.
-        if ENV_ZENML_SERVER not in os.environ:
+        if register_filesystem and ENV_ZENML_SERVER not in os.environ:
             self._register()
 
     def __getstate__(self) -> Dict[str, Any]:

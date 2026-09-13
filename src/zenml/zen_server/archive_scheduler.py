@@ -13,10 +13,14 @@ instead of waiting for the next cron occurrence.
 
 import asyncio
 import random
+from threading import Event as ThreadEvent
 from typing import Optional
 
 from zenml.enums import RetentionOutcome
-from zenml.exceptions import ExecutionRetentionConflictError
+from zenml.exceptions import (
+    ExecutionRetentionBusyError,
+    ExecutionRetentionConflictError,
+)
 from zenml.logger import get_logger
 from zenml.utils.native_schedules import next_occurrence_for_cron
 from zenml.utils.time_utils import utc_now
@@ -42,22 +46,21 @@ class ArchiveScheduler:
         """
         self.schedule = schedule
         self._shutdown_event = asyncio.Event()
+        self._cancel_event = ThreadEvent()
         self._task: Optional[asyncio.Task[None]] = None
 
     def start(self) -> None:
         """Start the scheduling loop on the running event loop."""
         self._shutdown_event.clear()
+        self._cancel_event.clear()
         self._task = asyncio.create_task(self._run())
 
     async def shutdown(self) -> None:
-        """Stop the scheduling loop, abandoning the lease to expire."""
+        """Stop scheduling and wait for active sweep work to finish."""
         self._shutdown_event.set()
+        self._cancel_event.set()
         if self._task is not None:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
+            await self._task
             self._task = None
 
     async def _run(self) -> None:
@@ -94,7 +97,12 @@ class ArchiveScheduler:
         from zenml.zen_server.utils import zen_store
 
         try:
-            return zen_store().run_archive_sweep()
+            return zen_store().run_archive_sweep(
+                cancel_event=self._cancel_event
+            )
+        except ExecutionRetentionBusyError:
+            logger.debug("This replica is at its retention capacity.")
+            return RetentionOutcome.PAUSED
         except ExecutionRetentionConflictError:
             logger.debug("Another replica is running the archive sweep.")
             return RetentionOutcome.RUNNING

@@ -18,10 +18,12 @@ from threading import Thread
 from uuid import uuid4
 
 import pytest
+import requests
 from pytest_mock import MockerFixture
 
 from zenml.enums import TriggerRunConcurrency
-from zenml.models import WebhookTriggerUpdate
+from zenml.exceptions import ExecutionRetentionUnavailableError
+from zenml.models import ArchiveRequest, WebhookTriggerUpdate
 from zenml.zen_server.exceptions import (
     NO_RETRY_HEADER,
 )
@@ -40,15 +42,15 @@ SERVER_URL_WITH_SLASH = f"{SERVER_URL}/"
 @pytest.mark.parametrize(
     ("path", "expected_status", "expected_requests"),
     [
-        ("/marked-503", 503, 1),
-        ("/marked-429", 429, 1),
+        ("/marked-503", 200, 2),
+        ("/marked-429", 200, 2),
         ("/unmarked-503", 200, 2),
     ],
 )
 def test_server_retry_signal_controls_real_session(
     path: str, expected_status: int, expected_requests: int
 ) -> None:
-    """Marked failures return once while ordinary 503 responses still retry.
+    """The ordinary session retains its established status retries.
 
     Args:
         path: Test response behavior selected by the request path.
@@ -62,7 +64,7 @@ def test_server_retry_signal_controls_real_session(
         def do_GET(self) -> None:
             """Return a marked failure or one transient unmarked failure."""
             type(self).attempts += 1
-            if self.path == "/unmarked-503" and self.attempts > 1:
+            if self.attempts > 1:
                 status = 200
             else:
                 status = 429 if self.path == "/marked-429" else 503
@@ -91,6 +93,85 @@ def test_server_retry_signal_controls_real_session(
 
     assert response.status_code == expected_status
     assert Handler.attempts == expected_requests
+
+
+def test_retention_request_honors_no_retry_response() -> None:
+    """A marked retention failure reaches the typed mapper immediately."""
+
+    class Handler(BaseHTTPRequestHandler):
+        attempts = 0
+
+        def do_POST(self) -> None:
+            """Return one actionable retention storage failure."""
+            type(self).attempts += 1
+            body = (
+                b'{"detail":["ExecutionRetentionUnavailableError",'
+                b'"storage unavailable"]}'
+            )
+            self.send_response(503)
+            self.send_header(NO_RETRY_HEADER, "no")
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            """Suppress local HTTP server logs during the unit test."""
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_port}"
+        store = RestZenStore.model_construct(
+            config=RestZenStoreConfiguration(url=url)
+        )
+        with pytest.raises(ExecutionRetentionUnavailableError):
+            store.archive_runs(ArchiveRequest(run_ids=[uuid4()]))
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert Handler.attempts == 1
+
+
+def test_ordinary_unmarked_retry_exhaustion_still_raises() -> None:
+    """Unmarked endpoint exhaustion keeps the pre-retention transport API."""
+
+    class Handler(BaseHTTPRequestHandler):
+        attempts = 0
+
+        def do_GET(self) -> None:
+            """Return an unmarked retryable response on every attempt."""
+            type(self).attempts += 1
+            self.send_response(503)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, format: str, *args: object) -> None:
+            """Suppress local HTTP server logs during the unit test."""
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_port}"
+        store = RestZenStore.model_construct(
+            config=RestZenStoreConfiguration(url=url)
+        )
+        adapter = store.session.get_adapter(url)
+        adapter.max_retries = adapter.max_retries.new(
+            total=1, status=1, backoff_factor=0
+        )
+        with pytest.raises(requests.exceptions.RetryError):
+            store.session.get(f"{url}/always-503", timeout=2)
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert Handler.attempts == 2
 
 
 def test_rest_store_url_is_normalized_before_moving_credentials(

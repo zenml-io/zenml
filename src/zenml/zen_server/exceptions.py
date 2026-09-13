@@ -25,6 +25,7 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     ExecutionArchivedError,
+    ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
     ExecutionRetentionUnavailableError,
@@ -99,6 +100,7 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 422 Unprocessable Entity
     (ValueError, 422),
     # 429 Too Many Requests
+    (ExecutionRetentionBusyError, 429),
     (MaxConcurrentTasksError, 429),
     # 500 Internal Server Error
     (EntityCreationError, 500),
@@ -188,10 +190,11 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     if isinstance(
         error,
         (
+            ExecutionRetentionIntegrityError,
             ExecutionRetentionUnavailableError,
+            ExecutionRetentionBusyError,
             ExecutionRetentionConflictError,
             ExecutionArchivedError,
-            MaxConcurrentTasksError,
         ),
     ):
         headers[NO_RETRY_HEADER] = "no"

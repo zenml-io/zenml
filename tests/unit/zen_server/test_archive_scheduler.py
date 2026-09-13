@@ -3,6 +3,7 @@
 
 import asyncio
 from collections.abc import Coroutine
+from threading import Event as ThreadEvent
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -79,40 +80,62 @@ def test_scheduler_treats_a_sweep_conflict_as_running(
     )
     monkeypatch.setattr(server_utils, "zen_store", lambda: store)
 
-    outcome = ArchiveScheduler("* * * * *")._sweep()
+    scheduler = ArchiveScheduler("* * * * *")
+    outcome = scheduler._sweep()
 
     assert outcome == RetentionOutcome.RUNNING
-    store.run_archive_sweep.assert_called_once_with()
+    store.run_archive_sweep.assert_called_once()
+    assert (
+        store.run_archive_sweep.call_args.kwargs["cancel_event"]
+        is scheduler._cancel_event
+    )
 
 
-async def test_shutdown_cancels_and_cleans_up_scheduler_task(
+async def test_shutdown_wakes_pending_scheduler_wait(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Shutdown cancels a pending wait and drops the task reference."""
+    """Shutdown wakes an idle scheduler without cancelling its task."""
     scheduler = ArchiveScheduler("* * * * *")
-    wait_started = asyncio.Event()
-    keep_waiting = asyncio.Event()
-
-    async def wait_until_cancelled(
-        waiter: Coroutine[Any, Any, bool], timeout: float
-    ) -> None:
-        del timeout
-        waiter.close()
-        wait_started.set()
-        await keep_waiting.wait()
-
     monkeypatch.setattr(scheduler, "_seconds_until_next_sweep", lambda: 60.0)
-    monkeypatch.setattr(
-        archive_scheduler.asyncio, "wait_for", wait_until_cancelled
-    )
 
     scheduler.start()
     task = scheduler._task
     assert task is not None
-    await wait_started.wait()
+    await asyncio.sleep(0)
 
     await scheduler.shutdown()
 
-    assert task.cancelled()
+    assert task.done() and not task.cancelled()
     assert scheduler._task is None
     assert scheduler._shutdown_event.is_set()
+    assert scheduler._cancel_event.is_set()
+
+
+async def test_shutdown_waits_for_active_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Application cleanup cannot overtake an active retention worker."""
+    scheduler = ArchiveScheduler("* * * * *")
+    store = MagicMock()
+    entered = ThreadEvent()
+    release = ThreadEvent()
+
+    def blocked_sweep(*, cancel_event: ThreadEvent) -> RetentionOutcome:
+        entered.set()
+        assert release.wait(5)
+        assert cancel_event.is_set()
+        return RetentionOutcome.PAUSED
+
+    store.run_archive_sweep.side_effect = blocked_sweep
+    monkeypatch.setattr(server_utils, "zen_store", lambda: store)
+    monkeypatch.setattr(scheduler, "_seconds_until_next_sweep", lambda: 0.0)
+    scheduler.start()
+    assert await asyncio.to_thread(entered.wait, 3)
+
+    shutdown = asyncio.create_task(scheduler.shutdown())
+    await asyncio.sleep(0)
+    assert not shutdown.done()
+    release.set()
+    await shutdown
+
+    assert scheduler._task is None

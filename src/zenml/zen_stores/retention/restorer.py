@@ -59,14 +59,19 @@ def restore_run(
             or owner is already in use.
     """
     with Session(engine) as session:
-        marker = session.execute(
-            select(col(PipelineRunSchema.archive_bundle_id)).where(
-                col(PipelineRunSchema.id) == run_id
+        root = session.execute(
+            select(
+                col(PipelineRunSchema.id),
+                col(PipelineRunSchema.archive_bundle_id),
+            ).where(col(PipelineRunSchema.id) == run_id)
+        ).one_or_none()
+        if root is None:
+            raise ExecutionRetentionConflictError(
+                "The run disappeared before restoration started."
             )
-        ).scalar_one()
-        if marker is None:
+        if root.archive_bundle_id is None:
             return RestoreResponse(run_id=run_id, outcome=RestoreOutcome.NOOP)
-        bundle = session.get(ArchiveBundleSchema, marker)
+        bundle = session.get(ArchiveBundleSchema, root.archive_bundle_id)
         if bundle is None:
             raise ExecutionRetentionIntegrityError(
                 "Archive marker has no bundle record."
@@ -112,18 +117,35 @@ def _apply(
     Raises:
         ExecutionRetentionConflictError: The marker names another bundle.
     """
-    marker = session.execute(
-        select(col(PipelineRunSchema.archive_bundle_id))
+    root = session.execute(
+        select(
+            col(PipelineRunSchema.id),
+            col(PipelineRunSchema.project_id),
+            col(PipelineRunSchema.snapshot_id),
+            col(PipelineRunSchema.archive_bundle_id),
+        )
         .where(col(PipelineRunSchema.id) == document.run_id)
         .with_for_update()
-    ).scalar_one()
-    if marker is None:
+    ).one_or_none()
+    if root is None:
+        raise ExecutionRetentionConflictError(
+            "The run disappeared while its archive was being read."
+        )
+    if root.archive_bundle_id is None:
         return RestoreResponse(
             run_id=document.run_id, outcome=RestoreOutcome.NOOP
         )
-    if marker != bundle_id:
+    if root.archive_bundle_id != bundle_id:
         raise ExecutionRetentionConflictError(
             "The run was archived again while restoring."
+        )
+    if (
+        root.project_id != document.project_id
+        or root.project_id != document.run.project_id
+        or root.snapshot_id != document.run.snapshot_id
+    ):
+        raise ExecutionRetentionConflictError(
+            "The archived run changed its owner or snapshot."
         )
     _require_rows(session, "step_run", document.steps, bundle_id)
     _require_rows(session, "pipeline_snapshot", document.snapshots, bundle_id)

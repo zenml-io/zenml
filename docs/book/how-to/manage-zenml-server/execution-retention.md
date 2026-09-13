@@ -83,6 +83,13 @@ the URI's scheme uses the credentials of the server process itself.
 | `azure` | A managed identity or the default Azure credential chain. |
 | `local` | For test servers. With several replicas, the path must be shared storage every replica sees. |
 
+The local backend is intended only for trusted local and test deployments. Set
+`ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS=true` before starting the server so the
+archive adapter can access the configured directory. This setting permits
+server-side access to local paths for other artifact-store operations too; do
+not enable it on an untrusted or multi-tenant server merely to configure
+retention.
+
 Set `CONNECTOR_ID` to authenticate through a ZenML **service connector**
 instead; the server connects and refreshes it exactly as a registered stack
 component would. A connector named there cannot be deleted while it is
@@ -132,18 +139,39 @@ applies, in which case a later sweep reconsiders it:
 | `oversized` | The run exceeds 50,000 archived rows. |
 
 Each run is archived on its own, including child runs of dynamic pipelines. A
-run's archived detail must fit within 64 MiB. A run that turns out larger
-during capture stays in the database and counts as `oversized`, and later
-sweeps skip it.
+run's uncompressed archive document must fit within 64 MiB, and one capture
+accepts at most 128 MiB of text and binary source values read from SQL. A run
+that turns out larger during capture stays in the database and counts as
+`oversized`, and later sweeps skip it. These are document and source-transfer
+limits, not a process-memory limit: model validation, serialization, and
+compression require additional working memory.
+
+Each server process admits at most four retention payload operations at once
+across manual archiving, sweeping, and restoration. Manual batches process
+their runs sequentially within one admitted operation. This bound is local to
+one replica, not cluster-wide; the database-backed sweep lease separately
+ensures that only one replica performs a scheduled sweep.
 
 ## The scheduled sweep
 
 Every replica schedules the sweep on `SCHEDULE`, and a lease decides which
 one actually runs it; the others do nothing. A sweep examines up to
-`MAX_RUNS_PER_PASS` runs for at most **60 seconds** and saves its position. A
-sweep that stops on either budget reports `paused` and is resumed a few
-seconds later, so a backlog drains over several sweeps rather than in one
-long transaction.
+`MAX_RUNS_PER_PASS` runs and uses a **60-second soft budget checked between
+runs** before saving its position. A storage request, SQL lock wait, or an
+already-started retirement can take the pass beyond that budget. A sweep that
+stops on either budget reports `paused` and is resumed a few seconds later, so
+a backlog drains over several sweeps rather than in one long transaction.
+During server shutdown, cancellation is checked between phases and before a
+new retirement starts; shutdown waits for active retention work, including an
+already-started transaction, to finish rather than interrupting its commit.
+
+For S3, each SDK request uses a 10-second connection timeout, a 60-second
+socket-read timeout, and at most three total attempts. Those are per-request
+transport bounds, not a deadline for a complete archive operation, which can
+issue several requests. The current ZenML artifact-store contract exposes no
+portable whole-operation deadline for GCS, Azure, local filesystems, or SQL.
+Their provider and driver timeouts still apply, but this feature cannot promise
+a fixed maximum shutdown duration for those backends.
 
 There is no command to trigger a sweep. To archive something now, use the
 targeted command below.

@@ -3,16 +3,27 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
+from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
 from threading import Event, current_thread
 from unittest.mock import Mock
 from uuid import uuid4
 
+import pymysql
 import pytest
-from sqlalchemy import event, select, update
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+    Text,
+    event,
+    select,
+    update,
+)
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session
+from sqlmodel import Session, SQLModel
 
 from tests.unit.zen_stores.retention.fixture_graph import (
     dynamic_step,
@@ -26,10 +37,12 @@ from zenml.enums import (
     ExecutionStatus,
     RestoreOutcome,
     RetentionExclusion,
+    RetentionFailure,
     RetentionOutcome,
 )
 from zenml.exceptions import (
     ExecutionArchivedError,
+    ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     IllegalOperationError,
 )
@@ -39,17 +52,21 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunUpdate,
     StepRunFilter,
+    StepRunUpdate,
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
 from zenml.zen_stores.retention import (
     archiver,
+    capture,
     eligibility,
     fences,
 )
 from zenml.zen_stores.retention import (
     format as archive_format,
 )
+from zenml.zen_stores.retention.capacity import RetentionCapacity
+from zenml.zen_stores.retention.eligibility import ArchivableRun
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
@@ -197,6 +214,28 @@ def test_client_updates_archived_snapshot_tags_without_restore(
     opened.assert_not_called()
 
 
+def test_retained_step_cache_expiry_update_succeeds(
+    retention_store, run_factory, archive_run, NOW
+) -> None:
+    """A retained-only step update does not rewrite its archived parent."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    expiry = NOW + timedelta(days=10)
+
+    retention_store.update_run_step(
+        ids.producer, StepRunUpdate(cache_expires_at=expiry)
+    )
+
+    with Session(retention_store.engine) as session:
+        step = session.get(StepRunSchema, ids.producer)
+        assert step is not None
+        assert step.cache_expires_at == expiry
+    assert (
+        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
+        is not None
+    )
+
+
 def test_retirement_compresses_only_the_uploaded_capture(
     retention_store,
     run_factory,
@@ -218,6 +257,74 @@ def test_retirement_compresses_only_the_uploaded_capture(
     archive_run(retention_store, ids)
 
     assert compression_count == 1
+
+
+def test_retirement_capture_queries_scale_by_page(
+    retention_store, run_factory, storage, monkeypatch, NOW
+) -> None:
+    """A large run adds page-scale queries inside locked retirement."""
+    ids = run_factory(retention_store, kind="legacy")
+    steps = SQLModel.metadata.tables["step_run"]
+    step_count = 1000
+    with retention_store.engine.begin() as connection:
+        template = dict(
+            connection.execute(select(steps).where(steps.c.id == ids.producer))
+            .mappings()
+            .one()
+        )
+        additions = []
+        for index in range(step_count - 2):
+            identity = uuid4()
+            additions.append(
+                dict(
+                    template,
+                    id=identity,
+                    name=f"extra_{index}",
+                    cache_key=str(identity),
+                )
+            )
+        connection.execute(steps.insert(), additions)
+
+    statements = {"total": 0, "retirement": 0}
+    retirement_active = False
+    original_retire = archiver.RunArchiver._retire
+
+    def observe_statement(*args) -> None:
+        statements["total"] += 1
+        if retirement_active:
+            statements["retirement"] += 1
+
+    def observe_retirement(self, *args, **kwargs):
+        nonlocal retirement_active
+        retirement_active = True
+        try:
+            return original_retire(self, *args, **kwargs)
+        finally:
+            retirement_active = False
+
+    monkeypatch.setattr(archiver.RunArchiver, "_retire", observe_retirement)
+    event.listen(
+        retention_store.engine, "before_cursor_execute", observe_statement
+    )
+    try:
+        outcome = archiver.RunArchiver(
+            retention_store.engine,
+            storage,
+            retention_store.archive_settings,
+        ).archive(ids.run, NOW)
+    finally:
+        event.remove(
+            retention_store.engine,
+            "before_cursor_execute",
+            observe_statement,
+        )
+
+    row_pages = (
+        step_count + capture.SOURCE_ROWS_PER_PAGE - 1
+    ) // capture.SOURCE_ROWS_PER_PAGE
+    assert outcome.outcome == "archived"
+    assert statements["retirement"] <= row_pages + 20
+    assert statements["total"] <= 2 * row_pages + 30
 
 
 def test_update_after_retirement_fails_with_the_restore_command(
@@ -371,6 +478,403 @@ def test_interrupted_retirement(
         restored = retention_store.restore_pipeline_run(ids.run)
         assert restored.outcome == RestoreOutcome.RESTORED
         assert retention_store.get_run(ids.run).model_dump() == before[1]
+
+
+def test_unknown_retirement_outcome_keeps_uploaded_object(
+    retention_store, run_factory, storage, monkeypatch, NOW
+):
+    """A missing catalog row cannot disprove a still-pending commit."""
+    ids = run_factory(retention_store)
+    pending = []
+
+    @contextmanager
+    def unresolved_commit(engine):
+        connection = engine.connect().execution_options(
+            isolation_level="READ COMMITTED"
+        )
+        transaction = connection.begin()
+        session = Session(connection, expire_on_commit=False)
+        pending.append((session, transaction, connection))
+        yield session
+        session.flush()
+        raise ConnectionError("retirement commit outcome is unresolved")
+
+    monkeypatch.setattr(
+        archiver.transactions, "transaction", unresolved_commit
+    )
+    worker = archiver.RunArchiver(
+        retention_store.engine,
+        storage,
+        retention_store.archive_settings,
+    )
+    try:
+        attempt = worker.archive(ids.run, NOW)
+        assert attempt.outcome == "failed"
+        session, transaction, _ = pending[0]
+        transaction.commit()
+        with Session(retention_store.engine) as verification:
+            run = verification.get(PipelineRunSchema, ids.run)
+            assert run is not None
+            bundle = verification.get(
+                ArchiveBundleSchema, run.archive_bundle_id
+            )
+            assert bundle is not None
+            assert storage.artifact_store.exists(bundle.uri)
+    finally:
+        for session, transaction, connection in pending:
+            if transaction.is_active:
+                transaction.rollback()
+            session.close()
+            connection.close()
+
+
+def test_cancelled_sweep_does_not_start_retirement_after_object_read(
+    retention_store, run_factory, storage, monkeypatch
+) -> None:
+    """Cancellation after blocking I/O removes the uncommitted upload."""
+    ids = run_factory(retention_store)
+    entered = Event()
+    release = Event()
+    cancel = Event()
+    original_read = storage.read
+
+    def blocked_read(uri, max_bytes):
+        if uri.endswith(".json.gz"):
+            entered.set()
+            assert release.wait(5)
+        return original_read(uri, max_bytes)
+
+    monkeypatch.setattr(storage, "read", blocked_read)
+    with ThreadPoolExecutor(1) as pool:
+        future = pool.submit(
+            retention_store.run_archive_sweep, cancel_event=cancel
+        )
+        assert entered.wait(3)
+        cancel.set()
+        release.set()
+        assert future.result(timeout=5) == RetentionOutcome.PAUSED
+
+    assert (
+        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
+        is None
+    )
+    assert not list(Path(storage.root).rglob("*.json.gz"))
+
+
+def test_one_capacity_budget_covers_all_retention_payload_paths(
+    retention_store, run_factory, archive_run, monkeypatch
+) -> None:
+    """Manual archive, sweep, and restore share one replica-local budget."""
+    archived = run_factory(retention_store)
+    archive_run(retention_store, archived)
+    candidate = run_factory(retention_store)
+    capacity = RetentionCapacity(1)
+    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+
+    with capacity.claim():
+        with pytest.raises(ExecutionRetentionBusyError):
+            retention_store.archive_runs(
+                ArchiveRequest(run_ids=[candidate.run])
+            )
+        with pytest.raises(ExecutionRetentionBusyError):
+            retention_store.run_archive_sweep()
+        with pytest.raises(ExecutionRetentionBusyError):
+            retention_store.restore_pipeline_run(archived.run)
+
+
+def test_duplicate_restore_is_rejected_before_second_download(
+    retention_store, run_factory, archive_run, storage, monkeypatch
+) -> None:
+    """Concurrent restores of one bundle do not duplicate payload reads."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    capacity = RetentionCapacity(2)
+    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+    entered = Event()
+    release = Event()
+    reads = 0
+    original_read = storage.read
+
+    def blocked_read(uri, max_bytes):
+        nonlocal reads
+        reads += 1
+        entered.set()
+        assert release.wait(5)
+        return original_read(uri, max_bytes)
+
+    monkeypatch.setattr(storage, "read", blocked_read)
+    with ThreadPoolExecutor(1) as pool:
+        first = pool.submit(retention_store.restore_pipeline_run, ids.run)
+        assert entered.wait(3)
+        with pytest.raises(ExecutionRetentionBusyError):
+            retention_store.restore_pipeline_run(ids.run)
+        release.set()
+        assert first.result(timeout=5).outcome == RestoreOutcome.RESTORED
+
+    assert reads == 1
+
+
+def test_capture_classifies_late_record_growth_as_oversized(
+    retention_store, run_factory, storage, monkeypatch, NOW
+) -> None:
+    """The capture count is checked before format validation runs."""
+    ids = run_factory(retention_store)
+    with Session(retention_store.engine) as session:
+        inspected = eligibility.inspect_run(
+            session,
+            ids.run,
+            retention_store.archive_settings,
+            NOW,
+        )
+        monkeypatch.setattr(capture, "MAX_RECORDS", 5)
+        with pytest.raises(ExecutionRetentionConflictError) as error:
+            capture.capture_run(session, inspected)
+
+    assert error.value.error_code == RetentionFailure.OVERSIZED
+
+
+def test_capture_counts_utf8_bytes() -> None:
+    """Unicode text is charged by its encoded size, not character count."""
+    payload = "😀" * 1000
+
+    assert capture.source_row_bytes({"payload": payload}) == len(
+        payload.encode("utf-8")
+    )
+
+
+def test_capture_bounds_aggregate_multibyte_pages(
+    retention_store, monkeypatch
+) -> None:
+    """A driver fetch stays bounded when small UTF-8 rows add up."""
+    table = Table(
+        "retention_capture_aggregate",
+        MetaData(),
+        Column("id", Integer, primary_key=True),
+        Column("payload", Text),
+    )
+    table.create(retention_store.engine)
+    payload = "😀" * 175
+    payload_bytes = len(payload.encode("utf-8"))
+    fetched_bytes = []
+    original_fetchmany = pymysql.cursors.SSCursor.fetchmany
+
+    def observe_fetchmany(cursor, size=None):
+        fetched = original_fetchmany(cursor, size)
+        fetched_bytes.append(
+            sum(
+                len(value.encode("utf-8"))
+                for row in fetched
+                for value in row
+                if isinstance(value, str)
+            )
+        )
+        return fetched
+
+    try:
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                table.insert(),
+                [
+                    {"id": identity, "payload": payload}
+                    for identity in range(1, 5)
+                ],
+            )
+        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 4096)
+        monkeypatch.setattr(capture, "SOURCE_BYTES_PER_PAGE", 1500)
+        monkeypatch.setattr(
+            pymysql.cursors.SSCursor, "fetchmany", observe_fetchmany
+        )
+        with Session(retention_store.engine) as session:
+            capturer = capture.RunCapturer(
+                session, ArchivableRun(run_id=uuid4())
+            )
+            captured = capturer._read_table(
+                table,
+                ["id", "payload"],
+                (table.c.id, range(1, 5)),
+            )
+
+        assert [row["id"] for row in captured] == list(range(1, 5))
+        assert capturer.source_bytes == 4 * payload_bytes
+        assert fetched_bytes and max(fetched_bytes) <= 1500
+    finally:
+        table.drop(retention_store.engine)
+
+
+def test_capture_reads_large_eligible_row_alone(
+    retention_store, monkeypatch
+) -> None:
+    """The ordinary page target does not become a smaller per-row cap."""
+    table = Table(
+        "retention_capture_large_row",
+        MetaData(),
+        Column("id", Integer, primary_key=True),
+        Column("payload", Text),
+    )
+    table.create(retention_store.engine)
+    payload = "x" * 3000
+    try:
+        with retention_store.engine.begin() as connection:
+            connection.execute(table.insert(), {"id": 1, "payload": payload})
+        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 4096)
+        monkeypatch.setattr(capture, "SOURCE_BYTES_PER_PAGE", 1024)
+        with Session(retention_store.engine) as session:
+            capturer = capture.RunCapturer(
+                session, ArchivableRun(run_id=uuid4())
+            )
+            captured = capturer._read_table(
+                table,
+                ["id", "payload"],
+                (table.c.id, [1]),
+            )
+
+        assert captured == [{"id": 1, "payload": payload}]
+        assert capturer.source_bytes == len(payload)
+    finally:
+        table.drop(retention_store.engine)
+
+
+def test_capture_guards_payload_that_grows_before_fetch(
+    retention_store, monkeypatch
+) -> None:
+    """The payload projection rechecks aggregate size in its SQL statement."""
+    table = Table(
+        "retention_capture_growth",
+        MetaData(),
+        Column("id", Integer, primary_key=True),
+        Column("payload", Text),
+    )
+    table.create(retention_store.engine)
+    original_payload = "x" * 700
+    grown_payload = "y" * 1200
+    fetched_bytes = []
+    grew = False
+    original_fetchmany = pymysql.cursors.SSCursor.fetchmany
+
+    def grow_before_select(
+        connection, cursor, statement, parameters, context, many
+    ) -> None:
+        nonlocal grew
+        if not grew and statement.lstrip().upper().startswith("SELECT"):
+            cursor.execute(
+                "UPDATE retention_capture_growth SET payload = %s "
+                "WHERE id = %s",
+                (grown_payload, 2),
+            )
+            grew = True
+
+    def observe_fetchmany(cursor, size=None):
+        fetched = original_fetchmany(cursor, size)
+        fetched_bytes.append(
+            sum(
+                len(value.encode("utf-8"))
+                for row in fetched
+                for value in row
+                if isinstance(value, str)
+            )
+        )
+        return fetched
+
+    try:
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                table.insert(),
+                [
+                    {"id": 1, "payload": original_payload},
+                    {"id": 2, "payload": original_payload},
+                ],
+            )
+        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 4096)
+        monkeypatch.setattr(capture, "SOURCE_BYTES_PER_PAGE", 1500)
+        monkeypatch.setattr(
+            pymysql.cursors.SSCursor, "fetchmany", observe_fetchmany
+        )
+        event.listen(
+            retention_store.engine,
+            "before_cursor_execute",
+            grow_before_select,
+        )
+        with Session(retention_store.engine) as session:
+            capturer = capture.RunCapturer(
+                session, ArchivableRun(run_id=uuid4())
+            )
+            captured = capturer._read_table(
+                table,
+                ["id", "payload"],
+                (table.c.id, [1, 2]),
+            )
+
+        assert grew
+        assert captured == [
+            {"id": 1, "payload": original_payload},
+            {"id": 2, "payload": grown_payload},
+        ]
+        assert capturer.source_bytes == 1900
+        assert fetched_bytes and max(fetched_bytes) <= 1500
+    finally:
+        event.remove(
+            retention_store.engine,
+            "before_cursor_execute",
+            grow_before_select,
+        )
+        table.drop(retention_store.engine)
+
+
+def test_capture_guards_payload_before_driver_buffering(
+    retention_store, monkeypatch
+) -> None:
+    """An oversized row reaches the driver without its guarded payload."""
+    table = Table(
+        "retention_capture_budget",
+        MetaData(),
+        Column("id", Integer, primary_key=True),
+        Column("payload", Text),
+    )
+    table.create(retention_store.engine)
+    cap = 2048
+    fetched_bytes = []
+    original_fetchmany = pymysql.cursors.SSCursor.fetchmany
+
+    def observe_fetchmany(cursor, size=None):
+        rows = original_fetchmany(cursor, size)
+        fetched_bytes.append(
+            sum(
+                len(value.encode("utf-8"))
+                for row in rows
+                for value in row
+                if isinstance(value, str)
+            )
+        )
+        return rows
+
+    try:
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                table.insert(),
+                [
+                    {"id": 1, "payload": ""},
+                    {"id": 2, "payload": "x" * 3000},
+                ],
+            )
+        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", cap)
+        monkeypatch.setattr(
+            pymysql.cursors.SSCursor, "fetchmany", observe_fetchmany
+        )
+        with Session(retention_store.engine) as session:
+            capturer = capture.RunCapturer(
+                session, ArchivableRun(run_id=uuid4())
+            )
+            with pytest.raises(ExecutionRetentionConflictError) as error:
+                capturer._read_table(
+                    table,
+                    ["id", "payload"],
+                    (table.c.id, [1, 2]),
+                )
+
+        assert error.value.error_code == RetentionFailure.OVERSIZED
+        assert fetched_bytes and max(fetched_bytes) <= cap
+    finally:
+        table.drop(retention_store.engine)
 
 
 def test_sweep_continues_from_its_saved_position(
@@ -552,6 +1056,44 @@ def test_restore_conflict_rolls_back_all_detail(
             retention_store.engine, "before_cursor_execute", fail_insert
         )
     assert rows(retention_store) == before
+
+
+def test_restore_rejects_root_deleted_during_object_read(
+    retention_store, run_factory, archive_run, storage, monkeypatch
+) -> None:
+    """A disappearing root is an expected conflict, not a generic error."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    original_read = storage.read
+
+    def delete_during_read(uri, max_bytes):
+        data = original_read(uri, max_bytes)
+        retention_store.delete_run(ids.run)
+        return data
+
+    monkeypatch.setattr(storage, "read", delete_during_read)
+
+    with pytest.raises(ExecutionRetentionConflictError, match="disappeared"):
+        retention_store.restore_pipeline_run(ids.run)
+
+
+def test_restore_rejects_changed_root_snapshot(
+    retention_store, run_factory, archive_run
+) -> None:
+    """Restore validates the locked root ownership before writing detail."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    with retention_store.engine.begin() as connection:
+        connection.execute(
+            update(PipelineRunSchema)
+            .where(PipelineRunSchema.id == ids.run)
+            .values(snapshot_id=None)
+        )
+
+    with pytest.raises(
+        ExecutionRetentionConflictError, match="owner or snapshot"
+    ):
+        retention_store.restore_pipeline_run(ids.run)
 
 
 def test_targeted_archive_requires_explicit_policy_override(

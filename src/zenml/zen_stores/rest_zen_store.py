@@ -4172,6 +4172,7 @@ class RestZenStore(BaseZenStore):
                 f"{RETENTION}/archive",
                 body=request,
                 timeout=RESTORE_TIMEOUT_SECONDS,
+                server_directed_retries=True,
             )
         )
 
@@ -4198,7 +4199,9 @@ class RestZenStore(BaseZenStore):
         # verification, and write-back can outlast the default timeout.
         return RestoreResponse.model_validate(
             self.post(
-                f"{RUNS}/{run_id}/restore", timeout=RESTORE_TIMEOUT_SECONDS
+                f"{RUNS}/{run_id}/restore",
+                timeout=RESTORE_TIMEOUT_SECONDS,
+                server_directed_retries=True,
             )
         )
 
@@ -5058,73 +5061,61 @@ class RestZenStore(BaseZenStore):
                         urllib3.exceptions.InsecureRequestWarning
                     )
 
-                self._session = requests.Session()
-                # Retries are triggered for all HTTP methods (GET, HEAD, POST, PUT,
-                # PATCH, OPTIONS and DELETE) on specific HTTP status codes:
-                #
-                #     408: Request Timeout.
-                #     429: Too Many Requests.
-                #     502: Bad Gateway.
-                #     503: Service Unavailable.
-                #     504: Gateway Timeout
-                #
-                # This also handles connection level errors, if a connection attempt
-                # fails due to transient issues like:
-                #
-                #     DNS resolution errors.
-                #     Connection timeouts.
-                #     Network disruptions.
-                #
-                # Additional errors retried:
-                #
-                #     Read Timeouts: If the server does not send a response within
-                #     the timeout period.
-                #     Connection Refused: If the server refuses the connection.
-                #
-                retries = _RouteAwareRetry(
-                    connect=5,
-                    read=8,
-                    redirect=3,
-                    status=10,
-                    # Let the response mapper preserve typed server errors
-                    # after HTTP status retries are exhausted.
-                    raise_on_status=False,
-                    allowed_methods=[
-                        "HEAD",
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "PATCH",
-                        "DELETE",
-                        "OPTIONS",
-                    ],
-                    status_forcelist=[
-                        408,  # Request Timeout
-                        429,  # Too Many Requests
-                        502,  # Bad Gateway
-                        503,  # Service Unavailable
-                        504,  # Gateway Timeout
-                    ],
-                    other=3,
-                    backoff_factor=1,
-                )
-                http_adapter = HTTPAdapter(
-                    max_retries=retries,
-                    pool_maxsize=self.config.connection_pool_size,
-                )
-                self._session.mount("https://", http_adapter)
-                self._session.mount("http://", http_adapter)
-                self._session.verify = self.config.verify_ssl
-                # Use a custom user agent to identify the ZenML client in the server
-                # logs.
-                self._session.headers.update(
-                    {"User-Agent": "zenml/" + zenml.__version__}
+                self._session = self._new_session(
+                    server_directed_retries=False
                 )
 
             # Note that we return an unauthenticated session here. An API token
             # is only fetched and set in the authorization header when and if it is
             # needed.
             return self._session
+
+    def _new_session(
+        self, *, server_directed_retries: bool
+    ) -> requests.Session:
+        """Build an HTTP session with the requested status-retry contract.
+
+        Args:
+            server_directed_retries: Whether marked retention responses should
+                bypass configured status retries.
+
+        Returns:
+            A configured requests session.
+        """
+        retry_kwargs: Dict[str, Any] = {
+            "connect": 5,
+            "read": 8,
+            "redirect": 3,
+            "status": 10,
+            "allowed_methods": [
+                "HEAD",
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS",
+            ],
+            "status_forcelist": [408, 429, 502, 503, 504],
+            "other": 3,
+            "backoff_factor": 1,
+        }
+        if server_directed_retries:
+            retries: Retry = _RouteAwareRetry(
+                **retry_kwargs, raise_on_status=False
+            )
+        else:
+            retries = Retry(**retry_kwargs)
+        http_adapter = HTTPAdapter(
+            max_retries=retries,
+            pool_maxsize=self.config.connection_pool_size,
+        )
+        session = requests.Session()
+        session.mount("https://", http_adapter)
+        session.mount("http://", http_adapter)
+        session.verify = self.config.verify_ssl
+        session.headers.update({"User-Agent": "zenml/" + zenml.__version__})
+        return session
 
     def reinitialize_session(self) -> None:
         """Reinitialize the session.
@@ -5240,6 +5231,7 @@ class RestZenStore(BaseZenStore):
         url: str,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
+        server_directed_retries: bool = False,
         **kwargs: Any,
     ) -> Json:
         """Make a request to the REST API.
@@ -5249,6 +5241,8 @@ class RestZenStore(BaseZenStore):
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
+            server_directed_retries: Honor retention no-retry responses without
+                changing the ordinary session's exhaustion behavior.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -5292,15 +5286,27 @@ class RestZenStore(BaseZenStore):
             last_authenticated = self._last_authenticated
 
             try:
-                response = self.session.request(
-                    method,
-                    url,
-                    headers=request_headers,
-                    params=params if params else {},
-                    verify=self.config.verify_ssl,
-                    timeout=timeout or self.config.http_timeout,
-                    **kwargs,
-                )
+                temporary_session = None
+                request_session = self.session
+                if server_directed_retries:
+                    temporary_session = self._new_session(
+                        server_directed_retries=True
+                    )
+                    temporary_session.headers.update(request_session.headers)
+                    request_session = temporary_session
+                try:
+                    response = request_session.request(
+                        method,
+                        url,
+                        headers=request_headers,
+                        params=params if params else {},
+                        verify=self.config.verify_ssl,
+                        timeout=timeout or self.config.http_timeout,
+                        **kwargs,
+                    )
+                finally:
+                    if temporary_session is not None:
+                        temporary_session.close()
 
                 status_code = str(response.status_code)
                 return self._handle_response(response)

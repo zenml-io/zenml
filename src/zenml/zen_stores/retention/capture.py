@@ -7,9 +7,20 @@ hashes detects any change in between, including rows that did not exist at
 the first capture, without relying on writers refreshing ``updated``.
 """
 
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
-from sqlalchemy import RowMapping, Table, select, tuple_
+from sqlalchemy import Table, case, func, literal, select, tuple_
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
@@ -41,12 +52,19 @@ from zenml.zen_stores.schemas.step_configuration_utils import (
 # run's working set bounded, however large its stored columns are.
 MAX_SOURCE_BYTES = 2 * MAX_DECODED_BYTES
 
-# Rows are streamed in small groups so an oversized source stops early
-# instead of arriving as one fully buffered result.
-SOURCE_ROWS_PER_FETCH = 50
+# Ordinary pages bound both row count and aggregate payload. A single eligible
+# row may exceed the byte target and is then fetched alone under the remaining
+# per-run budget, so this target does not become a smaller per-row limit.
+SOURCE_ROWS_PER_PAGE = 50
+SOURCE_BYTES_PER_PAGE = 1024 * 1024
+
+_SOURCE_BYTES_LABEL = "_zenml_retention_source_bytes"
+_SOURCE_ID_LABEL = "_zenml_retention_source_id"
+_SOURCE_RUNNING_BYTES_LABEL = "_zenml_retention_source_running_bytes"
+_SOURCE_ROW_NUMBER_LABEL = "_zenml_retention_source_row_number"
 
 
-def source_row_bytes(row: RowMapping) -> int:
+def source_row_bytes(row: Mapping[str, Any]) -> int:
     """Measure the text and binary payload one fetched row holds in memory.
 
     Args:
@@ -56,22 +74,31 @@ def source_row_bytes(row: RowMapping) -> int:
         The combined length of its string and bytes values.
     """
     return sum(
-        len(value) for value in row.values() if isinstance(value, (str, bytes))
+        len(value.encode("utf-8")) if isinstance(value, str) else len(value)
+        for value in row.values()
+        if isinstance(value, (str, bytes))
     )
 
 
 class RunCapturer:
     """Read one run's archivable rows and the projections its steps keep."""
 
-    def __init__(self, session: Session, run: ArchivableRun) -> None:
+    def __init__(
+        self,
+        session: Session,
+        run: ArchivableRun,
+        check_cancelled: Optional[Callable[[], None]] = None,
+    ) -> None:
         """Bind a capture to one transaction and inspected run.
 
         Args:
             session: Read session or the locked retirement transaction.
             run: Eligible run with its exclusively owned snapshots.
+            check_cancelled: Optional cooperative cancellation check.
         """
         self.session = session
         self.run = run
+        self.check_cancelled = check_cancelled
         self.source_bytes = 0
         self.run_row: Dict[str, Any] = {}
         self.step_rows: List[Dict[str, Any]] = []
@@ -85,6 +112,11 @@ class RunCapturer:
             if name not in {"step_type", "substitutions"}
         ]
 
+    def _check_cancelled(self) -> None:
+        """Run the optional cooperative cancellation check."""
+        if self.check_cancelled is not None:
+            self.check_cancelled()
+
     def capture(self) -> ArchiveDocument:
         """Read the run's detail in record order.
 
@@ -95,12 +127,13 @@ class RunCapturer:
             ExecutionRetentionConflictError: The run is excluded, changed, or
                 exceeds a capture limit.
         """
+        self._check_cancelled()
         if self.run.exclusion is not None:
             raise ExecutionRetentionConflictError(
                 "Run is not eligible for archiving."
             )
         runs = SQLModel.metadata.tables["pipeline_run"]
-        steps = SQLModel.metadata.tables["step_run"]
+        step_table = SQLModel.metadata.tables["step_run"]
         found = self._read_table(
             runs,
             [*RunRecord.model_fields, "start_time", "archive_bundle_id"],
@@ -111,28 +144,38 @@ class RunCapturer:
                 "Run disappeared or was archived during capture."
             )
         self.run_row = found[0]
+        self._check_cancelled()
         self.step_rows = self._read_table(
-            steps,
+            step_table,
             [*self.step_fields, "archive_bundle_id"],
-            (steps.c.pipeline_run_id, [self.run.run_id]),
+            (step_table.c.pipeline_run_id, [self.run.run_id]),
         )
         snapshots = self._capture_snapshots()
+        self._check_cancelled()
         self._capture_configurations()
+        self._check_cancelled()
+        step_records = self._capture_steps()
+        record_count = (
+            1
+            + len(step_records)
+            + len(snapshots)
+            + len(self.owned_configurations)
+        )
+        if record_count > MAX_RECORDS:
+            raise ExecutionRetentionConflictError(
+                "Run exceeds the archive record limit.",
+                error_code=RetentionFailure.OVERSIZED,
+            )
         document = ArchiveDocument(
             project_id=self.run.project,
             run_id=self.run.run_id,
             run=RunRecord.model_validate(
                 {name: self.run_row[name] for name in RunRecord.model_fields}
             ),
-            steps=self._capture_steps(),
+            steps=step_records,
             snapshots=snapshots,
             configurations=self.owned_configurations,
         )
-        if document.record_count > MAX_RECORDS:
-            raise ExecutionRetentionConflictError(
-                "Run exceeds the archive record limit.",
-                error_code=RetentionFailure.OVERSIZED,
-            )
         return document
 
     def _read_table(
@@ -156,31 +199,185 @@ class RunCapturer:
                 exist than one capture permits.
         """
         columns = [table.c[name] for name in fields]
+        payload_columns = []
+        for column in columns:
+            try:
+                is_payload = column.type.python_type in {str, bytes}
+            except (AttributeError, NotImplementedError):
+                is_payload = False
+            if is_payload:
+                payload_columns.append(column)
+        payload_names = {column.key for column in payload_columns}
+        source_size: ColumnElement[int] = literal(0)
+        for payload_column in payload_columns:
+            source_size += func.coalesce(func.octet_length(payload_column), 0)
         selected: Dict[Any, Dict[str, Any]] = {}
         for column, identities in predicates:
             for group in batches(identities):
-                statement = (
-                    select(*columns)
-                    .where(column.in_(group))
-                    .order_by(table.c.id)
-                    .limit(MAX_RECORDS + 1)
-                    .execution_options(yield_per=SOURCE_ROWS_PER_FETCH)
-                )
-                with self.session.execute(statement) as result:
-                    for source_row in result.mappings():
-                        self.source_bytes += source_row_bytes(source_row)
-                        if self.source_bytes > MAX_SOURCE_BYTES:
-                            raise ExecutionRetentionConflictError(
-                                "Run source exceeds the capture byte limit.",
-                                error_code=RetentionFailure.OVERSIZED,
-                            )
-                        selected[source_row["id"]] = dict(source_row)
+                after_id = None
+                while True:
+                    self._check_cancelled()
+                    remaining = MAX_SOURCE_BYTES - self.source_bytes
+                    source_rows, fetched_bytes = self._read_page(
+                        table=table,
+                        columns=columns,
+                        fields=fields,
+                        payload_names=payload_names,
+                        source_size=source_size,
+                        owner_column=column,
+                        owner_ids=group,
+                        after_id=after_id,
+                        remaining=remaining,
+                    )
+                    self._check_cancelled()
+                    if not source_rows:
+                        break
+                    self.source_bytes += fetched_bytes
+                    for source_row in source_rows:
+                        selected[source_row["id"]] = source_row
                         if len(selected) > MAX_RECORDS:
                             raise ExecutionRetentionConflictError(
                                 "Run source exceeds the capture record limit.",
                                 error_code=RetentionFailure.OVERSIZED,
                             )
+                    after_id = source_rows[-1]["id"]
         return [selected[identity] for identity in sorted(selected)]
+
+    def _read_page(
+        self,
+        *,
+        table: Table,
+        columns: Sequence[Any],
+        fields: Sequence[str],
+        payload_names: set[str],
+        source_size: ColumnElement[int],
+        owner_column: Any,
+        owner_ids: Sequence[Any],
+        after_id: Any,
+        remaining: int,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Read one row- and byte-bounded page with a SQL payload guard.
+
+        Args:
+            table: Source table.
+            columns: Allowlisted source columns.
+            fields: Names of the allowlisted source columns.
+            payload_names: Text and binary column names.
+            source_size: SQL expression measuring one row's payload bytes.
+            owner_column: Column identifying the row owner.
+            owner_ids: Owners included in this predicate batch.
+            after_id: Last identity returned by the preceding page, if any.
+            remaining: Bytes left in the per-capture source budget.
+
+        Returns:
+            Source rows and their aggregate payload size. An empty row list
+            marks the end of this predicate batch.
+
+        Raises:
+            ExecutionRetentionConflictError: The first unread row exceeds the
+                remaining capture budget.
+        """  # noqa: DOC502
+        candidate_statement = select(table.c.id.label(_SOURCE_ID_LABEL)).where(
+            owner_column.in_(owner_ids)
+        )
+        if after_id is not None:
+            candidate_statement = candidate_statement.where(
+                table.c.id > after_id
+            )
+        candidate_ids = (
+            candidate_statement.order_by(table.c.id)
+            .limit(SOURCE_ROWS_PER_PAGE)
+            .subquery()
+        )
+        sized_page = (
+            select(
+                table.c.id.label(_SOURCE_ID_LABEL),
+                source_size.label(_SOURCE_BYTES_LABEL),
+                func.sum(source_size)
+                .over(order_by=table.c.id, rows=(None, 0))
+                .label(_SOURCE_RUNNING_BYTES_LABEL),
+                func.row_number()
+                .over(order_by=table.c.id)
+                .label(_SOURCE_ROW_NUMBER_LABEL),
+            )
+            .select_from(
+                table.join(
+                    candidate_ids,
+                    table.c.id == candidate_ids.c[_SOURCE_ID_LABEL],
+                )
+            )
+            .subquery()
+        )
+        page_budget = min(SOURCE_BYTES_PER_PAGE, remaining)
+        # Size the candidate prefix and guard its payload projection in one
+        # statement, so a newer payload version cannot bypass either budget.
+        payload_allowed = (
+            sized_page.c[_SOURCE_RUNNING_BYTES_LABEL] <= page_budget
+        ) | (
+            (sized_page.c[_SOURCE_ROW_NUMBER_LABEL] == 1)
+            & (sized_page.c[_SOURCE_BYTES_LABEL] <= remaining)
+        )
+        guarded_columns = [
+            case((payload_allowed, column), else_=None).label(column.key)
+            if column.key in payload_names
+            else column
+            for column in columns
+        ]
+        statement = (
+            select(
+                *guarded_columns,
+                sized_page.c[_SOURCE_BYTES_LABEL],
+                sized_page.c[_SOURCE_RUNNING_BYTES_LABEL],
+                sized_page.c[_SOURCE_ROW_NUMBER_LABEL],
+            )
+            .select_from(
+                table.join(
+                    sized_page,
+                    table.c.id == sized_page.c[_SOURCE_ID_LABEL],
+                )
+            )
+            .order_by(table.c.id)
+            .execution_options(yield_per=SOURCE_ROWS_PER_PAGE)
+        )
+        source_rows = []
+        first_source_bytes = 0
+        with self.session.execute(statement) as result:
+            for guarded_row in result.mappings():
+                row_bytes = int(guarded_row[_SOURCE_BYTES_LABEL])
+                running_bytes = int(guarded_row[_SOURCE_RUNNING_BYTES_LABEL])
+                row_number = int(guarded_row[_SOURCE_ROW_NUMBER_LABEL])
+                ordinary_page_row = running_bytes <= page_budget
+                large_first_row = row_number == 1 and row_bytes <= remaining
+                if not (ordinary_page_row or large_first_row):
+                    if row_number == 1:
+                        self._raise_source_oversized()
+                    # The cursor is drained, but after_id advances only past
+                    # accepted rows so this guarded row starts the next page.
+                    continue
+                if row_number == 1:
+                    first_source_bytes = row_bytes
+                source_rows.append(
+                    {name: guarded_row[name] for name in fields}
+                )
+        aggregate_budget = (
+            remaining if first_source_bytes > page_budget else page_budget
+        )
+        fetched_bytes = sum(source_row_bytes(row) for row in source_rows)
+        if fetched_bytes > aggregate_budget:
+            self._raise_source_oversized()
+        return source_rows, fetched_bytes
+
+    @staticmethod
+    def _raise_source_oversized() -> None:
+        """Raise the canonical source-byte limit failure.
+
+        Raises:
+            ExecutionRetentionConflictError: Always.
+        """
+        raise ExecutionRetentionConflictError(
+            "Run source exceeds the capture byte limit.",
+            error_code=RetentionFailure.OVERSIZED,
+        )
 
     def _capture_snapshots(self) -> List[SnapshotRecord]:
         """Capture owned snapshots and read shared ones for projections.
@@ -341,12 +538,17 @@ class RunCapturer:
         return records
 
 
-def capture_run(session: Session, run: ArchivableRun) -> ArchiveDocument:
+def capture_run(
+    session: Session,
+    run: ArchivableRun,
+    check_cancelled: Optional[Callable[[], None]] = None,
+) -> ArchiveDocument:
     """Capture one inspected run in the caller's transaction.
 
     Args:
         session: Read session or the locked retirement transaction.
         run: Eligible run with its exclusively owned snapshots.
+        check_cancelled: Optional cooperative cancellation check.
 
     Returns:
         The run's archive document.
@@ -355,7 +557,9 @@ def capture_run(session: Session, run: ArchivableRun) -> ArchiveDocument:
         ExecutionRetentionIntegrityError: The captured rows break the format.
     """
     try:
-        return RunCapturer(session, run).capture()
+        return RunCapturer(
+            session, run, check_cancelled=check_cancelled
+        ).capture()
     except ValueError as error:
         # Pydantic validation errors subclass ValueError; captured SQL rows
         # that violate the document closure mean the database is inconsistent.
