@@ -90,7 +90,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml"; \
     fi \
     && pip install --upgrade pip uv setuptools \
-    && uv pip install "${PACKAGE_NAME}[server,server-streaming,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
+    && uv pip install "${PACKAGE_NAME}[server,server-streaming,otel,aws-rds-iam,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
     && pip freeze > requirements.txt
 
 FROM base AS client
@@ -159,7 +159,7 @@ ENV \
   ZENML_CONTAINER=1 \
   # Set the ZenML global configuration path
   ZENML_CONFIG_PATH=/zenml/.zenconfig \
-  # Set ZenML debug mode to false
+  # Send ZenML analytics events to the official ZenML analytics server
   ZENML_DEBUG=false \
   # Enable ZenML server-side analytics
   ZENML_ANALYTICS_OPT_IN=true

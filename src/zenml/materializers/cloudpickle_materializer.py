@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's cloudpickle materializer."""
 
+import hashlib
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar, Optional, Tuple, Type
 
 import cloudpickle
 
@@ -23,6 +24,7 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils.io_utils import (
+    CallbackWriter,
     read_file_contents_as_string,
     write_file_contents_as_string,
 )
@@ -48,11 +50,17 @@ class CloudpickleMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     SKIP_REGISTRATION: ClassVar[bool] = True
 
+    _content_hash: Optional[str] = None
+
     def load(self, data_type: Type[Any]) -> Any:
         """Reads an artifact from a cloudpickle file.
 
         Args:
             data_type: The data type of the artifact.
+
+        Raises:
+            RuntimeError: If the stored data does not match the recorded
+                content hash.
 
         Returns:
             The loaded artifact data.
@@ -72,8 +80,19 @@ class CloudpickleMaterializer(BaseMaterializer):
         # load data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with self.artifact_store.open(filepath, "rb") as fid:
-            data = cloudpickle.load(fid)
-        return data
+            if self.expected_content_hash is None:
+                return cloudpickle.load(fid)
+
+            serialized_data = fid.read()
+
+        content_hash = hashlib.sha256(serialized_data).hexdigest()
+        if content_hash != self.expected_content_hash:
+            raise RuntimeError(
+                f"The artifact at '{self.uri}' does not match its recorded "
+                "content hash."
+            )
+
+        return cloudpickle.loads(serialized_data)
 
     def _load_python_version(self) -> str:
         """Loads the Python version that was used to materialize the artifact.
@@ -110,11 +129,25 @@ class CloudpickleMaterializer(BaseMaterializer):
 
         # save data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
+        digest = hashlib.sha256()
         with self.artifact_store.open(filepath, "wb") as fid:
-            cloudpickle.dump(data, fid)
+            cloudpickle.dump(data, CallbackWriter(fid, digest.update))
+        self._content_hash = digest.hexdigest()
 
     def _save_python_version(self) -> None:
         """Saves the Python version used to materialize the artifact."""
         filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
         current_python_version = Environment().python_version()
         write_file_contents_as_string(filepath, current_python_version)
+
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Returns the content hash of the stored data.
+
+        Args:
+            data: The saved data.
+
+        Returns:
+            The content hash computed during `save`, or `None` if the data
+            was not saved by this instance.
+        """
+        return self._content_hash

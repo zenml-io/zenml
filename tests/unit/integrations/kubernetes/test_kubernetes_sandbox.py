@@ -165,6 +165,7 @@ def _make_sandbox(pods: List[k8s_client.V1Pod]) -> MagicMock:
     sandbox.id = uuid4()
     sandbox.config.kubernetes_namespace = "zenml"
     sandbox.config.api_request_timeout = None
+    sandbox.config.max_api_retries = 3
     sandbox.core_api.list_namespaced_pod.return_value = k8s_client.V1PodList(
         items=pods
     )

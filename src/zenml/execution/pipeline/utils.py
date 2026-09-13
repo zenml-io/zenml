@@ -191,7 +191,9 @@ def skip_steps_and_prune_snapshot(
 
     for invocation_id, step in snapshot.step_configurations.items():
         explicitly_skipped = invocation_id in explicitly_skipped_steps
-        should_skip = request_factory.should_skip_step(invocation_id)
+        should_skip = request_factory.should_skip_step(
+            invocation_id, step=step
+        )
 
         if not should_skip:
             continue

@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Unit tests for secret utilities."""
 
+import pytest
 from hypothesis import given
 from hypothesis.strategies import from_regex
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from zenml.utils import secret_utils
 
@@ -39,6 +41,13 @@ def test_is_secret_reference(name, key):
 
 
 @given(name=strategy, key=strategy)
+def test_is_secret_reference_unwraps_secret_str(name, key):
+    """Check that secret reference detection unwraps `SecretStr` values."""
+    assert secret_utils.is_secret_reference(SecretStr(f"{{{{{name}.{key}}}}}"))
+    assert not secret_utils.is_secret_reference(SecretStr("plain text"))
+
+
+@given(name=strategy, key=strategy)
 def test_secret_reference_parsing(name, key):
     """Tests that secret reference parsing works correctly."""
     for value in [
@@ -49,6 +58,16 @@ def test_secret_reference_parsing(name, key):
         ref = secret_utils.parse_secret_reference(value)
         assert ref.name == name
         assert ref.key == key
+
+
+@given(name=strategy, key=strategy)
+def test_secret_reference_parsing_unwraps_secret_str(name, key):
+    """Tests that secret reference parsing unwraps `SecretStr` values."""
+    ref = secret_utils.parse_secret_reference(
+        SecretStr(f"{{{{{name}.{key}}}}}")
+    )
+    assert ref.name == name
+    assert ref.key == key
 
 
 def test_secret_field():
@@ -73,3 +92,30 @@ def test_secret_field_detection():
         secret_utils.is_secret_field(Model.model_fields["non_secret"]) is False
     )
     assert secret_utils.is_secret_field(Model.model_fields["secret"]) is True
+
+
+@pytest.mark.parametrize("value", ["", "   ", "\t\n"])
+def test_non_empty_plain_serialized_secret_str_rejects_empty_values(
+    value: str,
+) -> None:
+    """Tests that non-empty serialized secrets reject blank values."""
+
+    class Model(BaseModel):
+        secret: secret_utils.NonEmptyPlainSerializedSecretStr
+
+    with pytest.raises(ValidationError):
+        Model(secret=value)
+
+
+def test_non_empty_plain_serialized_secret_str_serializes_plain_value() -> (
+    None
+):
+    """Tests that non-empty serialized secrets preserve plain JSON output."""
+
+    class Model(BaseModel):
+        secret: secret_utils.NonEmptyPlainSerializedSecretStr
+
+    model = Model(secret=" value ")
+
+    assert model.secret.get_secret_value() == " value "
+    assert model.model_dump_json() == '{"secret":" value "}'

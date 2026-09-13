@@ -62,7 +62,11 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         self,
         info: "StepRunInfo",
     ) -> None:
-        """Configure a Trackio run."""
+        """Configure a Trackio run.
+
+        Args:
+            info: Information about the step run.
+        """
         if self.config.hf_token:
             previous_token: Optional[str] = os.environ.get(HF_TOKEN_ENV_VAR)
 
@@ -108,7 +112,14 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         self,
         info: "StepRunInfo",
     ) -> Dict[str, "MetadataType"]:
-        """Get metadata after a step ran."""
+        """Get metadata after a step ran.
+
+        Args:
+            info: Information about the step run.
+
+        Returns:
+            Metadata containing the Trackio run name and optional run URL.
+        """
         run_url: Optional[str] = None
         run_name: Optional[str] = None
 
@@ -153,7 +164,12 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         info: "StepRunInfo",
         step_failed: bool,
     ) -> None:
-        """Finalize the Trackio run."""
+        """Finalize the Trackio run.
+
+        Args:
+            info: Information about the step run.
+            step_failed: Whether the step failed.
+        """
         settings = cast(
             TrackioExperimentTrackerSettings,
             self.get_settings(info),
@@ -248,7 +264,12 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         info: "StepRunInfo",
         run_name: str,
     ) -> None:
-        """Initialize a Trackio run."""
+        """Initialize a Trackio run.
+
+        Args:
+            info: Information about the step run.
+            run_name: Name to assign to the Trackio run.
+        """
         logger.debug(
             "Initializing Trackio with project=%s, run_name=%s.",
             self.config.project_name,

@@ -162,7 +162,9 @@ for _ in range(n_trials):
     trial = study.ask()
     config = {
         "trial_number": trial.number,
-        "learning_rate": trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True),
+        "learning_rate": trial.suggest_float(
+            "learning_rate", 1e-4, 1e-2, log=True
+        ),
         "batch_size": trial.suggest_categorical("batch_size", [64, 128]),
         "hidden_dim": trial.suggest_categorical("hidden_dim", [8, 16, 32]),
     }
@@ -205,7 +207,11 @@ Aggregates trial results and finds the best configuration. Results from all roun
 def report_results(results: list, previous_summary: dict = None) -> dict:
     all_trials = previous_summary.get("all_trials", []) + current_results
     best = min(all_trials, key=lambda t: t["val_loss"])
-    return {"best_val_loss": best["val_loss"], "best_params": ..., "all_trials": all_trials}
+    return {
+        "best_val_loss": best["val_loss"],
+        "best_params": ...,
+        "all_trials": all_trials,
+    }
 ```
 
 ### 4. Retrain Best Model (`steps/save_best.py`)

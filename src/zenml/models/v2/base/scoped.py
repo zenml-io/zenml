@@ -374,7 +374,17 @@ class ProjectScopedResponse(
         """
         from zenml.client import Client
 
-        return Client().get_project(self.project_id)
+        client = Client()
+
+        try:
+            active_project = client.active_project
+        except Exception:
+            active_project = None
+
+        if active_project is not None and active_project.id == self.project_id:
+            return active_project
+
+        return client.get_project(self.project_id)
 
 
 # ---------------------- Filter Models ----------------------
@@ -462,38 +472,6 @@ class TaggableFilter(BaseFilter):
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
-
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from zenml.models.v2.base.filter import VALUELESS_FILTER_OPS
-        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
-
-        query = super().apply_filter(query=query, table=table)
-
-        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
-
-        if tag_values and any(
-            self._resolve_operator(tag)[1] not in VALUELESS_FILTER_OPS
-            for tag in tag_values
-        ):
-            query = query.join(
-                TagResourceSchema,
-                TagResourceSchema.resource_id == getattr(table, "id"),
-            ).join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
-
-        return query
 
     def get_custom_filters(
         self, table: Type["AnySchema"]

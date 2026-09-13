@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -70,9 +70,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.resource_request_schemas import (
-        ResourceRequestSchema,
-    )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
@@ -182,6 +179,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    resource_request_id: Optional[UUID] = Field(nullable=True)
 
     # Relationships
     project: "ProjectSchema" = Relationship(back_populates="step_runs")
@@ -254,10 +252,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-    resource_request: Optional["ResourceRequestSchema"] = Relationship(
-        back_populates="step_run"
-    )
-
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
@@ -265,6 +259,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -274,6 +269,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -284,34 +281,37 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ModelVersionSchema,
         )
 
+        single_loader = selectinload if many else joinedload
+
         options = [
-            selectinload(jl_arg(StepRunSchema.snapshot)).load_only(
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration)
+            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
-            selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            selectinload(jl_arg(StepRunSchema.static_config)),
-            selectinload(jl_arg(StepRunSchema.dynamic_config)),
+            single_loader(jl_arg(StepRunSchema.static_config)),
+            single_loader(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(StepRunSchema.parents)),
-        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(StepRunSchema.parents)),
+                    selectinload(jl_arg(StepRunSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend(
                 [
-                    selectinload(
+                    single_loader(
                         jl_arg(StepRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(jl_arg(StepRunSchema.user)),
+                    single_loader(jl_arg(StepRunSchema.user)),
                     selectinload(jl_arg(StepRunSchema.input_artifacts))
                     .joinedload(
                         jl_arg(StepRunInputArtifactSchema.artifact_version),
@@ -402,6 +402,29 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     pipeline_configuration=pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
+
+                if input_overrides := (
+                    pipeline_configuration.get_invocation_input_overrides(
+                        invocation_id=self.name,
+                        step_name=step.config.name,
+                    )
+                ):
+                    # Remove all parameters that are shadowed by replay input
+                    # overrides.
+                    step = step.model_copy(
+                        update={
+                            "config": step.config.model_copy(
+                                update={
+                                    "parameters": {
+                                        key: value
+                                        for key, value in step.config.parameters.items()
+                                        if key not in input_overrides
+                                    }
+                                }
+                            )
+                        }
+                    )
+
         if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the
@@ -450,6 +473,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
+            resource_request_id=self.resource_request_id,
             substitutions=step.config.substitutions,
             heartbeat_threshold=self.heartbeat_threshold,
         )
@@ -514,11 +538,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 ],
                 inputs=input_artifacts,
                 outputs=output_artifacts,
-                resource_request=self.resource_request.to_model(
-                    include_metadata=True, include_resources=False
-                )
-                if self.resource_request
-                else None,
             )
 
         return StepRunResponse(

@@ -24,10 +24,10 @@ Instead of passing DataFrames between steps, each step passes a `LakeFSRef` — 
 
 ```python
 class LakeFSRef(BaseModel):
-    repo: str       # "robot-data"
-    ref: str        # branch name or commit SHA
-    path: str       # "validated/data.parquet"
-    endpoint: str   # "http://localhost:8000"
+    repo: str  # "robot-data"
+    ref: str  # branch name or commit SHA
+    path: str  # "validated/data.parquet"
+    endpoint: str  # "http://localhost:8000"
 ```
 
 Steps read/write data directly to LakeFS via its S3-compatible API. ZenML's built-in Pydantic materializer handles the small reference object automatically.

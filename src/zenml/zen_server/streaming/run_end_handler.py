@@ -16,9 +16,8 @@
 import asyncio
 from uuid import UUID
 
-from zenml.dispatcher import EventHandler
+from zenml.dispatcher import Event, EventHandler, PipelineRunStatusUpdate
 from zenml.logger import get_logger
-from zenml.models import PipelineRunResponse
 from zenml.utils.time_utils import exponential_backoff_delays
 from zenml.zen_server.streaming.brokers.base import StreamBroker
 from zenml.zen_server.streaming.brokers.frames import EndFrame, encode_frame
@@ -49,12 +48,16 @@ class StreamEndEventHandler(EventHandler):
         self._broker = broker
         self._loop = loop
 
-    def handle_run_status_update(self, run: PipelineRunResponse) -> None:
-        """Schedule a stream-end publish if the run is terminal.
+    def handle_event(self, event: Event) -> None:
+        """Route pipeline run status updates to the stream-end handler.
 
         Args:
-            run: The run whose status changed.
+            event: The dispatched event envelope.
         """
+        if not isinstance(event, PipelineRunStatusUpdate):
+            return
+
+        run = event.run
         if run.in_progress:
             return
 

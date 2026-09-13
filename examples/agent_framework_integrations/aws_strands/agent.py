@@ -26,7 +26,6 @@ model = OpenAIModel(
         "api_key": os.getenv("OPENAI_API_KEY", ""),
     },
     model_id="gpt-5-nano",
-    params={"temperature": 0.7},
 )
 
 

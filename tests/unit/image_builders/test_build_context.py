@@ -78,7 +78,6 @@ def test_build_context_includes_and_excludes(tmp_path):
     build_context.dockerignore_file == str(default_dockerignore)
     assert build_context._get_exclude_patterns() == ["*", "!/.zen"]
     assert build_context.get_files() == {
-        ".dockerignore": str(default_dockerignore),
         ".zen": str(root / ".zen"),
         os.path.join(".zen", "config.yaml"): str(zen_repo),
     }

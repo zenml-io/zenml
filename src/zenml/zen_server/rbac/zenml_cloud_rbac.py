@@ -55,13 +55,13 @@ class ZenMLCloudRBAC(RBACInterface):
             return {}
 
         if user.is_service_account and user.external_user_id is None:
-            # Internal service accounts have full permissions for now
-            # TODO: remove this once we have a proper way to migrate the
-            # service accounts
+            # Workspace-local service account API keys are still accepted as a
+            # temporary compatibility measure and do not have Cloud RBAC
+            # identities to check against.
             return {resource: True for resource in resources}
 
-        # At this point it's a regular user, which in a ZenML Pro with RBAC
-        # enabled is always authenticated using external authentication
+        # ZenML Pro RBAC is keyed by the external user ID, including for
+        # organization-level service accounts mirrored into the workspace.
         assert user.external_user_id
 
         params = {
@@ -98,13 +98,13 @@ class ZenMLCloudRBAC(RBACInterface):
         """
         assert not resource.id
         if user.is_service_account and user.external_user_id is None:
-            # Internal service accounts have full permissions for now
-            # TODO: remove this once we have a proper way to migrate the
-            # service accounts
+            # Workspace-local service account API keys are still accepted as a
+            # temporary compatibility measure and do not have Cloud RBAC
+            # identities to check against.
             return True, []
 
-        # At this point it's a regular user, which in the ZenML Pro with RBAC
-        # enabled is always authenticated using external authentication
+        # ZenML Pro RBAC is keyed by the external user ID, including for
+        # organization-level service accounts mirrored into the workspace.
         assert user.external_user_id
         params = {
             "user_id": str(user.external_user_id),

@@ -168,7 +168,6 @@ integrations for `mypy` checks:
 
 ```
 zenml integration install -y -i feast
-pip install click~=8.0.3
 mypy --install-types
 ```
 

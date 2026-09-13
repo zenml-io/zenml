@@ -12,16 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
 from datetime import datetime
 from uuid import uuid4
 
-from zenml.enums import StackComponentType
-from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
-from zenml.integrations.evidently.data_validators import EvidentlyDataValidator
+import pytest
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Evidently integration is not installed on Python 3.14 CI.",
+)
 def test_evidently_data_validator_attributes():
     """Tests that the basic attributes of the Evidently data validator are set correctly."""
+    from zenml.enums import StackComponentType
+    from zenml.integrations.evidently import EVIDENTLY_DATA_VALIDATOR_FLAVOR
+    from zenml.integrations.evidently.data_validators import (
+        EvidentlyDataValidator,
+    )
+
     validator = EvidentlyDataValidator(
         name="arias_validator",
         id=uuid4(),

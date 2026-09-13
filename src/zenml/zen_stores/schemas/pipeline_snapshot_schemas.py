@@ -19,7 +19,7 @@ from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, object_session, selectinload
+from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
@@ -372,21 +372,31 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """
         options = []
 
-        if include_metadata:
+        if not include_metadata:
+            # pipeline_configuration and client_environment are large columns
+            # only read when metadata is included. Skip fetching them otherwise.
             options.extend(
                 [
-                    joinedload(jl_arg(PipelineSnapshotSchema.stack)),
-                    joinedload(jl_arg(PipelineSnapshotSchema.build)),
-                    joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
-                    joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
-                    joinedload(jl_arg(PipelineSnapshotSchema.code_reference)),
+                    defer(
+                        jl_arg(PipelineSnapshotSchema.pipeline_configuration)
+                    ),
+                    defer(jl_arg(PipelineSnapshotSchema.client_environment)),
                 ]
             )
 
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(PipelineSnapshotSchema.user)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.stack)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.build)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.pipeline)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.schedule)),
+                    selectinload(
+                        jl_arg(PipelineSnapshotSchema.code_reference)
+                    ),
+                    selectinload(jl_arg(PipelineSnapshotSchema.user)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.deployment)),
+                    selectinload(jl_arg(PipelineSnapshotSchema.tags)),
                     selectinload(
                         jl_arg(PipelineSnapshotSchema.visualizations)
                     ),
@@ -523,6 +533,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable=self.is_runnable,
             deployable=deployable,
             is_dynamic=self.is_dynamic,
+            pipeline_id=self.pipeline_id,
         )
         metadata = None
         if include_metadata:

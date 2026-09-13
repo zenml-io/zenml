@@ -12,16 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from transformers import RobertaConfig, RobertaModel
+import sys
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
-    HFPTModelMaterializer,
+import pytest
+
+
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
 )
-
-
 def test_huggingface_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Pretrained Model materializer."""
+    from transformers import RobertaConfig, RobertaModel
+
+    from tests.unit.test_general import _test_materializer
+    from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
+        HFPTModelMaterializer,
+    )
+
     model = _test_materializer(
         step_output=RobertaModel(RobertaConfig()),
         materializer_class=HFPTModelMaterializer,

@@ -44,10 +44,18 @@ fi
 PYTEST_RERUN_ARGS=(--reruns "$RERUNS" --reruns-delay "$RERUNS_DELAY")
 
 export ZENML_DEBUG=1
+export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 export EVIDENTLY_DISABLE_TELEMETRY=1
 
 ./zen-test environment provision $TEST_ENVIRONMENT
+
+# Some macOS ML libraries bundle incompatible OpenMP runtimes. Apply the
+# requested runtime override when starting pytest; tests/conftest.py removes it
+# from the process environment before tests can launch child processes.
+if [[ -n "${PYTEST_DYLD_INSERT_LIBRARIES:-}" ]]; then
+    export DYLD_INSERT_LIBRARIES="$PYTEST_DYLD_INSERT_LIBRARIES"
+fi
 
 # The '-vv' flag enables pytest-clarity output when tests fail.
 # Shows errors instantly in logs when test fails.
@@ -65,6 +73,10 @@ else
         coverage run -m pytest tests/unit --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision "${PYTEST_RERUN_ARGS[@]}" --instafail
         coverage run -m pytest tests/integration --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
     fi
+fi
+
+if [[ -n "${PYTEST_DYLD_INSERT_LIBRARIES:-}" ]]; then
+    unset DYLD_INSERT_LIBRARIES
 fi
 
 ./zen-test environment cleanup $TEST_ENVIRONMENT

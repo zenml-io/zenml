@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
+from typing import Any, ContextManager, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -56,7 +56,6 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
-    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
@@ -102,6 +101,7 @@ def _get_orchestrator_job_state(
     namespace: str,
     job_name: str,
     api_request_timeout: Optional[int],
+    max_retries: int,
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -110,6 +110,7 @@ def _get_orchestrator_job_state(
         namespace: The namespace.
         job_name: The name of the orchestrator job.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The run id and orchestrator run id.
@@ -122,6 +123,7 @@ def _get_orchestrator_job_state(
         namespace=namespace,
         job_name=job_name,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
 
     if job.metadata and job.metadata.annotations:
@@ -141,6 +143,7 @@ def _reconstruct_nodes(
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 
@@ -150,6 +153,7 @@ def _reconstruct_nodes(
         namespace: The namespace.
         batch_api: The batch api.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The reconstructed nodes.
@@ -171,6 +175,7 @@ def _reconstruct_nodes(
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
@@ -257,6 +262,7 @@ def main() -> None:
             pod_name=orchestrator_pod_name,
             namespace=namespace,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
         if not job_name:
             raise RuntimeError(
@@ -268,6 +274,7 @@ def main() -> None:
             namespace=namespace,
             job_name=job_name,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
 
         if run_id and orchestrator_run_id:
@@ -279,6 +286,7 @@ def main() -> None:
                 namespace=namespace,
                 batch_api=batch_api,
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             logger.debug("Reconstructed nodes: %s", nodes)
 
@@ -309,6 +317,7 @@ def main() -> None:
                     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
                 },
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             nodes = [
                 Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
@@ -333,6 +342,7 @@ def main() -> None:
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
                     api_request_timeout=pipeline_settings.api_request_timeout,
+                    max_retries=pipeline_settings.max_api_retries,
                 )
                 # Make sure None of the owner references are marked as
                 # controllers of the created pod, which messes with the
@@ -347,7 +357,6 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
             "project_id": kube_utils.sanitize_label_value(
@@ -372,9 +381,7 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
@@ -385,7 +392,7 @@ def main() -> None:
                 step_run = publish_cached_step_run(
                     step_run_request, pipeline_run
                 )
-                step_runs[step_name] = step_run
+                step_run_request_factory.record_step_run(step_run)
                 logger.info("Using cached version of step `%s`.", step_name)
                 return True
 
@@ -414,9 +421,7 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     "Failed to populate step run request for step `%s`: %s",
@@ -600,6 +605,7 @@ def main() -> None:
                 namespace=namespace,
                 job_manifest=job_manifest,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
 
             try:
@@ -753,6 +759,7 @@ def main() -> None:
                 job_name=job_name,
                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED

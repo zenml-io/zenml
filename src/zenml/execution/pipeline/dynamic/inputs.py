@@ -220,6 +220,22 @@ def collect_upstream_node_ids(
     ]
 
 
+def collect_start_upstream_node_ids(
+    start_after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],
+) -> List[str]:
+    """Collect start-upstream node IDs from `start_after` futures.
+
+    Args:
+        start_after: Optional upstream futures for start ordering.
+
+    Returns:
+        The start-upstream node IDs.
+    """
+    return [
+        future.invocation_id for future in collect_futures(after=start_after)
+    ]
+
+
 def get_running_upstream_dependencies(
     inputs: Dict[str, Any],
     after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],

@@ -12,10 +12,10 @@ rules:
   # These are ZenML's own templates and are intentionally unpinned
   unpinned-uses:
     ignore:
-      - update-templates-to-examples.yml:44  # zenml-io/template-e2e-batch
+      - update-templates-to-examples.yml:46  # zenml-io/template-e2e-batch
       - update-templates-to-examples.yml:120  # zenml-io/template-nlp
-      - update-templates-to-examples.yml:195  # zenml-io/template-starter
-      - update-templates-to-examples.yml:272  # zenml-io/template-llm-finetuning
+      - update-templates-to-examples.yml:193  # zenml-io/template-starter
+      - update-templates-to-examples.yml:268  # zenml-io/template-llm-finetuning
       - weekly-agent-pipelines-test.yml:101  # Ilshidur/action-discord uses @master, can't be SHA-pinned
 
   # excessive-permissions: These workflows use default permissions.
@@ -52,20 +52,13 @@ rules:
   # (step outputs within same workflow are trusted)
   template-injection:
     ignore:
-      - release.yml:169  # VERSION from step output
-      - release.yml:170  # sha from step output
+      - release.yml:162  # VERSION from step output
+      - release.yml:163  # sha from step output
       - snack-it.yml:352  # issue_number from step output
       - snack-it.yml:353  # continuation of above
       - snack-it.yml:354  # project_added from step output
       - validate-changelog.yml:37  # step output
       - notify-changelog.yml:27  # inputs.release_tag is workflow_dispatch input (authorized users only)
-
-  # Detect cache poisoning vulnerabilities
-  # Ignores: Low-confidence findings for protected publish workflows
-  cache-poisoning:
-    ignore:
-      - publish_api_docs.yml:24  # Protected release branch, docs only (setup-node caching)
-      - publish_api_docs.yml:27  # Protected release branch, docs only
 
   # Detect malformed conditionals
   unsound-condition: {}

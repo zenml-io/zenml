@@ -67,7 +67,7 @@ def list_projects(
             if active_project_id not in {p.id for p in projects.items}:
                 projects.items.insert(0, client.active_project)
             projects.items.sort(key=lambda p: p.id != active_project_id)
-        except Exception:
+        except RuntimeError:
             active_project_id = None
     else:
         active_project_id = None

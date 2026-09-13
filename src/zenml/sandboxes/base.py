@@ -38,6 +38,15 @@ class BaseSandboxSettings(BaseSettings):
     )
 
 
+class ContainerizedSandboxSettings(BaseSandboxSettings):
+    """Containerized sandbox settings."""
+
+    image: str = Field(
+        default="python:3.11-slim",
+        description="Container image to run sandbox sessions in.",
+    )
+
+
 class BaseSandboxConfig(StackComponentConfig):
     """Sandbox configuration."""
 
@@ -74,12 +83,16 @@ class BaseSandbox(StackComponent, ABC):
 
     @abstractmethod
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Create a fresh sandbox session.
 
         Args:
             settings: The sandbox settings.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Returns:
             A new sandbox session.

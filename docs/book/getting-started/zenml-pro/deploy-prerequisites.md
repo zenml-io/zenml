@@ -238,11 +238,13 @@ The Control Plane and Workspace Server components are completely independent fro
 
 | Infrastructure Type | Support Level |
 |---------------------|---------------|
-| Kubernetes (managed or self-hosted, 1.24+) | ✅ Officially supported and documented |
+| Kubernetes (1.24+) | ✅ Officially supported and documented |
 | Container-as-a-Service (ECS, Cloud Run, etc.) | ⚠️ Possible but not documented |
 | Serverless containers (Fargate, Lambda, etc.) | ⚠️ Possible but not documented |
 | Virtual machines with Docker (VMware, VirtualBox, etc.) | ⚠️ Possible but not documented |
 | Docker-compose | ✅ Can be provided upon request for local testing purposes |
+
+These Helm-based deployments use standard Kubernetes APIs and work on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
 
 {% hint style="warning" %}
 While ZenML Pro can theoretically run on any container orchestration platform, only Kubernetes deployments are officially fully supported and documented. If you require a different deployment target, please contact [cloud@zenml.io](mailto:cloud@zenml.io) to discuss your requirements.

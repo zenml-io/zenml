@@ -988,7 +988,7 @@ zenml service-connector login gcp-user-account --resource-type kubernetes-cluste
 ⠴ Attempting to configure local client using service connector 'gcp-user-account'...
 Context "gke_zenml-core_zenml-test-cluster" modified.
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
-The 'gcp-user-account' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'gcp-user-account' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
 {% endcode %}
 
@@ -1035,7 +1035,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'gcp-user-account' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'gcp-user-account' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
 {% endcode %}
 
@@ -1075,7 +1075,7 @@ zenml service-connector login gcp-user-account --resource-type gcp-generic
 {% code title="Example Command Output" %}
 ```
 Updated the local gcloud default application credentials file at '/home/user/.config/gcloud/application_default_credentials.json'
-The 'gcp-user-account' GCP Service Connector connector was used to successfully configure the local Generic GCP resource client/SDK.
+The 'gcp-user-account' GCP Service Connector was used to successfully configure the local Generic GCP resource client/SDK.
 ```
 {% endcode %}
 

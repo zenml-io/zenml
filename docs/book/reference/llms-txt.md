@@ -227,4 +227,13 @@ For the best AI-assisted ZenML development experience, combine:
 
 This gives your AI assistant access to documentation, your actual ZenML data, and structured workflows for making changes.
 
+## Kitaru's coding-agent tooling
+
+Everything above covers ZenML pipelines. [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for recording and replaying AI agent runs, has its own equivalents, and they're worth installing separately if you work on agents: reviewing a session, freezing a cohort and running a replay experiment is a long loop that your coding assistant can drive end to end.
+
+- **MCP server** — `uv add "kitaru[mcp]"` gives you the `kitaru-mcp` executable, which exposes typed Kitaru operations to Claude Code, Cursor, and other MCP clients. Tools are gated by a capability mode (`read-only` by default, then `standard`, then `destructive`), so an assistant only sees the operations you've allowed.
+- **Agent Skills** — published from [`zenml-io/kitaru-skills`](https://github.com/zenml-io/kitaru-skills) and installable with `npx skills add zenml-io/kitaru-skills` or the Claude Code plugin marketplace. They cover the workflow itself: investigating sessions, running a replay experiment, and building an adapter or importer for an unsupported framework.
+
+See [Set up your coding agent](https://docs.zenml.io/kitaru/agent-native/setup) for the full setup, including the server URL and capability-mode settings that most often trip people up.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

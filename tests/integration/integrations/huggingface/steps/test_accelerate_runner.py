@@ -15,9 +15,17 @@
 import os
 import platform
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
+
+if sys.version_info >= (3, 14):
+    pytest.skip(
+        "The Hugging Face integration is not installed on Python 3.14 CI.",
+        allow_module_level=True,
+    )
+
 import transformers
 from accelerate import Accelerator
 from datasets import load_from_disk

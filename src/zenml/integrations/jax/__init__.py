@@ -21,7 +21,9 @@ class JAXIntegration(Integration):
     """Definition of JAX array integration for ZenML."""
 
     NAME = JAX
-    REQUIREMENTS = ["jax", "numpy"]
+    # JAX 0.4.35+ requires ml-dtypes>=0.4.0, which is incompatible with the
+    # TensorFlow versions currently supported by the TensorFlow integration.
+    REQUIREMENTS = ["jax<0.4.35", "numpy"]
 
     @classmethod
     def activate(cls) -> None:

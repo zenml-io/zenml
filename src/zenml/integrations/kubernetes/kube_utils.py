@@ -34,6 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import functools
 import json
+import math
 import re
 import time
 from collections import defaultdict
@@ -46,6 +47,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -54,10 +56,15 @@ from typing import (
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
+from pydantic import ValidationError
 from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
+    ENV_ZENML_KUBERNETES_MAIN_ADDRESS,
+    ENV_ZENML_KUBERNETES_MAIN_PORT,
+    ENV_ZENML_KUBERNETES_POD_COUNT,
+    MULTI_POD_MAIN_PORT,
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
@@ -74,11 +81,14 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.resource_settings import ResourceSettings
+    from zenml.models import ResourceRequestResponse
 
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+SettingsT = TypeVar("SettingsT", bound="BaseSettings")
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -213,6 +223,50 @@ def sanitize_label_value(label: str) -> str:
     return label
 
 
+def multi_pod_job_name(job_name: str, pod_count: int) -> str:
+    """Adjust a sanitized job name for use as a multi-pod job name.
+
+    Args:
+        job_name: The sanitized job name.
+        pod_count: The number of pods.
+
+    Returns:
+        The adjusted job name.
+    """
+    # The name doubles as the name of the headless service, which must
+    # start with a letter.
+    if not job_name[:1].isalpha():
+        job_name = f"j{job_name}"
+
+    # Kubernetes sets the hostname of indexed-job pods to
+    # `<job-name>-<index>`, and hostnames are capped at 63 characters.
+    max_length = 62 - len(str(pod_count - 1))
+    return job_name[:max_length].rstrip("-")
+
+
+def multi_pod_environment(
+    job_name: str, namespace: str, pod_count: int
+) -> Dict[str, str]:
+    """Environment for the pods of a multi-pod job.
+
+    Args:
+        job_name: The job name (also the headless service name).
+        namespace: The Kubernetes namespace.
+        pod_count: The number of pods.
+
+    Returns:
+        Environment variables shared by all pods of the job.
+    """
+    # Indexed-job pods get the hostname `<job-name>-<index>`. With the
+    # pod spec's subdomain pointing at the headless service, index 0
+    # resolves at this stable DNS name.
+    return {
+        ENV_ZENML_KUBERNETES_POD_COUNT: str(pod_count),
+        ENV_ZENML_KUBERNETES_MAIN_ADDRESS: f"{job_name}-0.{job_name}.{namespace}.svc",
+        ENV_ZENML_KUBERNETES_MAIN_PORT: str(MULTI_POD_MAIN_PORT),
+    }
+
+
 def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is not 'Pending'.
 
@@ -254,6 +308,7 @@ def get_pod(
     pod_name: str,
     namespace: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> Optional[k8s_client.V1Pod]:
     """Get a pod from Kubernetes metadata API.
 
@@ -262,6 +317,7 @@ def get_pod(
         pod_name: The name of the pod.
         namespace: The namespace of the pod.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Raises:
         RuntimeError: When it sees unexpected errors from Kubernetes API.
@@ -273,6 +329,7 @@ def get_pod(
         return retry_on_api_exception(
             core_api.read_namespaced_pod,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )(name=pod_name, namespace=namespace)
     except k8s_client.rest.ApiException as e:
         if e.status == 404:
@@ -285,6 +342,7 @@ def create_pod(
     namespace: str,
     pod_manifest: k8s_client.V1Pod,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Create a Kubernetes pod.
 
@@ -293,10 +351,12 @@ def create_pod(
         namespace: The namespace in which to create the pod.
         pod_manifest: The manifest of the pod to create.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
     """
     retry_on_api_exception(
         core_api.create_namespaced_pod,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         body=pod_manifest,
@@ -308,6 +368,7 @@ def delete_pod(
     pod_name: str,
     namespace: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Delete a Kubernetes pod.
 
@@ -316,6 +377,7 @@ def delete_pod(
         pod_name: The name of the pod to delete.
         namespace: The namespace of the pod.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Raises:
         k8s_client.rest.ApiException: If the pod deletion failed for any
@@ -325,6 +387,7 @@ def delete_pod(
         retry_on_api_exception(
             core_api.delete_namespaced_pod,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )(
             name=pod_name,
             namespace=namespace,
@@ -344,6 +407,7 @@ def wait_pod(
     exponential_backoff: bool = False,
     stream_logs: bool = False,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> k8s_client.V1Pod:
     """Wait for a pod to meet an exit condition.
 
@@ -366,6 +430,7 @@ def wait_pod(
         stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Raises:
         RuntimeError: when the function times out.
@@ -391,6 +456,7 @@ def wait_pod(
             pod_name,
             namespace,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )
 
         if resp is None:
@@ -608,6 +674,7 @@ def create_and_wait_for_pod_to_start(
     startup_failure_backoff: float,
     startup_timeout: float,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Create a pod and wait for it to reach a desired state.
 
@@ -622,6 +689,7 @@ def create_and_wait_for_pod_to_start(
         startup_failure_backoff: The backoff factor for the pod startup.
         startup_timeout: The maximum time to wait for the pod to start.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Raises:
         TimeoutError: If the pod is still in a pending state after the maximum
@@ -677,6 +745,7 @@ def create_and_wait_for_pod_to_start(
             pod_name=pod_name,
             namespace=namespace,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )
         if not pod or pod_is_not_pending(pod):
             break
@@ -707,6 +776,7 @@ def get_pod_owner_references(
     pod_name: str,
     namespace: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> List[k8s_client.V1OwnerReference]:
     """Get owner references for a pod.
 
@@ -715,6 +785,7 @@ def get_pod_owner_references(
         pod_name: Name of the pod.
         namespace: Kubernetes namespace.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         List of owner references.
@@ -724,6 +795,7 @@ def get_pod_owner_references(
         pod_name=pod_name,
         namespace=namespace,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
 
     if not pod or not pod.metadata or not pod.metadata.owner_references:
@@ -794,7 +866,8 @@ def create_job(
     namespace: str,
     job_manifest: k8s_client.V1Job,
     api_request_timeout: Optional[int] = None,
-) -> None:
+    max_retries: int = 3,
+) -> k8s_client.V1Job:
     """Create a Kubernetes job.
 
     Args:
@@ -802,13 +875,74 @@ def create_job(
         namespace: Kubernetes namespace.
         job_manifest: The manifest of the job to create.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
+
+    Returns:
+        The created job.
     """
-    retry_on_api_exception(
+    return retry_on_api_exception(
         batch_api.create_namespaced_job,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         body=job_manifest,
+    )
+
+
+def delete_job(
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+    api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
+) -> None:
+    """Delete a Kubernetes job and its pods.
+
+    Args:
+        batch_api: Kubernetes batch api.
+        namespace: Kubernetes namespace.
+        job_name: The name of the job to delete.
+        api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
+    """
+    retry_on_api_exception(
+        batch_api.delete_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
+    )(
+        name=job_name,
+        namespace=namespace,
+        propagation_policy="Foreground",
+    )
+
+
+def create_service(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    service_manifest: k8s_client.V1Service,
+    api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
+) -> k8s_client.V1Service:
+    """Create a Kubernetes service.
+
+    Args:
+        core_api: Kubernetes core api.
+        namespace: Kubernetes namespace.
+        service_manifest: The manifest of the service to create.
+        api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
+
+    Returns:
+        The created service.
+    """
+    return retry_on_api_exception(
+        core_api.create_namespaced_service,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
+    )(
+        namespace=namespace,
+        body=service_manifest,
     )
 
 
@@ -817,6 +951,7 @@ def get_job(
     namespace: str,
     job_name: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> k8s_client.V1Job:
     """Get a job by name.
 
@@ -825,12 +960,15 @@ def get_job(
         namespace: Kubernetes namespace.
         job_name: The name of the job to get.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The job.
     """
     return retry_on_api_exception(
-        batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
+        batch_api.read_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(name=job_name, namespace=namespace)
 
 
@@ -839,6 +977,7 @@ def list_jobs(
     namespace: str,
     label_selector: Optional[str] = None,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> k8s_client.V1JobList:
     """List jobs in a namespace.
 
@@ -847,12 +986,15 @@ def list_jobs(
         namespace: Kubernetes namespace.
         label_selector: The label selector to use.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The job list.
     """
     return retry_on_api_exception(
-        batch_api.list_namespaced_job, api_request_timeout=api_request_timeout
+        batch_api.list_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         label_selector=label_selector,
@@ -865,6 +1007,7 @@ def update_job(
     job_name: str,
     annotations: Dict[str, str],
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> k8s_client.V1Job:
     """Update a job.
 
@@ -874,12 +1017,15 @@ def update_job(
         job_name: The name of the job to update.
         annotations: The annotations to update.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The updated job.
     """
     return retry_on_api_exception(
-        batch_api.patch_namespaced_job, api_request_timeout=api_request_timeout
+        batch_api.patch_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         name=job_name,
         namespace=namespace,
@@ -1066,6 +1212,7 @@ def wait_for_job_to_finish(
     stream_logs: bool = True,
     container_name: Optional[str] = None,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Wait for a job to finish.
 
@@ -1082,6 +1229,7 @@ def wait_for_job_to_finish(
         stream_logs: Whether to stream the job logs.
         container_name: Name of the container to stream logs from.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Raises:
         RuntimeError: If the job failed or timed out.
@@ -1097,6 +1245,7 @@ def wait_for_job_to_finish(
         job: k8s_client.V1Job = retry_on_api_exception(
             batch_api.read_namespaced_job,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )(name=job_name, namespace=namespace)
 
         if job.status.conditions:
@@ -1113,6 +1262,7 @@ def wait_for_job_to_finish(
             pod_list: k8s_client.V1PodList = retry_on_api_exception(
                 core_api.list_namespaced_pod,
                 api_request_timeout=api_request_timeout,
+                max_retries=max_retries,
             )(
                 namespace=namespace,
                 label_selector=f"job-name={job_name}",
@@ -1129,13 +1279,12 @@ def wait_for_job_to_finish(
                     and waiting_state.reason
                     in fail_on_container_waiting_reasons
                 ):
-                    retry_on_api_exception(
-                        batch_api.delete_namespaced_job,
-                        api_request_timeout=api_request_timeout,
-                    )(
-                        name=job_name,
+                    delete_job(
+                        batch_api=batch_api,
                         namespace=namespace,
-                        propagation_policy="Foreground",
+                        job_name=job_name,
+                        api_request_timeout=api_request_timeout,
+                        max_retries=max_retries,
                     )
                     raise RuntimeError(
                         f"Job `{namespace}:{job_name}` failed: "
@@ -1214,6 +1363,7 @@ def check_job_status(
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     container_name: Optional[str] = None,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> Tuple[JobStatus, Optional[str]]:
     """Check the status of a job.
 
@@ -1226,6 +1376,7 @@ def check_job_status(
             that will cause the job to fail.
         container_name: Name of the container to check for failure.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The status of the job and an optional status message. For failed jobs,
@@ -1233,7 +1384,9 @@ def check_job_status(
         pod diagnostics.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
-        batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
+        batch_api.read_namespaced_job,
+        api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(name=job_name, namespace=namespace)
 
     if job.status.conditions:
@@ -1269,6 +1422,7 @@ def check_job_status(
         pod_list: k8s_client.V1PodList = retry_on_api_exception(
             core_api.list_namespaced_pod,
             api_request_timeout=api_request_timeout,
+            max_retries=max_retries,
         )(
             namespace=namespace,
             label_selector=f"job-name={job_name}",
@@ -1295,13 +1449,12 @@ def check_job_status(
                 and (waiting_state := container_state.waiting)
                 and waiting_state.reason in fail_on_container_waiting_reasons
             ):
-                retry_on_api_exception(
-                    batch_api.delete_namespaced_job,
-                    api_request_timeout=api_request_timeout,
-                )(
-                    name=job_name,
+                delete_job(
+                    batch_api=batch_api,
                     namespace=namespace,
-                    propagation_policy="Foreground",
+                    job_name=job_name,
+                    api_request_timeout=api_request_timeout,
+                    max_retries=max_retries,
                 )
                 error_message = (
                     f"Detected container in state `{waiting_state.reason}`"
@@ -1319,6 +1472,7 @@ def create_config_map(
     name: str,
     data: Dict[str, str],
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Create a Kubernetes config map.
 
@@ -1328,10 +1482,12 @@ def create_config_map(
         name: Name of the config map to create.
         data: Data to store in the config map.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
     """
     retry_on_api_exception(
         core_api.create_namespaced_config_map,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         body=k8s_client.V1ConfigMap(metadata={"name": name}, data=data),
@@ -1344,6 +1500,7 @@ def update_config_map(
     name: str,
     data: Dict[str, str],
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Update a Kubernetes config map.
 
@@ -1353,10 +1510,12 @@ def update_config_map(
         name: Name of the config map to update.
         data: Data to store in the config map.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
     """
     retry_on_api_exception(
         core_api.patch_namespaced_config_map,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         name=name,
@@ -1369,6 +1528,7 @@ def get_config_map(
     namespace: str,
     name: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> k8s_client.V1ConfigMap:
     """Get a Kubernetes config map.
 
@@ -1377,6 +1537,7 @@ def get_config_map(
         namespace: Kubernetes namespace.
         name: Name of the config map to get.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The config map.
@@ -1384,6 +1545,7 @@ def get_config_map(
     return retry_on_api_exception(
         core_api.read_namespaced_config_map,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         name=name,
@@ -1395,6 +1557,7 @@ def delete_config_map(
     namespace: str,
     name: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> None:
     """Delete a Kubernetes config map.
 
@@ -1403,10 +1566,12 @@ def delete_config_map(
         namespace: Kubernetes namespace.
         name: Name of the config map to delete.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
     """
     retry_on_api_exception(
         core_api.delete_namespaced_config_map,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )(
         namespace=namespace,
         name=name,
@@ -1418,6 +1583,7 @@ def get_parent_job_name(
     pod_name: str,
     namespace: str,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> Optional[str]:
     """Get the name of the job that created a pod.
 
@@ -1426,6 +1592,7 @@ def get_parent_job_name(
         pod_name: Name of the pod.
         namespace: Kubernetes namespace.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The name of the job that created the pod, or None if the pod is not
@@ -1436,6 +1603,7 @@ def get_parent_job_name(
         pod_name=pod_name,
         namespace=namespace,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
     if (
         pod
@@ -1479,6 +1647,215 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+def apply_resource_request_component_settings(
+    settings: SettingsT,
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    settings_class: Type[SettingsT],
+) -> SettingsT:
+    """Apply matching request target settings to stack settings.
+
+    Args:
+        settings: The stack component settings to update.
+        allocated_resource_request: The allocated resource request, if any.
+        settings_class: The settings class used to validate the result.
+
+    Returns:
+        The updated and validated stack component settings.
+
+    Raises:
+        ValueError: If the allocated resource request is invalid.
+    """
+    if not allocated_resource_request:
+        return settings
+
+    component_settings = (
+        allocated_resource_request.get_resources().component_settings
+    )
+
+    settings_dict = settings.model_dump(exclude_unset=True)
+    settings_dict.update(component_settings)
+
+    try:
+        return settings_class.model_validate(settings_dict)
+    except (ValidationError, TypeError) as e:
+        resource_pool_name = (
+            allocated_resource_request.get_body().pool_name or "<unknown>"
+        )
+        component_settings_json = json.dumps(
+            component_settings,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        )
+        raise ValueError(
+            "Failed to apply the Resource Pool component setting overrides "
+            "from the allocated resource request "
+            f"{allocated_resource_request.id} "
+            f"to `{settings_class.__name__}` stack component settings. "
+            "The overrides were merged with the existing stack component "
+            "settings, but the merged configuration is invalid. "
+            "Component settings provided by the resource request:\n"
+            f"{component_settings_json}\n"
+            "Please check the target settings that you configured for the "
+            f"`{resource_pool_name}` resource pool and its policies."
+        ) from e
+
+
+def apply_resource_request_allocations_to_pod_settings(
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    pod_settings: Optional[KubernetesPodSettings] = None,
+) -> KubernetesPodSettings:
+    """Apply allocated CPU, memory, and GPU resources to pod settings.
+
+    Args:
+        allocated_resource_request: The allocated resource request, if any.
+        pod_settings: The pod settings to update. A new one will be created
+            if not provided.
+
+    Returns:
+        The new or updated pod settings.
+    """
+    if not pod_settings:
+        pod_settings = KubernetesPodSettings()
+    else:
+        pod_settings = pod_settings.model_copy(deep=True)
+
+    if not allocated_resource_request:
+        return pod_settings
+
+    cpu_millicores = 0
+    memory_bytes = 0
+    gpu_count = 0
+
+    for allocation in allocated_resource_request.get_resources().allocations:
+        kind = allocation.resource_kind
+        unit = allocation.unit
+
+        if kind == "cpu":
+            cpu_millicores += _cpu_allocation_to_millicores(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "memory":
+            memory_bytes += _memory_allocation_to_bytes(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "gpu":
+            gpu_count += allocation.quantity
+
+    resources = {
+        section: dict(values)
+        for section, values in (pod_settings.resources or {}).items()
+    }
+    requests = resources.setdefault("requests", {})
+    limits = resources.setdefault("limits", {})
+    resource_request_resources: Dict[str, Dict[str, str]] = {
+        "requests": {},
+        "limits": {},
+    }
+    resource_request_requests = resource_request_resources["requests"]
+    resource_request_limits = resource_request_resources["limits"]
+
+    if cpu_millicores:
+        if cpu_millicores % 1000 == 0:
+            cpu = str(cpu_millicores // 1000)
+        else:
+            cpu = f"{cpu_millicores}m"
+        requests["cpu"] = cpu
+        limits["cpu"] = cpu
+        resource_request_requests["cpu"] = cpu
+        resource_request_limits["cpu"] = cpu
+
+    if memory_bytes:
+        memory = f"{math.ceil(memory_bytes / ByteUnit.MIB.byte_value)}Mi"
+        requests["memory"] = memory
+        limits["memory"] = memory
+        resource_request_requests["memory"] = memory
+        resource_request_limits["memory"] = memory
+
+    if gpu_count:
+        gpu = str(gpu_count)
+        requests["nvidia.com/gpu"] = gpu
+        limits["nvidia.com/gpu"] = gpu
+        resource_request_requests["nvidia.com/gpu"] = gpu
+        resource_request_limits["nvidia.com/gpu"] = gpu
+
+    logger.debug(
+        "Configured Kubernetes pod resources from allocated resource request "
+        "`%s`: %s. Final Kubernetes pod resources: %s",
+        allocated_resource_request.id,
+        json.dumps(
+            resource_request_resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+        json.dumps(
+            resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+    )
+
+    return pod_settings.model_copy(update={"resources": resources})
+
+
+def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
+    """Convert a CPU allocation to Kubernetes millicores.
+
+    Args:
+        quantity: CPU allocation quantity.
+        unit: CPU allocation unit.
+
+    Returns:
+        CPU allocation expressed in Kubernetes millicores.
+    """
+    if unit is None:
+        if quantity > 50:
+            return quantity
+        return quantity * 1000
+
+    normalized_unit = unit.lower()
+    if normalized_unit == "cpu":
+        return quantity * 1000
+    if normalized_unit in {"m", "mcpu", "millicpu", "millicore", "millicores"}:
+        return quantity
+
+    logger.warning(
+        "Interpreting unsupported CPU allocation unit `%s` as full CPU cores.",
+        unit,
+    )
+    return quantity * 1000
+
+
+def _memory_allocation_to_bytes(quantity: int, unit: Optional[str]) -> int:
+    """Convert a memory allocation to bytes.
+
+    Args:
+        quantity: Memory allocation quantity.
+        unit: Memory allocation unit.
+
+    Returns:
+        Memory allocation expressed in bytes.
+    """
+    if unit is None:
+        logger.warning("Interpreting memory allocation without a unit as MiB.")
+        return quantity * ByteUnit.MIB.byte_value
+
+    try:
+        byte_unit = ByteUnit(unit)
+    except ValueError:
+        logger.warning(
+            "Ignoring memory allocation with unsupported unit `%s`.",
+            unit,
+        )
+        return 0
+
+    return quantity * byte_unit.byte_value
 
 
 # ============================================================================

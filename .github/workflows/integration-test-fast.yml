@@ -82,6 +82,10 @@ on:
         type: number
         required: false
         default: 3
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
@@ -91,8 +95,6 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       ZENML_ENABLE_RICH_TRACEBACK: false
       WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8
@@ -167,9 +169,9 @@ jobs:
           # Free up space previously used by Docker's default root on the OS disk.
           sudo rm -rf /var/lib/docker/* || true
           sudo systemctl start docker
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |
@@ -177,7 +179,7 @@ jobs:
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b  # v6.2.0
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c  # v6.2.4
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
@@ -193,7 +195,7 @@ jobs:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -201,7 +203,7 @@ jobs:
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
       - name: Setup environment
-        uses: ./.github/actions/setup_environment
+        uses: $/.github/actions/setup_environment
         with:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}

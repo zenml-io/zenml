@@ -137,9 +137,7 @@ class NumpyMaterializer(BaseMaterializer):
                     os.path.join(self.uri, DATA_FILENAME), "rb"
                 ) as f:
                     input_stream = pa.input_stream(f)
-                    data = pq.read_table(  # type: ignore[no-untyped-call]
-                        input_stream
-                    )
+                    data = pq.read_table(input_stream)
                 vals = getattr(data.to_pandas(), DATA_VAR).values
                 arr = np.reshape(vals, shape_tuple)
                 # Ensure consistent dtype handling

@@ -293,6 +293,51 @@ class APIKeyInternalResponse(APIKeyResponse):
         default=None,
         title="The previous API key. Only set if the key was rotated.",
     )
+    key_generation: int = Field(
+        default=1,
+        title="The current API key generation.",
+    )
+
+    def is_previous_key_retained(self) -> bool:
+        """Check whether the previous API key generation is still retained.
+
+        Returns:
+            True if the previous key/generation is still in its retention
+            window.
+        """
+        if (
+            not self.active
+            or self.last_rotated is None
+            or self.retain_period_minutes <= 0
+            or self.key_generation <= 1
+        ):
+            return False
+
+        return utc_now(tz_aware=self.last_rotated) - self.last_rotated < (
+            timedelta(minutes=self.retain_period_minutes)
+        )
+
+    def is_token_generation_valid(
+        self, token_generation: Optional[int]
+    ) -> bool:
+        """Check whether an API-key-derived token generation is still valid.
+
+        Args:
+            token_generation: The API key generation embedded in the JWT.
+
+        Returns:
+            True if the token generation is still valid.
+        """
+        if token_generation is None:
+            return True
+
+        if token_generation == self.key_generation:
+            return True
+
+        return (
+            token_generation == self.key_generation - 1
+            and self.is_previous_key_retained()
+        )
 
     def verify_key(
         self,
@@ -319,19 +364,8 @@ class APIKeyInternalResponse(APIKeyResponse):
 
         # same for the previous key, if set and if it's still valid
         key_hash = None
-        if (
-            self.previous_key is not None
-            and self.last_rotated is not None
-            and self.active
-            and self.retain_period_minutes > 0
-        ):
-            # check if the previous key is still valid
-            if utc_now(
-                tz_aware=self.last_rotated
-            ) - self.last_rotated < timedelta(
-                minutes=self.retain_period_minutes
-            ):
-                key_hash = self.previous_key
+        if self.previous_key is not None and self.is_previous_key_retained():
+            key_hash = self.previous_key
         previous_result = context.verify(key, key_hash)
 
         return result or previous_result

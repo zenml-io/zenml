@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
@@ -158,6 +158,8 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
             SQLAlchemy query options.
         """
         options: List[ExecutableOption] = [joinedload(jl_arg(cls.run))]
+        if include_metadata:
+            options.append(selectinload(jl_arg(cls.run_metadata)))
         if include_resources:
             options.extend(
                 [

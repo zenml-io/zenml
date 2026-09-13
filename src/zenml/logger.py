@@ -88,12 +88,18 @@ _RESERVED_LOG_RECORD_ATTRS: frozenset[str] = frozenset(
 
 
 def get_logger(logger_name: str) -> logging.Logger:
-    """Returns a stdlib logger by name.
+    """Return a stdlib logger by name.
 
     To attach structured fields to a log record,
     use the stdlib pattern:
 
         ``logger.info("event", extra={"key": "value"})``
+
+    Args:
+        logger_name: Name of the logger to retrieve.
+
+    Returns:
+        The requested standard library logger.
     """
     return logging.getLogger(logger_name)
 
@@ -167,6 +173,9 @@ def logging_context(**fields: Any) -> Generator[None, None, None]:
 
         This will propagate extra context (on top of the context bound by
         `bind_log_context`) to the log records emitted within the scope.
+
+    Args:
+        **fields: Context fields to bind within the scope.
     """
     with structlog.contextvars.bound_contextvars(**fields):
         yield
@@ -180,6 +189,9 @@ def get_logging_context() -> dict[str, Any]:
 
     Useful at response/error boundaries that need to surface a single field
     (typically ``request_id``) back to the caller.
+
+    Returns:
+        A mutable copy of the currently bound logging context.
     """
     return dict(structlog.contextvars.get_contextvars())
 
@@ -252,7 +264,11 @@ class ZenMLConsoleFormatter(logging.Formatter):
     _URL_PATTERN = re.compile(r"https?://[^\s)\"'>]+")
 
     def __init__(self, custom_log_format: Optional[str] = None) -> None:
-        """Initialize the formatter."""
+        """Initialize the formatter.
+
+        Args:
+            custom_log_format: Optional standard library logging format.
+        """
         super().__init__(fmt=custom_log_format or self._LOG_FORMAT)
         self._custom_log_format = custom_log_format
 
@@ -311,14 +327,21 @@ class ZenMLConsoleFormatter(logging.Formatter):
         return bool(self._is_zenml_server)
 
     def _format_custom_log_format(self, record: logging.LogRecord) -> str:
-        """Format a record with a user-provided console format."""
+        """Format a record with a user-provided console format.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The formatted log record.
+        """
         return self._format_with_step_prefix_in_message(record)
 
     def _format_compact_client_log(self, record: logging.LogRecord) -> str:
         """Format default client INFO logs with a compact layout.
 
-        Log format:
-        <message> | <extras as JSON, if any> \n [traceback and stack_info if any]
+        The output contains the message, optional JSON extras, and optional
+        traceback and stack information.
 
         Args:
             record: The log record to render.
@@ -404,7 +427,14 @@ class ZenMLConsoleFormatter(logging.Formatter):
     def _format_with_step_prefix_in_message(
         self, record: logging.LogRecord
     ) -> str:
-        """Format a record with the step prefix folded into its message, if enabled."""
+        """Format a record with its step prefix folded into the message.
+
+        Args:
+            record: The log record to format.
+
+        Returns:
+            The formatted log record.
+        """
         if not self._should_prefix_step_name(record):
             return super().format(record)
 
@@ -433,7 +463,14 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
     @staticmethod
     def _should_prefix_step_name(record: logging.LogRecord) -> bool:
-        """Check whether the console message should include pipeline step name prefix."""
+        """Check whether a message should include its pipeline step name.
+
+        Args:
+            record: The log record to inspect.
+
+        Returns:
+            Whether to prefix the message with its pipeline step name.
+        """
         # Only add step prefix if step names are enabled in console and the
         # log record has a step name.
         return step_names_in_console.get() and bool(
@@ -445,7 +482,15 @@ class ZenMLConsoleFormatter(logging.Formatter):
         record: logging.LogRecord,
         exclude_attrs: Optional[set[str]] = None,
     ) -> str:
-        """Format structured fields attached to a log record."""
+        """Format structured fields attached to a log record.
+
+        Args:
+            record: The log record containing structured fields.
+            exclude_attrs: Additional record attributes to omit.
+
+        Returns:
+            The formatted structured fields, or an empty string if none exist.
+        """
         extras = _collect_extra_fields(record, exclude_attrs=exclude_attrs)
 
         if not extras:
@@ -463,7 +508,14 @@ class ZenMLConsoleFormatter(logging.Formatter):
     def _format_traceback_and_stack_info(
         self, record: logging.LogRecord
     ) -> str:
-        """Format traceback and stack info, if present."""
+        """Format traceback and stack info, if present.
+
+        Args:
+            record: The log record containing exception or stack information.
+
+        Returns:
+            The formatted traceback and stack information.
+        """
         if not record.exc_info and not record.stack_info:
             return ""
 
@@ -486,7 +538,15 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
     @classmethod
     def _highlight_message_tokens(cls, text: str, base_color: str) -> str:
-        """Highlight backtick-quoted text in purple and URLs in blue."""
+        """Highlight backtick-quoted text in purple and URLs in blue.
+
+        Args:
+            text: The text to highlight.
+            base_color: ANSI color restored after each highlighted token.
+
+        Returns:
+            The highlighted text.
+        """
         for quoted in cls._BACKTICK_PATTERN.findall(text):
             text = text.replace(
                 "`" + quoted + "`",
@@ -544,7 +604,11 @@ class ZenMLJsonFormatter(logging.Formatter):
 
 
 def _get_console_logging_format() -> Optional[str]:
-    """Get the configured client console logging format."""
+    """Get the configured client console logging format.
+
+    Returns:
+        The configured format, or `None` when no valid format is configured.
+    """
     # ZENML_CONSOLE_LOGGING_FORMAT takes precedence over older deprecated ZENML_LOGGING_FORMAT.
     log_format = os.environ.get(
         ENV_ZENML_CONSOLE_LOGGING_FORMAT
@@ -622,7 +686,15 @@ def _add_step_name_to_message(message: str) -> str:
 
 
 def _prefix_step_name(message: str, step_name: str) -> str:
-    """Prefix a console/stdout message with the active step name."""
+    """Prefix a console/stdout message with the active step name.
+
+    Args:
+        message: The message to prefix.
+        step_name: The active pipeline step name.
+
+    Returns:
+        The message with the step name prefix applied where appropriate.
+    """
     # Console writes can arrive as blank chunks; prefixing those would turn
     # empty lines into visible "[step]" noise.
     if message in ["\n", ""]:
@@ -836,7 +908,11 @@ class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
     """
 
     def __init__(self, stream: Optional[Any] = None) -> None:
-        """Initialize the console handler."""
+        """Initialize the console handler.
+
+        Args:
+            stream: Optional output stream for console logs.
+        """
         # initialize the handler with the provided stream or the default stream
         super().__init__(stream or _ZenMLStdoutStream())
 
@@ -876,7 +952,11 @@ def set_root_verbosity() -> LoggingLevels:
 
 
 def _remove_zenml_handlers(root_logger: logging.Logger) -> None:
-    """Remove handlers owned by the ZenML logging setup."""
+    """Remove handlers owned by the ZenML logging setup.
+
+    Args:
+        root_logger: Root logger from which to remove ZenML handlers.
+    """
     for handler in root_logger.handlers[:]:
         if isinstance(handler, (ZenMLConsoleHandler, ZenMLLoggingHandler)):
             root_logger.removeHandler(handler)

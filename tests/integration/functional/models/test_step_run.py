@@ -25,7 +25,7 @@ from tests.integration.functional.zen_stores.utils import (
     constant_int_output_test_step,
     int_plus_one_test_step,
 )
-from zenml import step
+from zenml import log_metadata, step
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StepType
 
@@ -89,6 +89,30 @@ def test_step_run_and_dag_include_step_type(
 
     step_node = next(node for node in dag.nodes if node.type == "step")
     assert step_node.metadata["type"] == expected_type.value
+
+
+@step
+def metadata_logging_step() -> int:
+    log_metadata(metadata={"accuracy": 0.9, "loss": 0.1})
+    return 1
+
+
+def test_dag_includes_requested_metadata_keys(
+    clean_client: "Client", one_step_pipeline
+):
+    """Tests that DAG step nodes contain the requested run metadata values."""
+    pipeline_instance = one_step_pipeline(metadata_logging_step)
+    pipeline_run = pipeline_instance()
+
+    dag = clean_client.zen_store.get_pipeline_run_dag(pipeline_run.id)
+    step_node = next(node for node in dag.nodes if node.type == "step")
+    assert "run_metadata" not in step_node.metadata
+
+    dag = clean_client.zen_store.get_pipeline_run_dag(
+        pipeline_run.id, include_step_metadata=["accuracy"]
+    )
+    step_node = next(node for node in dag.nodes if node.type == "step")
+    assert step_node.metadata["run_metadata"] == {"accuracy": 0.9}
 
 
 def test_step_run_parent_steps_linkage(

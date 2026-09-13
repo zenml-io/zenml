@@ -26,22 +26,16 @@ from zenml.integrations.modal.flavors.modal_base_flavor import (
 from zenml.sandboxes import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
-    BaseSandboxSettings,
+    ContainerizedSandboxSettings,
 )
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.sandboxes import ModalSandbox
 
 
-class ModalSandboxSettings(BaseSandboxSettings, ModalSettingsMixin):
+class ModalSandboxSettings(ContainerizedSandboxSettings, ModalSettingsMixin):
     """Per-step settings for the Modal sandbox."""
 
-    image: str = Field(
-        default="python:3.11-slim",
-        description="Docker image used to boot the Modal sandbox. Accepts "
-        "any registry reference Modal can pull. Example: "
-        "'python:3.11-slim', 'my-registry/my-image:tag'.",
-    )
     cpu: Optional[int] = Field(
         default=None,
         description="Number of CPU cores requested for the sandbox. Must be "

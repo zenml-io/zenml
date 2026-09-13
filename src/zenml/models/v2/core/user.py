@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing users."""
 
+from datetime import datetime
 from secrets import token_hex
 from typing import (
     TYPE_CHECKING,
@@ -302,6 +303,10 @@ class UserResponseBody(BaseDatedResponseBody):
 class UserResponseMetadata(BaseResponseMetadata):
     """Response metadata for users."""
 
+    password_changed_at: Optional[datetime] = Field(
+        default=None,
+        title="The time when the user's password was last changed.",
+    )
     email: Optional[str] = Field(
         default="",
         title="The email address associated with the account. Only relevant "
@@ -403,6 +408,26 @@ class UserResponse(
             the value of the property.
         """
         return self.get_body().is_service_account
+
+    def is_token_issued_after_password_change(
+        self, issued_at: Optional[datetime]
+    ) -> bool:
+        """Check whether a token was issued after the latest password change.
+
+        Args:
+            issued_at: The time at which the token was issued.
+
+        Returns:
+            True if the token is still valid for this user account.
+        """
+        if issued_at is None or self.is_service_account:
+            return True
+
+        password_changed_at = self.get_metadata().password_changed_at
+        if not password_changed_at:
+            return True
+
+        return issued_at >= password_changed_at
 
     @property
     def is_admin(self) -> bool:

@@ -17,6 +17,8 @@ layout:
 
 This guide provides step-by-step instructions for deploying ZenML Pro on Kubernetes using Helm charts. All components run within your infrastructure with zero external dependencies.
 
+ZenML Pro deployments use standard Kubernetes APIs and work on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
+
 ## Deployment Architecture
 
 All components run entirely within your Kubernetes cluster and infrastructure:

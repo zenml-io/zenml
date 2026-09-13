@@ -129,8 +129,8 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ $server.image.pullPolicy }}
-          args: ["migrate-database"]
-          command: ['zenml']
+          args: ["-m", "zenml.zen_server.database_migration"]
+          command: ["python"]
           volumeMounts:
             - name: zenml-config
               mountPath: /zenml/.zenconfig
@@ -150,6 +150,9 @@ spec:
           {{- end }}
           env:
             {{- $envVars := include "zenml.envVariables" . | fromYaml | default dict }}
+            {{- with $server.openTelemetry.dbMigrationServiceName }}
+            {{- $_ := set $envVars "ZENML_SERVER_OTEL_SERVICE_NAME" . }}
+            {{- end }}
             {{- range $k, $v := $envVars }}
             - name: {{ $k }}
               value: {{ $v | quote }}
@@ -160,6 +163,13 @@ spec:
                 secretKeyRef:
                   name: {{ $server.database.passwordSecretRef.name }}
                   key: {{ $server.database.passwordSecretRef.key }}
+            {{- end }}
+            {{- if and $server.pro.enabled $server.pro.enrollmentKeySecretRef }}
+            - name: ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $server.pro.enrollmentKeySecretRef.name }}
+                  key: {{ $server.pro.enrollmentKeySecretRef.key }}
             {{- end }}
             {{- range $server.environmentSecretKeyRefs }}
             - name: {{ .name }}

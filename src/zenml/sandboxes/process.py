@@ -59,11 +59,19 @@ class SandboxProcess(ABC):
 
     @abstractmethod
     def stdout(self) -> Iterator[str]:
-        """Yields stdout lines."""
+        """Yield stdout lines.
+
+        Returns:
+            An iterator over standard output lines.
+        """
 
     @abstractmethod
     def stderr(self) -> Iterator[str]:
-        """Yields stderr lines."""
+        """Yield stderr lines.
+
+        Returns:
+            An iterator over standard error lines.
+        """
 
     @abstractmethod
     def wait(self, timeout: Optional[float] = None) -> int:

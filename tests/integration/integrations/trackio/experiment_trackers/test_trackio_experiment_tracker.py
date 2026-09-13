@@ -323,7 +323,6 @@ def test_trackio_cleanup_calls_finish_when_sync_fails(
 
 
 def test_trackio_metadata() -> None:
-
     tracker = _tracker(space_id="AINovice2005/zenml-F5J4jOGLJ44")
 
     tracker.get_settings = MagicMock(return_value=_settings())

@@ -12,18 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import sys
+
 import pandas as pd
-from datasets import Dataset
+import pytest
 
-from tests.unit.test_general import _test_materializer
-from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
-    HFDatasetMaterializer,
-    extract_repo_name,
+
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
 )
-
-
 def test_huggingface_datasets_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Datasets materializer."""
+    from datasets import Dataset
+
+    from tests.unit.test_general import _test_materializer
+    from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
+        HFDatasetMaterializer,
+    )
+
     sample_dataframe = pd.DataFrame([1, 2, 3])
     dataset = Dataset.from_pandas(sample_dataframe)
     dataset = _test_materializer(
@@ -38,8 +45,16 @@ def test_huggingface_datasets_materializer(clean_client):
     assert [1, 2, 3] in data.values()
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
+)
 def test_extract_repo_name():
     """Tests whether the extract_repo_name function works correctly."""
+    from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
+        extract_repo_name,
+    )
+
     # Test valid URL
     url = "hf://datasets/nyu-mll/glue@bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c/mrpc/train-00000-of-00001.parquet"
     assert extract_repo_name(url) == "nyu-mll/glue"
@@ -67,8 +82,16 @@ def test_extract_repo_name():
     assert extract_repo_name(None) is None
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
+)
 def test_extract_repo_name_edge_cases():
     """Tests edge cases for the extract_repo_name function."""
+    from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
+        extract_repo_name,
+    )
+
     # Test URL with no '@' symbol
     url = "hf://datasets/org/repo/file.parquet"
     assert extract_repo_name(url) == "org/repo"
@@ -82,8 +105,16 @@ def test_extract_repo_name_edge_cases():
     assert extract_repo_name(url) == "org-name/repo_name-123"
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="The Hugging Face integration is not installed on Python 3.14 CI.",
+)
 def test_extract_repo_name_exceptions():
     """Tests exception handling in the extract_repo_name function."""
+    from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
+        extract_repo_name,
+    )
+
     # Test with non-string input
     assert extract_repo_name(123) is None
 

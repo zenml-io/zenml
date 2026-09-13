@@ -11,6 +11,10 @@ The following enrollment key has been used to enroll your server in the ZenML Pr
 
   {{ $server.pro.enrollmentKey }}
 
+{{- else if $server.pro.enrollmentKeySecretRef }}
+
+The enrollment key has been sourced from key "{{ $server.pro.enrollmentKeySecretRef.key }}" in the existing Kubernetes Secret "{{ $server.pro.enrollmentKeySecretRef.name }}".
+
 {{- else }}
 
 An enrollment key has been auto-generated for your server. Please use the following command to fetch the enrollment key:

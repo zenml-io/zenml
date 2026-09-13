@@ -69,6 +69,7 @@ Every step output is named so lineage and dashboards stay readable:
 ```python
 from typing import Annotated
 
+
 @step
 def summarize_agent_work(
     results: list[pd.DataFrame],
@@ -123,7 +124,9 @@ def finalize_decision(
         action, status = "deploy_agent_recommendation", "completed"
     else:
         action, status = "skip_agent_recommendation", "rejected"
-    return pd.DataFrame([{"action": action, "status": status, "reviewed_tasks": len(summary)}])
+    return pd.DataFrame(
+        [{"action": action, "status": status, "reviewed_tasks": len(summary)}]
+    )
 ```
 
 Aborting the wait via the dashboard is handled by the framework — it terminates the run; you don't catch it in user code.
@@ -136,8 +139,7 @@ Aborting the wait via the dashboard is handled by the framework — it terminate
 @step(runtime="isolated")
 def execute_agent_task(
     task: dict[str, str],
-) -> Annotated[pd.DataFrame, "task_trace"]:
-    ...
+) -> Annotated[pd.DataFrame, "task_trace"]: ...
 ```
 
 ## 🚀 Run the Example

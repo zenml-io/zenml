@@ -111,3 +111,23 @@ def test_remove_none_values_method_works_when_recursive_flag_used():
     expected = {"a": {}}
 
     assert dict_utils.remove_none_values(original, recursive=True) == expected
+
+
+def test_bounded_dict_evicts_oldest_entries_on_setitem():
+    """Tests that setting entries evicts the oldest beyond the size limit."""
+    bounded = dict_utils.BoundedDict(max_size=2)
+
+    for key in ["a", "b", "c"]:
+        bounded[key] = key
+
+    assert list(bounded) == ["b", "c"]
+
+
+def test_bounded_dict_evicts_oldest_entries_on_update():
+    """Tests that updating evicts the oldest entries beyond the size limit."""
+    bounded = dict_utils.BoundedDict(max_size=2)
+    bounded["a"] = "a"
+
+    bounded.update({"b": "b", "c": "c"})
+
+    assert list(bounded) == ["b", "c"]

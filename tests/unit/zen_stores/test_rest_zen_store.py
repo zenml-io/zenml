@@ -13,9 +13,20 @@
 #  permissions and limitations under the License.
 """Tests for the REST ZenML store."""
 
+from uuid import uuid4
+
+import pytest
 from pytest_mock import MockerFixture
 
-from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+from zenml.enums import TriggerRunConcurrency
+from zenml.models import WebhookTriggerUpdate
+from zenml.zen_stores.rest_zen_store import (
+    ARTIFACT_VERSIONS,
+    TRIGGERS,
+    WEBHOOKS,
+    RestZenStore,
+    RestZenStoreConfiguration,
+)
 
 SERVER_URL = "https://server.example"
 SERVER_URL_WITH_SLASH = f"{SERVER_URL}/"
@@ -39,4 +50,101 @@ def test_rest_store_url_is_normalized_before_moving_credentials(
     assert config.url == SERVER_URL
     credentials_store.set_bare_token.assert_called_once_with(
         SERVER_URL, "test-api-token"
+    )
+
+
+def test_delete_artifact_version_can_request_server_side_data_deletion(
+    mocker: MockerFixture,
+) -> None:
+    """Tests forwarding artifact data deletion to the server."""
+    store = mocker.Mock()
+    artifact_version_id = uuid4()
+
+    RestZenStore.delete_artifact_version_server_side(
+        store,
+        artifact_version_id=artifact_version_id,
+        delete_from_artifact_store=True,
+    )
+
+    store._delete_resource.assert_called_once_with(
+        resource_id=artifact_version_id,
+        route=ARTIFACT_VERSIONS,
+        params={
+            "delete_metadata": True,
+            "delete_from_artifact_store": True,
+        },
+    )
+
+
+def test_delete_artifact_version_can_preserve_metadata(
+    mocker: MockerFixture,
+) -> None:
+    """Tests requesting data deletion without metadata deletion."""
+    store = mocker.Mock()
+    artifact_version_id = uuid4()
+
+    RestZenStore.delete_artifact_version_server_side(
+        store,
+        artifact_version_id=artifact_version_id,
+        delete_metadata=False,
+        delete_from_artifact_store=True,
+    )
+
+    store._delete_resource.assert_called_once_with(
+        resource_id=artifact_version_id,
+        route=ARTIFACT_VERSIONS,
+        params={
+            "delete_metadata": False,
+            "delete_from_artifact_store": True,
+        },
+    )
+
+
+def test_webhook_trigger_updates_use_full_serialization(
+    mocker: MockerFixture,
+) -> None:
+    """Tests that webhook trigger PUT requests include the complete model."""
+    store = mocker.Mock()
+    trigger_id = uuid4()
+    trigger_update = WebhookTriggerUpdate(
+        name="webhook-trigger",
+        active=True,
+        concurrency=TriggerRunConcurrency.SKIP,
+        configuration={"target_events": []},
+    )
+    store.put.return_value = {}
+
+    with pytest.raises(ValueError, match="Bad response"):
+        RestZenStore.update_trigger(
+            store,
+            trigger_id=trigger_id,
+            trigger_update=trigger_update,
+        )
+
+    store.put.assert_called_once_with(
+        f"{TRIGGERS}/{trigger_id}",
+        body=trigger_update,
+        params=None,
+        exclude_unset=False,
+    )
+
+
+def test_get_raw_webhook_event_uses_delivery_query_parameter(
+    mocker: MockerFixture,
+) -> None:
+    """Provider delivery IDs are not interpolated into URL path segments."""
+    store = mocker.Mock()
+    webhook_id = uuid4()
+    store.get.return_value = {"body": {"message": "hello"}}
+
+    result = RestZenStore.get_raw_webhook_event(
+        store,
+        webhook_id=webhook_id,
+        delivery_id="provider/id:with,characters",
+    )
+
+    assert result == {"body": {"message": "hello"}}
+    store.get.assert_called_once_with(
+        f"{WEBHOOKS}/{webhook_id}/events/raw",
+        params={"delivery_id": "provider/id:with,characters"},
     )

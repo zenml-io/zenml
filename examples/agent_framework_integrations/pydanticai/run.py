@@ -25,38 +25,33 @@ docker_settings = DockerSettings(
 def run_pydanticai_agent(
     query: str,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the PydanticAI agent and return results."""
-    try:
-        # Execute the PydanticAI agent
-        result = agent.run_sync(query)
+    """Execute the PydanticAI agent and return results.
 
-        return {"query": query, "response": result.output, "status": "success"}
-    except Exception as e:
-        return {
-            "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
-        }
+    Args:
+        query: Question for the agent.
+
+    Returns:
+        The query and generated response.
+    """
+    result = agent.run_sync(query)
+    return {"query": query, "response": result.output}
 
 
 @step
 def format_pydanticai_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the PydanticAI results into a readable summary."""
+    """Format the PydanticAI results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ PYDANTICAI AGENT ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🐍 PYDANTICAI RESPONSE
+    formatted = f"""🐍 PYDANTICAI RESPONSE
 {"=" * 40}
 
 Query: {query}

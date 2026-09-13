@@ -87,7 +87,14 @@ def _error_response(
 
 
 def _request_log_fields(request: Request) -> dict[str, Any]:
-    """Get common request fields for request lifecycle logs."""
+    """Get common request fields for request lifecycle logs.
+
+    Args:
+        request: The incoming HTTP request.
+
+    Returns:
+        Common request fields for structured logging.
+    """
     return {
         "method": request.method,
         "path": request.url.path,

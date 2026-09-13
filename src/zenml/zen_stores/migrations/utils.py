@@ -22,7 +22,16 @@ from sqlalchemy import inspect
 def index_exists(
     table_name: str, index_name: str, schema: Optional[str] = None
 ) -> bool:
-    """Check whether an index exists on the current database connection."""
+    """Check whether an index exists on the current database connection.
+
+    Args:
+        table_name: Name of the table containing the index.
+        index_name: Name of the index.
+        schema: Optional database schema containing the table.
+
+    Returns:
+        Whether the index exists.
+    """
     connection = op.get_bind()
     inspector = inspect(connection)
     return any(
@@ -38,7 +47,15 @@ def create_index_if_missing(
     unique: bool = False,
     schema: Optional[str] = None,
 ) -> None:
-    """Create an index only if it does not already exist."""
+    """Create an index only if it does not already exist.
+
+    Args:
+        table_name: Name of the table on which to create the index.
+        index_name: Name of the index.
+        columns: Columns included in the index.
+        unique: Whether to create a unique index.
+        schema: Optional database schema containing the table.
+    """
     if index_exists(table_name, index_name, schema=schema):
         return
 
@@ -49,7 +66,13 @@ def create_index_if_missing(
 def drop_index_if_exists(
     table_name: str, index_name: str, schema: Optional[str] = None
 ) -> None:
-    """Drop an index only if it exists."""
+    """Drop an index only if it exists.
+
+    Args:
+        table_name: Name of the table containing the index.
+        index_name: Name of the index.
+        schema: Optional database schema containing the table.
+    """
     if not index_exists(table_name, index_name, schema=schema):
         return
 

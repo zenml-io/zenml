@@ -23,17 +23,21 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveFloat,
     PositiveInt,
     field_validator,
     model_validator,
 )
 
 from zenml.constants import (
+    API,
     DEFAULT_HTTP_TIMEOUT,
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
@@ -60,6 +64,9 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
     ENV_ZENML_SERVER_PRO_PREFIX,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+    VERSION_1,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -166,6 +173,8 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        snapshot_run_dispatcher_implementation_source: Source pointing to a
+            class implementing the snapshot run dispatcher interface.
         max_concurrent_snapshot_runs: The maximum number of concurrent snapshot
             runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
@@ -264,7 +273,11 @@ class ServerConfiguration(BaseModel):
             artifact store instances across requests instead of rebuilding them
             on every request.
         api_transaction_cleanup_interval: The interval in seconds between
-            cleanup batches.
+            cleanup passes.
+        api_transaction_cleanup_batch_size: The maximum number of expired API
+            transactions to delete per SQL batch.
+        api_transaction_cleanup_time_budget: The maximum number of seconds a
+            cleanup pass spends draining full batches before sleeping again.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -280,7 +293,8 @@ class ServerConfiguration(BaseModel):
             export. If not set, ZenML derives it from the base endpoint.
         otel_service_name: Service name reported in OTel resource attributes.
             Appears as ``service.name`` in traces, metrics, and logs.
-            Defaults to 'zenml-server'. Can also be configured through the
+            Defaults to the ZenML Pro workspace name for cloud deployments and
+            'zenml-server' otherwise. Can also be configured through the
             standard OTEL_SERVICE_NAME environment variable.
         otel_traces_enabled: Whether to export OpenTelemetry traces when the
             OTLP endpoint is configured.
@@ -332,6 +346,7 @@ class ServerConfiguration(BaseModel):
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
     stream_broker_implementation_source: Optional[str] = None
+    snapshot_run_dispatcher_implementation_source: Optional[str] = None
     streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
     streaming_max_subscribers_per_stream: int = Field(default=100, gt=0)
     streaming_broadcaster_idle_grace_seconds: float = Field(
@@ -393,8 +408,16 @@ class ServerConfiguration(BaseModel):
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
     artifact_store_cache_enabled: bool = True
 
-    api_transaction_cleanup_interval: int = (
+    api_transaction_cleanup_interval: PositiveInt = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
+    )
+    api_transaction_cleanup_batch_size: PositiveInt = Field(
+        default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+        le=MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    )
+    api_transaction_cleanup_time_budget: PositiveFloat = Field(
+        default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+        le=MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     )
 
     max_request_body_size_in_bytes: int = (
@@ -421,10 +444,39 @@ class ServerConfiguration(BaseModel):
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
+    webhook_event_handler_sources: list[str] = []
+
+    @model_validator(mode="after")
+    def _validate_api_transaction_cleanup_settings(
+        self,
+    ) -> "ServerConfiguration":
+        """Validate API transaction cleanup settings.
+
+        Returns:
+            The validated server configuration.
+
+        Raises:
+            ValueError: If the cleanup time budget exceeds the cleanup
+                interval.
+        """
+        if (
+            self.api_transaction_cleanup_time_budget
+            > self.api_transaction_cleanup_interval
+        ):
+            raise ValueError(
+                "`api_transaction_cleanup_time_budget` must be less than or "
+                "equal to `api_transaction_cleanup_interval`."
+            )
+
+        return self
 
     @model_validator(mode="after")
     def _resolve_otel_endpoints(self) -> "ServerConfiguration":
-        """Resolve effective OTLP/HTTP endpoints for all telemetry signals."""
+        """Resolve effective OTLP/HTTP endpoints for all telemetry signals.
+
+        Returns:
+            The server configuration with resolved telemetry endpoints.
+        """
         # Resolve OTLP/HTTP endpoints for all telemetry signals
         self.otel_exporter_otlp_traces_endpoint = (
             self._get_otel_signal_endpoint(
@@ -454,7 +506,20 @@ class ServerConfiguration(BaseModel):
         endpoint: Optional[str],
         signal_path: str,
     ) -> Optional[str]:
-        """Get a configured or derived OTLP/HTTP signal endpoint."""
+        """Get a configured or derived OTLP/HTTP signal endpoint.
+
+        Args:
+            enabled: Whether exporting the telemetry signal is enabled.
+                E.g.: logs, metrics, traces are individual enabled or disabled.
+            endpoint: The explicitly configured endpoint, if any.
+                E.g. if user has set individual endpoints for traces, metrics or logs.
+            signal_path: The signal-specific path appended to the base endpoint.
+                E.g: `v1/traces`, `v1/metrics`, `v1/logs` suffixes at the end of base OTel endpoint.
+
+        Returns:
+            The resolved signal endpoint, or `None` if the signal is disabled
+            or no endpoint is configured.
+        """
         # If the signal is disabled, return None.
         if not enabled:
             return None
@@ -588,24 +653,27 @@ class ServerConfiguration(BaseModel):
 
         return value
 
-    @field_validator("event_handler_sources", mode="before")
+    @field_validator(
+        "event_handler_sources",
+        "webhook_event_handler_sources",
+        mode="before",
+    )
     @classmethod
-    def _convert_event_handlers(cls, value: Any) -> list[str]:
-        """Convert comma-separated value to list of strings.
+    def _convert_event_sources(cls, value: Any) -> Any:
+        """Convert comma-separated extension sources to a list.
 
         Args:
             value: A comma-separated string or None.
 
         Returns:
-            A list of event handlers or an empty list.
+            The potentially converted source list.
         """
-        if isinstance(value, list):
-            return value
-
         if isinstance(value, str):
-            return [i.strip() for i in value.strip().split(",")]
+            return [
+                source.strip() for source in value.split(",") if source.strip()
+            ]
 
-        return []
+        return value
 
     @property
     def deployment_id(self) -> UUID:
@@ -731,6 +799,34 @@ class ServerConfiguration(BaseModel):
 
         return self.external_server_id
 
+    @property
+    def server_api_url(self) -> Optional[str]:
+        """Get the externally reachable base URL of the server API.
+
+        Returns:
+            The absolute API URL, or `None` when no external server URL is
+            configured.
+        """
+        if not self.server_url:
+            return None
+
+        segments = [
+            self.server_url.rstrip("/"),
+            self.root_url_path.strip("/"),
+            API.strip("/"),
+            VERSION_1.strip("/"),
+        ]
+        return "/".join(segment for segment in segments if segment)
+
+    @property
+    def is_pro_server(self) -> bool:
+        """Return whether the server is a ZenML Pro server.
+
+        Returns:
+            True if the server is a ZenML Pro server, False otherwise.
+        """
+        return self.deployment_type == ServerDeploymentType.CLOUD
+
     @classmethod
     def get_server_config(cls) -> "ServerConfiguration":
         """Get the server configuration.
@@ -754,7 +850,7 @@ class ServerConfiguration(BaseModel):
 
         server_config = ServerConfiguration(**env_server_config)
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # If the zenml server is a Pro server, we will apply the Pro
             # configuration overrides to the server config automatically.
             # TODO: these should be retrieved dynamically from the ZenML Pro
@@ -781,10 +877,19 @@ class ServerConfiguration(BaseModel):
                     workspace_id=str(server_pro_config.workspace_id),
                 )
             )
-            if server_pro_config.workspace_name:
-                server_config.metadata.update(
-                    dict(workspace_name=server_pro_config.workspace_name)
+            if server_pro_config.organization_name:
+                server_config.metadata["organization_name"] = (
+                    server_pro_config.organization_name
                 )
+            if server_pro_config.workspace_name:
+                server_config.metadata["workspace_name"] = (
+                    server_pro_config.workspace_name
+                )
+                # Set default OTEL_SERVICE_NAME to the workspace name, if not set.
+                if "otel_service_name" not in env_server_config:
+                    server_config.otel_service_name = (
+                        server_pro_config.workspace_name
+                    )
 
             extra_cors_allow_origins = [
                 server_pro_config.dashboard_url,

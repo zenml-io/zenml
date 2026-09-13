@@ -21,13 +21,17 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Union,
 )
 from uuid import UUID
 
+from pydantic import BaseModel, Field
+
 import zenml
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.container_engines import ContainerEngine
 from zenml.logger import get_logger
 from zenml.models import (
@@ -46,10 +50,66 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepositoryContext
-    from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.docker_settings import DockerSettings
 
 logger = get_logger(__name__)
+
+
+class PreparedBuildItem(BaseModel):
+    """A build configuration with its precomputed identifiers.
+
+    Attributes:
+        configuration: The Docker build configuration.
+        key: The key used to identify the image in a pipeline build.
+        settings_checksum: Checksum of the build configuration settings.
+    """
+
+    configuration: BuildConfiguration = Field(
+        title="The Docker build configuration."
+    )
+    key: str = Field(title="The pipeline build image key.")
+    settings_checksum: str = Field(
+        title="The checksum of the build configuration settings."
+    )
+
+
+class PreparedPipelineBuild(BaseModel):
+    """Precomputed data needed to find or create a pipeline build.
+
+    Attributes:
+        items: Build configurations with their precomputed identifiers.
+    """
+
+    items: List[PreparedBuildItem] = Field(
+        title="The prepared Docker build configurations."
+    )
+
+    @property
+    def checksum(self) -> str:
+        """Compute the aggregate checksum of all prepared build items.
+
+        Returns:
+            The aggregate pipeline build checksum.
+        """
+        hash_ = hashlib.md5()  # nosec
+        for item in self.items:
+            hash_.update(item.key.encode())
+            hash_.update(item.settings_checksum.encode())
+
+        return hash_.hexdigest()
+
+    def prune(self, required_keys: Set[str]) -> "PreparedPipelineBuild":
+        """Create a prepared build containing only required build items.
+
+        Args:
+            required_keys: Keys of build items that should be retained.
+
+        Returns:
+            A new prepared pipeline build containing the required items.
+        """
+        return PreparedPipelineBuild(
+            items=[item for item in self.items if item.key in required_keys]
+        )
 
 
 def get_docker_settings(
@@ -219,16 +279,26 @@ def reuse_or_create_pipeline_build(
         The build response.
     """
     if not build:
+        stack = Client().active_stack
+        required_builds = stack.get_docker_builds(snapshot=snapshot)
+        prepared_build = prepare_pipeline_build(
+            items=required_builds,
+            stack=stack,
+            code_repository=code_repository,
+        )
+
         if (
             allow_build_reuse
             and not should_prevent_build_reuse(snapshot=snapshot)
             and not requires_included_code(
                 snapshot=snapshot, code_repository=code_repository
             )
-            and build_required(snapshot=snapshot)
+            and prepared_build.items
         ):
             existing_build = find_existing_build(
-                snapshot=snapshot, code_repository=code_repository
+                snapshot=snapshot,
+                code_repository=code_repository,
+                prepared_build=prepared_build,
             )
 
             if existing_build:
@@ -253,6 +323,7 @@ def reuse_or_create_pipeline_build(
             snapshot=snapshot,
             pipeline_id=pipeline_id,
             code_repository=code_repository,
+            prepared_build=prepared_build,
         )
 
     if isinstance(build, UUID):
@@ -277,12 +348,14 @@ def reuse_or_create_pipeline_build(
 
 def find_existing_build(
     snapshot: "PipelineSnapshotBase",
+    prepared_build: PreparedPipelineBuild,
     code_repository: Optional["BaseCodeRepository"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Find an existing build for a snapshot.
 
     Args:
         snapshot: The snapshot for which to find an existing build.
+        prepared_build: Precomputed build configurations and checksum.
         code_repository: The code repository that will be used to download
             files in the images.
 
@@ -298,14 +371,8 @@ def find_existing_build(
         return None
 
     python_version_prefix = ".".join(platform.python_version_tuple()[:2])
-    required_builds = stack.get_docker_builds(snapshot=snapshot)
-
-    if not required_builds:
+    if not prepared_build.items:
         return None
-
-    build_checksum = compute_build_checksum(
-        required_builds, stack=stack, code_repository=code_repository
-    )
 
     matches = client.list_builds(
         sort_by="desc:created",
@@ -329,7 +396,7 @@ def find_existing_build(
         zenml_version=zenml.__version__,
         # Match all patch versions of the same Python major + minor
         python_version=f"startswith:{python_version_prefix}",
-        checksum=build_checksum,
+        checksum=prepared_build.checksum,
     )
 
     if not matches.items:
@@ -342,6 +409,7 @@ def create_pipeline_build(
     snapshot: "PipelineSnapshotBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
+    prepared_build: Optional[PreparedPipelineBuild] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Builds images and registers the output in the server.
 
@@ -350,6 +418,7 @@ def create_pipeline_build(
         pipeline_id: The ID of the pipeline.
         code_repository: If provided, this code repository will be used to
             download inside the build images.
+        prepared_build: Optional precomputed build configurations and checksum.
 
     Returns:
         The build output.
@@ -366,27 +435,45 @@ def create_pipeline_build(
 
     required_builds = stack.get_docker_builds(snapshot=pruned_snapshot)
 
-    if not required_builds:
+    if prepared_build is None:
+        prepared_build = prepare_pipeline_build(
+            items=required_builds,
+            stack=stack,
+            code_repository=code_repository,
+        )
+    else:
+        required_keys = {
+            PipelineBuildBase.get_image_key(
+                component_key=build_config.key,
+                step=build_config.step_name,
+            )
+            for build_config in required_builds
+        }
+        prepared_build = prepared_build.prune(required_keys=required_keys)
+
+    if not prepared_build.items:
         logger.debug("No docker builds required.")
         return None
 
-    logger.info(
-        "Building Docker image(s) for pipeline `%s`.",
-        snapshot.pipeline_configuration.name,
+    will_build_images = any(
+        not item.configuration.settings.skip_build
+        for item in prepared_build.items
     )
+    if will_build_images:
+        logger.info(
+            "Building Docker image(s) for pipeline `%s`.",
+            snapshot.pipeline_configuration.name,
+        )
     start_time = time.time()
 
     docker_image_builder = PipelineDockerImageBuilder()
     images: Dict[str, BuildItem] = {}
     checksums: Dict[str, str] = {}
 
-    for build_config in required_builds:
-        combined_key = PipelineBuildBase.get_image_key(
-            component_key=build_config.key, step=build_config.step_name
-        )
-        checksum = build_config.compute_settings_checksum(
-            stack=stack, code_repository=code_repository
-        )
+    for prepared_item in prepared_build.items:
+        build_config = prepared_item.configuration
+        combined_key = prepared_item.key
+        checksum = prepared_item.settings_checksum
 
         if combined_key in images:
             previous_checksum = images[combined_key].settings_checksum
@@ -460,14 +547,12 @@ def create_pipeline_build(
         )
         checksums[checksum] = combined_key
 
-    logger.info("Finished building Docker image(s).")
+    if will_build_images:
+        logger.info("Finished building Docker image(s).")
 
     duration = round(time.time() - start_time)
     is_local = stack.container_registry is None
     contains_code = any(item.contains_code for item in images.values())
-    build_checksum = compute_build_checksum(
-        required_builds, stack=stack, code_repository=code_repository
-    )
     stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
         project=client.active_project.id,
@@ -478,47 +563,46 @@ def create_pipeline_build(
         images=images,
         zenml_version=zenml.__version__,
         python_version=platform.python_version(),
-        checksum=build_checksum,
+        checksum=prepared_build.checksum,
         stack_checksum=stack_checksum,
         duration=duration,
     )
     return client.zen_store.create_build(build_request)
 
 
-def compute_build_checksum(
+def prepare_pipeline_build(
     items: List["BuildConfiguration"],
     stack: "Stack",
     code_repository: Optional["BaseCodeRepository"] = None,
-) -> str:
-    """Compute an overall checksum for a pipeline build.
+) -> PreparedPipelineBuild:
+    """Prepare build configurations for reuse and build creation.
 
     Args:
-        items: Items of the build.
-        stack: The stack associated with the build. Will be used to gather
-            its requirements.
-        code_repository: The code repository that will be used to download
-            files inside the build. Will be used for its dependency
-            specification.
+        items: Build configurations to prepare.
+        stack: The stack for which the images will be built.
+        code_repository: Optional code repository used by the build.
 
     Returns:
-        The build checksum.
+        The prepared build configurations and their aggregate checksum.
     """
-    hash_ = hashlib.md5()  # nosec
+    prepared_items: List[PreparedBuildItem] = []
 
     for item in items:
         key = PipelineBuildBase.get_image_key(
             component_key=item.key, step=item.step_name
         )
-
         settings_checksum = item.compute_settings_checksum(
             stack=stack,
             code_repository=code_repository,
         )
-
-        hash_.update(key.encode())
-        hash_.update(settings_checksum.encode())
-
-    return hash_.hexdigest()
+        prepared_items.append(
+            PreparedBuildItem(
+                configuration=item,
+                key=key,
+                settings_checksum=settings_checksum,
+            )
+        )
+    return PreparedPipelineBuild(items=prepared_items)
 
 
 def verify_local_repository_context(
@@ -651,9 +735,11 @@ def verify_custom_build(
             )
 
     if build.checksum:
-        build_checksum = compute_build_checksum(
-            required_builds, stack=stack, code_repository=code_repository
-        )
+        build_checksum = prepare_pipeline_build(
+            items=required_builds,
+            stack=stack,
+            code_repository=code_repository,
+        ).checksum
         if build_checksum != build.checksum:
             logger.warning(
                 "The Docker settings used for the build `%s` are "

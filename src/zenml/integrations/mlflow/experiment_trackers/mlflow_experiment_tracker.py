@@ -52,6 +52,9 @@ MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
 MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
+MLFLOW_RUN_ID = "MLFLOW_RUN_ID"
+MLFLOW_EXPERIMENT_ID = "MLFLOW_EXPERIMENT_ID"
+MLFLOW_EXPERIMENT_NAME = "MLFLOW_EXPERIMENT_NAME"
 MLFLOW_BACKEND_STORE_URI = "_MLFLOW_SERVER_FILE_STORE"
 LOCAL_MLFLOW_BACKEND_FILENAME = "mlflow.db"
 LOCAL_MLFLOW_ARTIFACTS_DIRECTORY = "mlflow_artifacts"
@@ -242,6 +245,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         tags = settings.tags.copy()
         tags.update(self._get_internal_tags())
 
+        self._clear_inherited_run_environment(run_id=run_id)
+
         mlflow.start_run(
             run_id=run_id,
             run_name=info.run_name,
@@ -356,6 +361,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 os.environ[MLFLOW_ENABLE_DB_SDK] = "true"
             if self.config.enable_unity_catalog:
                 mlflow.set_registry_uri(DATABRICKS_UNITY_CATALOG)
+            else:
+                mlflow.set_registry_uri(tracking_uri)
         else:
             os.environ[MLFLOW_TRACKING_URI] = tracking_uri
             if self.config.tracking_username:
@@ -401,6 +408,30 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             return cast(str, run.info.run_id)
         else:
             return None
+
+    @staticmethod
+    def _clear_inherited_run_environment(run_id: Optional[str]) -> None:
+        """Clear MLflow run-selection env vars from host runtimes.
+
+        Some managed runtimes, such as AzureML, export their own MLflow run
+        identifiers. If ZenML starts a managed MLflow run with ``run_id=None``,
+        MLflow would otherwise treat an inherited run ID as an implicit resume
+        request instead of creating the ZenML-managed run.
+
+        Args:
+            run_id: The explicit MLflow run ID ZenML intends to resume, if any.
+        """
+        if run_id is not None:
+            return
+
+        inherited_run_id = os.environ.get(MLFLOW_RUN_ID)
+        if not inherited_run_id:
+            return
+
+        logger.debug("Clearing inherited MLflow run environment variables.")
+        os.environ.pop(MLFLOW_RUN_ID, None)
+        os.environ.pop(MLFLOW_EXPERIMENT_ID, None)
+        os.environ.pop(MLFLOW_EXPERIMENT_NAME, None)
 
     def _set_active_experiment(self, experiment_name: str) -> Experiment:
         """Sets the active MLflow experiment.

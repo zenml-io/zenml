@@ -116,9 +116,10 @@ class Alembic:
             True if the database is empty, False otherwise.
         """
         # Check the existence of any of the SQLModel tables
-        return not self.engine.dialect.has_table(
-            self.engine.connect(), schemas.StackSchema.__tablename__
-        )
+        with self.engine.connect() as connection:
+            return not self.engine.dialect.has_table(
+                connection, schemas.StackSchema.__tablename__
+            )
 
     def run_migrations(
         self,

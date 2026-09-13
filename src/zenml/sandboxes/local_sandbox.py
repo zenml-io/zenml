@@ -199,6 +199,7 @@ class LocalSandboxSession(SandboxSession):
         env: Dict[str, str],
         *,
         parent: "BaseSandbox",
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize the local sandbox session.
 
@@ -207,10 +208,13 @@ class LocalSandboxSession(SandboxSession):
                 This directory is cleaned up when the session is closed.
             env: Environment variables to set for this session.
             parent: The sandbox component that created this session.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         super().__init__(
             id=f"local-{uuid.uuid4().hex[:12]}",
             parent=parent,
+            destroy_on_exit=destroy_on_exit,
         )
         self._workdir = workdir
         self._env = env
@@ -292,6 +296,56 @@ class LocalSandboxSession(SandboxSession):
         return LocalSandboxProcess(
             process=process, session=self, started_at=started_at
         )
+
+    def _resolve_sandbox_path(self, path: str) -> str:
+        """Resolve a path against the session working directory.
+
+        The local flavor has no filesystem namespace, so paths are
+        host paths and are confined to the session working directory.
+
+        Args:
+            path: The path to resolve.
+
+        Raises:
+            ValueError: If the path is outside the session working directory.
+
+        Returns:
+            The absolute host path.
+        """
+        if os.path.isabs(path):
+            resolved = os.path.realpath(path)
+        else:
+            resolved = os.path.realpath(os.path.join(self._workdir, path))
+
+        workdir = os.path.realpath(self._workdir)
+        if resolved != workdir and not resolved.startswith(workdir + os.sep):
+            raise ValueError(
+                f"Path `{path}` is outside the local sandbox session "
+                f"working directory `{workdir}`."
+            )
+
+        return resolved
+
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
+        """Copy a file into the session working directory.
+
+        Args:
+            local_path: Source path on the caller's filesystem.
+            remote_path: Destination path in the sandbox.
+        """
+        destination = self._resolve_sandbox_path(remote_path)
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        shutil.copyfile(local_path, destination)
+
+    def _download_file(self, remote_path: str, local_path: str) -> None:
+        """Copy a file out of the session working directory.
+
+        Args:
+            remote_path: Source path in the sandbox.
+            local_path: Destination path on the caller's filesystem.
+        """
+        source = self._resolve_sandbox_path(remote_path)
+        shutil.copyfile(source, local_path)
 
     def _close(self) -> None:
         """Terminate running processes and clean up the working directory."""
@@ -392,12 +446,16 @@ class LocalSandbox(BaseSandbox):
         return env
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Create a local sandbox session in a clean working directory.
 
         Args:
             settings: Optional settings overrides.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Returns:
             A local sandbox session.
@@ -416,6 +474,7 @@ class LocalSandbox(BaseSandbox):
             workdir=workdir,
             env=env,
             parent=self,
+            destroy_on_exit=destroy_on_exit,
         )
 
 

@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, NonNegativeInt, PositiveInt
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_SANDBOX_FLAVOR
@@ -24,20 +24,16 @@ from zenml.models import ServiceConnectorRequirements
 from zenml.sandboxes.base import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
-    BaseSandboxSettings,
+    ContainerizedSandboxSettings,
 )
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.sandboxes import KubernetesSandbox
 
 
-class KubernetesSandboxSettings(BaseSandboxSettings):
+class KubernetesSandboxSettings(ContainerizedSandboxSettings):
     """Settings for the Kubernetes sandbox."""
 
-    image: str = Field(
-        default="python:3.11-slim",
-        description="Container image used for sandbox session pods.",
-    )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
         description="Pod configuration overrides for sandbox session pods.",
@@ -63,6 +59,11 @@ class KubernetesSandboxSettings(BaseSandboxSettings):
     api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for Kubernetes API requests in seconds.",
+    )
+    max_api_retries: NonNegativeInt = Field(
+        default=3,
+        description="Maximum number of retries for failed Kubernetes API "
+        "requests. Set to 0 to disable retries.",
     )
 
 

@@ -144,17 +144,17 @@ Stop clicking through dashboards to understand your ML workflows. The **[ZenML M
 
 The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
 
-## 🤖 Kitaru: Durable AI Agents
+## 🤖 Kitaru: Replay-Based Evals for AI Agents
 
-Building AI agents that need to survive crashes, pause for human approval, or run on cloud infrastructure? **[Kitaru](https://kitaru.ai)** is our open-source sister project for making Python agents durable.
+Running AI agents in production and wondering whether the cheaper model would have held, or whether the new prompt fixes Tuesday's failure? **[Kitaru](https://kitaru.ai)** is our open-source sister project for agents: traces you can run, not just read.
 
-- **Crash recovery** — checkpoint and replay from failure, not from scratch
-- **Human-in-the-loop** — built-in approval gates and wait points
-- **Persistent memory** — versioned, durable state across agent runs with full audit trail
-- **Framework agnostic** — works with PydanticAI, CrewAI, or raw Python
-- **Runs anywhere** — local, Kubernetes, Vertex AI, SageMaker, AzureML
+- **Every run is a recording** — wrap your agent once (PydanticAI today), or import the Langfuse traces you already collect
+- **Replay is re-execution** — the run happens again against your real code, with recorded tool calls answered from the recording, so nothing touches live systems
+- **Fork with one thing changed** — a cheaper model, a new prompt, the fix in your working tree — and trust the diff
+- **Scale the decision** — freeze real traffic into cohorts, run experiments, gate CI on the result
+- **Self-hosted, by design** — one small server on your infrastructure; replays execute on workers in your environment
 
-Built on the same infrastructure that powers ZenML. Two decorators (`@flow` + `@checkpoint`) and you're done.
+The split is clean: **ZenML is for ML pipelines, Kitaru is for agents.**
 
 ```bash
 pip install kitaru

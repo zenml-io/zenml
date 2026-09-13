@@ -98,7 +98,15 @@ def build_wandb_initialization(
 def _get_run_name(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> str:
-    """Get the Wandb display name for a ZenML step run."""
+    """Get the Wandb display name for a ZenML step run.
+
+    Args:
+        settings: Wandb settings for the step run.
+        info: Information about the step run.
+
+    Returns:
+        The Wandb display name.
+    """
     if settings.run_name:
         return settings.run_name
 
@@ -112,7 +120,16 @@ def _get_run_name(
 def _get_run_id(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> Optional[str]:
-    """Get the Wandb run ID for a ZenML step run."""
+    """Get the Wandb run ID for a ZenML step run.
+
+    Args:
+        settings: Wandb settings for the step run.
+        info: Information about the step run.
+
+    Returns:
+        The configured or derived Wandb run ID, or `None` when Wandb should
+        generate it.
+    """
     if settings.run_id:
         return settings.run_id
 
@@ -135,7 +152,15 @@ def _get_run_id(
 def _get_group(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> Optional[str]:
-    """Get the Wandb group for a ZenML step run."""
+    """Get the Wandb group for a ZenML step run.
+
+    Args:
+        settings: Wandb settings for the step run.
+        info: Information about the step run.
+
+    Returns:
+        The configured or derived Wandb group, or `None`.
+    """
     if settings.group:
         return settings.group
 
@@ -148,7 +173,15 @@ def _get_group(
 def _get_tags(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> List[str]:
-    """Get Wandb tags for a ZenML step run."""
+    """Get Wandb tags for a ZenML step run.
+
+    Args:
+        settings: Wandb settings for the step run.
+        info: Information about the step run.
+
+    Returns:
+        The deduplicated Wandb tags.
+    """
     tags = list(settings.tags)
 
     if settings.enable_zenml_metadata:
@@ -158,7 +191,14 @@ def _get_tags(
 
 
 def _deduplicate_tags(tags: List[str]) -> List[str]:
-    """Deduplicate tags after applying Wandb length limits."""
+    """Deduplicate tags after applying Wandb length limits.
+
+    Args:
+        tags: Tags to sanitize and deduplicate.
+
+    Returns:
+        The sanitized tags in their original order without duplicates.
+    """
     deduplicated_tags: List[str] = []
     for tag in tags:
         sanitized_tag = sanitize_tag(tag)
@@ -171,7 +211,15 @@ def _deduplicate_tags(tags: List[str]) -> List[str]:
 def _get_run_config(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> Dict[str, Any]:
-    """Get the Wandb run config for a ZenML step run."""
+    """Get the Wandb run config for a ZenML step run.
+
+    Args:
+        settings: Wandb settings for the step run.
+        info: Information about the step run.
+
+    Returns:
+        The Wandb run configuration, including enabled ZenML metadata.
+    """
     run_config = dict(settings.run_config)
 
     if not settings.enable_zenml_metadata:
@@ -195,7 +243,14 @@ def _get_run_config(
 
 
 def _get_dashboard_links(info: "StepRunInfo") -> Dict[str, str]:
-    """Get dashboard links for a ZenML step run if they are available."""
+    """Get dashboard links for a ZenML step run if they are available.
+
+    Args:
+        info: Information about the step run.
+
+    Returns:
+        Available ZenML dashboard links keyed by metadata field name.
+    """
     dashboard_links: Dict[str, str] = {}
 
     try:

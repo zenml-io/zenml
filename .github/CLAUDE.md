@@ -118,8 +118,9 @@ Standard settings used across workflows:
 
 ```yaml
 env:
-  ZENML_DEBUG: true
+  ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
+  ZENML_DEBUG: true
   PYTHONIOENCODING: utf-8
   UV_HTTP_TIMEOUT: 600
 ```
@@ -204,6 +205,10 @@ Creates tracking issues from PRs when `snack-it` label is applied. Adds to GitHu
 ### zizmor.yml
 
 Runs GitHub Actions security analysis on workflow/config changes, pushes to `main`/`develop`, a weekly schedule, and manual dispatch. Use the same config locally with `GH_TOKEN=$(gh auth token) uvx zizmor --config=.github/zizmor.yml .github/workflows/`.
+
+### publish_staging_workspace_runtime.yml
+
+Dispatches a `zenml-develop-updated` repository event to `zenml-cloud-plugins` on every push to `develop`, carrying the exact merge SHA. That repository builds and publishes the internal staging workspace image; this repo only needs the `CLOUD_PLUGINS_REPO_PAT` secret. Gated to the upstream repository so forks never fail on the missing secret.
 
 ### check-links.yml / check-markdown-links.yml / gitbook-redirect-check.yml
 

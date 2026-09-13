@@ -43,10 +43,12 @@ def clean_requirements(requirements: List[str]) -> List[str]:
     if not all(isinstance(req, str) for req in requirements):
         raise ValueError("All elements in the list must be strings")
 
-    cleaned = {}
+    operators = ["=", ">", "<", "~", "^"]
+    cleaned: Dict[str, List[str]] = {}
     for req in requirements:
         package = (
-            req.split(">=")[0]
+            req.split(">")[0]
+            .split("!=")[0]
             .split("==")[0]
             .split("<")[0]
             .split("~=")[0]
@@ -54,11 +56,23 @@ def clean_requirements(requirements: List[str]) -> List[str]:
             .split("[")[0]
             .strip()
         )
-        if package not in cleaned or any(
-            op in req for op in ["=", ">", "<", "~", "^"]
-        ):
-            cleaned[package] = req
-    return sorted(cleaned.values())
+        is_constrained = any(op in req for op in operators)
+        if package not in cleaned:
+            cleaned[package] = [req]
+        elif is_constrained:
+            cleaned[package] = [
+                existing_req
+                for existing_req in cleaned[package]
+                if any(op in existing_req for op in operators)
+            ]
+            if req not in cleaned[package]:
+                cleaned[package].append(req)
+
+    return sorted(
+        req
+        for package_requirements in cleaned.values()
+        for req in package_requirements
+    )
 
 
 def requirement_installed(requirement: Union[str, Requirement]) -> bool:
@@ -78,7 +92,7 @@ def requirement_installed(requirement: Union[str, Requirement]) -> bool:
     except PackageNotFoundError:
         return False
 
-    return requirement.specifier.contains(dist.version)
+    return requirement.specifier.contains(dist.version, prereleases=True)
 
 
 def get_dependencies(

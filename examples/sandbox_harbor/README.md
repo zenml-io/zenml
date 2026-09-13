@@ -90,6 +90,7 @@ The pipeline prints the dashboard URL on start. Inspect the artifacts:
 
 ```python
 from zenml.client import Client
+
 run = Client().get_pipeline_run("<run-id-from-stdout>")
 outputs = run.steps["run_harbor_trial"].outputs
 result = outputs["harbor_trial_result"][0].load()

@@ -1,0 +1,4 @@
+# Pin for the zizmor workflow scanner. Dependabot (pip ecosystem, scoped to
+# this directory) bumps it, so new audit rules arrive as reviewable PRs
+# instead of turning `develop` red on release day.
+zizmor==1.30.0

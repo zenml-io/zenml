@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 
 
-from zenml.constants import handle_int_env_var, handle_json_env_var
+from zenml.constants import (
+    handle_int_env_var,
+    handle_json_env_var,
+    handle_positive_int_env_var,
+)
 
 
 def test_handle_int_env_var(monkeypatch):
@@ -27,6 +31,29 @@ def test_handle_int_env_var(monkeypatch):
     # check if it isn't there (in case it doesn't exist)
     monkeypatch.delenv(env_var, raising=False)
     assert 0 == handle_int_env_var(env_var, 0)
+
+
+def test_handle_positive_int_env_var(monkeypatch):
+    """Check handle_positive_int_env_var in all cases."""
+    env_var = "ZENML_TEST_HANDLE_POSITIVE_INT_ENV_VAR"
+
+    # positive values are used as-is
+    monkeypatch.setenv(env_var, "42")
+    assert 42 == handle_positive_int_env_var(env_var, default=7)
+
+    # zero and negative values fall back to the default
+    monkeypatch.setenv(env_var, "0")
+    assert 7 == handle_positive_int_env_var(env_var, default=7)
+    monkeypatch.setenv(env_var, "-1")
+    assert 7 == handle_positive_int_env_var(env_var, default=7)
+
+    # unparsable values fall back to the default
+    monkeypatch.setenv(env_var, "test")
+    assert 7 == handle_positive_int_env_var(env_var, default=7)
+
+    # unset falls back to the default
+    monkeypatch.delenv(env_var, raising=False)
+    assert 7 == handle_positive_int_env_var(env_var, default=7)
 
 
 def test_handle_json_env_var(monkeypatch):

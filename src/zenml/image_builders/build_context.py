@@ -120,6 +120,11 @@ class BuildContext(Archivable):
             return {
                 archive_path: os.path.join(self._root, archive_path)
                 for archive_path in archive_paths
+                # The patterns are already applied at this point. Keeping the
+                # dockerignore would make some image builders re-apply them
+                # which would exclude anything in `self.extra_files` if the
+                # dockerignore contains patterns that match any of them.
+                if archive_path != ".dockerignore"
             }
         else:
             return {}

@@ -129,6 +129,9 @@ def get_stack_deployment_config(
     # A new API token is generated for the stack deployment
     api_token = generate_access_token(
         user_id=token.user_id,
+        # Keep the original API key and device token scopes.
+        api_key=auth_context.api_key,
+        device=auth_context.device,
         expires_in=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION * 60,
     ).access_token
 

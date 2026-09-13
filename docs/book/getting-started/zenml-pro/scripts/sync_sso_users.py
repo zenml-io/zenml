@@ -224,7 +224,9 @@ class ZenMLProClient:
         Returns:
             Role object or None if not found.
         """
-        roles = self.list_organization_roles(org_id, level=level, name=role_name)
+        roles = self.list_organization_roles(
+            org_id, level=level, name=role_name
+        )
         for role in roles:
             if role.get("name") == role_name:
                 return role
@@ -258,9 +260,7 @@ class ZenMLProClient:
     # Invitation Management
     # =========================================================================
 
-    def create_invitation(
-        self, org_id: str, email: str, role_id: str
-    ) -> dict:
+    def create_invitation(self, org_id: str, email: str, role_id: str) -> dict:
         """Create an invitation to join an organization.
 
         Invitations act as placeholders for users who haven't logged in yet.
@@ -285,7 +285,10 @@ class ZenMLProClient:
         return response.json()
 
     def list_invitations(
-        self, org_id: str, email: Optional[str] = None, only_pending: bool = True
+        self,
+        org_id: str,
+        email: Optional[str] = None,
+        only_pending: bool = True,
     ) -> list[dict]:
         """List invitations for an organization.
 
@@ -312,7 +315,9 @@ class ZenMLProClient:
         self, org_id: str, email: str
     ) -> Optional[dict]:
         """Get a pending invitation by email."""
-        invitations = self.list_invitations(org_id, email=email, only_pending=True)
+        invitations = self.list_invitations(
+            org_id, email=email, only_pending=True
+        )
         for inv in invitations:
             if inv.get("email") == email:
                 return inv
@@ -700,9 +705,7 @@ class UserSynchronizer:
                     invitation_id=invitation_id,
                 )
                 target = "user" if user_id else "invitation"
-                logger.info(
-                    f"Assigned {role_name} to {target} in {org_name}"
-                )
+                logger.info(f"Assigned {role_name} to {target} in {org_name}")
             except requests.HTTPError as e:
                 if e.response.status_code == 409:
                     logger.debug(f"Role already assigned: {role_name}")
@@ -774,9 +777,7 @@ def main():
     idp_token = os.environ.get("IDP_TOKEN")
 
     if not all([zenml_api_url, zenml_api_key]):
-        raise ValueError(
-            "ZENML_PRO_API_URL and ZENML_PRO_API_KEY must be set"
-        )
+        raise ValueError("ZENML_PRO_API_URL and ZENML_PRO_API_KEY must be set")
 
     if not all([idp_url, idp_token]):
         raise ValueError("IDP_URL and IDP_TOKEN must be set")

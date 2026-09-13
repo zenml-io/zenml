@@ -6,6 +6,8 @@ description: Orchestrating your pipelines to run on Kubernetes clusters.
 
 Using the ZenML `kubernetes` integration, you can orchestrate and scale your ML pipelines on a [Kubernetes](https://kubernetes.io/) cluster without writing a single line of Kubernetes code.
 
+The orchestrator uses standard Kubernetes APIs and works on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
+
 This Kubernetes-native orchestrator is a minimalist, lightweight alternative to other distributed orchestrators like Airflow or Kubeflow.
 
 Overall, the Kubernetes orchestrator is quite similar to the Kubeflow orchestrator in that it runs each pipeline step in a separate Kubernetes pod. However, the orchestration of the different pods is not done by Kubeflow but by a separate master pod that orchestrates the step execution via topological sort.
@@ -20,15 +22,18 @@ This component is only meant to be used within the context of a [remote ZenML de
 
 You should use the Kubernetes orchestrator if:
 
+* you already have a Kubernetes cluster—managed cloud, Red Hat OpenShift, SUSE Rancher, or self-managed on-premises.
 * you're looking for a lightweight way of running your pipelines on Kubernetes.
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 
 ## How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our production guide](https://docs.zenml.io/user-guides/production-guide).
+The Kubernetes orchestrator requires a Kubernetes cluster (version 1.21 or higher recommended).
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
+There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [production guide](https://docs.zenml.io/user-guides/production-guide).
+
+If the Kubernetes cluster is deployed remotely, another prerequisite is to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 
 ## How to use it
 
@@ -42,7 +47,7 @@ To use the Kubernetes orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.
 * A [remote container registry](../container-registries/README.md) as part of your stack.
-* A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
+* A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it) (version 1.21 or higher recommended)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 
 {% hint style="info" %}
@@ -150,7 +155,7 @@ The following configuration options can be set either through the orchestrator c
 - **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
 - **`stream_step_logs`** (default: True): If `True`, the orchestrator pod will stream the logs of the step pods.
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
-- **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
+- **`step_pod_service_account_name`**: Name of the service account to use for the step pods. If not set, the step pods fall back to `service_account_name`; if that is not set either, they run with the namespace's `default` service account. Note that `pod_settings` has no service account field, so `pod_settings={"service_account_name": ...}` is accepted but ignored.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 - **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -225,6 +230,12 @@ If `pass_zenml_token_as_secret=True`, also grant:
 Step containers do not need Kubernetes API access for normal execution in this
 orchestrator flow. Unless your step code explicitly calls the Kubernetes API,
 you can keep this account with no additional Kubernetes RBAC grants.
+
+The step pods use `step_pod_service_account_name` if it is set, otherwise
+`service_account_name`, otherwise the namespace's `default` service account.
+Set it through the orchestrator settings, not through `pod_settings`:
+`KubernetesPodSettings` has no `service_account_name` field, and an unknown
+key passed to `pod_settings` is accepted without error and never applied.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -397,6 +408,30 @@ def simple_ml_pipeline(parameter: int):
 ```
 
 This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
+
+To run a single step under its own Kubernetes service account (for example, one bound to a cloud identity with access to a specific bucket), set `step_pod_service_account_name` on that step. This is a top-level orchestrator setting, not part of `pod_settings`:
+
+```python
+@step(
+    settings={
+        "orchestrator": KubernetesOrchestratorSettings(
+            step_pod_service_account_name="train-model-sa",
+        )
+    }
+)
+def train_model(data: dict) -> None:
+    ...
+```
+
+The same override in a YAML config file:
+
+```yaml
+steps:
+  train_model:
+    settings:
+      orchestrator.kubernetes:
+        step_pod_service_account_name: train-model-sa
+```
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 

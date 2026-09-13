@@ -1413,7 +1413,7 @@ zenml service-connector login gcp-user-multi --resource-type kubernetes-cluster 
 $ zenml service-connector login gcp-user-multi --resource-type kubernetes-cluster --resource-id zenml-test-cluster
 ⠇ Attempting to configure local client using service connector 'gcp-user-multi'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'gke_zenml-core_zenml-test-cluster'.
-The 'gcp-user-multi' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'gcp-user-multi' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 
 # Verify that the local kubectl client is now configured to access the remote Kubernetes cluster
 $ kubectl cluster-info
@@ -1433,7 +1433,7 @@ zenml service-connector login aws-multi-type --resource-type kubernetes-cluster 
 $ zenml service-connector login aws-multi-type --resource-type kubernetes-cluster --resource-id zenhacks-cluster
 ⠏ Attempting to configure local client using service connector 'aws-multi-type'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'arn:aws:eks:us-east-1:715803424590:cluster/zenhacks-cluster'.
-The 'aws-multi-type' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'aws-multi-type' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 
 # Verify that the local kubectl client is now configured to access the remote Kubernetes cluster
 $ kubectl cluster-info
@@ -1471,7 +1471,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'aws-session-token' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'aws-session-token' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 
 # Verify that the local Docker client is now configured to access the remote Docker container registry
 $ docker pull 715803424590.dkr.ecr.us-east-1.amazonaws.com/zenml-server

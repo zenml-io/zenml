@@ -206,8 +206,9 @@ def error(text: str) -> NoReturn:
     class StyledClickException(click.ClickException):
         def show(self, file: Optional[IO[Any]] = None) -> None:
             if file is None:
-                file = click.get_text_stream("stderr")
-            click.echo(self.message, file=file)
+                click.echo(self.message, err=True)
+            else:
+                click.echo(self.message, file=file)
 
     raise StyledClickException(message=error_prefix + error_message)
 
@@ -974,6 +975,7 @@ def prompt_configuration(
             else:
                 title = "Please enter a new value or press Enter to skip it"
 
+        value: Optional[str]
         while True:
             # Ask the user to enter a value for the attribute
             value = click.prompt(
@@ -2592,11 +2594,11 @@ def pretty_print_deployment(
 
         declare(
             f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
         declare(
             f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
 
         # Auth key handling with proper security

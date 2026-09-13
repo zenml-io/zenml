@@ -173,6 +173,52 @@ Client().replay_pipeline_run(
 {% endtab %}
 {% endtabs %}
 
+#### Overriding an input for every invocation of a step
+
+If you want to override inputs for **every invocation** of a step, you can
+use `step_default_input_overrides`. It is keyed by the step's name instead of
+the invocation ID. Per-invocation overrides in `step_input_overrides` take
+precedence per input key.
+
+{% hint style="warning" %}
+The override applies to every invocation that shares the given name, and ZenML
+does not enforce that a name maps to a single step function. If two different
+steps share a name (for example two functions named `train` in different
+modules both default to the name `train`), the override is applied to both.
+Give such steps distinct names if you want to target only one of them.
+{% endhint %}
+
+{% tabs %}
+{% tab title="From local code" %}
+```python
+training_pipeline.replay(
+    pipeline_run="run_name_or_id",
+    step_default_input_overrides={
+        "llm_call": {
+            "model": "claude-fable-5"
+        }
+    },
+)
+```
+{% endtab %}
+{% tab title="From the server" %}
+```python
+from zenml import Client
+
+Client().replay_pipeline_run(
+    name_id_or_prefix="run_name_or_id",
+    run_configuration={
+        "step_default_input_overrides": {
+            "llm_call": {
+                "model": "claude-fable-5"
+            }
+        }
+    },
+)
+```
+{% endtab %}
+{% endtabs %}
+
 ---
 
 ## Replaying a single step

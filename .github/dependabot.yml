@@ -2,7 +2,9 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
       interval: weekly
       day: tuesday
@@ -14,6 +16,22 @@ updates:
       minor-and-patch:
         patterns: ['*']
         update-types: [minor, patch]
+    cooldown:
+      default-days: 7
+    target-branch: develop
+  # Only the zizmor pin lives here; scoping to this directory keeps Dependabot
+  # away from the root pyproject.toml dependency tree.
+  - package-ecosystem: pip
+    directory: /.github/zizmor
+    schedule:
+      interval: weekly
+      day: tuesday
+      time: "07:00"
+      timezone: Europe/Amsterdam
+    reviewers: [strickvl]
+    labels: [dependencies, internal, no-release-notes]
+    # Must exceed the 3-day `exclude-newer` window in pyproject.toml: uvx reads
+    # that config from the repo root, so a pin newer than 3 days is unresolvable.
     cooldown:
       default-days: 7
     target-branch: develop

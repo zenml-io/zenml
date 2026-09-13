@@ -1,0 +1,74 @@
+x-admin-creds: &admin-creds
+  ZENML_DEFAULT_USER_NAME: admin
+  ZENML_DEFAULT_USER_PASSWORD: password
+
+services:
+
+  # Database
+  db:
+    image: mysql:8.4
+    container_name: db
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # The ZenML Server
+  zenml_server:
+    # To use the official image, uncomment the following line and
+    # comment out the build section below.
+    #
+    # image: zenmldocker/zenml-server:latest
+    build:
+      context: ./
+      dockerfile: docker/zenml-server-dev.Dockerfile
+      args:
+        INSTALL_DEBUG_TOOLS: true
+      # NOTE: use the local-runtime target to run the API in dev mode from the
+      # mounted source code (will automatically refresh when code changes are
+      # made); If the target is not set, the container will have all sources
+      # pre-packaged into the image (no need to mount the source code).
+      #
+      target: local-runtime
+    container_name: server
+    platform: linux/amd64
+    ports:
+      - 80:8080
+    volumes:
+      - ./src:/zenml/src
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8080/health').raise_for_status()" ]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    restart: on-failure
+    environment:
+      ZENML_LOGGING_VERBOSITY: DEBUG
+      ZENML_ANALYTICS_OPT_IN: false
+
+      ZENML_SERVER_DEPLOYMENT_TYPE: docker
+      ZENML_SERVER_AUTO_ACTIVATE: true
+      ZENML_SERVER_SERVER_URL: http://localhost
+      ZENML_SECRETS_STORE_TYPE: sql
+      ZENML_SECRETS_STORE_ENCRYPTION_KEY: dummy_zenml_secrets_store_encryption_key
+      ZENML_SERVER_JWT_SECRET_KEY: dummy_zenml_server_api_jwt_key
+
+      ZENML_STORE_TYPE: sql
+      ZENML_STORE_PASSWORD: password
+      ZENML_STORE_URL: mysql://root@db/zenml # <- Docker replaces `db` with IP_Address
+
+      <<: *admin-creds
+
+volumes:
+  mysql_data:

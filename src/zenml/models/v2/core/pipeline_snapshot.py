@@ -241,6 +241,10 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     is_dynamic: bool = Field(
         title="Whether this is a snapshot of a dynamic pipeline.",
     )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline associated with the snapshot.",
+    )
 
 
 class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
@@ -550,6 +554,18 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_resources().pipeline
+
+    @property
+    def pipeline_id(self) -> UUID | None:
+        """The ID of the pipeline associated with this snapshot.
+
+        This foreign key is exposed on the response body to avoid unnecessary
+        resource hydration when callers only need the pipeline ID.
+
+        Returns:
+            The pipeline ID.
+        """
+        return self.get_body().pipeline_id
 
     @property
     def stack(self) -> Optional[StackResponse]:

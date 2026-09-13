@@ -32,10 +32,14 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
     DATABRICKS_CLIENT_SECRET,
     DATABRICKS_HOST,
     DATABRICKS_PASSWORD,
+    DATABRICKS_UNITY_CATALOG,
     DATABRICKS_USERNAME,
     LOCAL_MLFLOW_ARTIFACTS_DIRECTORY,
     LOCAL_MLFLOW_BACKEND_FILENAME,
     MLFLOW_ENABLE_DB_SDK,
+    MLFLOW_EXPERIMENT_ID,
+    MLFLOW_EXPERIMENT_NAME,
+    MLFLOW_RUN_ID,
     MLFLOW_TRACKING_INSECURE_TLS,
     MLFLOW_TRACKING_PASSWORD,
     MLFLOW_TRACKING_USERNAME,
@@ -320,6 +324,33 @@ def test_mlflow_experiment_tracker_set_config(
     assert os.environ[DATABRICKS_USERNAME] == "john_doe"
     assert os.environ[DATABRICKS_PASSWORD] == "password"
     assert os.environ[DATABRICKS_HOST] == "https://databricks.com"
+    assert os.environ[MLFLOW_TRACKING_INSECURE_TLS] == "false"
+    assert local_stack._experiment_tracker.config.enable_unity_catalog is False
+
+    import mlflow
+
+    assert mlflow.get_registry_uri() == "databricks"
+
+    local_stack._experiment_tracker = MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            tracking_username="john_doe",
+            tracking_password="password",
+            databricks_host="https://databricks.com",
+            enable_unity_catalog=True,
+        ),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    local_stack._experiment_tracker.configure_mlflow()
+
+    assert mlflow.get_registry_uri() == DATABRICKS_UNITY_CATALOG
 
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
@@ -344,6 +375,7 @@ def test_mlflow_experiment_tracker_set_config(
     assert os.environ[DATABRICKS_CLIENT_SECRET] == "client-secret"
     assert os.environ[DATABRICKS_AUTH_TYPE] == "oauth-m2m"
     assert os.environ[MLFLOW_ENABLE_DB_SDK] == "true"
+    assert mlflow.get_registry_uri() == "databricks"
 
 
 def test_mlflow_experiment_tracker_uses_sqlite_for_local_backend(
@@ -459,3 +491,62 @@ def test_mlflow_experiment_tracker_handles_missing_run(
         "Expected run_id to be None when run doesn't exist"
     )
     assert call_kwargs["run_name"] == "test_run"
+
+
+@patch("mlflow.start_run")
+@patch("mlflow.get_experiment_by_name")
+@patch("mlflow.set_experiment")
+def test_mlflow_experiment_tracker_clears_inherited_run_environment(
+    mock_set_experiment: MagicMock,
+    mock_get_experiment: MagicMock,
+    mock_start_run: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tests that runtime-inherited MLflow run IDs are ignored."""
+    monkeypatch.setenv(MLFLOW_RUN_ID, "azureml_run_id")
+    monkeypatch.setenv(MLFLOW_EXPERIMENT_ID, "azureml_experiment_id")
+    monkeypatch.setenv(MLFLOW_EXPERIMENT_NAME, "azureml_experiment")
+
+    mock_experiment = MagicMock()
+    mock_experiment.experiment_id = "test_experiment_id"
+    mock_get_experiment.return_value = mock_experiment
+    mock_set_experiment.return_value = mock_experiment
+
+    tracker = MLFlowExperimentTracker(
+        name="test_tracker",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="file:///tmp/mlflow",
+        ),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    mock_step_info = MagicMock()
+    mock_step_info.pipeline.name = "test_pipeline"
+    mock_step_info.run_name = "test_run"
+    mock_step_info.pipeline_step_name = "test_step"
+
+    with patch.object(tracker, "get_run_id", return_value=None):
+        with patch.object(
+            tracker,
+            "get_settings",
+            return_value=MagicMock(
+                experiment_name=None,
+                tags={},
+                nested=False,
+            ),
+        ):
+            tracker.prepare_step_run(mock_step_info)
+
+    assert MLFLOW_RUN_ID not in os.environ
+    assert MLFLOW_EXPERIMENT_ID not in os.environ
+    assert MLFLOW_EXPERIMENT_NAME not in os.environ
+
+    mock_start_run.assert_called_once()
+    call_kwargs = mock_start_run.call_args[1]
+    assert call_kwargs["run_id"] is None
+    assert call_kwargs["experiment_id"] == "test_experiment_id"

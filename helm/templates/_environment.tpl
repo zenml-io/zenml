@@ -25,6 +25,13 @@ Returns:
 {{- define "zenml.storeConfigurationAttrs" -}}
 {{- if .ZenML.database.url }}
 type: sql
+auth_mode: {{ .ZenML.database.authMode | quote }}
+{{- if .ZenML.database.awsRegion }}
+aws_region: {{ .ZenML.database.awsRegion | quote }}
+{{- end }}
+{{- if .ZenML.database.awsRdsIamRoleArn }}
+aws_rds_iam_role_arn: {{ .ZenML.database.awsRdsIamRoleArn | quote }}
+{{- end }}
 {{- if .ZenML.database.ssl }}
 ssl: {{ .ZenML.database.ssl | quote }}
 {{- end }}
@@ -292,6 +299,34 @@ root_url_path: {{ .ZenML.rootUrlPath | quote }}
 {{- end }}
 {{- if .ZenML.serverURL }}
 server_url: {{ .ZenML.serverURL | quote }}
+{{- end }}
+{{- with .ZenML.openTelemetry }}
+{{- if or .endpoint .tracesEndpoint .metricsEndpoint .logsEndpoint }}
+{{- if .endpoint }}
+otel_exporter_otlp_endpoint: {{ .endpoint | quote }}
+{{- end }}
+{{- if .serviceName }}
+otel_service_name: {{ .serviceName | quote }}
+{{- end }}
+{{- if .tracesEndpoint }}
+otel_exporter_otlp_traces_endpoint: {{ .tracesEndpoint | quote }}
+{{- end }}
+{{- if .metricsEndpoint }}
+otel_exporter_otlp_metrics_endpoint: {{ .metricsEndpoint | quote }}
+{{- end }}
+{{- if .logsEndpoint }}
+otel_exporter_otlp_logs_endpoint: {{ .logsEndpoint | quote }}
+{{- end }}
+{{- if hasKey . "tracesEnabled" }}
+otel_traces_enabled: {{ .tracesEnabled | quote }}
+{{- end }}
+{{- if hasKey . "metricsEnabled" }}
+otel_metrics_enabled: {{ .metricsEnabled | quote }}
+{{- end }}
+{{- if hasKey . "logsEnabled" }}
+otel_logs_enabled: {{ .logsEnabled | quote }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- range $key, $value := .ZenML.secure_headers }}
 secure_headers_{{ $key }}: {{ $value | quote }}
@@ -607,6 +642,7 @@ Returns a dictionary with common configuration env vars.
 */}}
 {{- define "zenml.baseEnvVariables" -}}
 {{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- $logging := $server.logging | default dict -}}
 ZENML_SERVER: "True"
 NODE_OPTIONS: "--use-openssl-ca"
 {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
@@ -615,6 +651,16 @@ SSL_CERT_FILE: "/updated-certs/ca-certificates.crt"
 {{- end }}
 {{- if $server.debug }}
 ZENML_LOGGING_VERBOSITY: "DEBUG"
+{{- else }}
+ZENML_LOGGING_VERBOSITY: {{ default "info" $logging.verbosity | upper | quote }}
+{{- end }}
+{{- with $logging }}
+{{- if .format }}
+ZENML_CONSOLE_LOGGING_FORMAT: {{ .format | quote }}
+{{- end }}
+{{- if hasKey . "colorsDisabled" }}
+ZENML_LOGGING_COLORS_DISABLED: {{ .colorsDisabled | quote }}
+{{- end }}
 {{- end }}
 {{- if $server.analyticsOptIn }}
 ZENML_ANALYTICS_OPT_IN: "True"

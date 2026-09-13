@@ -47,7 +47,7 @@ class PolarsMaterializer(BaseMaterializer):
             io_utils.copy_dir(self.uri, temp_dir)
 
             # Load the data from the temporary directory
-            table = pq.read_table(  # type: ignore[no-untyped-call]
+            table = pq.read_table(
                 os.path.join(temp_dir, "dataframe.parquet").replace("\\", "/")
             )
 
@@ -104,7 +104,5 @@ class PolarsMaterializer(BaseMaterializer):
             path = os.path.join(temp_dir, "dataframe.parquet").replace(
                 "\\", "/"
             )
-            pq.write_table(  # type: ignore[no-untyped-call]
-                table, path
-            )  # Uses lz4 compression by default
+            pq.write_table(table, path)  # Uses lz4 compression by default
             io_utils.copy_dir(temp_dir, self.uri)

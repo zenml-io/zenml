@@ -156,7 +156,15 @@ _PY_TYPE_TO_JSON_TYPE = (
 
 
 def _json_type_of(value: Any) -> Optional[str]:
-    """Returns the JSON Schema primitive type name for a Python value."""
+    """Return the JSON Schema primitive type name for a Python value.
+
+    Args:
+        value: The Python value to inspect.
+
+    Returns:
+        The corresponding JSON Schema primitive type, or `None` if the value
+        has no supported mapping.
+    """
     for py_type, name in _PY_TYPE_TO_JSON_TYPE:
         if isinstance(value, py_type):
             return name

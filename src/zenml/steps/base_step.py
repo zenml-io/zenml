@@ -618,6 +618,9 @@ class BaseStep:
             Sequence[Union[str, StepArtifact, "AnyOutputFuture"]],
             None,
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> Any:
         """Handle a call of the step.
@@ -631,7 +634,11 @@ class BaseStep:
             *args: Entrypoint function arguments.
             id: Invocation ID to use.
             after: Upstream steps for the invocation.
+            start_after: Upstream futures to wait for the start of.
             **kwargs: Entrypoint function keyword arguments.
+
+        Raises:
+            RuntimeError: If `start_after` is used in a static pipeline.
 
         Returns:
             The outputs of the entrypoint function call.
@@ -649,6 +656,10 @@ class BaseStep:
 
         compilation_context = PipelineCompilationContext.get()
         if compilation_context:
+            if start_after is not None:
+                raise RuntimeError(
+                    "`start_after` is only supported in dynamic pipelines."
+                )
             # We're currently compiling a static pipeline, which we want to
             # allow even while inside a running step.
             after = cast(
@@ -698,6 +709,7 @@ class BaseStep:
                 args=args,
                 kwargs=kwargs,
                 after=after,
+                start_after=start_after,
                 concurrent=False,
             )
 
@@ -756,6 +768,9 @@ class BaseStep:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "StepFuture":
         """Submit the step to run concurrently in a separate thread.
@@ -765,6 +780,8 @@ class BaseStep:
             id: The invocation ID of the step.
             after: The step run output futures to wait for before executing the
                 step.
+            start_after: The step run output futures to wait for the start of
+                before executing the step.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -790,6 +807,7 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             concurrent=True,
         )
 
@@ -797,6 +815,9 @@ class BaseStep:
         self,
         *args: Any,
         after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         **kwargs: Any,
@@ -837,6 +858,8 @@ class BaseStep:
             *args: The arguments to pass to the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            start_after: The step run output futures to wait for the start of
+                before executing the steps.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -862,6 +885,7 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             product=False,
         )
 
@@ -869,6 +893,9 @@ class BaseStep:
         self,
         *args: Any,
         after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         **kwargs: Any,
@@ -909,6 +936,8 @@ class BaseStep:
             *args: The arguments to pass to the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            start_after: The step run output futures to wait for the start of
+                before executing the steps.
             **kwargs: The keyword arguments to pass to the step function.
 
         Raises:
@@ -934,6 +963,7 @@ class BaseStep:
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             product=True,
         )
 
@@ -1056,7 +1086,10 @@ class BaseStep:
         Returns:
             The step instance that this method was called on.
         """
-        from zenml.config.step_configurations import StepConfigurationUpdate
+        from zenml.config.step_configurations import (
+            GroupInfo,
+            StepConfigurationUpdate,
+        )
         from zenml.hooks.validation import resolve_and_validate_hook
 
         def _resolve_if_necessary(

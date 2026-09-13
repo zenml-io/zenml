@@ -30,7 +30,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -47,6 +52,7 @@ from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     EnumFilterOption,
     StringFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -68,6 +74,7 @@ class TriggerDispatchStatusCode(StrEnum):
     SUCCESS = "SUCCESS"
     SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
     SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
+    SKIPPED_TRIGGER_CYCLE = "SKIPPED_TRIGGER_CYCLE"
     ERROR = "ERROR"
 
 
@@ -94,6 +101,10 @@ class TriggerSnapshotDispatchState(BaseModel):
     last_status_at: datetime | None = Field(
         default=None,
         description="Timestamp of the latest recorded status transition.",
+    )
+    last_status_details: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured details for the latest dispatch status.",
     )
     last_error_message: str | None = Field(
         default=None,
@@ -221,6 +232,7 @@ class TriggerSnapshotDispatchState(BaseModel):
 
         self.last_status = new_state.last_status
         self.last_status_at = new_state.last_status_at or utc_now()
+        self.last_status_details = new_state.last_status_details
 
     def clear_error_details(self) -> None:
         """Clear stored error details while keeping the last status."""
@@ -238,6 +250,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotResponse,
         UserResponse,
+        WebhookResponse,
     )
     from zenml.models.v2.base.filter import AnySchema
 
@@ -351,6 +364,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    webhook: Optional["WebhookResponse"] = None
     snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
         default_factory=dict
     )
@@ -362,6 +376,7 @@ class UnScopedTriggerFilter(BaseFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "is_archived",
+        "flavor",
         "type",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
@@ -403,6 +418,10 @@ class UnScopedTriggerFilter(BaseFilter):
     concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."
     )
+    webhook_id: UUIDFilterOption = Field(
+        default=None,
+        description="The webhook associated with the trigger.",
+    )
 
     def apply_filter(
         self,
@@ -431,6 +450,12 @@ class UnScopedTriggerFilter(BaseFilter):
             )
             query = query.where(col(TriggerSchema.type).in_(type_checks))
 
+        if self.flavor is not None:
+            flavor_checks = (
+                self.flavor if isinstance(self.flavor, list) else [self.flavor]
+            )
+            query = query.where(col(TriggerSchema.flavor).in_(flavor_checks))
+
         return query
 
 
@@ -449,6 +474,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "type",
         "flavor",
         "next_occurrence",
+        "webhook_id",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
         *UnScopedTriggerFilter.API_SINGLE_INPUT_PARAMS,
@@ -487,6 +513,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         """
         from sqlmodel import col
 
+        from zenml.utils import uuid_utils
         from zenml.zen_stores.schemas import (
             PipelineSnapshotSchema,
             TriggerSchema,
@@ -510,8 +537,14 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
                     if isinstance(self.pipeline_id, list)
                     else [self.pipeline_id]
                 )
+                normalized_pipeline_ids = [
+                    uuid_utils.to_uuid(pipeline_id)
+                    for pipeline_id in pipeline_ids
+                ]
                 query = query.where(
-                    col(PipelineSnapshotSchema.pipeline_id).in_(pipeline_ids)
+                    col(PipelineSnapshotSchema.pipeline_id).in_(
+                        normalized_pipeline_ids
+                    )
                 )
 
             if self.snapshot_id is not None:
@@ -520,8 +553,14 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
                     if isinstance(self.snapshot_id, list)
                     else [self.snapshot_id]
                 )
+                normalized_snapshot_ids = [
+                    uuid_utils.to_uuid(snapshot_id)
+                    for snapshot_id in snapshot_ids
+                ]
                 query = query.where(
-                    col(TriggerSnapshotSchema.snapshot_id).in_(snapshot_ids)
+                    col(TriggerSnapshotSchema.snapshot_id).in_(
+                        normalized_snapshot_ids
+                    )
                 )
 
         return query
@@ -824,6 +863,17 @@ class TriggerResponse(
         return self.get_resources().executable_snapshots
 
     @property
+    def snapshot_dispatch_states(
+        self,
+    ) -> dict[UUID, TriggerSnapshotDispatchState]:
+        """Get the latest dispatch state for each attached snapshot.
+
+        Returns:
+            Dispatch states keyed by snapshot ID.
+        """
+        return self.get_resources().snapshot_dispatch_states
+
+    @property
     def latest_run(self) -> Optional["PipelineRunResponse"]:
         """Implements the 'latest_run' property.
 
@@ -1061,20 +1111,161 @@ class PlatformEventTriggerResponse(
         return self.get_body().target_events
 
 
+# ----------- WEBHOOK CLASSES ------------------- #
+
+
+class WebhookTrigger(BaseModel):
+    """Marker base class for webhook trigger models."""
+
+
+class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
+    """Class representing a webhook trigger request."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+    flavor: Literal[TriggerFlavor.WEBHOOK] = TriggerFlavor.WEBHOOK
+    webhook_id: UUID
+    configuration: dict[str, Any]
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            The provider-specific event configuration.
+        """
+        return self.model_dump_json(include={"configuration"})
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return flat webhook trigger fields.
+
+        Returns:
+            The webhook association.
+        """
+        return {"webhook_id": self.webhook_id}
+
+
+class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
+    """Class representing a webhook trigger update."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+    configuration: dict[str, Any]
+
+    @model_validator(mode="after")
+    def validate_complete_update(self) -> "WebhookTriggerUpdate":
+        """Ensure webhook trigger updates preserve PUT semantics.
+
+        Returns:
+            The validated webhook trigger update.
+
+        Raises:
+            ValueError: If any mutable trigger field was omitted.
+        """
+        required_fields = {
+            "name",
+            "active",
+            "concurrency",
+            "configuration",
+        }
+        missing_fields = required_fields - self.model_fields_set
+        if missing_fields:
+            raise ValueError(
+                "Webhook trigger updates must include all mutable fields. "
+                f"Missing: {', '.join(sorted(missing_fields))}."
+            )
+        return self
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            The provider-specific event configuration.
+        """
+        return self.model_dump_json(include={"configuration"})
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return flat webhook trigger fields.
+
+        Returns:
+            The webhook association.
+        """
+        return {}
+
+
+class WebhookTriggerResponseBody(WebhookTrigger, TriggerResponseBody):
+    """Class representing a webhook trigger response body."""
+
+    configuration: dict[str, Any]
+    webhook_id: UUID | None = None
+
+    def get_extra_fields(self) -> list[str]:
+        """Return flat fields required for the response.
+
+        Returns:
+            The webhook association field.
+        """
+        return ["webhook_id"]
+
+
+class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
+    """Class representing a webhook trigger response."""
+
+    @property
+    def webhook_id(self) -> UUID | None:
+        """Return the associated webhook ID.
+
+        Returns:
+            The associated webhook ID, if any.
+        """
+        return self.get_body().webhook_id
+
+    @property
+    def webhook(self) -> Optional["WebhookResponse"]:
+        """Return the associated webhook.
+
+        Returns:
+            The associated webhook, if any.
+        """
+        return self.get_resources().webhook
+
+    @property
+    def configuration(self) -> dict[str, Any]:
+        """Return the provider-neutral configuration.
+
+        Returns:
+            The webhook trigger configuration.
+        """
+        return self.get_body().configuration
+
+
+class WebhookTriggerExecutionInfo(BaseModel):
+    """Information about the webhook event that triggered a pipeline run."""
+
+    webhook_id: UUID
+    delivery_id: str
+    event: dict[str, Any] | None = None
+
+
 class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
     upstream_run_id: UUID | None = None
+    upstream_pipeline_ids: list[UUID] = Field(default_factory=list)
+    webhook_upstream_event: dict[str, WebhookTriggerExecutionInfo] | None = (
+        None
+    )
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate | WebhookTriggerUpdate,
     Field(discriminator="type"),
 ]
 TRIGGER_CREATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerRequest | PlatformEventTriggerRequest,
+    ScheduleTriggerRequest
+    | PlatformEventTriggerRequest
+    | WebhookTriggerRequest,
     Field(discriminator="type"),
 ]
 TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
-    ScheduleTriggerResponse | PlatformEventTriggerResponse
+    ScheduleTriggerResponse
+    | PlatformEventTriggerResponse
+    | WebhookTriggerResponse
 )

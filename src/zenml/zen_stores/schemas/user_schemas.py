@@ -14,6 +14,7 @@
 """SQLModel implementation of user tables."""
 
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 from uuid import UUID
 
@@ -82,6 +83,9 @@ class UserSchema(NamedSchema, table=True):
     )
     active: bool
     password: Optional[str] = Field(nullable=True)
+    password_changed_at: Optional[datetime] = Field(
+        default=None, nullable=True
+    )
     activation_token: Optional[str] = Field(nullable=True)
     email_opted_in: Optional[bool] = Field(nullable=True)
     external_user_id: Optional[UUID] = Field(nullable=True)
@@ -173,6 +177,7 @@ class UserSchema(NamedSchema, table=True):
             avatar_url=model.avatar_url,
             active=model.active,
             password=model.create_hashed_password(),
+            password_changed_at=utc_now() if model.password else None,
             activation_token=model.create_hashed_activation_token(),
             external_user_id=model.external_user_id,
             email_opted_in=model.email_opted_in,
@@ -226,6 +231,7 @@ class UserSchema(NamedSchema, table=True):
 
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
+                self.password_changed_at = utc_now()
             elif field == "activation_token":
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
@@ -282,6 +288,9 @@ class UserSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = UserResponseMetadata(
+                password_changed_at=self.password_changed_at
+                if include_private
+                else None,
                 email=self.email if include_private else None,
                 external_user_id=self.external_user_id,
                 user_metadata=json.loads(self.user_metadata)

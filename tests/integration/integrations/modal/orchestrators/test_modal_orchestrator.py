@@ -1135,6 +1135,7 @@ class StaticStepRunRequestFactoryStub:
     def __init__(self):
         self.created_requests = []
         self.populate_calls = []
+        self.recorded_step_runs = []
 
     @staticmethod
     def has_caching_enabled(_step_name):
@@ -1149,8 +1150,11 @@ class StaticStepRunRequestFactoryStub:
         self.created_requests.append(request)
         return request
 
-    def populate_request(self, request, *, step_runs):
-        self.populate_calls.append((request, dict(step_runs)))
+    def populate_request(self, request):
+        self.populate_calls.append(request)
+
+    def record_step_run(self, step_run):
+        self.recorded_step_runs.append(step_run)
 
 
 def _make_static_controller(
@@ -1386,11 +1390,9 @@ def test_start_step_sandbox_launches_sandbox_on_cache_miss(monkeypatch):
         True
     )
 
-    def populate_running_request(request, *, step_runs):
+    def populate_running_request(request):
         request.status = ExecutionStatus.RUNNING
-        setup.step_run_request_factory.populate_calls.append(
-            (request, dict(step_runs))
-        )
+        setup.step_run_request_factory.populate_calls.append(request)
 
     setup.step_run_request_factory.populate_request = populate_running_request
     setup.orchestrator.create_static_step_sandbox = lambda **_kwargs: sandbox
@@ -1428,11 +1430,9 @@ def test_start_step_sandbox_uses_cached_step_run_on_cache_hit(monkeypatch):
         True
     )
 
-    def populate_cached_request(request, *, step_runs):
+    def populate_cached_request(request):
         request.status = ExecutionStatus.CACHED
-        setup.step_run_request_factory.populate_calls.append(
-            (request, dict(step_runs))
-        )
+        setup.step_run_request_factory.populate_calls.append(request)
 
     setup.step_run_request_factory.populate_request = populate_cached_request
     setup.orchestrator.create_static_step_sandbox = lambda **_kwargs: (
@@ -1462,7 +1462,9 @@ def test_start_step_sandbox_uses_cached_step_run_on_cache_hit(monkeypatch):
     assert setup.step_run_request_factory.created_requests[0].status == (
         ExecutionStatus.CACHED
     )
-    assert setup.controller.step_runs == {"train": cached_step_run}
+    assert setup.step_run_request_factory.recorded_step_runs == [
+        cached_step_run
+    ]
     assert MODAL_SANDBOX_ID_METADATA_KEY not in dag_node.metadata
 
 

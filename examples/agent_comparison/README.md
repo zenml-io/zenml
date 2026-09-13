@@ -178,18 +178,21 @@ def evaluate_and_decide(
 class YourCustomAgent(BaseAgent):
     def __init__(self, prompts: Optional[List[Prompt]] = None):
         super().__init__("YourCustomAgent", prompts)
-    
+
     def process_query(self, query: str) -> AgentResponse:
         # Your implementation here
-        return AgentResponse(text="...", latency_ms=..., confidence=..., tokens_used=...)
-    
+        return AgentResponse(
+            text="...", latency_ms=..., confidence=..., tokens_used=...
+        )
+
     def get_mermaid_diagram(self) -> str:
         """Return HTML with Mermaid diagram for automatic visualization."""
         return """<!DOCTYPE html>..."""
-    
+
     def get_graph_visualization(self) -> str:
         """Return text description for automatic visualization."""
         return "YourCustomAgent Architecture: ..."
+
 
 # Add to the architectures dictionary in run_architecture_comparison()
 # The AgentMaterializer will automatically generate visualizations
@@ -223,13 +226,13 @@ from litellm import completion
 # This works with any provider supported by LiteLLM:
 response = completion(
     model="gpt-3.5-turbo",  # OpenAI
-    # model="claude-3-sonnet",  # Anthropic  
+    # model="claude-3-sonnet",  # Anthropic
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
     messages=[{"role": "user", "content": query}],
     max_tokens=200,
     # Langfuse integration (automatic when env vars are set)
-    metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)}
+    metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)},
 )
 ```
 
@@ -302,6 +305,7 @@ To make this production-ready:
 5. **Scale Testing**: Run on larger datasets and more architectures
 6. **Add Monitoring**: Track performance degradation over time with Langfuse dashboards
 7. **Implement A/B Testing**: Gradually roll out winning architectures with proper monitoring
+8. **Replay Real Runs**: Import the Langfuse traces of the winning architecture into [Kitaru](https://docs.zenml.io/kitaru) with `kitaru-langfuse-importer` and replay them against your real code with one thing changed, instead of comparing architectures on sample data only ([importing Langfuse traces](https://docs.zenml.io/kitaru/guides/import-langfuse-traces))
 
 ## 🔗 Related Examples
 

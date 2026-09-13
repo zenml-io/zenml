@@ -28,54 +28,56 @@ docker_settings = DockerSettings(
 def run_qwen_agent(
     query: str,
 ) -> Annotated[Dict[str, Any], "agent_results"]:
-    """Execute the Qwen-Agent with the given query."""
-    try:
-        messages = [{"role": "user", "content": query}]
-        last_batch: list[Any] = []
-        for batch in agent.run(messages=messages):
-            # run() yields incremental message lists; keep the latest for the final assistant output
-            last_batch = batch
+    """Execute the Qwen-Agent with the given query.
 
-        final_text = ""
-        if last_batch:
-            last_msg = last_batch[-1]
-            final_text = (
-                last_msg.get("content", str(last_msg))
-                if isinstance(last_msg, dict)
-                else str(last_msg)
-            )
+    Args:
+        query: Question for the agent.
 
-        return {
-            "query": query,
-            "response": final_text,
-            "status": "success",
-        }
-    except Exception as e:
-        return {
-            "query": query,
-            "response": f"Agent error: {str(e)}",
-            "status": "error",
-        }
+    Returns:
+        The query and generated response.
+
+    Raises:
+        RuntimeError: If the agent returns no response.
+    """
+    messages = [{"role": "user", "content": query}]
+    last_batch: list[Any] = []
+    for batch in agent.run(messages=messages):
+        last_batch = batch
+
+    if not last_batch:
+        raise RuntimeError("Qwen-Agent returned no messages.")
+
+    last_msg = last_batch[-1]
+    if isinstance(last_msg, dict):
+        role = last_msg.get("role")
+        final_text = last_msg.get("content")
+    else:
+        role = getattr(last_msg, "role", None)
+        final_text = getattr(last_msg, "content", None)
+
+    if role != "assistant" or not isinstance(final_text, str):
+        raise RuntimeError("Qwen-Agent did not return a final response.")
+    if not final_text.strip():
+        raise RuntimeError("Qwen-Agent returned an empty response.")
+
+    return {"query": query, "response": final_text}
 
 
 @step
 def format_qwen_response(
     agent_data: Dict[str, Any],
 ) -> Annotated[str, "formatted_response"]:
-    """Format the Qwen-Agent results into a readable summary."""
+    """Format the Qwen-Agent results into a readable summary.
+
+    Args:
+        agent_data: Query and generated response.
+
+    Returns:
+        The formatted agent response.
+    """
     query = agent_data["query"]
     response = agent_data["response"]
-    status = agent_data["status"]
-
-    if status == "error":
-        formatted = f"""❌ QWEN-AGENT ERROR
-{"=" * 40}
-
-Query: {query}
-Error: {response}
-"""
-    else:
-        formatted = f"""🤖 QWEN-AGENT RESPONSE
+    formatted = f"""🤖 QWEN-AGENT RESPONSE
 {"=" * 40}
 
 Query: {query}

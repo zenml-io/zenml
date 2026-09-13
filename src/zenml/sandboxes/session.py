@@ -52,15 +52,19 @@ class SandboxSession(ABC):
         *,
         id: str,
         parent: "BaseSandbox",
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize the sandbox session.
 
         Args:
             id: Session identifier.
             parent: The sandbox component that created this session.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         self.id = id
         self._parent = parent
+        self._destroy_on_exit = destroy_on_exit
         self._closed = False
         self._logging_context: Optional["LoggingContext"] = None
         self._logging_disabled = False
@@ -467,5 +471,12 @@ class SandboxSession(ABC):
         return self
 
     def __exit__(self, *_: Any) -> None:
-        """Close the session."""
-        self.close()
+        """Destroy or close the session, depending on `destroy_on_exit`.
+
+        Args:
+            *_: Unused context manager exception details.
+        """
+        if self._destroy_on_exit:
+            self.destroy()
+        else:
+            self.close()

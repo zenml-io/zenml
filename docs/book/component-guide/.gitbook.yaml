@@ -41,6 +41,7 @@ redirects:
   experiment-trackers/neptune: experiment-trackers/neptune.md
   experiment-trackers/vertexai: experiment-trackers/vertexai.md
   experiment-trackers/wandb: experiment-trackers/wandb.md
+  experiment-trackers/trackio: experiment-trackers/trackio.md
   feature-stores: feature-stores/README.md
   feature-stores/custom: feature-stores/custom.md
   feature-stores/feast: feature-stores/feast.md
