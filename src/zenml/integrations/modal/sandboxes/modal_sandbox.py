@@ -433,20 +433,20 @@ class ModalSandbox(BaseSandbox):
             modal_client=modal_client,
         )
 
-    @staticmethod
-    def _set_sandbox_tags(sandbox: "modal.Sandbox") -> None:
-        """Tag the sandbox with the active pipeline run and step run ids.
+    def _set_sandbox_tags(self, sandbox: "modal.Sandbox") -> None:
+        """Tag the sandbox with the session, component and run ids.
 
         Args:
             sandbox: The Modal sandbox to tag.
         """
+        tags = {
+            "zenml-sandbox-id": sandbox.object_id,
+            "zenml-sandbox-component-id": str(self.id),
+        }
         if step_context := StepContext.get():
-            sandbox.set_tags(
-                {
-                    "run_id": str(step_context.pipeline_run.id),
-                    "step_run_id": str(step_context.step_run.id),
-                }
-            )
+            tags["run_id"] = str(step_context.pipeline_run.id)
+            tags["step_run_id"] = str(step_context.step_run.id)
+        sandbox.set_tags(tags)
 
     def create_session(
         self,

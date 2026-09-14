@@ -69,7 +69,8 @@ logger = get_logger(__name__)
 DOCKER_SANDBOX_FLAVOR = "docker"
 
 
-_SESSION_ID_LABEL = "zenml-sandbox-session"
+_SESSION_ID_LABEL = "zenml-sandbox-id"
+_COMPONENT_ID_LABEL = "zenml-sandbox-component-id"
 _SNAPSHOT_REPOSITORY = "zenml-sandbox-snapshot"
 
 # Docker has no API to terminate an exec instance and `exec_inspect`
@@ -608,6 +609,7 @@ class DockerSandbox(BaseSandbox):
         run_args = copy.deepcopy(settings.run_args)
         labels = run_args.pop("labels", {})
         labels[_SESSION_ID_LABEL] = session_id
+        labels[_COMPONENT_ID_LABEL] = str(self.id)
         if step_context := StepContext.get():
             labels["run_id"] = str(step_context.pipeline_run.id)
             labels["step_run_id"] = str(step_context.step_run.id)
