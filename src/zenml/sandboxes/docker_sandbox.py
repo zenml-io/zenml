@@ -58,6 +58,7 @@ from zenml.sandboxes.base import (
 from zenml.sandboxes.process import SandboxExecError, SandboxProcess
 from zenml.sandboxes.session import SandboxSession
 from zenml.sandboxes.snapshot import SandboxSnapshot
+from zenml.steps.step_context import StepContext
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -607,6 +608,9 @@ class DockerSandbox(BaseSandbox):
         run_args = copy.deepcopy(settings.run_args)
         labels = run_args.pop("labels", {})
         labels[_SESSION_ID_LABEL] = session_id
+        if step_context := StepContext.get():
+            labels["run_id"] = str(step_context.pipeline_run.id)
+            labels["step_run_id"] = str(step_context.step_run.id)
         if settings.cpu_limit is not None:
             run_args["nano_cpus"] = int(settings.cpu_limit * 1e9)
         if settings.memory_limit is not None:
