@@ -1249,23 +1249,7 @@ class SqlZenStore(BaseZenStore):
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
 
     @staticmethod
-    def _archived_run_metadata(
-        run: PipelineRunSchema, include_full_metadata: bool
-    ) -> Dict[str, "MetadataType"]:
-        """Build the retained metadata projection for an archived run.
-
-        Args:
-            run: Archived run schema attached to an active session.
-            include_full_metadata: Whether step and schedule metadata is included.
-
-        Returns:
-            The requested SQL-backed metadata projection.
-        """
-        return run.fetch_metadata(include_full_metadata=include_full_metadata)
-
-    @classmethod
     def _populate_archived_run_summaries(
-        cls,
         session: Session,
         page: Page[PipelineRunResponse],
         include_full_metadata: bool,
@@ -1302,8 +1286,8 @@ class SqlZenStore(BaseZenStore):
             .options(*options)
         ).all()
         metadata = {
-            schema.id: cls._archived_run_metadata(
-                schema, include_full_metadata=include_full_metadata
+            schema.id: schema.fetch_metadata(
+                include_full_metadata=include_full_metadata
             )
             for schema in schemas
         }
@@ -5518,7 +5502,11 @@ class SqlZenStore(BaseZenStore):
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
         *,
-        authorize: Optional[Callable[[Any], None]] = None,
+        authorize: Optional[
+            Callable[
+                [Union[PipelineSnapshotResponse, PipelineRunResponse]], None
+            ]
+        ] = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -6498,7 +6486,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_run_id: UUID,
         include_step_metadata: Optional[List[str]] = None,
         *,
-        authorize: Optional[Callable[[Any], None]] = None,
+        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunDAG:
         """Get the DAG of a pipeline run.
 
@@ -7233,7 +7221,7 @@ class SqlZenStore(BaseZenStore):
         include_full_metadata: bool = False,
         include_python_packages: bool = False,
         *,
-        authorize: Optional[Callable[[Any], None]] = None,
+        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -7277,8 +7265,8 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
-                archive_metadata=self._archived_run_metadata(
-                    run, include_full_metadata=include_full_metadata
+                archive_metadata=run.fetch_metadata(
+                    include_full_metadata=include_full_metadata
                 )
                 if run.is_archived
                 else None,
@@ -7611,8 +7599,7 @@ class SqlZenStore(BaseZenStore):
                         include_metadata=hydrate and not schema.is_archived,
                         include_resources=True,
                         include_full_metadata=include_full_metadata,
-                        archive_metadata=self._archived_run_metadata(
-                            schema,
+                        archive_metadata=schema.fetch_metadata(
                             include_full_metadata=include_full_metadata,
                         )
                         if hydrate and schema.is_archived
@@ -12847,7 +12834,7 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         hydrate: bool = True,
         *,
-        authorize: Optional[Callable[[Any], None]] = None,
+        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -12903,7 +12890,7 @@ class SqlZenStore(BaseZenStore):
         step_run_filter_model: StepRunFilter,
         hydrate: bool = False,
         *,
-        authorize: Optional[Callable[[Any], None]] = None,
+        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> Page[StepRunResponse]:
         """List all step runs matching the given filter criteria.
 
@@ -14463,6 +14450,7 @@ class SqlZenStore(BaseZenStore):
                     == col(PipelineRunSchema.id),
                 )
                 .where(col(StepRunSchema.id) == step_run_id)
+                .options(load_only(*self._RUN_HEADER_COLUMNS))
             ).first()
             if run is None:
                 raise KeyError(f"Step run '{step_run_id}' does not exist.")
@@ -14570,9 +14558,7 @@ class SqlZenStore(BaseZenStore):
             now = transactions.database_now(session)
         state = RetentionState.load(raw)
         settings = ServerConfiguration.get_server_config().archive
-        return state.to_response(
-            settings, archive_configured=settings.configured, now=now
-        )
+        return state.to_response(settings, now=now)
 
     def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
         """Restore an archived run's detail in this request.

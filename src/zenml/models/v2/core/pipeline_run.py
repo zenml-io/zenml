@@ -1363,10 +1363,7 @@ class PipelineRunFilter(
                     # table columns.
                     PipelineRunSchema.not_archived(),
                     PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.not_archived(),
-                    PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
-                    col(PipelineBuildSchema.is_local).is_(False),
-                    col(PipelineBuildSchema.stack_id).is_not(None),
+                    PipelineSnapshotSchema.runnable_filter(),
                 )
             else:
                 templatable_filter = or_(

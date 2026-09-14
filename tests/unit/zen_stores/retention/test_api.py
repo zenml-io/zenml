@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -104,8 +105,14 @@ def test_denied_before_detail_storage_or_dispatch(
     blocked = Mock(
         side_effect=AssertionError("denied request crossed boundary")
     )
-    for module in ROUTERS:
+    for module in (
+        retention_endpoints,
+        run_metadata_endpoints,
+        runs_endpoints,
+        steps_endpoints,
+    ):
         monkeypatch.setattr(module, "verify_permission_for_model", denied)
+    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", denied)
     monkeypatch.setattr(
         retention_endpoints, "batch_verify_permissions_for_models", denied
     )
@@ -166,6 +173,115 @@ def test_read_permission_restores_without_allowing_run_updates(
     assert restored.json()["outcome"] == "restored"
     assert update_response.status_code == 403, update_response.text
     assert checked_actions == [Action.READ, Action.UPDATE]
+
+
+def test_get_entity_header_authorization_precedes_dehydration(
+    monkeypatch,
+):
+    """The opt-in getter authorizes its header before returning redacted data."""
+    resource_id = uuid4()
+    header = object()
+    hydrated = object()
+    redacted = object()
+    events = []
+
+    def verify(model, *, action):
+        events.append(("authorize", model, action))
+
+    def get(entity_id, *, authorize, hydrate):
+        assert entity_id == resource_id and hydrate is True
+        authorize(header)
+        events.append(("hydrate", hydrated))
+        return hydrated
+
+    def dehydrate(model):
+        events.append(("dehydrate", model))
+        return redacted
+
+    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", verify)
+    monkeypatch.setattr(endpoint_utils, "dehydrate_response_model", dehydrate)
+
+    result = endpoint_utils.verify_permissions_and_get_entity(
+        id=resource_id,
+        get_method=get,
+        authorize_from_header=True,
+        hydrate=True,
+    )
+
+    assert result is redacted
+    assert events == [
+        ("authorize", header, Action.READ),
+        ("hydrate", hydrated),
+        ("dehydrate", hydrated),
+    ]
+
+
+def test_get_entity_default_authorization_order_is_unchanged(monkeypatch):
+    """Existing helper callers still authorize the fetched response."""
+    resource_id = uuid4()
+    model = object()
+    events = []
+
+    def get(entity_id, *, hydrate):
+        assert entity_id == resource_id and hydrate is False
+        events.append(("get", model))
+        return model
+
+    def verify(response, *, action):
+        events.append(("authorize", response, action))
+
+    def dehydrate(response):
+        events.append(("dehydrate", response))
+        return response
+
+    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", verify)
+    monkeypatch.setattr(endpoint_utils, "dehydrate_response_model", dehydrate)
+
+    result = endpoint_utils.verify_permissions_and_get_entity(
+        id=resource_id,
+        get_method=get,
+        hydrate=False,
+    )
+
+    assert result is model
+    assert events == [
+        ("get", model),
+        ("authorize", model, Action.READ),
+        ("dehydrate", model),
+    ]
+
+
+def test_step_status_checks_only_the_owning_run_once(http, monkeypatch):
+    """A scalar step read performs one permission check for its owning run."""
+    checks = Mock(
+        side_effect=lambda *, user, resources, action: {
+            resource: True for resource in resources
+        }
+    )
+    monkeypatch.setattr(
+        rbac_utils,
+        "server_config",
+        lambda: SimpleNamespace(rbac_enabled=True),
+    )
+    monkeypatch.setattr(
+        rbac_utils,
+        "is_owned_by_authenticated_user",
+        lambda _: False,
+    )
+    monkeypatch.setattr(
+        rbac_utils,
+        "rbac",
+        lambda: SimpleNamespace(check_permissions=checks),
+    )
+
+    response = http.client.get(f"/api/v1/steps/{http.ids.producer}/status")
+
+    assert response.status_code == 200, response.text
+    assert checks.call_count == 1
+    assert {
+        (resource.type, resource.id)
+        for resource in checks.call_args.kwargs["resources"]
+    } == {(ResourceType.PIPELINE_RUN, http.ids.run)}
 
 
 def test_archive_restore_http_lifecycle(http, monkeypatch):
@@ -434,9 +550,7 @@ def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
         if model.id == http.ids.run:
             raise HTTPException(403, "Forbidden")
 
-    monkeypatch.setattr(
-        pipeline_snapshot_endpoints, "verify_permission_for_model", verify
-    )
+    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", verify)
 
     response = http.client.get(
         f"/api/v1/pipeline_snapshots/{http.ids.snapshot}",

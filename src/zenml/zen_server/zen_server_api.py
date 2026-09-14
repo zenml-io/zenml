@@ -119,7 +119,6 @@ from zenml.zen_server.utils import (
     stop_event_loop_lag_monitor,
     zen_store,
 )
-from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver
 
 
 def dashboard_directory() -> str:
@@ -159,16 +158,15 @@ def _check_archive_store_on_startup() -> None:
     """Validate configured archive storage, including while writes are paused.
 
     Raises:
-        RuntimeError: Archive storage is configured on a SQLite database.
-    """
+        IllegalOperationError: Archive storage is configured on an unsupported
+            database.
+    """  # noqa: DOC502
     if not server_config().archive.configured:
         return
     store = zen_store()
-    if store.config.driver != SQLDatabaseDriver.MYSQL:
-        raise RuntimeError(
-            "ZENML_SERVER_ARCHIVE__BACKEND is set, but execution archives "
-            "requires a MySQL database. Unset it or move the server to MySQL."
-        )
+    # Database and configuration failures are fatal. Only the external storage
+    # probe below is allowed to degrade to a startup warning.
+    _ = store.archive_settings
     try:
         usable = store.archive_storage.probe()
     except Exception:

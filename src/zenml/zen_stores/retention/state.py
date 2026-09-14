@@ -2,7 +2,7 @@
 """Latest archive sweep state, stored as JSON on the server settings row."""
 
 from datetime import datetime, timedelta
-from typing import ClassVar, FrozenSet, List, Optional
+from typing import ClassVar, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -31,9 +31,6 @@ class RetentionState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     LEASE: ClassVar[timedelta] = timedelta(minutes=10)
-    ACTIVE_OUTCOMES: ClassVar[FrozenSet[RetentionOutcome]] = frozenset(
-        {RetentionOutcome.RUNNING}
-    )
     # Runs over the byte budget are only found by reading them. Remembering
     # a bounded number of them keeps every full scan from re-reading each
     # one; older entries fall off and are simply read again.
@@ -72,7 +69,7 @@ class RetentionState(BaseModel):
             True while another sweep must not replace this one.
         """
         return (
-            self.last_outcome in self.ACTIVE_OUTCOMES
+            self.last_outcome == RetentionOutcome.RUNNING
             and self.operation_expires_at is not None
             and self.operation_expires_at > now
         )
@@ -102,27 +99,25 @@ class RetentionState(BaseModel):
         self,
         settings: ArchiveSettings,
         *,
-        archive_configured: bool,
         now: datetime,
     ) -> RetentionStatusResponse:
         """Describe the latest sweep and the current configuration.
 
         Args:
             settings: The server's archive settings.
-            archive_configured: Whether archive storage settings are present.
             now: Current database time, to report an abandoned sweep.
 
         Returns:
             The status response.
         """
         outcome = self.last_outcome
-        if outcome in self.ACTIVE_OUTCOMES and not self.is_live(now):
+        if outcome == RetentionOutcome.RUNNING and not self.is_live(now):
             outcome = RetentionOutcome.EXPIRED
         return RetentionStatusResponse(
             outcome=outcome,
             finished_at=self.last_finished_at,
             archive_enabled=settings.new_archives_enabled,
-            archive_configured=archive_configured,
+            archive_configured=settings.configured,
             archive_scheduled=settings.scheduled,
             archive_after_days=settings.after_days
             if settings.configured

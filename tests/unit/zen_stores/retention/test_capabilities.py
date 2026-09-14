@@ -4,6 +4,7 @@
 import inspect as python_inspect
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -16,6 +17,7 @@ from zenml.artifact_stores.base_artifact_store import (
 from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.constants import ENV_ZENML_SERVER
 from zenml.enums import AuthScheme, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.io import fileio, filesystem_registry
 from zenml.io.local_filesystem import LocalFilesystem
 from zenml.models import ServerModel
@@ -113,6 +115,62 @@ def test_store_info_reports_manual_archive_capability(
     info = store.get_store_info()
 
     assert info.execution_archiving_enabled is expected
+
+
+def test_archive_startup_database_validation_is_fatal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unsupported databases fail startup outside the storage probe guard."""
+    from zenml.zen_server import zen_server_api
+
+    archive = ArchiveSettings(backend="local", uri="/tmp/archive")
+    storage = SimpleNamespace(probe=Mock())
+
+    class UnsupportedStore:
+        archive_storage = storage
+
+        @property
+        def archive_settings(self) -> ArchiveSettings:
+            raise IllegalOperationError("unsupported database")
+
+    monkeypatch.setattr(
+        zen_server_api,
+        "server_config",
+        lambda: SimpleNamespace(archive=archive),
+    )
+    monkeypatch.setattr(zen_server_api, "zen_store", UnsupportedStore)
+
+    with pytest.raises(IllegalOperationError, match="unsupported database"):
+        zen_server_api._check_archive_store_on_startup()
+
+    storage.probe.assert_not_called()
+
+
+def test_archive_startup_storage_failure_is_a_warning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A transient archive storage failure does not prevent server startup."""
+    from zenml.zen_server import zen_server_api
+
+    archive = ArchiveSettings(backend="local", uri="/tmp/archive")
+    storage = SimpleNamespace(probe=Mock(side_effect=OSError("temporary")))
+    store = SimpleNamespace(
+        archive_settings=archive,
+        archive_storage=storage,
+    )
+    warning = Mock()
+    monkeypatch.setattr(
+        zen_server_api,
+        "server_config",
+        lambda: SimpleNamespace(archive=archive),
+    )
+    monkeypatch.setattr(zen_server_api, "zen_store", lambda: store)
+    monkeypatch.setattr(zen_server_api.logger, "warning", warning)
+
+    zen_server_api._check_archive_store_on_startup()
+
+    storage.probe.assert_called_once_with()
+    warning.assert_called_once()
 
 
 def test_archive_storage_does_not_replace_global_fileio_dispatch(

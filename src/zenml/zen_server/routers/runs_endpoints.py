@@ -97,6 +97,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -322,16 +323,13 @@ def get_run(
         The pipeline run.
     """
     store = zen_store()
-    run = dehydrate_response_model(
-        store.get_run(
-            run_id,
-            hydrate=hydrate,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-            include_python_packages=include_python_packages,
-            include_full_metadata=include_full_metadata,
-        )
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        authorize_from_header=True,
+        hydrate=hydrate,
+        include_python_packages=include_python_packages,
+        include_full_metadata=include_full_metadata,
     )
 
     if refresh_status:
@@ -451,14 +449,11 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    run = dehydrate_response_model(
-        zen_store().get_run(
-            run_id,
-            hydrate=True,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-        )
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        authorize_from_header=True,
+        hydrate=True,
     )
     return run.config.model_dump()
 
@@ -515,9 +510,7 @@ def get_run_dag(
     return store.get_pipeline_run_dag(
         pipeline_run_id=run_id,
         include_step_metadata=include_step_metadata,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
     )
 
 
@@ -539,14 +532,11 @@ def refresh_run_status(
             the status of individual steps.
     """
     store = zen_store()
-    run = dehydrate_response_model(
-        store.get_run(
-            run_id,
-            hydrate=True,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-        )
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        authorize_from_header=True,
+        hydrate=True,
     )
     run_utils.refresh_run_status(
         run=run, include_step_updates=include_steps, zen_store=store
@@ -570,14 +560,11 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    run = dehydrate_response_model(
-        zen_store().get_run(
-            run_id,
-            hydrate=True,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-        )
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=zen_store().get_run,
+        authorize_from_header=True,
+        hydrate=True,
     )
     verify_permission_for_model(run, action=Action.UPDATE)
     run_utils.stop_run(run=run, graceful=graceful)
@@ -623,14 +610,11 @@ def run_logs(
 
     store = zen_store()
 
-    run = dehydrate_response_model(
-        store.get_run(
-            run_id,
-            hydrate=False,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-        )
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        authorize_from_header=True,
+        hydrate=False,
     )
 
     logs: Optional["LogsResponse"] = None

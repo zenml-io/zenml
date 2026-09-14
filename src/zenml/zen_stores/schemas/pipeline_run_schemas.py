@@ -81,6 +81,10 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+    run_pipeline_configuration,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -563,22 +567,17 @@ class PipelineRunSchema(
         if self.snapshot is not None:
             self.snapshot.require_hot(self.id)
         if self.snapshot:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
+            configuration = self.snapshot.pipeline_configuration
         elif self.pipeline_configuration:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
+            configuration = self.pipeline_configuration
         else:
             raise RuntimeError(
                 "Pipeline run has no snapshot and no pipeline configuration."
             )
 
-        pipeline_config.finalize_substitutions(
-            start_time=self.start_time, inplace=True
+        return run_pipeline_configuration(
+            configuration=configuration, start_time=self.start_time
         )
-        return pipeline_config
 
     def get_step_configuration(self, step_name: str) -> Step:
         """Get the step configuration for the pipeline run.
@@ -597,11 +596,9 @@ class PipelineRunSchema(
             self.snapshot.require_hot(self.id)
         if self.snapshot:
             pipeline_configuration = self.get_pipeline_configuration()
-            return Step.from_dict(
-                data=json.loads(
-                    self.snapshot.get_step_configuration(step_name).config
-                ),
-                pipeline_configuration=pipeline_configuration,
+            return merge_step_configuration(
+                self.snapshot.get_step_configuration(step_name).config,
+                pipeline_configuration,
                 exclude_hook_sources=self.snapshot.is_dynamic,
             )
         else:

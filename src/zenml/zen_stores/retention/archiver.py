@@ -50,9 +50,6 @@ from zenml.models.v2.misc.retention import (
     ArchiveResponse,
 )
 from zenml.zen_stores.retention import transactions
-from zenml.zen_stores.retention.capacity import (
-    MAX_CONCURRENT_RETENTION_OPERATIONS,
-)
 from zenml.zen_stores.retention.capture import capture_run
 from zenml.zen_stores.retention.eligibility import (
     ArchivableRun,
@@ -84,10 +81,6 @@ RunOutcome = Literal["archived", "skipped", "oversized", "failed"]
 
 # Snapshot rows require these columns, so retirement stores empty objects.
 EMPTY_JSON = canonical_json({}).decode()
-
-# Backward-compatible name for the aggregate per-process capacity. Manual
-# batches are sequential; concurrency comes from independently admitted calls.
-MAX_ARCHIVE_WORKERS = MAX_CONCURRENT_RETENTION_OPERATIONS
 
 
 class ArchiveAttempt(BaseModel):
@@ -731,7 +724,7 @@ class ArchivePass:
             session: Transaction that locked and loaded the settings row.
             now: Current database time for the lease and finish timestamp.
         """
-        active = self.state.last_outcome in RetentionState.ACTIVE_OUTCOMES
+        active = self.state.last_outcome == RetentionOutcome.RUNNING
         self.state.operation_expires_at = (
             now + RetentionState.LEASE if active else None
         )

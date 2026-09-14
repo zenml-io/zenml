@@ -55,6 +55,17 @@ AnyUpdate = TypeVar("AnyUpdate", bound=BaseUpdate)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
+def verify_read_permission_for_model(
+    model: BaseIdentifiedResponse[Any, Any, Any],
+) -> None:
+    """Verify read permission for a response model.
+
+    Args:
+        model: The response model to authorize.
+    """
+    verify_permission_for_model(model, action=Action.READ)
+
+
 def verify_permissions_and_create_entity(
     request_model: AnyRequest,
     create_method: Callable[[AnyRequest], AnyResponse],
@@ -200,6 +211,8 @@ def verify_permissions_and_get_or_create_entity(
 def verify_permissions_and_get_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponse],
+    *,
+    authorize_from_header: bool = False,
     **get_method_kwargs: Any,
 ) -> AnyResponse:
     """Verify permissions and fetch an entity.
@@ -207,13 +220,19 @@ def verify_permissions_and_get_entity(
     Args:
         id: The ID of the entity to fetch.
         get_method: The method to fetch the entity.
+        authorize_from_header: Whether the getter accepts an ``authorize``
+            callback that it invokes on the permission model before hydration.
         get_method_kwargs: Keyword arguments to pass to the get method.
 
     Returns:
         A model of the fetched entity.
     """
+    if authorize_from_header:
+        get_method_kwargs["authorize"] = verify_read_permission_for_model
+
     model = get_method(id, **get_method_kwargs)
-    verify_permission_for_model(model, action=Action.READ)
+    if not authorize_from_header:
+        verify_read_permission_for_model(model)
     return dehydrate_response_model(model)
 
 

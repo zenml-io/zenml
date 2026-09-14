@@ -53,6 +53,8 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_get_entity,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -116,9 +118,7 @@ def list_run_steps(
     page = zen_store().list_run_steps(
         step_run_filter_model=step_run_filter_model,
         hydrate=hydrate,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
     )
     return dehydrate_page(page)
 
@@ -174,16 +174,12 @@ def get_step(
     Returns:
         The step.
     """
-    store = zen_store()
-    step = store.get_run_step(
-        step_id,
+    return verify_permissions_and_get_entity(
+        id=step_id,
+        get_method=zen_store().get_run_step,
+        authorize_from_header=True,
         hydrate=hydrate,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
     )
-
-    return dehydrate_response_model(step)
 
 
 @router.put(
@@ -275,13 +271,10 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    store = zen_store()
-    step = store.get_run_step(
+    step = zen_store().get_run_step(
         step_id,
         hydrate=True,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
     )
 
     return step.config.model_dump()
@@ -304,13 +297,10 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    store = zen_store()
-    step = store.get_run_step(
+    step = zen_store().get_run_step(
         step_id,
         hydrate=False,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
     )
 
     return step.status
@@ -357,9 +347,7 @@ def get_step_logs(
     step = store.get_run_step(
         step_id,
         hydrate=False,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
     )
 
     if step.log_collection:

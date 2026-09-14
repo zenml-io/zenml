@@ -60,15 +60,15 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
-    dehydrate_response_model,
     verify_permission,
-    verify_permission_for_model,
 )
 from zenml.zen_server.routers.workload_manager_gate import (
     workload_manager_enabled,
@@ -182,16 +182,13 @@ def get_pipeline_snapshot(
     Returns:
         A specific snapshot object.
     """
-    return dehydrate_response_model(
-        zen_store().get_snapshot(
-            snapshot_id,
-            hydrate=hydrate,
-            authorize=lambda header: verify_permission_for_model(
-                header, action=Action.READ
-            ),
-            step_configuration_filter=step_configuration_filter,
-            include_config_schema=include_config_schema,
-        )
+    return verify_permissions_and_get_entity(
+        id=snapshot_id,
+        get_method=zen_store().get_snapshot,
+        authorize_from_header=True,
+        hydrate=hydrate,
+        step_configuration_filter=step_configuration_filter,
+        include_config_schema=include_config_schema,
     )
 
 
@@ -273,9 +270,7 @@ def get_snapshot_code_download_token(
     snapshot = store.get_snapshot(
         snapshot_id=snapshot_id,
         hydrate=True,
-        authorize=lambda header: verify_permission_for_model(
-            header, action=Action.READ
-        ),
+        authorize=verify_read_permission_for_model,
         step_configuration_filter=[],
         include_config_schema=False,
     )
@@ -399,14 +394,11 @@ def create_snapshot_run(
     with track_handler(
         event=AnalyticsEvent.EXECUTED_SNAPSHOT,
     ) as analytics_handler:
-        snapshot = dehydrate_response_model(
-            zen_store().get_snapshot(
-                snapshot_id,
-                hydrate=True,
-                authorize=lambda header: verify_permission_for_model(
-                    header, action=Action.READ
-                ),
-            )
+        snapshot = verify_permissions_and_get_entity(
+            id=snapshot_id,
+            get_method=zen_store().get_snapshot,
+            authorize_from_header=True,
+            hydrate=True,
         )
         analytics_handler.metadata = {
             "project_id": snapshot.project_id,
