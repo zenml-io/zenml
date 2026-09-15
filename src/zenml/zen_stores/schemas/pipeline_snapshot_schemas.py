@@ -17,7 +17,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 from uuid import UUID
 
-from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
@@ -41,6 +41,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
+)
+from zenml.zen_stores.schemas.compressed_text import (
+    CompressedMediumText,
+    CompressedText,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -106,26 +110,31 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
     pipeline_configuration: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            CompressedMediumText(f"{__tablename__}.pipeline_configuration"),
             nullable=False,
         )
     )
-    client_environment: str = Field(sa_column=Column(TEXT, nullable=False))
+    client_environment: str = Field(
+        sa_column=Column(
+            CompressedText(f"{__tablename__}.client_environment"),
+            nullable=False,
+        )
+    )
     run_name_template: str = Field(nullable=False)
     client_version: str = Field(nullable=True)
     server_version: str = Field(nullable=True)
     pipeline_version_hash: Optional[str] = Field(nullable=True, default=None)
     pipeline_spec: Optional[str] = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            CompressedMediumText(f"{__tablename__}.pipeline_spec"),
             nullable=True,
         )
     )
-    source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code: Optional[str] = Field(
+        sa_column=Column(
+            CompressedText(f"{__tablename__}.source_code"), nullable=True
+        )
+    )
     code_path: Optional[str] = Field(nullable=True)
 
     # Foreign keys
@@ -684,9 +693,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     name: str
     config: str = Field(
         sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
+            CompressedMediumText(f"{__tablename__}.config"),
             nullable=False,
         )
     )
