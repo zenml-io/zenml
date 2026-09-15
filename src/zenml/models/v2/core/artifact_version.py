@@ -481,14 +481,14 @@ class ArtifactVersionResponse(
         from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
         from zenml.artifacts.utils import load_artifact_from_response
 
-        cache = InMemoryArtifactCache.get()
+        cache = None if disable_cache else InMemoryArtifactCache.get()
 
-        if cache and (data := cache.get_artifact_data(self.id)):
+        if cache and cache.has_artifact_data(self.id):
             logger.debug("Returning artifact data (%s) from cache", self.id)
-            return data
+            return cache.get_artifact_data(self.id)
 
         data = load_artifact_from_response(self)
-        if cache and not disable_cache:
+        if cache:
             cache.set_artifact_data(self.id, data)
         return data
 
