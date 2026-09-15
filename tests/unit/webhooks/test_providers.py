@@ -22,7 +22,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from zenml.webhooks import WebhookEvent
+from zenml.webhooks import DynamicWebhookTargetEvent, WebhookEvent
 from zenml.webhooks.providers import (
     BaseWebhookProvider,
     BuiltinWebhookType,
@@ -104,6 +104,14 @@ def test_generic_webhook_string_filter_operators(
     )
 
 
+def test_unrecognized_string_filter_prefix_matches_literally() -> None:
+    """Only recognized operator prefixes activate expression parsing."""
+    assert matches_string_filter(
+        actual="matches:main", configured="matches:main"
+    )
+    assert not matches_string_filter(actual="main", configured="matches:main")
+
+
 @pytest.mark.parametrize(
     "configured",
     [
@@ -131,7 +139,7 @@ def test_filtered_providers_accept_all_generic_string_operators(
 
 @pytest.mark.parametrize(
     "configured",
-    ["matches:main", "equals:", "oneof:not-json", "notoneof:[]"],
+    ["equals:", "oneof:not-json", "notoneof:[]"],
 )
 def test_generic_webhook_string_filters_reject_invalid_expressions(
     configured: str,
@@ -141,6 +149,23 @@ def test_generic_webhook_string_filters_reject_invalid_expressions(
     Args:
         configured: The invalid filter expression under test.
     """
+    with pytest.raises(ValidationError):
+        PushEvent(branch=configured)
+
+
+@pytest.mark.parametrize(
+    "configured",
+    [
+        [],
+        [str(index) for index in range(11)],
+        "x" * 513,
+        'oneof:["0","1","2","3","4","5","6","7","8","9","10"]',
+    ],
+)
+def test_typed_webhook_string_filters_enforce_common_limits(
+    configured: str | list[str],
+) -> None:
+    """Existing typed filters share the bounded string-filter contract."""
     with pytest.raises(ValidationError):
         PushEvent(branch=configured)
 
@@ -281,10 +306,24 @@ def test_github_matching_returns_serialized_semantic_event() -> None:
             ]
         },
     )
+    dynamic_trigger = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "push",
+                    "filters": {"ref": "refs/heads/main"},
+                }
+            ]
+        },
+    )
 
-    result = provider.match_triggers(event=event, candidates=[trigger])
+    result = provider.match_triggers(
+        event=event, candidates=[trigger, dynamic_trigger]
+    )
 
-    assert result.triggers == [trigger]
+    assert result.triggers == [trigger, dynamic_trigger]
     assert result.event == {
         "type": "push",
         "repo": "zenml-io/zenml",
@@ -497,19 +536,19 @@ async def test_github_pre_validation_rejects_missing_or_empty_event_header(
 
 @pytest.mark.parametrize(
     "event_type",
-    ["pull request", "pull-request", "PULL_REQUEST"],
+    ["pull request", "pull-request", "PULL_REQUEST", "future_event"],
 )
-async def test_github_pre_validation_ignores_unsupported_event_type(
+async def test_github_pre_validation_processes_open_event_type(
     event_type: str,
 ) -> None:
-    """GitHub pre-validation explicitly ignores unsupported families."""
+    """GitHub pre-validation accepts event families unknown to ZenML."""
     provider = GitHubWebhookProvider()
 
     result = await provider.pre_validate(
         headers={GITHUB_EVENT_HEADER: event_type}
     )
 
-    assert result == WebhookPreValidationResult.IGNORE
+    assert result == WebhookPreValidationResult.PROCESS
 
 
 @pytest.mark.parametrize(
@@ -738,17 +777,89 @@ def test_provider_configuration_ignores_removed_fields() -> None:
     )
 
 
-def test_custom_configuration_ignores_unknown_fields() -> None:
-    """Custom V1 configuration remains intentionally unfiltered."""
+def test_custom_configuration_preserves_legacy_match_all_forms() -> None:
+    """Missing, null, and empty custom targets remain unfiltered."""
     provider = CustomWebhookProvider()
 
     assert provider.validate_configuration({}) == CustomWebhookConfiguration()
     assert (
-        provider.validate_configuration(
-            {"target_events": [{"type": "pipeline.ready"}]}
-        )
+        provider.validate_configuration({"target_events": None})
         == CustomWebhookConfiguration()
     )
+    assert provider.validate_configuration(
+        {"target_events": []}
+    ) == CustomWebhookConfiguration(target_events=[])
+    assert (
+        provider.validate_configuration({"removed_provider_option": True})
+        == CustomWebhookConfiguration()
+    )
+
+
+def test_custom_configuration_rejects_non_dynamic_targets() -> None:
+    """Custom target entries use the explicit dynamic discriminator."""
+    with pytest.raises(ValueError):
+        CustomWebhookProvider().validate_configuration(
+            {"target_events": [{"type": "pipeline.ready"}]}
+        )
+
+
+def test_custom_dynamic_targets_and_legacy_match_all() -> None:
+    """Custom filtering is opt-in through a non-empty dynamic target list."""
+    provider = CustomWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="custom",
+        event_type="pipeline.ready",
+        payload={"pipeline": {"name": "training"}, "successful": True},
+    )
+    legacy = SimpleNamespace(id=uuid4(), configuration={})
+    empty = SimpleNamespace(id=uuid4(), configuration={"target_events": []})
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "pipeline.ready",
+                    "filters": {
+                        "pipeline.name": "training",
+                        "successful": "true",
+                    },
+                }
+            ]
+        },
+    )
+    non_matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "pipeline.failed",
+                }
+            ]
+        },
+    )
+
+    result = provider.match_triggers(
+        event=event,
+        candidates=[legacy, empty, matching, non_matching],
+    )
+
+    assert result.triggers == [legacy, empty, matching]
+    assert result.event is None
+
+
+def test_provider_configurations_limit_total_target_events() -> None:
+    """Typed and dynamic targets share one bounded provider target list."""
+    targets = [
+        DynamicWebhookTargetEvent(event_type=f"event-{index}")
+        for index in range(11)
+    ]
+
+    with pytest.raises(ValidationError):
+        GitHubWebhookConfiguration(target_events=targets)
 
 
 def test_runtime_matching_rejects_stale_github_configuration() -> None:
@@ -810,6 +921,48 @@ def test_runtime_empty_target_events_are_rejected() -> None:
         provider.match_triggers(event=event, candidates=[trigger]).triggers
         == []
     )
+
+
+def test_github_dynamic_target_matches_without_semantic_event() -> None:
+    """Raw GitHub variants can match independently of curated semantics."""
+    provider = GitHubWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="github",
+        event_type="pull_request",
+        payload={
+            "action": "opened",
+            "pull_request": {
+                "merged": False,
+                "base": {"ref": "develop"},
+            },
+        },
+    )
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "pull_request",
+                    "filters": {
+                        "action": "opened",
+                        "pull_request.base.ref": "develop",
+                    },
+                }
+            ]
+        },
+    )
+    typed = SimpleNamespace(
+        id=uuid4(),
+        configuration={"target_events": [{"type": "merged_pull_request"}]},
+    )
+
+    result = provider.match_triggers(event=event, candidates=[matching, typed])
+
+    assert result.triggers == [matching]
+    assert result.event is None
 
 
 def _clickup_signature(secret: str, body: bytes) -> str:
@@ -989,6 +1142,39 @@ def test_clickup_match_filters_list_events() -> None:
     assert result.event is not None
     assert result.event["type"] == "listCreated"
     assert result.event["list_id"] == "162641285"
+
+
+def test_clickup_dynamic_target_matches_unknown_event_type() -> None:
+    """ClickUp event types outside the semantic catalog remain matchable."""
+    provider = ClickUpWebhookProvider()
+    event = WebhookEvent(
+        project_id=uuid4(),
+        webhook_id=uuid4(),
+        webhook_type="clickup",
+        event_type="futureEvent",
+        payload={
+            "event": "futureEvent",
+            "webhook_id": "wh-1",
+            "history_items": [{"after": {"status": "ready"}}],
+        },
+    )
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "startswith:future",
+                    "filters": {"history_items[0].after.status": "ready"},
+                }
+            ]
+        },
+    )
+
+    result = provider.match_triggers(event=event, candidates=[matching])
+
+    assert result.triggers == [matching]
+    assert result.event is None
 
 
 def test_clickup_configuration_accepts_typed_configuration() -> None:
