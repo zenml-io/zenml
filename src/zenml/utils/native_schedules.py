@@ -24,6 +24,12 @@ def next_occurrence_for_interval(
 ) -> datetime:
     """Calculate the next occurrence based on interval based schedules.
 
+    The occurrences of an interval schedule are `start + k * interval`. The
+    returned datetime is the first of those that lies strictly after `base`,
+    which means it keeps the seconds of `start`: truncating them would move
+    the occurrence off the schedule and, for a `start` whose seconds are not
+    zero, up to `interval - 1` seconds into the past.
+
     Args:
         interval: The difference (in seconds) between two occurrences.
         start: The first occurrence.
@@ -44,10 +50,8 @@ def next_occurrence_for_interval(
     )
 
     return (
-        (start + timedelta(seconds=(in_between_intervals + 1) * interval))
-        .replace(second=0, microsecond=0)
-        .replace(tzinfo=None)
-    )
+        start + timedelta(seconds=(in_between_intervals + 1) * interval)
+    ).replace(tzinfo=None)
 
 
 def next_occurrence_for_cron(
