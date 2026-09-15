@@ -26,6 +26,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | [Databricks](databricks.md)        | `databricks` | `databricks` | ✅                 | Uses Databricks one-time jobs to execute selected steps                  |
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | ✅                 | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
+| [Nebius Serverless](nebius.md) | `nebius` | `nebius` | ❌ | Experimental single-GPU Jobs for static Python steps |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | ✅                 | Uses SageMaker to execute steps                                          |
 | [Run:AI](runai.md)                 | `runai`      | `runai`      | ✅                 | Uses Run:AI to execute steps                                             |
 | [SSH](ssh.md)                      | `ssh`        | `ssh`        | ❌                 | Runs steps on a remote host via SSH + Docker                             |
