@@ -1,0 +1,133 @@
+---
+name: Optional PR fuzzing
+on:
+  pull_request:
+    branches: [develop]
+    types:
+      - labeled
+      - unlabeled
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+permissions:
+  contents: read
+concurrency:
+  group: fuzz-pr-${{ github.event.pull_request.number }}-${{ ((github.event.action
+    == 'labeled' || github.event.action == 'unlabeled') && github.event.label.name
+    != 'run-fuzz') && github.run_id || 'active' }}
+  cancel-in-progress: true
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.suite }} / ${{ matrix.backend }}
+    if: >-
+      github.event.action != 'unlabeled' &&
+      contains(github.event.pull_request.labels.*.name, 'run-fuzz') &&
+      (github.event.action != 'labeled' ||
+      github.event.label.name == 'run-fuzz')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - suite: filters
+            backend: sqlite
+          - suite: filters
+            backend: mysql
+          - suite: api
+            backend: sqlite
+          - suite: api
+            backend: mysql
+          - suite: cli
+            backend: none
+    services:
+      mysql:
+        image: ${{ matrix.backend == 'mysql' && 'mysql:8.0' || '' }}
+        env:
+          MYSQL_ROOT_PASSWORD: fuzz-root-password
+        ports: [3306:3306]
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=fuzz-root-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      AUTO_OPEN_DASHBOARD: 'false'
+      FUZZ_BACKEND: ${{ matrix.backend }}
+      FUZZ_OUTPUT_DIR: fuzz-results/${{ matrix.suite }}-${{ matrix.backend }}
+      FUZZ_PROFILE: pr
+      FUZZ_SUITE: ${{ matrix.suite }}
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      ZENML_ANALYTICS_OPT_IN: 'false'
+      ZENML_DEBUG: 'true'
+      ZENML_FUZZ_MYSQL_URL: mysql+pymysql://root:fuzz-root-password@127.0.0.1:3306/mysql
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout immutable PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
+        with:
+          version: 0.8.14
+      - name: Restore dependency cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/uv
+          key: fuzz-pr-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-${{ hashFiles('pyproject.toml',
+            'uv.lock', 'tests/fuzz/requirements.txt') }}
+          restore-keys: |
+            fuzz-pr-uv-${{ runner.os }}-py3.11-${{ matrix.suite }}-
+      - name: Install dedicated fuzz environment
+        run: |
+          case "${FUZZ_SUITE}" in
+            api) zenml_target='.[server]' ;;
+            filters) zenml_target='.[local]' ;;
+            cli) zenml_target='.' ;;
+            *) exit 2 ;;
+          esac
+          uv venv --python 3.11 .venv-fuzz
+          uv pip install --python .venv-fuzz/bin/python \
+            --requirement tests/fuzz/requirements.txt \
+            -e "${zenml_target}"
+          uv pip check --python .venv-fuzz/bin/python
+      - name: Run bounded fuzz suite
+        run: |
+          .venv-fuzz/bin/python scripts/fuzz.py \
+            --suite "${FUZZ_SUITE}" \
+            --backend "${FUZZ_BACKEND}" \
+            --profile "${FUZZ_PROFILE}" \
+            --output-dir "${FUZZ_OUTPUT_DIR}"
+      - name: Publish fuzz summary
+        if: always()
+        run: |
+          {
+            echo "## Fuzz ${FUZZ_SUITE} / ${FUZZ_BACKEND}"
+            if [[ -f "${FUZZ_OUTPUT_DIR}/run.json" ]]; then
+              echo '```json'
+              cat "${FUZZ_OUTPUT_DIR}/run.json"
+              echo '```'
+            else
+              echo "No run metadata was produced; setup was incomplete."
+            fi
+          } >> "${GITHUB_STEP_SUMMARY}"
+      - name: Upload fuzz evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: fuzz-pr-${{ matrix.suite }}-${{ matrix.backend }}
+          path: ${{ env.FUZZ_OUTPUT_DIR }}
+          retention-days: 14
+          include-hidden-files: true
+          if-no-files-found: error

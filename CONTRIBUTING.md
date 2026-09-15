@@ -197,6 +197,9 @@ Tests can be run as follows:
 bash scripts/test-coverage-xml.sh
 ```
 
+Optional generated-input tests have a separate
+[local fuzzing guide](tests/fuzz/README.md).
+
 Please note that it is good practice to run the above commands before submitting
 any Pull Request: The CI GitHub Action
 will run it anyway, so you might as well catch the errors locally!
