@@ -1,0 +1,4 @@
+-r requirements.txt
+tinker==0.24.0
+tinker-cookbook==0.5.7
+transformers==5.5.4

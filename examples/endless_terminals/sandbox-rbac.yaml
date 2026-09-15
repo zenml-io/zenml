@@ -1,0 +1,39 @@
+# Set metadata.namespace and subjects.namespace to the orchestrator namespace.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: endless-terminal-controller
+  namespace: aws-k8s-8b16c2
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: endless-terminal-controller
+  namespace: aws-k8s-8b16c2
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["pods", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["get", "create"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: endless-terminal-controller
+  namespace: aws-k8s-8b16c2
+subjects:
+  - kind: ServiceAccount
+    name: endless-terminal-controller
+    namespace: aws-k8s-8b16c2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: endless-terminal-controller
