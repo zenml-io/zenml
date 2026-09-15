@@ -3,6 +3,24 @@
 # Exit on error
 set -e
 
+if ! command -v aws &> /dev/null; then
+    echo "Error: AWS CLI is required but not installed."
+    echo "Install guide: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html"
+    exit 1
+fi
+
+if ! command -v jq &> /dev/null; then
+    echo "Error: jq is required but not installed."
+    echo "Install with: sudo apt-get install jq"
+    exit 1
+fi
+
+if ! aws sts get-caller-identity &> /dev/null; then
+    echo "Error: AWS credentials are not configured."
+    echo "Run: aws configure"
+    exit 1
+fi
+
 # Name used for the stack, service connector, and artifact store and as a prefix
 # for all created resources
 NAME="${NAME:-zenml-aws}"
@@ -47,11 +65,19 @@ trap print_cleanup_instructions EXIT
 
 
 # Create S3 bucket
+# us-east-1 is AWS's default region and the create-bucket API rejects an
+# explicit LocationConstraint for it.
 echo "Creating AWS bucket: $PREFIX"
-aws s3api create-bucket \
-    --bucket "$PREFIX" \
-    --region "$REGION" \
-    --create-bucket-configuration LocationConstraint="$REGION"
+if [ "$REGION" != "us-east-1" ]; then
+    aws s3api create-bucket \
+        --bucket "$PREFIX" \
+        --region "$REGION" \
+        --create-bucket-configuration LocationConstraint="$REGION"
+else
+    aws s3api create-bucket \
+        --bucket "$PREFIX" \
+        --region "$REGION"
+fi
 
 # Create IAM user and access key
 echo "Creating IAM user: $PREFIX"
