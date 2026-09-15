@@ -21,7 +21,8 @@ below. For detailed migration recipes and SQL inspection queries, use
   from `zenml.zen_stores.compressed_text` (a leaf module that imports no
   schemas, so it is safe to import from a migration) before parsing them,
   and write transformed values back as plain text, which every reader
-  accepts.
+  accepts. Only writes through the ORM column types may store
+  compressed values.
 - Include both schema changes and data migrations when needed.
 - Run `scripts/check-alembic-branches.sh` to verify migration consistency.
 

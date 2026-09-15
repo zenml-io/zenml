@@ -13,6 +13,10 @@
 #  permissions and limitations under the License.
 """Tests for reading compressed snapshot and step configuration payloads."""
 
+from pathlib import Path
+from typing import Iterator
+
+import pytest
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel
 
@@ -26,15 +30,24 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunRequest,
     PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    ProjectFilter,
+    StackFilter,
     StepRunRequest,
+    StepRunResponse,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     CompressedText,
+    decode_compressed_text,
     encode_compressed_text,
+    set_compressed_writes,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.sql_zen_store import (
+    SqlZenStore,
+    SqlZenStoreConfiguration,
+)
 
 
 def _compressed_columns() -> dict[str, list[str]]:
@@ -101,12 +114,11 @@ def _stored_values(store: SqlZenStore) -> list[str]:
         ]
 
 
-def test_compressed_rows_read_like_plain_ones(clean_client: Client) -> None:
-    """Every snapshot and step configuration reader decodes compressed rows."""
-    store = clean_client.zen_store
-    assert isinstance(store, SqlZenStore)
+def _create_snapshots(
+    clean_client: Client, store: SqlZenStore
+) -> tuple[PipelineSnapshotResponse, StepRunResponse]:
+    """Create a static snapshot and a dynamic step run through the store."""
     project_id = clean_client.active_project.id
-
     pipeline = store.create_pipeline(
         PipelineRequest(project=project_id, name="pipeline")
     )
@@ -154,16 +166,15 @@ def test_compressed_rows_read_like_plain_ones(clean_client: Client) -> None:
             dynamic_config=_step("dynamic-step"),
         )
     )
+    return static_snapshot, dynamic_step
 
-    # Writes stay plain text; only rows a future writer compressed differ.
-    assert not any(
-        v.startswith(COMPRESSED_TEXT_MARKER) for v in _stored_values(store)
-    )
-    assert _compress_stored_rows(store) == len(_stored_values(store)) == 8
-    assert all(
-        v.startswith(COMPRESSED_TEXT_MARKER) for v in _stored_values(store)
-    )
 
+def _assert_reads_unchanged(
+    store: SqlZenStore,
+    static_snapshot: PipelineSnapshotResponse,
+    dynamic_step: StepRunResponse,
+) -> None:
+    """Every reader returns what was written, whatever the storage form."""
     reread = store.get_snapshot(static_snapshot.id)
     assert (
         reread.pipeline_configuration == static_snapshot.pipeline_configuration
@@ -176,3 +187,94 @@ def test_compressed_rows_read_like_plain_ones(clean_client: Client) -> None:
     assert store.get_run_step(dynamic_step.id).config.model_dump(
         exclude={"substitutions"}
     ) == dynamic_step.config.model_dump(exclude={"substitutions"})
+
+
+def test_compressed_rows_read_like_plain_ones(clean_client: Client) -> None:
+    """Every reader decodes rows compressed by a later writer."""
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    static_snapshot, dynamic_step = _create_snapshots(clean_client, store)
+
+    # With compressed writes off, nothing is stored compressed.
+    assert not any(
+        v.startswith(COMPRESSED_TEXT_MARKER) for v in _stored_values(store)
+    )
+    assert _compress_stored_rows(store) == len(_stored_values(store)) == 8
+    assert all(
+        v.startswith(COMPRESSED_TEXT_MARKER) for v in _stored_values(store)
+    )
+
+    _assert_reads_unchanged(store, static_snapshot, dynamic_step)
+
+
+@pytest.fixture
+def compressing_store(clean_client: Client) -> Iterator[SqlZenStore]:
+    """The test client's store with compressed writes switched on."""
+    store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
+    set_compressed_writes(store.engine.dialect, True)
+    try:
+        yield store
+    finally:
+        set_compressed_writes(store.engine.dialect, False)
+
+
+def test_compressed_writes_shrink_storage_without_changing_reads(
+    clean_client: Client, compressing_store: SqlZenStore
+) -> None:
+    """With compressed writes on, payloads that shrink are stored compressed."""
+    store = compressing_store
+    static_snapshot, dynamic_step = _create_snapshots(clean_client, store)
+
+    stored = _stored_values(store)
+    plain = [decode_compressed_text(v, "value") for v in stored]
+    # The empty client environments and the short source code cannot get
+    # smaller; every other payload is stored compressed.
+    assert sorted(
+        v for v in stored if not v.startswith(COMPRESSED_TEXT_MARKER)
+    ) == sorted(["{}", "{}", static_snapshot.source_code])
+    assert sum(len(v.encode()) for v in stored) < sum(
+        len(v.encode()) for v in plain
+    )
+
+    _assert_reads_unchanged(store, static_snapshot, dynamic_step)
+
+
+@pytest.mark.parametrize("compress", [False, True])
+def test_store_option_controls_compressed_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, compress: bool
+) -> None:
+    """`compress_text_payloads` is what switches compressed writes on."""
+    monkeypatch.setenv("ZENML_CONFIG_PATH", str(tmp_path / "config"))
+    store = SqlZenStore(
+        config=SqlZenStoreConfiguration(
+            url=f"sqlite:///{tmp_path / 'zenml.db'}",
+            compress_text_payloads=compress,
+        ),
+        skip_default_registrations=False,
+    )
+    project_id = store.list_projects(ProjectFilter()).items[0].id
+    pipeline = store.create_pipeline(
+        PipelineRequest(project=project_id, name="pipeline")
+    )
+    snapshot = store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            stack=store.list_stacks(StackFilter()).items[0].id,
+            pipeline=pipeline.id,
+            run_name_template="run",
+            pipeline_configuration=PipelineConfiguration(name="pipeline"),
+            client_version="test",
+            server_version="test",
+            step_configurations={"step": _step("step")},
+        )
+    )
+
+    with store.engine.connect() as connection:
+        stored = connection.execute(
+            text("SELECT config FROM step_configuration")
+        ).scalar_one()
+    assert stored.startswith(COMPRESSED_TEXT_MARKER) is compress
+    assert store.get_snapshot(snapshot.id).step_configurations == (
+        snapshot.step_configurations
+    )
