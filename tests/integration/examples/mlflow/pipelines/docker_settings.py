@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Shared Docker settings for the MLflow example pipelines."""
 
-import mlflow
+from importlib.metadata import version
 
 from zenml.config import DockerSettings
 from zenml.integrations.constants import MLFLOW, SKLEARN
@@ -24,8 +24,10 @@ from zenml.integrations.constants import MLFLOW, SKLEARN
 # both open. A newer MLflow in the container migrates that database to a
 # schema revision the client cannot read ("Detected out-of-date database
 # schema"), which is what happened when MLflow 3.16.0 was released while the
-# client environment still resolved 3.15.2.
+# client environment still resolved 3.15.2. Read package metadata to avoid
+# importing MLflow and its optional PySpark dependency before ZenML initializes;
+# PySpark 3.2.1 patches named tuples and breaks copies of step definitions.
 docker_settings = DockerSettings(
     required_integrations=[MLFLOW, SKLEARN],
-    requirements=["scikit-image", f"mlflow=={mlflow.__version__}"],
+    requirements=["scikit-image", f"mlflow=={version('mlflow')}"],
 )
