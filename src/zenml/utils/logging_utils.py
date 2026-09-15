@@ -18,7 +18,6 @@ import os
 import threading
 from contextlib import contextmanager
 from contextvars import ContextVar
-from datetime import datetime
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -33,8 +32,6 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
-
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import StepConfiguration
@@ -45,10 +42,12 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
-from zenml.enums import LoggingLevels, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger, step_names_in_console
 from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -62,57 +61,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-
-class LogEntry(BaseModel):
-    """A structured log entry with parsed information.
-
-    This is used in two distinct ways:
-        1. If we are using the artifact log store, we save the
-        entries as JSON-serialized LogEntry's in the artifact store.
-        2. When queried, the server returns logs as a list of LogEntry's.
-    """
-
-    message: str = Field(description="The log message content")
-    name: Optional[str] = Field(
-        default=None,
-        description="The name of the logger",
-    )
-    level: Optional[LoggingLevels] = Field(
-        default=None,
-        description="The log level",
-    )
-    timestamp: Optional[datetime] = Field(
-        default=None,
-        description="When the log was created",
-    )
-    module: Optional[str] = Field(
-        default=None, description="The module that generated this log entry"
-    )
-    filename: Optional[str] = Field(
-        default=None,
-        description="The name of the file that generated this log entry",
-    )
-    lineno: Optional[int] = Field(
-        default=None, description="The fileno that generated this log entry"
-    )
-    chunk_index: int = Field(
-        default=0,
-        description="The index of the chunk in the log entry",
-    )
-    total_chunks: int = Field(
-        default=1,
-        description="The total number of chunks in the log entry",
-    )
-    id: UUID = Field(
-        default_factory=uuid4,
-        description="The unique identifier of the log entry",
-    )
-
-    model_config = ConfigDict(
-        # ignore extra attributes during model initialization
-        extra="ignore",
-    )
 
 
 class LoggingContext(context_utils.BaseContext):
@@ -549,9 +497,13 @@ def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
 def fetch_logs(
     logs: "LogsResponse",
     zen_store: "BaseZenStore",
-    limit: int,
-) -> List["LogEntry"]:
-    """Fetch logs from the log store.
+    start: Optional[str] = None,
+    limit: Optional[int] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    filter_: Optional[LogsEntriesFilter] = None,
+) -> LogsEntriesResponse:
+    """Fetch a page of log entries from the log store that holds them.
 
     This function is designed to be called from the server side where we can't
     always instantiate the full Stack object due to missing integration dependencies.
@@ -560,10 +512,17 @@ def fetch_logs(
     Args:
         logs: The logs response model containing metadata about the logs.
         zen_store: The zen store instance.
+        start: Which end of the stream to start reading from. Omit to let
+            the log store pick.
         limit: Maximum number of log entries to return.
+        before: Cursor towards older entries, from a previous page.
+        after: Cursor towards newer entries, from a previous page.
+        filter_: Filters to apply while retrieving the entries.
 
     Returns:
-        List of log entries.
+        A page of log entries, oldest first, with cursors for the pages
+        around it that the store can serve. Empty if the logs are not backed
+        by any store.
 
     Raises:
         DoesNotExistException: If the log store doesn't exist or is not the right type.
@@ -612,7 +571,14 @@ def fetch_logs(
             )
 
         try:
-            return log_store.fetch(logs_model=logs, limit=limit)
+            return log_store.fetch(
+                logs_model=logs,
+                start=start,
+                limit=limit,
+                before=before,
+                after=after,
+                filter_=filter_,
+            )
         finally:
             log_store.cleanup()
 
@@ -640,9 +606,18 @@ def fetch_logs(
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
-        return log_store.fetch(logs_model=logs, limit=limit)
+        # No cleanup here: the artifact store may be a cached instance shared
+        # with other requests, and cleaning it up would break them.
+        return log_store.fetch(
+            logs_model=logs,
+            start=start,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
 
-    return []
+    return LogsEntriesResponse()
 
 
 def setup_logging_context(

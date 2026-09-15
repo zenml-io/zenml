@@ -63,21 +63,55 @@ You can view logs through several methods:
 
 ```python
 from zenml.client import Client
+from zenml.models import LogsEntriesFilter
+from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
 
-# Get the run you want logs for
+# Get the run you want logs for. A run collects several log streams, one per
+# source: "orchestrator" for the run itself, "step" for each of its steps.
 run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
+logs = search_logs_by_source(run.log_collection, "orchestrator")
 
 # Note: The log store must match the one that captured the logs
 log_store = client.active_stack.log_store
-log_entries = log_store.fetch(logs_model=run.logs, limit=1000)
+page = log_store.fetch(logs_model=logs, limit=1000)
 
-for entry in log_entries:
+for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-3. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way.
+
+A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page. Cursors preserve the backend's native continuation tokens; ZenML does not invent a reverse cursor when the backend only supports one direction. Keep the same filters for each continuation and, when the response supplies `until`, pass that value back to keep the time window fixed.
+
+```python
+# Start at the end of a stream and walk back through its history.
+page = log_store.fetch(logs_model=logs, start="newest")
+while page.before:
+    page = log_store.fetch(
+        logs_model=logs,
+        before=page.before,
+        filter_=LogsEntriesFilter(until=page.until),
+    )
+```
+
+Filters are pushed down into the backend's own query. Search uses the backend's matching rules, including its tokenization, case sensitivity, and punctuation handling; it does not guarantee a literal substring match:
+
+```python
+from zenml.models import LogsEntriesFilter
+
+page = log_store.fetch(
+    logs_model=logs,
+    filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
+)
+```
+
+3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. The existing run and step log endpoints still accept their original parameters and return lists of entries. They return a single batch from the backend; use the dedicated entries endpoint for pagination.
+
+Runner logs use the workload manager, as they do through the existing run-log endpoint. They return one batch without cursors; apply filtering and pagination in the client. Requesting unsupported runner filters or cursors returns `400`.
+
+4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
 
 ### Log Store Flavors
 
@@ -99,8 +133,5 @@ zenml log-store flavor list
 {% hint style="info" %}
 If you're interested in understanding the base abstraction and how log stores work internally, check out the [Develop a Custom Log Store](custom.md) page for a detailed explanation of the architecture.
 {% endhint %}
-
-
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

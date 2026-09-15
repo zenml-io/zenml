@@ -50,8 +50,17 @@ The Artifact Log Store uses OpenTelemetry's batch processing under the hood. You
 | `ZENML_LOGS_OTEL_SCHEDULE_DELAY_MILLIS`  | `5000`    | Delay between batch exports in milliseconds         |
 | `ZENML_LOGS_OTEL_MAX_EXPORT_BATCH_SIZE`  | `5000`    | Maximum batch size for exports                      |
 | `ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS`  | `15000`   | Timeout for each export batch in milliseconds       |
+| `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST`     | `50000`   | Maximum log entries returned by a single fetch      |
 
 These defaults are optimized for most use cases. You typically only need to adjust them for high-volume logging scenarios.
+
+### Reading logs
+
+Unlike log stores backed by a queryable API, the artifact log store does not page. Its log files carry no index, so resuming a read in the middle of one means scanning to that point again, and paging through a long run would turn a browsing session into a long series of increasingly expensive reads against object storage. Reading the file once and returning one response is both cheaper and simpler.
+
+A fetch reads the file from the beginning and stops once it has collected as many entries as the caller asked for, or `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` of them if the caller asked for no particular number. A stream longer than that is cut off at its end, so you keep the oldest entries and lose the newest. `before` and `after` come back unset, which tells the caller that this one response is all they will get from the server.
+
+Anything beyond that is refused rather than quietly dropped: a pagination cursor (`before` or `after`), `start=newest`, and the `search`, `level`, `since` and `until` filters all raise `ValueError`, which the REST API reports as `400`.
 
 ### Log format
 
