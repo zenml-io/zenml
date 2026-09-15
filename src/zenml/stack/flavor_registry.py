@@ -73,6 +73,7 @@ class FlavorRegistry:
             DatadogLogStoreFlavor,
             OtelLogStoreFlavor,
         )
+        from zenml.metric_stores import OtelMetricStoreFlavor
         from zenml.orchestrators import (
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
@@ -95,6 +96,7 @@ class FlavorRegistry:
             DockerSandboxFlavor,
             LocalSandboxFlavor,
             OtelLogStoreFlavor,
+            OtelMetricStoreFlavor,
         ]
         return flavors
 

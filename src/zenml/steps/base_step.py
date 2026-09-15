@@ -123,6 +123,7 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         experiment_tracker: Optional[Union[bool, str]] = None,
         step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
@@ -156,6 +157,9 @@ class BaseStep:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
             enable_step_logs: Enable step logs for this step.
+            enable_step_metrics: Enable runtime metric sampling (CPU/GPU/
+                memory) for this step. Only takes effect when the active
+                stack has a metric store configured.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -243,6 +247,7 @@ class BaseStep:
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
+            enable_step_metrics=enable_step_metrics,
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
@@ -995,6 +1000,7 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         experiment_tracker: Optional[Union[bool, str]] = None,
         step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
@@ -1037,6 +1043,9 @@ class BaseStep:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
             enable_step_logs: If step logs should be enabled for this step.
+            enable_step_metrics: If runtime metric sampling (CPU/GPU/memory)
+                should be enabled for this step. Only takes effect when the
+                active stack has a metric store configured.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -1148,6 +1157,7 @@ class BaseStep:
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "enable_step_metrics": enable_step_metrics,
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
@@ -1179,6 +1189,7 @@ class BaseStep:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         experiment_tracker: Optional[Union[bool, str]] = None,
         step_operator: Optional[Union[bool, str]] = None,
         parameters: Optional[Dict[str, Any]] = None,
@@ -1211,6 +1222,9 @@ class BaseStep:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this step.
             enable_step_logs: If step logs should be enabled for this step.
+            enable_step_metrics: If runtime metric sampling (CPU/GPU/memory)
+                should be enabled for this step. Only takes effect when the
+                active stack has a metric store configured.
             experiment_tracker: The experiment tracker to use for this step.
             step_operator: The step operator to use for this step.
             parameters: Function parameters for this step
@@ -1257,6 +1271,7 @@ class BaseStep:
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
+            enable_step_metrics=enable_step_metrics,
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             parameters=parameters,

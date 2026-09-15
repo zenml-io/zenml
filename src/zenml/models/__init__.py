@@ -457,6 +457,10 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
 )
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.metrics import (
+    MetricSample,
+    MetricsResponse,
+)
 from zenml.models.v2.misc.param_groups import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
@@ -770,6 +774,8 @@ __all__ = [
     "LogsRequest",
     "LogsUpdate",
     "LogsResponse",
+    "MetricSample",
+    "MetricsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
     "LogsResponseResources",
