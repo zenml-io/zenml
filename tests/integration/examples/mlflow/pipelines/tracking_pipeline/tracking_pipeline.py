@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pipelines.docker_settings import docker_settings
 from sklearn.svm import SVC
 from steps.evaluator_step import evaluator
 from steps.loader_step import importer
@@ -18,12 +19,6 @@ from steps.normalizer_step import normalizer
 from steps.trainer_step import trainer
 
 from zenml import pipeline
-from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, SKLEARN
-
-docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
-)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
