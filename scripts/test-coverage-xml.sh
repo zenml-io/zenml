@@ -51,8 +51,8 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 ./zen-test environment provision $TEST_ENVIRONMENT
 
 # Some macOS ML libraries bundle incompatible OpenMP runtimes. Apply the
-# requested runtime override only to pytest and its children; injecting it into
-# the arm64e `zen-test` executable causes dyld to abort during provisioning.
+# requested runtime override when starting pytest; tests/conftest.py removes it
+# from the process environment before tests can launch child processes.
 if [[ -n "${PYTEST_DYLD_INSERT_LIBRARIES:-}" ]]; then
     export DYLD_INSERT_LIBRARIES="$PYTEST_DYLD_INSERT_LIBRARIES"
 fi

@@ -498,10 +498,6 @@ def get_resource_type_for_model(
         PlatformEventTriggerResponse,
         ProjectRequest,
         ProjectResponse,
-        ResourcePoolRequest,
-        ResourcePoolResponse,
-        ResourcePoolSubjectPolicyRequest,
-        ResourcePoolSubjectPolicyResponse,
         RunMetadataRequest,
         RunTemplateRequest,
         RunTemplateResponse,
@@ -522,6 +518,10 @@ def get_resource_type_for_model(
         TagRequest,
         TagResponse,
         TriggerRequest,
+        WebhookRequest,
+        WebhookResponse,
+        WebhookTriggerRequest,
+        WebhookTriggerResponse,
     )
 
     mapping: Dict[
@@ -536,8 +536,6 @@ def get_resource_type_for_model(
         CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
         ComponentRequest: ResourceType.STACK_COMPONENT,
         ComponentResponse: ResourceType.STACK_COMPONENT,
-        ResourcePoolRequest: ResourceType.RESOURCE_POOL,
-        ResourcePoolResponse: ResourceType.RESOURCE_POOL,
         FlavorRequest: ResourceType.FLAVOR,
         FlavorResponse: ResourceType.FLAVOR,
         ModelRequest: ResourceType.MODEL,
@@ -573,14 +571,16 @@ def get_resource_type_for_model(
         TagResponse: ResourceType.TAG,
         ProjectResponse: ResourceType.PROJECT,
         ProjectRequest: ResourceType.PROJECT,
-        ResourcePoolSubjectPolicyRequest: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
-        ResourcePoolSubjectPolicyResponse: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         # UserResponse: ResourceType.USER,
         PlatformEventTriggerRequest: ResourceType.TRIGGER,
         PlatformEventTriggerResponse: ResourceType.TRIGGER,
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
+        WebhookRequest: ResourceType.WEBHOOK,
+        WebhookResponse: ResourceType.WEBHOOK,
+        WebhookTriggerRequest: ResourceType.TRIGGER,
+        WebhookTriggerResponse: ResourceType.TRIGGER,
     }
 
     return mapping.get(type(model))
@@ -701,8 +701,6 @@ def _get_resource_type_schema_mapping() -> Dict[
         PipelineRunSchema,
         PipelineSchema,
         PipelineSnapshotSchema,
-        ResourcePoolSchema,
-        ResourcePoolSubjectPolicySchema,
         RunMetadataSchema,
         RunTemplateSchema,
         ScheduleSchema,
@@ -714,13 +712,13 @@ def _get_resource_type_schema_mapping() -> Dict[
         TagSchema,
         TriggerSchema,
         UserSchema,
+        WebhookSchema,
     )
 
     return {
         ResourceType.STACK: StackSchema,
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
-        ResourceType.RESOURCE_POOL: ResourcePoolSchema,
         ResourceType.PIPELINE: PipelineSchema,
         ResourceType.CODE_REPOSITORY: CodeRepositorySchema,
         ResourceType.MODEL: ModelSchema,
@@ -742,7 +740,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
         ResourceType.TRIGGER: TriggerSchema,
-        ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
+        ResourceType.WEBHOOK: WebhookSchema,
     }
 
 

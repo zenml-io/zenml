@@ -676,6 +676,34 @@ class ResourceRequestStatus(StrEnum):
     CANCELLED = "cancelled"
     REJECTED = "rejected"
     RELEASED = "released"
+    EXPIRED = "expired"
+    NO_MATCHING_POOL = "no_matching_pool"
+
+
+class ResourcePoolScope(StrEnum):
+    """Ownership scopes for resource pools."""
+
+    GLOBAL = "global"
+    ORGANIZATION = "organization"
+    WORKSPACE = "workspace"
+
+
+class ResourceRequestRuntimeState(StrEnum):
+    """Owner-reported runtime states for resource requests."""
+
+    UNKNOWN = "unknown"
+    PENDING = "pending"
+    SUBMITTED = "submitted"
+    RUNNING = "running"
+    IDLE = "idle"
+
+
+class ResourceRequestReclaimTolerance(StrEnum):
+    """Caller tolerance for reclaiming lower-priority work on a request."""
+
+    NONE = "none"
+    COORDINATED = "coordinated"
+    ANY = "any"
 
 
 class TriggerType(StrEnum):
@@ -683,6 +711,7 @@ class TriggerType(StrEnum):
 
     SCHEDULE = "schedule"
     PLATFORM_EVENT = "platform_event"
+    WEBHOOK = "webhook"
 
 
 class TriggerFlavor(StrEnum):
@@ -690,6 +719,7 @@ class TriggerFlavor(StrEnum):
 
     NATIVE_SCHEDULE = "native schedule"
     PLATFORM_EVENT = "platform event"
+    WEBHOOK = "webhook"
 
 
 class TriggerRunConcurrency(StrEnum):
