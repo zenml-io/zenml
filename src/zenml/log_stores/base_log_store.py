@@ -15,6 +15,9 @@
 
 import base64
 import binascii
+import hashlib
+import hmac
+import json
 import logging
 import threading
 from abc import ABC, abstractmethod
@@ -228,39 +231,70 @@ class BaseLogStore(StackComponent, ABC):
         return min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
 
     @staticmethod
-    def encode_cursor(token: str) -> str:
-        """Encode a backend continuation token for the response.
+    def encode_cursor(token: str, *, signing_key: str, context: str) -> str:
+        """Sign a backend continuation token for a particular query.
 
         Args:
             token: The backend's own continuation token.
+            signing_key: A secret shared by instances of this log store.
+            context: Stable query parameters, including stream and direction.
 
         Returns:
             The encoded cursor.
+
+        Raises:
+            ValueError: If the backend token is empty.
         """
-        return base64.urlsafe_b64encode(token.encode("utf-8")).decode("ascii")
+        if not token.strip():
+            raise ValueError(
+                "The backend continuation token must not be empty."
+            )
+        encoded = base64.urlsafe_b64encode(token.encode("utf-8")).decode(
+            "ascii"
+        )
+        signature = hmac.new(
+            signing_key.encode("utf-8"),
+            json.dumps([context, encoded]).encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        return f"{encoded}.{signature}"
 
     @staticmethod
-    def decode_cursor(token: str) -> str:
+    def decode_cursor(token: str, *, signing_key: str, context: str) -> str:
         """Decode a cursor back to the backend continuation token.
 
         Args:
             token: The encoded cursor from a previous page.
+            signing_key: The secret used to sign the cursor.
+            context: The current stream, direction, and query parameters.
 
         Returns:
             The backend's own continuation token.
 
         Raises:
-            ValueError: If the token is not one this server issued.
+            ValueError: If the cursor is malformed, altered, or belongs to
+                another query.
         """
         try:
-            return base64.urlsafe_b64decode(token.encode("ascii")).decode(
-                "utf-8"
+            encoded, _ = token.split(".")
+            native = base64.b64decode(
+                encoded.encode("ascii"), altchars=b"-_", validate=True
+            ).decode("utf-8")
+            expected = BaseLogStore.encode_cursor(
+                native, signing_key=signing_key, context=context
             )
-        except (binascii.Error, UnicodeDecodeError, ValueError) as e:
-            raise ValueError(
-                "The pagination cursor is not one this server issued. Drop it "
-                "and read the stream again from one of its ends."
-            ) from e
+            if hmac.compare_digest(
+                token.encode("ascii"), expected.encode("ascii")
+            ):
+                return native
+        except (binascii.Error, UnicodeError, ValueError):
+            pass
+
+        raise ValueError(
+            "Invalid pagination cursor. Keep the same stream, direction, and "
+            "filters (including `until`) as the previous page, or drop the "
+            "cursor and start a new read."
+        )
 
     @abstractmethod
     def fetch(

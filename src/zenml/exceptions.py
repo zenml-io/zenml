@@ -43,6 +43,33 @@ class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML repository."""
 
 
+class LogStoreError(ZenMLBaseException):
+    """Raised when a log backend rejects a request or returns invalid data."""
+
+
+class LogStoreUnavailableError(LogStoreError):
+    """Raised when a log backend is temporarily unavailable."""
+
+
+class LogStoreRateLimitError(LogStoreError):
+    """Raised when a log backend rate limits a request."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        *,
+        retry_after: Optional[int] = None,
+    ) -> None:
+        """Initialize the rate limit error.
+
+        Args:
+            message: A description safe to return to API clients.
+            retry_after: Seconds to wait before retrying, if known.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class AuthorizationException(ZenMLBaseException):
     """Raised when an authorization error occurred while trying to access a ZenML resource ."""
 

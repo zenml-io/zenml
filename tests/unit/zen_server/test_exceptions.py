@@ -25,6 +25,9 @@ from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
     ValidationError,
     ZenKeyError,
 )
@@ -66,13 +69,15 @@ def get_exception(exception_type: Type[Exception]) -> Exception:
         PydanticValidationError,
         ValidationError,
         ValueError,
+        LogStoreError,
+        LogStoreRateLimitError,
+        LogStoreUnavailableError,
         RuntimeError,
         NotImplementedError,
     ],
 )
 def test_http_exception_reconstruction(exception_type: Type[Exception]):
     """Test the HTTP exception reconstruction."""
-
     exception = get_exception(exception_type)
     http_exception = http_exception_from_error(exception)
 
@@ -111,6 +116,9 @@ def test_http_exception_reconstruction(exception_type: Type[Exception]):
         KeyError,
         ValidationError,
         ValueError,
+        LogStoreError,
+        LogStoreRateLimitError,
+        LogStoreUnavailableError,
         RuntimeError,
         NotImplementedError,
     ],
@@ -174,7 +182,6 @@ def test_reconstruct_unknown_exception_as_runtime_error():
 )
 def test_unpack_unknown_error(error_code, exception_type):
     """Test that arbitrary errors are properly reconstructed."""
-
     response = requests.Response()
     response.status_code = error_code
     response._content = "error message".encode()
@@ -223,3 +230,16 @@ def test_unpack_unknown_error(error_code, exception_type):
     assert reconstructed_exception is not None
     assert reconstructed_exception.__class__ is exception_type
     assert reconstructed_exception.args == ("error message",)
+
+
+def test_log_store_retry_after_survives_round_trip() -> None:
+    """SDK callers receive the provider backoff delay through HTTP."""
+    original = LogStoreRateLimitError("rate limited", retry_after=17)
+    http = http_exception_from_error(original)
+    response = requests.Response()
+    response.status_code = http.status_code
+    response.headers.update(http.headers)
+    response._content = json.dumps({"detail": http.detail}).encode()
+    restored = exception_from_response(response)
+    assert isinstance(restored, LogStoreRateLimitError)
+    assert restored.retry_after == 17

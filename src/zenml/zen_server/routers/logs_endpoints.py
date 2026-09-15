@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     ENTRIES,
     LOGS,
+    LOGS_RUNNER_SOURCE,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError
@@ -35,6 +36,7 @@ from zenml.models import (
 from zenml.utils.logging_utils import fetch_logs
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_update_entity,
@@ -189,6 +191,9 @@ def get_logs(
         401: error_response,
         404: error_response,
         422: error_response,
+        429: error_response,
+        502: error_response,
+        503: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper
@@ -220,10 +225,28 @@ def get_logs_entries(
 
     Returns:
         A page of log entries.
+
+    Raises:
+        ValueError: If runner logs have no associated pipeline run.
     """
     store = zen_store()
     logs = store.get_logs(logs_id, hydrate=False)
     _verify_log_read_permission(logs)
+
+    if logs.source == LOGS_RUNNER_SOURCE:
+        if logs.pipeline_run_id is None:
+            raise ValueError(
+                "Runner logs must be associated with a pipeline run."
+            )
+        return fetch_runner_logs(
+            run=store.get_run(logs.pipeline_run_id, hydrate=True),
+            logs=logs,
+            start=start,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
 
     return fetch_logs(
         logs=logs,

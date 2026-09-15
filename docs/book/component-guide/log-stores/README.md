@@ -63,6 +63,7 @@ You can view logs through several methods:
 
 ```python
 from zenml.client import Client
+from zenml.models import LogsEntriesFilter
 from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
@@ -80,9 +81,9 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way. 
+`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way.
 
-A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page.
+A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page. Cursors preserve the backend's native continuation tokens; ZenML does not invent a reverse cursor when the backend only supports one direction. Keep the same filters for each continuation and, when the response supplies `until`, pass that value back to keep the time window fixed.
 
 ```python
 # Start at the end of a stream and walk back through its history.
@@ -91,10 +92,11 @@ while page.before:
     page = log_store.fetch(
         logs_model=logs,
         before=page.before,
+        filter_=LogsEntriesFilter(until=page.until),
     )
 ```
 
-Filters are pushed down into the backend's own query, so they cost nothing to apply:
+Filters are pushed down into the backend's own query. Search uses the backend's matching rules, including its tokenization, case sensitivity, and punctuation handling; it does not guarantee a literal substring match:
 
 ```python
 from zenml.models import LogsEntriesFilter
@@ -105,7 +107,9 @@ page = log_store.fetch(
 )
 ```
 
-3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. This is what the dashboard uses.
+3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. The existing run and step log endpoints still accept their original parameters and return lists of entries. They return a single batch from the backend; use the dedicated entries endpoint for pagination.
+
+Runner logs use the workload manager, as they do through the existing run-log endpoint. They return one batch without cursors; apply filtering and pagination in the client. Requesting unsupported runner filters or cursors returns `400`.
 
 4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
 

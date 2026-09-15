@@ -13,12 +13,19 @@
 #  permissions and limitations under the License.
 """Datadog log store implementation."""
 
+import json
+import re
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import requests
 
 from zenml.enums import LoggingLevels
+from zenml.exceptions import (
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
+)
 from zenml.log_stores.datadog.datadog_flavor import (
     DATADOG_MAX_PAGE_SIZE,
     DatadogLogStoreConfig,
@@ -130,15 +137,16 @@ class DatadogLogStore(OtelLogStore):
             before: Cursor towards older entries, from a previous page.
             after: Cursor towards newer entries, from a previous page.
             filter_: Filters to apply while retrieving the entries.
+                Continue with the same filters and the previous page's `until`.
 
         Returns:
             A page of log entries, oldest first.
 
         Raises:
             ValueError: If the logs model does not belong to this log store,
-                or if both cursors are set.
-            RuntimeError: If Datadog does not answer with a usable result.
-        """
+                or the pagination parameters are invalid.
+            LogStoreError: If Datadog does not answer with a usable result.
+        """  # noqa: DOC503
         if logs_model.log_store_id != self.id:
             raise ValueError(
                 "logs_model.log_store_id does not match the id of the log "
@@ -148,6 +156,8 @@ class DatadogLogStore(OtelLogStore):
 
         if before is not None and after is not None:
             raise ValueError("Pass only one of `before` and `after`.")
+        if start not in (None, "oldest", "newest"):
+            raise ValueError("`start` must be `oldest` or `newest`.")
 
         # Datadog's token only continues the scan it was issued for.
         if before is not None:
@@ -168,13 +178,18 @@ class DatadogLogStore(OtelLogStore):
             descending = start == "newest"
 
         filter_ = filter_ or LogsEntriesFilter()
+        page_cursor = before if before is not None else after
+        if page_cursor is not None and filter_.until is None:
+            raise ValueError(
+                "Pass the previous page's `until` with a continuation cursor."
+            )
         limit = min(self.resolve_limit(limit), DATADOG_MAX_PAGE_SIZE)
         since = filter_.since or to_utc_timezone(logs_model.created)
         until = filter_.until or utc_now(tz_aware=True)
+        if since > until:
+            raise ValueError("`since` must be earlier than `until`.")
         sort = "-timestamp" if descending else "timestamp"
 
-        headers = self._get_headers()
-        headers["Content-Type"] = "application/json"
         body: Dict[str, Any] = {
             "filter": {
                 "query": self._build_query(logs_model, filter_),
@@ -184,8 +199,57 @@ class DatadogLogStore(OtelLogStore):
             "page": {"limit": limit},
             "sort": sort,
         }
-        if page_cursor := before or after:
-            body["page"]["cursor"] = self.decode_cursor(page_cursor)
+        context = json.dumps(
+            [str(self.id), str(logs_model.id), body["filter"], sort],
+            sort_keys=True,
+        )
+        signing_key = self.config.application_key.get_secret_value()
+        if page_cursor is not None:
+            body["page"]["cursor"] = self.decode_cursor(
+                page_cursor, signing_key=signing_key, context=context
+            )
+
+        events, native_cursor = self._search(body)
+        entries = [
+            entry
+            for entry in (self._parse_log_entry(event) for event in events)
+            if entry is not None
+        ]
+        if descending:
+            entries.reverse()
+
+        encoded = (
+            self.encode_cursor(
+                native_cursor, signing_key=signing_key, context=context
+            )
+            if native_cursor
+            else None
+        )
+        return LogsEntriesResponse(
+            items=entries,
+            until=until,
+            before=encoded if descending else None,
+            after=encoded if not descending else None,
+        )
+
+    def _search(
+        self, body: Dict[str, Any]
+    ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Execute one Datadog search and read its native continuation token.
+
+        Args:
+            body: The Datadog search request.
+
+        Returns:
+            The events and the native token, if another request is possible.
+
+        Raises:
+            LogStoreUnavailableError: If Datadog cannot be reached or fails.
+            LogStoreRateLimitError: If Datadog rate limits the search.
+            LogStoreError: If Datadog rejects the search or returns invalid data.
+        """
+        headers = self._get_headers()
+        headers["Content-Type"] = "application/json"
 
         try:
             response = requests.post(
@@ -196,7 +260,7 @@ class DatadogLogStore(OtelLogStore):
             )
         except requests.RequestException as e:
             logger.exception("Datadog log search failed")
-            raise RuntimeError(
+            raise LogStoreUnavailableError(
                 "Could not reach Datadog to read these logs."
             ) from e
 
@@ -206,7 +270,22 @@ class DatadogLogStore(OtelLogStore):
                 response.status_code,
                 response.text[:500],
             )
-            raise RuntimeError(
+            if response.status_code == 429:
+                retry_after = response.headers.get(
+                    "Retry-After",
+                    response.headers.get("X-RateLimit-Reset", ""),
+                )
+                raise LogStoreRateLimitError(
+                    "Datadog rate limited the log search. Try again later.",
+                    retry_after=int(retry_after)
+                    if retry_after.isdecimal()
+                    else None,
+                )
+            if response.status_code >= 500:
+                raise LogStoreUnavailableError(
+                    "Datadog is temporarily unavailable. Try again later."
+                )
+            raise LogStoreError(
                 f"Datadog rejected the log search with status "
                 f"{response.status_code}."
             )
@@ -214,40 +293,40 @@ class DatadogLogStore(OtelLogStore):
         try:
             payload = response.json()
         except ValueError as e:
-            raise RuntimeError(
+            raise LogStoreError(
                 "Datadog returned a response that could not be read as a log "
                 "search result."
             ) from e
 
-        if not isinstance(payload, dict):
-            raise RuntimeError(
-                "Datadog returned a response that could not be read as a log "
-                "search result."
+        if not isinstance(payload, dict) or "data" not in payload:
+            raise LogStoreError(
+                "Datadog returned an invalid log search result."
             )
-
-        events = payload.get("data") or []
-        entries = [
-            entry
-            for entry in (self._parse_log_entry(event) for event in events)
-            if entry is not None
-        ]
-        if descending:
-            entries.reverse()
-
-        # Datadog keeps issuing a token past the last page. Following it
-        # would never terminate, so an empty page is the end of this scan.
-        native_cursor = (
-            payload.get("meta", {}).get("page", {}).get("after")
-            if events
-            else None
-        )
-        encoded = self.encode_cursor(native_cursor) if native_cursor else None
-
-        return LogsEntriesResponse(
-            items=entries,
-            before=encoded if descending else None,
-            after=encoded if not descending else None,
-        )
+        events = payload["data"]
+        # Datadog may issue a token even on the empty terminal page.
+        if events is None or events == []:
+            return [], None
+        if not isinstance(events, list) or not all(
+            isinstance(event, dict) for event in events
+        ):
+            raise LogStoreError(
+                "Datadog returned an invalid log search result."
+            )
+        meta = payload.get("meta", {})
+        if not isinstance(meta, dict) or not isinstance(
+            meta.get("page", {}), dict
+        ):
+            raise LogStoreError(
+                "Datadog returned invalid log pagination metadata."
+            )
+        native_cursor = meta.get("page", {}).get("after")
+        if native_cursor is not None and (
+            not isinstance(native_cursor, str) or not native_cursor.strip()
+        ):
+            raise LogStoreError(
+                "Datadog returned an invalid continuation token."
+            )
+        return events, native_cursor
 
     def _build_query(
         self, logs_model: "LogsResponse", filter_: LogsEntriesFilter
@@ -261,19 +340,29 @@ class DatadogLogStore(OtelLogStore):
         Returns:
             The Datadog search query.
         """
+        service = self.config.service_name.replace("\\", "\\\\").replace(
+            '"', '\\"'
+        )
         query = [
-            f"service:{self.config.service_name}",
+            f'service:"{service}"',
             f"@zenml.log.id:{logs_model.id}",
         ]
 
         if filter_.search:
-            escaped = (
-                filter_.search.replace("\\", "\\\\")
-                .replace("*", "\\*")
-                .replace("?", "\\?")
-                .replace('"', '\\"')
-            )
-            query.append(f"*{escaped}*")
+            # Quoting keeps multiword searches together. Wildcards only work
+            # outside quotes, and Datadog's index controls punctuation matching.
+            if any(character.isspace() for character in filter_.search):
+                escaped = filter_.search.replace("\\", "\\\\").replace(
+                    '"', '\\"'
+                )
+                query.append(f'message:"{escaped}"')
+            else:
+                escaped = re.sub(
+                    r'([+\-=!&|><(){}\[\]^"~*?:\\/#@])',
+                    r"\\\1",
+                    filter_.search,
+                )
+                query.append(f"message:*{escaped}*")
 
         if filter_.level and filter_.level.value > LoggingLevels.DEBUG.value:
             statuses = [
@@ -284,7 +373,7 @@ class DatadogLogStore(OtelLogStore):
             ]
             query.append(f"status:({' OR '.join(statuses)})")
 
-        return " ".join(query)
+        return " AND ".join(query)
 
     def _parse_log_entry(self, log: Dict[str, Any]) -> Optional[LogEntry]:
         """Parse a single log entry from Datadog's API response.
@@ -324,11 +413,14 @@ class DatadogLogStore(OtelLogStore):
                     tz=timezone.utc,
                 )
             elif isinstance(timestamp_raw, str):
-                timestamp = iso8601_to_utc_naive(timestamp_raw)
+                timestamp = to_utc_timezone(
+                    iso8601_to_utc_naive(timestamp_raw)
+                )
             else:
-                raise ValueError(
+                logger.warning(
                     "Datadog log entry is missing a valid timestamp."
                 )
+                return None
 
             status = str(log_fields.get("status", "info")).lower()
             module = None

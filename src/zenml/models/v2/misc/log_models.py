@@ -125,7 +125,9 @@ class LogsEntriesFilter(BaseModel):
     search: Optional[str] = Field(
         default=None,
         description=(
-            "Only return entries whose message contains this string."
+            "Search log messages for this text using the log store's native "
+            "search. Tokenization, case sensitivity, and punctuation matching "
+            "depend on the backend; literal substring matching is not guaranteed."
         ),
     )
     level: Optional[NamedLoggingLevel] = Field(
@@ -180,6 +182,14 @@ class LogsEntriesResponse(BaseModel):
     items: List[LogEntry] = Field(
         default_factory=list,
         description="Log entries, ordered from oldest to newest.",
+    )
+    until: Optional[datetime] = Field(
+        default=None,
+        description=(
+            "The upper time bound used for this read, if applicable. Pass it "
+            "back as the `until` filter with continuation cursors to keep the "
+            "query window fixed."
+        ),
     )
     before: Optional[str] = Field(
         default=None,

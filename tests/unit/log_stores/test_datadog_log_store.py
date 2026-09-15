@@ -13,17 +13,23 @@
 #  permissions and limitations under the License.
 """Tests for paging through the Datadog Logs API."""
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 
 import pytest
 import requests
+from pytest_mock import MockerFixture
 
 from zenml.enums import LoggingLevels, StackComponentType
+from zenml.exceptions import (
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
+)
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.datadog.datadog_log_store import DatadogLogStore
-from zenml.models import LogsEntriesFilter
+from zenml.models import LogsEntriesFilter, LogsResponse
 
 
 class StubResponse:
@@ -35,6 +41,7 @@ class StubResponse:
         status_code: int = 200,
         text: str = "the-upstream-body",
         malformed: bool = False,
+        headers: Optional[Dict[str, str]] = None,
     ) -> None:
         """Store the payload to return.
 
@@ -43,11 +50,13 @@ class StubResponse:
             status_code: The response status.
             text: The raw response body.
             malformed: Whether decoding the body should fail.
+            headers: The response headers.
         """
         self._payload = payload
         self._malformed = malformed
         self.status_code = status_code
         self.text = text
+        self.headers = headers or {}
 
     def json(self) -> Any:
         """Return the response body.
@@ -194,7 +203,9 @@ def test_after_continues_on_datadog_s_cursor(
     )
 
     first = log_store.fetch(logs)
-    log_store.fetch(logs, after=first.after)
+    log_store.fetch(
+        logs, after=first.after, filter_=LogsEntriesFilter(until=first.until)
+    )
 
     assert first.before is None
     assert first.after is not None
@@ -216,7 +227,12 @@ def test_before_continues_on_datadog_s_cursor(
     )
 
     first = log_store.fetch(logs, start="newest")
-    log_store.fetch(logs, start="newest", before=first.before)
+    log_store.fetch(
+        logs,
+        start="newest",
+        before=first.before,
+        filter_=LogsEntriesFilter(until=first.until),
+    )
 
     assert first.after is None
     assert first.before is not None
@@ -288,10 +304,13 @@ def test_a_null_data_field_is_the_end_of_the_results(
 
 def test_a_made_up_cursor_is_refused(log_store, logs_model_factory):
     """A cursor that cannot be decoded is not sent to Datadog."""
-    with pytest.raises(ValueError, match="not one this server issued"):
+    with pytest.raises(ValueError, match="Invalid pagination cursor"):
         log_store.fetch(
             logs_model_factory(log_store_id=log_store.id),
             after="not-base64",
+            filter_=LogsEntriesFilter(
+                until=datetime(2026, 1, 3, tzinfo=timezone.utc)
+            ),
         )
 
 
@@ -312,9 +331,12 @@ def test_filters_are_pushed_into_the_query(
     )
 
     query = requests_made[0]["filter"]["query"]
-    assert '*say \\"hi\\"*' in query
-    assert "status:warn" in query
-    assert "status:debug" not in query
+    assert 'message:"say \\"hi\\""' in query
+    assert (
+        "status:(warn OR warning OR err OR error OR crit OR critical OR alert OR emerg OR emergency OR fatal)"
+        in query
+    )
+    assert "debug" not in query
     assert requests_made[0]["filter"]["from"] == "2026-01-02T00:00:00+00:00"
     assert requests_made[0]["filter"]["to"] == "2026-01-03T00:00:00+00:00"
 
@@ -329,7 +351,7 @@ def test_query_is_scoped_to_the_log_stream(
     log_store.fetch(logs)
 
     assert f"@zenml.log.id:{logs.id}" in requests_made[0]["filter"]["query"]
-    assert "service:zenml" in requests_made[0]["filter"]["query"]
+    assert 'service:"zenml"' in requests_made[0]["filter"]["query"]
 
 
 def test_status_is_mapped_to_a_log_level(
@@ -371,7 +393,7 @@ def test_a_rejected_search_is_an_error(log_store, logs_model_factory, search):
     """A failed search must not look like a log stream with no entries."""
     search(StubResponse(status_code=403))
 
-    with pytest.raises(RuntimeError, match="403") as failure:
+    with pytest.raises(LogStoreError, match="403") as failure:
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
     assert "the-upstream-body" not in str(failure.value)
@@ -386,5 +408,240 @@ def test_an_unreachable_datadog_is_an_error(
         side_effect=requests.ConnectionError("no route"),
     )
 
-    with pytest.raises(RuntimeError, match="Could not reach Datadog"):
+    with pytest.raises(
+        LogStoreUnavailableError, match="Could not reach Datadog"
+    ):
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+
+@pytest.mark.parametrize(
+    "start,slot", [("oldest", "after"), ("newest", "before")]
+)
+def test_continuations_keep_the_original_query_window(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    mocker: MockerFixture,
+    start: str,
+    slot: str,
+) -> None:
+    """Clock movement and page size changes do not change the search window."""
+    now = datetime(2026, 1, 3, tzinfo=timezone.utc)
+    clock = mocker.patch(
+        "zenml.log_stores.datadog.datadog_log_store.utc_now",
+        side_effect=[now, now + timedelta(minutes=2)],
+    )
+    logs = logs_model_factory(log_store_id=log_store.id)
+    requests_made = search(
+        make_payload(
+            [make_event("1", "message 1", "2026-01-02T12:00:00Z")],
+            "native/+=?",
+        ),
+        make_payload([]),
+    )
+    first = log_store.fetch(
+        logs,
+        start=start,
+        limit=50,
+        filter_=LogsEntriesFilter(search="message"),
+    )
+    assert first.until == now
+    second = log_store.fetch(
+        logs,
+        limit=25,
+        **{slot: first.model_dump()[slot]},
+        filter_=LogsEntriesFilter(search="message", until=first.until),
+    )
+    assert requests_made[0]["filter"] == requests_made[1]["filter"]
+    assert requests_made[1]["page"] == {"limit": 25, "cursor": "native/+=?"}
+    assert second.until == first.until
+    assert clock.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "change", ["search", "level", "since", "until", "stream", "direction"]
+)
+def test_cursor_cannot_be_reused_for_a_different_query(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    change: str,
+) -> None:
+    """A signed native cursor must stay attached to its original query."""
+    logs = logs_model_factory(log_store_id=log_store.id)
+    requests_made = search(
+        make_payload(
+            [make_event("1", "message", "2026-01-02T00:00:00Z")], "native"
+        )
+    )
+    first = log_store.fetch(logs)
+    filters = {"until": first.until}
+    slot = "after"
+    if change in ("since", "until"):
+        filters[change] = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    elif change == "search":
+        filters[change] = "different"
+    elif change == "level":
+        filters[change] = "ERROR"
+    elif change == "stream":
+        logs = logs_model_factory(log_store_id=log_store.id)
+    else:
+        slot = "before"
+    with pytest.raises(ValueError, match="Invalid pagination cursor"):
+        log_store.fetch(
+            logs, **{slot: first.after}, filter_=LogsEntriesFilter(**filters)
+        )
+    assert len(requests_made) == 1
+
+
+@pytest.mark.parametrize("cursor", ["", " ", "@@@"])
+def test_bad_cursor_never_reaches_datadog(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    cursor: str,
+) -> None:
+    """Even an empty query parameter is rejected before making a request."""
+    requests_made = search()
+    with pytest.raises(ValueError, match="Invalid pagination cursor"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id),
+            after=cursor,
+            filter_=LogsEntriesFilter(
+                until=datetime(2026, 1, 3, tzinfo=timezone.utc)
+            ),
+        )
+    assert not requests_made
+
+
+def test_continuation_requires_until(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+) -> None:
+    """The client must preserve the response time bound."""
+    requests_made = search()
+    with pytest.raises(ValueError, match="previous page's `until`"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id), after="token"
+        )
+    assert not requests_made
+
+
+@pytest.mark.parametrize(
+    "term,clause",
+    [
+        ("message", "message:*message*"),
+        ("message 1", 'message:"message 1"'),
+        ("x OR service:other", 'message:"x OR service:other"'),
+        ('x" OR *:*', 'message:"x\\" OR *:*"'),
+        ("a:b", r"message:*a\:b*"),
+        ("x*?", r"message:*x\*\?*"),
+        ("(x)", r"message:*\(x\)*"),
+    ],
+)
+def test_search_text_cannot_change_stream_scope(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    term: str,
+    clause: str,
+) -> None:
+    """Provider search keeps phrases together and treats query syntax as text."""
+    logs = logs_model_factory(log_store_id=log_store.id)
+    requests_made = search(make_payload([]))
+    log_store.fetch(logs, filter_=LogsEntriesFilter(search=term))
+    assert requests_made[0]["filter"]["query"] == (
+        f'service:"zenml" AND @zenml.log.id:{logs.id} AND {clause}'
+    )
+
+
+@pytest.mark.parametrize(
+    "timestamp", ["2026-01-01T13:00:00+01:00", 1767268800000]
+)
+def test_timestamps_remain_aware_utc(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    timestamp: Any,
+) -> None:
+    """Numeric and ISO timestamps serialize consistently with UTC offsets."""
+    search(make_payload([make_event("1", "message", timestamp)]))
+    entry = log_store.fetch(
+        logs_model_factory(log_store_id=log_store.id)
+    ).items[0]
+    assert entry.timestamp == datetime(2026, 1, 1, 12, tzinfo=timezone.utc)
+    assert entry.timestamp.utcoffset() == timedelta(0)
+    assert entry.model_dump(mode="json")["timestamp"].endswith("Z")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        [],
+        {"data": {}},
+        {"data": ["invalid"]},
+        {"data": [{}], "meta": None},
+        {"data": [{}], "meta": {"page": []}},
+        {"data": [{}], "meta": {"page": {"after": 1}}},
+    ],
+)
+def test_invalid_provider_responses_raise_shared_error(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    payload: Any,
+) -> None:
+    """An upstream schema failure cannot masquerade as an empty stream."""
+    search(StubResponse(payload=payload))
+    with pytest.raises(LogStoreError):
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+
+@pytest.mark.parametrize(
+    "status,error",
+    [
+        (429, LogStoreRateLimitError),
+        (500, LogStoreUnavailableError),
+        (503, LogStoreUnavailableError),
+    ],
+)
+def test_provider_failures_have_distinct_errors(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+    status: int,
+    error: type[Exception],
+) -> None:
+    """Clients can distinguish upstream backoff from unavailable services."""
+    search(
+        StubResponse(status_code=status, headers={"X-RateLimit-Reset": "17"})
+    )
+    with pytest.raises(error) as failure:
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    if status == 429:
+        assert failure.value.retry_after == 17
+
+
+def test_malformed_json_is_a_log_store_error(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+) -> None:
+    """A successful HTTP response still needs usable JSON."""
+    search(StubResponse(malformed=True))
+    with pytest.raises(LogStoreError):
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+
+def test_unparseable_events_do_not_lose_the_native_cursor(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    search: Callable[..., List[Dict[str, Any]]],
+) -> None:
+    """Only an empty provider page terminates a scan."""
+    search(make_payload([make_event("1", "message", "invalid")], "next"))
+    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    assert page.items == []
+    assert page.after is not None

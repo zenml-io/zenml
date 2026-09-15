@@ -101,6 +101,8 @@ def test_fetch_reports_no_cursors(
     "kwargs",
     [
         {"before": "a-cursor"},
+        {"before": ""},
+        {"after": ""},
         {"after": "a-cursor"},
         {"start": "newest"},
         {"filter_": LogsEntriesFilter(search="boom")},

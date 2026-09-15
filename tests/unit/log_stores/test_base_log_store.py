@@ -109,14 +109,21 @@ def log_store() -> StubLogStore:
 
 def test_cursor_round_trip(log_store):
     """A cursor carries the backend token back unchanged."""
-    token = log_store.encode_cursor("native-token")
+    token = log_store.encode_cursor(
+        "native-token", signing_key="secret", context="query"
+    )
 
-    assert log_store.decode_cursor(token) == "native-token"
+    assert (
+        log_store.decode_cursor(token, signing_key="secret", context="query")
+        == "native-token"
+    )
 
 
 def test_cursor_is_url_safe(log_store):
     """A cursor is passed around as a query parameter."""
-    token = log_store.encode_cursor("a/b+c=d?e&f")
+    token = log_store.encode_cursor(
+        "a/b+c=d?e&f", signing_key="secret", context="query"
+    )
 
     assert "/" not in token
     assert "+" not in token
@@ -127,12 +134,16 @@ def test_cursor_is_url_safe(log_store):
     [
         "not base64 at all",
         "@@@",
+        "",
+        " ",
+        "bmF0aXZl",
+        "." + "0" * 64,
     ],
 )
 def test_invalid_cursors_are_rejected(log_store, token):
     """A cursor that was not issued by a log store is an error."""
-    with pytest.raises(ValueError, match="not one this server issued"):
-        log_store.decode_cursor(token)
+    with pytest.raises(ValueError, match="Invalid pagination cursor"):
+        log_store.decode_cursor(token, signing_key="secret", context="query")
 
 
 def test_limit_defaults_to_the_page_size_of_the_log_store(log_store):
@@ -153,3 +164,37 @@ def test_non_positive_limits_are_rejected(log_store, limit):
     """A page of zero or fewer entries is meaningless."""
     with pytest.raises(ValueError, match="positive integer"):
         log_store.resolve_limit(limit)
+
+
+@pytest.mark.parametrize(
+    "change", ["token", "signature", "key", "context", "encoding"]
+)
+def test_cursors_are_authenticated(
+    log_store: StubLogStore, change: str
+) -> None:
+    """A cursor cannot be altered or reused against a different query."""
+    token = log_store.encode_cursor(
+        "native", signing_key="secret", context="query"
+    )
+    key, context = "secret", "query"
+    if change == "token":
+        token = "eA==." + token.split(".")[1]
+    elif change == "signature":
+        token = token[:-1] + ("1" if token[-1] == "0" else "0")
+    elif change == "key":
+        key = "another-secret"
+    elif change == "context":
+        context = "another-query"
+    else:
+        token = "!" + token
+    with pytest.raises(ValueError, match="Invalid pagination cursor"):
+        log_store.decode_cursor(token, signing_key=key, context=context)
+
+
+@pytest.mark.parametrize("native", ["", " ", "\t\n"])
+def test_empty_native_tokens_cannot_be_signed(
+    log_store: StubLogStore, native: str
+) -> None:
+    """An empty backend token must not restart the scan."""
+    with pytest.raises(ValueError, match="must not be empty"):
+        log_store.encode_cursor(native, signing_key="secret", context="query")

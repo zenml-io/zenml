@@ -225,6 +225,7 @@ class MyLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
+        start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
@@ -314,7 +315,21 @@ If your backend supports log retrieval, implement the `fetch()` method to enable
 
 A fetch returns one page of a log stream, ordered from oldest to newest, together with `before` and `after` for the pages around it. `start` tells you which end of the stream the first page is taken from: `"oldest"` gives the first entries, `"newest"` the last. It may be omitted, in which case pick the end you can serve (usually the oldest). It does not change the ordering of what you return — sort every page chronologically before handing it back. So for a stream of a hundred entries with a limit of ten, `"oldest"` returns entries one through ten and `"newest"` returns ninety-one through a hundred, both in that order. Refuse an explicit `start` you cannot honor rather than quietly substituting another end.
 
+The following example assumes a backend with native tokens in both directions. Adapt the request fields to your provider and only return directions it supports. The signing helpers wrap the native token without creating a new pagination position. Use a stable secret and bind each cursor to the stream, filters, and direction. Raise shared `LogStoreError`, `LogStoreUnavailableError`, or `LogStoreRateLimitError` exceptions for backend failures so the REST API can map them to `502`, `503`, and `429` respectively.
+
 ```python
+import json
+from datetime import datetime
+from typing import Optional
+
+import requests
+
+from zenml.enums import LoggingLevels
+from zenml.exceptions import LogStoreError, LogStoreUnavailableError
+from zenml.models import LogEntry, LogsEntriesFilter, LogsEntriesResponse, LogsResponse
+from zenml.utils.time_utils import to_utc_timezone, utc_now
+
+
 def fetch(
     self,
     logs_model: LogsResponse,
@@ -325,53 +340,84 @@ def fetch(
     filter_: Optional[LogsEntriesFilter] = None,
 ) -> LogsEntriesResponse:
     """Fetch a page of log entries from the backend."""
-    filter_ = filter_ or LogsEntriesFilter()
-
+    if logs_model.log_store_id != self.id:
+        raise ValueError("The log stream belongs to a different log store.")
+    if start not in (None, "oldest", "newest"):
+        raise ValueError("`start` must be `oldest` or `newest`.")
     if before is not None and after is not None:
         raise ValueError("Pass only one of `before` and `after`.")
+    filter_ = filter_ or LogsEntriesFilter()
+    cursor = before if before is not None else after
+    if cursor is not None and filter_.until is None:
+        raise ValueError("Continue with the previous page's `until`.")
+    since = filter_.since or to_utc_timezone(logs_model.created)
+    until = filter_.until or utc_now(tz_aware=True)
+    if since > until:
+        raise ValueError("`since` must be earlier than `until`.")
+    query = {
+        "log_id": str(logs_model.id),
+        "contains": filter_.search,
+        "min_severity": filter_.level.name if filter_.level else None,
+        "start_time": since.isoformat(),
+        "end_time": until.isoformat(),
+    }
 
-    response = requests.get(
-        f"{self.config.endpoint}/logs",
-        params={
-            "log_id": str(logs_model.id),
-            "limit": self.resolve_limit(limit),
-            "start_at": start,
-            "page_token": self.decode_cursor(before or after)
-            if before or after
-            else None,
-            "contains": filter_.search,
-            "min_severity": filter_.level.name if filter_.level else None,
-            "start_time": (
-                filter_.since or logs_model.created
-            ).isoformat(),
-            "end_time": (filter_.until or utc_now()).isoformat(),
-        },
-        headers={"Authorization": f"Bearer {self.config.api_key}"},
-    )
+    def cursor_context(direction: str) -> str:
+        return json.dumps([str(self.id), query, direction], sort_keys=True)
 
-    body = response.json()
-
-    entries = [
-        LogEntry(
-            message=log["message"],
-            level=LoggingLevels[log["severity"].upper()],
-            timestamp=datetime.fromisoformat(log["timestamp"]),
-            name=log.get("logger_name"),
-            filename=log.get("filename"),
-            lineno=log.get("line_number"),
-            id=uuid5(self.id, log["id"]),
+    direction = "before" if before is not None else "after"
+    native_cursor = (
+        self.decode_cursor(
+            cursor,
+            signing_key=self.config.api_key,
+            context=cursor_context(direction),
         )
-        for log in body["logs"] or []
-    ]
+        if cursor is not None
+        else None
+    )
+    try:
+        response = requests.get(
+            f"{self.config.endpoint}/logs",
+            params={
+                **query,
+                "limit": self.resolve_limit(limit),
+                "start_at": start,
+                "direction": direction,
+                "page_token": native_cursor,
+            },
+            headers={"Authorization": f"Bearer {self.config.api_key}"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        raise LogStoreUnavailableError("Could not reach the log backend.") from exc
+    if response.status_code != 200:
+        raise LogStoreError("The log backend rejected the search.")
+    try:
+        body = response.json()
+        entries = [
+            LogEntry(
+                message=log["message"],
+                level=LoggingLevels[log["severity"].upper()],
+                timestamp=datetime.fromisoformat(log["timestamp"]),
+            )
+            for log in body["logs"] or []
+        ]
+    except (ValueError, KeyError, TypeError) as exc:
+        raise LogStoreError("The log backend returned invalid data.") from exc
 
     return LogsEntriesResponse(
-        items=entries,
-        before=self.encode_cursor(body["prev_page_token"])
-        if entries and body.get("prev_page_token")
-        else None,
-        after=self.encode_cursor(body["next_page_token"])
-        if entries and body.get("next_page_token")
-        else None,
+        items=sorted(entries, key=lambda entry: entry.timestamp),
+        until=until,
+        before=self.encode_cursor(
+            body["prev_page_token"],
+            signing_key=self.config.api_key,
+            context=cursor_context("before"),
+        ) if body.get("prev_page_token") else None,
+        after=self.encode_cursor(
+            body["next_page_token"],
+            signing_key=self.config.api_key,
+            context=cursor_context("after"),
+        ) if body.get("next_page_token") else None,
     )
 ```
 

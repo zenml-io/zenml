@@ -369,7 +369,11 @@ class ArtifactLogStore(OtelLogStore):
                 "id of the log store."
             )
 
-        unallowed = start not in (None, "oldest") or before or after
+        unallowed = (
+            start not in (None, "oldest")
+            or before is not None
+            or after is not None
+        )
         if filter_ is not None:
             unallowed = unallowed or any(
                 (
@@ -383,7 +387,7 @@ class ArtifactLogStore(OtelLogStore):
             raise ValueError(
                 "The artifact log store only reads a log file from its start "
                 "and serves what fits in one response. Drop start, before, "
-                "after, and filters, and narrow the result down where it is "
+                "after, search, level, since, and until, and narrow the result down where it is "
                 "displayed."
             )
 
