@@ -949,6 +949,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         current_status = ExecutionStatus(self.status)
 
         if (
+            requested_status is None
+            and status_reason is None
+            and current_status.is_finished
+        ):
+            # Late step updates must not recalculate an immutable terminal run
+            # status. This also allows non-status step fields to be updated.
+            return False
+
+        if (
             requested_status == ExecutionStatus.RESUMING
             and current_status
             not in {
