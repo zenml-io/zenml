@@ -125,6 +125,7 @@ server:
   openTelemetry:
     endpoint: "http://otel-collector:4318"
     serviceName: "zenml-server"
+    dbMigrationServiceName: "zenml-db-migration"
     tracesEndpoint:
     metricsEndpoint:
     logsEndpoint:
@@ -145,7 +146,7 @@ OpenTelemetry export behavior:
 - If `server.openTelemetry.endpoint` is configured, the server uses it for any signal without a per-signal endpoint by appending paths like `/v1/traces`, `/v1/metrics`, and `/v1/logs`.
 - Each signal is enabled by default and can be disabled individually with `server.openTelemetry.tracesEnabled`, `metricsEnabled`, and `logsEnabled`. OR you can set individual per-signal endpoints to enable export only for that signal type.
 
-The service name can be configured with `server.openTelemetry.serviceName`. If not set, the server uses its default service name.
+The service name can be configured with `server.openTelemetry.serviceName`. If not set, the server uses its default service name. The database migration job uses this service name unless `server.openTelemetry.dbMigrationServiceName` is configured.
 
 You can use `server.environment` for advanced exporter settings and standard OpenTelemetry variables that are not modeled as chart values, such as `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT`, and `OTEL_EXPORTER_OTLP_COMPRESSION`.
 

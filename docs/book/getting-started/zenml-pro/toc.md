@@ -44,6 +44,9 @@
   * [Custom webhooks](webhooks/custom.md)
 * [Resource Pools](resource-pools.md)
   * [Core Concepts](resource-pools-core-concepts.md)
+  * [Admin Guide](resource-pools-admin-guide.md)
+  * [User Guide](resource-pools-user-guide.md)
+  * [External Workloads](resource-pools-external-workloads.md)
   * [Reconciliation Process](resource-pools-reconciliation.md)
   * [Examples](resource-pools-examples.md)
 
