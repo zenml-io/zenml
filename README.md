@@ -81,7 +81,10 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 ## 🚀 Get Started (5 minutes)
 
 ```bash
-# Install ZenML with server capabilities
+# Install ZenML with one command (macOS, Linux, WSL). Includes the local server and dashboard.
+curl -fsSL https://zenml.io/install | bash
+
+# Or with pip, including server capabilities
 pip install "zenml[server]"  # pip install zenml will install a slimmer client
 
 # Initialize your ZenML repository
