@@ -128,7 +128,9 @@ def test_pr_event_gate_and_concurrency_contract() -> None:
         "group": PR_CONCURRENCY,
         "cancel-in-progress": "true",
     }
-    assert " ".join(workflow["jobs"]["fuzz"]["if"].split()) == PR_JOB_GATE
+    fuzz_job = workflow["jobs"]["fuzz"]
+    assert "name" not in fuzz_job
+    assert " ".join(fuzz_job["if"].split()) == PR_JOB_GATE
 
 
 @pytest.mark.parametrize(

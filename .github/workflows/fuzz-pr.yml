@@ -19,7 +19,6 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fuzz:
-    name: Fuzz ${{ matrix.suite }} / ${{ matrix.backend }}
     if: >-
       github.event.action != 'unlabeled' &&
       contains(github.event.pull_request.labels.*.name, 'run-fuzz') &&
