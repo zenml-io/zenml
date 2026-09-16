@@ -13,6 +13,7 @@
 #  limitations under the License.
 """Tests for artifact-version liveness and pruning."""
 
+from pathlib import Path
 from typing import Any, Callable, List
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
@@ -373,3 +374,36 @@ def test_data_only_prune_keeps_metadata(
 
     assert pruned == 1 and seen == [version_id]
     store.get_artifact_version(version_id)
+
+
+def test_client_prunes_a_local_store_itself(
+    clean_client: Client, project_id: UUID
+) -> None:
+    """Without a server, the client runs the prune loop and deletes data."""
+    root = Path(clean_client.active_stack.artifact_store.path) / "prune"
+    root.mkdir(parents=True)
+    (root / "data").write_text("payload")
+    version_id = clean_client.zen_store.create_artifact_version(
+        ArtifactVersionRequest(
+            artifact_name=f"artifact-{uuid4().hex[:8]}",
+            project=project_id,
+            version="1",
+            type=ArtifactType.DATA,
+            uri=str(root),
+            materializer="zenml.materializers.BuiltInMaterializer",
+            data_type="builtins.str",
+            save_type=ArtifactSaveType.MANUAL,
+            artifact_store_id=clean_client.active_stack.artifact_store.id,
+        )
+    ).id
+
+    dry_run = clean_client.prune_artifacts(dry_run=True)
+    assert dry_run.artifact_version_count == 1 and dry_run.task_id is None
+    assert root.exists()
+
+    pruned = clean_client.prune_artifacts(delete_from_artifact_store=True)
+
+    assert pruned.artifact_version_count == 1
+    assert not root.exists()
+    with pytest.raises(KeyError):
+        clean_client.zen_store.get_artifact_version(version_id)
