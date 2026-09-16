@@ -881,6 +881,18 @@ client.attach_trigger_to_snapshot(
 The trigger's `concurrency` setting controls what happens when another matching
 delivery arrives while a run for an attached snapshot is already active.
 
+{% hint style="warning" %}
+Triggered runs may fail before any pipeline steps start if you attach a
+snapshot created with ZenML 0.96.4 or earlier to a trigger type introduced in a
+newer ZenML version. For example, this can happen when you attach an older
+snapshot to a webhook trigger, even if your client and server are up to date.
+
+To avoid this, recreate the snapshot with ZenML 0.96.5 or later before
+attaching it to a newer trigger type. Starting with ZenML 0.96.5, trigger
+execution is forward compatible: snapshots do not need to match the server
+version when new trigger types are introduced.
+{% endhint %}
+
 Send an event from the configured provider, or test the intake path with a
 [signed GitHub mock request](webhooks/github.md#mock-a-signed-github-push) or
 [signed Slack mock request](webhooks/slack.md#mock-a-signed-slack-message).
