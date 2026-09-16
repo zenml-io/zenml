@@ -5858,11 +5858,7 @@ class Client(metaclass=ClientMetaClass):
             The number of unused or pruned artifact versions, or the ID of
             the background task pruning them.
         """
-        from zenml.artifacts.utils import (
-            ArtifactDataDeleter,
-            load_artifact_store,
-        )
-        from zenml.zen_stores.sql_zen_store import SqlZenStore
+        from zenml.zen_stores.rest_zen_store import RestZenStore
 
         prune_request = ArtifactVersionPruneRequest(
             project=self.get_project(project).id
@@ -5873,14 +5869,24 @@ class Client(metaclass=ClientMetaClass):
             delete_from_artifact_store=delete_from_artifact_store,
             apply=not dry_run,
         )
-        # A local store cannot reach the artifact store from a server, so the
-        # data is deleted here.
-        if isinstance(self.zen_store, SqlZenStore):
-            return self.zen_store.prune_artifact_versions(
-                prune_request,
-                delete_artifact_data=ArtifactDataDeleter(load_artifact_store),
-            )
-        return self.zen_store.prune_artifact_versions(prune_request)
+        if isinstance(self.zen_store, RestZenStore):
+            return self.zen_store.prune_artifact_versions(prune_request)
+
+        # No server can prune a local database, so the client runs the
+        # prune loop itself, loading the artifact stores it has access to.
+        from zenml.artifacts.pruning import (
+            ArtifactDataDeleter,
+            prune_artifact_versions,
+        )
+        from zenml.artifacts.utils import load_artifact_store
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+        assert isinstance(self.zen_store, SqlZenStore)
+        return prune_artifact_versions(
+            self.zen_store,
+            prune_request,
+            artifact_data_deleter=ArtifactDataDeleter(load_artifact_store),
+        )
 
     # --------------------------- Artifact Versions ---------------------------
 

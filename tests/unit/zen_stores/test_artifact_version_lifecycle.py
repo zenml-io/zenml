@@ -11,15 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Tests for artifact-version liveness in the SQL store."""
+"""Tests for artifact-version liveness and pruning."""
 
-from typing import Any, List
+from typing import Any, Callable, List
 from unittest.mock import MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 from sqlmodel import Session, select
 
+from zenml.artifacts import pruning
+from zenml.artifacts.pruning import (
+    ArtifactDataDeleter,
+    prune_artifact_versions,
+)
 from zenml.client import Client
 from zenml.enums import (
     ArtifactSaveType,
@@ -41,7 +46,6 @@ from zenml.models import (
     RunMetadataRequest,
     RunMetadataResource,
 )
-from zenml.zen_stores import sql_zen_store
 from zenml.zen_stores.schemas import (
     PipelineRunOutputSchema,
     PipelineRunSchema,
@@ -73,7 +77,8 @@ def _prune(
 ) -> int:
     """Prune the project's unused artifact versions and return the count."""
     return (
-        store.prune_artifact_versions(
+        prune_artifact_versions(
+            store,
             ArtifactVersionPruneRequest(
                 project=project_id, only_versions=only_versions, apply=apply
             ),
@@ -81,6 +86,15 @@ def _prune(
         ).artifact_version_count
         or 0
     )
+
+
+def _deleter(
+    delete: Callable[[ArtifactVersionLocation], bool],
+) -> ArtifactDataDeleter:
+    """A data deleter whose `delete` is the given function."""
+    deleter = MagicMock(spec=ArtifactDataDeleter)
+    deleter.delete.side_effect = delete
+    return deleter
 
 
 def _create_artifact_version(store: SqlZenStore, project_id: UUID) -> UUID:
@@ -240,7 +254,7 @@ def test_prune_deletes_in_batches(
         _create_artifact_version(store, project_id) for _ in range(3)
     ]
 
-    with patch.object(sql_zen_store, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
+    with patch.object(pruning, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
         assert _prune(store, project_id) == 3
     for version_id in version_ids:
         with pytest.raises(KeyError):
@@ -274,20 +288,25 @@ def test_prune_with_data_keeps_versions_whose_data_stays(
             _link_to_model_version(store, project_id, raced_id)
         return location.id != broken_id
 
-    with patch.object(sql_zen_store, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
-        pruned = store.prune_artifact_versions(
+    with patch.object(pruning, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
+        pruned = prune_artifact_versions(
+            store,
             ArtifactVersionPruneRequest(
                 project=project_id,
                 delete_from_artifact_store=True,
                 apply=True,
             ),
-            delete_artifact_data=_delete_artifact_data,
+            artifact_data_deleter=_deleter(_delete_artifact_data),
             on_deleted=deleted_batches.append,
         ).artifact_version_count
 
     assert pruned == 1
     assert deleted_batches == [[fine_id]]
     assert str(raced_id) in caplog.text and "data is gone" in caplog.text
+    # Every batch reports its data deletion times.
+    assert "Deleting the data of 2 artifact version(s) took" in caplog.text
+    assert "Deleting the data of 1 artifact version(s) took" in caplog.text
+    assert "median" in caplog.text
     store.get_artifact_version(broken_id)
     store.get_artifact_version(raced_id)
     with pytest.raises(KeyError):
@@ -308,11 +327,11 @@ def test_metadata_only_prune_never_deletes_data(
 ) -> None:
     """A deleter passed along is ignored unless data deletion is requested."""
     version_id = _create_artifact_version(store, project_id)
-    deleter = MagicMock(return_value=True)
+    deleter = _deleter(lambda location: True)
 
-    assert _prune(store, project_id, delete_artifact_data=deleter) == 1
+    assert _prune(store, project_id, artifact_data_deleter=deleter) == 1
 
-    deleter.assert_not_called()
+    deleter.delete.assert_not_called()
     with pytest.raises(KeyError):
         store.get_artifact_version(version_id)
 
@@ -320,14 +339,15 @@ def test_metadata_only_prune_never_deletes_data(
 def test_prune_with_data_requires_a_way_to_delete_it(
     store: SqlZenStore, project_id: UUID
 ) -> None:
-    """The store cannot delete artifact data itself."""
+    """Data deletion needs a deleter."""
     with pytest.raises(ValueError):
-        store.prune_artifact_versions(
+        prune_artifact_versions(
+            store,
             ArtifactVersionPruneRequest(
                 project=project_id,
                 delete_from_artifact_store=True,
                 apply=True,
-            )
+            ),
         )
 
 
@@ -338,14 +358,17 @@ def test_data_only_prune_keeps_metadata(
     version_id = _create_artifact_version(store, project_id)
     seen: List[UUID] = []
 
-    pruned = store.prune_artifact_versions(
+    pruned = prune_artifact_versions(
+        store,
         ArtifactVersionPruneRequest(
             project=project_id,
             delete_metadata=False,
             delete_from_artifact_store=True,
             apply=True,
         ),
-        delete_artifact_data=lambda location: seen.append(location.id) is None,
+        artifact_data_deleter=_deleter(
+            lambda location: seen.append(location.id) is None
+        ),
     ).artifact_version_count
 
     assert pruned == 1 and seen == [version_id]

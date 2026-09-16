@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for the artifact version pruning endpoint."""
+"""Tests for server-side artifact version pruning."""
 
 import os
 import stat
@@ -23,7 +23,8 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from zenml.artifacts.utils import ArtifactDataDeleter
+from zenml.artifacts import pruning
+from zenml.artifacts.pruning import ArtifactDataDeleter
 from zenml.client import Client
 from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.exceptions import IllegalOperationError
@@ -33,9 +34,9 @@ from zenml.models import (
     ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
 )
+from zenml.zen_server.controllers import artifacts as controller
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import artifact_version_endpoints as endpoints
-from zenml.zen_stores import sql_zen_store
 
 
 @contextmanager
@@ -43,7 +44,7 @@ def _server(store: MagicMock) -> Iterator[MagicMock]:
     """Patch the permission check, store and task submission.
 
     Args:
-        store: The store the endpoint should use.
+        store: The store the routes and the controller should use.
 
     Yields:
         The patched permission check.
@@ -51,33 +52,23 @@ def _server(store: MagicMock) -> Iterator[MagicMock]:
     with (
         patch.object(endpoints, "verify_permission") as verify,
         patch.object(endpoints, "zen_store", return_value=store),
+        patch.object(controller, "zen_store", return_value=store),
         patch.object(
-            endpoints, "submit_maintenance_task", return_value="task"
+            controller, "submit_maintenance_task", return_value="task"
         ),
     ):
         yield verify
-
-
-def _prune(
-    prune_request: ArtifactVersionPruneRequest,
-) -> ArtifactVersionPruneResponse:
-    """Call the prune endpoint without the FastAPI wrapper."""
-    return endpoints.prune_artifact_versions.__wrapped__(
-        prune_request, auth_context=MagicMock()
-    )
 
 
 def test_prune_dry_run_only_counts() -> None:
     """A dry run counts synchronously and schedules nothing."""
     prune_request = ArtifactVersionPruneRequest(project=uuid4())
     store = MagicMock()
-    store.prune_artifact_versions.return_value = ArtifactVersionPruneResponse(
-        artifact_version_count=3
-    )
+    store.count_artifact_versions.return_value = 3
 
     with _server(store) as verify:
-        response = _prune(prune_request)
-        endpoints.submit_maintenance_task.assert_not_called()
+        response = endpoints.prune_artifact_versions.__wrapped__(prune_request)
+        controller.submit_maintenance_task.assert_not_called()
 
     verify.assert_called_once_with(
         resource_type=ResourceType.ARTIFACT_VERSION,
@@ -85,34 +76,35 @@ def test_prune_dry_run_only_counts() -> None:
         project_id=prune_request.project,
     )
     assert response == ArtifactVersionPruneResponse(artifact_version_count=3)
-    store.prune_artifact_versions.assert_called_once_with(prune_request)
+    assert store.count_artifact_versions.call_args.args[0].only_unused
+    assert store.count_artifact_versions.call_args.args[0].project == (
+        prune_request.project
+    )
 
 
 def test_prune_apply_runs_in_the_background() -> None:
-    """Applying defers the pruning to a maintenance task."""
+    """Applying defers the pruning to a maintenance task with RBAC cleanup."""
     prune_request = ArtifactVersionPruneRequest(project=uuid4(), apply=True)
+    version_id = uuid4()
     store = MagicMock()
-    store.prune_artifact_versions.return_value = ArtifactVersionPruneResponse(
-        artifact_version_count=2
-    )
+    store.list_unused_artifact_version_locations.side_effect = [
+        [ArtifactVersionLocation(version_id, "uri", None)],
+        [],
+    ]
+    store.delete_unused_artifact_versions.return_value = [version_id]
 
     with (
         _server(store),
-        patch.object(endpoints, "delete_resources") as delete_resources,
+        patch.object(controller, "delete_resources") as delete_resources,
     ):
-        response = _prune(prune_request)
-        store.prune_artifact_versions.assert_not_called()
-        endpoints.submit_maintenance_task.assert_called_once()
-        endpoints.submit_maintenance_task.call_args.args[0]()
-        call = store.prune_artifact_versions.call_args
-        version_id = uuid4()
-        call.kwargs["on_deleted"]([version_id])
+        response = endpoints.prune_artifact_versions.__wrapped__(prune_request)
+        store.delete_unused_artifact_versions.assert_not_called()
+        controller.submit_maintenance_task.assert_called_once()
+        controller.submit_maintenance_task.call_args.args[0]()
         resource = delete_resources.call_args.args[0][0]
 
     assert response == ArtifactVersionPruneResponse(task_id="task")
-    store.prune_artifact_versions.assert_called_once()
-    assert call.args == (prune_request,)
-    assert isinstance(call.kwargs["delete_artifact_data"], ArtifactDataDeleter)
+    store.delete_unused_artifact_versions.assert_called_once_with([version_id])
     assert (resource.type, resource.id, resource.project_id) == (
         ResourceType.ARTIFACT_VERSION,
         version_id,
@@ -125,23 +117,20 @@ def test_legacy_prune_route_prunes_synchronously() -> None:
     project_id = uuid4()
     store = MagicMock()
     store.get_project.return_value.id = project_id
+    store.list_unused_artifact_version_locations.return_value = []
 
     with _server(store) as verify:
         endpoints.prune_artifact_versions_legacy.__wrapped__(
             "my-project", only_versions=False
         )
-        endpoints.submit_maintenance_task.assert_not_called()
+        controller.submit_maintenance_task.assert_not_called()
 
     verify.assert_called_once_with(
         resource_type=ResourceType.ARTIFACT_VERSION,
         action=Action.PRUNE,
         project_id=project_id,
     )
-    store.prune_artifact_versions.assert_called_once_with(
-        ArtifactVersionPruneRequest(
-            project=project_id, only_versions=False, apply=True
-        )
-    )
+    store.delete_artifacts_without_versions.assert_called_once_with(project_id)
 
 
 def test_data_deleter_keeps_versions_it_cannot_delete_data_for() -> None:
@@ -163,17 +152,19 @@ def test_data_deleter_keeps_versions_it_cannot_delete_data_for() -> None:
 
     with (
         patch.object(
-            endpoints, "_verify_artifact_store_access", _verify_access
+            controller, "verify_artifact_store_access", _verify_access
         ),
         patch.object(
-            endpoints,
+            controller,
             "instantiate_artifact_store",
             return_value=artifact_store,
         ) as instantiate,
     ):
-        delete = ArtifactDataDeleter(endpoints._load_accessible_artifact_store)
+        deleter = ArtifactDataDeleter(
+            controller.load_accessible_artifact_store
+        )
         results = [
-            delete(ArtifactVersionLocation(uuid4(), uri, store_id))
+            deleter.delete(ArtifactVersionLocation(uuid4(), uri, store_id))
             for uri, store_id in [
                 ("forbidden", forbidden_store),
                 ("broken", allowed_store),
@@ -233,18 +224,15 @@ def test_prune_deletes_data_and_metadata_batch_by_batch(
 
     try:
         with (
+            patch.object(controller, "verify_permission_for_model"),
+            patch.object(controller, "delete_resources"),
             patch.object(
-                endpoints, "zen_store", return_value=clean_client.zen_store
+                controller, "zen_store", return_value=clean_client.zen_store
             ),
-            patch.object(
-                sql_zen_store, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2
-            ),
+            patch.object(pruning, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2),
         ):
-            pruned = clean_client.zen_store.prune_artifact_versions(
-                prune_request,
-                delete_artifact_data=ArtifactDataDeleter(
-                    endpoints._load_accessible_artifact_store
-                ),
+            pruned = controller.prune_artifact_versions(
+                prune_request, in_background=False
             ).artifact_version_count
     finally:
         os.chmod(locked, stat.S_IRWXU)

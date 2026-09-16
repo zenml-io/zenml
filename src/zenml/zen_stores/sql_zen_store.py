@@ -213,8 +213,6 @@ from zenml.models import (
     ArtifactUpdate,
     ArtifactVersionFilter,
     ArtifactVersionLocation,
-    ArtifactVersionPruneRequest,
-    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
@@ -517,13 +515,6 @@ _WEBHOOK_SECRET_VALUE_KEY = "secret"
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
-
-
-# Pruning walks unused artifact versions in batches of this size. Every
-# version in a batch may cost a round trip to the artifact store before the
-# batch's metadata goes, so batches stay small enough for an interrupted
-# prune to lose little.
-ARTIFACT_VERSION_PRUNE_BATCH_SIZE = 500
 
 
 def exponential_backoff_with_jitter(
@@ -3481,107 +3472,32 @@ class SqlZenStore(BaseZenStore):
             session.delete(artifact_version)
             session.commit()
 
-    def prune_artifact_versions(
-        self,
-        prune_request: ArtifactVersionPruneRequest,
-        delete_artifact_data: Optional[
-            Callable[[ArtifactVersionLocation], bool]
-        ] = None,
-        on_deleted: Optional[Callable[[List[UUID]], None]] = None,
-    ) -> ArtifactVersionPruneResponse:
-        """Counts or deletes artifact versions that nothing references.
-
-        The versions are walked in ID order in batches. When artifact data is
-        deleted, each batch's data goes before its metadata, the same order
-        as deleting a single version: a version whose data cannot be deleted
-        keeps its metadata and can be retried, and an interrupted prune
-        leaves at most one batch of versions without data. A version that is
-        referenced between the two steps keeps its metadata while its data
-        is gone, so it is reported as an error.
+    def count_artifact_versions(
+        self, filter_model: ArtifactVersionFilter
+    ) -> int:
+        """Count all artifact versions.
 
         Args:
-            prune_request: Which artifact versions to prune and whether to
-                delete them or only count them.
-            delete_artifact_data: Deletes the data of one unused artifact
-                version and returns whether it did; the version is kept
-                otherwise. Only used, and required, when the request asks
-                for data deletion.
-            on_deleted: Called with the IDs of every batch of deleted
-                artifact versions.
+            filter_model: The filter model to filter the artifact versions.
 
         Returns:
-            The number of unused artifact versions for a dry run, otherwise
-            the number of artifact versions whose metadata, or for a
-            data-only prune whose data, was deleted.
-
-        Raises:
-            ValueError: If the request asks for data deletion without a way
-                to delete it.
+            The number of artifact versions.
         """
-        if not prune_request.apply:
-            return ArtifactVersionPruneResponse(
-                artifact_version_count=self._count_entity(
-                    ArtifactVersionSchema,
-                    ArtifactVersionFilter(
-                        project=prune_request.project, only_unused=True
-                    ),
-                )
-            )
-        if not prune_request.delete_from_artifact_store:
-            delete_artifact_data = None
-        elif delete_artifact_data is None:
-            raise ValueError(
-                "Deleting artifact data requires a way to delete it."
-            )
-
-        pruned_count = 0
-        after: Optional[UUID] = None
-        while locations := self._list_unused_artifact_version_locations(
-            prune_request.project, after
-        ):
-            after = locations[-1].id
-            if delete_artifact_data:
-                locations = [
-                    location
-                    for location in locations
-                    if delete_artifact_data(location)
-                ]
-            if not prune_request.delete_metadata:
-                pruned_count += len(locations)
-                continue
-            deleted = self._delete_unused_artifact_versions(
-                [location.id for location in locations]
-            )
-            if delete_artifact_data and len(deleted) < len(locations):
-                kept = ", ".join(
-                    str(location.id)
-                    for location in locations
-                    if location.id not in deleted
-                )
-                logger.error(
-                    f"Artifact version(s) {kept} were referenced after their "
-                    "data was deleted and were kept. Their data is gone."
-                )
-            if on_deleted and deleted:
-                on_deleted(deleted)
-            pruned_count += len(deleted)
-
-        if prune_request.delete_metadata and not prune_request.only_versions:
-            self._prune_artifacts_without_versions(prune_request.project)
-        return ArtifactVersionPruneResponse(
-            artifact_version_count=pruned_count
+        return self._count_entity(
+            schema=ArtifactVersionSchema, filter_model=filter_model
         )
 
-    def _list_unused_artifact_version_locations(
-        self, project_id: UUID, after: Optional[UUID]
+    def list_unused_artifact_version_locations(
+        self, project_id: UUID, after: Optional[UUID], limit: int
     ) -> List[ArtifactVersionLocation]:
-        """List where the data of the next batch of unused versions is stored.
+        """List where the data of a batch of unused artifact versions is stored.
 
         Args:
             project_id: The project whose artifact versions are listed.
             after: Only list artifact versions with an ID greater than this
                 one, so that a batch is never listed again once the caller
                 walked it, whether or not it deleted the versions.
+            limit: The maximum number of artifact versions to list.
 
         Returns:
             The locations, in ID order.
@@ -3597,7 +3513,7 @@ class SqlZenStore(BaseZenStore):
                 col(ArtifactVersionSchema.project_id) == project_id,
             )
             .order_by(col(ArtifactVersionSchema.id))
-            .limit(ARTIFACT_VERSION_PRUNE_BATCH_SIZE)
+            .limit(limit)
         )
         if after is not None:
             query = query.where(col(ArtifactVersionSchema.id) > after)
@@ -3606,7 +3522,7 @@ class SqlZenStore(BaseZenStore):
                 ArtifactVersionLocation(*row) for row in session.exec(query)
             ]
 
-    def _delete_unused_artifact_versions(
+    def delete_unused_artifact_versions(
         self, artifact_version_ids: Sequence[UUID]
     ) -> List[UUID]:
         """Delete the given artifact versions unless something references them.
@@ -3658,7 +3574,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return deleted
 
-    def _prune_artifacts_without_versions(self, project_id: UUID) -> None:
+    def delete_artifacts_without_versions(self, project_id: UUID) -> None:
         """Delete the artifacts of a project that have no versions left.
 
         Args:

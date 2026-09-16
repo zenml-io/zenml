@@ -14,7 +14,7 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from typing import TYPE_CHECKING, List, Sequence, Union
+from typing import List, Sequence, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -22,11 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
-from zenml.artifacts.utils import (
-    ArtifactDataDeleter,
-    instantiate_artifact_store,
-    load_artifact_visualization,
-)
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.constants import (
     API,
     ARTIFACT_VERSIONS,
@@ -38,7 +34,6 @@ from zenml.constants import (
     VISUALIZE,
 )
 from zenml.enums import DownloadType
-from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionPruneRequest,
@@ -46,7 +41,6 @@ from zenml.models import (
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
-    ComponentResponse,
     LoadedVisualization,
     Page,
 )
@@ -56,6 +50,7 @@ from zenml.zen_server.auth import (
     generate_download_token,
     verify_download_token,
 )
+from zenml.zen_server.controllers import artifacts as artifact_controller
 from zenml.zen_server.download_utils import (
     create_artifact_archive,
     verify_artifact_is_downloadable,
@@ -67,12 +62,11 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_get_entity,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import Action, Resource, ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     dehydrate_page,
     delete_model_resource,
-    delete_resources,
     get_allowed_resource_ids,
     verify_permission,
     verify_permission_for_model,
@@ -81,14 +75,8 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
-    submit_maintenance_task,
     zen_store,
 )
-
-if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-
-logger = get_logger(__name__)
 
 artifact_version_router = APIRouter(
     prefix=API + VERSION_1 + ARTIFACT_VERSIONS,
@@ -292,7 +280,7 @@ def delete_artifact_version(
                 "Artifact version has no artifact store, cannot delete data."
             )
 
-        artifact_store = _load_accessible_artifact_store(
+        artifact_store = artifact_controller.load_accessible_artifact_store(
             artifact_version.artifact_store_id
         )
         try:
@@ -317,19 +305,13 @@ def delete_artifact_version(
 @async_fastapi_endpoint_wrapper
 def prune_artifact_versions(
     prune_request: ArtifactVersionPruneRequest,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> ArtifactVersionPruneResponse:
-    """Counts or deletes artifact versions that nothing references.
-
-    Pruning can take a long time, so it runs as a maintenance task and the
-    request only returns the task ID. Artifact data is deleted only from the
-    artifact stores the caller may use, and versions whose data cannot be
-    deleted are kept.
+    """Counts unused artifact versions, or prunes them in the background.
 
     Args:
         prune_request: Which artifact versions to prune and whether to
             delete them or only count them.
-        auth_context: Authentication context.
 
     Returns:
         The number of unused artifact versions for a dry run, or the ID of
@@ -340,44 +322,7 @@ def prune_artifact_versions(
         action=Action.PRUNE,
         project_id=prune_request.project,
     )
-
-    if not prune_request.apply:
-        return zen_store().prune_artifact_versions(prune_request)
-
-    def _delete_artifact_version_resources(
-        artifact_version_ids: List[UUID],
-    ) -> None:
-        delete_resources(
-            [
-                Resource(
-                    type=ResourceType.ARTIFACT_VERSION,
-                    id=artifact_version_id,
-                    project_id=prune_request.project,
-                )
-                for artifact_version_id in artifact_version_ids
-            ]
-        )
-
-    def _prune() -> None:
-        logger.info(
-            f"Pruning unused artifact versions of project "
-            f"{prune_request.project} on behalf of user "
-            f"{auth_context.user.id}."
-        )
-        result = zen_store().prune_artifact_versions(
-            prune_request,
-            delete_artifact_data=ArtifactDataDeleter(
-                _load_accessible_artifact_store
-            ),
-            on_deleted=_delete_artifact_version_resources,
-        )
-        logger.info(
-            f"Pruned {result.artifact_version_count} artifact version(s)."
-        )
-
-    return ArtifactVersionPruneResponse(
-        task_id=submit_maintenance_task(_prune)
-    )
+    return artifact_controller.prune_artifact_versions(prune_request)
 
 
 @artifact_version_router.delete(
@@ -407,52 +352,12 @@ def prune_artifact_versions_legacy(
         action=Action.PRUNE,
         project_id=project_id,
     )
-    zen_store().prune_artifact_versions(
+    artifact_controller.prune_artifact_versions(
         ArtifactVersionPruneRequest(
             project=project_id, only_versions=only_versions, apply=True
-        )
+        ),
+        in_background=False,
     )
-
-
-def _load_accessible_artifact_store(
-    artifact_store_id: UUID,
-) -> "BaseArtifactStore":
-    """Load an artifact store after checking that the caller may use it.
-
-    Args:
-        artifact_store_id: The artifact store.
-
-    Returns:
-        The artifact store.
-    """
-    return instantiate_artifact_store(
-        _verify_artifact_store_access(artifact_store_id)
-    )
-
-
-def _verify_artifact_store_access(
-    artifact_store_id: UUID,
-) -> ComponentResponse:
-    """Verify that the caller may use an artifact store and its connector.
-
-    Args:
-        artifact_store_id: The artifact store.
-
-    Returns:
-        The artifact store component.
-    """
-    artifact_store_model = zen_store().get_stack_component(
-        artifact_store_id, hydrate=True
-    )
-    verify_permission_for_model(artifact_store_model, action=Action.READ)
-    if artifact_store_model.connector:
-        verify_permission_for_model(
-            artifact_store_model.connector, action=Action.READ
-        )
-        verify_permission_for_model(
-            artifact_store_model.connector, action=Action.CLIENT
-        )
-    return artifact_store_model
 
 
 @artifact_version_router.get(

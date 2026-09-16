@@ -484,6 +484,10 @@ def submit_maintenance_task(task: Callable[[], Any]) -> str:
         token = _auth_context.set(auth_context)
         try:
             with logging_context(task_id=task_id, request_id=request_id):
+                logger.info(
+                    "Running maintenance task on behalf of user "
+                    f"{auth_context.user.id if auth_context else None}."
+                )
                 try:
                     task()
                 except Exception:
