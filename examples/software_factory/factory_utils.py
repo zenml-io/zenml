@@ -619,7 +619,8 @@ def slack_message_text(channel: str, ts: str) -> str:
         f"https://slack.com/api/conversations.replies?{query}",
         headers={"Authorization": f"Bearer {token}"},
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
+    # The URL is a fixed https literal, so no other scheme can be opened.
+    with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
         payload = json.load(response)
     messages = payload.get("messages") or []
     match = next((m for m in messages if m.get("ts") == ts), None)

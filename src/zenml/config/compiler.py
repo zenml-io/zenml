@@ -504,7 +504,7 @@ class Compiler:
                 get_step_runtime,
             )
 
-            step_runtime = get_step_runtime(
+            step_runtime, _ = get_step_runtime(
                 step_config=step_config,
                 pipeline_docker_settings=pipeline.configuration.docker_settings,
                 orchestrator=stack.orchestrator,
