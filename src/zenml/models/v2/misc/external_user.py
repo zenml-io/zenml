@@ -26,7 +26,7 @@ class ExternalUserModel(BaseModel):
     username: str
     email: Optional[str] = None
     name: Optional[str] = None
-    is_admin: bool = False
+    is_superuser: bool = False
     is_service_account: bool = False
     avatar_url: Optional[str] = None
 

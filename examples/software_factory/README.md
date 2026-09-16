@@ -280,7 +280,9 @@ An `app_mention` target works the same way without the extra scope, since the me
 `open_workspace` clones the repository once and returns the session id as an artifact. Every later step that touches the checkout calls `attach_or_recreate(workspace, repo, branch)`, which reattaches to that session and resets it to the pushed branch:
 
 ```python
-def attach_or_recreate(workspace: str, repo: str, branch: str) -> SandboxSession:
+def attach_or_recreate(
+    workspace: str, repo: str, branch: str
+) -> SandboxSession:
     try:
         session = attach_sandbox(workspace)
     except (KeyError, RuntimeError):
