@@ -414,6 +414,7 @@ from zenml.zen_stores.dag.utils import (
     load_input_artifact_rows,
     load_output_artifact_rows,
     load_step_run_metadata,
+    sort_dag_steps,
 )
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
@@ -6396,7 +6397,7 @@ class SqlZenStore(BaseZenStore):
                     substituted_output_name
                 ]
 
-            for step_name, step in steps.items():
+            for step_name, step in sort_dag_steps(steps):
                 upstream_steps = set(step.spec.upstream_steps)
 
                 step_id = None
