@@ -442,8 +442,6 @@ module = ["zenml.integrations.great_expectations.*"]
 warn_unused_ignores = false
 disallow_subclassing_any = false
 
-# evidently is only installed on Python < 3.14 (see its integration
-# requirements), so its `type: ignore` comments are unused on 3.14 lint runs.
 [[tool.mypy.overrides]]
 module = ["zenml.integrations.evidently.*"]
 warn_unused_ignores = false
