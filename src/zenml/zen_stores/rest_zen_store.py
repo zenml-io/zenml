@@ -227,6 +227,8 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotRunRequest,
@@ -1827,6 +1829,23 @@ class RestZenStore(BaseZenStore):
             resource_id=snapshot_id,
             route=PIPELINE_SNAPSHOTS,
         )
+
+    def prune_snapshots(
+        self, prune_request: PipelineSnapshotPruneRequest
+    ) -> PipelineSnapshotPruneResponse:
+        """Counts or deletes old anonymous snapshots that nothing references.
+
+        Args:
+            prune_request: Which snapshots to prune and whether to delete
+                them or only count them.
+
+        Returns:
+            The number of deleted or, for a dry run, eligible snapshots.
+        """
+        response_body = self.post(
+            path=f"{PIPELINE_SNAPSHOTS}{PRUNE}", body=prune_request
+        )
+        return PipelineSnapshotPruneResponse.model_validate(response_body)
 
     def run_snapshot(
         self,
