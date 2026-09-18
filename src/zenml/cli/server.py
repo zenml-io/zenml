@@ -928,3 +928,7 @@ def archive_runs(
         cli_utils.declare(
             "Nothing moved; resolve the reasons above to archive these runs."
         )
+    if result.failed:
+        cli_utils.error(
+            f"{result.failed} run(s) failed; the server log names each error."
+        )

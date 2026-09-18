@@ -184,10 +184,22 @@ def _require_rows(
     """
     table = SQLModel.metadata.tables[table_name]
     expected = {record.id: record for record in records}
+    owner_columns = [
+        name
+        for name in ("project_id", "pipeline_run_id", "snapshot_id")
+        if records and name in type(records[0]).model_fields
+    ]
+    # Retained columns such as step source code are outside every archive
+    # byte budget, so validation must not load them.
+    columns = [
+        table.c.id,
+        table.c.archive_bundle_id,
+        *(table.c[name] for name in owner_columns),
+    ]
     found: Dict[UUID, Any] = {}
     for group in transactions.batches(expected):
         for locked in session.execute(
-            select(table)
+            select(*columns)
             .where(table.c.id.in_(group))
             .order_by(table.c.id)
             .with_for_update()
@@ -199,9 +211,7 @@ def _require_rows(
             raise ExecutionRetentionConflictError(
                 "Restore needs every archived row with its archive marker."
             )
-        owners = record.model_dump(
-            include={"project_id", "pipeline_run_id", "snapshot_id"}
-        )
+        owners = record.model_dump(include=set(owner_columns))
         if any(row[column] != value for column, value in owners.items()):
             raise ExecutionRetentionConflictError(
                 "An archived row changed its owner."

@@ -238,7 +238,11 @@ class StepRunArchiveDescriptor(ExecutionArchiveDescriptor):
     pipeline_run_id: UUID
     original_step_run_id: Optional[UUID] = None
     parent_step_ids: Optional[List[UUID]] = None
-    run_metadata: Optional[Dict[str, MetadataType]] = None
+    # Hydration warnings print changed body fields; metadata can be large or
+    # sensitive, so it stays out of the descriptor's representation.
+    run_metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, repr=False
+    )
 
 
 class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):

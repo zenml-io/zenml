@@ -51,6 +51,7 @@ from zenml.models import (
     ArchiveRequest,
     PipelineRunRequest,
     PipelineRunUpdate,
+    PipelineSnapshotUpdate,
     StepRunFilter,
     StepRunUpdate,
 )
@@ -1394,3 +1395,79 @@ def test_archive_continuation_is_scoped_to_its_target(
                 dry_run=True,
             )
         )
+
+
+def test_restore_validation_reads_no_retained_payload(
+    retention_store, run_factory, archive_run
+):
+    """Locking archived rows selects identities, not retained source code."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+    locking = []
+
+    def observe(conn, cursor, statement, parameters, context, many):
+        if "FOR UPDATE" in statement:
+            locking.append(statement)
+
+    event.listen(retention_store.engine, "before_cursor_execute", observe)
+    try:
+        restored = retention_store.restore_pipeline_run(ids.run)
+    finally:
+        event.remove(retention_store.engine, "before_cursor_execute", observe)
+
+    assert restored.outcome == RestoreOutcome.RESTORED
+    assert locking
+    assert not any(
+        column in statement
+        for statement in locking
+        for column in ("source_code", "docstring", "pipeline_spec")
+    )
+
+
+def test_run_without_start_time_is_archived(
+    retention_store, run_factory, archive_run
+):
+    """A clock-derived substitution cannot make the two captures differ."""
+    ids = run_factory(retention_store)
+    with retention_store.engine.begin() as connection:
+        connection.execute(
+            update(PipelineRunSchema)
+            .where(PipelineRunSchema.id == ids.run)
+            .values(start_time=None)
+        )
+
+    archive_run(retention_store, ids)
+
+
+def test_archived_snapshot_cannot_be_named_without_restore(
+    retention_store, run_factory, archive_run
+):
+    """Naming is new use: a named snapshot must own its definition in SQL."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+
+    with pytest.raises(ExecutionArchivedError):
+        retention_store.update_snapshot(
+            ids.snapshot, PipelineSnapshotUpdate(name="promoted")
+        )
+
+    retention_store.restore_pipeline_run(ids.run)
+    named = retention_store.update_snapshot(
+        ids.snapshot, PipelineSnapshotUpdate(name="promoted")
+    )
+    assert named.name == "promoted"
+
+
+def test_archived_run_update_returns_the_retained_summary(
+    retention_store, run_factory, archive_run
+):
+    """A mutation response carries the same summary as a fresh read."""
+    ids = run_factory(retention_store)
+    archive_run(retention_store, ids)
+
+    updated = retention_store.update_run(
+        ids.run, PipelineRunUpdate(add_tags=["cold"])
+    )
+
+    assert updated.run_metadata == {}
+    assert "run_metadata" not in repr(updated.get_body().archive)

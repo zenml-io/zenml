@@ -5818,7 +5818,12 @@ class SqlZenStore(BaseZenStore):
             )
 
             # The schema update treats both None and an empty string as no-ops.
-            if snapshot_update.description:
+            # Naming counts as new use: eligibility keeps named snapshots in
+            # SQL, so a snapshot named while archived could lose its only
+            # restore path once its run is deleted.
+            if snapshot_update.description or isinstance(
+                snapshot_update.name, str
+            ):
                 fences.protect_snapshot_owners(session, [snapshot_id])
             else:
                 transactions.lock_ids(
@@ -7934,6 +7939,9 @@ class SqlZenStore(BaseZenStore):
             return existing_run.to_model(
                 include_metadata=not existing_run.is_archived,
                 include_resources=True,
+                archive_metadata=existing_run.fetch_metadata()
+                if existing_run.is_archived
+                else None,
             )
 
     def delete_run(self, run_id: UUID) -> None:

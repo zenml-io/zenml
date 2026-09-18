@@ -279,7 +279,11 @@ class PipelineRunArchiveDescriptor(ExecutionArchiveDescriptor):
 
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
-    run_metadata: Optional[Dict[str, MetadataType]] = None
+    # Hydration warnings print changed body fields; metadata can be large or
+    # sensitive, so it stays out of the descriptor's representation.
+    run_metadata: Optional[Dict[str, MetadataType]] = Field(
+        default=None, repr=False
+    )
 
 
 class PipelineRunResponseBody(

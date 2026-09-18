@@ -683,3 +683,14 @@ def test_archived_run_and_snapshot_delete_over_http(http):
         http.client.delete(f"/api/v1/runs/{http.ids.run}").status_code == 200
     )
     assert http.client.delete(snapshot).status_code == 200
+
+
+def test_misspelled_archive_control_field_is_rejected(http):
+    """A typo in `dry_run` cannot turn a preview into a real archive."""
+    response = http.client.post(
+        "/api/v1/retention/archive",
+        json={"run_ids": [str(http.ids.run)], "dry_run_": True},
+    )
+
+    assert response.status_code == 422, response.text
+    assert http.store.get_run(http.ids.run).archive_bundle_id is None

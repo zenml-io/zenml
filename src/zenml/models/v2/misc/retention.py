@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from zenml.enums import (
     RestoreOutcome,
@@ -36,6 +36,9 @@ class RetentionStatusResponse(BaseModel):
 
 class ArchiveRequest(BaseModel):
     """Runs to archive or preview, named directly or through their owner."""
+
+    # A misspelled `dry_run` must not silently become a real archive.
+    model_config = ConfigDict(extra="forbid")
 
     run_ids: Optional[List[UUID]] = Field(default=None, max_length=100)
     pipeline_id: Optional[UUID] = None

@@ -164,8 +164,10 @@ already-started retirement can take the pass beyond that budget. A sweep that
 stops on either budget reports `paused` and is resumed a few seconds later, so
 a backlog drains over several sweeps rather than in one long transaction.
 During server shutdown, cancellation is checked between phases and before a
-new retirement starts; shutdown waits for active retention work, including an
-already-started transaction, to finish rather than interrupting its commit.
+new retirement starts; shutdown waits for an active scheduled sweep, including
+an already-started transaction, to finish rather than interrupting its commit.
+Manual archive and restore requests are not drained on shutdown; an
+interrupted one rolls back or leaves its run unchanged and can be repeated.
 
 For S3, each SDK request uses a 10-second connection timeout, a 60-second
 socket-read timeout, and at most three total attempts. Those are per-request

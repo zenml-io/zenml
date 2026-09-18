@@ -112,3 +112,16 @@ def test_dry_run_needs_no_confirmation_and_reports_eligibility(monkeypatch):
     assert "Dry run: eligible 2" in result.output
     assert "Nothing moved" not in result.output
     assert archive.call_args.kwargs["dry_run"] is True
+
+
+def test_failed_attempts_fail_the_command(monkeypatch):
+    """Scripts can detect that some runs were not archived."""
+    archive = Mock(return_value=ArchiveResponse(archived=1, failed=1))
+    monkeypatch.setattr(Client, "archive_runs", archive)
+
+    result = CliRunner().invoke(
+        retention, ["archive", "--run-id", RUN_ID, "--yes"]
+    )
+
+    assert result.exit_code != 0
+    assert "Archived 1" in result.output
