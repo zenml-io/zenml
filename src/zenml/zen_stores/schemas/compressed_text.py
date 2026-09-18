@@ -11,19 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Text column types that read compressed values.
+"""Text column types that store text compressed when that is smaller.
 
 The storage format is defined in `zenml.zen_stores.compressed_text`; these
 column types apply it at the column boundary so that every ORM reader receives
 plain text.
 
-Values are not compressed on write yet. Compressed writes can only be enabled
-in a release in which every server version that may share the database already
-contains this decoder; otherwise an upgraded replica would write rows that the
-remaining replicas cannot read during a rolling upgrade.
+Compressed writes are off by default and enabled per engine through
+`SqlZenStoreConfiguration.compress_text_payloads`. They may only be enabled
+once every server that shares the database runs a version that contains this
+decoder; otherwise an upgraded replica would write rows that the remaining
+replicas cannot read during a rolling upgrade. Readers never depend on the
+setting, so it can be switched off again at any time.
 """
 
 from typing import Any, Optional, Type, Union
+from weakref import WeakSet
 
 from sqlalchemy import TEXT, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
@@ -35,6 +38,7 @@ from zenml.zen_stores.compressed_text import (
     COMPRESSED_TEXT_MARKER,
     COMPRESSED_TEXT_PREFIX,
     MAX_DECOMPRESSED_TEXT_BYTES,
+    MIN_COMPRESSIBLE_BYTES,
     CompressedTextError,
     decode_compressed_text,
     encode_compressed_text,
@@ -44,21 +48,44 @@ __all__ = [
     "COMPRESSED_TEXT_MARKER",
     "COMPRESSED_TEXT_PREFIX",
     "MAX_DECOMPRESSED_TEXT_BYTES",
+    "MIN_COMPRESSIBLE_BYTES",
     "CompressedMediumText",
     "CompressedText",
     "CompressedTextError",
     "decode_compressed_text",
     "encode_compressed_text",
+    "set_compressed_writes",
 ]
+
+# Column types are created when the schemas are imported and shared by every
+# engine in the process, so the write setting is kept per engine, keyed by
+# the dialect object that bind processors receive. The references are weak so
+# that the registry never keeps an engine alive.
+_compressing_dialects: "WeakSet[Dialect]" = WeakSet()
+
+
+def set_compressed_writes(dialect: Dialect, enabled: bool) -> None:
+    """Enable or disable compressed writes for the engine using a dialect.
+
+    Args:
+        dialect: The dialect of the engine.
+        enabled: Whether values are compressed when written through it.
+    """
+    if enabled:
+        _compressing_dialects.add(dialect)
+    else:
+        _compressing_dialects.discard(dialect)
 
 
 class CompressedText(TypeDecorator[str]):
-    """`TEXT` column whose compressed values are decoded when read.
+    """`TEXT` column that stores text compressed when that is smaller.
 
-    Plain text is written and read unchanged; values in the compressed
-    storage format are decoded on read, so callers never see the format.
-    Plain text that starts with the compressed-text marker is rejected on
-    write so that it cannot be mistaken for a compressed value later.
+    Callers read and write plain text; the storage format never leaves the
+    column type. Compressed writes are enabled per engine through
+    `set_compressed_writes`. A value that starts with the compressed-text
+    marker is always rejected on write, whether writes are compressed or
+    not, so a stored value carrying the marker is always one this module
+    produced.
     """
 
     impl: Union[TypeEngine[Any], Type[TypeEngine[Any]]] = TEXT
@@ -76,27 +103,36 @@ class CompressedText(TypeDecorator[str]):
     def process_bind_param(
         self, value: Optional[str], dialect: Dialect
     ) -> Optional[str]:
-        """Reject plain text that would be mistaken for a compressed value.
-
-        JSON documents cannot start with a NUL byte, so only free-form text
-        columns such as source code can ever trip this.
+        """Compress a value on write when that is enabled and smaller.
 
         Args:
-            value: The value being written.
-            dialect: The active dialect.
+            value: The plain text being written.
+            dialect: The dialect of the engine writing the value.
 
         Raises:
             ValueError: If the value starts with the compressed-text marker.
 
         Returns:
-            The value unchanged.
+            The value to store.
         """
-        if value is not None and value.startswith(COMPRESSED_TEXT_MARKER):
+        if value is None:
+            return None
+        # JSON documents cannot start with a NUL byte and Python refuses to
+        # compile source code containing one, so this only rejects a raw
+        # stored value that was read past the decoder and written back.
+        if value.startswith(COMPRESSED_TEXT_MARKER):
             raise ValueError(
                 f"The {self.column} must not start with the compressed text "
                 "marker."
             )
-        return value
+        if dialect not in _compressing_dialects:
+            return value
+
+        plain_size = len(value.encode("utf-8"))
+        if plain_size < MIN_COMPRESSIBLE_BYTES:
+            return value
+        encoded = encode_compressed_text(value)
+        return encoded if len(encoded) < plain_size else value
 
     def process_result_value(
         self, value: Optional[str], dialect: Dialect
