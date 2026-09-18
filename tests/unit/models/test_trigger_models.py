@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -13,11 +14,13 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.models import (
+    PipelineRunResponse,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
     ScheduleTriggerRequest,
+    ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
     TriggerDispatchStatusCode,
@@ -106,6 +109,87 @@ def test_trigger_execution_info_allows_missing_semantic_event() -> None:
             event=None,
         )
     }
+
+
+def _run_payload_with_trigger(
+    pipeline_run: PipelineRunResponse, trigger: dict[str, Any]
+) -> dict[str, Any]:
+    """Create a pipeline run payload containing a trigger resource.
+
+    Args:
+        pipeline_run: Pipeline run used as the base payload.
+        trigger: Raw trigger response payload.
+
+    Returns:
+        A serialized pipeline run payload containing the trigger.
+    """
+    payload = pipeline_run.model_dump(mode="json")
+    assert payload["resources"] is not None
+    payload["resources"]["trigger"] = trigger
+    return payload
+
+
+def test_pipeline_run_ignores_unknown_trigger_type(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Unknown trigger types should not invalidate pipeline run responses."""
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {"type": "future_trigger_type"},
+        },
+    )
+
+    pipeline_run = PipelineRunResponse.model_validate(payload)
+
+    assert pipeline_run.trigger is None
+
+
+def test_pipeline_run_loads_valid_trigger(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Valid trigger resources should still be loaded normally."""
+    now = datetime.now().isoformat()
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {
+                "name": "hourly",
+                "active": True,
+                "type": "schedule",
+                "concurrency": "skip",
+                "created": now,
+                "updated": now,
+                "project_id": str(uuid4()),
+                "is_archived": False,
+                "flavor": "native schedule",
+                "cron_expression": "0 * * * *",
+            },
+        },
+    )
+
+    pipeline_run = PipelineRunResponse.model_validate(payload)
+
+    assert isinstance(pipeline_run.trigger, ScheduleTriggerResponse)
+
+
+def test_pipeline_run_ignores_corrupted_trigger(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Corrupted trigger resources should be omitted."""
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {"type": "schedule"},
+        },
+    )
+
+    pipeline_run = PipelineRunResponse.model_validate(payload)
+
+    assert pipeline_run.trigger is None
 
 
 def test_webhook_trigger_update_requires_complete_payload() -> None:
