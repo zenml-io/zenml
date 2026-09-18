@@ -108,13 +108,21 @@ def test_connector_update_rebuilds(built_stores):
 
 def test_ttl_expiry_rebuilds_without_cleanup(built_stores):
     """An entry past its TTL is rebuilt without cleaning up the old store."""
-    cache = ArtifactStoreCache(ttl=0.0)
+    cache = ArtifactStoreCache(ttl=10.0)
     model = _model()
 
-    first = cache.get_or_create(model)
-    second = cache.get_or_create(model)
+    with patch(
+        "zenml.zen_server.artifact_store_cache.time.monotonic",
+        return_value=100.0,
+    ) as clock:
+        first = cache.get_or_create(model)
+        clock.return_value = 109.0
+        assert cache.get_or_create(model) is first
+        clock.return_value = 111.0
+        second = cache.get_or_create(model)
 
     assert first is not second
+    assert len(built_stores) == 2
     first.cleanup.assert_not_called()
 
 
