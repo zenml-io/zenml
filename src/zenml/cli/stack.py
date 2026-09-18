@@ -218,6 +218,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-m",
+    "--metric_store",
+    "metric_store",
+    help="Name of the metric store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-sb",
     "--sandbox",
     "sandbox",
@@ -281,6 +289,7 @@ def register_stack(
     image_builder: Optional[str] = None,
     deployer: Optional[str] = None,
     log_store: Optional[str] = None,
+    metric_store: Optional[str] = None,
     sandbox: Tuple[str, ...] = (),
     set_stack: bool = False,
     provider: Optional[str] = None,
@@ -306,6 +315,7 @@ def register_stack(
         image_builder: Name of the new image builder for this stack.
         deployer: Name of the deployer for this stack.
         log_store: Name of the log store for this stack.
+        metric_store: Name of the metric store for this stack.
         sandbox: Names of sandboxes for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
@@ -551,6 +561,7 @@ def register_stack(
             (StackComponentType.FEATURE_STORE, feature_store),
             (StackComponentType.IMAGE_BUILDER, image_builder),
             (StackComponentType.LOG_STORE, log_store),
+            (StackComponentType.METRIC_STORE, metric_store),
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
@@ -762,6 +773,14 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "-m",
+    "--metric_store",
+    "metric_store",
+    help="Name of the metric store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "-sb",
     "--sandbox",
     "sandbox",
@@ -814,6 +833,7 @@ def update_stack(
     model_registry: Optional[str] = None,
     deployer: Optional[str] = None,
     log_store: Optional[str] = None,
+    metric_store: Optional[str] = None,
     sandbox: Tuple[str, ...] = (),
     secrets: List[str] = [],
     remove_secrets: List[str] = [],
@@ -838,6 +858,7 @@ def update_stack(
         model_registry: Name of the new model registry for this stack.
         deployer: Name of the new deployer for this stack.
         log_store: Name of the log store for this stack.
+        metric_store: Name of the metric store for this stack.
         sandbox: Names of sandboxes for this stack.
         secrets: Secrets to attach to the stack.
         remove_secrets: Secrets to remove from the stack.
@@ -887,6 +908,8 @@ def update_stack(
             updates[StackComponentType.DEPLOYER] = [deployer]
         if log_store:
             updates[StackComponentType.LOG_STORE] = [log_store]
+        if metric_store:
+            updates[StackComponentType.METRIC_STORE] = [metric_store]
         if sandbox:
             updates[StackComponentType.SANDBOX] = list(sandbox)
 
@@ -1011,6 +1034,14 @@ def update_stack(
     required=False,
 )
 @click.option(
+    "-m",
+    "--metric_store",
+    "metric_store_flag",
+    help="Include this to remove the metric store from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
     "-sb",
     "--sandbox",
     "sandbox_flag",
@@ -1032,6 +1063,7 @@ def remove_stack_component(
     model_registry_flag: Optional[str] = None,
     deployer_flag: Optional[bool] = False,
     log_store_flag: Optional[bool] = False,
+    metric_store_flag: Optional[bool] = False,
     sandbox_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
@@ -1052,6 +1084,7 @@ def remove_stack_component(
         model_registry_flag: To remove the model registry from this stack.
         deployer_flag: To remove the deployer from this stack.
         log_store_flag: To remove the log store from this stack.
+        metric_store_flag: To remove the metric store from this stack.
         sandbox_flag: To remove the sandbox from this stack.
     """
     client = Client()
@@ -1094,6 +1127,8 @@ def remove_stack_component(
 
         if log_store_flag:
             stack_component_update[StackComponentType.LOG_STORE] = []
+        if metric_store_flag:
+            stack_component_update[StackComponentType.METRIC_STORE] = []
 
         if sandbox_flag:
             stack_component_update[StackComponentType.SANDBOX] = []
