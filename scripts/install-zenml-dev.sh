@@ -121,6 +121,12 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
+    # The combined integration environment resolves Evidently to 0.6.0, whose
+    # NumPy/scikit-learn dependencies have no Python 3.14 wheels.
+    if [ "$python_version" = "3.14" ]; then
+        ignore_integrations="$ignore_integrations evidently"
+    fi
+
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
