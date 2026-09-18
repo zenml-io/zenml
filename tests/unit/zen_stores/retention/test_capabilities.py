@@ -230,3 +230,16 @@ def test_archive_storage_does_not_replace_global_fileio_dispatch(
         "read_timeout": 60,
         "retries": {"mode": "standard", "total_max_attempts": 3},
     }
+
+
+def test_objects_stay_readable_after_the_archive_root_changes(
+    tmp_path,
+) -> None:
+    """A recorded URI under a former root is read where it was written."""
+    former = ArchiveStorage.from_uri(str(tmp_path / "former"))
+    uri = former.object_uri(uuid4(), uuid4(), uuid4())
+    former.write(uri, b"archived")
+
+    current = ArchiveStorage.from_uri(str(tmp_path / "current"))
+
+    assert current.read(uri, 8) == b"archived"

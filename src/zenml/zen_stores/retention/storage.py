@@ -103,6 +103,7 @@ class ArchiveStorage:
             artifact_store: Store whose path is the archive root.
         """
         self.artifact_store = artifact_store
+        self._former_roots: Dict[str, "ArchiveStorage"] = {}
 
     @classmethod
     def from_uri(
@@ -226,14 +227,40 @@ class ArchiveStorage:
         Raises:
             ExecutionRetentionUnavailableError: The object could not be read.
         """
+        # A former root that cannot be instantiated reports its own
+        # configuration error rather than a transient read failure.
+        store = self._storage_for(uri).artifact_store
         try:
-            with self.artifact_store.open(uri, "rb") as source:
+            with store.open(uri, "rb") as source:
                 return bytes(source.read(max_bytes + 1))
         except Exception as error:
             raise ExecutionRetentionUnavailableError(
                 "Archived execution detail storage is unavailable. Retry "
                 "shortly."
             ) from error
+
+    def _storage_for(self, uri: str) -> "ArchiveStorage":
+        """Select storage whose root contains a recorded object URI.
+
+        Artifact stores refuse paths outside their own root, so an object
+        written before ZENML_SERVER_ARCHIVE__URI changed is read through a
+        store rooted where it was written, with the configured connector.
+
+        Args:
+            uri: Object URI recorded on a bundle row.
+
+        Returns:
+            This storage, or one rooted at the object's original root.
+        """
+        if uri.startswith(f"{self.root}/"):
+            return self
+        # Objects are named `{root}/{project_id}/{run_id}/{bundle_id}.json.gz`.
+        former_root = uri.rsplit("/", 3)[0]
+        if former_root not in self._former_roots:
+            self._former_roots[former_root] = ArchiveStorage.from_uri(
+                former_root, connector_id=self.artifact_store.connector
+            )
+        return self._former_roots[former_root]
 
     def remove(self, uri: str) -> None:
         """Remove an object that never became authoritative, if possible.

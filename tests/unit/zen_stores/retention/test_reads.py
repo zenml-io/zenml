@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import event, update
+from sqlalchemy import update
 from sqlmodel import Session
 
 from tests.unit.zen_stores.retention.fixture_graph import dynamic_step
@@ -295,31 +295,3 @@ def test_snapshot_restore_owner_is_resolved_from_archive_catalog(
 
     assert snapshot.archive is not None
     assert snapshot.archive.restore_run_id == ids.run
-
-
-def test_step_owner_headers_do_not_lazy_load_end_time(
-    retention_store: Any, run_factory: Any, archive_run: Any
-) -> None:
-    """Authorization headers include every archived descriptor column."""
-    runs = [run_factory(retention_store) for _ in range(3)]
-    for run in runs:
-        archive_run(retention_store, run)
-    statements = []
-
-    def observe(conn, cursor, statement, parameters, context, many):
-        statements.append(statement)
-
-    event.listen(retention_store.engine, "before_cursor_execute", observe)
-    try:
-        retention_store.list_run_steps(
-            StepRunFilter(project=runs[0].project),
-            hydrate=False,
-            authorize=lambda _: None,
-        )
-    finally:
-        event.remove(retention_store.engine, "before_cursor_execute", observe)
-
-    assert not any(
-        statement.startswith("SELECT pipeline_run.end_time")
-        for statement in statements
-    )

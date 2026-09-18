@@ -119,8 +119,10 @@ manual-only archiving. Setting `BACKEND=disabled` removes access to archive
 storage and therefore also prevents restore; use `ENABLED=false` to pause.
 
 Changing the configured URI or provider does not migrate existing objects.
-Their recorded URIs must remain accessible with the configured adapter and
-credentials.
+Restore reads each object at its recorded URI, so the earlier location must
+stay in place, and the server's ambient credentials or configured
+`CONNECTOR_ID` must still be able to read it. The server image must keep the
+storage integration for the earlier provider installed.
 
 ## What the sweep archives
 
@@ -241,6 +243,8 @@ zenml server retention status
 Status shows the latest sweep outcome, when it finished, how many runs it
 archived, skipped, found oversized, or failed on, and whether storage is
 configured, new archives are enabled, and automatic sweeps are enabled.
+Counts accumulate across the resumed segments of one scan and reset when a
+new scan starts from the oldest run.
 `archive_configured` means storage settings are present; status does not
 construct an adapter or check the health of stored objects. It never scans
 runs or reads archive objects.

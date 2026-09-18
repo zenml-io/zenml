@@ -1068,6 +1068,6 @@ def restore_pipeline_run(
     """
     store = zen_store()
     verify_permission_for_model(
-        model=store.get_run(run_id, hydrate=False), action=Action.READ
+        model=store.get_run_header(run_id), action=Action.READ
     )
     return store.restore_pipeline_run(run_id)

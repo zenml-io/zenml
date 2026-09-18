@@ -97,12 +97,18 @@ def database_now(session: Session) -> datetime:
         session: Current transaction.
 
     Returns:
-        Timestamp in the database session's time zone.
+        Naive UTC timestamp, comparable with the `utc_now()` values stored in
+        execution rows.
     """
-    return cast(
-        datetime,
-        session.execute(select(func.current_timestamp())).scalar_one(),
+    # MySQL's CURRENT_TIMESTAMP follows the session time zone, which would
+    # shift every age, grace, and lease comparison on a non-UTC server.
+    # SQLite's is always UTC and has no UTC_TIMESTAMP function.
+    clock = (
+        func.utc_timestamp()
+        if session.get_bind().dialect.name == "mysql"
+        else func.current_timestamp()
     )
+    return cast(datetime, session.execute(select(clock)).scalar_one())
 
 
 def batches(values: Iterable[T]) -> Iterator[List[T]]:

@@ -1943,7 +1943,7 @@ class RestZenStore(BaseZenStore):
                 f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
                 body=run_request,
             )
-        except MethodNotAllowedError as e:
+        except (MethodNotAllowedError, NotImplementedError) as e:
             raise RuntimeError(
                 "Running a snapshot is not supported for this server."
             ) from e
@@ -2383,7 +2383,7 @@ class RestZenStore(BaseZenStore):
             response_body = self.post(
                 f"{RUNS}/{run_id}{REPLAY}", body=run_configuration
             )
-        except MethodNotAllowedError as e:
+        except (MethodNotAllowedError, NotImplementedError) as e:
             raise RuntimeError(
                 "Replaying a run is not supported for this server."
             ) from e

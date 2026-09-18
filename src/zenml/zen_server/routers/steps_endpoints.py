@@ -115,10 +115,10 @@ def list_run_steps(
         pipeline_run_id=allowed_pipeline_run_ids,
     )
 
+    # The filter above already scopes the query to readable runs, so rows
+    # need no further per-run permission check.
     page = zen_store().list_run_steps(
-        step_run_filter_model=step_run_filter_model,
-        hydrate=hydrate,
-        authorize=verify_read_permission_for_model,
+        step_run_filter_model=step_run_filter_model, hydrate=hydrate
     )
     return dehydrate_page(page)
 

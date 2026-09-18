@@ -236,6 +236,70 @@ def test_retained_step_cache_expiry_update_succeeds(
     )
 
 
+def test_locked_recapture_reuses_step_projections(
+    retention_store, run_factory, archive_run, monkeypatch
+):
+    """Retirement does not validate step configurations under its locks."""
+    ids = run_factory(retention_store)
+    original = capture.merge_step_configuration
+    merges = 0
+
+    def count_merges(*args, **kwargs):
+        nonlocal merges
+        merges += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(capture, "merge_step_configuration", count_merges)
+
+    archive_run(retention_store, ids)
+
+    assert merges == 2
+
+
+def test_shared_configuration_change_invalidates_projections(
+    retention_store, run_factory, storage, monkeypatch, NOW
+):
+    """A projection input outside the document still fails the recapture."""
+    ids = run_factory(retention_store)
+    other = run_factory(retention_store)
+    snapshots = SQLModel.metadata.tables["pipeline_snapshot"]
+    with retention_store.engine.begin() as connection:
+        # Sharing the snapshot keeps its configuration out of the document.
+        connection.execute(
+            update(PipelineRunSchema)
+            .where(PipelineRunSchema.id == other.run)
+            .values(snapshot_id=ids.snapshot)
+        )
+    original = storage.write
+
+    def change_after_upload(uri, data):
+        original(uri, data)
+        if uri.endswith(".json.gz"):
+            with retention_store.engine.begin() as connection:
+                connection.execute(
+                    update(snapshots)
+                    .where(snapshots.c.id == ids.snapshot)
+                    .values(
+                        pipeline_configuration=(
+                            '{"name":"example",'
+                            '"substitutions":{"team":"late"}}'
+                        )
+                    )
+                )
+
+    monkeypatch.setattr(storage, "write", change_after_upload)
+
+    attempt = archiver.RunArchiver(
+        retention_store.engine, storage, retention_store.archive_settings
+    ).archive(ids.run, NOW)
+
+    assert attempt.outcome == "skipped"
+    assert (
+        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
+        is None
+    )
+
+
 def test_retirement_compresses_only_the_uploaded_capture(
     retention_store,
     run_factory,

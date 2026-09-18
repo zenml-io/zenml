@@ -7,6 +7,7 @@ hashes detects any change in between, including rows that did not exist at
 the first capture, without relying on writers refreshing ``updated``.
 """
 
+import hashlib
 from typing import (
     Any,
     Callable,
@@ -19,6 +20,7 @@ from typing import (
     Tuple,
 )
 
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Table, case, func, literal, select, tuple_
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, SQLModel
@@ -64,6 +66,25 @@ _SOURCE_RUNNING_BYTES_LABEL = "_zenml_retention_source_running_bytes"
 _SOURCE_ROW_NUMBER_LABEL = "_zenml_retention_source_row_number"
 
 
+class StepProjection(BaseModel):
+    """Step type and substitutions derived from one set of raw inputs.
+
+    Deriving them validates the whole step configuration, which is too slow
+    to repeat for every step under retirement's row locks. The fingerprint
+    covers every raw input of that derivation, so the locked recapture can
+    reuse a projection exactly when none of its inputs changed.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    fingerprint: str
+    step_type: Optional[str]
+    substitutions: Dict[str, str]
+
+
+ProjectionCache = Dict[Any, StepProjection]
+
+
 def source_row_bytes(row: Mapping[str, Any]) -> int:
     """Measure the text and binary payload one fetched row holds in memory.
 
@@ -88,6 +109,7 @@ class RunCapturer:
         session: Session,
         run: ArchivableRun,
         check_cancelled: Optional[Callable[[], None]] = None,
+        projections: Optional[ProjectionCache] = None,
     ) -> None:
         """Bind a capture to one transaction and inspected run.
 
@@ -95,10 +117,16 @@ class RunCapturer:
             session: Read session or the locked retirement transaction.
             run: Eligible run with its exclusively owned snapshots.
             check_cancelled: Optional cooperative cancellation check.
+            projections: Step projections from an earlier capture of this
+                run. Entries are reused while their inputs are unchanged and
+                replaced by the ones this capture derives.
         """
         self.session = session
         self.run = run
         self.check_cancelled = check_cancelled
+        self.projections: ProjectionCache = (
+            projections if projections is not None else {}
+        )
         self.source_bytes = 0
         self.run_row: Dict[str, Any] = {}
         self.step_rows: List[Dict[str, Any]] = []
@@ -474,6 +502,40 @@ class RunCapturer:
                     ConfigurationRecord.model_validate(configuration_row)
                 )
 
+    def _projection_fingerprint(
+        self,
+        step_row: Mapping[str, Any],
+        owner: Optional[Mapping[str, Any]],
+        definition: Optional[Mapping[str, Any]],
+    ) -> str:
+        """Hash every raw input a step's projection is derived from.
+
+        Args:
+            step_row: Captured step row.
+            owner: Snapshot whose pipeline configuration is merged in, if any.
+            definition: Stored step definition that is merged, if any.
+
+        Returns:
+            Digest that changes whenever the derived projection could.
+        """
+        inputs: Tuple[str, ...]
+        if owner is not None and definition is not None:
+            inputs = (
+                "definition",
+                definition["config"],
+                owner["pipeline_configuration"],
+                str(owner["is_dynamic"]),
+                str(self.run_row["start_time"]),
+            )
+        else:
+            inputs = ("inline", step_row["step_configuration"])
+        digest = hashlib.sha256()
+        for value in inputs:
+            encoded = value.encode("utf-8")
+            digest.update(len(encoded).to_bytes(8, "big"))
+            digest.update(encoded)
+        return digest.hexdigest()
+
     def _capture_steps(self) -> List[StepRecord]:
         """Capture steps with the type and substitutions kept in SQL.
 
@@ -504,34 +566,48 @@ class RunCapturer:
                 raise ExecutionRetentionConflictError(
                     "Step configuration owner is missing or archived."
                 )
-            if owner is not None and definition is not None:
-                snapshot_id = step_row["snapshot_id"]
-                if snapshot_id not in pipeline_configurations:
-                    pipeline_configurations[snapshot_id] = (
-                        run_pipeline_configuration(
-                            owner["pipeline_configuration"],
-                            self.run_row["start_time"],
-                        )
-                    )
-                configuration = merge_step_configuration(
-                    definition["config"],
-                    pipeline_configurations[snapshot_id],
-                    exclude_hook_sources=owner["is_dynamic"],
-                )
-            elif step_row["step_configuration"]:
-                configuration = Step.model_validate_json(
-                    step_row["step_configuration"]
-                )
-            else:
+            uses_definition = owner is not None and definition is not None
+            if not uses_definition and not step_row["step_configuration"]:
                 raise ExecutionRetentionConflictError(
                     "Step configuration disappeared during capture."
                 )
+            fingerprint = self._projection_fingerprint(
+                step_row,
+                owner if uses_definition else None,
+                definition if uses_definition else None,
+            )
+            projection = self.projections.get(step_row["id"])
+            if projection is None or projection.fingerprint != fingerprint:
+                if owner is not None and definition is not None:
+                    snapshot_id = step_row["snapshot_id"]
+                    if snapshot_id not in pipeline_configurations:
+                        pipeline_configurations[snapshot_id] = (
+                            run_pipeline_configuration(
+                                owner["pipeline_configuration"],
+                                self.run_row["start_time"],
+                            )
+                        )
+                    configuration = merge_step_configuration(
+                        definition["config"],
+                        pipeline_configurations[snapshot_id],
+                        exclude_hook_sources=owner["is_dynamic"],
+                    )
+                else:
+                    configuration = Step.model_validate_json(
+                        step_row["step_configuration"]
+                    )
+                projection = StepProjection(
+                    fingerprint=fingerprint,
+                    step_type=configuration.config.step_type,
+                    substitutions=configuration.config.substitutions,
+                )
+                self.projections[step_row["id"]] = projection
             records.append(
                 StepRecord.model_validate(
                     {
                         **{name: step_row[name] for name in self.step_fields},
-                        "step_type": configuration.config.step_type,
-                        "substitutions": configuration.config.substitutions,
+                        "step_type": projection.step_type,
+                        "substitutions": projection.substitutions,
                     }
                 )
             )
@@ -542,6 +618,7 @@ def capture_run(
     session: Session,
     run: ArchivableRun,
     check_cancelled: Optional[Callable[[], None]] = None,
+    projections: Optional[ProjectionCache] = None,
 ) -> ArchiveDocument:
     """Capture one inspected run in the caller's transaction.
 
@@ -549,6 +626,8 @@ def capture_run(
         session: Read session or the locked retirement transaction.
         run: Eligible run with its exclusively owned snapshots.
         check_cancelled: Optional cooperative cancellation check.
+        projections: Step projections shared between the two captures of one
+            run; read and refreshed in place.
 
     Returns:
         The run's archive document.
@@ -558,7 +637,10 @@ def capture_run(
     """
     try:
         return RunCapturer(
-            session, run, check_cancelled=check_cancelled
+            session,
+            run,
+            check_cancelled=check_cancelled,
+            projections=projections,
         ).capture()
     except ValueError as error:
         # Pydantic validation errors subclass ValueError; captured SQL rows

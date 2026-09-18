@@ -50,7 +50,7 @@ from zenml.models.v2.misc.retention import (
     ArchiveResponse,
 )
 from zenml.zen_stores.retention import transactions
-from zenml.zen_stores.retention.capture import capture_run
+from zenml.zen_stores.retention.capture import ProjectionCache, capture_run
 from zenml.zen_stores.retention.eligibility import (
     ArchivableRun,
     discover_runs,
@@ -257,11 +257,17 @@ class RunArchiver:
             _RetentionCancelled: The owning sweep is shutting down.
         """  # noqa: DOC502
         self._check_cancelled()
+        # Filled outside the locks so retirement need not validate every
+        # step configuration again while it blocks the run's writers.
+        projections: ProjectionCache = {}
         try:
             with Session(self.engine) as session:
                 encoded = encode(
                     capture_run(
-                        session, run, check_cancelled=self._check_cancelled
+                        session,
+                        run,
+                        check_cancelled=self._check_cancelled,
+                        projections=projections,
                     )
                 )
         except ExecutionRetentionConflictError as error:
@@ -281,7 +287,9 @@ class RunArchiver:
                 )
             self._check_cancelled()
             retirement_started = True
-            self._retire(run, bundle_id, uri, encoded, evaluated_at, force)
+            self._retire(
+                run, bundle_id, uri, encoded, evaluated_at, force, projections
+            )
             return ArchiveAttempt(run_id=run.run_id, outcome="archived")
         except _RetentionCancelled:
             if object_written and not retirement_started:
@@ -375,6 +383,7 @@ class RunArchiver:
         encoded: EncodedDocument,
         evaluated_at: datetime,
         force: bool,
+        projections: ProjectionCache,
     ) -> None:
         """Replace the run's SQL detail with the verified bundle atomically.
 
@@ -385,6 +394,7 @@ class RunArchiver:
             encoded: Uploaded bytes and their content hash.
             evaluated_at: Evaluation time shared by the whole batch.
             force: Rule set the run was inspected under.
+            projections: Step projections derived by the first capture.
 
         Raises:
             ExecutionRetentionConflictError: The run changed or became
@@ -450,7 +460,7 @@ class RunArchiver:
                 .order_by(col(StepConfigurationSchema.id))
                 .with_for_update()
             ).all()
-            document = capture_run(session, fresh)
+            document = capture_run(session, fresh, projections=projections)
             if compute_content_hash(document) != encoded.content_hash:
                 raise ExecutionRetentionConflictError(
                     "Run detail changed after capture."

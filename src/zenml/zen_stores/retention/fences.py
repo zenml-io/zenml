@@ -28,6 +28,12 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
 )
 
+# Update-model fields that write archived columns or drive run status. Other
+# fields, such as cache expiry, outputs, and logs, stay writable on archived
+# rows. A new update field that touches an archived column must be added here.
+RUN_FENCED_UPDATE_FIELDS = frozenset({"exception_info", "status"})
+STEP_FENCED_UPDATE_FIELDS = frozenset({"exception_info", "status", "end_time"})
+
 HotRow = Union[PipelineRunSchema, StepRunSchema]
 
 

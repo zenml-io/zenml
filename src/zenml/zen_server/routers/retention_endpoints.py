@@ -92,8 +92,7 @@ def archive_runs(
     if request.run_ids is not None:
         batch_verify_permissions_for_models(
             models=[
-                store.get_run(run_id, hydrate=False)
-                for run_id in request.run_ids
+                store.get_run_header(run_id) for run_id in request.run_ids
             ],
             action=action,
         )

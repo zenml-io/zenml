@@ -13,7 +13,7 @@ no-op.
 from typing import Any, Dict, Sequence
 from uuid import UUID
 
-from sqlalchemy import Engine, bindparam, insert, or_, select, update
+from sqlalchemy import Engine, bindparam, insert, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, SQLModel, col
 
@@ -223,30 +223,32 @@ def _require_free_configurations(
     """
     if not document.configurations:
         return
-    occupied = session.execute(
-        select(col(StepConfigurationSchema.id))
-        .where(
-            or_(
-                col(StepConfigurationSchema.id).in_(
-                    [
-                        configuration.id
-                        for configuration in document.configurations
-                    ]
-                ),
-                col(StepConfigurationSchema.snapshot_id).in_(
-                    [snapshot.id for snapshot in document.snapshots]
-                ),
-                col(StepConfigurationSchema.step_run_id).in_(
-                    [step.id for step in document.steps]
-                ),
-            )
-        )
-        .limit(1)
-    ).first()
-    if occupied is not None:
-        raise ExecutionRetentionConflictError(
-            "A restored configuration identity or owner is already in use."
-        )
+    owners = (
+        (
+            col(StepConfigurationSchema.id),
+            [configuration.id for configuration in document.configurations],
+        ),
+        (
+            col(StepConfigurationSchema.snapshot_id),
+            [snapshot.id for snapshot in document.snapshots],
+        ),
+        (
+            col(StepConfigurationSchema.step_run_id),
+            [step.id for step in document.steps],
+        ),
+    )
+    for column, identities in owners:
+        for group in transactions.batches(identities):
+            occupied = session.execute(
+                select(col(StepConfigurationSchema.id))
+                .where(column.in_(group))
+                .limit(1)
+            ).first()
+            if occupied is not None:
+                raise ExecutionRetentionConflictError(
+                    "A restored configuration identity or owner is already "
+                    "in use."
+                )
 
 
 def _write_back(

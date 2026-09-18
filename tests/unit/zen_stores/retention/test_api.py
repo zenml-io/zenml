@@ -89,7 +89,6 @@ def http(retention_store, run_factory, storage, monkeypatch):
         ("GET", "steps/{producer}", Action.READ),
         ("GET", "steps/{producer}/status", Action.READ),
         ("GET", "steps/{producer}/logs?source=missing", Action.READ),
-        ("GET", "steps?project={project}&hydrate=true", Action.READ),
         ("POST", "pipeline_snapshots/{snapshot}/runs", Action.READ),
         ("POST", "runs/{run}/replay", Action.READ),
         ("POST", "runs/{run}/restore", Action.READ),
@@ -115,12 +114,6 @@ def test_denied_before_detail_storage_or_dispatch(
     monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", denied)
     monkeypatch.setattr(
         retention_endpoints, "batch_verify_permissions_for_models", denied
-    )
-    monkeypatch.setattr(
-        steps_endpoints, "get_allowed_resource_ids", lambda **_: []
-    )
-    monkeypatch.setattr(
-        steps_endpoints, "set_filter_project_scope", lambda _: None
     )
     monkeypatch.setattr(storage, "read", blocked)
     monkeypatch.setattr(execution, "run_snapshot", blocked)
@@ -678,3 +671,15 @@ def test_unrelated_capacity_response_keeps_retry_policy(http, monkeypatch):
 
     assert response.status_code == 429, response.text
     assert response.headers.get("X-ZenML-Retry") != "no"
+
+
+def test_archived_run_and_snapshot_delete_over_http(http):
+    """REST deletion authorizes from SQL headers, run before snapshot."""
+    http.store.run_archive_sweep()
+    snapshot = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
+
+    assert http.client.delete(snapshot).status_code == 409
+    assert (
+        http.client.delete(f"/api/v1/runs/{http.ids.run}").status_code == 200
+    )
+    assert http.client.delete(snapshot).status_code == 200

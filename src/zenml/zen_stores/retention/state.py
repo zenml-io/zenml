@@ -75,7 +75,7 @@ class RetentionState(BaseModel):
         )
 
     def start(self, operation_id: UUID) -> None:
-        """Hand the state to a newly started sweep and reset its counts.
+        """Hand the state to a sweep, resetting counts when a new scan starts.
 
         Args:
             operation_id: Identity of the sweep taking the lease.
@@ -83,7 +83,10 @@ class RetentionState(BaseModel):
         self.operation_id = operation_id
         self.last_outcome = RetentionOutcome.RUNNING
         self.last_finished_at = None
-        self.archived = self.skipped = self.oversized = self.failed = 0
+        # A saved cursor means this lease resumes a paused scan, whose counts
+        # must keep accumulating; only a new scan from the oldest run resets.
+        if self.cursor is None:
+            self.archived = self.skipped = self.oversized = self.failed = 0
 
     def remember_oversized(self, run_id: UUID) -> None:
         """Keep a run found over the byte budget out of later scans.

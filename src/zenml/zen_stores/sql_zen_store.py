@@ -111,6 +111,7 @@ from sqlalchemy.orm import (
     InstrumentedAttribute,
     Mapped,
     aliased,
+    joinedload,
     load_only,
     noload,
     selectinload,
@@ -6708,6 +6709,9 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(StepRunSchema.end_time),
                         jl_arg(StepRunSchema.step_type),
                         jl_arg(StepRunSchema.archive_bundle_id),
+                        # Legacy steps keep their merged definition inline;
+                        # deferring it would lazy-load once per step.
+                        jl_arg(StepRunSchema.step_configuration),
                     ),
                     selectinload(jl_arg(PipelineRunSchema.step_runs))
                     .joinedload(jl_arg(StepRunSchema.snapshot))
@@ -6793,7 +6797,9 @@ class SqlZenStore(BaseZenStore):
                         json.loads(config_table.config),
                         substitutions=pipeline_configuration.substitutions,
                     )
-                    for config_table in snapshot.get_step_configurations()
+                    # Eager-loaded above; `get_pipeline_configuration` has
+                    # already required the run and snapshot to be unarchived.
+                    for config_table in snapshot.step_configurations
                 }
 
             input_artifact_rows = {}
@@ -7790,6 +7796,8 @@ class SqlZenStore(BaseZenStore):
                     "include_full_metadata": include_full_metadata
                 },
             )
+            # Archived rows can never be hydrated without a restore, so their
+            # summaries carry run metadata even in unhydrated pages.
             if not hydrate:
                 self._populate_archived_run_summaries(
                     session,
@@ -7868,7 +7876,7 @@ class SqlZenStore(BaseZenStore):
             with session.no_autoflush:
                 existing_run.update(run_update=run_update)
                 if run_update.model_fields_set.intersection(
-                    {"exception_info", "status"}
+                    fences.RUN_FENCED_UPDATE_FIELDS
                 ):
                     fences.update_hot(session, existing_run)
             session.add(existing_run)
@@ -12704,7 +12712,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.add(step_configuration_schema)
 
-            # If cached, attach metadata of the original step
+            # If cached, attach metadata of the original step. The links join
+            # the step's own commit: a second commit would release the run
+            # lock taken above and let retirement capture a half-written step.
             if (
                 step_run.status
                 in {ExecutionStatus.CACHED, ExecutionStatus.SKIPPED}
@@ -13068,8 +13078,6 @@ class SqlZenStore(BaseZenStore):
         self,
         step_run_filter_model: StepRunFilter,
         hydrate: bool = False,
-        *,
-        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> Page[StepRunResponse]:
         """List all step runs matching the given filter criteria.
 
@@ -13079,24 +13087,11 @@ class SqlZenStore(BaseZenStore):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
-            authorize: Optional permission check on each owning run header.
-
         Returns:
             A list of all step runs matching the filter criteria.
         """
-        authorized: Set[UUID] = set()
 
         def convert(step: StepRunSchema) -> StepRunResponse:
-            if (
-                authorize is not None
-                and step.pipeline_run_id not in authorized
-            ):
-                authorize(
-                    step.pipeline_run.to_model(
-                        include_metadata=False, include_resources=False
-                    )
-                )
-                authorized.add(step.pipeline_run_id)
             archived = step.has_archived_configuration
             return step.to_model(
                 include_metadata=hydrate and not archived,
@@ -13115,12 +13110,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             query = select(StepRunSchema)
-            if authorize is not None:
-                query = query.options(
-                    selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
-                        *self._RUN_HEADER_COLUMNS
-                    )
-                )
             page = self.filter_and_paginate(
                 session=session,
                 query=query,
@@ -13501,7 +13490,7 @@ class SqlZenStore(BaseZenStore):
             with session.no_autoflush:
                 existing_step_run.update(step_run_update)
                 if step_run_update.model_fields_set.intersection(
-                    {"exception_info", "status", "start_time", "end_time"}
+                    fences.STEP_FENCED_UPDATE_FIELDS
                 ):
                     fences.update_hot(session, existing_step_run)
             session.add(existing_step_run)
@@ -14608,6 +14597,26 @@ class SqlZenStore(BaseZenStore):
             )
         return settings
 
+    def get_run_header(self, run_id: UUID) -> PipelineRunResponse:
+        """Load a run's SQL header without its resources or metadata.
+
+        Args:
+            run_id: Run to authorize or inspect.
+
+        Returns:
+            Run header with its project and user ownership.
+        """
+        with Session(self.engine) as session:
+            run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+                query_options=[load_only(*self._RUN_HEADER_COLUMNS)],
+            )
+            return run.to_model(
+                include_metadata=False, include_resources=False
+            )
+
     def get_step_run_owner(self, step_run_id: UUID) -> PipelineRunResponse:
         """Load the header of the run that owns a step, in one query.
 
@@ -14752,15 +14761,12 @@ class SqlZenStore(BaseZenStore):
             ExecutionRetentionBusyError: This replica has no retention
                 capacity available or this run is already being restored.
         """  # noqa: DOC502
-        run = self.get_run(run_id, hydrate=False)
+        run = self.get_run_header(run_id)
         if run.archive_bundle_id is None:
             return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
+        # `restore_run` checks the marker again under its own locks, so a
+        # restore that finished while this one waited reports a no-op.
         with self._RETENTION_CAPACITY.claim(key=("restore", run.id)):
-            run = self.get_run(run.id, hydrate=False)
-            if run.archive_bundle_id is None:
-                return RestoreResponse(
-                    run_id=run.id, outcome=RestoreOutcome.NOOP
-                )
             return restore_run(self.engine, self.archive_storage, run.id)
 
     def get_project(
