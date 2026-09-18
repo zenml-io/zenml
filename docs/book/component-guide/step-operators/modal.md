@@ -113,6 +113,7 @@ modal_settings = ModalStepOperatorSettings(
     # cloud="aws",        # optional, enterprise/team only
     # modal_environment="main",  # optional Modal environment name
     # timeout=86400,      # optional sandbox timeout in seconds
+    # stop_app=True,      # optional; stop the Modal app after the step finishes
 )
 
 resource_settings = ResourceSettings(
@@ -133,6 +134,7 @@ def my_modal_step():
 ```
 
 Important:
+- Set `stop_app=True` in `ModalStepOperatorSettings` if you want ZenML to stop the per-step Modal app after execution completes. Stopped apps move from 'deployed' to 'stopped' in the Modal dashboard while preserving full log history.
 - If you request GPUs with `ResourceSettings.gpu_count > 0`, you must also specify a GPU type via `ModalStepOperatorSettings.gpu`; otherwise the run will fail with a validation error.
 - If a GPU type is set but `gpu_count == 0`, ZenML treats the step as CPU-only and logs a warning that the GPU type is ignored.
 - If `gpu_count` is omitted and a GPU type is set, Modal uses one GPU of that type.
