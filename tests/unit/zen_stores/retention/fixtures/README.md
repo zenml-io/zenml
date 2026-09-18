@@ -3,7 +3,9 @@
 These immutable JSON documents were captured using the v1 capture/format code
 at `923ce9f1c167cad196f2e5cdeba0588915965524` on September 12, 2026, from
 synthetic static, dynamic, and legacy two-step executions. They contain no
-customer data or credentials.
+customer data or credentials. On September 18, 2026, before v1 was released,
+step `source_code` and `docstring` joined the archived columns and were added
+to these documents; no v1 object without them was ever written by a release.
 
 `test_compatibility.py` checks their recorded hashes, changes only project
 identity to fit the disposable database, and compresses them independently of

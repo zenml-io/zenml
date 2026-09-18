@@ -73,9 +73,14 @@ class RunRecord(ArchivedRecord):
 class StepRecord(ArchivedRecord):
     """Step detail plus the projections kept in SQL while archived."""
 
+    # Source code and docstrings are only returned by hydrated reads, and
+    # only inherited from cache candidates and replay originals, all of which
+    # require an unarchived step. They are usually a step's largest payload.
     archived_columns: ClassVar[tuple[str, ...]] = (
         "exception_info",
         "step_configuration",
+        "source_code",
+        "docstring",
     )
     project_id: UUID
     pipeline_run_id: UUID
@@ -83,6 +88,8 @@ class StepRecord(ArchivedRecord):
     name: str
     exception_info: Optional[str]
     step_configuration: Optional[str]
+    source_code: Optional[str]
+    docstring: Optional[str]
     step_type: Optional[str]
     substitutions: Dict[str, str]
 

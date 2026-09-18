@@ -125,6 +125,7 @@ def test_archive_restore_round_trip(
         step = session.get(StepRunSchema, ids.consumer)
         assert run.orchestrator_environment is None
         assert step.step_configuration is None and step.exception_info is None
+        assert step.source_code is None and step.docstring is None
         assert step.archive_bundle_id == bundle_id
         bundle = session.get(ArchiveBundleSchema, bundle_id)
         assert bundle.run_id == ids.run and bundle.restored_at is None

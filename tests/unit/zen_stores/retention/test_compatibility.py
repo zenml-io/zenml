@@ -28,9 +28,9 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 FIXTURES = Path(__file__).with_name("fixtures")
 V1_HASHES = {
-    "static": "2ae5257dc7aeca814469a32c97fb53e803e4ded65cc2cea0f149d718d4984973",
-    "dynamic": "4a0527cca913df79454c9b4c79b8ec2ca0b96cc33f5eb0cc720ed1f895a2388f",
-    "legacy": "200b6f22d50feab1877c3287e61ee264cbbd413fa23d6992f185b4e6daced6e3",
+    "static": "6042e6ab29884ff5ac0a5f12467eb8a8dc6a678f85a25ccba68eae25c9c4c691",
+    "dynamic": "a5609ebe6618b6594e70775284a1cf5986980fb1411fdc1226972d83a8df2cdf",
+    "legacy": "9055e0ec0a1db32aa55c89f0290f0506294d4e6b6479a258b8ad3658570280e4",
 }
 
 

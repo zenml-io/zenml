@@ -826,6 +826,8 @@ def _clear_detail(
             .values(
                 exception_info=None,
                 step_configuration=None,
+                source_code=None,
+                docstring=None,
                 archive_bundle_id=bundle_id,
                 step_type=bindparam("projected_type"),
                 substitutions=bindparam("projected_substitutions"),
