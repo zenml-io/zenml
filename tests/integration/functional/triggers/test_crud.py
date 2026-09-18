@@ -34,7 +34,11 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 def _create_runnable_snapshot(
-    client: Client, pipeline_id: uuid.UUID
+    client: Client,
+    pipeline_id: uuid.UUID,
+    *,
+    name: str | None = None,
+    source_snapshot_id: uuid.UUID | None = None,
 ) -> PipelineSnapshotResponse:
     project_id = client.active_project.id
     build = client.zen_store.create_build(
@@ -50,6 +54,7 @@ def _create_runnable_snapshot(
     return client.zen_store.create_snapshot(
         PipelineSnapshotRequest(
             project=project_id,
+            name=name,
             run_name_template=sample_name("trigger-filter-snapshot"),
             pipeline_configuration=PipelineConfiguration(
                 name=sample_name("trigger-filter-config")
@@ -60,6 +65,7 @@ def _create_runnable_snapshot(
             client_version="0.1.0",
             server_version="0.1.0",
             is_dynamic=False,
+            source_snapshot=source_snapshot_id,
         )
     )
 
@@ -320,19 +326,40 @@ def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
             project=project_id,
         )
     )
-    snapshots = [
-        _create_runnable_snapshot(clean_client, first_pipeline.id),
-        _create_runnable_snapshot(clean_client, first_pipeline.id),
-        _create_runnable_snapshot(clean_client, second_pipeline.id),
+    source_snapshots = [
+        _create_runnable_snapshot(
+            clean_client,
+            first_pipeline.id,
+            name=sample_name("trigger-filter-source"),
+        ),
+        _create_runnable_snapshot(
+            clean_client,
+            first_pipeline.id,
+            name=sample_name("trigger-filter-source"),
+        ),
+        _create_runnable_snapshot(
+            clean_client,
+            second_pipeline.id,
+            name=sample_name("trigger-filter-source"),
+        ),
+    ]
+    executable_snapshots = [
+        _create_runnable_snapshot(
+            clean_client,
+            source_snapshot.pipeline_id,
+            source_snapshot_id=source_snapshot.id,
+        )
+        for source_snapshot in source_snapshots
     ]
     triggers = [
         clean_client.create_schedule_trigger(
             name=sample_name("trigger-filter"),
             cron_expression="* * * * *",
+            active=index != 0,
         )
-        for _ in snapshots
+        for index, _ in enumerate(executable_snapshots)
     ]
-    for trigger, snapshot in zip(triggers, snapshots):
+    for trigger, snapshot in zip(triggers, executable_snapshots):
         store.attach_trigger_to_snapshot(
             trigger_id=trigger.id,
             snapshot_id=snapshot.id,
@@ -342,7 +369,13 @@ def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
         pipeline_id=str(first_pipeline.id)
     )
     snapshot_triggers = clean_client.list_schedule_triggers(
-        snapshot_id=str(snapshots[0].id)
+        snapshot_id=str(source_snapshots[0].id)
+    )
+    executable_snapshot_triggers = clean_client.list_schedule_triggers(
+        snapshot_id=str(executable_snapshots[0].id)
+    )
+    sdk_snapshot_triggers = clean_client.list_snapshot_triggers(
+        snapshot_id=source_snapshots[0].id,
     )
 
     assert {trigger.id for trigger in pipeline_triggers.items} == {
@@ -352,6 +385,22 @@ def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
     assert {trigger.id for trigger in snapshot_triggers.items} == {
         triggers[0].id
     }
+    assert {trigger.id for trigger in executable_snapshot_triggers.items} == {
+        triggers[0].id
+    }
+    assert {trigger.id for trigger in sdk_snapshot_triggers.items} == {
+        triggers[0].id
+    }
+    assert sdk_snapshot_triggers.items[0].active is False
+
+    store.delete_trigger(triggers[0].id, soft=True)
+
+    assert (
+        clean_client.list_snapshot_triggers(
+            snapshot_id=source_snapshots[0].id,
+        ).total
+        == 0
+    )
 
 
 def test_run_associations(clean_client):
