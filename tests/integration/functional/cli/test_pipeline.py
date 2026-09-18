@@ -26,6 +26,7 @@ from zenml.config import DockerSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.models import (
+    Page,
     PipelineBuildBase,
     PipelineBuildRequest,
 )
@@ -537,14 +538,76 @@ def test_pipeline_build_delete(clean_client: "Client"):
     assert runner.invoke(delete_command, [str(build_id), "-y"]).exit_code == 1
 
 
-def test_pipeline_snapshot_delete(clean_client: "Client"):
+def test_pipeline_snapshot_delete(clean_client: "Client", mocker):
     """Test that `zenml pipeline snapshots delete` works as expected."""
     snapshot_id = pipeline_instance.create_snapshot(name="test_snapshot").id
+    trigger_lookup = mocker.patch.object(Client, "list_snapshot_triggers")
     runner = cli_runner()
     delete_command = (
         cli.commands["pipeline"].commands["snapshot"].commands["delete"]
     )
     result = runner.invoke(delete_command, [str(snapshot_id), "-y"])
     assert result.exit_code == 0
+    trigger_lookup.assert_not_called()
     with pytest.raises(KeyError):
         clean_client.get_snapshot(str(snapshot_id))
+
+
+def test_pipeline_snapshot_delete_warns_about_attached_triggers(
+    clean_client: "Client", mocker
+):
+    """Test that snapshot deletion warns about attached triggers."""
+    snapshot = pipeline_instance.create_snapshot(name="attached_snapshot")
+    active_trigger = clean_client.create_schedule_trigger(
+        name="active-trigger",
+        active=True,
+        cron_expression="* * * * *",
+    )
+    inactive_trigger = clean_client.create_schedule_trigger(
+        name="inactive-trigger",
+        active=False,
+        cron_expression="* * * * *",
+    )
+    trigger_page = Page(
+        index=1,
+        max_size=20,
+        total_pages=1,
+        total=2,
+        items=[active_trigger, inactive_trigger],
+    )
+    trigger_lookup = mocker.patch.object(
+        Client,
+        "list_snapshot_triggers",
+        return_value=trigger_page,
+    )
+    delete_snapshot = mocker.patch.object(Client, "delete_snapshot")
+
+    runner = cli_runner()
+    delete_command = (
+        cli.commands["pipeline"].commands["snapshot"].commands["delete"]
+    )
+    result = runner.invoke(delete_command, [str(snapshot.id)], input="n\n")
+
+    assert result.exit_code == 0
+    assert "active-trigger" in result.output
+    assert "inactive-trigger" in result.output
+    assert "remove these trigger attachments" in " ".join(
+        result.output.split()
+    )
+    trigger_lookup.assert_called_once_with(
+        snapshot_id=snapshot.id,
+        hydrate=False,
+    )
+    delete_snapshot.assert_not_called()
+
+    trigger_lookup.reset_mock()
+    result = runner.invoke(delete_command, [str(snapshot.id)], input="y\n")
+
+    assert result.exit_code == 0
+    trigger_lookup.assert_called_once_with(
+        snapshot_id=snapshot.id,
+        hydrate=False,
+    )
+    delete_snapshot.assert_called_once_with(
+        name_id_or_prefix=str(snapshot.id),
+    )

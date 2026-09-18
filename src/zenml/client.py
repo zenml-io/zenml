@@ -92,6 +92,7 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -4007,6 +4008,40 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_run_template(template_id=template_id)
 
     # ------------------------------- Triggers ---------------------------------
+
+    def list_snapshot_triggers(
+        self,
+        snapshot_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers attached to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            project: The project name or ID to filter by.
+            hydrate: Whether to include metadata fields in the response.
+
+        Returns:
+            A page of triggers attached to the snapshot.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                snapshot_id=str(snapshot_id),
+                is_archived=False,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+            ),
+            hydrate=hydrate,
+        )
 
     def create_schedule_trigger(
         self,

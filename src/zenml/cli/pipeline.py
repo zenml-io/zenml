@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
 import click
@@ -40,6 +40,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
     RunWaitConditionFilter,
     RunWaitConditionResponse,
     ScheduleFilter,
@@ -51,6 +52,55 @@ from zenml.utils.json_utils import parse_value_for_schema
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
+
+
+def _confirm_snapshot_removal(
+    client: Client,
+    snapshot: PipelineSnapshotResponse,
+    *,
+    action: Literal["delete", "recreate"],
+) -> bool:
+    """Confirm an operation that removes an existing snapshot.
+
+    Args:
+        client: The client used to look up attached triggers.
+        snapshot: The snapshot that will be removed.
+        action: The action presented to the user, such as `delete` or
+            `recreate`.
+
+    Returns:
+        Whether the user confirmed the operation.
+    """
+    attached_triggers = client.list_snapshot_triggers(
+        snapshot_id=snapshot.id,
+        hydrate=False,
+    )
+    snapshot_display_name = snapshot.name or str(snapshot.id)
+
+    if not attached_triggers.total:
+        return cli_utils.confirmation(
+            f"Are you sure you want to {action} snapshot "
+            f"`{snapshot_display_name}`?"
+        )
+
+    trigger_lines = [
+        f"  - `{trigger.name}` ({trigger.type.value}, "
+        f"{'active' if trigger.active else 'inactive'})"
+        for trigger in attached_triggers
+    ]
+    remaining_trigger_count = attached_triggers.total - attached_triggers.size
+    if remaining_trigger_count:
+        trigger_lines.append(f"  - ... and {remaining_trigger_count} more")
+
+    confirmation_message = (
+        f"Snapshot `{snapshot_display_name}` is attached to the following "
+        "triggers:\n\n"
+        + "\n".join(trigger_lines)
+        + f"\n\nThe snapshot will be removed when you {action} it, which "
+        "will also remove these trigger attachments. Are you sure you want "
+        "to continue?"
+    )
+    return cli_utils.confirmation(confirmation_message)
 
 
 def _import_pipeline(source: str) -> Pipeline:
@@ -1888,16 +1938,27 @@ def delete_pipeline_snapshot(
         snapshot_name_or_id: The name or ID of the snapshot to delete.
         yes: If set, don't ask for confirmation.
     """
+    client = Client()
     if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete snapshot `{snapshot_name_or_id}`?"
-        )
-        if not confirmation:
+        try:
+            snapshot_model = client.get_snapshot(
+                snapshot_name_or_id,
+                hydrate=False,
+            )
+        except KeyError as e:
+            cli_utils.exception(e)
+            return
+
+        if not _confirm_snapshot_removal(
+            client=client,
+            snapshot=snapshot_model,
+            action="delete",
+        ):
             cli_utils.declare("Snapshot deletion canceled.")
             return
 
     try:
-        Client().delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
+        client.delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
     except KeyError as e:
         cli_utils.exception(e)
     else:

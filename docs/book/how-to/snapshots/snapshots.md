@@ -208,16 +208,32 @@ Learn how to get a bearer token for the curl commands:
 ## Deleting Pipeline Snapshots
 
 You can delete a snapshot using the CLI:
+
 ```bash
 zenml pipeline snapshot delete <SNAPSHOT-NAME-OR-ID>
 ```
 
+Triggers can depend on a snapshot to start automated pipeline runs. Deleting a snapshot that is still attached to triggers can therefore interrupt that automation. To help prevent accidental disruption, the CLI lists the affected triggers and whether each one is active or inactive before asking you to confirm the deletion. The `--yes` option skips this safety check and the confirmation prompt.
+
 You can also delete a snapshot using the Python SDK:
+
 ```python
 from zenml.client import Client
 
-Client().delete_snapshot(name_id_or_prefix=<SNAPSHOT-NAME-OR-ID>)
+client = Client()
+snapshot = client.get_snapshot("<NAME-OR-ID>", hydrate=False)
+
+attached_triggers = client.list_snapshot_triggers(snapshot_id=snapshot.id)
+if attached_triggers.total:
+    for trigger in attached_triggers:
+        status = "active" if trigger.active else "inactive"
+        print(f"{trigger.name} ({status})")
+    raise RuntimeError("Snapshot is still used by triggers.")
+
+client.delete_snapshot(name_id_or_prefix=snapshot.id)
 ```
+
+`list_snapshot_triggers` returns a paginated list of triggers attached to the snapshot, including inactive triggers, and `total` reports the total number of attached triggers.
 
 ## Advanced Usage: Running Snapshots from Other Pipelines
 
