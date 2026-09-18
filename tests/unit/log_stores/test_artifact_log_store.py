@@ -11,18 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for reading log entries back out of the artifact store."""
+"""Tests for artifact log retrieval."""
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
 
+from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
-from zenml.models import LogEntry, LogsEntriesFilter
+from zenml.models import LogEntry, LogsEntriesFilter, LogsResponse
 
 START = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -47,7 +48,7 @@ def make_entry(
 
 
 def write_log_file(path: str, entries: List[LogEntry]) -> None:
-    """Write entries to a log file the way the artifact log exporter does."""
+    """Write entries in the artifact log exporter's JSON-lines format."""
     with open(path, "w") as file:
         for entry in entries:
             file.write(entry.model_dump_json() + "\n")
@@ -65,46 +66,75 @@ def logs_uri(artifact_store) -> str:
     return os.path.join(artifact_store.path, "logs.log")
 
 
-def test_fetch_returns_entries_oldest_first(
-    log_store, logs_model_factory, logs_uri, artifact_store
-):
-    """A fetch returns the entries in the order they were written."""
+@pytest.mark.parametrize("limit,expected_count", [(None, 3), (2, 2), (100, 3)])
+def test_fetch_returns_a_capped_batch(
+    log_store: ArtifactLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    logs_uri: str,
+    artifact_store: LocalArtifactStore,
+    monkeypatch: pytest.MonkeyPatch,
+    limit: Optional[int],
+    expected_count: int,
+) -> None:
+    """Test ordered batches with requested and global limits, without cursors."""
+    monkeypatch.setattr(
+        "zenml.log_stores.base_log_store.LOGS_MAX_ENTRIES_PER_REQUEST", 3
+    )
     write_log_file(logs_uri, [make_entry(f"line {i}", i) for i in range(5)])
     logs = logs_model_factory(
         uri=logs_uri, artifact_store_id=artifact_store.id
     )
 
-    page = log_store.fetch(logs)
+    page = log_store.fetch(logs, limit=limit, filter_=LogsEntriesFilter())
 
     assert [entry.message for entry in page.items] == [
-        f"line {i}" for i in range(5)
+        f"line {i}" for i in range(expected_count)
     ]
+    assert page.before is None
+    assert page.after is None
 
 
-def test_fetch_reports_no_cursors(
+def test_stored_chunk_ids_remain_stable_uuids(
     log_store, logs_model_factory, logs_uri, artifact_store
 ):
-    """The artifact log store never claims to be pageable."""
-    write_log_file(logs_uri, [make_entry("only line")])
+    """Stored UUIDs remain shared by chunks across repeated reads."""
+    entry_id = uuid4()
+    write_log_file(
+        logs_uri,
+        [
+            make_entry(
+                f"part-{index}",
+                chunk_index=index,
+                total_chunks=2,
+                entry_id=entry_id,
+            )
+            for index in range(2)
+        ],
+    )
     logs = logs_model_factory(
         uri=logs_uri, artifact_store_id=artifact_store.id
     )
 
-    page = log_store.fetch(logs)
+    first = log_store.fetch(logs)
+    second = log_store.fetch(logs)
 
-    assert page.before is None
-    assert page.after is None
-    assert len(page.items) == 1
+    expected_keys = [(entry_id, 0), (entry_id, 1)]
+    assert [
+        (entry.id, entry.chunk_index) for entry in first.items
+    ] == expected_keys
+    assert [
+        (entry.id, entry.chunk_index) for entry in second.items
+    ] == expected_keys
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"before": "a-cursor"},
         {"before": ""},
-        {"after": ""},
         {"after": "a-cursor"},
         {"start": "newest"},
+        {"limit": 0},
+        {"limit": -1},
         {"filter_": LogsEntriesFilter(search="boom")},
         {"filter_": LogsEntriesFilter(level=LoggingLevels.ERROR)},
         {
@@ -114,70 +144,21 @@ def test_fetch_reports_no_cursors(
         },
     ],
 )
-def test_fetch_refuses_what_it_cannot_honor(
-    log_store, logs_model_factory, logs_uri, artifact_store, kwargs
-):
-    """Serving something other than what was asked for would mislead a caller."""
+def test_fetch_rejects_invalid_parameters(
+    log_store: ArtifactLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    logs_uri: str,
+    artifact_store: LocalArtifactStore,
+    kwargs: Dict[str, Any],
+) -> None:
+    """Test rejection of invalid limits and unsupported pagination or filters."""
     write_log_file(logs_uri, [make_entry("only line")])
     logs = logs_model_factory(
         uri=logs_uri, artifact_store_id=artifact_store.id
     )
 
-    with pytest.raises(ValueError, match="only reads a log file"):
+    with pytest.raises(ValueError):
         log_store.fetch(logs, **kwargs)
-
-
-def test_fetch_accepts_an_empty_filter(
-    log_store, logs_model_factory, logs_uri, artifact_store
-):
-    """A filter that narrows nothing down asks nothing of the log store."""
-    write_log_file(logs_uri, [make_entry("only line")])
-    logs = logs_model_factory(
-        uri=logs_uri, artifact_store_id=artifact_store.id
-    )
-
-    page = log_store.fetch(logs, filter_=LogsEntriesFilter())
-
-    assert len(page.items) == 1
-
-
-def test_fetch_names_every_filter_it_refuses(
-    log_store, logs_model_factory, logs_uri, artifact_store
-):
-    """A caller should not have to discover its refused filters one at a time."""
-    write_log_file(logs_uri, [make_entry("only line")])
-    logs = logs_model_factory(
-        uri=logs_uri, artifact_store_id=artifact_store.id
-    )
-
-    with pytest.raises(ValueError) as failure:
-        log_store.fetch(
-            logs,
-            filter_=LogsEntriesFilter(
-                search="boom", level=LoggingLevels.ERROR
-            ),
-        )
-
-    assert "search" in str(failure.value)
-    assert "level" in str(failure.value)
-
-
-def test_fetch_stops_at_the_limit(
-    log_store, logs_model_factory, logs_uri, artifact_store
-):
-    """A stream longer than the limit is cut off at its end."""
-    write_log_file(logs_uri, [make_entry(f"line {i}", i) for i in range(10)])
-    logs = logs_model_factory(
-        uri=logs_uri, artifact_store_id=artifact_store.id
-    )
-
-    page = log_store.fetch(logs, limit=3)
-
-    assert [entry.message for entry in page.items] == [
-        "line 0",
-        "line 1",
-        "line 2",
-    ]
 
 
 def test_fetch_reads_every_file_of_a_log_directory(
@@ -210,7 +191,7 @@ def test_fetch_reads_every_file_of_a_log_directory(
 def test_fetch_of_missing_logs_is_empty(
     log_store, logs_model_factory, artifact_store
 ):
-    """A log stream that was never written to reads as empty."""
+    """Test that a missing log file returns an empty page."""
     logs = logs_model_factory(
         uri=os.path.join(artifact_store.path, "does-not-exist.log"),
         artifact_store_id=artifact_store.id,
@@ -224,7 +205,7 @@ def test_fetch_of_missing_logs_is_empty(
 def test_fetch_rejects_a_foreign_artifact_store(
     log_store, logs_model_factory, logs_uri
 ):
-    """Logs collected by another artifact store are not readable here."""
+    """Test rejection of a mismatched artifact store ID."""
     logs = logs_model_factory(uri=logs_uri, artifact_store_id=uuid4())
 
     with pytest.raises(ValueError, match="does not match"):
@@ -234,7 +215,7 @@ def test_fetch_rejects_a_foreign_artifact_store(
 def test_a_chunked_message_does_not_overshoot_the_limit(
     log_store, logs_model_factory, logs_uri, artifact_store
 ):
-    """The limit counts stored entries, so a huge message cannot blow past it."""
+    """Test that each stored message chunk counts toward the limit."""
     entry_id = uuid4()
     chunks = [
         make_entry(

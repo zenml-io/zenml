@@ -155,13 +155,17 @@ Logs are automatically fetched from Datadog when viewing step details in the Zen
 
 #### Pagination and search
 
-Each fetch makes one Datadog search request, returning up to 1000 entries (or a smaller requested `limit`). An oldest-first scan exposes Datadog's native next token as `after`; a scan starting at `newest` exposes it as `before`. Each page is returned in chronological order. There is no generated cursor for the opposite direction.
+Each fetch makes one Datadog search request for up to 1000 entries. `start="oldest"` returns an `after` cursor for newer entries; `start="newest"` returns a `before` cursor for older entries. These cursors use Datadog's native next token. Entries within each page are ordered from oldest to newest. Follow the cursor until it is absent, even if a page contains fewer entries than requested.
 
-The cursor contains Datadog's token plus a signature bound to the log store, stream, query, and direction. Keep the same filters and pass the response's `until` value on every continuation request. When omitted on the first request, `until` is set to the current UTC time. This fixes the time bounds while paging, though Datadog may still index late-arriving events within that window. An empty, altered, or mismatched cursor returns `400`. Rotating the application key invalidates existing cursors; start a new read afterward.
+Continue by passing only the returned cursor. It retains the query, page size, and fixed time bounds. If omitted initially, `until` defaults to the current UTC time; the response includes this bound for reference. Datadog may still index late-arriving events within the window.
 
-`search` is text to find in the message, not a Datadog query expression. A single term such as `message` uses `message:*message*`; multiple words such as `message 1` use the phrase query `message:"message 1"`. This lets `message` find both `log message 1` and `log message 2`, while the phrase `message 1` selects the first. All searches remain scoped to the configured service and ZenML log stream.
+Invalid cursors or conflicting parameters return `400`. To change the filters, direction, or page size, start a new request without a cursor.
 
-Matching is performed entirely by Datadog. Its index determines token boundaries, case sensitivity, and punctuation handling. A quoted phrase is not an arbitrary substring test across spaces or special characters, and some punctuation cannot be searched in messages. ZenML escapes query syntax and does not apply a second text filter to the returned page. See [Datadog's search syntax](https://docs.datadoghq.com/logs/explorer/search_syntax/) for these limitations.
+`search` matches text in Datadog's message field. Single terms use wildcard matching, while multiple words use phrase matching. Searches are limited to the configured service and log stream.
+
+Datadog's tokenization, case sensitivity, and punctuation rules apply, so matching can differ from a literal substring search. Exception details appended by ZenML to the displayed message are outside this search. See [Datadog's search syntax](https://docs.datadoghq.com/logs/explorer/search_syntax/) for details.
+
+Entry UUIDs are derived from Datadog's event IDs and remain stable across reads and log store instances. Use them to deduplicate overlapping pages.
 
 #### In Datadog
 
@@ -199,7 +203,9 @@ If you're hitting Datadog's rate limits while writing logs:
 - Decrease `max_export_batch_size` for more frequent, smaller batches
 - Consider log sampling for high-volume pipelines
 
-The Logs Search API used for reading has its own, separate rate limit. A page holds up to 1000 entries, Datadog's own search maximum, and each page costs one search request. Pages can be shorter; follow the returned token until it is absent. The entries endpoint returns `429` when Datadog rate limits a search, with `Retry-After` when Datadog supplies a numeric delay, `503` for connection failures or backend outages, and `502` for other rejected or malformed upstream responses.
+The Logs Search API has a separate rate limit for reads. HTTP `429` responses include `Retry-After` when Datadog provides a retry delay. Retry the original request and cursor after that delay.
+
+Connection failures and outages return `503`; other backend errors return `502`. Timeout or warning metadata indicating incomplete results also produces an error. Direct SDK fetches raise the corresponding log store exception.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.datadog.datadog_log_store).
 

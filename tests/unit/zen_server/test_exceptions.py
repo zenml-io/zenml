@@ -70,7 +70,6 @@ def get_exception(exception_type: Type[Exception]) -> Exception:
         ValidationError,
         ValueError,
         LogStoreError,
-        LogStoreRateLimitError,
         LogStoreUnavailableError,
         RuntimeError,
         NotImplementedError,
@@ -232,14 +231,24 @@ def test_unpack_unknown_error(error_code, exception_type):
     assert reconstructed_exception.args == ("error message",)
 
 
-def test_log_store_retry_after_survives_round_trip() -> None:
-    """SDK callers receive the provider backoff delay through HTTP."""
-    original = LogStoreRateLimitError("rate limited", retry_after=17)
+@pytest.mark.parametrize("retry_after", [None, 0, 17])
+def test_log_store_retry_after_survives_round_trip(
+    retry_after: int | None,
+) -> None:
+    """Test preservation of Retry-After during exception reconstruction."""
+    original = LogStoreRateLimitError("rate limited", retry_after=retry_after)
     http = http_exception_from_error(original)
+    assert http.status_code == 429
+    headers = http.headers or {}
+    if retry_after is None:
+        assert "Retry-After" not in headers
+    else:
+        assert headers["Retry-After"] == str(retry_after)
     response = requests.Response()
     response.status_code = http.status_code
-    response.headers.update(http.headers)
+    response.headers.update(headers)
     response._content = json.dumps({"detail": http.detail}).encode()
     restored = exception_from_response(response)
     assert isinstance(restored, LogStoreRateLimitError)
-    assert restored.retry_after == 17
+    assert restored.args == original.args
+    assert restored.retry_after == retry_after

@@ -61,17 +61,14 @@ router = APIRouter(
 
 
 def _verify_log_read_permission(logs: LogsResponse) -> None:
-    """Verify that the authenticated user may read a log stream.
-
-    A log stream has no permissions of its own: it is readable exactly when the
-    pipeline run it was collected for is.
+    """Verify read access to a log stream's pipeline run.
 
     Args:
         logs: The log stream to authorize.
 
     Raises:
-        IllegalOperationError: If the log stream is not attached to anything
-            that could authorize it.
+        IllegalOperationError: If the stream has no associated run, step,
+            or hook invocation.
     """
     store = zen_store()
 
@@ -206,21 +203,16 @@ def get_logs_entries(
     filter_: LogsEntriesFilter = Depends(make_dependable(LogsEntriesFilter)),
     _: AuthContext = Security(authorize),
 ) -> LogsEntriesResponse:
-    """Returns a page of the entries of a log stream.
+    """Return a page of log entries.
 
     Args:
         logs_id: ID of the log stream to read.
-        start: Which end of the stream to start reading from. Omit to let
-            the log store pick. This picks where the read begins, not how
-            entries are ordered: a page runs from oldest to newest either
-            way, so a limit of ten gives the first ten entries from `oldest`
-            and the last ten from `newest`.
-        limit: Maximum number of entries to return. Defaults to a page size
-            chosen by the log store holding the entries.
+        start: Read from the oldest or newest end of the stream. Defaults
+            to the log store's choice. Pages always use chronological order.
+        limit: Maximum entries to return. Defaults to the log store's page size.
         before: Cursor towards older entries, from a previous response.
-        after: Cursor towards newer entries, from a previous response. Pass
-            only one of `before` and `after`. A store that cannot go that
-            way answers 400.
+        after: Cursor towards newer entries, from a previous response.
+            Mutually exclusive with `before`. Unsupported directions return 400.
         filter_: Filters to apply while retrieving the entries.
 
     Returns:

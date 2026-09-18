@@ -63,8 +63,8 @@ class LogStoreRateLimitError(LogStoreError):
         """Initialize the rate limit error.
 
         Args:
-            message: A description safe to return to API clients.
-            retry_after: Seconds to wait before retrying, if known.
+            message: A user-facing error message.
+            retry_after: Retry delay in seconds, if available.
         """
         super().__init__(message)
         self.retry_after = retry_after

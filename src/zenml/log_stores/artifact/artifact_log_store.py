@@ -335,22 +335,22 @@ class ArtifactLogStore(OtelLogStore):
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,
     ) -> LogsEntriesResponse:
-        """Fetch the entries of a log stream from the artifact store.
+        """Fetch a batch of log entries from the artifact store.
 
         Args:
             logs_model: The logs model containing uri and artifact_store_id.
-            start: Which end of the stream to start reading from. Omit it,
-                or pass `"oldest"`. `"newest"` is refused.
+            start: Initial position. Only None and `oldest` are supported.
             limit: Maximum number of log entries to return.
             before: Not supported.
             after: Not supported.
             filter_: Not supported.
 
         Returns:
-            The oldest entries of the stream, up to the limit, with no cursors.
+            The oldest entries up to the limit, without cursors.
 
         Raises:
-            ValueError: If the logs model does not belong to this log store.
+            ValueError: If the logs model is invalid, the limit is not positive,
+                or unsupported parameters are provided.
         """
         if not logs_model.uri:
             raise ValueError(

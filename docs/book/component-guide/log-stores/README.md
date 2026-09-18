@@ -55,25 +55,24 @@ Once configured, logs are automatically captured during pipeline execution.
 
 ### Viewing Logs
 
-You can view logs through several methods:
+You can view step logs in the ZenML dashboard or in your logging provider's UI. To retrieve them programmatically, use the Python SDK or REST API.
 
-1. **ZenML Dashboard**: Navigate to a pipeline run and view step logs directly in the UI.
+#### Python SDK
 
-2. **Programmatically**: You can fetch logs directly using the log store:
+Use the log store that captured the logs:
 
 ```python
 from zenml.client import Client
-from zenml.models import LogsEntriesFilter
 from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
 
-# Get the run you want logs for. A run collects several log streams, one per
-# source: "orchestrator" for the run itself, "step" for each of its steps.
 run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
-logs = search_logs_by_source(run.log_collection, "orchestrator")
+step_run = run.steps["<STEP_NAME>"]
+logs = search_logs_by_source(step_run.log_collection or [], "step")
+if logs is None:
+    raise ValueError("This step has no execution log stream.")
 
-# Note: The log store must match the one that captured the logs
 log_store = client.active_stack.log_store
 page = log_store.fetch(logs_model=logs, limit=1000)
 
@@ -81,37 +80,48 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way.
+`fetch()` returns a page with entries in `items`, ordered from oldest to newest. Set `start="oldest"` or `start="newest"` to choose the first page, or omit it to use the backend's default.
 
-A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page. Cursors preserve the backend's native continuation tokens; ZenML does not invent a reverse cursor when the backend only supports one direction. Keep the same filters for each continuation and, when the response supplies `until`, pass that value back to keep the time window fixed.
+For backends with pagination, pass the returned `before` cursor to read older entries or `after` to read newer ones. Only directions supported by the backend's native tokens are available; `None` means there is no continuation in that direction.
 
-```python
-# Start at the end of a stream and walk back through its history.
-page = log_store.fetch(logs_model=logs, start="newest")
-while page.before:
-    page = log_store.fetch(
-        logs_model=logs,
-        before=page.before,
-        filter_=LogsEntriesFilter(until=page.until),
-    )
-```
-
-Filters are pushed down into the backend's own query. Search uses the backend's matching rules, including its tokenization, case sensitivity, and punctuation handling; it does not guarantee a literal substring match:
+For example, with Datadog, filter the first request and use its cursor to continue:
 
 ```python
 from zenml.models import LogsEntriesFilter
 
 page = log_store.fetch(
     logs_model=logs,
+    start="newest",
     filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
 )
+while True:
+    for entry in page.items:
+        print(entry.message)
+    if page.before is None:
+        break
+    page = log_store.fetch(logs_model=logs, before=page.before)
 ```
 
-3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. The existing run and step log endpoints still accept their original parameters and return lists of entries. They return a single batch from the backend; use the dedicated entries endpoint for pagination.
+Datadog cursors retain the filters, page size, and fixed time bounds. The response's `until` shows the upper bound; it does not need to be sent back. Search follows the backend's matching rules, which may differ from a literal substring match.
 
-Runner logs use the workload manager, as they do through the existing run-log endpoint. They return one batch without cursors; apply filtering and pagination in the client. Requesting unsupported runner filters or cursors returns `400`.
+The artifact log store returns one batch for client-side filtering and pagination. It does not support these filters or `start="newest"`.
 
-4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+Each entry has a UUID `id`. IDs remain stable for Datadog events and structured artifact logs. Deduplicate entries within a stream by `(id, chunk_index)` to preserve chunks of the same message. Shared log types, including `LogEntry`, are available from `zenml.models`.
+
+#### REST API
+
+`GET /api/v1/logs/{logs_id}/entries` accepts `start`, `limit`, `before`, `after`, `search`, `level`, `since`, and `until` as query parameters. For example:
+
+```http
+GET /api/v1/logs/<LOGS_ID>/entries?start=newest&limit=50
+GET /api/v1/logs/<LOGS_ID>/entries?before=<CURSOR>
+```
+
+Invalid or unsupported filters and cursors return `400`; backends without log retrieval return `501`. Shared log store errors return `429` for throttling, `503` for unavailability, or `502` for other backend errors. When provided, `Retry-After` specifies the delay in seconds before retrying the original request. Direct SDK calls raise the corresponding `LogStoreError` subclass.
+
+Runner logs return one batch through the workload manager. Apply filtering and pagination in the client; unsupported runner filters or cursors return `400`.
+
+The existing run and step log endpoints continue to return a single list of entries. Use the dedicated entries endpoint for pagination.
 
 ### Log Store Flavors
 

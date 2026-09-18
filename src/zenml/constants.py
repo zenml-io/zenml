@@ -642,9 +642,7 @@ LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
 
-# Hard ceiling on the number of entries a single log fetch may return. A
-# caller that sets no limit gets this many, unless the log store's backend
-# is smaller.
+# Maximum number of log entries returned per request.
 LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
     ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
 )

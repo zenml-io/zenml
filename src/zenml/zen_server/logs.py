@@ -35,7 +35,7 @@ def fetch_runner_logs(
     after: Optional[str] = None,
     filter_: Optional[LogsEntriesFilter] = None,
 ) -> LogsEntriesResponse:
-    """Read runner logs using the workload that launched the run.
+    """Fetch runner logs from the workload manager.
 
     Args:
         run: The authorized, hydrated pipeline run.

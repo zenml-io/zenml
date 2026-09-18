@@ -503,29 +503,24 @@ def fetch_logs(
     after: Optional[str] = None,
     filter_: Optional[LogsEntriesFilter] = None,
 ) -> LogsEntriesResponse:
-    """Fetch a page of log entries from the log store that holds them.
-
-    This function is designed to be called from the server side where we can't
-    always instantiate the full Stack object due to missing integration dependencies.
-    Instead, it directly instantiates the appropriate log store based on the logs model.
+    """Fetch a page of log entries on the server.
 
     Args:
-        logs: The logs response model containing metadata about the logs.
+        logs: The log stream.
         zen_store: The zen store instance.
-        start: Which end of the stream to start reading from. Omit to let
-            the log store pick.
+        start: Starting point, `oldest` or `newest`. Defaults to the log
+            store's starting point.
         limit: Maximum number of log entries to return.
-        before: Cursor towards older entries, from a previous page.
-        after: Cursor towards newer entries, from a previous page.
-        filter_: Filters to apply while retrieving the entries.
+        before: Continuation cursor for older entries.
+        after: Continuation cursor for newer entries.
+        filter_: Log entry filters.
 
     Returns:
-        A page of log entries, oldest first, with cursors for the pages
-        around it that the store can serve. Empty if the logs are not backed
-        by any store.
+        A page of entries in chronological order. Empty if the stream has
+        no associated log store.
 
     Raises:
-        DoesNotExistException: If the log store doesn't exist or is not the right type.
+        DoesNotExistException: If the log store is missing or has the wrong type.
         NotImplementedError: If the log store's dependencies are not installed.
         RuntimeError: If the function is called from the client environment.
     """
@@ -536,8 +531,6 @@ def fetch_logs(
     )
 
     if ENV_ZENML_SERVER not in os.environ:
-        # This utility function should not be called from the client environment
-        # because it would cause instantiating the active log store again.
         raise RuntimeError(
             "This utility function is only supported in the server "
             "environment. Use the log store directly instead."
@@ -606,8 +599,7 @@ def fetch_logs(
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
-        # No cleanup here: the artifact store may be a cached instance shared
-        # with other requests, and cleaning it up would break them.
+        # Artifact stores may be shared between requests; leave them open.
         return log_store.fetch(
             logs_model=logs,
             start=start,

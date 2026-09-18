@@ -30,10 +30,7 @@ from zenml.models import LogsResponse, LogsResponseBody
 
 @pytest.fixture(scope="session", autouse=True)
 def auto_environment() -> Iterator[Tuple[SimpleNamespace, SimpleNamespace]]:
-    """Override the global auto_environment fixture with a lightweight stub.
-
-    Reading log entries never goes through a ZenML store, so these tests do not
-    need a provisioned test environment.
+    """Provide stubs without provisioning a test environment.
 
     Yields:
         The active environment and a connected client stub.
@@ -58,7 +55,7 @@ def artifact_store(tmp_path) -> LocalArtifactStore:
 
 @pytest.fixture
 def logs_model_factory():
-    """Build a logs response model without going through the store."""
+    """Build a logs response model without store access."""
 
     def _build(
         uri: Optional[str] = None,

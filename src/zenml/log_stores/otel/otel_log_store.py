@@ -314,16 +314,14 @@ class OtelLogStore(BaseLogStore):
         after: Optional[str] = None,
         filter_: Optional["LogsEntriesFilter"] = None,
     ) -> "LogsEntriesResponse":
-        """Fetch the entries of a log stream from the OpenTelemetry backend.
+        """Fetch log entries from an OpenTelemetry backend.
 
-        OTLP is a write-only protocol: it defines how to ship logs to a
-        collector, not how to read them back. Subclasses that know the query API
-        of a concrete backend override this.
+        OTLP does not support log retrieval. Subclasses must implement their
+        backend's query API.
 
         Args:
             logs_model: The logs model containing run and step metadata.
-            start: Which end of the stream to start reading from. Omit to
-                let a subclass that implements fetch pick.
+            start: Initial end of the stream, chosen by the subclass if omitted.
             limit: Maximum number of log entries to return.
             before: Cursor towards older entries, from a previous page.
             after: Cursor towards newer entries, from a previous page.
@@ -333,7 +331,7 @@ class OtelLogStore(BaseLogStore):
             Never returns.
 
         Raises:
-            NotImplementedError: Always, as OTLP has no read path.
+            NotImplementedError: Log retrieval is not supported by OTLP.
         """
         raise NotImplementedError(
             "Log fetching is not supported by the OTEL log store."

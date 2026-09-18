@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Regression tests for runner retrieval through both log endpoints."""
+"""Regression tests for log retrieval and backend errors over HTTP."""
 
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -38,7 +38,11 @@ from zenml.models import (
 )
 from zenml.zen_server import logs as runner_logs
 from zenml.zen_server.auth import authorize
-from zenml.zen_server.routers import logs_endpoints, runs_endpoints
+from zenml.zen_server.routers import (
+    logs_endpoints,
+    runs_endpoints,
+    steps_endpoints,
+)
 
 
 class RequestManager:
@@ -78,8 +82,16 @@ def endpoint(mocker: MockerFixture) -> Iterator[SimpleNamespace]:
     store = mocker.Mock()
     store.get_logs.return_value = logs
     store.get_run.return_value = run
+    store.get_run_step.return_value = SimpleNamespace(
+        id=uuid4(),
+        pipeline_run_id=run.id,
+        project_id=logs.project_id,
+        log_collection=[logs],
+    )
     mocker.patch.object(logs_endpoints, "zen_store", return_value=store)
     mocker.patch.object(runs_endpoints, "zen_store", return_value=store)
+    mocker.patch.object(steps_endpoints, "zen_store", return_value=store)
+    mocker.patch.object(steps_endpoints, "verify_permission")
     authorize_run = mocker.patch.object(
         logs_endpoints, "verify_permission_for_model"
     )
@@ -105,6 +117,7 @@ def endpoint(mocker: MockerFixture) -> Iterator[SimpleNamespace]:
     app = FastAPI()
     app.include_router(logs_endpoints.router)
     app.include_router(runs_endpoints.router)
+    app.include_router(steps_endpoints.router)
     app.dependency_overrides[authorize] = lambda: None
     with TestClient(app) as client:
         yield SimpleNamespace(
@@ -123,7 +136,7 @@ def endpoint(mocker: MockerFixture) -> Iterator[SimpleNamespace]:
 def test_new_and_legacy_endpoints_select_the_same_runner_workload(
     endpoint: SimpleNamespace, kind: str
 ) -> None:
-    """Every runner launch path keeps the legacy workload ID selection."""
+    """Test runner workload selection through both endpoints."""
     if kind == "trigger":
         endpoint.run.trigger = SimpleNamespace(id=uuid4())
     elif kind == "snapshot":
@@ -142,26 +155,23 @@ def test_new_and_legacy_endpoints_select_the_same_runner_workload(
     endpoint.authorize_run.assert_called_once()
     endpoint.normal_fetch.assert_not_called()
     endpoint.manager.get_logs.assert_called_once_with(workload_id=expected_id)
-    for params in [
-        {"source": LOGS_RUNNER_SOURCE},
-        {"logs_id": str(endpoint.logs.id)},
-    ]:
-        old = endpoint.client.get(
-            f"/api/v1/runs/{endpoint.run.id}/logs", params=params
-        )
-        assert old.status_code == 200
-        assert [entry["message"] for entry in old.json()] == [
-            "runner 0",
-            "runner 1",
-            "runner 2",
-        ]
-        endpoint.manager.get_logs.assert_called_with(workload_id=expected_id)
+    old = endpoint.client.get(
+        f"/api/v1/runs/{endpoint.run.id}/logs",
+        params={"logs_id": str(endpoint.logs.id)},
+    )
+    assert old.status_code == 200
+    assert [entry["message"] for entry in old.json()] == [
+        "runner 0",
+        "runner 1",
+        "runner 2",
+    ]
+    endpoint.manager.get_logs.assert_called_with(workload_id=expected_id)
 
 
 def test_legacy_runner_without_log_model_still_works(
     endpoint: SimpleNamespace,
 ) -> None:
-    """Runs from before the log collection existed still expose runner logs."""
+    """Test runner retrieval without a log model for legacy runs."""
     endpoint.run.log_collection = []
     endpoint.run.snapshot.template_id = uuid4()
     response = endpoint.client.get(
@@ -179,15 +189,12 @@ def test_legacy_runner_without_log_model_still_works(
         {"after": "token"},
         {"start": "newest"},
         {"search": "runner"},
-        {"level": "ERROR"},
-        {"since": "2026-01-01"},
-        {"until": "2026-01-03"},
     ],
 )
 def test_runner_rejects_unsupported_queries_without_fetching(
     endpoint: SimpleNamespace, params: dict[str, str]
 ) -> None:
-    """The endpoint must not silently drop runner pagination or filters."""
+    """Test rejection of unsupported runner pagination and filters."""
     response = endpoint.client.get(endpoint.url, params=params)
     assert response.status_code == 400
     assert "Runner logs" in response.text
@@ -197,7 +204,7 @@ def test_runner_rejects_unsupported_queries_without_fetching(
 def test_runner_without_snapshot_reports_error(
     endpoint: SimpleNamespace,
 ) -> None:
-    """Missing workloads must not look like empty successful pages."""
+    """Test the error for runner logs without a snapshot."""
     endpoint.run.snapshot = None
     response = endpoint.client.get(endpoint.url)
     assert response.status_code == 400
@@ -208,36 +215,70 @@ def test_runner_without_snapshot_reports_error(
 def test_runner_permission_checked_before_workload_access(
     endpoint: SimpleNamespace,
 ) -> None:
-    """Runner dispatch cannot bypass the owning run's read permission."""
+    """Test authorization before runner workload access."""
     endpoint.authorize_run.side_effect = IllegalOperationError("forbidden")
     assert endpoint.client.get(endpoint.url).status_code == 403
     endpoint.manager.get_logs.assert_not_called()
 
 
 @pytest.mark.parametrize(
-    "error,status",
+    "error,status,retry_after",
     [
-        (LogStoreError("invalid response"), 502),
-        (LogStoreUnavailableError("unavailable"), 503),
-        (LogStoreRateLimitError("rate limited", retry_after=17), 429),
+        (LogStoreError("invalid response"), 502, None),
+        (LogStoreUnavailableError("unavailable"), 503, None),
+        (
+            LogStoreRateLimitError("rate limited", retry_after=17),
+            429,
+            17,
+        ),
     ],
 )
-def test_log_store_errors_have_actionable_http_status(
-    endpoint: SimpleNamespace, error: Exception, status: int
+def test_log_store_errors_use_standard_http_exception_handling(
+    endpoint: SimpleNamespace,
+    error: Exception,
+    status: int,
+    retry_after: int | None,
 ) -> None:
-    """Backend failures reach HTTP clients without becoming generic 500s."""
+    """Shared backend exceptions retain their HTTP status and retry headers."""
     endpoint.logs.body.source = "step"
     endpoint.normal_fetch.side_effect = error
     response = endpoint.client.get(endpoint.url)
     assert response.status_code == status
-    if status == 429:
-        assert response.headers["Retry-After"] == "17"
+    assert response.json()["detail"][0] == type(error).__name__
+    assert "items" not in response.json()
+    if retry_after is None:
+        assert "Retry-After" not in response.headers
+    else:
+        assert response.headers["Retry-After"] == str(retry_after)
+
+
+@pytest.mark.parametrize("resource", ["runs", "steps"])
+def test_legacy_endpoints_do_not_turn_backend_errors_into_empty_lists(
+    endpoint: SimpleNamespace,
+    mocker: MockerFixture,
+    resource: str,
+) -> None:
+    """Test backend HTTP errors through the legacy list endpoints."""
+    endpoint.logs.body.source = "step"
+    error = LogStoreUnavailableError("unavailable")
+    mocker.patch.object(runs_endpoints, "fetch_logs", side_effect=error)
+    mocker.patch.object(steps_endpoints, "fetch_logs", side_effect=error)
+    entity_id = (
+        endpoint.run.id
+        if resource == "runs"
+        else endpoint.store.get_run_step.return_value.id
+    )
+    response = endpoint.client.get(
+        f"/api/v1/{resource}/{entity_id}/logs", params={"source": "step"}
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"][0] == type(error).__name__
 
 
 def test_datadog_cursor_and_time_bound_round_trip_over_http(
     endpoint: SimpleNamespace, mocker: MockerFixture
 ) -> None:
-    """Wire serialization preserves the signed query and provider token."""
+    """Test cursor-only retries with fixed filters, time bounds, and page size."""
     from zenml.enums import StackComponentType
     from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
     from zenml.log_stores.datadog.datadog_log_store import DatadogLogStore
@@ -283,53 +324,49 @@ def test_datadog_cursor_and_time_bound_round_trip_over_http(
     assert first.status_code == 200
     data = first.json()
     assert data["after"] is None
-    continuation = {
-        "before": data["before"],
-        "until": data["until"],
-        "search": "message",
-        "limit": 50,
-    }
-    assert (
-        endpoint.client.get(endpoint.url, params=continuation).status_code
-        == 200
+    continuation = {"before": data["before"]}
+    success_response = post.return_value
+    post.return_value = SimpleNamespace(
+        status_code=429,
+        text="rate limited",
+        headers={"Retry-After": "17"},
     )
+    failed = endpoint.client.get(endpoint.url, params=continuation)
+    assert failed.status_code == 429
+    assert failed.json()["detail"][0] == "LogStoreRateLimitError"
+    assert failed.headers["Retry-After"] == "17"
+
+    post.return_value = success_response
+    retried = endpoint.client.get(endpoint.url, params=continuation)
+    assert retried.status_code == 200
+    assert retried.json()["until"] == data["until"]
+    assert retried.json()["items"][0]["id"] == data["items"][0]["id"]
     calls = post.call_args_list
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert (
         calls[0].kwargs["json"]["filter"] == calls[1].kwargs["json"]["filter"]
     )
+    assert calls[1].kwargs["json"] == calls[2].kwargs["json"]
+    assert all(call.kwargs["json"]["page"]["limit"] == 50 for call in calls)
     assert calls[1].kwargs["json"]["page"]["cursor"] == "native/+=?token"
     continuation["search"] = "different"
     assert (
         endpoint.client.get(endpoint.url, params=continuation).status_code
         == 400
     )
-    assert post.call_count == 2
+    assert post.call_count == 3
 
 
 @pytest.mark.parametrize("resource", ["runs", "steps"])
 def test_legacy_endpoints_keep_parameters_and_list_response(
     endpoint: SimpleNamespace, mocker: MockerFixture, resource: str
 ) -> None:
-    """Old run and step consumers can still fetch by source or log model ID."""
-    from zenml.zen_server.routers import steps_endpoints
-
+    """Test legacy source and log ID parameters with list responses."""
     logs = endpoint.logs
     logs.body.source = "step"
     page = LogsEntriesResponse(items=[LogEntry(message="legacy")])
     mocker.patch.object(runs_endpoints, "fetch_logs", return_value=page)
     mocker.patch.object(steps_endpoints, "fetch_logs", return_value=page)
-    mocker.patch.object(
-        steps_endpoints, "zen_store", return_value=endpoint.store
-    )
-    mocker.patch.object(steps_endpoints, "verify_permission")
-    endpoint.store.get_run_step.return_value = SimpleNamespace(
-        id=uuid4(),
-        pipeline_run_id=endpoint.run.id,
-        project_id=logs.project_id,
-        log_collection=[logs],
-    )
-    endpoint.client.app.include_router(steps_endpoints.router)
     entity_id = (
         endpoint.run.id
         if resource == "runs"

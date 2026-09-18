@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Models used to retrieve and paginate the entries of a log stream."""
+"""Models for log entries, filters, and pagination."""
 
 from datetime import datetime
 from typing import Any, List, Optional
@@ -32,7 +32,7 @@ from zenml.utils.time_utils import to_utc_timezone
 
 
 def parse_log_level(value: Any) -> Any:
-    """Resolve a log level given as a name or as a numeric value.
+    """Parse a log level name or number.
 
     Args:
         value: The value to resolve.
@@ -41,7 +41,7 @@ def parse_log_level(value: Any) -> Any:
         The log level, or the value unchanged for Pydantic to validate.
 
     Raises:
-        ValueError: If the value is a string that names no log level.
+        ValueError: If a string is not a recognized level name or number.
     """
     if isinstance(value, str):
         candidate = value.strip()
@@ -58,20 +58,12 @@ def parse_log_level(value: Any) -> Any:
     return value
 
 
-# A log level that may be given by name or by number. Query parameters always
-# arrive as strings, so `level=ERROR`, `level=error` and `level=40` all have to
-# resolve to the same level.
+# Query parameters accept both level names and numeric values.
 NamedLoggingLevel = Annotated[LoggingLevels, BeforeValidator(parse_log_level)]
 
 
 class LogEntry(BaseModel):
-    """A single structured log entry.
-
-    This is used in two distinct ways:
-        1. If we are using the artifact log store, we save the
-        entries as JSON-serialized LogEntry's in the artifact store.
-        2. When queried, the server returns logs as a list of LogEntry's.
-    """
+    """A structured log entry for storage and API responses."""
 
     message: str = Field(description="The log message content")
     name: Optional[str] = Field(
@@ -94,7 +86,7 @@ class LogEntry(BaseModel):
         description="The name of the file that generated this log entry",
     )
     lineno: Optional[int] = Field(
-        default=None, description="The fileno that generated this log entry"
+        default=None, description="The source line number"
     )
     chunk_index: int = Field(
         default=0,
@@ -106,28 +98,29 @@ class LogEntry(BaseModel):
     )
     id: UUID = Field(
         default_factory=uuid4,
-        description="The unique identifier of the log entry",
+        description=(
+            "Entry identifier. Chunks share an ID and have distinct "
+            "chunk_index values."
+        ),
     )
 
     model_config = ConfigDict(
-        # ignore extra attributes during model initialization
         extra="ignore",
     )
 
 
 class LogsEntriesFilter(BaseModel):
-    """Filters applied while retrieving the entries of a log stream.
+    """Backend filters for log retrieval.
 
-    A log store pushes these down into its backend, so a filter it cannot
-    express is refused rather than dropped.
+    Unsupported filters raise an error.
     """
 
     search: Optional[str] = Field(
         default=None,
         description=(
-            "Search log messages for this text using the log store's native "
-            "search. Tokenization, case sensitivity, and punctuation matching "
-            "depend on the backend; literal substring matching is not guaranteed."
+            "Message text to search using backend matching rules. "
+            "Tokenization, case sensitivity, and punctuation handling depend "
+            "on the backend; literal substring matching is not guaranteed."
         ),
     )
     level: Optional[NamedLoggingLevel] = Field(
@@ -146,14 +139,10 @@ class LogsEntriesFilter(BaseModel):
     @field_validator("since", "until")
     @classmethod
     def normalize_bound(cls, value: Optional[datetime]) -> Optional[datetime]:
-        """Make the time bounds timezone-aware.
-
-        Timestamps arriving from query parameters may be naive, while log
-        entries are timezone-aware, so the bounds are normalized once here
-        instead of at every comparison.
+        """Normalize time bounds to UTC.
 
         Args:
-            value: The bound to normalize.
+            value: Timestamp to normalize. Naive values are interpreted as UTC.
 
         Returns:
             The bound in the UTC timezone.
@@ -177,7 +166,7 @@ class LogsEntriesFilter(BaseModel):
 
 
 class LogsEntriesResponse(BaseModel):
-    """A single page of log entries, with cursors for the pages around it."""
+    """A page of log entries with backend continuation cursors."""
 
     items: List[LogEntry] = Field(
         default_factory=list,
@@ -186,22 +175,21 @@ class LogsEntriesResponse(BaseModel):
     until: Optional[datetime] = Field(
         default=None,
         description=(
-            "The upper time bound used for this read, if applicable. Pass it "
-            "back as the `until` filter with continuation cursors to keep the "
-            "query window fixed."
+            "Upper time bound used for the query, if applicable. "
+            "Informational; continuation cursors retain this value."
         ),
     )
     before: Optional[str] = Field(
         default=None,
         description=(
-            "Opaque token that continues the read towards older entries. "
-            "`None` means this store cannot go that way from this page."
+            "Cursor for older entries, or None when continuation in this "
+            "direction is unavailable."
         ),
     )
     after: Optional[str] = Field(
         default=None,
         description=(
-            "Opaque token that continues the read towards newer entries. "
-            "`None` means this store cannot go that way from this page."
+            "Cursor for newer entries, or None when continuation in this "
+            "direction is unavailable."
         ),
     )
