@@ -14,7 +14,8 @@
 """Functionality for reading, writing and managing files."""
 
 import os
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
+import shutil
+from typing import IO, Any, Callable, Iterable, List, Optional, Tuple, Type
 
 from zenml.constants import FILEIO_COPY_CHUNK_SIZE
 
@@ -90,7 +91,7 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     if src_fs is dst_fs:
         src_fs.copyfile(src, dst, overwrite=overwrite)
     else:
-        if not overwrite and exists(dst):
+        if not overwrite and dst_fs.exists(dst):
             raise FileExistsError(
                 f"Destination file '{convert_to_str(dst)}' already exists "
                 f"and `overwrite` is false."
@@ -99,8 +100,25 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
             open(src, mode="rb") as src_file,
             open(dst, mode="wb") as dst_file,
         ):
-            while chunk := src_file.read(FILEIO_COPY_CHUNK_SIZE):
-                dst_file.write(chunk)
+            copy_fileobj(src_file, dst_file)
+
+
+def copy_fileobj(
+    src: IO[bytes], dst: IO[bytes], chunk_size: Optional[int] = None
+) -> None:
+    """Copy the contents of one file object to another.
+
+    The contents are streamed in chunks so that memory usage stays bounded
+    regardless of the file size.
+
+    Args:
+        src: The file object to read from.
+        dst: The file object to write to.
+        chunk_size: The size of the chunks to copy in bytes. Defaults to
+            `FILEIO_COPY_CHUNK_SIZE` (configurable via the
+            `ZENML_FILEIO_COPY_CHUNK_SIZE` environment variable).
+    """
+    shutil.copyfileobj(src, dst, chunk_size or FILEIO_COPY_CHUNK_SIZE)
 
 
 def exists(path: "PathType") -> bool:
@@ -305,6 +323,7 @@ def walk(
 
 __all__ = [
     "copy",
+    "copy_fileobj",
     "exists",
     "glob",
     "isdir",

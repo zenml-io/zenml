@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import io
 import os
 import string
 from collections.abc import Iterable
@@ -24,6 +25,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
 
+from tests.unit.conftest import ReadTrackingBytesIO
 from zenml.io import fileio
 from zenml.io.filesystem import BaseFilesystem, PathType
 from zenml.io.filesystem_registry import default_filesystem_registry
@@ -301,3 +303,35 @@ def test_copy_across_filesystems_streams_in_chunks(tmp_path, monkeypatch):
     assert b"".join(written_chunks) == content
     assert len(written_chunks) == 4
     assert all(len(chunk) <= 4 for chunk in written_chunks)
+
+
+def test_copy_fileobj_streams_in_chunks(monkeypatch) -> None:
+    """Test that copy_fileobj copies contents in bounded chunks."""
+    monkeypatch.setattr(fileio, "FILEIO_COPY_CHUNK_SIZE", 4)
+
+    content = b"0123456789"
+    source = ReadTrackingBytesIO(content)
+    destination = io.BytesIO()
+    fileio.copy_fileobj(source, destination)
+
+    assert destination.getvalue() == content
+    assert all(size == 4 for size in source.read_sizes)
+
+
+def test_copy_fileobj_with_explicit_chunk_size() -> None:
+    """Test that copy_fileobj respects an explicit chunk size."""
+    content = b"0123456789"
+    source = ReadTrackingBytesIO(content)
+    destination = io.BytesIO()
+    fileio.copy_fileobj(source, destination, chunk_size=3)
+
+    assert destination.getvalue() == content
+    assert all(size == 3 for size in source.read_sizes)
+
+
+def test_copy_fileobj_with_empty_source() -> None:
+    """Test that copy_fileobj handles an empty source."""
+    destination = io.BytesIO()
+    fileio.copy_fileobj(io.BytesIO(), destination)
+
+    assert destination.getvalue() == b""

@@ -16,10 +16,12 @@
 import os
 import tarfile
 import tempfile
-from typing import TYPE_CHECKING
+from contextlib import contextmanager
+from typing import IO, TYPE_CHECKING, Iterator
 
 from zenml.artifacts.utils import load_artifact_store
 from zenml.exceptions import IllegalOperationError
+from zenml.io import fileio
 from zenml.models import (
     ArtifactVersionResponse,
 )
@@ -27,6 +29,27 @@ from zenml.zen_server.utils import server_config, zen_store
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+
+
+@contextmanager
+def _temporary_download_file() -> Iterator[IO[bytes]]:
+    """Create a temporary file that outlives the context.
+
+    The file is intended to be served to the client (and removed) by the
+    caller, which is why it is not deleted automatically. It is only removed
+    if an exception is raised inside the context, so that failed downloads
+    don't leave orphaned files behind.
+
+    Yields:
+        The open temporary file.
+    """
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+    try:
+        with temp_file:
+            yield temp_file
+    except Exception:
+        os.remove(temp_file.name)
+        raise
 
 
 def verify_artifact_is_downloadable(
@@ -91,7 +114,7 @@ def create_artifact_archive(
             tarinfo.size = size
         return tarinfo
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with _temporary_download_file() as temp_file:
         with tarfile.open(fileobj=temp_file, mode="w:gz") as tar:
             if artifact_store.isdir(artifact.uri):
                 for dir, _, files in artifact_store.walk(artifact.uri):
@@ -116,7 +139,7 @@ def create_artifact_archive(
                 with artifact_store.open(artifact.uri, "rb") as f:
                     tar.addfile(tarinfo, fileobj=f)
 
-        return temp_file.name
+    return temp_file.name
 
 
 def download_snapshot_code_archive(
@@ -132,11 +155,11 @@ def download_snapshot_code_archive(
     Returns:
         The path to the downloaded code.
     """
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+    with _temporary_download_file() as temp_file:
         with artifact_store.open(code_path, "rb") as f:
-            temp_file.write(f.read())
+            fileio.copy_fileobj(f, temp_file)
 
-        return temp_file.name
+    return temp_file.name
 
 
 def verify_file_is_downloadable(
