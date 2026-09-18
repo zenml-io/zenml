@@ -101,6 +101,7 @@ from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_artifact_store_cache,
     initialize_feature_gate,
+    initialize_maintenance_executor,
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
@@ -109,6 +110,7 @@ from zenml.zen_server.utils import (
     initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
+    maintenance_executor,
     register_event_handlers,
     register_webhook_event_handlers,
     server_config,
@@ -222,6 +224,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         initialize_feature_gate()
         initialize_workload_manager()
         initialize_snapshot_executor()
+        initialize_maintenance_executor()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
         await initialize_streaming()
@@ -246,6 +249,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if archive_scheduler is not None:
             await archive_scheduler.shutdown()
         snapshot_executor().shutdown(wait=True)
+        maintenance_executor().shutdown(wait=True)
         await shutdown_snapshot_run_dispatcher()
         await shutdown_streaming()
         await cleanup_request_manager()

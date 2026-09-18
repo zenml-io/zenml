@@ -39,6 +39,7 @@ from zenml.logger import get_logger
 from zenml.sandboxes.base import BaseSandbox, BaseSandboxSettings
 from zenml.sandboxes.process import SandboxExecError, SandboxProcess
 from zenml.sandboxes.session import SandboxSession
+from zenml.steps.step_context import StepContext
 
 logger = get_logger(__name__)
 
@@ -646,6 +647,13 @@ class KubernetesSandbox(BaseSandbox):
                 str(self.id)
             ),
         }
+        if step_context := StepContext.get():
+            labels["run_id"] = kube_utils.sanitize_label_value(
+                str(step_context.pipeline_run.id)
+            )
+            labels["step_run_id"] = kube_utils.sanitize_label_value(
+                str(step_context.step_run.id)
+            )
         env = self._resolve_session_environment(resolved_settings)
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
