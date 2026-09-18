@@ -490,6 +490,7 @@ DEVICE_VERIFY = "/verify"
 DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
+ENTRIES = "/entries"
 EVENT_FLAVORS = "/event-flavors"
 FLAVORS = "/flavors"
 HEALTH = "/health"
@@ -642,6 +643,7 @@ LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
 
+# Maximum number of log entries returned per request.
 LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
     ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
 )
