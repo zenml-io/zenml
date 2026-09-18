@@ -103,7 +103,7 @@ class ArchiveStorage:
             artifact_store: Store whose path is the archive root.
         """
         self.artifact_store = artifact_store
-        self._former_roots: Dict[str, "ArchiveStorage"] = {}
+        self._former_stores: Dict[str, BaseArtifactStore] = {}
 
     @classmethod
     def from_uri(
@@ -195,6 +195,18 @@ class ArchiveStorage:
         """
         return f"{self.root}/{project_id}/{run_id}/{bundle_id}.json.gz"
 
+    @staticmethod
+    def root_of(uri: str) -> str:
+        """Recover the archive root an object URI was written under.
+
+        Args:
+            uri: URI produced by `object_uri`.
+
+        Returns:
+            The root, without the project, run, and object segments.
+        """
+        return uri.rsplit("/", 3)[0]
+
     def write(self, uri: str, data: bytes) -> None:
         """Write one uniquely named archive object.
 
@@ -229,7 +241,7 @@ class ArchiveStorage:
         """
         # A former root that cannot be instantiated reports its own
         # configuration error rather than a transient read failure.
-        store = self._storage_for(uri).artifact_store
+        store = self._store_for(uri)
         try:
             with store.open(uri, "rb") as source:
                 return bytes(source.read(max_bytes + 1))
@@ -239,8 +251,8 @@ class ArchiveStorage:
                 "shortly."
             ) from error
 
-    def _storage_for(self, uri: str) -> "ArchiveStorage":
-        """Select storage whose root contains a recorded object URI.
+    def _store_for(self, uri: str) -> BaseArtifactStore:
+        """Select the artifact store whose root contains a recorded URI.
 
         Artifact stores refuse paths outside their own root, so an object
         written before ZENML_SERVER_ARCHIVE__URI changed is read through a
@@ -250,17 +262,16 @@ class ArchiveStorage:
             uri: Object URI recorded on a bundle row.
 
         Returns:
-            This storage, or one rooted at the object's original root.
+            This storage's store, or one rooted at the object's original root.
         """
         if uri.startswith(f"{self.root}/"):
-            return self
-        # Objects are named `{root}/{project_id}/{run_id}/{bundle_id}.json.gz`.
-        former_root = uri.rsplit("/", 3)[0]
-        if former_root not in self._former_roots:
-            self._former_roots[former_root] = ArchiveStorage.from_uri(
+            return self.artifact_store
+        former_root = self.root_of(uri)
+        if former_root not in self._former_stores:
+            self._former_stores[former_root] = ArchiveStorage.from_uri(
                 former_root, connector_id=self.artifact_store.connector
-            )
-        return self._former_roots[former_root]
+            ).artifact_store
+        return self._former_stores[former_root]
 
     def remove(self, uri: str) -> None:
         """Remove an object that never became authoritative, if possible.

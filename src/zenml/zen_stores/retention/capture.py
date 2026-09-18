@@ -19,6 +19,7 @@ from typing import (
     Sequence,
     Tuple,
 )
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Table, case, func, literal, select, tuple_
@@ -82,7 +83,19 @@ class StepProjection(BaseModel):
     substitutions: Dict[str, str]
 
 
-ProjectionCache = Dict[Any, StepProjection]
+ProjectionCache = Dict[UUID, StepProjection]
+
+
+def _digest(*inputs: str) -> str:
+    """Hash projection inputs; `repr` keeps their boundaries unambiguous.
+
+    Args:
+        inputs: Raw values a projection is derived from.
+
+    Returns:
+        Digest that changes whenever any input does.
+    """
+    return hashlib.sha256(repr(inputs).encode("utf-8")).hexdigest()
 
 
 def source_row_bytes(row: Mapping[str, Any]) -> int:
@@ -127,6 +140,8 @@ class RunCapturer:
         self.projections: ProjectionCache = (
             projections if projections is not None else {}
         )
+        self._snapshot_digests: Dict[Any, str] = {}
+        self._pipeline_configurations: Dict[Any, PipelineConfiguration] = {}
         self.source_bytes = 0
         self.run_row: Dict[str, Any] = {}
         self.step_rows: List[Dict[str, Any]] = []
@@ -502,39 +517,65 @@ class RunCapturer:
                     ConfigurationRecord.model_validate(configuration_row)
                 )
 
-    def _projection_fingerprint(
+    def _snapshot_digest(self, owner: Mapping[str, Any]) -> str:
+        """Hash the projection inputs every step of one snapshot shares.
+
+        Args:
+            owner: Snapshot whose pipeline configuration steps merge in.
+
+        Returns:
+            Digest of the snapshot-level inputs, computed once per snapshot.
+        """
+        snapshot_id = owner["id"]
+        if snapshot_id not in self._snapshot_digests:
+            self._snapshot_digests[snapshot_id] = _digest(
+                owner["pipeline_configuration"],
+                str(owner["is_dynamic"]),
+                str(self.run_row["start_time"]),
+            )
+        return self._snapshot_digests[snapshot_id]
+
+    def _derive_projection(
         self,
         step_row: Mapping[str, Any],
         owner: Optional[Mapping[str, Any]],
         definition: Optional[Mapping[str, Any]],
-    ) -> str:
-        """Hash every raw input a step's projection is derived from.
+        fingerprint: str,
+    ) -> StepProjection:
+        """Validate one step's configuration to read its projection.
 
         Args:
             step_row: Captured step row.
             owner: Snapshot whose pipeline configuration is merged in, if any.
             definition: Stored step definition that is merged, if any.
+            fingerprint: Digest of the inputs this derivation reads.
 
         Returns:
-            Digest that changes whenever the derived projection could.
+            The step type and substitutions kept in SQL while archived.
         """
-        inputs: Tuple[str, ...]
         if owner is not None and definition is not None:
-            inputs = (
-                "definition",
+            snapshot_id = owner["id"]
+            if snapshot_id not in self._pipeline_configurations:
+                self._pipeline_configurations[snapshot_id] = (
+                    run_pipeline_configuration(
+                        owner["pipeline_configuration"],
+                        self.run_row["start_time"],
+                    )
+                )
+            configuration = merge_step_configuration(
                 definition["config"],
-                owner["pipeline_configuration"],
-                str(owner["is_dynamic"]),
-                str(self.run_row["start_time"]),
+                self._pipeline_configurations[snapshot_id],
+                exclude_hook_sources=owner["is_dynamic"],
             )
         else:
-            inputs = ("inline", step_row["step_configuration"])
-        digest = hashlib.sha256()
-        for value in inputs:
-            encoded = value.encode("utf-8")
-            digest.update(len(encoded).to_bytes(8, "big"))
-            digest.update(encoded)
-        return digest.hexdigest()
+            configuration = Step.model_validate_json(
+                step_row["step_configuration"]
+            )
+        return StepProjection(
+            fingerprint=fingerprint,
+            step_type=configuration.config.step_type,
+            substitutions=configuration.config.substitutions,
+        )
 
     def _capture_steps(self) -> List[StepRecord]:
         """Capture steps with the type and substitutions kept in SQL.
@@ -546,7 +587,6 @@ class RunCapturer:
             ExecutionRetentionConflictError: A step or its configuration owner
                 is archived or missing.
         """
-        pipeline_configurations: Dict[Any, PipelineConfiguration] = {}
         records = []
         for step_row in self.step_rows:
             if step_row["archive_bundle_id"] is not None:
@@ -566,40 +606,20 @@ class RunCapturer:
                 raise ExecutionRetentionConflictError(
                     "Step configuration owner is missing or archived."
                 )
-            uses_definition = owner is not None and definition is not None
-            if not uses_definition and not step_row["step_configuration"]:
+            if owner is not None and definition is not None:
+                fingerprint = _digest(
+                    self._snapshot_digest(owner), definition["config"]
+                )
+            elif step_row["step_configuration"]:
+                fingerprint = _digest(step_row["step_configuration"])
+            else:
                 raise ExecutionRetentionConflictError(
                     "Step configuration disappeared during capture."
                 )
-            fingerprint = self._projection_fingerprint(
-                step_row,
-                owner if uses_definition else None,
-                definition if uses_definition else None,
-            )
             projection = self.projections.get(step_row["id"])
             if projection is None or projection.fingerprint != fingerprint:
-                if owner is not None and definition is not None:
-                    snapshot_id = step_row["snapshot_id"]
-                    if snapshot_id not in pipeline_configurations:
-                        pipeline_configurations[snapshot_id] = (
-                            run_pipeline_configuration(
-                                owner["pipeline_configuration"],
-                                self.run_row["start_time"],
-                            )
-                        )
-                    configuration = merge_step_configuration(
-                        definition["config"],
-                        pipeline_configurations[snapshot_id],
-                        exclude_hook_sources=owner["is_dynamic"],
-                    )
-                else:
-                    configuration = Step.model_validate_json(
-                        step_row["step_configuration"]
-                    )
-                projection = StepProjection(
-                    fingerprint=fingerprint,
-                    step_type=configuration.config.step_type,
-                    substitutions=configuration.config.substitutions,
+                projection = self._derive_projection(
+                    step_row, owner, definition, fingerprint
                 )
                 self.projections[step_row["id"]] = projection
             records.append(

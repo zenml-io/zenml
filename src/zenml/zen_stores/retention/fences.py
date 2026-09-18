@@ -22,17 +22,23 @@ from zenml.exceptions import (
     ExecutionRetentionConflictError,
     IllegalOperationError,
 )
+from zenml.zen_stores.retention.format import RunRecord, StepRecord
 from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSnapshotSchema,
     StepRunSchema,
 )
 
-# Update-model fields that write archived columns or drive run status. Other
-# fields, such as cache expiry, outputs, and logs, stay writable on archived
-# rows. A new update field that touches an archived column must be added here.
-RUN_FENCED_UPDATE_FIELDS = frozenset({"exception_info", "status"})
-STEP_FENCED_UPDATE_FIELDS = frozenset({"exception_info", "status", "end_time"})
+# Execution-state columns that must not change once a row is retired, in
+# addition to the archived columns themselves. Every other column, such as
+# cache expiry or `updated`, stays writable on an archived row.
+_STATE_COLUMNS = frozenset(
+    {"status", "status_reason", "in_progress", "end_time"}
+)
+_FENCED_COLUMNS = {
+    PipelineRunSchema: _STATE_COLUMNS | set(RunRecord.archived_columns),
+    StepRunSchema: _STATE_COLUMNS | set(StepRecord.archived_columns),
+}
 
 HotRow = Union[PipelineRunSchema, StepRunSchema]
 
@@ -41,7 +47,9 @@ def update_hot(session: Session, row: HotRow) -> None:
     """Carry the archive predicate in the existing row update, without a SELECT.
 
     Callers must modify the row and invoke this function inside no_autoflush
-    so an ORM flush cannot publish an unfenced update first. Step updates can
+    so an ORM flush cannot publish an unfenced update first. Changes that
+    touch no archived or execution-state column are left to the ORM flush,
+    so retained fields stay writable on archived rows. Step updates can
     lock a step before its run while retirement locks the run first; MySQL
     then rolls one of them back, and the archive pass skips that run.
 
@@ -63,9 +71,9 @@ def update_hot(session: Session, row: HotRow) -> None:
         for attribute in state.mapper.column_attrs
         if state.attrs[attribute.key].history.has_changes()
     }
-    if not changes:
-        return
     schema = type(row)
+    if _FENCED_COLUMNS[schema].isdisjoint(changes):
+        return
     statement = (
         update(schema)
         .where(

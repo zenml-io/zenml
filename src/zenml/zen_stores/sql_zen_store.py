@@ -7875,10 +7875,7 @@ class SqlZenStore(BaseZenStore):
 
             with session.no_autoflush:
                 existing_run.update(run_update=run_update)
-                if run_update.model_fields_set.intersection(
-                    fences.RUN_FENCED_UPDATE_FIELDS
-                ):
-                    fences.update_hot(session, existing_run)
+                fences.update_hot(session, existing_run)
             session.add(existing_run)
             if run_update.outputs is not None:
                 session.execute(
@@ -13489,10 +13486,7 @@ class SqlZenStore(BaseZenStore):
             # Update the step
             with session.no_autoflush:
                 existing_step_run.update(step_run_update)
-                if step_run_update.model_fields_set.intersection(
-                    fences.STEP_FENCED_UPDATE_FIELDS
-                ):
-                    fences.update_hot(session, existing_step_run)
+                fences.update_hot(session, existing_step_run)
             session.add(existing_step_run)
 
             # Update the artifacts.
@@ -14597,8 +14591,41 @@ class SqlZenStore(BaseZenStore):
             )
         return settings
 
+    def get_run_headers(
+        self, run_ids: Sequence[UUID]
+    ) -> List[PipelineRunResponse]:
+        """Load run SQL headers without resources or metadata, in one query.
+
+        Args:
+            run_ids: Runs to authorize or inspect.
+
+        Returns:
+            Run headers with project and user ownership, in request order.
+
+        Raises:
+            KeyError: If one of the runs does not exist.
+        """
+        with Session(self.engine) as session:
+            runs = {
+                run.id: run
+                for run in session.exec(
+                    select(PipelineRunSchema)
+                    .where(col(PipelineRunSchema.id).in_(run_ids))
+                    .options(load_only(*self._RUN_HEADER_COLUMNS))
+                )
+            }
+            for run_id in run_ids:
+                if run_id not in runs:
+                    raise KeyError(f"Pipeline run '{run_id}' does not exist.")
+            return [
+                runs[run_id].to_model(
+                    include_metadata=False, include_resources=False
+                )
+                for run_id in run_ids
+            ]
+
     def get_run_header(self, run_id: UUID) -> PipelineRunResponse:
-        """Load a run's SQL header without its resources or metadata.
+        """Load one run's SQL header without its resources or metadata.
 
         Args:
             run_id: Run to authorize or inspect.
@@ -14606,16 +14633,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Run header with its project and user ownership.
         """
-        with Session(self.engine) as session:
-            run = self._get_schema_by_id(
-                resource_id=run_id,
-                schema_class=PipelineRunSchema,
-                session=session,
-                query_options=[load_only(*self._RUN_HEADER_COLUMNS)],
-            )
-            return run.to_model(
-                include_metadata=False, include_resources=False
-            )
+        return self.get_run_headers([run_id])[0]
 
     def get_step_run_owner(self, step_run_id: UUID) -> PipelineRunResponse:
         """Load the header of the run that owns a step, in one query.
