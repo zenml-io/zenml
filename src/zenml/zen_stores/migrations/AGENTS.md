@@ -13,6 +13,15 @@ below. For detailed migration recipes and SQL inspection queries, use
   downgrades.
 - Never modify existing migrations that are already on `main` or `develop`.
 - Consider backward compatibility for rolling deployments.
+- Columns typed `CompressedText` / `CompressedMediumText` (see
+  `zen_stores/schemas/compressed_text.py`) may hold compressed values.
+  Reflected tables and raw SQL bypass the column decoder, so never apply
+  string functions such as `REPLACE()` or `LIKE` to these columns in a
+  migration; decode values read from them with `decode_compressed_text`
+  from `zenml.zen_stores.compressed_text` (a leaf module that imports no
+  schemas, so it is safe to import from a migration) before parsing them,
+  and write transformed values back as plain text, which every reader
+  accepts.
 - Include both schema changes and data migrations when needed.
 - Run `scripts/check-alembic-branches.sh` to verify migration consistency.
 
