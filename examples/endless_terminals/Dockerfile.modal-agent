@@ -1,0 +1,4 @@
+# Seed and grade with the original task image; mount seeded data into this image.
+ARG TASK_IMAGE
+FROM ${TASK_IMAGE}
+RUN rm -rf /home/user && mkdir -p /home/user

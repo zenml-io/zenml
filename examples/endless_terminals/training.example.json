@@ -1,0 +1,19 @@
+{
+  "cloud_config_path": "cloud.local.json",
+  "data_directory": "data",
+  "output_directory": "runs",
+  "episode_timeout": 90,
+  "max_actions": 16,
+  "max_tokens": 1024,
+  "max_context": 8192,
+  "training_task_ids": [
+    "task_000000_0228cd64",
+    "task_000000_010b99da"
+  ],
+  "groups": 16,
+  "group_size": 4,
+  "training_max_actions": 4,
+  "zero_signal_patience": 4,
+  "learning_rate": 0.0001,
+  "lora_rank": 8
+}

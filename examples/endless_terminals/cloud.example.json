@@ -1,0 +1,15 @@
+{
+  "aws_profile": "YOUR_AWS_PROFILE",
+  "aws_region": "YOUR_AWS_REGION",
+  "kube_context": "YOUR_KUBERNETES_CONTEXT",
+  "namespace": "YOUR_EXISTING_NAMESPACE",
+  "gpu_asg": "YOUR_DEDICATED_GPU_AUTOSCALING_GROUP",
+  "vllm_image": "docker.io/vllm/vllm-openai@sha256:df2607b26bdda2875de4832f4d08da0055b4b6e3570347f3a849bcc652771dd6",
+  "node_selector": {
+    "pool": "gpu"
+  },
+  "startup_timeout": 900,
+  "serving_deadline": 3600,
+  "cleanup_timeout": 240,
+  "force_termination": false
+}
