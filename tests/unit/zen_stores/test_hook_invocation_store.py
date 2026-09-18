@@ -20,8 +20,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from zenml.artifacts.pruning import prune_artifact_versions
 from zenml.enums import ExecutionStatus, HookType, StackComponentType
 from zenml.models import (
+    ArtifactVersionPruneRequest,
     ExceptionInfo,
     HookInvocationFilter,
     HookInvocationRequest,
@@ -413,7 +415,9 @@ def test_prune_artifact_versions_retains_hook_outputs(
     )
     created = sql_store.create_hook_invocation(request)
 
-    sql_store.prune_artifact_versions(project_id, only_versions=True)
+    prune_artifact_versions(
+        sql_store, ArtifactVersionPruneRequest(project=project_id, apply=True)
+    )
 
     # The version is referenced only by the hook output, so it must survive.
     with Session(sql_store.engine) as session:
