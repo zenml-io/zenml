@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 import requests
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 from zenml.enums import LoggingLevels
 from zenml.exceptions import (
@@ -176,14 +176,16 @@ class DatadogLogStore(OtelLogStore):
             The headers.
         """
         headers: Dict[str, str] = dict(self.config.headers or {})
-        headers.update(
-            {
-                "dd-api-key": self.config.api_key.get_secret_value(),
-                "dd-application-key": (
-                    self.config.application_key.get_secret_value()
-                ),
-            }
-        )
+        # Secret references resolve to strings; inline values remain SecretStr.
+        for name, value in (
+            ("dd-api-key", self.config.api_key),
+            ("dd-application-key", self.config.application_key),
+        ):
+            headers[name] = (
+                value.get_secret_value()
+                if isinstance(value, SecretStr)
+                else value
+            )
         return headers
 
     def get_exporter(self) -> DatadogLogExporter:

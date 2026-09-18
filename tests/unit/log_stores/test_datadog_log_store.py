@@ -16,6 +16,7 @@
 import base64
 import json
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -141,6 +142,59 @@ def search(mocker):
         return requests_made
 
     return _install
+
+
+def test_secret_references_authenticate_exports_and_searches(
+    log_store: DatadogLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    mocker: MockerFixture,
+) -> None:
+    """Test resolved secret references in both Datadog request paths."""
+    values = {
+        "api_key": "resolved-api-key",
+        "application_key": "resolved-app-key",
+    }
+    client = mocker.patch("zenml.client.Client").return_value
+    client.get_secret_by_name_and_private_status.return_value = (
+        SimpleNamespace(values=values, secret_values=values)
+    )
+    store = DatadogLogStore(
+        name=log_store.name,
+        id=log_store.id,
+        config=DatadogLogStoreConfig(
+            api_key="{{datadog.api_key}}",
+            application_key="{{datadog.application_key}}",
+        ),
+        flavor="datadog",
+        type=StackComponentType.LOG_STORE,
+        user=log_store.user,
+        created=log_store.created,
+        updated=log_store.updated,
+    )
+    exporter = mocker.patch(
+        "zenml.log_stores.datadog.datadog_log_store.DatadogLogExporter"
+    )
+    post = mocker.patch(
+        "zenml.log_stores.datadog.datadog_log_store.requests.post",
+        return_value=StubResponse(make_payload([])),
+    )
+
+    store.get_exporter()
+    store.fetch(logs_model_factory(log_store_id=store.id))
+
+    expected_headers = {
+        "dd-api-key": values["api_key"],
+        "dd-application-key": values["application_key"],
+    }
+    assert exporter.call_args.kwargs["headers"] == expected_headers
+    assert post.call_args.kwargs["headers"] == {
+        **expected_headers,
+        "Content-Type": "application/json",
+    }
+    assert all(
+        call.kwargs == {"name": "datadog"}
+        for call in client.get_secret_by_name_and_private_status.call_args_list
+    )
 
 
 def test_a_read_starts_at_the_oldest_entries_by_default(
@@ -557,7 +611,7 @@ def test_malformed_json_is_a_log_store_error(
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))
 
 
-def test_unparseable_events_do_not_lose_the_native_cursor(
+def test_unparsable_events_do_not_lose_the_native_cursor(
     log_store: DatadogLogStore,
     logs_model_factory: Callable[..., LogsResponse],
     search: Callable[..., List[Dict[str, Any]]],
