@@ -227,7 +227,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         response = client.create_custom_job(
             parent=parent, custom_job=job_request
         )
-        logger.debug("Vertex AI response:", response)
+        logger.debug("Vertex AI response: %s", response)
         publish_step_run_metadata(
             info.step_run_id,
             {self.id: {STEP_JOB_NAME_METADATA_KEY: response.name}},
