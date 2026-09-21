@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Tests for the CONTINUE_ON_FAILURE execution mode of dynamic pipelines."""
 
+import sys
 from typing import List
 
 import pytest
@@ -152,6 +153,10 @@ def partial_map_pipeline() -> None:
     fail_on_two.map(value=values)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Mapped step names contain colons, which are invalid in Windows artifact paths.",
+)
 def test_map_partial_failure_does_not_fail_run() -> None:
     _executed.clear()
     partial_map_pipeline()

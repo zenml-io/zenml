@@ -20,6 +20,7 @@ a live remote host.
 """
 
 import subprocess
+import sys
 from contextlib import contextmanager
 from typing import Any, Iterator
 from unittest.mock import MagicMock, patch
@@ -489,6 +490,10 @@ class TestIsolatedStepSubprocess:
             ExecutionStatus.RUNNING
         )
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="This test mocks Unix-only process-group functions.",
+    )
     def test_stop_kills_process_group(self) -> None:
         orch = _make_orchestrator()
         step_run = MagicMock()
@@ -506,6 +511,10 @@ class TestIsolatedStepSubprocess:
         killpg.assert_called_once()
         assert step_run.id in orch._stopped_step_ids
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="This test mocks Unix-only process-group functions.",
+    )
     def test_stop_reaps_after_sigkill(self) -> None:
         orch = _make_orchestrator()
         step_run = MagicMock()
@@ -523,6 +532,10 @@ class TestIsolatedStepSubprocess:
         assert killpg.call_count == 2
         assert proc.wait.call_count == 2
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="This test mocks Unix-only process-group functions.",
+    )
     def test_stop_noop_for_finished_step(self) -> None:
         orch = _make_orchestrator()
         step_run = MagicMock()
