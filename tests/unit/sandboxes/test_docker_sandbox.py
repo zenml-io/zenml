@@ -143,7 +143,7 @@ class _FakeContainers:
         return [
             container
             for call, container in zip(self.run_calls, self.containers)
-            if f"zenml-sandbox-session={call['labels']['zenml-sandbox-session']}"
+            if f"zenml-sandbox-id={call['labels']['zenml-sandbox-id']}"
             == label
         ]
 
@@ -274,7 +274,8 @@ class TestCreateSession:
         assert call["name"] == f"zenml-sandbox-{session.id}"
         assert call["labels"] == {
             "team": "ml",
-            "zenml-sandbox-session": session.id,
+            "zenml-sandbox-id": session.id,
+            "zenml-sandbox-component-id": str(sandbox.id),
         }
         assert call["working_dir"] == "/workspace"
         assert call["nano_cpus"] == 1_500_000_000
