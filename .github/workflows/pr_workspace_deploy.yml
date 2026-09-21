@@ -186,8 +186,7 @@ jobs:
           pip install requests
       - name: Manage workspace
         env:
-          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          ZENML_PRO_API_KEY: ${{ secrets.ZENML_PRO_STAGING_RELEASE_API_KEY }}
           CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID: ${{ secrets.CLOUD_STAGING_GH_ACTIONS_ORGANIZATION_ID }}
           WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.workspace_name }}
           DOCKER_IMAGE: zenmldocker/zenml-server-dev:${{ needs.set-branch-info.outputs.branch_name }}

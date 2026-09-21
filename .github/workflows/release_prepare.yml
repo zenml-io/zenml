@@ -178,8 +178,7 @@ jobs:
       # Deactivate and redeploy the tenant
       - name: Run tenant management script
         env:
-          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
-          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          ZENML_PRO_API_KEY: ${{ secrets.ZENML_PRO_STAGING_RELEASE_API_KEY }}
           RELEASE_TENANT_ID: ${{ secrets.RELEASE_TENANT_ID }}
           ZENML_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
         run: python scripts/redeploy-release-prep-tenant.py
