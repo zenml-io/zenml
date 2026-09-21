@@ -116,19 +116,29 @@ def test_archive_is_disabled_without_a_backend() -> None:
     assert config.archive.backend == ArchiveBackend.DISABLED
 
 
+def test_configured_storage_does_not_schedule_sweeps() -> None:
+    """Storage alone allows manual archiving; sweeps are switched on apart."""
+    config = ServerConfiguration(
+        archive={"backend": "s3", "uri": "s3://bucket/archive"}
+    )
+
+    assert config.archive.new_archives_enabled
+    assert not config.archive.scheduled
+
+
 def test_archive_settings_come_from_one_nested_group(monkeypatch) -> None:
     """Double-underscore variables address fields of the archive group."""
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "s3")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", "s3://bucket/archive")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "45")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE", "0 3 * * 0")
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "false")
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "true")
 
     config = ServerConfiguration.get_server_config()
 
     assert config.archive.configured
     assert config.archive.new_archives_enabled
-    assert not config.archive.scheduled
+    assert config.archive.scheduled
     assert config.archive.uri == "s3://bucket/archive"
     assert config.archive.after_days == 45
     assert config.archive.schedule == "0 3 * * 0"

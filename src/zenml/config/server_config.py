@@ -115,15 +115,18 @@ class ArchiveSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # `backend` is deliberately redundant with the URI scheme, which is what
-    # actually selects the artifact store flavor. It exists as an interlock:
-    # archiving is server-wide with no opt-out, so enabling it takes two
-    # explicit variables rather than one stray URI, and the validator below
-    # can name a scheme that disagrees with the stated intent.
+    # actually selects the artifact store flavor. Naming it lets the validator
+    # below reject a URI whose scheme disagrees with the stated intent, rather
+    # than archive to wherever a mistyped URI points.
     backend: ArchiveBackend = ArchiveBackend.DISABLED
     uri: Optional[str] = None
     connector_id: Optional[UUID] = None
     enabled: bool = True
-    schedule_enabled: bool = True
+    # Sweeps archive every eligible run on the server, with no per-project
+    # opt-out. Configuring storage therefore only allows manual archiving;
+    # the schedule is switched on separately, once a dry run has shown what
+    # the policy selects.
+    schedule_enabled: bool = False
     after_days: int = Field(default=90, ge=7)
     model_linked_runs: bool = False
     restored_grace_days: int = Field(default=30, ge=0)
