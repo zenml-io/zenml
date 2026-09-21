@@ -336,10 +336,12 @@ changing anything. A run that is not archived returns `noop`. A restored run
 is protected from scheduled and normal manual archiving for
 `restored_grace_days`; an explicit `--force` overrides this grace period.
 
-Restore requires update permission on the run, because it writes the run's
-detail back into the database. A user who can only read an archived run still
-sees its summary and needs someone with update permission to restore it.
-Restoring one run does not recursively restore its child runs.
+Restore requires read permission on the run, so a user who can open a run can
+also make its cold detail available; the dashboard relies on this when it
+restores a run as its page opens. A restore puts back exactly what that user
+could read before the run was archived. Updating any run detail still requires
+update permission. Restoring one run does not recursively restore its child
+runs.
 
 **Replay requires a restore first.** Replaying an archived run returns 409
 with the restore command.
@@ -355,7 +357,7 @@ the owning run.
 | --- | --- | --- |
 | `POST /api/v1/retention/archive` | Archive or preview named runs, a pipeline, or a project. | Update on the target and on every archived run; read for `dry_run=true`; server admin for `force=true` |
 | `GET /api/v1/retention/status` | Read the latest sweep. | Server admin |
-| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run update |
+| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run read |
 
 Archiving and restoring can take a while. The shared SDK request layer sends
 an `Idempotency-Key`; transport retries of that request reuse its result.

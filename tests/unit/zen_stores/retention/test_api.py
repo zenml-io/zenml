@@ -95,7 +95,7 @@ def http(retention_store, retention, run_factory, monkeypatch):
         ("GET", "steps/{producer}/logs?source=missing", Action.READ),
         ("POST", "pipeline_snapshots/{snapshot}/runs", Action.READ),
         ("POST", "runs/{run}/replay", Action.READ),
-        ("POST", "runs/{run}/restore", Action.UPDATE),
+        ("POST", "runs/{run}/restore", Action.READ),
         ("POST", "retention/archive", Action.UPDATE),
     ],
 )
@@ -144,26 +144,32 @@ def test_denied_before_detail_storage_or_dispatch(
     blocked.assert_not_called()
 
 
-def test_restore_needs_update_permission_on_the_run(http, monkeypatch):
-    """Restoring writes to the database, so reading a run is not enough."""
+def test_read_permission_restores_without_allowing_run_updates(
+    http, monkeypatch
+):
+    """A reader can restore detail without gaining run update permission."""
     http.retention.run_archive_sweep()
-    allowed = {Action.READ}
+    checked_actions = []
 
-    def verify(model, action):
-        if action not in allowed:
+    def allow_read(model, action):
+        checked_actions.append(action)
+        if action != Action.READ:
             raise HTTPException(403, "Forbidden")
 
-    monkeypatch.setattr(runs_endpoints, "verify_permission_for_model", verify)
+    monkeypatch.setattr(
+        runs_endpoints, "verify_permission_for_model", allow_read
+    )
+    monkeypatch.setattr(
+        endpoint_utils, "verify_permission_for_model", allow_read
+    )
 
-    denied = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
-    still_archived = http.store.get_run_header(http.ids.run)
-    allowed.add(Action.UPDATE)
     restored = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
+    update_response = http.client.put(f"/api/v1/runs/{http.ids.run}", json={})
 
-    assert denied.status_code == 403, denied.text
-    assert still_archived.archive_bundle_id is not None
     assert restored.status_code == 200, restored.text
     assert restored.json()["outcome"] == "restored"
+    assert update_response.status_code == 403, update_response.text
+    assert checked_actions == [Action.READ, Action.UPDATE]
 
 
 def test_get_entity_header_authorization_precedes_dehydration(

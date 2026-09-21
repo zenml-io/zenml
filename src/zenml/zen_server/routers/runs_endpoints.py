@@ -1081,13 +1081,18 @@ def restore_pipeline_run(
     The restore runs within the request and is all-or-nothing.
 
     Args:
-        run_id: Run to restore; requires UPDATE permission on it, because a
-            restore writes the run's detail back into the database.
+        run_id: Run to restore; requires READ permission on it.
 
     Returns:
         Restored, or a no-op when the run's detail is not archived.
     """
+    # Restoring writes to the database, yet it only needs READ: it puts back
+    # exactly what the caller could read before the run was archived, and the
+    # dashboard restores when a user opens a run page, which a viewer must be
+    # able to do. What a viewer can cost the server is bounded: a restored run
+    # is a no-op to restore again, stays out of archiving for the restore
+    # grace period, and each replica admits only a few restores at once.
     verify_permission_for_model(
-        model=zen_store().get_run_header(run_id), action=Action.UPDATE
+        model=zen_store().get_run_header(run_id), action=Action.READ
     )
     return retention_controller().restore_pipeline_run(run_id)
