@@ -6769,6 +6769,9 @@ class SqlZenStore(BaseZenStore):
             }
             pipeline_configuration = run.get_pipeline_configuration()
             if snapshot is None or snapshot.is_dynamic:
+                # A dynamic pipeline ignores the static config templates, and
+                # a legacy run without a snapshot only has the definitions
+                # stored with its steps.
                 steps = {}
                 for name, configured_step in step_runs.items():
                     configuration = configured_step.dynamic_config
@@ -7169,11 +7172,9 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
-            dag = helper.finalize_dag(
-                pipeline_run_id=pipeline_run_id,
-                status=ExecutionStatus(run.status),
-            )
-            return dag
+        return helper.finalize_dag(
+            pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
+        )
 
     def _get_duplicate_run_name_error_message(
         self, pipeline_run_name: str

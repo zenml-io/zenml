@@ -740,6 +740,8 @@ class PipelineRunSchema(
         )
         metadata = None
         if include_metadata and archive is None:
+            # Only the metadata needs the configuration and environments, so
+            # a page of summaries does not pay for parsing them per row.
             self.require_hot(self.id)
             config = self.get_pipeline_configuration()
             if self.snapshot is not None:

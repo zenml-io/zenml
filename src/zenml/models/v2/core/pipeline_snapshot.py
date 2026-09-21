@@ -873,6 +873,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 )
 
         if self.runnable is True:
+            # The following condition is not perfect as it does not
+            # consider stacks with custom flavor components or local
+            # components, but the best we can do currently with our
+            # table columns.
             custom_filters.append(PipelineSnapshotSchema.runnable_filter())
 
         if self.deployable is True:
