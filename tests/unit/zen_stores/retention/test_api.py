@@ -2,7 +2,6 @@
 """Authorization precedes archive access; HTTP exposes explicit restore."""
 
 from contextlib import asynccontextmanager
-from threading import Event
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4
@@ -30,12 +29,8 @@ from zenml.zen_server.routers import (
     runs_endpoints,
     steps_endpoints,
 )
-from zenml.zen_server.routers.workload_manager_gate import (
-    workload_manager_enabled,
-)
 from zenml.zen_stores.retention.capacity import RetentionCapacity
 from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
-from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 ROUTERS = (
     retention_endpoints,
@@ -47,7 +42,7 @@ ROUTERS = (
 
 
 @pytest.fixture
-def http(retention_store, run_factory, storage, monkeypatch):
+def http(retention_store, retention, run_factory, monkeypatch):
     """Mount real routers over the shared MySQL execution fixture."""
     ids = run_factory(retention_store)
 
@@ -64,7 +59,12 @@ def http(retention_store, run_factory, storage, monkeypatch):
     for module in ROUTERS:
         app.include_router(module.router)
         monkeypatch.setattr(module, "zen_store", lambda: retention_store)
+    # A server without a workload manager never mounts these routes.
+    for module in (runs_endpoints, pipeline_snapshot_endpoints):
+        app.include_router(module.workload_router, prefix=module.router.prefix)
     monkeypatch.setattr(utils, "zen_store", lambda: retention_store)
+    for module in (retention_endpoints, runs_endpoints):
+        monkeypatch.setattr(module, "retention_controller", lambda: retention)
     auth_context = AuthContext(
         user=retention_store.list_users(UserFilter()).items[0]
     )
@@ -74,9 +74,13 @@ def http(retention_store, run_factory, storage, monkeypatch):
         return auth_context
 
     app.dependency_overrides[authorize] = authenticated
-    app.dependency_overrides[workload_manager_enabled] = lambda: None
     with TestClient(app) as client:
-        yield SimpleNamespace(client=client, ids=ids, store=retention_store)
+        yield SimpleNamespace(
+            client=client,
+            ids=ids,
+            store=retention_store,
+            retention=retention,
+        )
 
 
 @pytest.mark.parametrize(
@@ -91,7 +95,7 @@ def http(retention_store, run_factory, storage, monkeypatch):
         ("GET", "steps/{producer}/logs?source=missing", Action.READ),
         ("POST", "pipeline_snapshots/{snapshot}/runs", Action.READ),
         ("POST", "runs/{run}/replay", Action.READ),
-        ("POST", "runs/{run}/restore", Action.READ),
+        ("POST", "runs/{run}/restore", Action.UPDATE),
         ("POST", "retention/archive", Action.UPDATE),
     ],
 )
@@ -99,7 +103,7 @@ def test_denied_before_detail_storage_or_dispatch(
     http, storage, monkeypatch, method, path, action
 ):
     """Denied requests return 403 before 409 or any storage access."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     denied = Mock(side_effect=HTTPException(403, "Forbidden"))
     blocked = Mock(
         side_effect=AssertionError("denied request crossed boundary")
@@ -140,32 +144,26 @@ def test_denied_before_detail_storage_or_dispatch(
     blocked.assert_not_called()
 
 
-def test_read_permission_restores_without_allowing_run_updates(
-    http, monkeypatch
-):
-    """A reader can restore detail without gaining run update permission."""
-    http.store.run_archive_sweep()
-    checked_actions = []
+def test_restore_needs_update_permission_on_the_run(http, monkeypatch):
+    """Restoring writes to the database, so reading a run is not enough."""
+    http.retention.run_archive_sweep()
+    allowed = {Action.READ}
 
-    def allow_read(model, action):
-        checked_actions.append(action)
-        if action != Action.READ:
+    def verify(model, action):
+        if action not in allowed:
             raise HTTPException(403, "Forbidden")
 
-    monkeypatch.setattr(
-        runs_endpoints, "verify_permission_for_model", allow_read
-    )
-    monkeypatch.setattr(
-        endpoint_utils, "verify_permission_for_model", allow_read
-    )
+    monkeypatch.setattr(runs_endpoints, "verify_permission_for_model", verify)
 
+    denied = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
+    still_archived = http.store.get_run_header(http.ids.run)
+    allowed.add(Action.UPDATE)
     restored = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
-    update_response = http.client.put(f"/api/v1/runs/{http.ids.run}", json={})
 
+    assert denied.status_code == 403, denied.text
+    assert still_archived.archive_bundle_id is not None
     assert restored.status_code == 200, restored.text
     assert restored.json()["outcome"] == "restored"
-    assert update_response.status_code == 403, update_response.text
-    assert checked_actions == [Action.READ, Action.UPDATE]
 
 
 def test_get_entity_header_authorization_precedes_dehydration(
@@ -181,9 +179,9 @@ def test_get_entity_header_authorization_precedes_dehydration(
     def verify(model, *, action):
         events.append(("authorize", model, action))
 
-    def get(entity_id, *, authorize, hydrate):
+    def get(entity_id, *, authorizer, hydrate):
         assert entity_id == resource_id and hydrate is True
-        authorize(header)
+        authorizer.authorize(header)
         events.append(("hydrate", hydrated))
         return hydrated
 
@@ -197,7 +195,7 @@ def test_get_entity_header_authorization_precedes_dehydration(
     result = endpoint_utils.verify_permissions_and_get_entity(
         id=resource_id,
         get_method=get,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=True,
     )
 
@@ -329,7 +327,7 @@ def test_metadata_writes_authorize_retained_run_headers(
 ):
     """Metadata writes require owning-run and project permissions, hot or cold."""
     if archived:
-        http.store.run_archive_sweep()
+        http.retention.run_archive_sweep()
     resource_id = getattr(http.ids, resource_attribute)
     opened = Mock(side_effect=AssertionError("metadata read archive storage"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
@@ -396,7 +394,7 @@ def test_metadata_writes_authorize_retained_run_headers(
 
 def test_archived_snapshot_rest_updates_follow_description_semantics(http):
     """REST permits tag changes but rejects real cold-description writes."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     path = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
 
     added = http.client.put(
@@ -444,7 +442,7 @@ def test_archived_http_summaries_and_logs_need_no_storage(
             ]
         )
         session.commit()
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     opened = Mock(side_effect=OSError("storage unavailable"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
     fetched = Mock(return_value=[])
@@ -485,7 +483,7 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
 ):
     """Real list routes serialize hot details and cold summaries during outages."""
     run_factory(http.store, age_days=1)
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     opened = Mock(side_effect=OSError("archive storage unavailable"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
 
@@ -514,7 +512,7 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
 
 def test_archived_snapshot_summary_outlives_deleted_restore_run(http):
     """Deleting the owner leaves a readable snapshot without a locator."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     http.store.delete_run(http.ids.run)
 
     response = http.client.get(
@@ -535,7 +533,7 @@ def test_archived_snapshot_summary_outlives_deleted_restore_run(http):
 
 def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
     """The owning restore run is disclosed only after its own read check."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     checked = []
 
     def verify(model, *, action):
@@ -568,7 +566,7 @@ def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
 )
 def test_cold_configuration_and_replay_require_restore(http, method, path):
     """Operations that need archived definitions consistently return 409."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
 
     response = http.client.request(
         method, "/api/v1/" + path.format(**http.ids.model_dump())
@@ -611,11 +609,58 @@ def test_archive_dry_run_uses_read_permission(http, monkeypatch):
     assert denied.call_args.kwargs["action"] == Action.READ
 
 
+def test_pipeline_permission_does_not_archive_its_runs(http, monkeypatch):
+    """Runs are authorized themselves, not through the pipeline above them."""
+    verified = []
+
+    def deny_runs(models, action):
+        verified.extend(model.id for model in models)
+        raise HTTPException(403, "Forbidden")
+
+    monkeypatch.setattr(
+        retention_endpoints, "verify_permission_for_model", Mock()
+    )
+    monkeypatch.setattr(
+        retention_endpoints, "batch_verify_permissions_for_models", deny_runs
+    )
+
+    response = http.client.post(
+        "/api/v1/retention/archive",
+        json={"pipeline_id": str(http.ids.pipeline)},
+    )
+
+    assert response.status_code == 403, response.text
+    assert verified == [http.ids.run]
+    assert http.store.get_run_header(http.ids.run).archive_bundle_id is None
+
+
+def test_force_needs_a_server_admin(http):
+    """Only an admin can set aside the policy an admin configured."""
+    editor = http.store.list_users(UserFilter()).items[0].model_copy(deep=True)
+    editor.body.is_admin = False
+    http.client.app.dependency_overrides[authorize] = lambda: AuthContext(
+        user=editor
+    )
+
+    forced = http.client.post(
+        "/api/v1/retention/archive",
+        json={"run_ids": [str(http.ids.run)], "force": True},
+    )
+    unforced = http.client.post(
+        "/api/v1/retention/archive",
+        json={"run_ids": [str(http.ids.run)]},
+    )
+
+    assert forced.status_code == 403, forced.text
+    assert "server admins" in forced.text
+    assert unforced.status_code == 200, unforced.text
+
+
 def test_paused_archive_request_is_not_advertised_as_retryable(
     http, monkeypatch
 ):
     """An intentional pause is a 409 and keeps explicit restore available."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
     archive = http.client.post(
         "/api/v1/retention/archive",
@@ -632,9 +677,9 @@ def test_paused_archive_request_is_not_advertised_as_retryable(
 def test_retention_capacity_returns_actionable_busy_response(
     http, monkeypatch
 ):
-    """Retention saturation is explicit and bypasses client status retries."""
+    """A replica at its retention capacity says so instead of queueing."""
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+    monkeypatch.setattr(http.retention, "capacity", capacity)
 
     with capacity.claim():
         response = http.client.post(
@@ -643,39 +688,11 @@ def test_retention_capacity_returns_actionable_busy_response(
         )
 
     assert response.status_code == 429, response.text
-    assert response.headers["X-ZenML-Retry"] == "no"
-
-
-def test_unrelated_capacity_response_keeps_retry_policy(http, monkeypatch):
-    """Snapshot-execution saturation is not marked as a retention failure."""
-    executor = execution.BoundedThreadPoolExecutor(max_workers=1)
-    release = Event()
-    active = executor.submit(release.wait, 5)
-
-    def saturated(*args, **kwargs):
-        executor.submit(lambda: None)
-        return http.store.get_run(http.ids.run)
-
-    monkeypatch.setattr(execution, "run_snapshot", saturated)
-    monkeypatch.setattr(
-        pipeline_snapshot_endpoints, "check_entitlement", lambda **_: None
-    )
-    try:
-        response = http.client.post(
-            f"/api/v1/pipeline_snapshots/{http.ids.snapshot}/runs", json={}
-        )
-    finally:
-        release.set()
-        active.result(timeout=5)
-        executor.shutdown()
-
-    assert response.status_code == 429, response.text
-    assert response.headers.get("X-ZenML-Retry") != "no"
 
 
 def test_archived_run_and_snapshot_delete_over_http(http):
     """REST deletion authorizes from SQL headers, run before snapshot."""
-    http.store.run_archive_sweep()
+    http.retention.run_archive_sweep()
     snapshot = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
 
     assert http.client.delete(snapshot).status_code == 409

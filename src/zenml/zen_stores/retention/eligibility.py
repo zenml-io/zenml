@@ -18,11 +18,11 @@ in place, which needs their detail in SQL.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-from sqlalchemy import ColumnElement, Select, func, or_, select
+from sqlalchemy import ColumnElement, Engine, Select, func, or_, select
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, col
 
@@ -92,41 +92,57 @@ class ArchiveBatch(BaseModel):
     next_after_run_id: Optional[UUID] = None
 
 
-def _finished_unarchived(limit: int) -> Select[Any]:
-    """Select finished runs whose detail is still in SQL, oldest first.
+def _finished_unarchived(
+    position: Any, after: Optional[Tuple[datetime, UUID]], limit: int
+) -> Select[Any]:
+    """Select finished runs whose detail is still in SQL, in keyset order.
 
-    Both scans page by ``(end_time, id)``: the sweep continues from its saved
-    position, a targeted archive takes the oldest batch of one owner.
+    The archive marker is deliberately not part of any index, so a scan reads
+    past runs that are already archived; continuing from the last examined
+    position keeps that to one pass over them.
 
     Args:
+        position: Timestamp column that orders the scan, with the run ID as
+            tiebreaker. It has to lead an index for the scan to stay cheap.
+        after: Position and ID of the last examined run, or None to start
+            from the beginning.
         limit: Maximum number of rows.
 
     Returns:
-        Ordered, limited keyset query over run positions.
+        Ordered, limited query over run positions and IDs.
     """
-    return (
-        select(col(PipelineRunSchema.end_time), col(PipelineRunSchema.id))
+    statement = (
+        select(position, col(PipelineRunSchema.id))
         .where(
             col(PipelineRunSchema.archive_bundle_id).is_(None),
             col(PipelineRunSchema.end_time).is_not(None),
         )
-        .order_by(col(PipelineRunSchema.end_time), col(PipelineRunSchema.id))
+        .order_by(position, col(PipelineRunSchema.id))
         .limit(limit)
     )
+    if after is not None:
+        statement = statement.where(
+            or_(
+                position > after[0],
+                (position == after[0])
+                & (col(PipelineRunSchema.id) > after[1]),
+            )
+        )
+    return statement
 
 
 def expand_target(
-    session: Session, request: ArchiveRequest, settings: ArchiveSettings
+    engine: Engine, request: ArchiveRequest, settings: ArchiveSettings
 ) -> ArchiveBatch:
     """Resolve one targeted archive request to a bounded batch of runs.
 
     Named runs are taken as given, deduplicated so one run cannot be counted
-    twice. A pipeline or project yields its oldest finished runs that are
-    still in SQL, bounded by the same budget the sweep uses, because a
-    project-wide request must not run unbounded inside one HTTP request.
+    twice. A pipeline or project yields its earliest-created finished runs
+    that are still in SQL, bounded by the same budget the sweep uses, because
+    a project-wide request must not run unbounded inside one HTTP request.
 
     Args:
-        session: Read session.
+        engine: Metadata database.
         request: Validated target.
         settings: The server's archive settings.
 
@@ -142,41 +158,33 @@ def expand_target(
         # refused on another, counting one run twice.
         return ArchiveBatch(run_ids=list(dict.fromkeys(request.run_ids)))
     limit = settings.max_runs_per_pass
-    statement = _finished_unarchived(limit + 1)
-    if request.pipeline_id is not None:
-        statement = statement.where(
-            col(PipelineRunSchema.pipeline_id) == request.pipeline_id
-        )
-    else:
-        statement = statement.where(
-            col(PipelineRunSchema.project_id) == request.project_id
-        )
-    if request.after_run_id is not None:
-        cursor_statement = select(
-            col(PipelineRunSchema.end_time), col(PipelineRunSchema.id)
-        ).where(col(PipelineRunSchema.id) == request.after_run_id)
-        if request.pipeline_id is not None:
-            cursor_statement = cursor_statement.where(
-                col(PipelineRunSchema.pipeline_id) == request.pipeline_id
-            )
-        else:
-            cursor_statement = cursor_statement.where(
-                col(PipelineRunSchema.project_id) == request.project_id
-            )
-        cursor = session.execute(cursor_statement).one_or_none()
-        if cursor is None or cursor.end_time is None:
-            raise KeyError(
-                f"Archive continuation run '{request.after_run_id}' is not "
-                "available for this target; restart without `after_run_id`."
-            )
-        statement = statement.where(
-            or_(
-                col(PipelineRunSchema.end_time) > cursor.end_time,
-                (col(PipelineRunSchema.end_time) == cursor.end_time)
-                & (col(PipelineRunSchema.id) > cursor.id),
-            )
-        )
-    rows = session.execute(statement).all()
+    owner = (
+        col(PipelineRunSchema.pipeline_id) == request.pipeline_id
+        if request.pipeline_id is not None
+        else col(PipelineRunSchema.project_id) == request.project_id
+    )
+    # One owner's runs are paged by `created` rather than by the sweep's
+    # `end_time`: the existing owner indexes already serve that order, so a
+    # targeted archive costs the largest table no index of its own.
+    created = col(PipelineRunSchema.created)
+    with Session(engine) as session:
+        after = None
+        if request.after_run_id is not None:
+            cursor = session.execute(
+                select(created, col(PipelineRunSchema.id)).where(
+                    col(PipelineRunSchema.id) == request.after_run_id, owner
+                )
+            ).one_or_none()
+            if cursor is None:
+                raise KeyError(
+                    f"Archive continuation run '{request.after_run_id}' is "
+                    "not available for this target; restart without "
+                    "`after_run_id`."
+                )
+            after = (cursor.created, cursor.id)
+        rows = session.execute(
+            _finished_unarchived(created, after, limit + 1).where(owner)
+        ).all()
     selected = rows[:limit]
     more = len(rows) > limit
     return ArchiveBatch(
@@ -207,7 +215,11 @@ def discover_runs(
     Returns:
         Candidate positions, oldest first.
     """
-    statement = _finished_unarchived(limit).where(
+    statement = _finished_unarchived(
+        col(PipelineRunSchema.end_time),
+        (after.end_time, after.run_id) if after is not None else None,
+        limit,
+    ).where(
         col(PipelineRunSchema.end_time)
         < now - timedelta(days=settings.after_days),
     )
@@ -215,14 +227,6 @@ def discover_runs(
         statement = statement.where(~_model_link(col(PipelineRunSchema.id)))
     if skip:
         statement = statement.where(col(PipelineRunSchema.id).not_in(skip))
-    if after is not None:
-        statement = statement.where(
-            or_(
-                col(PipelineRunSchema.end_time) > after.end_time,
-                (col(PipelineRunSchema.end_time) == after.end_time)
-                & (col(PipelineRunSchema.id) > after.run_id),
-            )
-        )
     rows = session.execute(statement).all()
     return [
         Cursor(end_time=end_time, run_id=run_id) for end_time, run_id in rows

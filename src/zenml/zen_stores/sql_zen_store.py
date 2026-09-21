@@ -23,19 +23,7 @@ from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
 from zenml.zen_stores.retention import fences, transactions
-from zenml.zen_stores.retention.archiver import (
-    ArchivePass,
-    archive_runs,
-    preview_runs,
-)
-from zenml.zen_stores.retention.capacity import (
-    MAX_CONCURRENT_RETENTION_OPERATIONS,
-    RetentionCapacity,
-)
-from zenml.zen_stores.retention.eligibility import expand_target
-from zenml.zen_stores.retention.restorer import restore_run
 from zenml.zen_stores.retention.state import RetentionState
-from zenml.zen_stores.retention.storage import ArchiveStorage
 
 try:
     import sqlalchemy  # noqa
@@ -63,9 +51,8 @@ import time
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from functools import cached_property, lru_cache
+from functools import lru_cache
 from pathlib import Path
-from threading import Event
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -78,6 +65,7 @@ from typing import (
     Literal,
     NoReturn,
     Optional,
+    Protocol,
     Sequence,
     Set,
     Tuple,
@@ -152,7 +140,7 @@ from zenml.config.pipeline_run_configuration import (
     ReplayRunConfiguration,
 )
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.config.server_config import ArchiveSettings, ServerConfiguration
+from zenml.config.server_config import ServerConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
@@ -186,8 +174,6 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
-    RestoreOutcome,
-    RetentionOutcome,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -209,8 +195,6 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     ExecutionArchivedError,
-    ExecutionRetentionConflictError,
-    ExecutionRetentionUnavailableError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
 )
@@ -407,13 +391,8 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
 from zenml.models.v2.misc.retention import (
-    ArchiveRequest,
-    ArchiveResponse,
-    RestoreResponse,
     RetentionStatusResponse,
 )
-from zenml.orchestrators.legacy_dag_runner import reverse_dag
-from zenml.orchestrators.topsort import topsorted_layers
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -670,6 +649,31 @@ class Session(SqlModelSession):
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)
+
+
+AnyHeader = TypeVar(
+    "AnyHeader",
+    bound=BaseIdentifiedResponse,  # type: ignore[type-arg]
+    contravariant=True,
+)
+
+
+class HeaderAuthorizer(Protocol[AnyHeader]):
+    """Permission check that a getter runs on an entity's header row.
+
+    A getter refuses to hydrate an archived entity. Checking permissions on
+    the fetched response, as callers usually do, would let that refusal reach
+    a caller who may not see the entity at all. The getter therefore hands the
+    header row, without metadata or resources, to this check first, within
+    the query it already runs.
+    """
+
+    def authorize(self, header: AnyHeader) -> None:
+        """Raise unless the caller may access the entity.
+
+        Args:
+            header: The entity without its metadata and resources.
+        """
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -1249,9 +1253,6 @@ class SqlZenStore(BaseZenStore):
         jl_arg(PipelineRunSchema.archive_bundle_id),
         jl_arg(PipelineRunSchema.start_time),
         jl_arg(PipelineRunSchema.end_time),
-    )
-    _RETENTION_CAPACITY: ClassVar[RetentionCapacity] = RetentionCapacity(
-        MAX_CONCURRENT_RETENTION_OPERATIONS
     )
 
     TYPE: ClassVar[StoreType] = StoreType.SQL
@@ -5682,9 +5683,9 @@ class SqlZenStore(BaseZenStore):
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
         *,
-        authorize: Optional[
-            Callable[
-                [Union[PipelineSnapshotResponse, PipelineRunResponse]], None
+        authorizer: Optional[
+            HeaderAuthorizer[
+                Union[PipelineSnapshotResponse, PipelineRunResponse]
             ]
         ] = None,
     ) -> PipelineSnapshotResponse:
@@ -5699,7 +5700,8 @@ class SqlZenStore(BaseZenStore):
                 included.
             include_config_schema: Whether to include the config schema in the
                 response.
-            authorize: Optional permission check using the current SQL header.
+            authorizer: Optional permission check on the header row, run
+                before anything about archived detail is revealed.
 
         Returns:
             The snapshot.
@@ -5713,8 +5715,8 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
-            if authorize is not None:
-                authorize(
+            if authorizer is not None:
+                authorizer.authorize(
                     snapshot.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -5729,7 +5731,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 if (
                     archive_restore_run_id is not None
-                    and authorize is not None
+                    and authorizer is not None
                 ):
                     owner = self._get_schema_by_id(
                         resource_id=archive_restore_run_id,
@@ -5737,7 +5739,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                         query_options=[load_only(*self._RUN_HEADER_COLUMNS)],
                     )
-                    authorize(
+                    authorizer.authorize(
                         owner.to_model(
                             include_metadata=False, include_resources=False
                         )
@@ -6671,7 +6673,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_run_id: UUID,
         include_step_metadata: Optional[List[str]] = None,
         *,
-        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
+        authorizer: Optional[HeaderAuthorizer[PipelineRunResponse]] = None,
     ) -> PipelineRunDAG:
         """Get the DAG of a pipeline run.
 
@@ -6679,7 +6681,8 @@ class SqlZenStore(BaseZenStore):
             pipeline_run_id: The ID of the pipeline run.
             include_step_metadata: Run metadata keys for which to include the
                 values in the step nodes.
-            authorize: Optional permission check using the current SQL header.
+            authorizer: Optional permission check on the header row, run
+                before anything about archived detail is revealed.
 
         Returns:
             The DAG of the pipeline run.
@@ -6749,8 +6752,8 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            if authorize is not None:
-                authorize(
+            if authorizer is not None:
+                authorizer.authorize(
                     run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -6780,22 +6783,6 @@ class SqlZenStore(BaseZenStore):
                         step_definition,
                         substitutions=pipeline_configuration.substitutions,
                     )
-                # SQL relationship order does not guarantee that a producer
-                # precedes a consumer that references its artifact nodes.
-                dependencies = {
-                    name: list(step.spec.upstream_steps)
-                    for name, step in steps.items()
-                }
-                downstream_steps = reverse_dag(dependencies)
-                layers = topsorted_layers(
-                    nodes=list(steps),
-                    get_node_id_fn=lambda name: name,
-                    get_parent_nodes=lambda name: dependencies[name],
-                    get_child_nodes=lambda name: downstream_steps[name],
-                )
-                steps = {
-                    name: steps[name] for layer in layers for name in layer
-                }
             else:
                 steps = {
                     config_table.name: DAGStepView.from_dict(
@@ -7411,7 +7398,7 @@ class SqlZenStore(BaseZenStore):
         include_full_metadata: bool = False,
         include_python_packages: bool = False,
         *,
-        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
+        authorizer: Optional[HeaderAuthorizer[PipelineRunResponse]] = None,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -7423,7 +7410,8 @@ class SqlZenStore(BaseZenStore):
                 full metadata in the response.
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
-            authorize: Optional permission check using the current SQL header.
+            authorizer: Optional permission check on the header row, run
+                before anything about archived detail is revealed.
 
         Returns:
             The pipeline run.
@@ -7442,8 +7430,8 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
-            if authorize is not None:
-                authorize(
+            if authorizer is not None:
+                authorizer.authorize(
                     run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -12602,7 +12590,12 @@ class SqlZenStore(BaseZenStore):
             # try to acquire more exclusive locks
             session.commit()
 
-            # Match retention's run-before-snapshot lock order.
+            # Lock the run and its snapshot before inserting, so concurrent
+            # step inserts for the same run serialize here instead of
+            # deadlocking on the insert. The run is locked first because the
+            # archiver retires a run and then its snapshot: taking the two
+            # locks in the opposite order could deadlock against an archive
+            # of this run.
             fences.protect_run(session, step_run.pipeline_run_id)
             if run.snapshot_id is None:
                 raise IllegalOperationError(
@@ -13028,7 +13021,7 @@ class SqlZenStore(BaseZenStore):
         step_run_id: UUID,
         hydrate: bool = True,
         *,
-        authorize: Optional[Callable[[PipelineRunResponse], None]] = None,
+        authorizer: Optional[HeaderAuthorizer[PipelineRunResponse]] = None,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -13037,7 +13030,9 @@ class SqlZenStore(BaseZenStore):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
-            authorize: Optional permission check on the owning run header.
+            authorizer: Optional permission check on the owning run's
+                header row, run before anything about archived detail is
+                revealed.
 
         Returns:
             The step run.
@@ -13059,8 +13054,8 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            if authorize is not None:
-                authorize(
+            if authorizer is not None:
+                authorizer.authorize(
                     step.pipeline_run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -14557,48 +14552,6 @@ class SqlZenStore(BaseZenStore):
 
         return project_model
 
-    @cached_property
-    def archive_storage(self) -> ArchiveStorage:
-        """Create the storage named by the server's archive settings.
-
-        Returns:
-            Storage rooted at the configured archive URI.
-
-        Raises:
-            ExecutionRetentionUnavailableError: Archive storage is not
-                configured or cannot be created.
-        """  # noqa: DOC502
-        settings = self.archive_settings
-        return ArchiveStorage.from_uri(
-            settings.root_uri, connector_id=settings.connector_id
-        )
-
-    @property
-    def archive_settings(self) -> ArchiveSettings:
-        """Read the server's configured archive storage settings.
-
-        Returns:
-            The configured archive settings.
-
-        Raises:
-            IllegalOperationError: The database is SQLite.
-            ExecutionRetentionUnavailableError: Archive storage is not
-                configured.
-        """
-        if self.config.driver != SQLDatabaseDriver.MYSQL:
-            raise IllegalOperationError(
-                "Execution archiving requires a MySQL database."
-            )
-        settings = ServerConfiguration.get_server_config().archive
-        if not settings.configured:
-            raise ExecutionRetentionUnavailableError(
-                "Execution archive storage is not configured on this server; ask "
-                "your server administrator to set "
-                "ZENML_SERVER_ARCHIVE__BACKEND and "
-                "ZENML_SERVER_ARCHIVE__URI."
-            )
-        return settings
-
     def get_run_headers(
         self, run_ids: Sequence[UUID]
     ) -> List[PipelineRunResponse]:
@@ -14672,93 +14625,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=False, include_resources=False
             )
 
-    def run_archive_sweep(
-        self, cancel_event: Optional[Event] = None
-    ) -> RetentionOutcome:
-        """Run one bounded archive sweep, if no other replica is sweeping.
-
-        Args:
-            cancel_event: Cooperative scheduler shutdown signal.
-
-        Returns:
-            The sweep outcome.
-
-        Raises:
-            ExecutionRetentionBusyError: This replica has no retention
-                capacity available.
-            ExecutionRetentionConflictError: Another replica holds the lease.
-        """  # noqa: DOC502,DOC503
-        settings = self.archive_settings
-        if not settings.enabled:
-            raise ExecutionRetentionConflictError(
-                "New execution archiving is paused by "
-                "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
-                "restorable."
-            )
-        if not settings.schedule_enabled:
-            raise ExecutionRetentionConflictError(
-                "Scheduled execution archiving is disabled by "
-                "ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED. Use a manual archive "
-                "request instead."
-            )
-        with self._RETENTION_CAPACITY.claim():
-            archive_pass = ArchivePass(
-                self.engine,
-                self.archive_storage,
-                settings,
-                cancel_event=cancel_event,
-            )
-            archive_pass.accept()
-            return archive_pass.run().last_outcome
-
-    def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
-        """Archive or preview the requested runs under the configured policy.
-
-        Args:
-            request: Authorized runs, pipeline, or project to archive.
-
-        Returns:
-            Counts and the runs that were refused, each with a reason.
-
-        Raises:
-            IllegalOperationError: The metadata database is not MySQL.
-            ExecutionRetentionBusyError: This replica has no retention
-                capacity available.
-            ExecutionRetentionConflictError: New archive creation is paused.
-        """  # noqa: DOC503
-        if request.dry_run:
-            if self.config.driver != SQLDatabaseDriver.MYSQL:
-                raise IllegalOperationError(
-                    "Execution archive previews require a MySQL database."
-                )
-            settings = ServerConfiguration.get_server_config().archive
-        else:
-            settings = self.archive_settings
-            if not settings.enabled:
-                raise ExecutionRetentionConflictError(
-                    "New execution archiving is paused by "
-                    "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
-                    "restorable; use `dry_run` to preview the current policy."
-                )
-        with Session(self.engine) as session:
-            batch = expand_target(session, request, settings)
-        if request.dry_run:
-            result = preview_runs(
-                self.engine, settings, batch.run_ids, force=request.force
-            )
-        else:
-            with self._RETENTION_CAPACITY.claim():
-                result = archive_runs(
-                    self.engine,
-                    self.archive_storage,
-                    settings,
-                    batch.run_ids,
-                    force=request.force,
-                )
-        result.pending = batch.more
-        result.next_after_run_id = batch.next_after_run_id
-        return result
-
     def get_retention_status(self) -> RetentionStatusResponse:
         """Read the latest sweep without scanning runs or storage.
 
@@ -14773,27 +14639,6 @@ class SqlZenStore(BaseZenStore):
         state = RetentionState.load(raw)
         settings = ServerConfiguration.get_server_config().archive
         return state.to_response(settings, now=now)
-
-    def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
-        """Restore an archived run's detail in this request.
-
-        Args:
-            run_id: Authorized run.
-
-        Returns:
-            Restored, or a no-op when the run's detail is already in SQL.
-
-        Raises:
-            ExecutionRetentionBusyError: This replica has no retention
-                capacity available or this run is already being restored.
-        """  # noqa: DOC502
-        run = self.get_run_header(run_id)
-        if run.archive_bundle_id is None:
-            return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
-        # `restore_run` checks the marker again under its own locks, so a
-        # restore that finished while this one waited reports a no-op.
-        with self._RETENTION_CAPACITY.claim(key=("restore", run.id)):
-            return restore_run(self.engine, self.archive_storage, run.id)
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

@@ -82,6 +82,7 @@ if TYPE_CHECKING:
 
     from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
+    from zenml.zen_server.controllers.retention import RetentionController
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
@@ -109,6 +110,7 @@ _stream_broker: Optional[StreamBroker] = None
 _stream_broadcaster: Optional[StreamBroadcaster] = None
 _stream_end_handler: Optional["StreamEndEventHandler"] = None
 _artifact_store_cache: Optional["ArtifactStoreCache"] = None
+_retention_controller: Optional["RetentionController"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -635,6 +637,29 @@ def artifact_store_cache() -> "ArtifactStoreCache":
     if _artifact_store_cache is None:
         raise RuntimeError("Artifact store cache not initialized")
     return _artifact_store_cache
+
+
+def retention_controller() -> "RetentionController":
+    """Return this replica's execution retention controller.
+
+    Returns:
+        The execution retention controller.
+
+    Raises:
+        RuntimeError: If the retention controller is not initialized.
+    """
+    global _retention_controller
+    if _retention_controller is None:
+        raise RuntimeError("Retention controller not initialized")
+    return _retention_controller
+
+
+def initialize_retention_controller() -> None:
+    """Initialize the execution retention controller."""
+    global _retention_controller
+    from zenml.zen_server.controllers.retention import RetentionController
+
+    _retention_controller = RetentionController(zen_store())
 
 
 def initialize_artifact_store_cache() -> None:

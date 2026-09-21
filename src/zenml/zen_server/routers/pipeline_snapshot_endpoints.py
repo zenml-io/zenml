@@ -62,21 +62,18 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
+    ReadAuthorizer,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
-    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     verify_permission,
     verify_permission_for_model,
-)
-from zenml.zen_server.routers.workload_manager_gate import (
-    workload_manager_enabled,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -90,6 +87,12 @@ logger = get_logger(__name__)
 
 router = APIRouter(
     prefix=API + VERSION_1 + PIPELINE_SNAPSHOTS,
+    tags=["snapshots"],
+    responses={401: error_response, 403: error_response},
+)
+
+# Mounted only with a workload manager; see `runs_endpoints.workload_router`.
+workload_router = APIRouter(
     tags=["snapshots"],
     responses={401: error_response, 403: error_response},
 )
@@ -235,7 +238,7 @@ def get_pipeline_snapshot(
     return verify_permissions_and_get_entity(
         id=snapshot_id,
         get_method=zen_store().get_snapshot,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=hydrate,
         step_configuration_filter=step_configuration_filter,
         include_config_schema=include_config_schema,
@@ -377,7 +380,7 @@ def get_snapshot_code_download_token(
     snapshot = store.get_snapshot(
         snapshot_id=snapshot_id,
         hydrate=True,
-        authorize=verify_read_permission_for_model,
+        authorizer=ReadAuthorizer(),
         step_configuration_filter=[],
         include_config_schema=False,
     )
@@ -466,7 +469,7 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
     )
 
 
-@router.post(
+@workload_router.post(
     "/{snapshot_id}/runs",
     responses={
         401: error_response,
@@ -474,7 +477,6 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
         409: error_response,
         422: error_response,
         429: error_response,
-        501: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper
@@ -482,7 +484,6 @@ def create_snapshot_run(
     snapshot_id: UUID,
     run_request: PipelineSnapshotRunRequest,
     auth_context: AuthContext = Security(authorize),
-    _: None = Depends(workload_manager_enabled),
 ) -> PipelineRunResponse:
     """Run a pipeline from a snapshot.
 
@@ -504,7 +505,7 @@ def create_snapshot_run(
         snapshot = verify_permissions_and_get_entity(
             id=snapshot_id,
             get_method=zen_store().get_snapshot,
-            authorize_from_header=True,
+            authorize_in_store=True,
             hydrate=True,
         )
         analytics_handler.metadata = {
@@ -529,3 +530,7 @@ def create_snapshot_run(
             auth_context=auth_context,
             request=run_request,
         )
+
+
+if server_config().workload_manager_enabled:
+    router.include_router(workload_router)

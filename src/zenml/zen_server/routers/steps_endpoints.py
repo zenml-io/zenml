@@ -52,9 +52,9 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    ReadAuthorizer,
     verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
-    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -177,7 +177,7 @@ def get_step(
     return verify_permissions_and_get_entity(
         id=step_id,
         get_method=zen_store().get_run_step,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=hydrate,
     )
 
@@ -274,7 +274,7 @@ def get_step_configuration(
     step = zen_store().get_run_step(
         step_id,
         hydrate=True,
-        authorize=verify_read_permission_for_model,
+        authorizer=ReadAuthorizer(),
     )
 
     return step.config.model_dump()
@@ -300,7 +300,7 @@ def get_step_status(
     step = zen_store().get_run_step(
         step_id,
         hydrate=False,
-        authorize=verify_read_permission_for_model,
+        authorizer=ReadAuthorizer(),
     )
 
     return step.status
@@ -347,7 +347,7 @@ def get_step_logs(
     step = store.get_run_step(
         step_id,
         hydrate=False,
-        authorize=verify_read_permission_for_model,
+        authorizer=ReadAuthorizer(),
     )
 
     if step.log_collection:

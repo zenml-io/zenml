@@ -97,7 +97,13 @@ def saved_state(store: SqlZenStore) -> RetentionState:
 
 @pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
 def test_archive_restore_round_trip(
-    retention_store, kind, run_factory, archive_run, storage, monkeypatch
+    retention_store,
+    kind,
+    run_factory,
+    archive_run,
+    storage,
+    monkeypatch,
+    retention,
 ):
     """Restore recovers every SQL payload and the original detailed responses."""
     ids = run_factory(retention_store, kind)
@@ -136,7 +142,7 @@ def test_archive_restore_round_trip(
     ).get_body()
     assert header.type == before[1]["body"]["type"]
     assert header.substitutions == before[1]["body"]["substitutions"]
-    restored = retention_store.restore_pipeline_run(ids.run)
+    restored = retention.restore_pipeline_run(ids.run)
 
     assert restored.outcome == RestoreOutcome.RESTORED
     assert restored.restored_at is not None
@@ -259,7 +265,12 @@ def test_locked_recapture_reuses_step_projections(
 
 
 def test_shared_configuration_change_invalidates_projections(
-    retention_store, run_factory, storage, monkeypatch, NOW
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    NOW,
+    retention,
 ):
     """A projection input outside the document still fails the recapture."""
     ids = run_factory(retention_store)
@@ -292,7 +303,7 @@ def test_shared_configuration_change_invalidates_projections(
     monkeypatch.setattr(storage, "write", change_after_upload)
 
     attempt = archiver.RunArchiver(
-        retention_store.engine, storage, retention_store.archive_settings
+        retention_store.engine, storage, retention.archive_settings
     ).archive(ids.run, NOW)
 
     assert attempt.outcome == "skipped"
@@ -326,7 +337,12 @@ def test_retirement_compresses_only_the_uploaded_capture(
 
 
 def test_retirement_capture_queries_scale_by_page(
-    retention_store, run_factory, storage, monkeypatch, NOW
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    NOW,
+    retention,
 ) -> None:
     """A large run adds page-scale queries inside locked retirement."""
     ids = run_factory(retention_store, kind="legacy")
@@ -376,7 +392,7 @@ def test_retirement_capture_queries_scale_by_page(
         outcome = archiver.RunArchiver(
             retention_store.engine,
             storage,
-            retention_store.archive_settings,
+            retention.archive_settings,
         ).archive(ids.run, NOW)
     finally:
         event.remove(
@@ -394,7 +410,10 @@ def test_retirement_capture_queries_scale_by_page(
 
 
 def test_update_after_retirement_fails_with_the_restore_command(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    monkeypatch,
+    retention,
 ):
     """A write waiting on retirement's lock sees the marker and fails."""
     ids = run_factory(retention_store)
@@ -411,7 +430,7 @@ def test_update_after_retirement_fails_with_the_restore_command(
         ThreadPoolExecutor(1, thread_name_prefix="archive") as archivers,
         ThreadPoolExecutor(1, thread_name_prefix="writer") as writers,
     ):
-        archive = archivers.submit(retention_store.run_archive_sweep)
+        archive = archivers.submit(retention.run_archive_sweep)
         assert locked.wait(20)
         writer = writers.submit(
             retention_store.update_run,
@@ -430,8 +449,45 @@ def test_update_after_retirement_fails_with_the_restore_command(
             writer.result(timeout=20)
 
 
+def test_live_lease_refuses_a_second_sweep(
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    retention,
+):
+    """A replica that finds the sweep lease held does not sweep as well."""
+    ids = run_factory(retention_store)
+    uploaded, release = Event(), Event()
+    original = storage.write
+
+    def pause_after_upload(uri, data):
+        original(uri, data)
+        if uri.endswith(".json.gz"):
+            uploaded.set()
+            assert release.wait(20)
+
+    monkeypatch.setattr(storage, "write", pause_after_upload)
+    with ThreadPoolExecutor(1) as pool:
+        holder = pool.submit(retention.run_archive_sweep)
+        try:
+            assert uploaded.wait(20)
+            with pytest.raises(ExecutionRetentionConflictError):
+                retention.run_archive_sweep()
+        finally:
+            release.set()
+        assert holder.result(timeout=20) == RetentionOutcome.SUCCEEDED
+
+    assert retention_store.get_run_header(ids.run).archive_bundle_id
+
+
 def test_losing_pass_removes_its_object(
-    retention_store, run_factory, storage, monkeypatch, NOW
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    NOW,
+    retention,
 ):
     """Two passes racing on one run leave one bundle and one object."""
     ids = run_factory(retention_store)
@@ -448,7 +504,7 @@ def test_losing_pass_removes_its_object(
 
     monkeypatch.setattr(storage, "write", pause_after_upload)
     with ThreadPoolExecutor(1, thread_name_prefix="stale") as pool:
-        stale = pool.submit(retention_store.run_archive_sweep)
+        stale = pool.submit(retention.run_archive_sweep)
         try:
             assert uploaded.wait(20)
             with Session(retention_store.engine) as session:
@@ -464,7 +520,7 @@ def test_losing_pass_removes_its_object(
                 retention_store.get_retention_status().outcome
                 == RetentionOutcome.EXPIRED
             )
-            winner = retention_store.run_archive_sweep()
+            winner = retention.run_archive_sweep()
             assert winner == RetentionOutcome.SUCCEEDED
         finally:
             release.set()
@@ -491,7 +547,12 @@ def test_losing_pass_removes_its_object(
 
 @pytest.mark.parametrize("failure", ["upload", "retirement", "commit_ack"])
 def test_interrupted_retirement(
-    retention_store, run_factory, storage, monkeypatch, failure
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    failure,
+    retention,
 ):
     """A failed commit changes nothing; a lost acknowledgement keeps the object."""
     ids = run_factory(retention_store)
@@ -529,7 +590,7 @@ def test_interrupted_retirement(
         with monkeypatch.context() as patch:
             patch.setattr(retention_store.engine.dialect, "do_commit", commit)
             patch.setattr(storage, "write", write)
-            outcome = retention_store.run_archive_sweep()
+            outcome = retention.run_archive_sweep()
     finally:
         event.remove(retention_store.engine, "before_cursor_execute", observe)
 
@@ -541,13 +602,18 @@ def test_interrupted_retirement(
         assert not list(Path(storage.root).rglob("*.json.gz"))
     else:
         assert state.archived == 1
-        restored = retention_store.restore_pipeline_run(ids.run)
+        restored = retention.restore_pipeline_run(ids.run)
         assert restored.outcome == RestoreOutcome.RESTORED
         assert retention_store.get_run(ids.run).model_dump() == before[1]
 
 
 def test_unknown_retirement_outcome_keeps_uploaded_object(
-    retention_store, run_factory, storage, monkeypatch, NOW
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    NOW,
+    retention,
 ):
     """A missing catalog row cannot disprove a still-pending commit."""
     ids = run_factory(retention_store)
@@ -571,7 +637,7 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
     worker = archiver.RunArchiver(
         retention_store.engine,
         storage,
-        retention_store.archive_settings,
+        retention.archive_settings,
     )
     try:
         attempt = worker.archive(ids.run, NOW)
@@ -595,7 +661,11 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
 
 
 def test_cancelled_sweep_does_not_start_retirement_after_object_read(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    retention,
 ) -> None:
     """Cancellation after blocking I/O removes the uncommitted upload."""
     ids = run_factory(retention_store)
@@ -612,9 +682,7 @@ def test_cancelled_sweep_does_not_start_retirement_after_object_read(
 
     monkeypatch.setattr(storage, "read", blocked_read)
     with ThreadPoolExecutor(1) as pool:
-        future = pool.submit(
-            retention_store.run_archive_sweep, cancel_event=cancel
-        )
+        future = pool.submit(retention.run_archive_sweep, cancel_event=cancel)
         assert entered.wait(3)
         cancel.set()
         release.set()
@@ -628,34 +696,42 @@ def test_cancelled_sweep_does_not_start_retirement_after_object_read(
 
 
 def test_one_capacity_budget_covers_all_retention_payload_paths(
-    retention_store, run_factory, archive_run, monkeypatch
+    retention_store,
+    run_factory,
+    archive_run,
+    monkeypatch,
+    retention,
+    archive_request,
 ) -> None:
     """Manual archive, sweep, and restore share one replica-local budget."""
     archived = run_factory(retention_store)
     archive_run(retention_store, archived)
     candidate = run_factory(retention_store)
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+    monkeypatch.setattr(retention, "capacity", capacity)
 
     with capacity.claim():
         with pytest.raises(ExecutionRetentionBusyError):
-            retention_store.archive_runs(
-                ArchiveRequest(run_ids=[candidate.run])
-            )
+            archive_request(ArchiveRequest(run_ids=[candidate.run]))
         with pytest.raises(ExecutionRetentionBusyError):
-            retention_store.run_archive_sweep()
+            retention.run_archive_sweep()
         with pytest.raises(ExecutionRetentionBusyError):
-            retention_store.restore_pipeline_run(archived.run)
+            retention.restore_pipeline_run(archived.run)
 
 
 def test_duplicate_restore_is_rejected_before_second_download(
-    retention_store, run_factory, archive_run, storage, monkeypatch
+    retention_store,
+    run_factory,
+    archive_run,
+    storage,
+    monkeypatch,
+    retention,
 ) -> None:
     """Concurrent restores of one bundle do not duplicate payload reads."""
     ids = run_factory(retention_store)
     archive_run(retention_store, ids)
     capacity = RetentionCapacity(2)
-    monkeypatch.setattr(SqlZenStore, "_RETENTION_CAPACITY", capacity)
+    monkeypatch.setattr(retention, "capacity", capacity)
     entered = Event()
     release = Event()
     reads = 0
@@ -670,10 +746,10 @@ def test_duplicate_restore_is_rejected_before_second_download(
 
     monkeypatch.setattr(storage, "read", blocked_read)
     with ThreadPoolExecutor(1) as pool:
-        first = pool.submit(retention_store.restore_pipeline_run, ids.run)
+        first = pool.submit(retention.restore_pipeline_run, ids.run)
         assert entered.wait(3)
         with pytest.raises(ExecutionRetentionBusyError):
-            retention_store.restore_pipeline_run(ids.run)
+            retention.restore_pipeline_run(ids.run)
         release.set()
         assert first.result(timeout=5).outcome == RestoreOutcome.RESTORED
 
@@ -681,7 +757,11 @@ def test_duplicate_restore_is_rejected_before_second_download(
 
 
 def test_capture_classifies_late_record_growth_as_oversized(
-    retention_store, run_factory, storage, monkeypatch, NOW
+    retention_store,
+    run_factory,
+    monkeypatch,
+    NOW,
+    retention,
 ) -> None:
     """The capture count is checked before format validation runs."""
     ids = run_factory(retention_store)
@@ -689,7 +769,7 @@ def test_capture_classifies_late_record_growth_as_oversized(
         inspected = eligibility.inspect_run(
             session,
             ids.run,
-            retention_store.archive_settings,
+            retention.archive_settings,
             NOW,
         )
         monkeypatch.setattr(capture, "MAX_RECORDS", 5)
@@ -944,7 +1024,10 @@ def test_capture_guards_payload_before_driver_buffering(
 
 
 def test_sweep_continues_from_its_saved_position(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    monkeypatch,
+    retention,
 ):
     """Each sweep examines the next runs, including excluded ones."""
     runs = [
@@ -959,10 +1042,10 @@ def test_sweep_continues_from_its_saved_position(
         session.commit()
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
 
-    assert retention_store.run_archive_sweep() == RetentionOutcome.PAUSED
+    assert retention.run_archive_sweep() == RetentionOutcome.PAUSED
     assert saved_state(retention_store).skipped == 1
-    assert retention_store.run_archive_sweep() == RetentionOutcome.PAUSED
-    assert retention_store.run_archive_sweep() == RetentionOutcome.SUCCEEDED
+    assert retention.run_archive_sweep() == RetentionOutcome.PAUSED
+    assert retention.run_archive_sweep() == RetentionOutcome.SUCCEEDED
 
     archived = [
         retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
@@ -973,11 +1056,14 @@ def test_sweep_continues_from_its_saved_position(
 
 
 def test_status_reports_storage_failure_without_probing(
-    retention_store, storage, monkeypatch
+    retention_store,
+    storage,
+    monkeypatch,
+    retention,
 ):
     """Status reads safe saved diagnostics even while storage is unavailable."""
     monkeypatch.setattr(storage, "probe", lambda: False)
-    assert retention_store.run_archive_sweep() == RetentionOutcome.FAILED
+    assert retention.run_archive_sweep() == RetentionOutcome.FAILED
     monkeypatch.setattr(
         storage,
         "probe",
@@ -1013,7 +1099,12 @@ def test_archived_snapshot_is_deleted_only_after_its_run(
 
 @pytest.mark.parametrize("writer_kind", ["step", "update", "snapshot"])
 def test_writer_racing_archive_preserves_committed_detail(
-    retention_store, run_factory, storage, monkeypatch, NOW, writer_kind
+    retention_store,
+    run_factory,
+    monkeypatch,
+    NOW,
+    writer_kind,
+    retention,
 ):
     """Retirement waits for writers, then detects changed payload or ownership."""
     ids = run_factory(retention_store, "dynamic")
@@ -1066,7 +1157,7 @@ def test_writer_racing_archive_preserves_committed_detail(
         writer = pool.submit(writers[writer_kind])
         try:
             assert entered.wait(10)
-            archive = archives.submit(retention_store.run_archive_sweep)
+            archive = archives.submit(retention.run_archive_sweep)
             with pytest.raises(FutureTimeout):
                 archive.result(timeout=0.5)
         finally:
@@ -1077,14 +1168,14 @@ def test_writer_racing_archive_preserves_committed_detail(
         retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
         is None
     )
-    retention_store.run_archive_sweep()
+    retention.run_archive_sweep()
     assert retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
     if writer_kind == "snapshot":
         assert (
             retention_store.get_snapshot(ids.snapshot).archive_bundle_id
             is None
         )
-    retention_store.restore_pipeline_run(ids.run)
+    retention.restore_pipeline_run(ids.run)
     if writer_kind == "step":
         assert retention_store.get_run_step(written.id).config.name == "late"
     elif writer_kind == "update":
@@ -1095,7 +1186,12 @@ def test_writer_racing_archive_preserves_committed_detail(
 
 @pytest.mark.parametrize("failure", ["occupied", "insert"])
 def test_restore_conflict_rolls_back_all_detail(
-    retention_store, run_factory, archive_run, monkeypatch, failure
+    retention_store,
+    run_factory,
+    archive_run,
+    monkeypatch,
+    failure,
+    retention,
 ):
     """Ownership conflicts and failures after payload updates leave SQL unchanged."""
     ids = run_factory(retention_store, "dynamic")
@@ -1116,7 +1212,7 @@ def test_restore_conflict_rolls_back_all_detail(
     event.listen(retention_store.engine, "before_cursor_execute", fail_insert)
     try:
         with pytest.raises(ExecutionRetentionConflictError):
-            retention_store.restore_pipeline_run(ids.run)
+            retention.restore_pipeline_run(ids.run)
     finally:
         event.remove(
             retention_store.engine, "before_cursor_execute", fail_insert
@@ -1125,7 +1221,12 @@ def test_restore_conflict_rolls_back_all_detail(
 
 
 def test_restore_rejects_root_deleted_during_object_read(
-    retention_store, run_factory, archive_run, storage, monkeypatch
+    retention_store,
+    run_factory,
+    archive_run,
+    storage,
+    monkeypatch,
+    retention,
 ) -> None:
     """A disappearing root is an expected conflict, not a generic error."""
     ids = run_factory(retention_store)
@@ -1140,11 +1241,14 @@ def test_restore_rejects_root_deleted_during_object_read(
     monkeypatch.setattr(storage, "read", delete_during_read)
 
     with pytest.raises(ExecutionRetentionConflictError, match="disappeared"):
-        retention_store.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(ids.run)
 
 
 def test_restore_rejects_changed_root_snapshot(
-    retention_store, run_factory, archive_run
+    retention_store,
+    run_factory,
+    archive_run,
+    retention,
 ) -> None:
     """Restore validates the locked root ownership before writing detail."""
     ids = run_factory(retention_store)
@@ -1159,11 +1263,13 @@ def test_restore_rejects_changed_root_snapshot(
     with pytest.raises(
         ExecutionRetentionConflictError, match="owner or snapshot"
     ):
-        retention_store.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(ids.run)
 
 
 def test_targeted_archive_requires_explicit_policy_override(
-    retention_store, run_factory, storage
+    retention_store,
+    run_factory,
+    archive_request,
 ):
     """Manual archiving follows policy until force is explicit."""
     fresh = run_factory(retention_store, age_days=0)
@@ -1175,8 +1281,8 @@ def test_targeted_archive_requires_explicit_policy_override(
             .values(status=ExecutionStatus.RUNNING.value)
         )
 
-    normal = retention_store.archive_runs(ArchiveRequest(run_ids=[fresh.run]))
-    forced = retention_store.archive_runs(
+    normal = archive_request(ArchiveRequest(run_ids=[fresh.run]))
+    forced = archive_request(
         ArchiveRequest(run_ids=[fresh.run, active.run], force=True)
     )
 
@@ -1198,7 +1304,10 @@ def test_targeted_archive_requires_explicit_policy_override(
 
 
 def test_targeted_archive_is_bounded_and_reports_more_work(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    monkeypatch,
+    archive_request,
 ):
     """A project-wide archive does one batch and says more runs remain."""
     runs = [
@@ -1207,10 +1316,8 @@ def test_targeted_archive_is_bounded_and_reports_more_work(
     ]
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
 
-    first = retention_store.archive_runs(
-        ArchiveRequest(project_id=runs[0].project)
-    )
-    second = retention_store.archive_runs(
+    first = archive_request(ArchiveRequest(project_id=runs[0].project))
+    second = archive_request(
         ArchiveRequest(
             project_id=runs[0].project,
             after_run_id=first.next_after_run_id,
@@ -1238,7 +1345,12 @@ def test_archive_connector_cannot_be_deleted(retention_store, monkeypatch):
 
 @pytest.mark.parametrize("refusal", ["active", "oversized"])
 def test_targeted_archive_continues_past_refusal_only_batches(
-    retention_store, run_factory, storage, monkeypatch, NOW, refusal
+    retention_store,
+    run_factory,
+    monkeypatch,
+    NOW,
+    refusal,
+    archive_request,
 ):
     """A continuation reaches later runs after a fully refused page."""
     oldest = run_factory(
@@ -1259,10 +1371,8 @@ def test_targeted_archive_continues_past_refusal_only_batches(
         monkeypatch.setattr(eligibility, "MAX_RECORDS", 6)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
 
-    first = retention_store.archive_runs(
-        ArchiveRequest(project_id=oldest.project)
-    )
-    second = retention_store.archive_runs(
+    first = archive_request(ArchiveRequest(project_id=oldest.project))
+    second = archive_request(
         ArchiveRequest(
             project_id=oldest.project,
             after_run_id=first.next_after_run_id,
@@ -1277,7 +1387,11 @@ def test_targeted_archive_continues_past_refusal_only_batches(
 
 
 def test_archive_preview_is_bounded_and_side_effect_free(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    storage,
+    monkeypatch,
+    archive_request,
 ):
     """Dry-run uses eligibility without storage access or database writes."""
     eligible = run_factory(retention_store, age_days=100)
@@ -1297,7 +1411,7 @@ def test_archive_preview_is_bounded_and_side_effect_free(
     monkeypatch.setattr(storage, "read", blocked)
     monkeypatch.setattr(storage, "write", blocked)
 
-    result = retention_store.archive_runs(
+    result = archive_request(
         ArchiveRequest(project_id=eligible.project, dry_run=True)
     )
 
@@ -1312,7 +1426,12 @@ def test_archive_preview_is_bounded_and_side_effect_free(
 
 
 def test_pausing_new_archives_keeps_preview_and_restore_available(
-    retention_store, run_factory, archive_run, storage, monkeypatch
+    retention_store,
+    run_factory,
+    archive_run,
+    monkeypatch,
+    retention,
+    archive_request,
 ):
     """The write gate does not remove configured recovery access."""
     archived = run_factory(retention_store)
@@ -1325,30 +1444,32 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     assert not status.archive_enabled
     assert not status.archive_scheduled
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
-        retention_store.archive_runs(
-            ArchiveRequest(run_ids=[candidate.run], force=True)
-        )
+        archive_request(ArchiveRequest(run_ids=[candidate.run], force=True))
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
-        retention_store.run_archive_sweep()
-    preview = retention_store.archive_runs(
+        retention.run_archive_sweep()
+    preview = archive_request(
         ArchiveRequest(run_ids=[candidate.run], dry_run=True)
     )
     assert preview.eligible == 1
-    assert retention_store.restore_pipeline_run(archived.run).outcome == (
+    assert retention.restore_pipeline_run(archived.run).outcome == (
         RestoreOutcome.RESTORED
     )
 
 
 def test_manual_only_configuration_rejects_sweeps(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    monkeypatch,
+    retention,
+    archive_request,
 ):
     """Disabling the schedule preserves manual archiving."""
     ids = run_factory(retention_store)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "false")
 
     with pytest.raises(ExecutionRetentionConflictError, match="manual"):
-        retention_store.run_archive_sweep()
-    result = retention_store.archive_runs(ArchiveRequest(run_ids=[ids.run]))
+        retention.run_archive_sweep()
+    result = archive_request(ArchiveRequest(run_ids=[ids.run]))
 
     assert result.archived == 1
     status = retention_store.get_retention_status()
@@ -1357,7 +1478,10 @@ def test_manual_only_configuration_rejects_sweeps(
 
 
 def test_deleted_archive_continuation_has_a_clear_error(
-    retention_store, run_factory, storage, monkeypatch
+    retention_store,
+    run_factory,
+    monkeypatch,
+    archive_request,
 ):
     """A stale continuation asks the caller to restart the bounded scan."""
     runs = [
@@ -1365,14 +1489,14 @@ def test_deleted_archive_continuation_has_a_clear_error(
         for index in range(2)
     ]
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
-    first = retention_store.archive_runs(
+    first = archive_request(
         ArchiveRequest(project_id=runs[0].project, dry_run=True)
     )
     assert first.next_after_run_id == runs[0].run
     retention_store.delete_run(runs[0].run)
 
     with pytest.raises(KeyError, match="restart without `after_run_id`"):
-        retention_store.archive_runs(
+        archive_request(
             ArchiveRequest(
                 project_id=runs[0].project,
                 after_run_id=first.next_after_run_id,
@@ -1382,14 +1506,16 @@ def test_deleted_archive_continuation_has_a_clear_error(
 
 
 def test_archive_continuation_is_scoped_to_its_target(
-    retention_store, run_factory, storage
+    retention_store,
+    run_factory,
+    archive_request,
 ):
     """A cursor from another owner cannot move this target's scan."""
     target = run_factory(retention_store)
     other = run_factory(retention_store)
 
     with pytest.raises(KeyError, match="not available for this target"):
-        retention_store.archive_runs(
+        archive_request(
             ArchiveRequest(
                 pipeline_id=target.pipeline,
                 after_run_id=other.run,
@@ -1399,7 +1525,10 @@ def test_archive_continuation_is_scoped_to_its_target(
 
 
 def test_restore_validation_reads_no_retained_payload(
-    retention_store, run_factory, archive_run
+    retention_store,
+    run_factory,
+    archive_run,
+    retention,
 ):
     """Locking archived rows selects identities, not retained source code."""
     ids = run_factory(retention_store)
@@ -1412,7 +1541,7 @@ def test_restore_validation_reads_no_retained_payload(
 
     event.listen(retention_store.engine, "before_cursor_execute", observe)
     try:
-        restored = retention_store.restore_pipeline_run(ids.run)
+        restored = retention.restore_pipeline_run(ids.run)
     finally:
         event.remove(retention_store.engine, "before_cursor_execute", observe)
 
@@ -1441,7 +1570,10 @@ def test_run_without_start_time_is_archived(
 
 
 def test_archived_snapshot_cannot_be_named_without_restore(
-    retention_store, run_factory, archive_run
+    retention_store,
+    run_factory,
+    archive_run,
+    retention,
 ):
     """Naming is new use: a named snapshot must own its definition in SQL."""
     ids = run_factory(retention_store)
@@ -1452,7 +1584,7 @@ def test_archived_snapshot_cannot_be_named_without_restore(
             ids.snapshot, PipelineSnapshotUpdate(name="promoted")
         )
 
-    retention_store.restore_pipeline_run(ids.run)
+    retention.restore_pipeline_run(ids.run)
     named = retention_store.update_snapshot(
         ids.snapshot, PipelineSnapshotUpdate(name="promoted")
     )

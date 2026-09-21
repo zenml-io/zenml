@@ -126,7 +126,7 @@ def test_archive_startup_database_validation_is_fatal(
     archive = ArchiveSettings(backend="local", uri="/tmp/archive")
     storage = SimpleNamespace(probe=Mock())
 
-    class UnsupportedStore:
+    class UnsupportedController:
         archive_storage = storage
 
         @property
@@ -138,7 +138,9 @@ def test_archive_startup_database_validation_is_fatal(
         "server_config",
         lambda: SimpleNamespace(archive=archive),
     )
-    monkeypatch.setattr(zen_server_api, "zen_store", UnsupportedStore)
+    monkeypatch.setattr(
+        zen_server_api, "retention_controller", UnsupportedController
+    )
 
     with pytest.raises(IllegalOperationError, match="unsupported database"):
         zen_server_api._check_archive_store_on_startup()
@@ -154,7 +156,7 @@ def test_archive_startup_storage_failure_is_a_warning(
 
     archive = ArchiveSettings(backend="local", uri="/tmp/archive")
     storage = SimpleNamespace(probe=Mock(side_effect=OSError("temporary")))
-    store = SimpleNamespace(
+    controller = SimpleNamespace(
         archive_settings=archive,
         archive_storage=storage,
     )
@@ -164,7 +166,9 @@ def test_archive_startup_storage_failure_is_a_warning(
         "server_config",
         lambda: SimpleNamespace(archive=archive),
     )
-    monkeypatch.setattr(zen_server_api, "zen_store", lambda: store)
+    monkeypatch.setattr(
+        zen_server_api, "retention_controller", lambda: controller
+    )
     monkeypatch.setattr(zen_server_api.logger, "warning", warning)
 
     zen_server_api._check_archive_store_on_startup()

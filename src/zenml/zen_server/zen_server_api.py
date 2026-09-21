@@ -105,6 +105,7 @@ from zenml.zen_server.utils import (
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
+    initialize_retention_controller,
     initialize_snapshot_executor,
     initialize_snapshot_run_dispatcher,
     initialize_streaming,
@@ -113,13 +114,13 @@ from zenml.zen_server.utils import (
     maintenance_executor,
     register_event_handlers,
     register_webhook_event_handlers,
+    retention_controller,
     server_config,
     shutdown_snapshot_run_dispatcher,
     shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
-    zen_store,
 )
 
 
@@ -165,12 +166,12 @@ def _check_archive_store_on_startup() -> None:
     """  # noqa: DOC502
     if not server_config().archive.configured:
         return
-    store = zen_store()
+    controller = retention_controller()
     # Database and configuration failures are fatal. Only the external storage
     # probe below is allowed to degrade to a startup warning.
-    _ = store.archive_settings
+    _ = controller.archive_settings
     try:
-        usable = store.archive_storage.probe()
+        usable = controller.archive_storage.probe()
     except Exception:
         usable = False
     if not usable:
@@ -216,8 +217,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # avoid race conditions
         await initialize_request_manager()
         initialize_zen_store()
+        initialize_retention_controller()
         _check_archive_store_on_startup()
-        archive_scheduler = _start_archive_scheduler()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()
         initialize_rbac()
@@ -225,6 +226,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         initialize_workload_manager()
         initialize_snapshot_executor()
         initialize_maintenance_executor()
+        # Sweeps run on the maintenance executor, so it has to exist first.
+        archive_scheduler = _start_archive_scheduler()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
         await initialize_streaming()

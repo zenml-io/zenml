@@ -20,10 +20,12 @@ from zenml.enums import RetentionOutcome
 from zenml.exceptions import (
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
+    MaxConcurrentTasksError,
 )
 from zenml.logger import get_logger
 from zenml.utils.native_schedules import next_occurrence_for_cron
 from zenml.utils.time_utils import utc_now
+from zenml.zen_server.utils import maintenance_executor, retention_controller
 
 logger = get_logger(__name__)
 
@@ -75,9 +77,15 @@ class ArchiveScheduler:
             except asyncio.TimeoutError:
                 pass
             try:
-                outcome = await asyncio.get_event_loop().run_in_executor(
-                    None, self._sweep
+                outcome = await asyncio.wrap_future(
+                    maintenance_executor().submit(self._sweep)
                 )
+            except MaxConcurrentTasksError:
+                logger.debug(
+                    "Another maintenance task is running; the archive sweep "
+                    "is retried shortly."
+                )
+                outcome = RetentionOutcome.PAUSED
             except Exception:
                 logger.exception("Error during the archive sweep")
                 outcome = RetentionOutcome.FAILED
@@ -94,17 +102,17 @@ class ArchiveScheduler:
             The sweep outcome, or `RUNNING` when another replica holds the
             lease.
         """
-        from zenml.zen_server.utils import zen_store
-
         try:
-            return zen_store().run_archive_sweep(
+            return retention_controller().run_archive_sweep(
                 cancel_event=self._cancel_event
             )
         except ExecutionRetentionBusyError:
             logger.debug("This replica is at its retention capacity.")
             return RetentionOutcome.PAUSED
-        except ExecutionRetentionConflictError:
-            logger.debug("Another replica is running the archive sweep.")
+        except ExecutionRetentionConflictError as error:
+            # Either another replica holds the lease or archiving is switched
+            # off; the error says which.
+            logger.debug("Archive sweep skipped: %s", error)
             return RetentionOutcome.RUNNING
 
     def _seconds_until_next_sweep(self) -> float:

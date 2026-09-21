@@ -55,15 +55,16 @@ AnyUpdate = TypeVar("AnyUpdate", bound=BaseUpdate)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
-def verify_read_permission_for_model(
-    model: BaseIdentifiedResponse[Any, Any, Any],
-) -> None:
-    """Verify read permission for a response model.
+class ReadAuthorizer:
+    """Checks read permission on the header rows a store getter hands over."""
 
-    Args:
-        model: The response model to authorize.
-    """
-    verify_permission_for_model(model, action=Action.READ)
+    def authorize(self, header: BaseIdentifiedResponse[Any, Any, Any]) -> None:
+        """Verify read permission on an entity's header row.
+
+        Args:
+            header: The entity without its metadata and resources.
+        """
+        verify_permission_for_model(header, action=Action.READ)
 
 
 def verify_permissions_and_create_entity(
@@ -212,7 +213,7 @@ def verify_permissions_and_get_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr], AnyResponse],
     *,
-    authorize_from_header: bool = False,
+    authorize_in_store: bool = False,
     **get_method_kwargs: Any,
 ) -> AnyResponse:
     """Verify permissions and fetch an entity.
@@ -220,19 +221,21 @@ def verify_permissions_and_get_entity(
     Args:
         id: The ID of the entity to fetch.
         get_method: The method to fetch the entity.
-        authorize_from_header: Whether the getter accepts an ``authorize``
-            callback that it invokes on the permission model before hydration.
+        authorize_in_store: Whether the getter takes an ``authorizer`` and
+            verifies read permission itself. Getters that can refuse to return
+            an archived entity do, so the refusal never reaches a caller who
+            may not read the entity.
         get_method_kwargs: Keyword arguments to pass to the get method.
 
     Returns:
         A model of the fetched entity.
     """
-    if authorize_from_header:
-        get_method_kwargs["authorize"] = verify_read_permission_for_model
+    if authorize_in_store:
+        get_method_kwargs["authorizer"] = ReadAuthorizer()
 
     model = get_method(id, **get_method_kwargs)
-    if not authorize_from_header:
-        verify_read_permission_for_model(model)
+    if not authorize_in_store:
+        verify_permission_for_model(model, action=Action.READ)
     return dehydrate_response_model(model)
 
 

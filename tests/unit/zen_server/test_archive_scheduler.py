@@ -10,10 +10,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from zenml.enums import RetentionOutcome
-from zenml.exceptions import ExecutionRetentionConflictError
+from zenml.exceptions import (
+    ExecutionRetentionConflictError,
+    MaxConcurrentTasksError,
+)
 from zenml.zen_server import archive_scheduler
-from zenml.zen_server import utils as server_utils
 from zenml.zen_server.archive_scheduler import ArchiveScheduler
+from zenml.zen_server.pipeline_execution.utils import (
+    BoundedThreadPoolExecutor,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -22,6 +27,44 @@ pytestmark = pytest.mark.anyio
 def anyio_backend() -> str:
     """Run scheduler tests on asyncio."""
     return "asyncio"
+
+
+@pytest.fixture(autouse=True)
+def maintenance_executor(monkeypatch: pytest.MonkeyPatch):
+    """Give the scheduler the single maintenance worker a server has."""
+    executor = BoundedThreadPoolExecutor(max_workers=1)
+    monkeypatch.setattr(
+        archive_scheduler, "maintenance_executor", lambda: executor
+    )
+    yield executor
+    executor.shutdown(wait=True)
+
+
+async def run_until_second_wait(
+    monkeypatch: pytest.MonkeyPatch, scheduler: ArchiveScheduler
+) -> list[float]:
+    """Run one sweep without sleeping and return the delays it waited for."""
+    wait_timeouts: list[float] = []
+    second_wait_reached = asyncio.Event()
+
+    async def wait_without_sleeping(
+        waiter: Coroutine[Any, Any, bool], timeout: float
+    ) -> None:
+        waiter.close()
+        wait_timeouts.append(timeout)
+        if len(wait_timeouts) == 1:
+            raise asyncio.TimeoutError
+
+        scheduler._shutdown_event.set()
+        second_wait_reached.set()
+
+    monkeypatch.setattr(
+        archive_scheduler.asyncio, "wait_for", wait_without_sleeping
+    )
+    scheduler.start()
+    await second_wait_reached.wait()
+    await scheduler.shutdown()
+    return wait_timeouts
 
 
 @pytest.mark.parametrize(
@@ -41,52 +84,70 @@ async def test_scheduler_selects_next_delay_from_sweep_outcome(
     scheduler = ArchiveScheduler("* * * * *")
     schedule_delay = MagicMock(side_effect=[60.0, 120.0])
     sweep = MagicMock(return_value=outcome)
-    wait_timeouts: list[float] = []
-    second_wait_reached = asyncio.Event()
-
-    async def wait_without_sleeping(
-        waiter: Coroutine[Any, Any, bool], timeout: float
-    ) -> None:
-        waiter.close()
-        wait_timeouts.append(timeout)
-        if len(wait_timeouts) == 1:
-            raise asyncio.TimeoutError
-
-        scheduler._shutdown_event.set()
-        second_wait_reached.set()
-
     monkeypatch.setattr(scheduler, "_seconds_until_next_sweep", schedule_delay)
     monkeypatch.setattr(scheduler, "_sweep", sweep)
-    monkeypatch.setattr(
-        archive_scheduler.asyncio, "wait_for", wait_without_sleeping
-    )
 
-    scheduler.start()
-    await second_wait_reached.wait()
-    await scheduler.shutdown()
+    wait_timeouts = await run_until_second_wait(monkeypatch, scheduler)
 
     assert wait_timeouts == [60.0, expected_second_delay]
     assert schedule_delay.call_count == expected_schedule_calls
     sweep.assert_called_once_with()
 
 
+@pytest.mark.parametrize(
+    ("error", "expected_second_delay"),
+    [
+        (RuntimeError("archive storage exploded"), 120.0),
+        (
+            MaxConcurrentTasksError("busy"),
+            archive_scheduler.RESUME_DELAY_SECONDS,
+        ),
+    ],
+)
+async def test_scheduler_outlives_a_failing_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+    maintenance_executor: BoundedThreadPoolExecutor,
+    error: Exception,
+    expected_second_delay: float,
+) -> None:
+    """A sweep that cannot run or blows up leaves the schedule running."""
+    scheduler = ArchiveScheduler("* * * * *")
+    monkeypatch.setattr(
+        scheduler,
+        "_seconds_until_next_sweep",
+        MagicMock(side_effect=[60.0, 120.0]),
+    )
+    if isinstance(error, MaxConcurrentTasksError):
+        monkeypatch.setattr(
+            maintenance_executor, "submit", MagicMock(side_effect=error)
+        )
+    else:
+        monkeypatch.setattr(scheduler, "_sweep", MagicMock(side_effect=error))
+
+    wait_timeouts = await run_until_second_wait(monkeypatch, scheduler)
+
+    assert wait_timeouts == [60.0, expected_second_delay]
+
+
 def test_scheduler_treats_a_sweep_conflict_as_running(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A live lease held by another replica is a normal running outcome."""
-    store = MagicMock()
-    store.run_archive_sweep.side_effect = ExecutionRetentionConflictError(
+    controller = MagicMock()
+    controller.run_archive_sweep.side_effect = ExecutionRetentionConflictError(
         "Archive sweep lease is already held."
     )
-    monkeypatch.setattr(server_utils, "zen_store", lambda: store)
+    monkeypatch.setattr(
+        archive_scheduler, "retention_controller", lambda: controller
+    )
 
     scheduler = ArchiveScheduler("* * * * *")
     outcome = scheduler._sweep()
 
     assert outcome == RetentionOutcome.RUNNING
-    store.run_archive_sweep.assert_called_once()
+    controller.run_archive_sweep.assert_called_once()
     assert (
-        store.run_archive_sweep.call_args.kwargs["cancel_event"]
+        controller.run_archive_sweep.call_args.kwargs["cancel_event"]
         is scheduler._cancel_event
     )
 
@@ -116,7 +177,7 @@ async def test_shutdown_waits_for_active_sweep(
 ) -> None:
     """Application cleanup cannot overtake an active retention worker."""
     scheduler = ArchiveScheduler("* * * * *")
-    store = MagicMock()
+    controller = MagicMock()
     entered = ThreadEvent()
     release = ThreadEvent()
 
@@ -126,8 +187,10 @@ async def test_shutdown_waits_for_active_sweep(
         assert cancel_event.is_set()
         return RetentionOutcome.PAUSED
 
-    store.run_archive_sweep.side_effect = blocked_sweep
-    monkeypatch.setattr(server_utils, "zen_store", lambda: store)
+    controller.run_archive_sweep.side_effect = blocked_sweep
+    monkeypatch.setattr(
+        archive_scheduler, "retention_controller", lambda: controller
+    )
     monkeypatch.setattr(scheduler, "_seconds_until_next_sweep", lambda: 0.0)
     scheduler.start()
     assert await asyncio.to_thread(entered.wait, 3)

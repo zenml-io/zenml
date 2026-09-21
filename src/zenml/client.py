@@ -250,6 +250,7 @@ if TYPE_CHECKING:
     from zenml.services.service import ServiceConfig
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
+    from zenml.zen_stores.rest_zen_store import RestZenStore
 
 logger = get_logger(__name__)
 
@@ -1194,7 +1195,7 @@ class Client(metaclass=ClientMetaClass):
             force=force,
             dry_run=dry_run,
         )
-        return self.zen_store.archive_runs(request)
+        return self._retention_store().archive_runs(request)
 
     def get_retention_status(self) -> RetentionStatusResponse:
         """Read the server's latest archive sweep without object access.
@@ -1202,7 +1203,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Latest sweep outcome, counts, and archive configuration.
         """
-        return self.zen_store.get_retention_status()
+        return self._retention_store().get_retention_status()
 
     def restore_pipeline_run(
         self, name_id_or_prefix: Union[str, UUID]
@@ -1216,7 +1217,29 @@ class Client(metaclass=ClientMetaClass):
             Restored, or a no-op when the run's detail is not archived.
         """
         selected = self.get_pipeline_run(name_id_or_prefix, hydrate=False)
-        return self.zen_store.restore_pipeline_run(selected.id)
+        return self._retention_store().restore_pipeline_run(selected.id)
+
+    def _retention_store(self) -> "RestZenStore":
+        """Return the server connection that execution retention needs.
+
+        Archiving is configured on the server and uses its archive storage
+        and credentials, so there is nothing a client can do against a local
+        database.
+
+        Returns:
+            The REST store the client is connected through.
+
+        Raises:
+            IllegalOperationError: The client is not connected to a server.
+        """
+        from zenml.zen_stores.rest_zen_store import RestZenStore
+
+        if not isinstance(self.zen_store, RestZenStore):
+            raise IllegalOperationError(
+                "Execution retention runs on a ZenML server. Connect to one "
+                "with `zenml login` to archive or restore pipeline runs."
+            )
+        return self.zen_store
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.

@@ -19,6 +19,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    retention_controller,
     zen_store,
 )
 
@@ -69,7 +70,7 @@ def get_retention_status(
 @async_fastapi_endpoint_wrapper(deduplicate=True)
 def archive_runs(
     request: ArchiveRequest,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> ArchiveResponse:
     """Archive or preview the named runs without waiting for a sweep.
 
@@ -82,27 +83,42 @@ def archive_runs(
 
     Args:
         request: Runs, pipeline, or project to archive. Mutating requests need
-            UPDATE permission on the target; dry runs need READ permission.
+            UPDATE permission on every run they archive; dry runs need READ
+            permission. A pipeline or project target needs the same permission
+            on the pipeline or project as well.
+        auth_context: Authentication context.
 
     Returns:
         Eligible or archived counts and refused runs with their reasons.
+
+    Raises:
+        IllegalOperationError: `force` was requested by a caller who is not a
+            server admin.
     """
+    # `force` sets aside the retention policy the server admin configured, so
+    # permissions on the runs alone are not enough to use it.
+    if request.force and not auth_context.user.is_admin:
+        raise IllegalOperationError(
+            "Only server admins can override the execution retention policy "
+            "with `force`."
+        )
     store = zen_store()
     action = Action.READ if request.dry_run else Action.UPDATE
-    if request.run_ids is not None:
-        batch_verify_permissions_for_models(
-            models=store.get_run_headers(request.run_ids),
-            action=action,
-        )
-    elif request.pipeline_id is not None:
+    if request.pipeline_id is not None:
         verify_permission_for_model(
             model=store.get_pipeline(request.pipeline_id, hydrate=False),
             action=action,
         )
-    else:
-        assert request.project_id is not None
+    elif request.project_id is not None:
         verify_permission_for_model(
             model=store.get_project(request.project_id, hydrate=False),
             action=action,
         )
-    return store.archive_runs(request)
+    controller = retention_controller()
+    batch = controller.expand_target(request)
+    # Runs are their own RBAC resource: permission on the pipeline or project
+    # that owns them does not by itself allow archiving them.
+    batch_verify_permissions_for_models(
+        models=store.get_run_headers(batch.run_ids), action=action
+    )
+    return controller.archive_batch(request, batch)

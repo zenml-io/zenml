@@ -92,12 +92,12 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
+    ReadAuthorizer,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
-    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -107,9 +107,6 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
-from zenml.zen_server.routers.workload_manager_gate import (
-    workload_manager_enabled,
-)
 from zenml.zen_server.streaming.broadcaster import (
     BroadcasterShuttingDownError,
     StreamCapacityError,
@@ -132,6 +129,7 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
     make_dependable,
+    retention_controller,
     server_config,
     set_filter_project_scope,
     stream_broadcaster,
@@ -142,6 +140,14 @@ from zenml.zen_server.utils import (
 
 router = APIRouter(
     prefix=API + VERSION_1 + RUNS,
+    tags=["runs"],
+    responses={401: error_response, 403: error_response},
+)
+
+# Routes that only exist on a server with a workload manager. They live on
+# their own router so that a server without one keeps answering as if the
+# routes were never defined, while tests can still mount them directly.
+workload_router = APIRouter(
     tags=["runs"],
     responses={401: error_response, 403: error_response},
 )
@@ -326,7 +332,7 @@ def get_run(
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=store.get_run,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=hydrate,
         include_python_packages=include_python_packages,
         include_full_metadata=include_full_metadata,
@@ -452,7 +458,7 @@ def get_pipeline_configuration(
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=True,
     )
     return run.config.model_dump()
@@ -510,7 +516,7 @@ def get_run_dag(
     return store.get_pipeline_run_dag(
         pipeline_run_id=run_id,
         include_step_metadata=include_step_metadata,
-        authorize=verify_read_permission_for_model,
+        authorizer=ReadAuthorizer(),
     )
 
 
@@ -535,7 +541,7 @@ def refresh_run_status(
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=store.get_run,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=True,
     )
     run_utils.refresh_run_status(
@@ -563,7 +569,7 @@ def stop_run(
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=zen_store().get_run,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=True,
     )
     verify_permission_for_model(run, action=Action.UPDATE)
@@ -613,7 +619,7 @@ def run_logs(
     run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=store.get_run,
-        authorize_from_header=True,
+        authorize_in_store=True,
         hydrate=False,
     )
 
@@ -731,7 +737,34 @@ def disable_run_heartbeat(
     zen_store().disable_run_heartbeat(run_id=run_id)
 
 
-@router.post(
+class ReplayAuthorizer:
+    """Checks that the caller may replay a run, from the run's header row."""
+
+    def authorize(self, header: PipelineRunResponse) -> None:
+        """Verify replay permissions before the run's detail is read.
+
+        Args:
+            header: The run to replay, without its metadata and resources.
+
+        Raises:
+            ExecutionArchivedError: If the run must be restored first.
+        """
+        verify_permission_for_model(header, action=Action.READ)
+        for resource_type in (
+            ResourceType.PIPELINE_SNAPSHOT,
+            ResourceType.PIPELINE_RUN,
+        ):
+            verify_permission(
+                resource_type=resource_type,
+                action=Action.CREATE,
+                project_id=header.project_id,
+            )
+        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
+        if header.archive_bundle_id is not None:
+            raise ExecutionArchivedError.for_entity(header.id, header.id)
+
+
+@workload_router.post(
     "/{run_id}" + REPLAY,
     responses={
         400: error_response,
@@ -739,7 +772,6 @@ def disable_run_heartbeat(
         404: error_response,
         409: error_response,
         422: error_response,
-        501: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper
@@ -747,7 +779,6 @@ def replay_run(
     run_id: UUID,
     run_configuration: Optional[ReplayRunConfiguration] = None,
     auth_context: AuthContext = Security(authorize),
-    _: None = Depends(workload_manager_enabled),
 ) -> PipelineRunResponse:
     """Replay a specific pipeline run.
 
@@ -767,25 +798,10 @@ def replay_run(
         run_snapshot,
     )
 
-    def authorize_source(source: PipelineRunResponse) -> None:
-        verify_permission_for_model(source, action=Action.READ)
-        for resource_type in (
-            ResourceType.PIPELINE_SNAPSHOT,
-            ResourceType.PIPELINE_RUN,
-        ):
-            verify_permission(
-                resource_type=resource_type,
-                action=Action.CREATE,
-                project_id=source.project_id,
-            )
-        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
-        if source.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(source.id, source.id)
-
     run = zen_store().get_run(
         run_id=run_id,
         hydrate=True,
-        authorize=authorize_source,
+        authorizer=ReplayAuthorizer(),
     )
     run = dehydrate_response_model(run)
     if not run.snapshot:
@@ -797,6 +813,10 @@ def replay_run(
         replay_configuration=run_configuration,
         original_run=run,
     )
+
+
+if server_config().workload_manager_enabled:
+    router.include_router(workload_router)
 
 
 def streaming_enabled() -> None:
@@ -1061,13 +1081,13 @@ def restore_pipeline_run(
     The restore runs within the request and is all-or-nothing.
 
     Args:
-        run_id: Run to restore; requires READ permission on it.
+        run_id: Run to restore; requires UPDATE permission on it, because a
+            restore writes the run's detail back into the database.
 
     Returns:
         Restored, or a no-op when the run's detail is not archived.
     """
-    store = zen_store()
     verify_permission_for_model(
-        model=store.get_run_header(run_id), action=Action.READ
+        model=zen_store().get_run_header(run_id), action=Action.UPDATE
     )
-    return store.restore_pipeline_run(run_id)
+    return retention_controller().restore_pipeline_run(run_id)

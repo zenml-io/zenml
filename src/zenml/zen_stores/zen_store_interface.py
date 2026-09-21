@@ -30,8 +30,6 @@ from zenml.models import (
     APIKeyResponse,
     APIKeyRotateRequest,
     APIKeyUpdate,
-    ArchiveRequest,
-    ArchiveResponse,
     ArtifactFilter,
     ArtifactRequest,
     ArtifactResponse,
@@ -108,8 +106,6 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
-    RestoreResponse,
-    RetentionStatusResponse,
     RunMetadataRequest,
     RunStatisticsRequest,
     RunStatisticsResponse,
@@ -3015,37 +3011,7 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             KeyError: If no user with the given ID exists.
         """
 
-    # -------------------- Execution retention --------------------
-
-    @abstractmethod
-    def archive_runs(self, request: ArchiveRequest) -> ArchiveResponse:
-        """Archive or preview a bounded manual retention request.
-
-        Args:
-            request: Runs, pipeline, or project to archive.
-
-        Returns:
-            Eligible or archived counts and refused runs with their reasons.
-        """
-
-    @abstractmethod
-    def get_retention_status(self) -> RetentionStatusResponse:
-        """Read the server's latest archive sweep without object access.
-
-        Returns:
-            Latest sweep outcome, counts, and archive configuration.
-        """
-
-    @abstractmethod
-    def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
-        """Write an archived pipeline run's detail back into the database.
-
-        Args:
-            run_id: Pipeline run to restore.
-
-        Returns:
-            Restored, or a no-op when the run's detail is not archived.
-        """
+    # -------------------- Projects --------------------
 
     @abstractmethod
     def create_project(self, project: ProjectRequest) -> ProjectResponse:

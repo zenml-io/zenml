@@ -133,7 +133,10 @@ def _seed_archived_headers(
 
 @pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
 def test_v1_archive_restores_to_current_schema(
-    retention_store: SqlZenStore, storage: ArchiveStorage, kind: str
+    retention_store: SqlZenStore,
+    storage: ArchiveStorage,
+    kind: str,
+    retention,
 ) -> None:
     """Old bytes restore exactly and remain usable through current models.
 
@@ -158,7 +161,7 @@ def test_v1_archive_restores_to_current_schema(
     )
     _seed_archived_headers(retention_store, document, bundle, kind)
 
-    result = retention_store.restore_pipeline_run(document.run_id)
+    result = retention.restore_pipeline_run(document.run_id)
 
     assert result.outcome == RestoreOutcome.RESTORED
     with retention_store.engine.connect() as connection:

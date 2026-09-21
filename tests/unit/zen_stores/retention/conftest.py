@@ -12,7 +12,8 @@ from tests.unit.zen_stores.retention.fixture_graph import (
     insert_rows,
 )
 from zenml.enums import RetentionOutcome
-from zenml.models import ProjectFilter
+from zenml.models import ArchiveRequest, ArchiveResponse, ProjectFilter
+from zenml.zen_server.controllers.retention import RetentionController
 from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -25,18 +26,34 @@ def storage(tmp_path, monkeypatch) -> ArchiveStorage:
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "local")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", root)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "7")
-    monkeypatch.setattr(
-        SqlZenStore, "archive_storage", property(lambda _: archive)
-    )
+    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "true")
     return archive
 
 
 @pytest.fixture
-def archive_run(storage):
+def retention(retention_store, storage) -> RetentionController:
+    """Drive retention the way a server replica does."""
+    return RetentionController(retention_store, storage=storage)
+
+
+@pytest.fixture
+def archive_request(retention):
+    """Archive or preview a request whose runs need no authorization."""
+
+    def archive(request: ArchiveRequest) -> ArchiveResponse:
+        return retention.archive_batch(
+            request, retention.expand_target(request)
+        )
+
+    return archive
+
+
+@pytest.fixture
+def archive_run(retention):
     """Sweep one eligible run out of SQL and return its bundle ID."""
 
     def archive(store: SqlZenStore, ids: "ExecutionRun") -> UUID:
-        assert store.run_archive_sweep() == RetentionOutcome.SUCCEEDED
+        assert retention.run_archive_sweep() == RetentionOutcome.SUCCEEDED
         bundle_id = store.get_run(ids.run, hydrate=False).archive_bundle_id
         assert bundle_id is not None
         return bundle_id
