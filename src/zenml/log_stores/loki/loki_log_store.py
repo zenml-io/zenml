@@ -8,19 +8,24 @@
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 """Grafana Loki log store implementation."""
 
 import base64
 import json
-from datetime import datetime, timezone
-from hashlib import blake2b
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from uuid import NAMESPACE_URL, uuid5
 
 import requests
+from pydantic import SecretStr
 
+from zenml.exceptions import (
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
+)
 from zenml.log_stores.loki.loki_flavor import (
     LOKI_MAX_PAGE_SIZE,
     LOKI_QUERY_RANGE_PATH,
@@ -28,58 +33,48 @@ from zenml.log_stores.loki.loki_flavor import (
 )
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
-from zenml.logger import get_logger
 from zenml.models import (
     LogEntry,
     LogsEntriesFilter,
     LogsEntriesResponse,
     LogsResponse,
 )
-from zenml.utils.time_utils import (
-    from_unix_nanos,
-    to_unix_nanos,
-    to_utc_timezone,
-    utc_now,
-)
-
-logger = get_logger(__name__)
+from zenml.utils.time_utils import from_unix_nanos, to_unix_nanos, utc_now
 
 QUERY_TIMEOUT = 30
 
-# Number of entry keys carried in a watermark cursor. Loki timestamps have
-# nanosecond resolution, so entries hardly ever share one and this list stays
-# tiny in practice. It is capped so that a pathological stream cannot grow the
-# cursor without bound.
-BOUNDARY_KEY_LIMIT = 50
-
-# Loki normalizes attribute names by replacing dots with underscores, so the
-# `zenml.log.id` attribute the exporter attaches is queried under this name.
+# Loki normalizes OTLP attribute names, including zenml.log.id.
 LOKI_LOG_ID_FIELD = "zenml_log_id"
 
 
 class LokiLogStore(OtelLogStore):
-    """Log store that ships logs to Loki over OTLP and reads them with LogQL.
-
-    Loki has ingested OTLP natively since 3.0, so the write path is the
-    inherited one; only the query side is specific to Loki.
-    """
+    """Ship logs through Loki's native OTLP endpoint and query them with LogQL."""
 
     _loki_exporter: Optional[OTLPLogExporter] = None
 
     @property
     def config(self) -> LokiLogStoreConfig:
-        """Returns the configuration of the Loki log store.
+        """Return the Loki configuration.
 
         Returns:
             The configuration.
         """
         return cast(LokiLogStoreConfig, self._config)
 
-    def get_exporter(self) -> OTLPLogExporter:
-        """Get the log exporter that pushes to Loki's OTLP endpoint.
+    @property
+    def default_query_size(self) -> int:
+        """Return the default query size.
 
         Returns:
-            An OTLP exporter carrying the Loki credentials.
+            The default number of entries in one batch.
+        """
+        return 1000
+
+    def get_exporter(self) -> OTLPLogExporter:
+        """Get the exporter configured for Loki ingestion.
+
+        Returns:
+            The OTLP exporter.
         """
         if not self._loki_exporter:
             self._loki_exporter = OTLPLogExporter(
@@ -93,186 +88,125 @@ class LokiLogStore(OtelLogStore):
         return self._loki_exporter
 
     def _get_headers(self) -> Dict[str, str]:
-        """Build the headers that authenticate a request to Loki.
-
-        Credentials are resolved here rather than folded into the configured
-        headers, so that they stay in the config fields ZenML knows to treat as
-        secrets.
+        """Build headers for both ingestion and query requests.
 
         Returns:
-            The headers for both ingestion and query requests.
+            Configured headers, including authentication and tenant scope.
         """
-        headers: Dict[str, str] = dict(self.config.headers or {})
-
+        headers = dict(self.config.headers or {})
         if (
             self.config.username is not None
             and self.config.password is not None
         ):
-            credentials = (
-                f"{self.config.username}:"
-                f"{self.config.password.get_secret_value()}"
-            ).encode("utf-8")
+            password = self.config.password
+            password_value = (
+                password.get_secret_value()
+                if isinstance(password, SecretStr)
+                else password
+            )
+            credentials = f"{self.config.username}:{password_value}".encode()
             token = base64.b64encode(credentials).decode("ascii")
             headers["Authorization"] = f"Basic {token}"
         elif self.config.api_key is not None:
-            headers["Authorization"] = (
-                f"Bearer {self.config.api_key.get_secret_value()}"
+            api_key = self.config.api_key
+            token = (
+                api_key.get_secret_value()
+                if isinstance(api_key, SecretStr)
+                else api_key
             )
+            headers["Authorization"] = f"Bearer {token}"
 
         if self.config.tenant_id:
             headers["X-Scope-OrgID"] = self.config.tenant_id
-
         return headers
 
     def fetch(
         self,
-        logs_model: "LogsResponse",
+        logs_model: LogsResponse,
         start: Optional[str] = None,
         limit: Optional[int] = None,
         before: Optional[str] = None,
         after: Optional[str] = None,
         filter_: Optional[LogsEntriesFilter] = None,
     ) -> LogsEntriesResponse:
-        """Fetch a page of log entries from Loki.
+        """Fetch one filtered batch of log entries from Loki.
 
-        Loki has no continuation token, so a page is bounded by a timestamp
-        taken from the entry at the edge of the previous page. That is the
-        query API's own capability: `start`/`end` plus `direction`. The
-        boundary is inclusive on the side the scan resumes from, so entries
-        sharing it come back a second time and are dropped by their keys.
+        Loki's range API has no native continuation token. Both response
+        cursors are therefore absent, even when the batch reaches its limit.
 
         Args:
-            logs_model: The logs model containing run and step metadata.
-            start: Which end of the stream to start reading from. Omit it
-                to read from the oldest end.
-            limit: Maximum number of log entries to return.
-            before: Cursor towards older entries, from a previous page.
-            after: Cursor towards newer entries, from a previous page.
-            filter_: Filters to apply while retrieving the entries.
+            logs_model: The log stream to read.
+            start: Initial end of the stream. Defaults to `newest`.
+            limit: Maximum entries to return, capped at 5000.
+            before: Unsupported continuation cursor.
+            after: Unsupported continuation cursor.
+            filter_: Filters applied by Loki.
 
         Returns:
-            A page of log entries, oldest first.
+            A batch of entries in chronological order, without cursors.
 
         Raises:
-            ValueError: If the logs model does not belong to this log store,
-                or if both cursors are set.
-            RuntimeError: If Loki does not answer with a usable result.
-        """
+            ValueError: If the stream belongs to another log store or the
+                parameters are unsupported.
+            LogStoreError: If Loki returns an invalid or failed response.
+            LogStoreRateLimitError: If Loki rate limits the request.
+            LogStoreUnavailableError: If Loki is unavailable.
+        """  # noqa: DOC503
         if logs_model.log_store_id != self.id:
             raise ValueError(
-                "logs_model.log_store_id does not match the id of the log "
-                "store. These entries were collected by another log store, "
-                "which is the one that can read them back."
+                "logs_model.log_store_id does not match this log store."
             )
-
-        if before is not None and after is not None:
-            raise ValueError("Pass only one of `before` and `after`.")
-
-        if after is not None:
-            descending = False
-        elif before is not None:
-            descending = True
-        else:
-            descending = start == "newest"
+        if before is not None or after is not None:
+            raise ValueError("Loki does not support continuation cursors.")
+        if start not in (None, "oldest", "newest"):
+            raise ValueError("`start` must be `oldest` or `newest`.")
 
         limit = min(self.resolve_limit(limit), LOKI_MAX_PAGE_SIZE)
         filter_ = filter_ or LogsEntriesFilter()
-        token = before or after
-        cursor = json.loads(self.decode_cursor(token)) if token else {}
+        start_ns = to_unix_nanos(filter_.since or logs_model.created)
+        # ZenML's upper bound is inclusive; Loki's end is exclusive.
+        end_ns = to_unix_nanos(filter_.until or utc_now(tz_aware=True)) + 1
+        if start_ns >= end_ns:
+            return LogsEntriesResponse()
 
-        start_ns = to_unix_nanos(
-            filter_.since or to_utc_timezone(logs_model.created)
+        entries = self._query_range(
+            query=self._build_query(logs_model, filter_),
+            start_ns=start_ns,
+            end_ns=end_ns,
+            limit=limit,
+            descending=start != "oldest",
         )
-        end_ns = to_unix_nanos(filter_.until or utc_now(tz_aware=True))
-        if watermark := cursor.get("timestamp"):
-            if descending:
-                end_ns = min(end_ns, int(watermark) + 1)
-            else:
-                start_ns = max(start_ns, int(watermark))
-
-        seen = set(cursor.get("keys", []))
-        entries: List[Tuple[int, str, LogEntry]] = []
-        if start_ns < end_ns:
-            entries = [
-                entry
-                for entry in self._query_range(
-                    query=self._build_query(logs_model, filter_),
-                    start_ns=start_ns,
-                    end_ns=end_ns,
-                    limit=limit,
-                    descending=descending,
-                )
-                if entry[1] not in seen
-            ]
-            entries.sort(key=lambda entry: entry[0])
-
-        return LogsEntriesResponse(
-            items=[entry[2] for entry in entries],
-            before=self._get_boundary_cursor(entries, oldest=True)
-            if entries
-            else None,
-            after=self._get_boundary_cursor(entries, oldest=False)
-            if entries
-            else None,
-        )
-
-    def _get_boundary_cursor(
-        self, entries: List[Tuple[int, str, LogEntry]], oldest: bool
-    ) -> str:
-        """Build a cursor that resumes a scan at one edge of a page.
-
-        Args:
-            entries: The entries of the current page, oldest first.
-            oldest: Whether to anchor on the oldest rather than the newest
-                entry.
-
-        Returns:
-            The cursor.
-        """
-        timestamp = entries[0][0] if oldest else entries[-1][0]
-        return self.encode_cursor(
-            json.dumps(
-                {
-                    "timestamp": timestamp,
-                    "keys": [
-                        key
-                        for entry_timestamp, key, _ in entries
-                        if entry_timestamp == timestamp
-                    ][:BOUNDARY_KEY_LIMIT],
-                },
-                separators=(",", ":"),
-            )
-        )
+        entries.sort(key=lambda entry: (entry[0], entry[1].id))
+        return LogsEntriesResponse(items=[entry for _, entry in entries])
 
     def _build_query(
-        self, logs_model: "LogsResponse", filter_: LogsEntriesFilter
+        self, logs_model: LogsResponse, filter_: LogsEntriesFilter
     ) -> str:
-        """Build the LogQL query for a log stream.
+        """Build a scoped LogQL query.
 
         Args:
-            logs_model: The logs model to fetch the entries of.
-            filter_: The filters to express in the query.
+            logs_model: The log stream to read.
+            filter_: Filters to apply.
 
         Returns:
-            The query.
+            The query with quoted label values and literal search text.
         """
-        # Only resource attributes become index labels, so the stream is
-        # selected by service name and narrowed to one log stream by a
-        # structured metadata filter.
+        service = json.dumps(self.config.service_name, ensure_ascii=False)
         query = [
-            f'{{service_name="{self.config.service_name}"}}',
+            f"{{service_name={service}}}",
             f'| {LOKI_LOG_ID_FIELD}="{logs_model.id}"',
         ]
-
         if filter_.search:
-            escaped = filter_.search.replace("\\", "\\\\").replace('"', '\\"')
-            query.append(f'|= "{escaped}"')
-
-        if filter_.level and (
-            threshold := self.get_severity_number_threshold(filter_.level)
-        ):
-            query.append(f"| severity_number >= {threshold}")
-
+            query.append(
+                f"|= {json.dumps(filter_.search, ensure_ascii=False)}"
+            )
+        if filter_.level is not None:
+            threshold = self.get_severity_number_threshold(filter_.level)
+            if threshold:
+                # Numeric conversion failures otherwise survive label filters.
+                query.append(
+                    f'| severity_number >= {threshold} | __error__=""'
+                )
         return " ".join(query)
 
     def _query_range(
@@ -282,26 +216,33 @@ class LokiLogStore(OtelLogStore):
         end_ns: int,
         limit: int,
         descending: bool,
-    ) -> List[Tuple[int, str, LogEntry]]:
-        """Run a range query and parse every entry of every stream it returns.
+    ) -> List[Tuple[int, LogEntry]]:
+        """Query Loki and parse all returned streams.
 
         Args:
-            query: The LogQL query to run.
-            start_ns: Start of the time window, in nanoseconds, inclusive.
-            end_ns: End of the time window, in nanoseconds, exclusive.
-            limit: Maximum number of entries Loki may return.
-            descending: Whether to scan towards older entries.
+            query: The LogQL query.
+            start_ns: Inclusive start in Unix nanoseconds.
+            end_ns: Exclusive end in Unix nanoseconds.
+            limit: Maximum number of entries.
+            descending: Whether to read newest entries first.
 
         Returns:
-            Tuples of nanosecond timestamp, deduplication key and entry, in the
-            order Loki returned them.
+            Nanosecond timestamps and their parsed entries.
 
         Raises:
-            RuntimeError: If Loki rejects or fails the query.
+            LogStoreError: If Loki rejects the query or returns invalid data.
+            LogStoreRateLimitError: If Loki rate limits the request.
+            LogStoreUnavailableError: If Loki is unavailable.
         """
+        client_cert: Optional[Union[str, Tuple[str, str]]] = (
+            (self.config.client_certificate_file, self.config.client_key_file)
+            if self.config.client_certificate_file
+            and self.config.client_key_file
+            else self.config.client_certificate_file
+        )
         try:
             response = requests.get(
-                f"{self.config.query_url}{LOKI_QUERY_RANGE_PATH}",
+                f"{self.config.get_query_url()}{LOKI_QUERY_RANGE_PATH}",
                 headers=self._get_headers(),
                 params={
                     "query": query,
@@ -311,114 +252,118 @@ class LokiLogStore(OtelLogStore):
                     "direction": "backward" if descending else "forward",
                 },
                 timeout=QUERY_TIMEOUT,
+                verify=self.config.certificate_file or True,
+                cert=client_cert,
+                allow_redirects=False,
             )
-        except requests.RequestException as e:
-            logger.exception("Loki log query failed")
-            raise RuntimeError(
-                "Could not reach Loki to read these logs."
-            ) from e
+        except requests.RequestException:
+            raise LogStoreUnavailableError(
+                "Could not reach Loki to read logs."
+            ) from None
 
-        if response.status_code != 200:
-            logger.error(
-                "Loki rejected a log query with %s: %s",
-                response.status_code,
-                response.text[:500],
+        if response.status_code == 429:
+            retry_after = response.headers.get("Retry-After", "")
+            raise LogStoreRateLimitError(
+                "Loki rate limited the log query.",
+                retry_after=int(retry_after)
+                if retry_after.isdecimal()
+                else None,
             )
-            raise RuntimeError(
-                f"Loki rejected the log query with status "
-                f"{response.status_code}."
+        if response.status_code == 408 or response.status_code >= 500:
+            raise LogStoreUnavailableError(
+                f"Loki is unavailable (HTTP {response.status_code})."
+            )
+        if response.status_code != 200:
+            raise LogStoreError(
+                f"Loki rejected the log query (HTTP {response.status_code})."
             )
 
         try:
             payload = response.json()
-        except ValueError as e:
-            raise RuntimeError(
-                "Loki returned a response that could not be read as a log "
-                "query result."
-            ) from e
+        except ValueError:
+            raise LogStoreError(
+                "Loki returned an invalid JSON response."
+            ) from None
+        if not isinstance(payload, dict) or payload.get("status") != "success":
+            raise LogStoreError("Loki failed to run the log query.")
+        data = payload.get("data")
+        if (
+            not isinstance(data, dict)
+            or data.get("resultType") != "streams"
+            or not isinstance(data.get("result"), list)
+        ):
+            raise LogStoreError("Loki returned an invalid log query result.")
 
-        if payload.get("status") != "success":
-            logger.error("Loki failed to run a log query: %s", payload)
-            raise RuntimeError("Loki failed to run the query.")
-
-        # A response stream is one combination of labels and structured
-        # metadata, not one log stream, and OTLP ingestion puts enough per-entry
-        # metadata in there to give nearly every entry a stream of its own. A
-        # page is therefore spread over many of them.
         entries = []
-        for stream in payload.get("data", {}).get("result", []):
-            labels = stream.get("stream", {})
-            for value in stream.get("values", []):
-                if entry := self._parse_entry(value, labels):
-                    entries.append(entry)
-
+        for stream in data["result"]:
+            if (
+                not isinstance(stream, dict)
+                or not isinstance(stream.get("stream"), dict)
+                or not isinstance(stream.get("values"), list)
+            ):
+                raise LogStoreError("Loki returned an invalid log stream.")
+            for value in stream["values"]:
+                entries.append(self._parse_entry(value, stream["stream"]))
         return entries
 
     def _parse_entry(
-        self, value: List[Any], labels: Dict[str, str]
-    ) -> Optional[Tuple[int, str, LogEntry]]:
-        """Parse one entry of a Loki stream.
+        self, value: Any, labels: Dict[str, str]
+    ) -> Tuple[int, LogEntry]:
+        """Parse an entry while retaining its exact timestamp for ordering.
 
         Args:
-            value: A stream value of a timestamp, a log line and, on the
-                versions that report it there, a flat mapping of the entry's
-                structured metadata.
-            labels: The labels of the response stream, which is where Loki
-                reports structured metadata alongside the index labels.
+            value: Timestamp, message, and optional structured metadata.
+            labels: Stream labels, including metadata on some Loki versions.
 
         Returns:
-            The nanosecond timestamp, the deduplication key and the entry, or
-            None if the entry could not be parsed.
+            The nanosecond timestamp and entry with a stable identifier.
+
+        Raises:
+            LogStoreError: If the entry cannot be parsed.
         """
+        if (
+            not isinstance(value, list)
+            or len(value) not in (2, 3)
+            or not isinstance(value[0], str)
+            or not isinstance(value[1], str)
+            or (len(value) == 3 and not isinstance(value[2], dict))
+        ):
+            raise LogStoreError("Loki returned an invalid log entry.")
+        metadata = {**labels, **(value[2] if len(value) == 3 else {})}
+        if not all(
+            isinstance(k, str) and isinstance(v, str)
+            for k, v in metadata.items()
+        ):
+            raise LogStoreError("Loki returned invalid log metadata.")
         try:
             timestamp_ns = int(value[0])
-            message = str(value[1])
-            metadata = value[2] if len(value) > 2 else {}
-
-            # Severity is per-entry structured metadata under OTLP ingestion,
-            # which reaches a query either merged into the labels of a response
-            # stream or attached to the entry, depending on the version.
-            severity_number = metadata.get("severity_number") or labels.get(
-                "severity_number"
+            timestamp = from_unix_nanos(timestamp_ns)
+            severity = metadata.get("severity_number")
+            level = self.get_level_for_severity_number(
+                int(severity) if severity else None
             )
+        except (ValueError, TypeError, OverflowError):
+            raise LogStoreError(
+                "Loki returned an invalid log entry."
+            ) from None
 
-            return (
-                timestamp_ns,
-                _get_entry_key(timestamp_ns, message),
-                LogEntry(
-                    message=message,
-                    level=self.get_level_for_severity_number(
-                        int(severity_number) if severity_number else None
-                    ),
-                    timestamp=from_unix_nanos(timestamp_ns),
-                ),
-            )
-        except Exception as e:
-            logger.warning(f"Failed to parse log entry: {e}")
-            return None
+        # Loki has no event ID. Identical native entries share an ID, while
+        # differences in stream labels, metadata, or nanoseconds remain distinct.
+        identity = json.dumps(
+            ["loki", timestamp_ns, value[1], metadata],
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        return timestamp_ns, LogEntry(
+            id=uuid5(NAMESPACE_URL, identity),
+            message=value[1],
+            level=level,
+            timestamp=timestamp,
+        )
 
     def cleanup(self) -> None:
-        """Cleanup the Loki log store."""
+        """Shut down the Loki exporter."""
         if self._loki_exporter:
             self._loki_exporter.shutdown()
             self._loki_exporter = None
-
-
-def _get_entry_key(timestamp_ns: int, message: str) -> str:
-    """Build a key that identifies an entry at a given timestamp.
-
-    Loki has no entry IDs, so resuming a scan at a timestamp needs another way
-    to recognize the entries already returned at it. Hashing the line keeps the
-    key short enough to carry several of them in a cursor.
-
-    Args:
-        timestamp_ns: The nanosecond timestamp of the entry.
-        message: The log line of the entry.
-
-    Returns:
-        The key.
-    """
-    digest = blake2b(
-        f"{timestamp_ns}:{message}".encode("utf-8"), digest_size=8
-    )
-    return digest.hexdigest()

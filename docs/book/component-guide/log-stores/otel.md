@@ -18,7 +18,7 @@ The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-
 
 The OTEL Log Store is ideal when:
 
-- You have an existing OpenTelemetry-compatible observability platform (e.g., Jaeger, Grafana Tempo, Honeycomb, Lightstep, Dash0)
+- You have an existing observability platform that accepts OpenTelemetry logs
 - You want to consolidate ML pipeline logs with your application logs
 - You need to export logs to a custom backend that supports OTLP
 - You're building a custom log ingestion pipeline
@@ -82,7 +82,7 @@ zenml log-store register my_otel_logs \
 zenml stack register my_stack \
     -a my_artifact_store \
     -o default \
-    -ls my_otel_logs \
+    --log_store my_otel_logs \
     --set
 ```
 

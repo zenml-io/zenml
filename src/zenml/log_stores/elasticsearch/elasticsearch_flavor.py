@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Elasticsearch log store flavor."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -27,12 +27,8 @@ from zenml.utils.secret_utils import PlainSerializedSecretStr
 # defaults to 10000 documents.
 ELASTICSEARCH_MAX_PAGE_SIZE = 10000
 
-# Document fields that both the exporter and the query side depend on. The two
-# sort fields exist to make paging exact: the nanosecond timestamp avoids the
-# millisecond truncation of a dynamically mapped date, and the sequence number
-# breaks a tie between entries written within the same nanosecond.
 TIMESTAMP_FIELD = "timestamp_nanos"
-SEQUENCE_FIELD = "sequence_number"
+EVENT_ID_FIELD = "event_id"
 MESSAGE_FIELD = "message"
 SEVERITY_NUMBER_FIELD = "severity_number"
 LOG_ID_FIELD = "zenml.log.id"
@@ -49,8 +45,13 @@ class ElasticsearchLogStoreConfig(OtelLogStoreConfig):
         password: Password for HTTP basic authentication.
     """
 
+    endpoint: str = Field(
+        default="",
+        description="Bulk ingestion URL override. Defaults to the bulk API "
+        "for the configured cluster URL and index.",
+    )
     url: str = Field(
-        description="Base URL of the Elasticsearch or OpenSearch cluster, "
+        description="Base URL of the Elasticsearch cluster, "
         "including the scheme and port. Examples: 'http://localhost:9200', "
         "'https://my-deployment.es.eu-central-1.aws.cloud.es.io:9243'",
     )
@@ -78,25 +79,6 @@ class ElasticsearchLogStoreConfig(OtelLogStoreConfig):
         description="Password for HTTP basic authentication against the "
         "cluster. Must be set together with `username`",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_default_endpoint(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Point the ingestion endpoint at the bulk API of the index.
-
-        Args:
-            data: The input data dictionary.
-
-        Returns:
-            The data dictionary with the endpoint set if it was missing.
-        """
-        if isinstance(data, dict) and not data.get("endpoint"):
-            url = data.get("url")
-            if isinstance(url, str):
-                index = data.get("index") or "zenml-logs"
-                data["endpoint"] = f"{url.rstrip('/')}/{index}/_bulk"
-
-        return data
 
     @model_validator(mode="after")
     def validate_authentication(self) -> "ElasticsearchLogStoreConfig":

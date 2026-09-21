@@ -56,11 +56,9 @@ These defaults are optimized for most use cases. You typically only need to adju
 
 ### Reading logs
 
-Unlike log stores backed by a queryable API, the artifact log store does not page. Its log files carry no index, so resuming a read in the middle of one means scanning to that point again, and paging through a long run would turn a browsing session into a long series of increasingly expensive reads against object storage. Reading the file once and returning one response is both cheaper and simpler.
+The artifact log store returns one batch of the oldest entries, capped by `limit` and `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` (default: 50,000). Entries beyond the cap are omitted. Both cursors are unset; apply filtering and pagination to the returned batch in your client.
 
-A fetch reads the file from the beginning and stops once it has collected as many entries as the caller asked for, or `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` of them if the caller asked for no particular number. A stream longer than that is cut off at its end, so you keep the oldest entries and lose the newest. `before` and `after` come back unset, which tells the caller that this one response is all they will get from the server.
-
-Anything beyond that is refused rather than quietly dropped: a pagination cursor (`before` or `after`), `start=newest`, and the `search`, `level`, `since` and `until` filters all raise `ValueError`, which the REST API reports as `400`.
+`before`, `after`, `start=newest`, and the `search`, `level`, `since`, and `until` filters are unsupported. They raise `ValueError` in the SDK or return HTTP `400` through the REST API.
 
 ### Log format
 
@@ -69,7 +67,7 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 ```json
 {
   "message": "Training model with 1000 samples",
-  "level": "INFO",
+  "level": 20,
   "timestamp": "2024-01-15T10:30:00.000Z",
   "name": "my_logger",
   "filename": "train.py",
@@ -84,7 +82,7 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 | Field          | Description                                                                 |
 |----------------|-----------------------------------------------------------------------------|
 | `message`      | The log message content                                                     |
-| `level`        | Log level (DEBUG, INFO, WARN, ERROR, CRITICAL)                             |
+| `level`        | Numeric log level (DEBUG=10, INFO=20, WARN=30, ERROR=40, CRITICAL=50)           |
 | `timestamp`    | When the log was created                                                    |
 | `name`         | The name of the logger                                                      |
 | `filename`     | The source file that generated the log                                      |
@@ -92,9 +90,11 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 | `module`       | The module that generated the log                                           |
 | `chunk_index`  | Index of this chunk (0 for non-chunked messages)                           |
 | `total_chunks` | Total number of chunks (1 for non-chunked messages)                        |
-| `id`           | Unique identifier for the log entry (used to reassemble chunked messages)  |
+| `id`           | UUID shared by all chunks of a message                                      |
 
 For large messages (>5KB), logs are automatically split into multiple chunks with sequential `chunk_index` values and a shared `id` for reassembly.
+
+Structured logs preserve entry IDs between reads. Deduplicate chunks within a stream by `(id, chunk_index)`. Older plain-text logs have no stored IDs and receive new ones on each read.
 
 ### Storage location
 
@@ -116,7 +116,7 @@ Logs are stored in the `logs` directory within your artifact store:
 
 2. **Monitor storage**: Logs can accumulate over time. Consider implementing log retention policies for your artifact store.
 
-3. **Large log volumes**: If you're generating very large log volumes, consider using a dedicated log store like Datadog for better scalability and querying.
+3. **Large log volumes**: If you're generating very large log volumes, consider an external log store with server-side filtering.
 
 4. **Sensitive data**: Be mindful of what you log. Avoid logging sensitive information like credentials or PII.
 

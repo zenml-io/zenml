@@ -11,15 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for paging through the Elasticsearch search API."""
+"""Tests for Elasticsearch log queries and native pagination."""
 
+import base64
+import json
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
+import requests
 
 from zenml.enums import LoggingLevels, StackComponentType
+from zenml.exceptions import (
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
+)
 from zenml.log_stores.elasticsearch.elasticsearch_flavor import (
     ElasticsearchLogStoreConfig,
 )
@@ -29,67 +38,51 @@ from zenml.log_stores.elasticsearch.elasticsearch_log_store import (
 from zenml.models import LogsEntriesFilter
 from zenml.utils.time_utils import to_unix_nanos
 
-SECOND = 1_000_000_000
-
 NOON = to_unix_nanos(datetime(2026, 1, 1, 12, tzinfo=timezone.utc))
-
-
-def at(second: int) -> int:
-    """Nanosecond timestamp of a given second after noon."""
-    return NOON + second * SECOND
-
-
-class StubResponse:
-    """A canned Elasticsearch search response."""
-
-    def __init__(
-        self, payload: Dict[str, Any], status_code: int = 200
-    ) -> None:
-        """Store the payload to return.
-
-        Args:
-            payload: The response body.
-            status_code: The response status.
-        """
-        self._payload = payload
-        self.status_code = status_code
-        self.text = "error"
-
-    def json(self) -> Dict[str, Any]:
-        """Return the response body.
-
-        Returns:
-            The response body.
-        """
-        return self._payload
+SEARCH_POST = (
+    "zenml.log_stores.elasticsearch.elasticsearch_log_store.requests.post"
+)
 
 
 def make_hit(
-    timestamp_ns: int,
-    message: str,
+    number: int,
     severity_number: Optional[int] = None,
-    sequence_number: int = 0,
 ) -> Dict[str, Any]:
-    """Build a search hit, with the sort values the cursors are built from."""
+    """Build a search hit with a stable ID and provider sort values."""
+    event_id = str(UUID(int=number))
     return {
+        "_id": event_id,
+        "_index": "zenml-logs",
         "_source": {
-            "timestamp_nanos": timestamp_ns,
-            "sequence_number": sequence_number,
-            "message": message,
+            "timestamp_nanos": NOON,
+            "event_id": event_id,
+            "message": f"message {number}",
             "severity_number": severity_number,
         },
-        "sort": [timestamp_ns, sequence_number],
+        "sort": [NOON, event_id],
     }
 
 
-def make_payload(hits: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Build a search response body."""
-    return {"hits": {"hits": hits}}
+def make_response(
+    entries: List[Dict[str, Any]], status: int = 200, **metadata: Any
+) -> requests.Response:
+    """Build a JSON search response."""
+    response = requests.Response()
+    response.status_code = status
+    response._content = json.dumps(
+        {
+            "timed_out": False,
+            "_shards": {"failed": 0},
+            "hits": {"hits": entries},
+            **metadata,
+        }
+    ).encode()
+    return response
 
 
 @pytest.fixture
 def log_store() -> ElasticsearchLogStore:
-    """An Elasticsearch log store with credentials that are never used."""
+    """An Elasticsearch log store with unused credentials."""
     return ElasticsearchLogStore(
         name="elasticsearch",
         id=uuid4(),
@@ -105,277 +98,377 @@ def log_store() -> ElasticsearchLogStore:
     )
 
 
-@pytest.fixture
-def search(mocker):
-    """Capture search requests and answer them with canned payloads."""
-    requests: List[Dict[str, Any]] = []
-
-    def _install(*payloads: Dict[str, Any]) -> List[Dict[str, Any]]:
-        responses = [StubResponse(payload) for payload in payloads]
-
-        def _post(url, headers, json, timeout):
-            requests.append({"url": url, "headers": headers, **json})
-            return responses[len(requests) - 1]
-
-        mocker.patch(
-            "zenml.log_stores.elasticsearch.elasticsearch_log_store.requests.post",
-            side_effect=_post,
-        )
-        return requests
-
-    return _install
-
-
-def test_first_page_reads_the_oldest_entries(
-    log_store, logs_model_factory, search
+def test_default_newest_read_uses_native_cursor_and_frozen_window(
+    log_store, logs_model_factory, mocker
 ):
-    """When start is omitted, Elasticsearch reads from the oldest end."""
-    requests = search(
-        make_payload(
-            [
-                make_hit(at(1), "first"),
-                make_hit(at(2), "second"),
-                make_hit(at(3), "third"),
-            ]
-        )
+    """A cursor alone retains the query and advances over timestamp ties."""
+    post = mocker.patch(
+        SEARCH_POST,
+        side_effect=[
+            make_response([make_hit(3), make_hit(2)]),
+            make_response([make_hit(1)]),
+            make_response([]),
+        ],
     )
+    logs = logs_model_factory(log_store_id=log_store.id)
+    first = log_store.fetch(logs)
+    second = log_store.fetch(logs, before=first.before)
+    terminal = log_store.fetch(logs, before=second.before)
 
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
-
-    assert requests[0]["sort"] == [
-        {"timestamp_nanos": "asc"},
-        {"sequence_number": "asc"},
+    first_query, second_query, _ = [
+        call.kwargs["json"] for call in post.call_args_list
     ]
-    assert requests[0]["size"] == log_store.default_query_size
-    assert "search_after" not in requests[0]
-    assert [entry.message for entry in page.items] == [
-        "first",
-        "second",
-        "third",
-    ]
-
-
-def test_a_read_from_the_newest_end_returns_its_page_chronologically(
-    log_store, logs_model_factory, search
-):
-    """The starting end picks where a read begins, not how a page is ordered."""
-    requests = search(
-        make_payload(
-            [
-                make_hit(at(3), "third"),
-                make_hit(at(2), "second"),
-                make_hit(at(1), "first"),
-            ]
-        )
-    )
-
-    page = log_store.fetch(
-        logs_model_factory(log_store_id=log_store.id),
-        start="newest",
-    )
-
-    assert requests[0]["sort"] == [
+    assert first_query["sort"] == [
         {"timestamp_nanos": "desc"},
-        {"sequence_number": "desc"},
+        {"event_id.keyword": "desc"},
     ]
-    assert [entry.message for entry in page.items] == [
-        "first",
-        "second",
-        "third",
+    assert first_query["size"] == 1000
+    assert "search_after" not in first_query
+    assert second_query == {
+        **first_query,
+        "search_after": make_hit(2)["sort"],
+    }
+    assert first_query["query"]["bool"]["filter"][0] == {
+        "term": {"zenml.log.id.keyword": str(logs.id)}
+    }
+    window = first_query["query"]["bool"]["filter"][1]["range"][
+        "timestamp_nanos"
     ]
+    assert window["gte"] == to_unix_nanos(logs.created)
+    assert window["lte"] > window["gte"]
+    assert [entry.message for entry in first.items] == [
+        "message 2",
+        "message 3",
+    ]
+    assert [entry.message for entry in second.items] == ["message 1"]
+    assert first.before and first.after is None
+    assert terminal.items == []
+    assert terminal.before is terminal.after is None
+    assert "until" not in first.model_dump()
 
 
-def test_older_page_searches_after_the_oldest_entry_seen(
-    log_store, logs_model_factory, search
+def test_oldest_traversal_and_repeated_reads_keep_event_ids(
+    log_store, logs_model_factory, mocker
 ):
-    """A step back through history continues from the edge of the last page."""
+    """Native IDs remain stable in either traversal direction."""
+    hits = [make_hit(1), make_hit(2, 17), make_hit(3, 21)]
+    post = mocker.patch(
+        SEARCH_POST,
+        side_effect=[
+            make_response(hits),
+            make_response([]),
+            make_response(hits[::-1]),
+        ],
+    )
     logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
-        make_payload([make_hit(at(2), "second")]),
-        make_payload([make_hit(at(1), "first")]),
+    oldest = log_store.fetch(logs, start="oldest", limit=3)
+    log_store.fetch(logs, after=oldest.after)
+    newest = log_store.fetch(logs, limit=3)
+
+    assert oldest.before is None and oldest.after
+    assert (
+        post.call_args_list[1].kwargs["json"]["search_after"]
+        == hits[-1]["sort"]
     )
-
-    first = log_store.fetch(logs, start="newest")
-    second = log_store.fetch(logs, start="newest", before=first.before)
-
-    assert requests[1]["search_after"] == [at(2), 0]
-    assert requests[1]["sort"][0] == {"timestamp_nanos": "desc"}
-    assert [entry.message for entry in second.items] == ["first"]
-
-
-def test_newer_page_searches_after_the_newest_entry_seen(
-    log_store, logs_model_factory, search
-):
-    """Tailing continues forward from the newest entry already seen."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
-        make_payload([make_hit(at(2), "second")]),
-        make_payload([make_hit(at(3), "third")]),
-    )
-
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, after=first.after)
-
-    assert requests[1]["search_after"] == [at(2), 0]
-    assert requests[1]["sort"][0] == {"timestamp_nanos": "asc"}
-    assert [entry.message for entry in second.items] == ["third"]
-
-
-def test_entries_of_one_nanosecond_are_ordered_by_their_sequence(
-    log_store, logs_model_factory, search
-):
-    """The sequence number is what makes a cursor exact within a nanosecond."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(
-        make_payload(
-            [
-                make_hit(at(2), "first", sequence_number=0),
-                make_hit(at(2), "second", sequence_number=1),
-            ]
-        ),
-        make_payload([]),
-    )
-
-    first = log_store.fetch(logs)
-    log_store.fetch(logs, after=first.after)
-
-    assert [entry.message for entry in first.items] == ["first", "second"]
-    assert requests[1]["search_after"] == [at(2), 1]
-
-
-def test_an_empty_page_reports_no_cursor(
-    log_store, logs_model_factory, search
-):
-    """No hits means there is no sort value to continue from."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    search(
-        make_payload([make_hit(at(2), "second")]),
-        make_payload([]),
-    )
-
-    first = log_store.fetch(logs)
-    second = log_store.fetch(logs, after=first.after)
-
-    assert second.items == []
-    assert second.after is None
-    assert second.before is None
-
-
-def test_an_empty_first_page_reports_no_cursor(
-    log_store, logs_model_factory, search
-):
-    """A stream with nothing in it has no page to continue from."""
-    search(make_payload([]))
-
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
-
-    assert page.items == []
-    assert page.after is None
-    assert page.before is None
-
-
-def test_filters_are_pushed_into_the_query(
-    log_store, logs_model_factory, search
-):
-    """Elasticsearch does the filtering, so the query has to express it."""
-    requests = search(make_payload([]))
-
-    log_store.fetch(
-        logs_model_factory(log_store_id=log_store.id),
-        filter_=LogsEntriesFilter(
-            search="failed to connect",
-            level=LoggingLevels.WARNING,
-            since=datetime(2026, 1, 2, tzinfo=timezone.utc),
-            until=datetime(2026, 1, 3, tzinfo=timezone.utc),
-        ),
-    )
-
-    clauses = requests[0]["query"]["bool"]["filter"]
-    assert {
-        "wildcard": {
-            "message": {
-                "value": "*failed to connect*",
-                "case_insensitive": True,
-            }
-        }
-    } in clauses
-    assert {"range": {"severity_number": {"gte": 13}}} in clauses
-    assert {
-        "range": {
-            "timestamp_nanos": {
-                "gte": to_unix_nanos(
-                    datetime(2026, 1, 2, tzinfo=timezone.utc)
-                ),
-                "lte": to_unix_nanos(
-                    datetime(2026, 1, 3, tzinfo=timezone.utc)
-                ),
-            }
-        }
-    } in clauses
-
-
-def test_query_is_scoped_to_the_log_stream(
-    log_store, logs_model_factory, search
-):
-    """Entries of other runs must never leak into a log stream."""
-    logs = logs_model_factory(log_store_id=log_store.id)
-    requests = search(make_payload([]))
-
-    log_store.fetch(logs)
-
-    clauses = requests[0]["query"]["bool"]["filter"]
-    assert {"match_phrase": {"zenml.log.id": str(logs.id)}} in clauses
-
-
-def test_severity_number_is_mapped_to_a_log_level(
-    log_store, logs_model_factory, search
-):
-    """OTEL numbers a severity, Python names it."""
-    search(
-        make_payload(
-            [
-                make_hit(at(1), "a"),
-                make_hit(at(2), "b", severity_number=17),
-                make_hit(at(3), "c", severity_number=21),
-            ]
-        )
-    )
-
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
-
-    assert [entry.level for entry in page.items] == [
+    assert post.call_args_list[0].kwargs["json"]["sort"] == [
+        {"timestamp_nanos": "asc"},
+        {"event_id.keyword": "asc"},
+    ]
+    assert oldest.items == newest.items
+    assert len({entry.id for entry in oldest.items}) == 3
+    assert [entry.level for entry in oldest.items] == [
         LoggingLevels.INFO,
         LoggingLevels.ERROR,
         LoggingLevels.CRITICAL,
     ]
 
 
-def test_credentials_authenticate_the_search(
-    log_store, logs_model_factory, search
+def test_filters_are_restored_from_cursor(
+    log_store, logs_model_factory, mocker
 ):
-    """One configuration has to authenticate reads as well as writes."""
-    requests = search(make_payload([]))
-
-    log_store.fetch(logs_model_factory(log_store_id=log_store.id))
-
-    assert requests[0]["headers"]["Authorization"] == "ApiKey api-key"
-    assert requests[0]["url"] == (
-        "http://elasticsearch:9200/zenml-logs/_search"
+    """The provider applies phrase, level and time filters on every page."""
+    post = mocker.patch(
+        SEARCH_POST,
+        side_effect=[make_response([make_hit(1)]), make_response([])],
     )
+    logs = logs_model_factory(log_store_id=log_store.id)
+    filters = LogsEntriesFilter(
+        search='failed to connect "host"',
+        level=LoggingLevels.WARNING,
+        since=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        until=datetime(2026, 1, 2, tzinfo=timezone.utc),
+    )
+    first = log_store.fetch(logs, start="oldest", limit=20000, filter_=filters)
+    log_store.fetch(logs, after=first.after)
+
+    initial, continued = [call.kwargs["json"] for call in post.call_args_list]
+    assert initial["query"] == continued["query"]
+    assert initial["size"] == continued["size"] == 10000
+    assert initial["query"]["bool"]["filter"] == [
+        {"term": {"zenml.log.id.keyword": str(logs.id)}},
+        {
+            "range": {
+                "timestamp_nanos": {
+                    "gte": to_unix_nanos(filters.since),
+                    "lte": to_unix_nanos(filters.until),
+                }
+            }
+        },
+        {"range": {"severity_number": {"gte": 13}}},
+        {"match_phrase": {"message": filters.search}},
+    ]
 
 
-def test_logs_of_another_log_store_are_rejected(log_store, logs_model_factory):
-    """Searching the wrong cluster would look like an empty run."""
+@pytest.mark.parametrize(
+    "conflict",
+    [
+        {"start": "oldest"},
+        {"limit": 2},
+        {"filter_": LogsEntriesFilter(search="other")},
+        {
+            "filter_": LogsEntriesFilter(
+                since=datetime(2026, 1, 2, tzinfo=timezone.utc)
+            )
+        },
+    ],
+)
+def test_continuation_rejects_conflicting_parameters(
+    log_store, logs_model_factory, mocker, conflict
+):
+    """An existing cursor cannot silently start a different query."""
+    post = mocker.patch(SEARCH_POST, return_value=make_response([make_hit(1)]))
+    logs = logs_model_factory(log_store_id=log_store.id)
+    page = log_store.fetch(logs, limit=1)
+
+    with pytest.raises(ValueError, match="conflicts"):
+        log_store.fetch(logs, before=page.before, **conflict)
+    assert post.call_count == 1
+
+
+def test_cursor_is_scoped_to_store_stream_and_direction(
+    log_store, logs_model_factory, mocker
+):
+    """Unsigned cursors cannot bypass the trusted stream query."""
+    post = mocker.patch(SEARCH_POST, return_value=make_response([make_hit(1)]))
+    logs = logs_model_factory(log_store_id=log_store.id)
+    page = log_store.fetch(logs)
+    other_logs = logs_model_factory(log_store_id=log_store.id)
+    with pytest.raises(ValueError, match="stream"):
+        log_store.fetch(other_logs, before=page.before)
+    with pytest.raises(ValueError, match="direction"):
+        log_store.fetch(logs, after=page.before)
+
+    payload = json.loads(base64.urlsafe_b64decode(page.before))
+    payload["log_store_id"] = str(uuid4())
+    changed = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    with pytest.raises(ValueError, match="log store"):
+        log_store.fetch(logs, before=changed)
     with pytest.raises(ValueError, match="log_store_id"):
         log_store.fetch(logs_model_factory(log_store_id=uuid4()))
+    assert post.call_count == 1
 
 
-def test_a_rejected_search_is_an_error(log_store, logs_model_factory, mocker):
-    """A failed search must not look like a log stream with no entries."""
+@pytest.mark.parametrize("cursor", ["", "not-base64!", "WzEsIDJd"])
+def test_malformed_cursor_is_rejected_before_search(
+    log_store, logs_model_factory, mocker, cursor
+):
+    """Invalid cursor envelopes are input errors, not provider requests."""
+    post = mocker.patch(SEARCH_POST)
+    with pytest.raises(ValueError, match="cursor"):
+        log_store.fetch(
+            logs_model_factory(log_store_id=log_store.id), before=cursor
+        )
+    post.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "status,error",
+    [
+        (401, LogStoreError),
+        (429, LogStoreRateLimitError),
+        (503, LogStoreUnavailableError),
+    ],
+)
+def test_provider_http_errors(
+    log_store, logs_model_factory, mocker, status, error
+):
+    """Provider failures preserve their retry category without exposing bodies."""
+    response = make_response([], status=status)
+    response.headers["Retry-After"] = "12"
+    mocker.patch(SEARCH_POST, return_value=response)
+    with pytest.raises(error) as exc:
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    if status == 429:
+        assert exc.value.retry_after == 12
+
+
+@pytest.mark.parametrize(
+    "response,error",
+    [
+        (make_response([], timed_out=True), LogStoreUnavailableError),
+        (make_response([], _shards={"failed": 1}), LogStoreError),
+        (make_response([], hits={"hits": None}), LogStoreError),
+        (
+            make_response([{**make_hit(1), "sort": [NOON, None]}]),
+            LogStoreError,
+        ),
+        (make_response([{**make_hit(1), "_id": ""}]), LogStoreError),
+    ],
+)
+def test_incomplete_or_invalid_results_are_not_empty_pages(
+    log_store, logs_model_factory, mocker, response, error
+):
+    """A failed search must not be mistaken for the end of a stream."""
+    mocker.patch(SEARCH_POST, return_value=response)
+    with pytest.raises(error):
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+
+
+def test_search_connection_failure(log_store, logs_model_factory, mocker):
+    """Connection errors become retryable domain errors."""
     mocker.patch(
-        "zenml.log_stores.elasticsearch.elasticsearch_log_store.requests.post",
-        return_value=StubResponse({}, status_code=401),
+        SEARCH_POST, side_effect=requests.ConnectionError("private details")
+    )
+    with pytest.raises(
+        LogStoreUnavailableError, match="Could not reach"
+    ) as exc:
+        log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    assert "private details" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "authentication,authorization",
+    [
+        ({"api_key": "{{elasticsearch.api_key}}"}, "ApiKey resolved-key"),
+        (
+            {"username": "elastic", "password": "{{elasticsearch.password}}"},
+            "Basic ZWxhc3RpYzpyZXNvbHZlZC1wYXNzd29yZA==",
+        ),
+    ],
+)
+def test_secret_credentials_and_tls_apply_to_searches_and_exports(
+    log_store, logs_model_factory, mocker, authentication, authorization
+):
+    """Resolved secrets and TLS configuration reach both request paths."""
+    values = {"api_key": "resolved-key", "password": "resolved-password"}
+    client = mocker.patch("zenml.client.Client").return_value
+    client.get_secret_by_name_and_private_status.return_value = (
+        SimpleNamespace(values=values, secret_values=values)
+    )
+    store = ElasticsearchLogStore(
+        name=log_store.name,
+        id=log_store.id,
+        config=ElasticsearchLogStoreConfig(
+            url="https://elasticsearch:9200",
+            certificate_file="ca.pem",
+            client_certificate_file="client.pem",
+            client_key_file="client.key",
+            **authentication,
+        ),
+        flavor="elasticsearch",
+        type=StackComponentType.LOG_STORE,
+        user=log_store.user,
+        created=log_store.created,
+        updated=log_store.updated,
+    )
+    exporter = mocker.patch(
+        "zenml.log_stores.elasticsearch.elasticsearch_log_store.ElasticsearchLogExporter"
+    )
+    post = mocker.patch(SEARCH_POST, return_value=make_response([]))
+    store.get_exporter()
+    store.fetch(logs_model_factory(log_store_id=store.id))
+
+    assert (
+        exporter.call_args.kwargs["headers"]["Authorization"] == authorization
+    )
+    assert exporter.call_args.kwargs["certificate_file"] == "ca.pem"
+    assert exporter.call_args.kwargs["client_certificate_file"] == "client.pem"
+    assert exporter.call_args.kwargs["client_key_file"] == "client.key"
+    assert (
+        exporter.call_args.kwargs["endpoint"]
+        == "https://elasticsearch:9200/zenml-logs/_bulk"
+    )
+    assert post.call_args.kwargs["headers"]["Authorization"] == authorization
+    assert post.call_args.kwargs["verify"] == "ca.pem"
+    assert post.call_args.kwargs["cert"] == ("client.pem", "client.key")
+    assert post.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.parametrize(
+    "authentication",
+    [
+        {"username": "elastic"},
+        {"password": "password"},
+        {"api_key": "key", "username": "elastic", "password": "password"},
+    ],
+)
+def test_authentication_modes_are_validated(authentication):
+    """An incomplete or ambiguous authentication configuration is rejected."""
+    with pytest.raises(ValueError):
+        ElasticsearchLogStoreConfig(
+            url="http://elasticsearch:9200", **authentication
+        )
+
+
+def test_updated_configuration_keeps_export_and_search_destinations_aligned(
+    log_store, logs_model_factory, mocker
+):
+    """Persisted defaults follow URL/index updates; explicit overrides survive."""
+    config = log_store.config.model_dump(exclude_unset=True)
+    config.update(url="https://new-cluster:9200", index="new-logs")
+    updated = ElasticsearchLogStoreConfig.model_validate(config)
+    store = ElasticsearchLogStore(
+        name=log_store.name,
+        id=log_store.id,
+        config=updated,
+        flavor="elasticsearch",
+        type=StackComponentType.LOG_STORE,
+        user=log_store.user,
+        created=log_store.created,
+        updated=log_store.updated,
+    )
+    exporter = mocker.patch(
+        "zenml.log_stores.elasticsearch.elasticsearch_log_store.ElasticsearchLogExporter"
+    )
+    post = mocker.patch(SEARCH_POST, return_value=make_response([]))
+    store.get_exporter()
+    store.fetch(logs_model_factory(log_store_id=store.id))
+
+    assert (
+        exporter.call_args.kwargs["endpoint"]
+        == "https://new-cluster:9200/new-logs/_bulk"
+    )
+    assert (
+        post.call_args.args[0] == "https://new-cluster:9200/new-logs/_search"
+    )
+    config["endpoint"] = "https://ingestion:9200/custom/_bulk"
+    assert (
+        ElasticsearchLogStoreConfig.model_validate(config).endpoint
+        == config["endpoint"]
     )
 
-    with pytest.raises(RuntimeError, match="401"):
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("_source", None),
+        ("timestamp_nanos", "private provider details"),
+        ("severity_number", "private provider details"),
+    ],
+)
+def test_malformed_hit_fails_the_page_instead_of_advancing_past_it(
+    log_store, logs_model_factory, mocker, field, value
+):
+    """A mixed page must not silently skip a record while returning its cursor."""
+    malformed = make_hit(1)
+    if field == "_source":
+        malformed[field] = value
+    else:
+        malformed["_source"][field] = value
+    post = mocker.patch(
+        SEARCH_POST, return_value=make_response([make_hit(2), malformed])
+    )
+    with pytest.raises(LogStoreError, match="invalid log entry") as exc:
         log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    assert "private provider details" not in str(exc.value)
+    post.assert_called_once()

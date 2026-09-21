@@ -13,28 +13,23 @@
 #  permissions and limitations under the License.
 """Log exporter that writes logs to Elasticsearch."""
 
-import itertools
 import json
-from datetime import datetime, timezone
+from time import monotonic, sleep
 from typing import Any, Dict, List, Optional, Sequence
+from uuid import uuid4
 
+import requests
 from opentelemetry.sdk._logs import ReadableLogRecord
 
 from zenml.log_stores.elasticsearch.elasticsearch_flavor import (
+    EVENT_ID_FIELD,
     MESSAGE_FIELD,
-    SEQUENCE_FIELD,
     SEVERITY_NUMBER_FIELD,
     TIMESTAMP_FIELD,
 )
 from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
-from zenml.logger import get_logger
 from zenml.utils.json_utils import pydantic_encoder
-
-logger = get_logger(__name__)
-
-# A data stream only accepts `create`, and a plain index accepts it too with an
-# automatically assigned document ID, so one action serves both.
-BULK_ACTION: Dict[str, Dict[str, Any]] = {"create": {}}
+from zenml.utils.time_utils import from_unix_nanos
 
 
 class ElasticsearchLogExporter(OTLPLogExporter):
@@ -63,11 +58,6 @@ class ElasticsearchLogExporter(OTLPLogExporter):
             **kwargs,
         )
 
-        # Entries written within the same nanosecond are ordered by this
-        # counter. A log stream has exactly one writer, so counting per exporter
-        # is enough to keep the order of a stream stable.
-        self._sequence_numbers = itertools.count()
-
     def _encode_document(self, readable: ReadableLogRecord) -> Dict[str, Any]:
         """Encode a readable log record as an Elasticsearch document.
 
@@ -92,17 +82,13 @@ class ElasticsearchLogExporter(OTLPLogExporter):
         document.update(
             {
                 TIMESTAMP_FIELD: timestamp,
-                SEQUENCE_FIELD: next(self._sequence_numbers),
+                EVENT_ID_FIELD: str(uuid4()),
                 MESSAGE_FIELD: str(record.body),
-                SEVERITY_NUMBER_FIELD: getattr(
-                    record.severity_number, "value", None
-                ),
+                SEVERITY_NUMBER_FIELD: record.severity_number.value
+                if record.severity_number is not None
+                else None,
                 "severity_text": record.severity_text,
-                # Kibana and every other Elasticsearch consumer expects a date
-                # field; the nanosecond field above only exists to sort on.
-                "@timestamp": datetime.fromtimestamp(
-                    timestamp / 1_000_000_000, tz=timezone.utc
-                ).isoformat(),
+                "@timestamp": from_unix_nanos(timestamp).isoformat(),
             }
         )
 
@@ -119,8 +105,9 @@ class ElasticsearchLogExporter(OTLPLogExporter):
         """
         lines: List[Any] = []
         for log in logs:
-            lines.append(BULK_ACTION)
-            lines.append(self._encode_document(log))
+            document = self._encode_document(log)
+            lines.append({"create": {"_id": document[EVENT_ID_FIELD]}})
+            lines.append(document)
 
         return lines
 
@@ -139,3 +126,86 @@ class ElasticsearchLogExporter(OTLPLogExporter):
         )
 
         return body.encode("utf-8")
+
+    def _export(
+        self, serialized_data: bytes, timeout_sec: float
+    ) -> requests.Response:
+        """Export a batch, retrying transient item failures up to three attempts.
+
+        Args:
+            serialized_data: The serialized bulk request.
+            timeout_sec: The request timeout in seconds.
+
+        Returns:
+            The HTTP response.
+
+        Raises:
+            ValueError: If the request fails or returns failed writes
+                or invalid bulk results.
+        """
+        lines = serialized_data.splitlines(keepends=True)
+        pending = [b"".join(lines[i : i + 2]) for i in range(0, len(lines), 2)]
+        deadline = monotonic() + timeout_sec
+        permanent_failure = False
+        for attempt in range(3):
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                break
+            response = super()._export(b"".join(pending), remaining)
+            if not 200 <= response.status_code < 300:
+                raise ValueError(
+                    f"Elasticsearch rejected the bulk export with status "
+                    f"{response.status_code}."
+                )
+            try:
+                payload = response.json()
+            except ValueError as e:
+                raise ValueError(
+                    "Elasticsearch returned an invalid bulk result."
+                ) from e
+            if (
+                not isinstance(payload, dict)
+                or type(payload.get("errors")) is not bool
+            ):
+                raise ValueError(
+                    "Elasticsearch returned an invalid bulk result."
+                )
+            items = payload.get("items")
+            if not isinstance(items, list) or len(items) != len(pending):
+                raise ValueError(
+                    "Elasticsearch returned an incomplete bulk result."
+                )
+            retry = []
+            for document, item in zip(pending, items):
+                result = item.get("create") if isinstance(item, dict) else None
+                if (
+                    not isinstance(result, dict)
+                    or type(result.get("status")) is not int
+                ):
+                    raise ValueError(
+                        "Elasticsearch returned an invalid bulk result."
+                    )
+                status = result["status"]
+                # IDs are generated once, so a create conflict after an uncertain
+                # HTTP retry means the same record was already written.
+                if status == 409 or (
+                    200 <= status < 300 and not result.get("error")
+                ):
+                    continue
+                if status == 429 or 500 <= status < 600:
+                    retry.append(document)
+                else:
+                    permanent_failure = True
+            if not retry:
+                if permanent_failure:
+                    break
+                return response
+            pending = retry
+            if attempt < 2:
+                delay = 0.25 * 2**attempt
+                if monotonic() + delay >= deadline:
+                    break
+                sleep(delay)
+        raise ValueError(
+            "Elasticsearch failed to export one or more log entries."
+        )

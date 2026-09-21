@@ -1,38 +1,16 @@
 ---
-description: Exporting logs to Elasticsearch or OpenSearch.
+description: Storing and querying pipeline logs with Elasticsearch.
 ---
 
 # Elasticsearch Log Store
 
-The Elasticsearch Log Store is a log store flavor that writes logs to an [Elasticsearch](https://www.elastic.co/elasticsearch) cluster and queries them back, so pipeline logs are available both in the ZenML dashboard and in Kibana. It works against [OpenSearch](https://opensearch.org/) too, whose bulk and search APIs agree with the Elasticsearch ones on everything this log store uses.
+The Elasticsearch Log Store writes pipeline logs to an Elasticsearch index or data stream and retrieves them for ZenML. Use it to keep pipeline logs in your existing Elastic deployment and explore them in Kibana.
 
-### When would you want to use it?
-
-The Elasticsearch Log Store is a good fit when:
-
-- You already run an Elastic or OpenSearch cluster, self-hosted or as Elastic Cloud, AWS OpenSearch Service or a similar managed service
-- You want pipeline logs in the same place as the rest of your application logs, searchable in Kibana
-- You want long retention with index lifecycle management deciding what gets rolled over or deleted
-- You want exact paging: unlike backends with only a timestamp to page by, a page here never overlaps another
-
-### How it works
-
-1. **Log capture**: All stdout, stderr, and Python logging output is captured during pipeline execution.
-
-2. **Bulk export**: A custom `ElasticsearchLogExporter` writes log records to the cluster's `_bulk` API as newline-delimited JSON, one flat document per entry.
-
-3. **Document shape**: Each document carries the message, the OTEL severity as both text and number, every ZenML attribute, and `@timestamp` for Kibana. Two extra fields exist purely so that reading is exact:
-
-   | Field             | Purpose                                                                                          |
-   |-------------------|--------------------------------------------------------------------------------------------------|
-   | `timestamp_nanos` | The entry's timestamp in nanoseconds, avoiding the millisecond truncation of a mapped date field  |
-   | `sequence_number` | A counter that orders entries written within the same nanosecond                                 |
-
-4. **Log retrieval**: Reads go to `_search`, sorted on those two fields and paged with `search_after`, filtered to one log stream by its ZenML log ID.
+The flavor is built into ZenML; no integration installation is required. The pipeline environment needs write access to the cluster, and the ZenML server needs read access for log retrieval.
 
 ### How to use it
 
-#### A self-hosted cluster
+#### Basic authentication
 
 ```shell
 zenml secret create elasticsearch \
@@ -40,18 +18,20 @@ zenml secret create elasticsearch \
 
 zenml log-store register elasticsearch_logs \
     --flavor=elasticsearch \
-    --url=http://elasticsearch.observability.svc.cluster.local:9200 \
-    --username=elastic \
+    --url=https://elasticsearch.example.com:9200 \
+    --username=<YOUR_USERNAME> \
     --password='{{elasticsearch.password}}'
 
 zenml stack register my_stack \
     -a my_artifact_store \
     -o default \
-    -ls elasticsearch_logs \
+    --log_store elasticsearch_logs \
     --set
 ```
 
-#### Elastic Cloud, with an API key
+#### API key authentication
+
+Use the encoded API key returned by Elasticsearch, and configure it instead of `username` and `password`:
 
 ```shell
 zenml secret create elasticsearch \
@@ -64,91 +44,99 @@ zenml log-store register elasticsearch_logs \
     --index=logs-zenml-production
 ```
 
-The API key is the `encoded` value returned by Elasticsearch's create API key endpoint. It needs the `create_doc` privilege to write and `read` to fetch logs back.
+The credentials need `create_doc` to write entries and `read` to retrieve them. Automatic index creation also requires an appropriate creation privilege, such as `auto_configure`. Otherwise, provision the target and its mappings before running a pipeline. See the [Elasticsearch bulk API prerequisites](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk).
 
 ### Configuration options
 
-| Parameter               | Default          | Description                                                     |
-|-------------------------|------------------|-----------------------------------------------------------------|
-| `url`                   | _required_       | Base URL of the cluster, including scheme and port              |
-| `index`                 | `"zenml-logs"`   | Index or data stream that log entries are written to and read from |
-| `api_key`               | `None`           | Encoded API key, instead of basic authentication                |
-| `username`              | `None`           | Username for basic authentication                               |
-| `password`              | `None`           | Password for basic authentication                               |
-| `service_name`          | `"zenml"`        | Service name attached to log records                            |
-| `service_version`       | ZenML version    | Service version attached to log records                         |
-| `max_export_batch_size` | `500`            | Number of entries per bulk request                              |
-| `max_queue_size`        | `100000`         | Maximum queue size for the batch processor                      |
-| `schedule_delay_millis` | `5000`           | Delay between batch exports (milliseconds)                      |
-| `export_timeout_millis` | `15000`          | Timeout for each export batch (milliseconds)                    |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `url` | _required_ | Base URL of the Elasticsearch cluster, including the scheme and port. |
+| `index` | `"zenml-logs"` | Index or data stream used for writes and reads. |
+| `api_key` | `None` | Encoded Elasticsearch API key. |
+| `username` | `None` | Basic authentication username. Requires `password`. |
+| `password` | `None` | Basic authentication password. |
+| `service_name` | `"zenml"` | Service name attached to log records. |
 
-Whichever credentials are configured authenticate both writes and reads.
+The flavor also supports the [OpenTelemetry log store's export settings](otel.md#configuration-options), including batching, compression, and TLS certificates. ZenML derives the bulk ingestion endpoint from `url` and `index`. Authentication credentials are used for both writes and queries.
 
-### The index
+### Index mapping
 
-With automatic index creation enabled, which is the default, nothing needs to be set up in advance: the first batch of logs creates the index and dynamic mapping infers the fields. The two sort fields must stay numeric for paging to work, which dynamic mapping does on its own as long as the first document it sees for them is a number.
+ZenML writes each log record through Elasticsearch's bulk `create` action. Documents contain the message, severity, ZenML attributes, `@timestamp`, and the fields used to identify and order entries.
 
-An explicit template is worth adding on a cluster where dynamic mapping is off, or where you want the fields to be mapped deliberately:
+A new index with Elasticsearch's default dynamic mappings provides the required field types. If you manage mappings explicitly, preserve these fields:
 
-```shell
-curl -X PUT "$ES_URL/_index_template/zenml-logs" -H 'Content-Type: application/json' -d '{
-  "index_patterns": ["zenml-logs*"],
-  "template": {
-    "mappings": {
-      "properties": {
-        "timestamp_nanos": { "type": "long" },
-        "sequence_number": { "type": "long" },
-        "severity_number": { "type": "long" },
-        "@timestamp": { "type": "date" },
-        "message": { "type": "text" }
-      }
+| Field | Mapping | Purpose |
+|-------|---------|---------|
+| `timestamp_nanos` | `long` | Timestamp sorting and time filters. |
+| `event_id.keyword` | `keyword` subfield of `event_id` | Unique tie-breaker for entries with the same timestamp. |
+| `zenml.log.id.keyword` | `keyword` subfield of `zenml.log.id` | Exact log stream selection. |
+| `severity_number` | Numeric | Minimum severity filters. |
+| `message` | `text` | Message search. |
+| `@timestamp` | `date` or `date_nanos` | Time field for Kibana and data streams. |
+
+For example, the `event_id` mapping should include its keyword subfield:
+
+```json
+{
+  "event_id": {
+    "type": "text",
+    "fields": {
+      "keyword": { "type": "keyword" }
     }
   }
-}'
+}
 ```
 
-{% hint style="info" %}
-Documents are written with the bulk `create` action and no document ID, which a data stream requires and a plain index accepts, so either kind of `index` target works.
-{% endhint %}
+Use the same subfield structure for `zenml.log.id`. For a data stream, configure a matching data stream template before the first write.
 
 ### Viewing logs
 
-#### In the ZenML dashboard
+Each fetch makes one Elasticsearch search request. It starts with the newest entries by default and returns a `before` cursor to continue towards older entries. Set `start="oldest"` to traverse towards newer entries using `after`. Entries within each page are chronological.
 
-Logs are fetched from Elasticsearch when viewing step details. Each fetch is a single search. Omit `start` to read from the oldest end of the stream; pass `start=newest` for the last page. Entries on a page are always oldest to newest.
+The default page size is 1000 and the maximum is 10,000, subject to `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST`. Use a smaller `limit` if the index has a lower `index.max_result_window`.
 
-Because the nanosecond timestamp and the sequence number together are a total order over a log stream, paging uses Elasticsearch's `search_after` on those sort values — the cluster's own continuation, not a timestamp we invented. `before` and `after` both work. An empty page has no cursor.
+Cursors retain Elasticsearch's native `search_after` values, the query filters, fixed time bounds, direction, and page size. Continue with only the returned cursor. To change the filters or direction, start a new read. Follow the cursor until it is absent; the final request may return an empty page.
 
-Searching and filtering by level or time is done by the cluster. A search term becomes a `wildcard` on the message, so it matches a substring. A page holds at most 10000 entries, which is the default `index.max_result_window`.
+If omitted, `since` starts at the log stream's creation time and `until` is fixed to the first request's current UTC time. Fixed time bounds do not freeze the index: newly indexed or changed documents within that window can affect later pages. See Elasticsearch's [pagination guidance](https://www.elastic.co/docs/reference/elasticsearch/rest-apis/paginate-search-results).
+
+Using the `log_store` and `logs` objects from the [Python SDK example](README.md#python-sdk):
+
+```python
+from zenml.models import LogsEntriesFilter
+
+page = log_store.fetch(
+    logs_model=logs,
+    limit=100,
+    filter_=LogsEntriesFilter(level="WARNING"),
+)
+while True:
+    for entry in page.items:
+        print(entry.message)
+    if page.before is None:
+        break
+    page = log_store.fetch(logs_model=logs, before=page.before)
+```
+
+`level` is a minimum severity, and `since` and `until` are inclusive. `search` uses Elasticsearch's [`match_phrase` query](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-match-query-phrase) on the message field. Tokenization, case handling, and punctuation follow the index's analyzer; this is a phrase search rather than a literal substring match.
+
+Each exported event has a persistent UUID used as its document ID and pagination tie-breaker. ZenML derives `LogEntry.id` from the index and document ID, so repeated reads of the same document return the same UUID.
 
 #### In Kibana
 
-Filter on the ZenML attributes, which are written as flat dotted fields:
+Filter on the ZenML attributes:
 
-```
+```text
 zenml.pipeline.run.name : "<YOUR_RUN_NAME>"
 ```
 
-```
+```text
 zenml.pipeline.run.name : "<YOUR_RUN_NAME>" and zenml.step.run.name : "my_training_step"
 ```
 
 ### Troubleshooting
 
-#### Logs not appearing in the cluster
+If logs do not appear, check write permissions, bulk export errors, and whether the target index or data stream exists. Elasticsearch makes writes searchable after an index refresh, so newly exported logs may take a short time to appear.
 
-1. Check that the credentials may write to the index; a bulk request that is rejected wholesale leaves nothing behind.
-2. Check whether automatic index creation is disabled on the cluster, in which case the index or data stream has to exist before the first run.
-
-#### Logs are in Kibana but not in the ZenML dashboard
-
-1. Confirm that `timestamp_nanos` and `sequence_number` are mapped as numbers. A search cannot sort on a field mapped as text, and the index template above fixes the mapping deliberately.
-2. Confirm that the credentials also grant read access to the index.
-
-#### A step's logs are incomplete
-
-The sequence number is counted per writing process, which is what orders entries sharing a nanosecond. Entries written by different processes into one log stream can therefore interleave differently to how they were emitted, but only within a single nanosecond.
-
-For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.elasticsearch.elasticsearch_log_store).
+If logs appear in Kibana but not in ZenML, check read permissions and the mappings above. Existing indices with incompatible mappings need a new index or a reindexing step; changing the template only affects future indices.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

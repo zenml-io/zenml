@@ -91,17 +91,16 @@ def to_utc_timezone(dt: datetime) -> datetime:
 def to_unix_nanos(dt: datetime) -> int:
     """Convert a datetime to a Unix timestamp in nanoseconds.
 
-    The seconds and the microseconds are converted separately, because the
-    float a datetime reports for a modern date cannot hold nanoseconds exactly.
-
     Args:
         dt: datetime to convert.
 
     Returns:
         Nanoseconds since the Unix epoch.
     """
-    utc = to_utc_timezone(dt)
-    return int(utc.timestamp()) * 1_000_000_000 + utc.microsecond * 1_000
+    delta = to_utc_timezone(dt) - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 1_000_000_000 + (
+        delta.microseconds * 1_000
+    )
 
 
 def from_unix_nanos(nanos: int) -> datetime:

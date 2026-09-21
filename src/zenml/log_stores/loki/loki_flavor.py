@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Grafana Loki log store flavor."""
 
-from typing import Any, Dict, Optional, Type
+from typing import Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -74,42 +74,36 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
         default=None,
         description="Tenant to scope ingestion and queries to, sent as the "
         "`X-Scope-OrgID` header. Required by a Loki running in multi-tenant "
-        "mode, and rejected by one running with authentication disabled. "
+        "mode. "
         "Example: 'ml-platform'",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def set_default_query_url(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Derive the query URL from the ingestion endpoint if it is not set.
-
-        Args:
-            data: The input data dictionary.
+    def get_query_url(self) -> str:
+        """Resolve the query URL from the current ingestion endpoint.
 
         Returns:
-            The data dictionary with the query URL set if it was missing.
+            The configured query URL or the ingestion endpoint's base URL.
         """
-        if isinstance(data, dict) and not data.get("query_url"):
-            endpoint = data.get("endpoint")
-            if isinstance(endpoint, str):
-                for suffix in (LOKI_OTLP_PATH, "/otlp"):
-                    if endpoint.endswith(suffix):
-                        endpoint = endpoint[: -len(suffix)]
-                        break
-                data["query_url"] = endpoint.rstrip("/")
+        if self.query_url:
+            return self.query_url.rstrip("/")
 
-        return data
+        endpoint = self.endpoint.rstrip("/")
+        for suffix in (LOKI_OTLP_PATH, "/otlp"):
+            if endpoint.endswith(suffix):
+                return endpoint[: -len(suffix)]
+        return endpoint
 
     @model_validator(mode="after")
     def validate_authentication(self) -> "LokiLogStoreConfig":
-        """Check that exactly one authentication mode is configured.
+        """Validate optional authentication and client TLS credentials.
 
         Returns:
             The validated configuration.
 
         Raises:
             ValueError: If basic authentication is half configured, or if both
-                authentication modes are configured at once.
+                authentication modes are configured at once, or a client key
+                has no corresponding certificate.
         """
         if (self.username is None) != (self.password is None):
             raise ValueError(
@@ -120,6 +114,11 @@ class LokiLogStoreConfig(OtelLogStoreConfig):
             raise ValueError(
                 "Configure either `api_key` or `username` and `password`, "
                 "not both."
+            )
+
+        if self.client_key_file and not self.client_certificate_file:
+            raise ValueError(
+                "`client_key_file` requires `client_certificate_file`."
             )
 
         return self

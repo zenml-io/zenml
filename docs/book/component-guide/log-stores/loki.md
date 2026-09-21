@@ -1,46 +1,22 @@
 ---
-description: Exporting logs to Grafana Loki.
+description: Storing and querying pipeline logs with Grafana Loki.
 ---
 
 # Grafana Loki Log Store
 
-The Loki Log Store is a log store flavor that ships logs to [Grafana Loki](https://grafana.com/oss/loki/) and reads them back with LogQL, so pipeline logs are available both in the ZenML dashboard and in Grafana.
-
-### When would you want to use it?
-
-The Loki Log Store is a good fit when:
-
-- You already run Loki or Grafana Cloud and want ML pipeline logs alongside the rest of your logs
-- You want to keep logs on infrastructure you control, with a backend that is inexpensive to run
-- You want to correlate pipeline logs with the metrics and traces already in your Grafana stack
-- You want to build Grafana dashboards and alerts on top of pipeline logs
-
-### How it works
-
-Loki has ingested OpenTelemetry logs natively since version 3.0, so the write path is the generic one of the [OTEL Log Store](otel.md):
-
-1. **Log capture**: All stdout, stderr, and Python logging output is captured during pipeline execution.
-
-2. **OTLP export**: Log records are pushed to Loki's `/otlp/v1/logs` endpoint with ZenML-specific attributes attached.
-
-3. **Storage shape**: Loki turns resource attributes into index labels and log attributes into per-entry structured metadata, replacing the dots of an attribute name with underscores. The ZenML attributes therefore end up as structured metadata under names like `zenml_log_id`.
-
-4. **Log retrieval**: Reads go to Loki's `query_range` endpoint with a LogQL query that selects the service and narrows it to a single log stream, for example:
-
-```
-{service_name="zenml"} | zenml_log_id="<LOG_ID>"
-```
+The Loki Log Store exports logs to Grafana Loki and queries them with LogQL. Use it to view pipeline logs in ZenML alongside the logs in your Grafana dashboards.
 
 ### Requirements
 
-- **Loki 3.0 or newer.** Older versions have no OTLP endpoint.
-- **Structured metadata enabled**, which requires the TSDB index and schema `v13`. This is the default in recent versions, and it is what carries the ZenML attributes and the log level of each entry.
+Use Loki 3.0 or newer with OTLP ingestion and structured metadata enabled. Structured metadata requires the TSDB index and schema `v13` or newer. See Loki's [OpenTelemetry ingestion guide](https://grafana.com/docs/loki/latest/send-data/otel/) and [structured metadata requirements](https://grafana.com/docs/loki/latest/get-started/labels/structured-metadata/).
+
+The flavor is built into ZenML; no integration installation is required. Both the pipeline environment and the ZenML server need access to the appropriate ingestion or query endpoint.
 
 ### How to use it
 
-#### A self-hosted Loki
+#### Self-hosted Loki
 
-One address serves both ingestion and queries, so only the endpoint is needed:
+Register the full OTLP logs endpoint. For a deployment that accepts writes and queries at the same address, ZenML derives the query URL automatically:
 
 ```shell
 zenml log-store register loki_logs \
@@ -50,22 +26,15 @@ zenml log-store register loki_logs \
 zenml stack register my_stack \
     -a my_artifact_store \
     -o default \
-    -ls loki_logs \
+    --log_store loki_logs \
     --set
 ```
 
-#### A Loki in multi-tenant mode
+For a multi-tenant deployment, add `--tenant_id=<TENANT_ID>`. It is sent as `X-Scope-OrgID` on writes and queries.
 
-```shell
-zenml log-store register loki_logs \
-    --flavor=loki \
-    --endpoint=http://loki:3100/otlp/v1/logs \
-    --tenant_id=ml-platform
-```
+#### Grafana Cloud or authenticated Loki
 
-#### Grafana Cloud
-
-Grafana Cloud pushes and queries on different hosts, so both URLs are needed. The username is the numeric instance ID of your Loki stack, and the password is an access policy token with the `logs:write` and `logs:read` scopes.
+For basic authentication, configure both `username` and `password`. On Grafana Cloud, use your stack's instance ID and an access policy token with log read and write permissions. Copy the ingestion and query endpoints from your stack's connection details:
 
 ```shell
 zenml secret create grafana_cloud \
@@ -73,75 +42,80 @@ zenml secret create grafana_cloud \
 
 zenml log-store register loki_logs \
     --flavor=loki \
-    --endpoint=https://logs-prod-eu-west-0.grafana.net/otlp/v1/logs \
-    --query_url=https://logs-prod-eu-west-0.grafana.net \
+    --endpoint=<OTLP_LOGS_ENDPOINT> \
+    --query_url=<LOKI_QUERY_BASE_URL> \
     --username=<YOUR_INSTANCE_ID> \
     --password='{{grafana_cloud.password}}'
 ```
 
+For a gateway that uses bearer authentication, configure `api_key` instead of `username` and `password`. Store the token in a ZenML secret and pass its reference to `--api_key`.
+
 ### Configuration options
 
-| Parameter               | Default              | Description                                                          |
-|-------------------------|----------------------|----------------------------------------------------------------------|
-| `endpoint`              | _required_           | Loki's OTLP endpoint, ending in `/otlp/v1/logs`                      |
-| `query_url`             | host of `endpoint`   | Base URL of the query API, without a path                            |
-| `username`              | `None`               | Username for basic authentication, or the Grafana Cloud instance ID   |
-| `password`              | `None`               | Password for basic authentication                                    |
-| `api_key`               | `None`               | Token for bearer authentication, instead of basic authentication      |
-| `tenant_id`             | `None`               | Tenant sent as `X-Scope-OrgID`                                       |
-| `service_name`          | `"zenml"`            | Service name, which becomes the Loki stream label to query           |
-| `service_version`       | ZenML version        | Service version attached to log records                              |
-| `max_export_batch_size` | `500`                | Maximum batch size for exports                                       |
-| `max_queue_size`        | `100000`             | Maximum queue size for the batch processor                           |
-| `schedule_delay_millis` | `5000`               | Delay between batch exports (milliseconds)                           |
-| `export_timeout_millis` | `15000`              | Timeout for each export batch (milliseconds)                         |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `endpoint` | _required_ | Full OTLP ingestion URL, ending in `/otlp/v1/logs`. |
+| `query_url` | Derived from `endpoint` | Query API base URL, without `/loki/api/v1/query_range`. Set it explicitly when queries use a different address. |
+| `username` | `None` | Basic authentication username. Requires `password`. |
+| `password` | `None` | Basic authentication password or access policy token. |
+| `api_key` | `None` | Bearer token; cannot be combined with basic authentication. |
+| `tenant_id` | `None` | Tenant identifier for `X-Scope-OrgID`. |
+| `service_name` | `"zenml"` | Service name used to select the Loki stream. |
 
-Whichever credentials are configured authenticate both ingestion and queries, so a secured Loki only needs to be configured once.
+The flavor also supports the [OpenTelemetry log store's export settings](otel.md#configuration-options), including batching, compression, and TLS certificates. Authentication credentials are used for both ingestion and queries.
 
 ### Viewing logs
 
-#### In the ZenML dashboard
+Loki supports server-side filtering and returns one batch per query. A fetch reads the newest entries by default; use `start="oldest"` to read from the other end. Each batch is returned in chronological order.
 
-Logs are fetched from Loki when viewing step details. Each fetch is a single range query that returns one page. Omit `start` to read from the oldest end of the stream; pass `start=newest` for the last page. Entries on a page are always oldest to newest.
+The default batch size is 1000 and the maximum is 5000, subject to `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST`. If your Loki deployment sets a lower `max_entries_limit_per_query`, pass a matching `limit`.
 
-Loki has no continuation token, so the cursor is a timestamp watermark from the edge of the page — that is what LogQL can express. `before` continues towards older entries, `after` towards newer ones. An empty page has no cursor.
+Loki's `query_range` API has no native continuation token. Both `before` and `after` are always unset, and passing either cursor raises `ValueError` in the SDK or returns HTTP `400`. Narrow the filters or time window to retrieve a smaller batch; use the returned entries for client-side pagination.
 
-Searching and filtering by level or time is done by Loki. A search term becomes a LogQL line filter (`|=`), which matches a substring anywhere in a message. A level filter becomes a comparison on the `severity_number` structured metadata. A page holds at most 5000 entries, which is Loki's default `max_entries_limit_per_query`.
+The filters run in Loki:
 
-{% hint style="info" %}
-Only the service name is an index label; the log ID that identifies a single step's logs is structured metadata. Loki therefore reads the whole `service_name` stream over the time window of the run and filters it. This is fine at the scale of one pipeline run, but a Loki instance shared with high-volume production traffic under the same service name will make those reads slower. Giving ZenML its own `service_name` keeps that stream small.
-{% endhint %}
+- `search` performs a case-sensitive substring match on the original log message through a LogQL `|=` line filter.
+- `level` is a minimum severity, so `WARNING` includes warnings and errors.
+- `since` and `until` bound the query by time. Both bounds are inclusive.
+
+When omitted, the time window runs from the log stream's creation time to the current UTC time.
+
+Using the `log_store` and `logs` objects from the [Python SDK example](README.md#python-sdk):
+
+```python
+from zenml.models import LogsEntriesFilter
+
+batch = log_store.fetch(
+    logs_model=logs,
+    limit=100,
+    filter_=LogsEntriesFilter(level="WARNING", search="training"),
+)
+for entry in batch.items:
+    print(entry.message)
+```
+
+Entries have stable UUIDs derived from Loki's timestamp, message, and labels and metadata. Identical entries with the same values share an ID because Loki does not expose a unique event ID.
 
 #### In Grafana
 
-Query the ZenML stream directly, narrowing it by whichever ZenML attribute is useful:
+ZenML attributes use underscores in Loki. Query a run or step directly with LogQL:
 
-```
+```logql
 {service_name="zenml"} | zenml_pipeline_run_name="<YOUR_RUN_NAME>"
 ```
 
-```
+```logql
 {service_name="zenml"} | zenml_step_run_name="my_training_step"
 ```
 
+Keep ZenML's `service_name` distinct from unrelated high-volume services. Loki uses it as an index label and filters the ZenML log stream ID from structured metadata.
+
 ### Troubleshooting
 
-#### Logs not appearing in Loki
+If logs do not appear, check that the ingestion endpoint ends in `/otlp/v1/logs`, structured metadata is enabled, and the credentials and tenant allow writes. Loki can also reject records outside its configured age limits.
 
-1. Check that the endpoint ends in `/otlp/v1/logs`; ZenML posts to the URL exactly as configured.
-2. Check whether Loki requires a tenant. It rejects a push with no `X-Scope-OrgID` in multi-tenant mode, and rejects one with a tenant header when authentication is disabled.
-3. Loki refuses entries that are too old for its `reject_old_samples_max_age`, which matters when replaying logs of an older run.
+If logs appear in Grafana but not in ZenML, check the query URL, read permissions, and `service_name`. Preserve the `zenml_*` and severity metadata during ingestion so ZenML can identify and filter the stream.
 
-#### Logs appear in Grafana but not in the ZenML dashboard
-
-1. Confirm that structured metadata is enabled. Without it the ZenML attributes are dropped at ingestion, and no query can find the log stream they identify.
-2. Confirm that `query_url` points at the query host, which is a different host to the ingestion one on Grafana Cloud.
-3. Confirm that the credentials also grant read access; on Grafana Cloud the `logs:read` scope is separate from `logs:write`.
-
-#### Every entry shows the same level
-
-Severity is read from the per-entry structured metadata. A Loki configured to promote `severity_text` to a stream label instead does not affect this, but an ingestion path that drops structured metadata leaves ZenML with no severity to read, and it falls back to `INFO`.
-
-For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.loki.loki_log_store).
+If large batches time out and Loki reports a gRPC message-size error, reduce `limit` or adjust Loki's [gRPC message-size limits](https://grafana.com/docs/loki/latest/operations/troubleshooting/troubleshoot-operations/).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

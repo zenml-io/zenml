@@ -29,7 +29,7 @@ The Log Store is automatically used in every ZenML stack. If you don't explicitl
 
 You should consider configuring a dedicated log store when:
 
-- You want to use a centralized logging backend like Datadog, Jaeger, Grafana Tempo, Honeycomb, Lightstep or Dash0 for log aggregation and analysis
+- You want centralized log aggregation and analysis
 - You need advanced log querying capabilities beyond what file-based storage provides
 - You're running pipelines at scale and need better log management
 - You want to integrate with your organization's existing observability infrastructure
@@ -38,28 +38,26 @@ You should consider configuring a dedicated log store when:
 
 By default, if no log store is explicitly configured in your stack, ZenML automatically creates an Artifact Log Store that uses your artifact store for log storage. This means logging works out of the box without any additional configuration.
 
-To use a different log store, you need to register it and add it to your stack:
+To use a different log store, choose a [flavor](#log-store-flavors), register it with the required configuration, and add it to your stack:
 
 ```shell
-# Register a log store (example with Datadog)
+# See the flavor's documentation for its configuration options
 zenml log-store register <LOG_STORE_NAME> \
-    --flavor=datadog \
-    --api_key=<DATADOG_API_KEY> \
-    --application_key=<DATADOG_APPLICATION_KEY>
+    --flavor=<FLAVOR> <CONFIGURATION_OPTIONS>
 
 # Add it to your stack
-zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> -ls <LOG_STORE_NAME> --set
+zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> --log_store <LOG_STORE_NAME> --set
 ```
 
 Once configured, logs are automatically captured during pipeline execution.
 
 ### Viewing Logs
 
-You can view logs through several methods:
+Log stores with retrieval support make step logs available in the ZenML dashboard, Python SDK, and REST API. Export-only stores require the backend's own UI or API to read logs.
 
-1. **ZenML Dashboard**: Navigate to a pipeline run and view step logs directly in the UI.
+#### Python SDK
 
-2. **Programmatically**: You can fetch logs directly using the log store:
+Use the log store that captured the logs:
 
 ```python
 from zenml.client import Client
@@ -67,12 +65,12 @@ from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
 
-# Get the run you want logs for. A run collects several log streams, one per
-# source: "orchestrator" for the run itself, "step" for each of its steps.
 run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
-logs = search_logs_by_source(run.log_collection, "orchestrator")
+step_run = run.steps["<STEP_NAME>"]
+logs = search_logs_by_source(step_run.log_collection or [], "step")
+if logs is None:
+    raise ValueError("This step has no execution log stream.")
 
-# Note: The log store must match the one that captured the logs
 log_store = client.active_stack.log_store
 page = log_store.fetch(logs_model=logs, limit=1000)
 
@@ -80,47 +78,64 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-`start` picks which end of the stream a read begins at. Omit it to let the log store pick (typically the oldest end). It is not a sort order: entries within a page always run from oldest to newest either way. 
+`fetch()` returns entries in `items`, ordered from oldest to newest. Set `start="oldest"` or `start="newest"` to choose which end of the stream to read, or omit it to use the backend's default. Supported directions and filters depend on the log store.
 
-A page may carry `before`, `after`, both, or neither. Pass `before` back in to walk towards older entries, and `after` to walk towards newer ones. A slot that comes back as `None` means this store cannot go that way from this page.
+`limit` controls the number of entries returned. `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` caps each request at 50,000 by default; a backend may have a lower limit.
 
-```python
-# Start at the end of a stream and walk back through its history.
-page = log_store.fetch(logs_model=logs, start="newest")
-while page.before:
-    page = log_store.fetch(
-        logs_model=logs,
-        before=page.before,
-    )
-```
+For backends with pagination, pass the returned `before` cursor to read older entries or `after` to read newer ones. Only directions supported by the backend's native tokens are available; `None` means there is no continuation in that direction.
 
-Filters are pushed down into the backend's own query, so they cost nothing to apply:
+For a backend with filtering and pagination towards older entries, filter the first request and use its cursor to continue:
 
 ```python
 from zenml.models import LogsEntriesFilter
 
 page = log_store.fetch(
     logs_model=logs,
+    start="newest",
     filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
 )
+while True:
+    for entry in page.items:
+        print(entry.message)
+    if page.before is None:
+        break
+    page = log_store.fetch(logs_model=logs, before=page.before)
 ```
 
-3. **Through the REST API**: `GET /api/v1/logs/{logs_id}/entries` serves the same pages over HTTP, taking `start`, `limit`, `before`, `after`, and the `search`, `level`, `since` and `until` filters as query parameters. A request a log store cannot serve comes back as `400`. This is what the dashboard uses.
+Cursors retain the filters, page size, and fixed time bounds, so continuation requests need only the cursor. Search follows the backend's matching rules, which may differ from a literal substring match.
 
-4. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+Some backends support filtering but return a single batch without cursors. The artifact log store returns a batch of the oldest entries for client-side filtering and pagination; it does not support server-side filters or `start="newest"`.
+
+Each entry has a UUID `id`. When a backend provides stable IDs, deduplicate entries within a stream by `(id, chunk_index)` to preserve chunks of the same message. See the flavor's documentation for its ID guarantees. Shared log types, including `LogEntry`, are available from `zenml.models`.
+
+#### REST API
+
+`GET /api/v1/logs/{logs_id}/entries` accepts `start`, `limit`, `before`, `after`, `search`, `level`, `since`, and `until` as query parameters. For example:
+
+```http
+GET /api/v1/logs/<LOGS_ID>/entries?start=newest&limit=50
+GET /api/v1/logs/<LOGS_ID>/entries?before=<CURSOR>
+```
+
+Invalid query values return `422`; unsupported parameters and cursors rejected by ZenML return `400`. Backends without log retrieval return `501`. Shared log store errors return `429` for throttling, `503` for unavailability, or `502` for other backend errors. When provided, `Retry-After` specifies the delay in seconds before retrying the original request. Direct SDK calls raise the corresponding `LogStoreError` subclass.
+
+Runner logs return one batch through the workload manager. Apply filtering and pagination in the client; unsupported runner filters or cursors return `400`.
+
+The existing run and step log endpoints continue to return a single list of entries. Use the dedicated entries endpoint for pagination when the backend supports it.
 
 ### Log Store Flavors
 
 ZenML provides several log store flavors out of the box:
 
-| Log Store                          | Flavor     | Integration | Notes                                                                                           |
-|------------------------------------|------------|-------------|------------------------------------------------------------------------------------------------|
-| [ArtifactLogStore](artifact.md)    | `artifact` | _built-in_  | Default log store that writes logs to your artifact store. Zero configuration required.        |
-| [OtelLogStore](otel.md)            | `otel`     | _built-in_  | Generic OpenTelemetry log store for any OTEL-compatible backend. Does not support log fetching.|
-| [DatadogLogStore](datadog.md)      | `datadog`  | _built-in_  | Exports logs to Datadog's log management platform with full fetch support.                     |
-| [LokiLogStore](loki.md)            | `loki`     | _built-in_  | Exports logs to Grafana Loki 3.0+ over OTLP and reads them back with LogQL.                    |
-| [ElasticsearchLogStore](elasticsearch.md) | `elasticsearch` | _built-in_ | Writes logs to an Elasticsearch or OpenSearch cluster and reads them back exactly.       |
-| [Custom Implementation](custom.md) | _custom_   |             | Extend the log store abstraction and provide your own implementation.                          |
+| Log Store | Flavor | Retrieval |
+|-----------|--------|-----------|
+| [Artifact Log Store](artifact.md) | `artifact` | One batch for client-side filtering and pagination. Used automatically when no log store is configured. |
+| [OpenTelemetry Log Store](otel.md) | `otel` | Export only; read logs through the backend's own UI or API. |
+| [Datadog Log Store](datadog.md) | `datadog` | Server-side filtering and native cursor pagination. |
+| [Grafana Loki Log Store](loki.md) | `loki` | Server-side filtering with one batch per query. |
+| [Elasticsearch Log Store](elasticsearch.md) | `elasticsearch` | Server-side filtering and native cursor pagination. |
+
+All five flavors are built in. You can also [develop a custom log store](custom.md).
 
 If you would like to see the available flavors of log stores, you can use the command:
 

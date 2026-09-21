@@ -15,8 +15,11 @@
 
 import json
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
+import requests
+from opentelemetry.sdk._logs.export import LogRecordExportResult
 
 from zenml.log_stores.elasticsearch.elasticsearch_log_exporter import (
     ElasticsearchLogExporter,
@@ -38,57 +41,151 @@ def make_record(timestamp_ns: int, message: str) -> SimpleNamespace:
     )
 
 
-@pytest.fixture
-def exporter() -> ElasticsearchLogExporter:
-    """An exporter that never reaches a cluster."""
-    return ElasticsearchLogExporter(
+def make_response(payload: object, status: int = 200) -> requests.Response:
+    """Build a bulk response."""
+    response = requests.Response()
+    response.status_code = status
+    response._content = json.dumps(payload).encode()
+    return response
+
+
+def test_bulk_documents_have_unique_sort_ids_across_writers(mocker):
+    """Each writer persists its event IDs in both bulk actions and documents."""
+    exporters = [
+        ElasticsearchLogExporter(
+            endpoint="https://elasticsearch:9200/zenml-logs/_bulk"
+        )
+        for _ in range(2)
+    ]
+    post = mocker.patch(
+        "requests.Session.post",
+        return_value=make_response(
+            {"errors": False, "items": [{"create": {"status": 201}}]}
+        ),
+    )
+    for exporter in exporters:
+        assert (
+            exporter.export([make_record(1_700_000_000, "hello")])
+            == LogRecordExportResult.SUCCESS
+        )
+        exporter.shutdown()
+
+    event_ids = set()
+    for call in post.call_args_list:
+        body = call.kwargs["data"]
+        assert body.endswith(b"\n")
+        action, document = [json.loads(line) for line in body.splitlines()]
+        event_id = document["event_id"]
+        assert UUID(event_id)
+        event_ids.add(event_id)
+        assert action == {"create": {"_id": event_id}}
+        assert document["timestamp_nanos"] == 1_700_000_000
+        assert document["@timestamp"] == "1970-01-01T00:00:01.700000+00:00"
+        assert document["message"] == "hello"
+        assert document["severity_number"] == 17
+        assert document["zenml.log.id"] == "log-id"
+    assert len(event_ids) == 2
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        make_response(
+            {
+                "errors": True,
+                "items": [
+                    {
+                        "create": {
+                            "status": 400,
+                            "error": {"reason": "private document"},
+                        }
+                    }
+                ],
+            }
+        ),
+        make_response(
+            {"errors": False, "items": [{"create": {"status": 400}}]}
+        ),
+        make_response({"errors": False, "items": []}),
+        make_response({}, status=302),
+        make_response({}, status=503),
+    ],
+)
+def test_partial_bulk_writes_and_http_failures_are_reported(mocker, response):
+    """HTTP200 is successful only when all bulk create operations succeeded."""
+    mocker.patch("requests.Session.post", return_value=response)
+    exporter = ElasticsearchLogExporter(
         endpoint="http://elasticsearch:9200/zenml-logs/_bulk"
     )
-
-
-def export_lines(exporter, *records):
-    """Encode records the way `export` does, and split the request body."""
-    body = exporter._serialize(exporter._encode_logs(records)).decode("utf-8")
-
-    assert body.endswith("\n"), "the bulk API rejects a body without one"
-
-    return [json.loads(line) for line in body.splitlines()]
-
-
-def test_every_document_is_preceded_by_an_action(exporter):
-    """A bulk request interleaves what to do with what to write."""
-    lines = export_lines(
-        exporter, make_record(1, "first"), make_record(2, "second")
+    assert (
+        exporter.export([make_record(1, "hello")])
+        == LogRecordExportResult.FAILURE
     )
-
-    assert lines[0] == {"create": {}}
-    assert lines[2] == {"create": {}}
-    assert [lines[1]["message"], lines[3]["message"]] == ["first", "second"]
+    exporter.shutdown()
 
 
-def test_a_document_carries_what_the_query_side_sorts_and_filters_on(exporter):
-    """Reading logs back depends on these fields being written flat."""
-    document = export_lines(exporter, make_record(1_700_000_000, "hello"))[1]
-
-    assert document["timestamp_nanos"] == 1_700_000_000
-    assert document["severity_number"] == 17
-    assert document["message"] == "hello"
-    assert document["zenml.log.id"] == "log-id"
-    assert document["@timestamp"] == "1970-01-01T00:00:01.700000+00:00"
-
-
-def test_sequence_numbers_order_entries_within_a_nanosecond(exporter):
-    """A timestamp alone cannot order two entries written at the same instant."""
-    lines = export_lines(
-        exporter, make_record(1, "first"), make_record(1, "second")
+def test_transient_bulk_failures_retry_only_failed_records_with_original_ids(
+    mocker,
+):
+    """Selective retries preserve IDs and accept already-created records."""
+    post = mocker.patch(
+        "requests.Session.post",
+        side_effect=[
+            make_response(
+                {
+                    "errors": True,
+                    "items": [
+                        {"create": {"status": status}}
+                        for status in (201, 429, 503)
+                    ],
+                }
+            ),
+            make_response(
+                {
+                    "errors": True,
+                    "items": [
+                        {"create": {"status": status}} for status in (201, 409)
+                    ],
+                }
+            ),
+        ],
     )
+    sleep = mocker.patch(
+        "zenml.log_stores.elasticsearch.elasticsearch_log_exporter.sleep"
+    )
+    exporter = ElasticsearchLogExporter(
+        endpoint="http://elasticsearch:9200/zenml-logs/_bulk"
+    )
+    result = exporter.export(
+        [make_record(1, message) for message in ("first", "second", "third")]
+    )
+    exporter.shutdown()
 
-    assert lines[1]["sequence_number"] < lines[3]["sequence_number"]
+    assert result == LogRecordExportResult.SUCCESS
+    assert post.call_count == 2
+    original = post.call_args_list[0].kwargs["data"].splitlines(keepends=True)
+    assert post.call_args_list[1].kwargs["data"] == b"".join(original[2:])
+    sleep.assert_called_once_with(0.25)
 
 
-def test_sequence_numbers_keep_counting_across_batches(exporter):
-    """Batches are exported one after another, and so is a log stream."""
-    first = export_lines(exporter, make_record(1, "first"))
-    second = export_lines(exporter, make_record(1, "second"))
+def test_transient_bulk_retries_are_bounded(mocker):
+    """Exhausted retries report failure without regenerating event IDs."""
+    post = mocker.patch(
+        "requests.Session.post",
+        return_value=make_response(
+            {"errors": True, "items": [{"create": {"status": 429}}]}
+        ),
+    )
+    sleep = mocker.patch(
+        "zenml.log_stores.elasticsearch.elasticsearch_log_exporter.sleep"
+    )
+    exporter = ElasticsearchLogExporter(
+        endpoint="http://elasticsearch:9200/zenml-logs/_bulk"
+    )
+    result = exporter.export([make_record(1, "retry")])
+    exporter.shutdown()
 
-    assert first[1]["sequence_number"] < second[1]["sequence_number"]
+    assert result == LogRecordExportResult.FAILURE
+    assert post.call_count == 3
+    assert len({call.kwargs["data"] for call in post.call_args_list}) == 1
+    assert [call.args[0] for call in sleep.call_args_list] == [0.25, 0.5]

@@ -360,7 +360,6 @@ class OTLPLogExporter(LogRecordExporter):
         if self._shutdown:
             logger.warning("Exporter already shutdown, ignoring batch")
             return LogRecordExportResult.FAILURE
-
         serialized_data = self._serialize(self._encode_logs(batch))
 
         try:

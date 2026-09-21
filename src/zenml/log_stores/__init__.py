@@ -13,26 +13,18 @@
 #  permissions and limitations under the License.
 """Implements the log stores for ZenML."""
 
-# Base classes
 from zenml.log_stores.base_log_store import (
     BaseLogStore,
     BaseLogStoreConfig,
     BaseLogStoreFlavor,
 )
 
-# OpenTelemetry log store
-from zenml.log_stores.otel.otel_flavor import (
-    OtelLogStoreConfig,
-    OtelLogStoreFlavor,
-)
-from zenml.log_stores.otel.otel_log_store import OtelLogStore
+# Flavors import these base types from this package.
+# isort: split
 
-# Artifact log store
 from zenml.log_stores.artifact.artifact_log_store import (
     ArtifactLogStore,
 )
-
-# Datadog log store
 from zenml.log_stores.datadog.datadog_flavor import (
     DatadogLogStoreConfig,
     DatadogLogStoreFlavor,
@@ -40,8 +32,6 @@ from zenml.log_stores.datadog.datadog_flavor import (
 from zenml.log_stores.datadog.datadog_log_store import (
     DatadogLogStore,
 )
-
-# Elasticsearch log store
 from zenml.log_stores.elasticsearch.elasticsearch_flavor import (
     ElasticsearchLogStoreConfig,
     ElasticsearchLogStoreFlavor,
@@ -49,8 +39,6 @@ from zenml.log_stores.elasticsearch.elasticsearch_flavor import (
 from zenml.log_stores.elasticsearch.elasticsearch_log_store import (
     ElasticsearchLogStore,
 )
-
-# Grafana Loki log store
 from zenml.log_stores.loki.loki_flavor import (
     LokiLogStoreConfig,
     LokiLogStoreFlavor,
@@ -58,6 +46,11 @@ from zenml.log_stores.loki.loki_flavor import (
 from zenml.log_stores.loki.loki_log_store import (
     LokiLogStore,
 )
+from zenml.log_stores.otel.otel_flavor import (
+    OtelLogStoreConfig,
+    OtelLogStoreFlavor,
+)
+from zenml.log_stores.otel.otel_log_store import OtelLogStore
 
 __all__ = [
     "ArtifactLogStore",

@@ -1,6 +1,6 @@
-"""Tests for the time helpers."""
+"""Tests for time utilities."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -49,27 +49,35 @@ def test_iso8601_to_utc_naive_unexpected_inputs_raise_value_error() -> None:
         iso8601_to_utc_naive("2026-02-18T08:15:30+99:99")  # invalid offset
 
 
-def test_unix_nanos_keeps_every_microsecond_of_a_modern_date() -> None:
-    """The float a datetime reports cannot hold nanoseconds of a modern date."""
-    moment = datetime(2026, 2, 18, 8, 15, 30, 123456, tzinfo=timezone.utc)
-
-    nanos = to_unix_nanos(moment)
-
-    assert nanos % 1_000_000_000 == 123_456_000
-    assert from_unix_nanos(nanos) == moment
-
-
-def test_unix_nanos_assumes_utc_for_a_naive_datetime() -> None:
-    """Covers the timezone handling shared with the rest of these helpers."""
-    naive = datetime(2026, 2, 18, 8, 15, 30)
-
-    assert to_unix_nanos(naive) == to_unix_nanos(
-        naive.replace(tzinfo=timezone.utc)
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        (datetime(1970, 1, 1), 0),
+        (datetime(1969, 12, 31, 23, 59, 59, 999999), -1000),
+        (datetime(2026, 1, 1, 0, 0, 0, 123456), 1767225600123456000),
+        (
+            datetime(
+                2026,
+                1,
+                1,
+                2,
+                0,
+                0,
+                123456,
+                tzinfo=timezone(timedelta(hours=2)),
+            ),
+            1767225600123456000,
+        ),
+    ],
+)
+def test_nanosecond_conversion_preserves_microseconds(
+    value: datetime, expected: int
+) -> None:
+    """Preserve exact time bounds across epoch, timezone and precision edges."""
+    assert to_unix_nanos(value) == expected
+    utc = (
+        value.replace(tzinfo=timezone.utc)
+        if value.tzinfo is None
+        else value.astimezone(timezone.utc)
     )
-
-
-def test_unix_nanos_truncates_below_a_microsecond() -> None:
-    """A datetime has no room for the finer detail a log backend may report."""
-    assert from_unix_nanos(1_786_983_319_196_431_104) == datetime(
-        2026, 8, 17, 16, 15, 19, 196431, tzinfo=timezone.utc
-    )
+    assert from_unix_nanos(expected + 999) == utc

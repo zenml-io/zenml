@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     ENTRIES,
     LOGS,
+    LOGS_RUNNER_SOURCE,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError
@@ -35,6 +36,7 @@ from zenml.models import (
 from zenml.utils.logging_utils import fetch_logs
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_update_entity,
@@ -58,18 +60,15 @@ router = APIRouter(
 )
 
 
-def verify_read_permission(logs: LogsResponse) -> None:
-    """Verify that the authenticated user may read a log stream.
-
-    A log stream has no permissions of its own: it is readable exactly when the
-    pipeline run it was collected for is.
+def _verify_log_read_permission(logs: LogsResponse) -> None:
+    """Verify read access to a log stream's pipeline run.
 
     Args:
         logs: The log stream to authorize.
 
     Raises:
-        IllegalOperationError: If the log stream is not attached to anything
-            that could authorize it.
+        IllegalOperationError: If the stream has no associated run, step,
+            or hook invocation.
     """
     store = zen_store()
 
@@ -174,7 +173,7 @@ def get_logs(
         The requested log model.
     """
     logs = zen_store().get_logs(logs_id, hydrate=True)
-    verify_read_permission(logs)
+    _verify_log_read_permission(logs)
 
     if hydrate is False:
         logs.metadata = None
@@ -189,6 +188,9 @@ def get_logs(
         401: error_response,
         404: error_response,
         422: error_response,
+        429: error_response,
+        502: error_response,
+        503: error_response,
     },
 )
 @async_fastapi_endpoint_wrapper
@@ -201,29 +203,42 @@ def get_logs_entries(
     filter_: LogsEntriesFilter = Depends(make_dependable(LogsEntriesFilter)),
     _: AuthContext = Security(authorize),
 ) -> LogsEntriesResponse:
-    """Returns a page of the entries of a log stream.
+    """Return a page of log entries.
 
     Args:
         logs_id: ID of the log stream to read.
-        start: Which end of the stream to start reading from. Omit to let
-            the log store pick. This picks where the read begins, not how
-            entries are ordered: a page runs from oldest to newest either
-            way, so a limit of ten gives the first ten entries from `oldest`
-            and the last ten from `newest`.
-        limit: Maximum number of entries to return. Defaults to a page size
-            chosen by the log store holding the entries.
+        start: Read from the oldest or newest end of the stream. Defaults
+            to the log store's choice. Pages always use chronological order.
+        limit: Maximum entries to return. Defaults to the log store's page size.
         before: Cursor towards older entries, from a previous response.
-        after: Cursor towards newer entries, from a previous response. Pass
-            only one of `before` and `after`. A store that cannot go that
-            way answers 400.
+        after: Cursor towards newer entries, from a previous response.
+            Mutually exclusive with `before`. Unsupported directions return 400.
         filter_: Filters to apply while retrieving the entries.
 
     Returns:
         A page of log entries.
+
+    Raises:
+        ValueError: If runner logs have no associated pipeline run.
     """
     store = zen_store()
     logs = store.get_logs(logs_id, hydrate=False)
-    verify_read_permission(logs)
+    _verify_log_read_permission(logs)
+
+    if logs.source == LOGS_RUNNER_SOURCE:
+        if logs.pipeline_run_id is None:
+            raise ValueError(
+                "Runner logs must be associated with a pipeline run."
+            )
+        return fetch_runner_logs(
+            run=store.get_run(logs.pipeline_run_id, hydrate=True),
+            logs=logs,
+            start=start,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
 
     return fetch_logs(
         logs=logs,
