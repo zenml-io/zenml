@@ -28,7 +28,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.models import ProjectFilter
+from zenml.models import ProjectFilter, ProjectResponse
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -193,20 +193,17 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
     """
     client = Client()
     if not project_name_or_id:
-        active_project = client.active_project
-        cli_utils.print_pydantic_models(
-            [active_project], exclude_columns=["created", "updated"]
-        )
+        project_: ProjectResponse = client.active_project
     else:
         try:
             project_ = client.get_project(project_name_or_id)
         except KeyError as err:
             cli_utils.exception(err)
         else:
-            cli_utils.print_pydantic_models(
-                [project_], exclude_columns=["created", "updated"]
-            )
             warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
+    cli_utils.print_pydantic_models(
+        [project_], exclude_columns=["created", "updated"]
+    )
 
 
 @project.command("delete")
