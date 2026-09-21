@@ -50,8 +50,15 @@ The Artifact Log Store uses OpenTelemetry's batch processing under the hood. You
 | `ZENML_LOGS_OTEL_SCHEDULE_DELAY_MILLIS`  | `5000`    | Delay between batch exports in milliseconds         |
 | `ZENML_LOGS_OTEL_MAX_EXPORT_BATCH_SIZE`  | `5000`    | Maximum batch size for exports                      |
 | `ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS`  | `15000`   | Timeout for each export batch in milliseconds       |
+| `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST`     | `50000`   | Maximum log entries returned by a single fetch      |
 
 These defaults are optimized for most use cases. You typically only need to adjust them for high-volume logging scenarios.
+
+### Reading logs
+
+The artifact log store returns one batch of the oldest entries, capped by `limit` and `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` (default: 50,000). Entries beyond the cap are omitted. Both cursors are unset; apply filtering and pagination to the returned batch in your client.
+
+`before`, `after`, `start=newest`, and the `search`, `level`, `since`, and `until` filters are unsupported. They raise `ValueError` in the SDK or return HTTP `400` through the REST API.
 
 ### Log format
 
@@ -60,7 +67,7 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 ```json
 {
   "message": "Training model with 1000 samples",
-  "level": "INFO",
+  "level": 20,
   "timestamp": "2024-01-15T10:30:00.000Z",
   "name": "my_logger",
   "filename": "train.py",
@@ -75,7 +82,7 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 | Field          | Description                                                                 |
 |----------------|-----------------------------------------------------------------------------|
 | `message`      | The log message content                                                     |
-| `level`        | Log level (DEBUG, INFO, WARN, ERROR, CRITICAL)                             |
+| `level`        | Numeric log level (DEBUG=10, INFO=20, WARN=30, ERROR=40, CRITICAL=50)           |
 | `timestamp`    | When the log was created                                                    |
 | `name`         | The name of the logger                                                      |
 | `filename`     | The source file that generated the log                                      |
@@ -83,9 +90,11 @@ Logs are stored as newline-delimited JSON (NDJSON) files. Each log entry contain
 | `module`       | The module that generated the log                                           |
 | `chunk_index`  | Index of this chunk (0 for non-chunked messages)                           |
 | `total_chunks` | Total number of chunks (1 for non-chunked messages)                        |
-| `id`           | Unique identifier for the log entry (used to reassemble chunked messages)  |
+| `id`           | UUID shared by all chunks of a message                                      |
 
 For large messages (>5KB), logs are automatically split into multiple chunks with sequential `chunk_index` values and a shared `id` for reassembly.
+
+Structured logs preserve entry IDs between reads. Deduplicate chunks within a stream by `(id, chunk_index)`. Older plain-text logs have no stored IDs and receive new ones on each read.
 
 ### Storage location
 

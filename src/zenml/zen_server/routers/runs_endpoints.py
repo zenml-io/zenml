@@ -42,7 +42,6 @@ from zenml.constants import (
     EVENTS,
     EVENTS_STREAM,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     LOGS_RUNNER_SOURCE,
     PIPELINE_CONFIGURATION,
     REFRESH,
@@ -58,6 +57,7 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
+    LogEntry,
     LogsResponse,
     Page,
     PipelineRunDAG,
@@ -74,7 +74,6 @@ from zenml.models import (
 )
 from zenml.utils import run_utils
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_id,
     search_logs_by_source,
@@ -87,6 +86,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
+from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -128,7 +128,6 @@ from zenml.zen_server.utils import (
     set_filter_project_scope,
     stream_broadcaster,
     stream_broker,
-    workload_manager,
     zen_store,
 )
 
@@ -558,9 +557,7 @@ def run_logs(
     logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
-    """Get log entries for efficient pagination.
-
-    This endpoint returns the log entries.
+    """Get the log entries of a pipeline run.
 
     Args:
         run_id: ID of the pipeline run.
@@ -607,66 +604,13 @@ def run_logs(
         else:
             raise ValueError("Either source or logs_id must be provided.")
 
-    # Handle runner logs from workload manager
     if source == LOGS_RUNNER_SOURCE or (
         logs and logs.source == LOGS_RUNNER_SOURCE
     ):
-        if run.snapshot:
-            snapshot = run.snapshot
-
-            is_legacy_run_with_runner_logs = (
-                snapshot.template_id
-                or snapshot.source_snapshot_id
-                or run.trigger
-            )
-
-            if (
-                logs
-                or is_legacy_run_with_runner_logs
-                and server_config().workload_manager_enabled
-            ):
-                from zenml.log_stores.artifact.artifact_log_store import (
-                    parse_log_entry,
-                )
-
-                if run.trigger:
-                    # Trigger invocation
-                    workload_id = run.id
-                elif run.source_snapshot:
-                    # Manual snapshot run. When we resume a run that was initially
-                    # triggered by a snapshot, we'll only show the runner logs
-                    # of the initial snapshot run. Not sure how to adjust this in
-                    # the future, maybe multiple runner log sources, that point to
-                    # specific workload IDs?
-                    workload_id = snapshot.id
-                else:
-                    # Resume/Retry run from server
-                    workload_id = run.id
-
-                workload_logs = workload_manager().get_logs(
-                    workload_id=workload_id
-                )
-
-                log_entries = []
-                for line in workload_logs.split("\n"):
-                    if log_record := parse_log_entry(line):
-                        log_entries.append(log_record)
-
-                    if len(log_entries) >= LOGS_MAX_ENTRIES_PER_REQUEST:
-                        break
-
-                return log_entries
-
-        raise ValueError(
-            "The run does not have a snapshot, thus the runner logs are not available."
-        )
+        return fetch_runner_logs(run, logs=logs).items
 
     if logs:
-        return fetch_logs(
-            logs=logs,
-            zen_store=store,
-            limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-        )
+        return fetch_logs(logs=logs, zen_store=store).items
 
     raise KeyError(f"No logs found in run {run_id}.")
 
