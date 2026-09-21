@@ -42,14 +42,20 @@ and every setting takes effect after a restart:
 ZENML_SERVER_ARCHIVE__BACKEND=s3
 ZENML_SERVER_ARCHIVE__URI=s3://my-bucket/zenml-archive
 ZENML_SERVER_ARCHIVE__AFTER_DAYS=90
+ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED=true
 ZENML_SERVER_ARCHIVE__SCHEDULE="0 3 * * *"
 ```
+
+Configuring storage only allows manual archiving. Scheduled sweeps archive
+every eligible run on the server, so they stay off until you set
+`SCHEDULE_ENABLED=true`. Preview what the policy selects first with
+`zenml server retention archive --project <project> --dry-run`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `BACKEND` | `disabled` | `disabled`, `local`, `s3`, `gcs`, or `azure`. A non-disabled backend configures storage and requires `URI`. |
 | `ENABLED` | `true` | Allow new archives when storage is configured. Set `false` to pause new archiving while keeping restore available. |
-| `SCHEDULE_ENABLED` | `true` | Run automatic sweeps when new archiving is enabled. Set `false` for manual-only operation. |
+| `SCHEDULE_ENABLED` | `false` | Run automatic sweeps on `SCHEDULE`. Off by default, so configuring storage alone only allows manual archiving. |
 | `URI` | unset | Archive root. Its scheme must match the backend. |
 | `AFTER_DAYS` | 90 | Minimum age of a finished run, at least **7 days**. |
 | `SCHEDULE` | `0 3 * * *` | Cron expression for the sweep, in UTC. |
@@ -66,8 +72,9 @@ so a typo cannot silently leave archiving half-configured.
 replica runs the new version.** Do not introduce the new `ENABLED` or
 `SCHEDULE_ENABLED` settings into a mixed-version deployment: older replicas
 reject unknown archive settings. The migration is additive and safe to apply
-first, but an old replica cannot see archive markers and would serve archived
-runs as if their detail were still there. After all replicas are upgraded,
+first, but an old replica cannot see archive markers: it tries to load the
+detail that archiving removed and answers requests for an archived run with
+**500** errors. After all replicas are upgraded,
 configure storage; set `ENABLED=false` if new archiving should remain paused.
 {% endhint %}
 
@@ -114,8 +121,8 @@ ZENML_SERVER_ARCHIVE__ENABLED=false
 ```
 
 This blocks new manual and scheduled archives after restart. Summaries and
-restore remain available. Set `ENABLED=true` and `SCHEDULE_ENABLED=false` for
-manual-only archiving. Setting `BACKEND=disabled` removes access to archive
+restore remain available. Leave `SCHEDULE_ENABLED` at its default of `false`
+for manual-only archiving. Setting `BACKEND=disabled` removes access to archive
 storage and therefore also prevents restore; use `ENABLED=false` to pause.
 
 Changing the configured URI or provider does not migrate existing objects.
@@ -193,17 +200,21 @@ zenml server retention archive --project default
 
 Manual archiving applies the same age, model-link, and restore-grace policy
 as the scheduled sweep. To deliberately override those three rules, add
-`--force`. The confirmation identifies the override. Active runs, resumable
-runs, and other execution-safety exclusions remain protected even with force.
+`--force`. Because it sets aside the policy the server admin configured,
+`--force` requires a server admin. The confirmation identifies the override.
+Active runs, resumable runs, and other execution-safety exclusions remain
+protected even with force.
 
-A pipeline or project target examines a bounded batch of its oldest finished
-runs. The response includes `pending` and `next_after_run_id`. When more
+A pipeline or project target examines a bounded batch of its finished runs,
+earliest-created first. The response includes `pending` and `next_after_run_id`. When more
 candidates remain, pass the returned ID with `--after-run-id` on the next
 command. This advances past refused runs too; a page that archives nothing
 can still have more work after it. The CLI prints the continuation ID.
 
-Naming runs directly requires update permission on each run; naming a
-pipeline or project requires update permission on that resource. A continuation
+Archiving requires update permission on every run it archives. Naming a
+pipeline or project additionally requires update permission on that resource;
+it does not by itself grant permission to archive the runs below it, and a
+batch that contains a run the caller cannot update is refused. A continuation
 ID must belong to the same target. If that run has been deleted, restart the
 scan without a continuation ID.
 
@@ -215,7 +226,7 @@ zenml server retention archive --project default --dry-run
 ```
 
 Preview works while new archiving is paused and requires read permission on
-the target. It reports eligible candidates and exclusion reasons, with the
+the target and on the runs it selects. It reports eligible candidates and exclusion reasons, with the
 same continuation behavior. It does not fetch payloads to estimate bytes;
 a candidate can still exceed the byte limit during actual capture or change
 before archiving.
@@ -325,10 +336,10 @@ changing anything. A run that is not archived returns `noop`. A restored run
 is protected from scheduled and normal manual archiving for
 `restored_grace_days`; an explicit `--force` overrides this grace period.
 
-Restore requires read permission on the run, so a user who can open a run can
-also make its cold detail available. Restoring one run does not recursively
-restore its child runs. Updating any run detail still requires update
-permission.
+Restore requires update permission on the run, because it writes the run's
+detail back into the database. A user who can only read an archived run still
+sees its summary and needs someone with update permission to restore it.
+Restoring one run does not recursively restore its child runs.
 
 **Replay requires a restore first.** Replaying an archived run returns 409
 with the restore command.
@@ -342,15 +353,23 @@ the owning run.
 
 | Method and route | Purpose | Permission |
 | --- | --- | --- |
-| `POST /api/v1/retention/archive` | Archive or preview named runs, a pipeline, or a project. | Update on the target; read for `dry_run=true` |
+| `POST /api/v1/retention/archive` | Archive or preview named runs, a pipeline, or a project. | Update on the target and on every archived run; read for `dry_run=true`; server admin for `force=true` |
 | `GET /api/v1/retention/status` | Read the latest sweep. | Server admin |
-| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run read |
+| `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run update |
 
 Archiving and restoring can take a while. The shared SDK request layer sends
 an `Idempotency-Key`; transport retries of that request reuse its result.
 A separate SDK call or CLI invocation gets a new key. For project and
 pipeline scans, use `next_after_run_id` to continue deliberately; retrying an
 operation and advancing the scan are separate actions.
+
+The ZenML client does not retry a busy (**429**) or unavailable (**503**)
+response from these routes the way it does for other requests, because each
+attempt can run for minutes; it raises the error at once so you can decide
+when to try again. A client connected to a server that predates execution
+retention gets an error saying so. `GET /api/v1/info` reports
+`execution_archiving_enabled`, which is true when the server runs on MySQL
+with archive storage configured and new archiving not paused.
 
 ## Archive compatibility
 
@@ -373,7 +392,7 @@ runs, because archive catalog records remain.
    detail or replaying a run. The bundled dashboard performs the same restore
    only during deliberate run-detail loading; lists and background refreshes
    remain read-only.
-3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs.
+3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs. A server process that is killed between uploading an object and committing its run can leave an object that no run refers to. Such an object only costs storage: it is any object below the archive root whose URI is not in the `archive_bundle.uri` column.
 4. **Only archive format version 1 exists.** Other versions are integrity errors; there are no format adapters.
 5. **Archived entries in detailed lists are summaries.** Check the archive
    descriptor before accessing cold detail; API clients restore explicitly

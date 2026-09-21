@@ -823,7 +823,8 @@ def retention_status() -> None:
 @click.option(
     "--force",
     is_flag=True,
-    help="Override age, model-link, and restore-grace protections.",
+    help="Override age, model-link, and restore-grace protections. "
+    "Requires a server admin.",
 )
 @click.option(
     "--dry-run",
