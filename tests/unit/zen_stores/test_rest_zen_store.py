@@ -13,20 +13,22 @@
 #  permissions and limitations under the License.
 """Tests for the REST ZenML store."""
 
+from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
+from types import SimpleNamespace
+from typing import Dict, Iterator, Optional
 from uuid import uuid4
 
 import pytest
-import requests
 from pytest_mock import MockerFixture
 
 from zenml.enums import TriggerRunConcurrency
-from zenml.exceptions import ExecutionRetentionUnavailableError
-from zenml.models import ArchiveRequest, WebhookTriggerUpdate
-from zenml.zen_server.exceptions import (
-    NO_RETRY_HEADER,
+from zenml.exceptions import (
+    ExecutionRetentionUnavailableError,
+    IllegalOperationError,
 )
+from zenml.models import ArchiveRequest, WebhookTriggerUpdate
 from zenml.zen_stores.rest_zen_store import (
     ARTIFACT_VERSIONS,
     TRIGGERS,
@@ -39,81 +41,43 @@ SERVER_URL = "https://server.example"
 SERVER_URL_WITH_SLASH = f"{SERVER_URL}/"
 
 
-@pytest.mark.parametrize(
-    ("path", "expected_status", "expected_requests"),
-    [
-        ("/marked-503", 200, 2),
-        ("/marked-429", 200, 2),
-        ("/unmarked-503", 200, 2),
-    ],
-)
-def test_server_retry_signal_controls_real_session(
-    path: str, expected_status: int, expected_requests: int
-) -> None:
-    """The ordinary session retains its established status retries.
+@contextmanager
+def serve(
+    status: int,
+    body: bytes = b"",
+    headers: Optional[Dict[str, str]] = None,
+    succeed_after: Optional[int] = None,
+) -> Iterator[SimpleNamespace]:
+    """Serve one canned response on a local port and count the requests.
 
     Args:
-        path: Test response behavior selected by the request path.
-        expected_status: Final status returned by the session.
-        expected_requests: Number of requests observed by the server.
+        status: Status of the canned response.
+        body: JSON body of the canned response.
+        headers: Extra headers of the canned response.
+        succeed_after: Number of requests after which the server answers 200.
+
+    Yields:
+        The REST store pointed at the server, its URL, and the request count.
     """
+    served = SimpleNamespace(attempts=0)
+    headers = headers or {}
 
     class Handler(BaseHTTPRequestHandler):
-        attempts = 0
-
-        def do_GET(self) -> None:
-            """Return a marked failure or one transient unmarked failure."""
-            type(self).attempts += 1
-            if self.attempts > 1:
-                status = 200
-            else:
-                status = 429 if self.path == "/marked-429" else 503
-            self.send_response(status)
-            if self.path.startswith("/marked-"):
-                self.send_header(NO_RETRY_HEADER, "no")
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-
-        def log_message(self, format: str, *args: object) -> None:
-            """Suppress local HTTP server logs during the unit test."""
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        url = f"http://127.0.0.1:{server.server_port}"
-        store = RestZenStore.model_construct(
-            config=RestZenStoreConfiguration(url=url)
-        )
-        response = store.session.get(f"{url}{path}", timeout=2)
-    finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
-
-    assert response.status_code == expected_status
-    assert Handler.attempts == expected_requests
-
-
-def test_retention_request_honors_no_retry_response() -> None:
-    """A marked retention failure reaches the typed mapper immediately."""
-
-    class Handler(BaseHTTPRequestHandler):
-        attempts = 0
-
-        def do_POST(self) -> None:
-            """Return one actionable retention storage failure."""
-            type(self).attempts += 1
-            body = (
-                b'{"detail":["ExecutionRetentionUnavailableError",'
-                b'"storage unavailable"]}'
+        def respond(self) -> None:
+            served.attempts += 1
+            recovered = (
+                succeed_after is not None and served.attempts > succeed_after
             )
-            self.send_response(503)
-            self.send_header(NO_RETRY_HEADER, "no")
+            self.send_response(200 if recovered else status)
+            for header, value in headers.items():
+                self.send_header(header, value)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+
+        do_GET = respond
+        do_POST = respond
 
         def log_message(self, format: str, *args: object) -> None:
             """Suppress local HTTP server logs during the unit test."""
@@ -122,89 +86,79 @@ def test_retention_request_honors_no_retry_response() -> None:
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        url = f"http://127.0.0.1:{server.server_port}"
-        store = RestZenStore.model_construct(
-            config=RestZenStoreConfiguration(url=url)
+        served.url = f"http://127.0.0.1:{server.server_port}"
+        served.store = RestZenStore.model_construct(
+            config=RestZenStoreConfiguration(url=served.url)
         )
+        served.store._api_token = None
+        yield served
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def test_ordinary_session_retries_a_transient_status() -> None:
+    """Requests outside execution retention keep their status retries."""
+    with serve(503, succeed_after=1) as served:
+        response = served.store.session.get(f"{served.url}/any", timeout=2)
+
+    assert response.status_code == 200
+    assert served.attempts == 2
+
+
+def test_retention_request_is_not_retried() -> None:
+    """A retention failure reaches the caller at once, as a typed error.
+
+    The server sends `Retry-After` with this error, which urllib3 would
+    otherwise honor even for a status it was not told to retry.
+    """
+    body = (
+        b'{"detail":["ExecutionRetentionUnavailableError",'
+        b'"storage unavailable"]}'
+    )
+    with serve(503, body, headers={"Retry-After": "1"}) as served:
         with pytest.raises(ExecutionRetentionUnavailableError):
-            store.archive_runs(ArchiveRequest(run_ids=[uuid4()]))
-    finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
+            served.store.archive_runs(ArchiveRequest(run_ids=[uuid4()]))
 
-    assert Handler.attempts == 1
+    assert served.attempts == 1
 
 
-def test_disabled_workload_manager_keeps_the_friendly_error() -> None:
-    """A 501 from the always-registered run routes reads like the old 405."""
+@pytest.mark.parametrize(
+    ("status", "body", "call"),
+    [
+        (
+            405,
+            b'{"detail":"Method Not Allowed"}',
+            lambda store: store.restore_pipeline_run(uuid4()),
+        ),
+        (
+            404,
+            b'{"detail":"Not Found"}',
+            lambda store: store.get_retention_status(),
+        ),
+    ],
+)
+def test_server_without_retention_routes_is_named_as_such(
+    status, body, call
+) -> None:
+    """An older server's answer is not mistaken for a missing run.
 
-    class Handler(BaseHTTPRequestHandler):
-        def do_POST(self) -> None:
-            """Answer as the workload-manager gate does."""
-            body = b'{"detail":"Workload management is not enabled."}'
-            self.send_response(501)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        def log_message(self, format: str, *args: object) -> None:
-            """Suppress local HTTP server logs during the unit test."""
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        url = f"http://127.0.0.1:{server.server_port}"
-        store = RestZenStore.model_construct(
-            config=RestZenStoreConfiguration(url=url)
-        )
-        store._api_token = None
-        with pytest.raises(RuntimeError, match="not supported"):
-            store.replay_run(uuid4(), run_configuration=None)
-    finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
+    Its GET catch-all for unknown API paths turns a POST into a 405 and a
+    GET into a 404 without a ZenML error.
+    """
+    with serve(status, body) as served:
+        with pytest.raises(IllegalOperationError, match="does not support"):
+            call(served.store)
 
 
-def test_ordinary_unmarked_retry_exhaustion_still_raises() -> None:
-    """Unmarked endpoint exhaustion keeps the pre-retention transport API."""
-
-    class Handler(BaseHTTPRequestHandler):
-        attempts = 0
-
-        def do_GET(self) -> None:
-            """Return an unmarked retryable response on every attempt."""
-            type(self).attempts += 1
-            self.send_response(503)
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-
-        def log_message(self, format: str, *args: object) -> None:
-            """Suppress local HTTP server logs during the unit test."""
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        url = f"http://127.0.0.1:{server.server_port}"
-        store = RestZenStore.model_construct(
-            config=RestZenStoreConfiguration(url=url)
-        )
-        adapter = store.session.get_adapter(url)
-        adapter.max_retries = adapter.max_retries.new(
-            total=1, status=1, backoff_factor=0
-        )
-        with pytest.raises(requests.exceptions.RetryError):
-            store.session.get(f"{url}/always-503", timeout=2)
-    finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
-
-    assert Handler.attempts == 2
+def test_missing_run_is_still_a_key_error() -> None:
+    """A retention route that cannot find the run keeps saying so."""
+    with serve(
+        404, b'{"detail":["KeyError","Run does not exist."]}'
+    ) as served:
+        with pytest.raises(KeyError, match="does not exist"):
+            served.store.restore_pipeline_run(uuid4())
 
 
 def test_rest_store_url_is_normalized_before_moving_credentials(

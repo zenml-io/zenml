@@ -16,15 +16,15 @@
 import os
 import re
 import time
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
-from types import TracebackType
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -48,9 +48,6 @@ from pydantic import (
     model_validator,
 )
 from requests.adapters import HTTPAdapter, Retry
-from typing_extensions import Self
-from urllib3.connectionpool import ConnectionPool
-from urllib3.exceptions import MaxRetryError, ResponseError
 
 import zenml
 from zenml.analytics import source_context
@@ -144,6 +141,7 @@ from zenml.enums import (
 from zenml.exceptions import (
     AuthorizationException,
     CredentialsNotValid,
+    IllegalOperationError,
     MethodNotAllowedError,
 )
 from zenml.io import fileio
@@ -332,72 +330,13 @@ from zenml.utils.networking_utils import (
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.exceptions import (
-    NO_RETRY_HEADER,
-    exception_from_response,
-)
+from zenml.zen_server.exceptions import exception_from_response
 from zenml.zen_stores.base_zen_store import BaseZenStore
-
-if TYPE_CHECKING:
-    from urllib3.response import BaseHTTPResponse
 
 logger = get_logger(__name__)
 
 # Restoring a run happens within the request; see `restore_pipeline_run`.
 RESTORE_TIMEOUT_SECONDS = 300
-
-
-class _RouteAwareRetry(Retry):
-    """Honor server responses that explicitly disable HTTP status retries."""
-
-    def increment(
-        self,
-        method: Optional[str] = None,
-        url: Optional[str] = None,
-        response: Optional["BaseHTTPResponse"] = None,
-        error: Optional[Exception] = None,
-        _pool: Optional[ConnectionPool] = None,
-        _stacktrace: Optional[TracebackType] = None,
-    ) -> Self:
-        """Stop retry recursion when the server marks an actionable response.
-
-        ``urllib3`` checks the status before passing the response to this
-        method. Raising its normal exhaustion signal makes the configured
-        ``raise_on_status=False`` adapter return that response immediately.
-
-        Args:
-            method: HTTP method used for the request.
-            url: URL used for the request.
-            response: HTTP response that may disable retries.
-            error: Error raised while sending the request, if any.
-            _pool: Connection pool used for the request.
-            _stacktrace: Traceback associated with the error, if any.
-
-        Returns:
-            The next retry state for an unmarked response.
-
-        Raises:
-            MaxRetryError: If the response disables retries.
-        """
-        if (
-            response is not None
-            and response.headers.get(NO_RETRY_HEADER, "").lower() == "no"
-            and _pool is not None
-            and url is not None
-        ):
-            raise MaxRetryError(
-                _pool,
-                url,
-                ResponseError("Server disabled retries for this response."),
-            )
-        return super().increment(
-            method=method,
-            url=url,
-            response=response,
-            error=error,
-            _pool=_pool,
-            _stacktrace=_stacktrace,
-        )
 
 
 # type alias for possible json payloads (the Anys are recursive Json instances)
@@ -1943,7 +1882,7 @@ class RestZenStore(BaseZenStore):
                 f"{PIPELINE_SNAPSHOTS}/{snapshot_id}/runs",
                 body=run_request,
             )
-        except (MethodNotAllowedError, NotImplementedError) as e:
+        except MethodNotAllowedError as e:
             raise RuntimeError(
                 "Running a snapshot is not supported for this server."
             ) from e
@@ -2383,7 +2322,7 @@ class RestZenStore(BaseZenStore):
             response_body = self.post(
                 f"{RUNS}/{run_id}{REPLAY}", body=run_configuration
             )
-        except (MethodNotAllowedError, NotImplementedError) as e:
+        except MethodNotAllowedError as e:
             raise RuntimeError(
                 "Replaying a run is not supported for this server."
             ) from e
@@ -4187,14 +4126,15 @@ class RestZenStore(BaseZenStore):
         """
         # The server archives within the request: capture, upload, and
         # read-back verification of a batch can outlast the default timeout.
-        return ArchiveResponse.model_validate(
-            self.post(
-                f"{RETENTION}/archive",
-                body=request,
-                timeout=RESTORE_TIMEOUT_SECONDS,
-                server_directed_retries=True,
+        with self._retention_route():
+            return ArchiveResponse.model_validate(
+                self.post(
+                    f"{RETENTION}/archive",
+                    body=request,
+                    timeout=RESTORE_TIMEOUT_SECONDS,
+                    retry_on_status=False,
+                )
             )
-        )
 
     def get_retention_status(self) -> RetentionStatusResponse:
         """Read the server's latest archive sweep without object access.
@@ -4202,9 +4142,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             Latest saved sweep outcome, completion time, and configuration.
         """
-        return RetentionStatusResponse.model_validate(
-            self.get(f"{RETENTION}/status")
-        )
+        with self._retention_route():
+            return RetentionStatusResponse.model_validate(
+                self.get(f"{RETENTION}/status")
+            )
 
     def restore_pipeline_run(self, run_id: UUID) -> RestoreResponse:
         """Write an archived pipeline run's detail back into the database.
@@ -4217,13 +4158,44 @@ class RestZenStore(BaseZenStore):
         """
         # The server restores within the request: a large run's download,
         # verification, and write-back can outlast the default timeout.
-        return RestoreResponse.model_validate(
-            self.post(
-                f"{RUNS}/{run_id}/restore",
-                timeout=RESTORE_TIMEOUT_SECONDS,
-                server_directed_retries=True,
+        with self._retention_route():
+            return RestoreResponse.model_validate(
+                self.post(
+                    f"{RUNS}/{run_id}/restore",
+                    timeout=RESTORE_TIMEOUT_SECONDS,
+                    retry_on_status=False,
+                )
             )
+
+    @contextmanager
+    def _retention_route(self) -> Iterator[None]:
+        """Explain the response of a server that has no retention routes.
+
+        Such a server answers a POST with 405 and a GET with a bare 404,
+        because its only match is the GET catch-all for unknown API paths.
+        Left alone, the 404 reads as if the run or project were missing: a
+        missing entity also reaches the client as a `KeyError`, only with the
+        server's message instead of the framework's "Not Found".
+
+        Yields:
+            Control while the request is made.
+
+        Raises:
+            IllegalOperationError: The server predates execution retention.
+            KeyError: The run or target does not exist.
+        """
+        unsupported = (
+            "This ZenML server does not support execution retention. "
+            "Upgrade the server to archive or restore pipeline runs."
         )
+        try:
+            yield
+        except MethodNotAllowedError as error:
+            raise IllegalOperationError(unsupported) from error
+        except KeyError as error:
+            if error.args != ("Not Found",):
+                raise
+            raise IllegalOperationError(unsupported) from error
 
     def get_project(
         self, project_name_or_id: Union[UUID, str], hydrate: bool = True
@@ -5081,9 +5053,7 @@ class RestZenStore(BaseZenStore):
                         urllib3.exceptions.InsecureRequestWarning
                     )
 
-                self._session = self._new_session(
-                    server_directed_retries=False
-                )
+                self._session = self._new_session()
 
             # Note that we return an unauthenticated session here. An API token
             # is only fetched and set in the authorization header when and if it is
@@ -5091,23 +5061,28 @@ class RestZenStore(BaseZenStore):
             return self._session
 
     def _new_session(
-        self, *, server_directed_retries: bool
+        self, *, retry_on_status: bool = True
     ) -> requests.Session:
-        """Build an HTTP session with the requested status-retry contract.
+        """Build an HTTP session.
+
+        Connection-level failures are always retried. HTTP status retries
+        cover transient responses (408, 429, 502, 503, 504) on every method.
 
         Args:
-            server_directed_retries: Whether marked retention responses should
-                bypass configured status retries.
+            retry_on_status: Whether to retry transient HTTP status codes.
+                Execution retention requests turn this off: they run for
+                minutes within the request, so a busy or unavailable response
+                should reach the caller at once instead of being retried.
 
         Returns:
             A configured requests session.
         """
-        retry_kwargs: Dict[str, Any] = {
-            "connect": 5,
-            "read": 8,
-            "redirect": 3,
-            "status": 10,
-            "allowed_methods": [
+        retries = Retry(
+            connect=5,
+            read=8,
+            redirect=3,
+            status=10,
+            allowed_methods=[
                 "HEAD",
                 "GET",
                 "POST",
@@ -5116,16 +5091,15 @@ class RestZenStore(BaseZenStore):
                 "DELETE",
                 "OPTIONS",
             ],
-            "status_forcelist": [408, 429, 502, 503, 504],
-            "other": 3,
-            "backoff_factor": 1,
-        }
-        if server_directed_retries:
-            retries: Retry = _RouteAwareRetry(
-                **retry_kwargs, raise_on_status=False
-            )
-        else:
-            retries = Retry(**retry_kwargs)
+            status_forcelist=[408, 429, 502, 503, 504]
+            if retry_on_status
+            else [],
+            # urllib3 retries a 413, 429 or 503 that carries `Retry-After`
+            # whether or not the status is listed above.
+            respect_retry_after_header=retry_on_status,
+            other=3,
+            backoff_factor=1,
+        )
         http_adapter = HTTPAdapter(
             max_retries=retries,
             pool_maxsize=self.config.connection_pool_size,
@@ -5134,6 +5108,8 @@ class RestZenStore(BaseZenStore):
         session.mount("https://", http_adapter)
         session.mount("http://", http_adapter)
         session.verify = self.config.verify_ssl
+        # Use a custom user agent to identify the ZenML client in the server
+        # logs.
         session.headers.update({"User-Agent": "zenml/" + zenml.__version__})
         return session
 
@@ -5251,7 +5227,7 @@ class RestZenStore(BaseZenStore):
         url: str,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
-        server_directed_retries: bool = False,
+        retry_on_status: bool = True,
         **kwargs: Any,
     ) -> Json:
         """Make a request to the REST API.
@@ -5261,8 +5237,8 @@ class RestZenStore(BaseZenStore):
             url: The URL to request.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
-            server_directed_retries: Honor retention no-retry responses without
-                changing the ordinary session's exhaustion behavior.
+            retry_on_status: Whether to retry transient HTTP status codes.
+                Turning this off sends the request on a session of its own.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
@@ -5308,9 +5284,13 @@ class RestZenStore(BaseZenStore):
             try:
                 temporary_session = None
                 request_session = self.session
-                if server_directed_retries:
+                # The retry policy belongs to a session's adapter, so a
+                # request that opts out gets a session of its own. Only a few
+                # minutes-long requests do, which is cheaper than keeping a
+                # second session in step with re-authentication.
+                if not retry_on_status:
                     temporary_session = self._new_session(
-                        server_directed_retries=True
+                        retry_on_status=False
                     )
                     temporary_session.headers.update(request_session.headers)
                     request_session = temporary_session

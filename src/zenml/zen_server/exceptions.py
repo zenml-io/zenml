@@ -49,9 +49,9 @@ class ErrorModel(BaseModel):
 
 error_response = dict(model=ErrorModel)
 
-# Retention errors a client should see at once rather than retry.
+# How long a client should wait before retrying while archive storage is
+# unavailable.
 RETENTION_RETRY_AFTER_SECONDS = 30
-NO_RETRY_HEADER = "X-ZenML-Retry"
 
 # Associates exceptions to HTTP status codes. This is used in two ways and the
 # order of the exceptions is important in both cases:
@@ -187,17 +187,6 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     headers: dict[str, str] = {}
     if isinstance(error, ExecutionRetentionUnavailableError):
         headers["Retry-After"] = str(RETENTION_RETRY_AFTER_SECONDS)
-    if isinstance(
-        error,
-        (
-            ExecutionRetentionIntegrityError,
-            ExecutionRetentionUnavailableError,
-            ExecutionRetentionBusyError,
-            ExecutionRetentionConflictError,
-            ExecutionArchivedError,
-        ),
-    ):
-        headers[NO_RETRY_HEADER] = "no"
     try:
         from zenml.logger import get_logging_context
 
