@@ -416,7 +416,7 @@ def fetch(
 
     try:
         response = requests.get(
-            f"{self.config.endpoint}/logs",
+            self.config.endpoint,
             params={
                 **query,
                 "limit": self.resolve_limit(page_limit),
@@ -472,7 +472,6 @@ def fetch(
 
     return LogsEntriesResponse(
         items=sorted(entries, key=lambda entry: entry.timestamp or filters.since),
-        until=filters.until,
         before=encode_cursor(body.get("prev_page_token"), "before"),
         after=encode_cursor(body.get("next_page_token"), "after"),
     )
@@ -516,7 +515,7 @@ zenml log-store register my_logs \
     --endpoint=https://my-backend.example.com/logs \
     --api_key=<MY_API_KEY>
 
-zenml stack register my_stack -ls my_logs ... --set
+zenml stack register my_stack --log_store my_logs ... --set
 ```
 
 {% hint style="info" %}

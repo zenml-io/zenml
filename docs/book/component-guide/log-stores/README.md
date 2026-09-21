@@ -48,7 +48,7 @@ zenml log-store register <LOG_STORE_NAME> \
     --application_key=<DATADOG_APPLICATION_KEY>
 
 # Add it to your stack
-zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> -ls <LOG_STORE_NAME> --set
+zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> --log_store <LOG_STORE_NAME> --set
 ```
 
 Once configured, logs are automatically captured during pipeline execution.
@@ -102,7 +102,7 @@ while True:
     page = log_store.fetch(logs_model=logs, before=page.before)
 ```
 
-Datadog cursors retain the filters, page size, and fixed time bounds. The response's `until` shows the upper bound; it does not need to be sent back. Search follows the backend's matching rules, which may differ from a literal substring match.
+Datadog cursors retain the filters, page size, and fixed time bounds. Search follows the backend's matching rules, which may differ from a literal substring match.
 
 The artifact log store returns one batch for client-side filtering and pagination. It does not support these filters or `start="newest"`.
 
@@ -117,7 +117,7 @@ GET /api/v1/logs/<LOGS_ID>/entries?start=newest&limit=50
 GET /api/v1/logs/<LOGS_ID>/entries?before=<CURSOR>
 ```
 
-Invalid or unsupported filters and cursors return `400`; backends without log retrieval return `501`. Shared log store errors return `429` for throttling, `503` for unavailability, or `502` for other backend errors. When provided, `Retry-After` specifies the delay in seconds before retrying the original request. Direct SDK calls raise the corresponding `LogStoreError` subclass.
+Invalid query values return `422`; unsupported parameters and cursors rejected by ZenML return `400`. Backends without log retrieval return `501`. Shared log store errors return `429` for throttling, `503` for unavailability, or `502` for other backend errors. When provided, `Retry-After` specifies the delay in seconds before retrying the original request. Direct SDK calls raise the corresponding `LogStoreError` subclass.
 
 Runner logs return one batch through the workload manager. Apply filtering and pagination in the client; unsupported runner filters or cursors return `400`.
 

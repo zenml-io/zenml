@@ -393,17 +393,17 @@ def test_continuations_keep_the_original_query_window(
             since=datetime(2026, 1, 2, tzinfo=timezone.utc),
         ),
     )
-    assert first.until == now
+    assert requests_made[0]["filter"]["to"] == now.isoformat()
+    assert "until" not in first.model_dump()
     opposite_slot = "before" if slot == "after" else "after"
     assert first.model_dump()[opposite_slot] is None
-    second = log_store.fetch(
+    log_store.fetch(
         logs,
         **{slot: first.model_dump()[slot]},
     )
     assert requests_made[0]["filter"] == requests_made[1]["filter"]
     assert requests_made[1]["page"] == {"limit": 50, "cursor": "native/+=?"}
     assert requests_made[0]["sort"] == requests_made[1]["sort"]
-    assert second.until == first.until
     assert clock.call_count == 1
 
 
@@ -431,8 +431,8 @@ def test_cursor_cannot_be_reused_for_a_different_query(
             [make_event("1", "message", "2026-01-02T00:00:00Z")], "native"
         )
     )
-    first = log_store.fetch(logs)
-    filters = {"until": first.until}
+    filters = {"until": datetime(2026, 1, 3, tzinfo=timezone.utc)}
+    first = log_store.fetch(logs, filter_=LogsEntriesFilter(**filters))
     slot = "after"
     params = {}
     if change == "until":
@@ -506,7 +506,7 @@ def test_identical_explicit_parameters_are_accepted(
             search="message",
             level="warn",
             since=datetime(2026, 1, 2, 1, tzinfo=timezone(timedelta(hours=1))),
-            until=first.until,
+            until=filters.until,
         ),
     )
     assert requests_made[0]["filter"] == requests_made[1]["filter"]

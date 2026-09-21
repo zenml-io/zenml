@@ -330,7 +330,6 @@ class DatadogLogStore(OtelLogStore):
         )
         return LogsEntriesResponse(
             items=entries,
-            until=filters.until,
             before=encoded if descending else None,
             after=encoded if not descending else None,
         )

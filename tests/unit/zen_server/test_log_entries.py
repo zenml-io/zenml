@@ -323,6 +323,7 @@ def test_datadog_cursor_and_time_bound_round_trip_over_http(
     )
     assert first.status_code == 200
     data = first.json()
+    assert "until" not in data
     assert data["after"] is None
     continuation = {"before": data["before"]}
     success_response = post.return_value
@@ -339,7 +340,7 @@ def test_datadog_cursor_and_time_bound_round_trip_over_http(
     post.return_value = success_response
     retried = endpoint.client.get(endpoint.url, params=continuation)
     assert retried.status_code == 200
-    assert retried.json()["until"] == data["until"]
+    assert "until" not in retried.json()
     assert retried.json()["items"][0]["id"] == data["items"][0]["id"]
     calls = post.call_args_list
     assert len(calls) == 3

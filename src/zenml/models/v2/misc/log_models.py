@@ -172,13 +172,6 @@ class LogsEntriesResponse(BaseModel):
         default_factory=list,
         description="Log entries, ordered from oldest to newest.",
     )
-    until: Optional[datetime] = Field(
-        default=None,
-        description=(
-            "Upper time bound used for the query, if applicable. "
-            "Informational; continuation cursors retain this value."
-        ),
-    )
     before: Optional[str] = Field(
         default=None,
         description=(
