@@ -197,25 +197,38 @@ def test_secret_references_authenticate_exports_and_searches(
     )
 
 
-def test_a_read_starts_at_the_oldest_entries_by_default(
+def test_a_read_starts_at_the_newest_entries_by_default(
     log_store, logs_model_factory, search
 ):
-    """Test that reads start at the oldest end by default."""
+    """Test default reads and cursor-only continuation toward older entries."""
     requests_made = search(
         make_payload(
             [
-                make_event("1", "first", "2026-01-01T12:00:01.000Z"),
+                make_event("3", "third", "2026-01-01T12:00:03.000Z"),
                 make_event("2", "second", "2026-01-01T12:00:02.000Z"),
-            ]
-        )
+            ],
+            "native-older",
+        ),
+        make_payload([make_event("1", "first", "2026-01-01T12:00:01.000Z")]),
     )
 
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    logs = logs_model_factory(log_store_id=log_store.id)
+    page = log_store.fetch(logs)
 
-    assert requests_made[0]["sort"] == "timestamp"
-    assert [entry.message for entry in page.items] == ["first", "second"]
-    assert page.before is None
+    assert requests_made[0]["sort"] == "-timestamp"
+    assert [entry.message for entry in page.items] == ["second", "third"]
+    assert page.before is not None
     assert page.after is None
+
+    older = log_store.fetch(logs, before=page.before)
+    assert [entry.message for entry in older.items] == ["first"]
+    assert older.before is None and older.after is None
+    assert requests_made[1]["sort"] == "-timestamp"
+    assert requests_made[1]["filter"] == requests_made[0]["filter"]
+    assert requests_made[1]["page"] == {
+        "limit": 1000,
+        "cursor": "native-older",
+    }
 
 
 def test_a_read_from_the_newest_end_returns_its_page_chronologically(
@@ -318,7 +331,9 @@ def test_status_is_mapped_to_a_log_level(
         )
     )
 
-    page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
+    page = log_store.fetch(
+        logs_model_factory(log_store_id=log_store.id), start="oldest"
+    )
 
     assert [entry.level for entry in page.items] == [
         LoggingLevels.WARNING,
@@ -432,7 +447,9 @@ def test_cursor_cannot_be_reused_for_a_different_query(
         )
     )
     filters = {"until": datetime(2026, 1, 3, tzinfo=timezone.utc)}
-    first = log_store.fetch(logs, filter_=LogsEntriesFilter(**filters))
+    first = log_store.fetch(
+        logs, start="oldest", filter_=LogsEntriesFilter(**filters)
+    )
     slot = "after"
     params = {}
     if change == "until":
@@ -620,7 +637,8 @@ def test_unparsable_events_do_not_lose_the_native_cursor(
     search(make_payload([make_event("1", "message", "invalid")], "next"))
     page = log_store.fetch(logs_model_factory(log_store_id=log_store.id))
     assert page.items == []
-    assert page.after is not None
+    assert page.before is not None
+    assert page.after is None
 
 
 @pytest.mark.parametrize(
@@ -648,11 +666,11 @@ def test_invalid_cursor_state_is_rejected_before_search(
         ),
     )
     first = log_store.fetch(logs)
-    payload = json.loads(base64.urlsafe_b64decode(first.after))
+    payload = json.loads(base64.urlsafe_b64decode(first.before))
     payload[field] = value
     cursor = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
     with pytest.raises(ValueError, match="Invalid pagination cursor"):
-        log_store.fetch(logs, after=cursor)
+        log_store.fetch(logs, before=cursor)
     assert len(requests_made) == 1
 
 
@@ -670,11 +688,11 @@ def test_unsigned_cursor_filters_cannot_replace_trusted_scope(
         make_payload([]),
     )
     first = log_store.fetch(logs)
-    assert "/" not in first.after and "+" not in first.after
-    payload = json.loads(base64.urlsafe_b64decode(first.after))
+    assert "/" not in first.before and "+" not in first.before
+    payload = json.loads(base64.urlsafe_b64decode(first.before))
     payload["filters"]["search"] = 'x" OR service:other'
     cursor = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
-    log_store.fetch(logs, after=cursor)
+    log_store.fetch(logs, before=cursor)
     assert requests_made[1]["filter"]["query"] == (
         f'service:"zenml" AND @zenml.log.id:{logs.id} '
         'AND message:"x\\" OR service:other"'
@@ -747,6 +765,7 @@ def test_canonical_timestamps_preserve_provider_order_and_filter_range(
     search(make_payload([first, second]))
     page = log_store.fetch(
         logs_model_factory(log_store_id=log_store.id),
+        start="oldest",
         filter_=LogsEntriesFilter(
             since=datetime(2026, 1, 1, 12, tzinfo=timezone.utc),
             until=datetime(2026, 1, 1, 13, tzinfo=timezone.utc),

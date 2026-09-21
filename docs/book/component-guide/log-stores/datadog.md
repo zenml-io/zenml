@@ -155,7 +155,7 @@ Logs are automatically fetched from Datadog when viewing step details in the Zen
 
 #### Pagination and search
 
-Each fetch makes one Datadog search request for up to 1000 entries. `start="oldest"` returns an `after` cursor for newer entries; `start="newest"` returns a `before` cursor for older entries. These cursors use Datadog's native next token. Entries within each page are ordered from oldest to newest. Follow the cursor until it is absent, even if a page contains fewer entries than requested.
+Each fetch makes one Datadog search request for up to 1000 entries. By default, it starts with the newest entries and returns a `before` cursor for older entries. Set `start="oldest"` to begin with the oldest entries and receive an `after` cursor for newer entries. These cursors use Datadog's native next token. Entries within each page are ordered from oldest to newest. Follow the cursor until it is absent, even if a page contains fewer entries than requested.
 
 Continue by passing only the returned cursor. It retains the query, page size, and fixed time bounds. If omitted initially, `until` defaults to the current UTC time. Datadog may still index late-arriving events within the window.
 

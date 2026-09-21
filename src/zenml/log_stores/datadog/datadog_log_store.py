@@ -220,7 +220,7 @@ class DatadogLogStore(OtelLogStore):
 
         Args:
             logs_model: The logs model containing run and step metadata.
-            start: Initial end of the stream. Defaults to `oldest`.
+            start: Initial end of the stream. Defaults to `newest`.
             limit: Maximum number of log entries to return.
             before: Cursor towards older entries, from a previous page.
             after: Cursor towards newer entries, from a previous page.
@@ -284,7 +284,7 @@ class DatadogLogStore(OtelLogStore):
             filters = cursor.filters
             limit = self.resolve_limit(cursor.limit)
         else:
-            direction = "newest" if start == "newest" else "oldest"
+            direction = "oldest" if start == "oldest" else "newest"
             limit = min(self.resolve_limit(limit), DATADOG_MAX_PAGE_SIZE)
             filters = _DatadogFilters(
                 search=filter_.search,

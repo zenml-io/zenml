@@ -80,7 +80,7 @@ for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-`fetch()` returns a page with entries in `items`, ordered from oldest to newest. Set `start="oldest"` or `start="newest"` to choose the first page, or omit it to use the backend's default.
+`fetch()` returns a page with entries in `items`, ordered from oldest to newest. Set `start="oldest"` or `start="newest"` to choose the first page, or omit it to use the backend's default: newest for Datadog, oldest for the artifact log store.
 
 For backends with pagination, pass the returned `before` cursor to read older entries or `after` to read newer ones. Only directions supported by the backend's native tokens are available; `None` means there is no continuation in that direction.
 
