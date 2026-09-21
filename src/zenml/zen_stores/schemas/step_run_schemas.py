@@ -432,20 +432,20 @@ class StepRunSchema(
 
     def _get_response_substitutions(
         self, step: Optional[Step]
-    ) -> Optional[Dict[str, str]]:
+    ) -> Dict[str, str]:
         """Resolve live substitutions or their retained projection.
 
         Args:
             step: The decoded live configuration, or None for archived payload.
 
         Returns:
-            Recorded substitutions, preserving None for a missing projection.
+            Recorded substitutions, empty when none were retained.
         """
         if step is not None:
             return step.config.substitutions
         if self.substitutions is not None:
             return cast(Dict[str, str], json.loads(self.substitutions))
-        return None
+        return {}
 
     def get_step_configuration(self) -> Step:
         """Get the step configuration for the step run.

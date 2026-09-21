@@ -273,6 +273,12 @@ class RunArchiver:
         except ExecutionRetentionConflictError as error:
             return self._conflict_attempt(run.run_id, error)
         self._check_cancelled()
+        # The object name is random rather than derived from the run or its
+        # content, so every attempt owns its object outright: a failed attempt
+        # can remove its object without ever touching the one a concurrent,
+        # successful attempt on the same run is about to commit. The price is
+        # that a process killed between the upload and the commit leaves an
+        # object no bundle row points at. That leaks storage, never detail.
         bundle_id = uuid4()
         uri = self.storage.object_uri(run.project, run.run_id, bundle_id)
         retirement_started = False

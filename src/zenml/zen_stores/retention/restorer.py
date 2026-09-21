@@ -152,6 +152,8 @@ def _apply(
     _require_free_configurations(session, document)
     _write_back(session, document, bundle_id)
     restored_at = transactions.database_now(session)
+    # `updated` is left alone here and on the restored rows: a restore puts
+    # back what was there, it is not an edit of the execution.
     session.execute(
         update(ArchiveBundleSchema)
         .where(col(ArchiveBundleSchema.id) == bundle_id)

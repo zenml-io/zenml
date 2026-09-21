@@ -737,18 +737,9 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
-
-        Raises:
-            RuntimeError: If parent step IDs were not included in the archived
-                summary.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            if archive.parent_step_ids is None:
-                raise RuntimeError(
-                    "Parent step IDs were not included in this archived "
-                    "summary."
-                )
+        archive = self._get_complete_archive()
+        if archive is not None and archive.parent_step_ids is not None:
             return archive.parent_step_ids
         return self.get_metadata().parent_step_ids
 
@@ -767,19 +758,40 @@ class StepRunResponse(
 
         Returns:
             the value of the property.
-
-        Raises:
-            RuntimeError: If metadata was not included in the archived
-                summary.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            if archive.run_metadata is None:
-                raise RuntimeError(
-                    "Run metadata was not included in this archived summary."
-                )
+        archive = self._get_complete_archive()
+        if archive is not None and archive.run_metadata is not None:
             return archive.run_metadata
         return self.get_metadata().run_metadata
+
+    def _get_complete_archive(self) -> Optional[StepRunArchiveDescriptor]:
+        """Return the archived summary, including what list pages leave out.
+
+        A page of step runs carries archived summaries without their run
+        metadata and parent step IDs. Reading either fetches the step run
+        once, the way reading metadata hydrates a step run that is not
+        archived.
+
+        Returns:
+            The archived summary, or None if the step run is not archived.
+        """
+        body = self.get_body()
+        archive = body.archive
+        if archive is None or (
+            archive.run_metadata is not None
+            and archive.parent_step_ids is not None
+        ):
+            return archive
+
+        from zenml.client import Client
+
+        body.archive = (
+            Client()
+            .zen_store.get_run_step(self.id, hydrate=False)
+            .get_body()
+            .archive
+        )
+        return body.archive
 
     @property
     def log_collection(self) -> Optional[List["LogsResponse"]]:
@@ -844,7 +856,9 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
 
     archive_bundle_id: UUIDFilterOption = Field(
         default=None,
-        description="The bundle holding archived execution detail.",
+        description="The bundle holding archived execution detail. The "
+        "column is not indexed; combine it with a project or pipeline "
+        "filter on large servers.",
     )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [

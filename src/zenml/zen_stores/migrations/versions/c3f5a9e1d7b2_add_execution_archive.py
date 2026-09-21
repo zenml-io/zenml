@@ -61,9 +61,10 @@ def upgrade() -> None:
             sa.Column("retention_state", sa.TEXT(), nullable=True)
         )
 
-    # The marker columns carry no foreign key and no index on purpose: these
-    # are among the largest tables, so index and constraint rollout needs its
-    # own migration timing.
+    # The marker columns carry no foreign key and no index on purpose. These
+    # are among the largest tables, and nothing looks rows up by marker alone:
+    # reads test it on rows they already found, and a bundle's run is reached
+    # through `archive_bundle.run_id`.
     for table in ARCHIVABLE_TABLES:
         with op.batch_alter_table(table, schema=None) as batch_op:
             batch_op.add_column(
@@ -81,9 +82,11 @@ def upgrade() -> None:
                     sa.Column("substitutions", sa.TEXT(), nullable=True)
                 )
 
-    # The sweep walks every project's runs in this order, so without this
-    # index each pass filesorts the whole table. MySQL builds secondary
-    # indexes online, but on a large `pipeline_run` it still takes time.
+    # The one index retention does need: the sweep walks every project's runs
+    # in this order, so without it each pass filesorts the whole table. MySQL
+    # builds secondary indexes online, but on a large `pipeline_run` this
+    # still takes time. Targeted archives page by `created` instead, which
+    # the existing project and pipeline indexes already serve.
     op.create_index(
         "ix_pipeline_run_end_time_id", "pipeline_run", ["end_time", "id"]
     )

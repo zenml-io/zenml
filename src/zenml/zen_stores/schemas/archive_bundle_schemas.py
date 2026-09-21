@@ -17,13 +17,16 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, BigInteger, Column, Index
+from sqlalchemy import TEXT, BigInteger, Column
 from sqlmodel import Field
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 
 
 class ArchiveBundleSchema(BaseSchema, table=True):
@@ -43,7 +46,9 @@ class ArchiveBundleSchema(BaseSchema, table=True):
     """
 
     __tablename__ = "archive_bundle"
-    __table_args__ = (Index("ix_archive_bundle_run_id", "run_id"),)
+    __table_args__ = (
+        build_index(table_name=__tablename__, column_names=["run_id"]),
+    )
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,

@@ -12,6 +12,7 @@ from sqlalchemy import update
 from sqlmodel import Session
 
 from tests.unit.zen_stores.retention.fixture_graph import dynamic_step
+from zenml.client import Client
 from zenml.enums import MetadataResourceTypes
 from zenml.exceptions import (
     ExecutionArchivedError,
@@ -95,6 +96,7 @@ def test_archived_summaries_need_no_archive_storage(
     storage: Any,
     monkeypatch: pytest.MonkeyPatch,
     NOW: Any,
+    retention,
 ) -> None:
     """Retained fields stay readable and cold detail keeps requiring restore."""
     ids = run_factory(retention_store)
@@ -139,15 +141,17 @@ def test_archived_summaries_need_no_archive_storage(
     blocked.assert_not_called()
     opened.assert_not_called()
 
+    # A list page leaves these out; reading them fetches the summary once
+    # instead of hydrating detail that is no longer in the database.
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
     run.archive.run_metadata = None
     step.archive.run_metadata = None
     step.archive.parent_step_ids = None
-    with pytest.raises(RuntimeError, match="archived summary"):
-        _ = run.run_metadata
-    with pytest.raises(RuntimeError, match="archived summary"):
-        _ = step.run_metadata
-    with pytest.raises(RuntimeError, match="archived summary"):
-        _ = step.parent_step_ids
+    assert run.run_metadata == {"run-summary": "retained"}
+    assert step.run_metadata == {"step-summary": "retained"}
+    assert step.parent_step_ids == [ids.producer]
     blocked.assert_not_called()
 
     detail_calls = [
@@ -163,7 +167,7 @@ def test_archived_summaries_need_no_archive_storage(
     opened.assert_not_called()
 
     with pytest.raises(ExecutionRetentionUnavailableError) as error:
-        retention_store.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(ids.run)
     exception = http_exception_from_error(error.value)
     assert exception.status_code == 503
     assert exception.headers["Retry-After"]
@@ -295,3 +299,27 @@ def test_snapshot_restore_owner_is_resolved_from_archive_catalog(
 
     assert snapshot.archive is not None
     assert snapshot.archive.restore_run_id == ids.run
+
+
+@pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
+def test_run_dag_links_the_producer_to_its_consumer(
+    retention_store, run_factory, kind
+):
+    """Each way of storing step definitions yields the same two-step graph.
+
+    The fixture loads the consumer's row before the producer's, and a legacy
+    run has no snapshot to read the graph from.
+    """
+    ids = run_factory(retention_store, kind)
+
+    dag = retention_store.get_pipeline_run_dag(ids.run)
+
+    steps = {node.name: node for node in dag.nodes if node.type == "step"}
+    assert set(steps) == {"producer", "consumer"}
+    assert steps["producer"].id == ids.producer
+    reachable = {steps["producer"].node_id}
+    for _ in dag.edges:
+        reachable |= {
+            edge.target for edge in dag.edges if edge.source in reachable
+        }
+    assert steps["consumer"].node_id in reachable

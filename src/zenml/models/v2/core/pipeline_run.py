@@ -534,19 +534,35 @@ class PipelineRunResponse(
 
         Returns:
             the value of the property.
-
-        Raises:
-            RuntimeError: If metadata was not included in the archived
-                summary.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            if archive.run_metadata is None:
-                raise RuntimeError(
-                    "Run metadata was not included in this archived summary."
-                )
+        archive = self._get_complete_archive()
+        if archive is not None and archive.run_metadata is not None:
             return archive.run_metadata
         return self.get_metadata().run_metadata
+
+    def _get_complete_archive(self) -> Optional[PipelineRunArchiveDescriptor]:
+        """Return the archived summary, including what list pages leave out.
+
+        A page of runs carries archived summaries without their run metadata.
+        Reading it fetches the run once, the way reading metadata hydrates a
+        run that is not archived.
+
+        Returns:
+            The archived summary, or None if the run is not archived.
+        """
+        body = self.get_body()
+        if body.archive is None or body.archive.run_metadata is not None:
+            return body.archive
+
+        from zenml.client import Client
+
+        body.archive = (
+            Client()
+            .zen_store.get_run(self.id, hydrate=False)
+            .get_body()
+            .archive
+        )
+        return body.archive
 
     @property
     def steps(self) -> Dict[str, "StepRunResponse"]:
@@ -902,7 +918,9 @@ class PipelineRunFilter(
 
     archive_bundle_id: UUIDFilterOption = Field(
         default=None,
-        description="The bundle holding archived execution detail.",
+        description="The bundle holding archived execution detail. The "
+        "column is not indexed; combine it with a project or pipeline "
+        "filter on large servers.",
     )
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [

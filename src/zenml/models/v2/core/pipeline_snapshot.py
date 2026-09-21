@@ -724,7 +724,9 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
     archive_bundle_id: UUIDFilterOption = Field(
         default=None,
-        description="The bundle holding archived execution detail.",
+        description="The bundle holding archived execution detail. The "
+        "column is not indexed; combine it with a project or pipeline "
+        "filter on large servers.",
     )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
