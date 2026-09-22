@@ -7246,7 +7246,8 @@ class SqlZenStore(BaseZenStore):
             The created pipeline run.
 
         Raises:
-            ExecutionArchivedError: The source snapshot is archived.
+            ExecutionArchivedError: The source snapshot or original run is
+                archived.
             EntityExistsError: If a run with the same name already exists or
                 a log entry with the same source already exists within the
                 scope of the same pipeline run.
@@ -7268,11 +7269,6 @@ class SqlZenStore(BaseZenStore):
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
-        # Allocating the index commits, which ends the transaction holding
-        # the caller's snapshot lock. Take it again so an archive pass cannot
-        # retire the snapshot before the new run that uses it commits.
-        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
-
         if pipeline_run.original_run_id:
             self._get_reference_schema_by_id(
                 resource=pipeline_run,
@@ -7281,6 +7277,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original run",
             )
+            # A replay needs the original step detail. Lock the run before
+            # the snapshot, in the same order as retirement.
+            fences.protect_run(session, pipeline_run.original_run_id)
+
+        # Index allocation commits, so acquire these locks afterwards and
+        # hold them until the new use is visible to retirement.
+        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
 
         root_run_id: Optional[UUID] = None
         if pipeline_run.parent_run_id:
@@ -7938,7 +7941,11 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to delete.
-        """
+
+        Raises:
+            ExecutionArchivedError: The run must be restored before deletion
+                to preserve its surviving snapshot's detail.
+        """  # noqa: DOC502
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = self._get_schema_by_id(
@@ -7947,7 +7954,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Delete the pipeline run
+            # Serialize with retirement so a surviving snapshot cannot lose
+            # the run it needs to restore its detail.
+            fences.protect_run(session, run_id)
             session.delete(existing_run)
             session.commit()
 

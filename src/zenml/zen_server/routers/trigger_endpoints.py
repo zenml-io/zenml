@@ -50,6 +50,7 @@ from zenml.zen_server.pipeline_execution.utils import (
     validate_snapshot_for_server_execution,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
+    ReadAuthorizer,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -95,12 +96,14 @@ def verify_permissions_for_source_entity(
         )
     elif source_type == SourceType.PIPELINE_RUN:
         verify_permission_for_model(
-            model=zen_store().get_run(run_id=source_id),
+            model=zen_store().get_run(run_id=source_id, hydrate=False),
             action=Action.UPDATE,
         )
     elif source_type == SourceType.PIPELINE_SNAPSHOT:
         verify_permission_for_model(
-            model=zen_store().get_snapshot(snapshot_id=source_id),
+            model=zen_store().get_snapshot(
+                snapshot_id=source_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     else:
@@ -311,7 +314,10 @@ def attach_trigger_to_snapshot(
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
-    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
+    verify_permission_for_model(model=trigger, action=Action.UPDATE)
+    snapshot = zen_store().get_snapshot(
+        snapshot_id=snapshot_id, hydrate=True, authorizer=ReadAuthorizer()
+    )
 
     if trigger.project_id != snapshot.project_id:
         raise KeyError(f"Snapshot {snapshot_id} not found.")
@@ -335,16 +341,6 @@ def attach_trigger_to_snapshot(
                 snapshot_replaced_id = s.id
 
     check_entitlement(feature=SCHEDULE_FEATURE)
-
-    verify_permission_for_model(
-        model=trigger,
-        action=Action.UPDATE,
-    )
-
-    verify_permission_for_model(
-        model=snapshot,
-        action=Action.READ,
-    )
 
     verify_permission(
         resource_type=ResourceType.PIPELINE_SNAPSHOT,
@@ -404,7 +400,7 @@ def detach_trigger_from_snapshot(
     )
 
     verify_permission_for_model(
-        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=False),
         action=Action.READ,
     )
 

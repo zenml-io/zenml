@@ -141,8 +141,8 @@ applies, in which case a later sweep reconsiders it:
 
 | Reason | Meaning |
 | --- | --- |
-| `not_eligible` | The run, one of its steps, or one of its child runs is still active, or a wait condition is unresolved. |
-| `resumable_failed` | The failed run can still be resumed. |
+| `not_eligible` | The run, one of its steps, one of its child runs, or a replay using it is still active, or a wait condition is unresolved. |
+| `resumable_failed` | The failed dynamic run can still be resumed, including locally without a server-runnable build. |
 | `root_active` | The run is a child of a root run that is still active or can still be resumed. Resuming a root reruns its child runs, which needs their details. |
 | `restored_grace` | The run was restored within the grace period. |
 | `oversized` | The run exceeds 50,000 archived rows. |
@@ -346,10 +346,11 @@ runs.
 **Replay requires a restore first.** Replaying an archived run returns 409
 with the restore command.
 
-Deleting an archived run is **irreversible**. Its archive object is kept, but
-the run can no longer be restored. A snapshot archived with it keeps its SQL
-header and can then be deleted; its archived detail cannot be restored without
-the owning run.
+Deleting an archived run first restores its detail, then deletes the run.
+Its snapshot remains readable and reusable, just as after deleting an
+unarchived run. Deletion requires delete permission on the run and available
+archive storage; if restoration fails, the run remains intact. Deleting the
+run is **irreversible**, and its archive object is kept.
 
 ## API routes
 

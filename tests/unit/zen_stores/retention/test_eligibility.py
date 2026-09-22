@@ -50,20 +50,24 @@ def inspect(
         )
 
 
-def make_resumable(store: SqlZenStore, run) -> None:
-    """Fail a dynamic run whose snapshot has a runnable build."""
+def make_resumable(
+    store: SqlZenStore, run, build_kind: str = "remote"
+) -> None:
+    """Fail a dynamic run that can resume locally or on the server."""
     with Session(store.engine) as session:
-        build = PipelineBuildSchema(
-            project_id=run.project,
-            stack_id=store.list_stacks(StackFilter()).items[0].id,
-            images="{}",
-            is_local=False,
-            contains_code=True,
-        )
-        session.add(build)
-        session.flush()
         snapshot = session.get(PipelineSnapshotSchema, run.snapshot)
-        snapshot.is_dynamic, snapshot.build_id = True, build.id
+        snapshot.is_dynamic = True
+        if build_kind != "none":
+            build = PipelineBuildSchema(
+                project_id=run.project,
+                stack_id=store.list_stacks(StackFilter()).items[0].id,
+                images="{}",
+                is_local=build_kind == "local",
+                contains_code=True,
+            )
+            session.add(build)
+            session.flush()
+            snapshot.build_id = build.id
         session.get(PipelineRunSchema, run.run).status = "failed"
         session.commit()
 
@@ -75,6 +79,9 @@ def make_resumable(store: SqlZenStore, run) -> None:
         ("in_progress", "not_eligible"),
         ("running_step", "not_eligible"),
         ("running_child", "not_eligible"),
+        ("running_replay", "not_eligible"),
+        ("replay_in_progress", "not_eligible"),
+        ("finished_replay", None),
         ("not_old", "not_old"),
         ("model_link", "model_link"),
         ("resumable_failed", "resumable_failed"),
@@ -101,6 +108,16 @@ def test_each_exclusion(
         child = run_factory(retention_store, parent=run.run)
         update_record(
             retention_store, PipelineRunSchema, child.run, status="running"
+        )
+    if rule in {"running_replay", "replay_in_progress", "finished_replay"}:
+        replay = run_factory(retention_store)
+        update_record(
+            retention_store,
+            PipelineRunSchema,
+            replay.run,
+            original_run_id=run.run,
+            status="running" if rule == "running_replay" else "completed",
+            in_progress=rule == "replay_in_progress",
         )
     if rule == "resumable_failed":
         make_resumable(retention_store, run)
@@ -154,7 +171,9 @@ def test_each_exclusion(
         assert inspected.row_count == 6
 
 
-@pytest.mark.parametrize("root_state", ["finished", "running", "resumable"])
+@pytest.mark.parametrize(
+    "root_state", ["finished", "running", "remote", "local", "none"]
+)
 def test_child_run_waits_for_its_root(
     retention_store, run_factory, NOW, root_state
 ) -> None:
@@ -165,11 +184,21 @@ def test_child_run_waits_for_its_root(
         update_record(
             retention_store, PipelineRunSchema, root.run, in_progress=True
         )
-    elif root_state == "resumable":
-        make_resumable(retention_store, root)
+    elif root_state != "finished":
+        make_resumable(retention_store, root, build_kind=root_state)
+        assert (
+            inspect(retention_store, root, NOW).exclusion == "resumable_failed"
+        )
+        assert (
+            inspect(retention_store, root, NOW, force=True).exclusion
+            == "resumable_failed"
+        )
 
     expected = None if root_state == "finished" else "root_active"
     assert inspect(retention_store, child, NOW).exclusion == expected
+    assert (
+        inspect(retention_store, child, NOW, force=True).exclusion == expected
+    )
 
 
 @pytest.mark.parametrize("owner", ["shared", "deployment", "name"])

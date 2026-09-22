@@ -13,8 +13,19 @@ from sqlalchemy import event, update
 from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
-from zenml.models import PipelineSnapshotResponse, UserFilter
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    SourceType,
+    VisualizationResourceTypes,
+)
+from zenml.exceptions import ExecutionRetentionUnavailableError
+from zenml.models import (
+    PipelineRunRequest,
+    PipelineSnapshotResponse,
+    PlatformEventTriggerRequest,
+    UserFilter,
+)
 from zenml.zen_server import utils
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.middleware import record_requests
@@ -23,11 +34,14 @@ from zenml.zen_server.rbac import endpoint_utils
 from zenml.zen_server.rbac import utils as rbac_utils
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.routers import (
+    curated_visualization_endpoints,
+    logs_endpoints,
     pipeline_snapshot_endpoints,
     retention_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
     steps_endpoints,
+    trigger_endpoints,
 )
 from zenml.zen_stores.retention.capacity import RetentionCapacity
 from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
@@ -38,6 +52,9 @@ ROUTERS = (
     runs_endpoints,
     steps_endpoints,
     pipeline_snapshot_endpoints,
+    curated_visualization_endpoints,
+    logs_endpoints,
+    trigger_endpoints,
 )
 
 
@@ -96,6 +113,7 @@ def http(retention_store, retention, run_factory, monkeypatch):
         ("POST", "pipeline_snapshots/{snapshot}/runs", Action.READ),
         ("POST", "runs/{run}/replay", Action.READ),
         ("POST", "runs/{run}/restore", Action.READ),
+        ("DELETE", "runs/{run}", Action.DELETE),
         ("POST", "retention/archive", Action.UPDATE),
     ],
 )
@@ -142,6 +160,99 @@ def test_denied_before_detail_storage_or_dispatch(
     assert denied.call_args.kwargs["action"] == action
     assert not any("FROM archive_bundle" in sql for sql in statements)
     blocked.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    [
+        "visualization_run",
+        "visualization_snapshot",
+        "trigger_run",
+        "trigger_snapshot",
+        "attach",
+        "detach",
+        "logs",
+    ],
+)
+def test_related_endpoints_authorize_archived_owners(
+    http, storage, monkeypatch, endpoint
+):
+    """Related resources check the execution owner's permission before detail."""
+    http.retention.run_archive_sweep()
+    checked = []
+
+    def deny_owner(model, *, action):
+        if model.id in {http.ids.run, http.ids.snapshot}:
+            checked.append((model.id, action))
+            raise HTTPException(403, "Forbidden")
+
+    for module in (
+        curated_visualization_endpoints,
+        logs_endpoints,
+        trigger_endpoints,
+        endpoint_utils,
+    ):
+        monkeypatch.setattr(module, "verify_permission_for_model", deny_owner)
+    opened = Mock(side_effect=AssertionError("denied request read archive"))
+    monkeypatch.setattr(storage, "read", opened)
+    body = None
+    owner = (
+        http.ids.snapshot
+        if endpoint.endswith("snapshot") or endpoint in {"attach", "detach"}
+        else http.ids.run
+    )
+    action = Action.READ
+    if endpoint.startswith("visualization"):
+        monkeypatch.setattr(
+            type(http.store),
+            "get_curated_visualization",
+            lambda *args, **kwargs: SimpleNamespace(
+                resource_id=owner,
+                resource_type=VisualizationResourceTypes.PIPELINE_SNAPSHOT
+                if owner == http.ids.snapshot
+                else VisualizationResourceTypes.PIPELINE_RUN,
+            ),
+        )
+        method, path = "GET", f"curated_visualizations/{uuid4()}"
+    elif endpoint.startswith("trigger"):
+        source_type = (
+            SourceType.PIPELINE_SNAPSHOT
+            if owner == http.ids.snapshot
+            else SourceType.PIPELINE_RUN
+        )
+        body = PlatformEventTriggerRequest(
+            project=http.ids.project,
+            name="archive-source",
+            source_entity={"id": owner, "type": source_type},
+            target_events=[
+                "run_completed" if owner == http.ids.snapshot else "completed"
+            ],
+        ).model_dump(mode="json")
+        method, path, action = "POST", "triggers", Action.UPDATE
+    elif endpoint in {"attach", "detach"}:
+        trigger_id = uuid4()
+        monkeypatch.setattr(
+            type(http.store),
+            "get_trigger",
+            lambda self, **kwargs: SimpleNamespace(
+                id=trigger_id, project_id=http.ids.project, snapshots=[]
+            ),
+        )
+        method = "PUT" if endpoint == "attach" else "DELETE"
+        path = f"triggers/{trigger_id}/pipeline_snapshots/{http.ids.snapshot}"
+    else:
+        method, path, action = "POST", "logs", Action.UPDATE
+        body = {
+            "project": str(http.ids.project),
+            "step_run_id": str(http.ids.producer),
+            "source": "runner",
+        }
+
+    response = http.client.request(method, f"/api/v1/{path}", json=body)
+
+    assert response.status_code == 403, response.text
+    assert checked == [(owner, action)]
+    opened.assert_not_called()
 
 
 def test_read_permission_restores_without_allowing_run_updates(
@@ -516,25 +627,31 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
     opened.assert_not_called()
 
 
-def test_archived_snapshot_summary_outlives_deleted_restore_run(http):
-    """Deleting the owner leaves a readable snapshot without a locator."""
+def test_archived_snapshot_detail_outlives_deleted_run(http):
+    """Deleting an archived owner preserves a readable, reusable snapshot."""
+    before = http.store.get_snapshot(http.ids.snapshot)
     http.retention.run_archive_sweep()
-    http.store.delete_run(http.ids.run)
+    deleted = http.client.delete(f"/api/v1/runs/{http.ids.run}")
+    assert deleted.status_code == 200, deleted.text
 
     response = http.client.get(
         f"/api/v1/pipeline_snapshots/{http.ids.snapshot}",
-        params={"hydrate": "false"},
     )
 
     assert response.status_code == 200, response.text
-    archive = response.json()["body"]["archive"]
-    assert archive["bundle_id"]
-    assert archive["restore_run_id"] is None
+    after = PipelineSnapshotResponse.model_validate(response.json())
+    assert after.archive_bundle_id is None
+    assert after.metadata == before.metadata
 
-    detail = http.client.get(f"/api/v1/pipeline_snapshots/{http.ids.snapshot}")
-    assert detail.status_code == 409, detail.text
-    assert "no restore run is recorded" in detail.text
-    assert "cannot be restored" in detail.text
+    run, created = http.store.get_or_create_run(
+        PipelineRunRequest(
+            project=http.ids.project,
+            name="reuse-surviving-snapshot",
+            snapshot=http.ids.snapshot,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    assert created and run.snapshot.id == http.ids.snapshot
 
 
 def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
@@ -706,6 +823,27 @@ def test_archived_run_and_snapshot_delete_over_http(http):
         http.client.delete(f"/api/v1/runs/{http.ids.run}").status_code == 200
     )
     assert http.client.delete(snapshot).status_code == 200
+
+
+def test_archived_run_delete_preserves_run_when_storage_is_unavailable(
+    http, storage, monkeypatch
+):
+    """Deletion cannot orphan snapshot detail when restoration fails."""
+    http.retention.run_archive_sweep()
+    monkeypatch.setattr(
+        storage,
+        "read",
+        Mock(
+            side_effect=ExecutionRetentionUnavailableError(
+                "Storage unavailable"
+            )
+        ),
+    )
+
+    response = http.client.delete(f"/api/v1/runs/{http.ids.run}")
+
+    assert response.status_code == 503, response.text
+    assert http.store.get_run(http.ids.run, hydrate=False).archive_bundle_id
 
 
 def test_misspelled_archive_control_field_is_rejected(http):

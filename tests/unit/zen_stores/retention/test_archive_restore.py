@@ -18,6 +18,7 @@ from sqlalchemy import (
     MetaData,
     Table,
     Text,
+    delete,
     event,
     select,
     update,
@@ -159,7 +160,7 @@ def test_archive_restore_round_trip(
 
 
 @pytest.mark.parametrize("identifier_kind", ["uuid", "name", "id_prefix"])
-def test_client_deletes_archived_run_from_retained_identity(
+def test_client_deletion_resolves_archived_run_from_retained_identity(
     retention_store,
     run_factory,
     archive_run,
@@ -183,6 +184,8 @@ def test_client_deletes_archived_run_from_retained_identity(
         Client, "zen_store", property(lambda _: retention_store)
     )
     client = object.__new__(Client)
+    delete_run = Mock()
+    monkeypatch.setattr(SqlZenStore, "delete_run", delete_run)
     identifier = {
         "uuid": ids.run,
         "name": run_name,
@@ -191,8 +194,7 @@ def test_client_deletes_archived_run_from_retained_identity(
 
     client.delete_pipeline_run(identifier, project=ids.project)
 
-    with pytest.raises(KeyError):
-        retention_store.get_run(ids.run, hydrate=False)
+    delete_run.assert_called_once_with(run_id=ids.run)
     opened.assert_not_called()
 
 
@@ -409,14 +411,17 @@ def test_retirement_capture_queries_scale_by_page(
     assert statements["total"] <= 2 * row_pages + 30
 
 
-def test_update_after_retirement_fails_with_the_restore_command(
+@pytest.mark.parametrize("writer_kind", ["update", "replay", "delete"])
+def test_write_after_retirement_fails_with_the_restore_command(
     retention_store,
     run_factory,
     monkeypatch,
     retention,
+    writer_kind,
 ):
     """A write waiting on retirement's lock sees the marker and fails."""
     ids = run_factory(retention_store)
+    target = run_factory(retention_store, age_days=0)
     locked, release = Event(), Event()
     original = archiver._clear_detail
 
@@ -432,11 +437,25 @@ def test_update_after_retirement_fails_with_the_restore_command(
     ):
         archive = archivers.submit(retention.run_archive_sweep)
         assert locked.wait(20)
-        writer = writers.submit(
-            retention_store.update_run,
-            ids.run,
-            PipelineRunUpdate(exception_info=ExceptionInfo(traceback="late")),
-        )
+        operations = {
+            "update": lambda: retention_store.update_run(
+                ids.run,
+                PipelineRunUpdate(
+                    exception_info=ExceptionInfo(traceback="late")
+                ),
+            ),
+            "replay": lambda: retention_store.get_or_create_run(
+                PipelineRunRequest(
+                    project=ids.project,
+                    name="replay",
+                    snapshot=target.snapshot,
+                    original_run_id=ids.run,
+                    status=ExecutionStatus.RUNNING,
+                )
+            ),
+            "delete": lambda: retention_store.delete_run(ids.run),
+        }
+        writer = writers.submit(operations[writer_kind])
         try:
             with pytest.raises(FutureTimeout):
                 writer.result(timeout=1)
@@ -1077,7 +1096,7 @@ def test_status_reports_storage_failure_without_probing(
 
 
 def test_archived_snapshot_is_deleted_only_after_its_run(
-    retention_store, run_factory, archive_run, storage
+    retention_store, run_factory, archive_run, storage, retention
 ):
     """Deleting a run keeps its object; its snapshot is then deletable."""
     ids = run_factory(retention_store)
@@ -1085,19 +1104,21 @@ def test_archived_snapshot_is_deleted_only_after_its_run(
     with pytest.raises(ExecutionArchivedError, match=str(ids.run)):
         retention_store.delete_snapshot(ids.snapshot)
 
-    retention_store.delete_run(ids.run)
+    with pytest.raises(ExecutionArchivedError, match=str(ids.run)):
+        retention_store.delete_run(ids.run)
+    retention.delete_pipeline_run(ids.run)
 
     with Session(retention_store.engine) as session:
         bundle = session.get(ArchiveBundleSchema, bundle_id)
         assert bundle.run_id is None
     assert storage.read(bundle.uri, bundle.size_bytes)
-    assert retention_store.get_snapshot(
-        ids.snapshot, hydrate=False
-    ).archive_bundle_id
+    assert retention_store.get_snapshot(ids.snapshot).archive_bundle_id is None
     retention_store.delete_snapshot(ids.snapshot)
 
 
-@pytest.mark.parametrize("writer_kind", ["step", "update", "snapshot"])
+@pytest.mark.parametrize(
+    "writer_kind", ["step", "update", "snapshot", "replay"]
+)
 def test_writer_racing_archive_preserves_committed_detail(
     retention_store,
     run_factory,
@@ -1113,6 +1134,7 @@ def test_writer_racing_archive_preserves_committed_detail(
         "step": "protect_run",
         "update": "update_hot",
         "snapshot": "protect_snapshot_owners",
+        "replay": "protect_run",
     }[writer_kind]
     original = getattr(fences, hook)
     calls = 0
@@ -1149,6 +1171,15 @@ def test_writer_racing_archive_preserves_committed_detail(
                 status=ExecutionStatus.RUNNING,
             )
         ),
+        "replay": lambda: retention_store.get_or_create_run(
+            PipelineRunRequest(
+                project=ids.project,
+                name="replay",
+                snapshot=ids.snapshot,
+                original_run_id=ids.run,
+                status=ExecutionStatus.RUNNING,
+            )
+        ),
     }
     with (
         ThreadPoolExecutor(1, thread_name_prefix="writer") as pool,
@@ -1169,6 +1200,16 @@ def test_writer_racing_archive_preserves_committed_detail(
         is None
     )
     retention.run_archive_sweep()
+    if writer_kind == "replay":
+        assert retention_store.get_run(ids.run).archive_bundle_id is None
+        replay, _ = written
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                update(PipelineRunSchema)
+                .where(PipelineRunSchema.id == replay.id)
+                .values(status=ExecutionStatus.COMPLETED, in_progress=False)
+            )
+        retention.run_archive_sweep()
     assert retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
     if writer_kind == "snapshot":
         assert (
@@ -1235,7 +1276,13 @@ def test_restore_rejects_root_deleted_during_object_read(
 
     def delete_during_read(uri, max_bytes):
         data = original_read(uri, max_bytes)
-        retention_store.delete_run(ids.run)
+        # Simulate a cascade from deleting the owning project or pipeline.
+        with retention_store.engine.begin() as connection:
+            connection.execute(
+                delete(PipelineRunSchema).where(
+                    PipelineRunSchema.id == ids.run
+                )
+            )
         return data
 
     monkeypatch.setattr(storage, "read", delete_during_read)

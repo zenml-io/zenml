@@ -201,6 +201,15 @@ class RetentionController:
         with self.capacity.claim(key=("restore", run.id)):
             return restore_run(self.store.engine, self.archive_storage, run.id)
 
+    def delete_pipeline_run(self, run_id: UUID) -> None:
+        """Delete a run while preserving the detail of its surviving snapshot.
+
+        Args:
+            run_id: Run the caller is authorized to delete.
+        """
+        self.restore_pipeline_run(run_id)
+        self.store.delete_run(run_id)
+
     def _policy(self) -> ArchiveSettings:
         """Read the retention policy of a server that can apply it.
 

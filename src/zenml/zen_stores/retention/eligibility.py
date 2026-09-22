@@ -310,7 +310,8 @@ def _resumable_failed(run_id: Any) -> ColumnElement[bool]:
             col(PipelineRunSchema.id) == run_id,
             col(PipelineRunSchema.status) == ExecutionStatus.FAILED.value,
             col(PipelineSnapshotSchema.is_dynamic).is_(True),
-            PipelineSnapshotSchema.runnable_filter(),
+            # Local resume does not require a build runnable by the server.
+            PipelineSnapshotSchema.not_archived(),
         )
         .exists()
     )
@@ -412,7 +413,10 @@ def _first_exclusion(
         .exists(),
         select(col(PipelineRunSchema.id))
         .where(
-            col(PipelineRunSchema.parent_run_id) == run_id,
+            or_(
+                col(PipelineRunSchema.parent_run_id) == run_id,
+                col(PipelineRunSchema.original_run_id) == run_id,
+            ),
             or_(
                 col(PipelineRunSchema.status).not_in(TERMINAL_STATUSES),
                 col(PipelineRunSchema.in_progress).is_(True),

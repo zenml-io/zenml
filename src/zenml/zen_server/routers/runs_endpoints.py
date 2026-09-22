@@ -400,7 +400,7 @@ def delete_run(
     verify_permissions_and_delete_entity(
         id=run_id,
         get_method=lambda id, _: zen_store().get_run(id, hydrate=False),
-        delete_method=zen_store().delete_run,
+        delete_method=retention_controller().delete_pipeline_run,
     )
 
 
