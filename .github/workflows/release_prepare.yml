@@ -139,6 +139,10 @@ jobs:
       # Check out the prepare-release branch
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Include latest dashboard
+        env:
+          ZENML_UI_RELEASE_TOKEN: ${{ secrets.ZENML_UI_RELEASE_TOKEN }}
+        run: bash scripts/install-dashboard.sh
       # Sign in to Google
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
