@@ -517,8 +517,6 @@ class StepRunSchema(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        archive_metadata: Optional[Dict[str, Any]] = None,
-        archive_parent_step_ids: Optional[List[UUID]] = None,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -526,9 +524,6 @@ class StepRunSchema(
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
-            archive_metadata: Retained run metadata for an archived summary.
-            archive_parent_step_ids: Retained parent step IDs for an archived
-                summary.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -550,18 +545,18 @@ class StepRunSchema(
                 )
             )
             assert bundle_id is not None
-            if archive_metadata is None and include_metadata:
-                archive_metadata = self.fetch_metadata()
-            if archive_parent_step_ids is None and include_metadata:
-                archive_parent_step_ids = [p.parent_id for p in self.parents]
             archive = StepRunArchiveDescriptor(
                 bundle_id=bundle_id,
                 restore_run_id=self.pipeline_run_id,
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
-                parent_step_ids=archive_parent_step_ids,
-                run_metadata=archive_metadata,
+                run_metadata=self.fetch_metadata()
+                if include_metadata
+                else None,
+                parent_step_ids=[p.parent_id for p in self.parents]
+                if include_metadata
+                else None,
             )
 
         body = StepRunResponseBody(

@@ -117,6 +117,20 @@ def tally(counts: RunCounts, outcome: RunOutcome) -> None:
         counts.skipped += 1
 
 
+def _refused_outcome(exclusion: RetentionExclusion) -> RunOutcome:
+    """Count an oversized run separately from every other refusal.
+
+    Args:
+        exclusion: Why the run was not archived.
+
+    Returns:
+        The outcome the refusal is tallied under.
+    """
+    return (
+        "oversized" if exclusion == RetentionExclusion.OVERSIZED else "skipped"
+    )
+
+
 class _PassReplaced(Exception):
     """Another sweep took over the saved state after its lease expired."""
 
@@ -188,7 +202,7 @@ class RunArchiver:
         self.settings = settings
         self.cancel_event = cancel_event
 
-    def _check_cancelled(self) -> None:
+    def check_cancelled(self) -> None:
         """Stop before beginning another irreversible phase.
 
         Raises:
@@ -213,20 +227,18 @@ class RunArchiver:
         Raises:
             _RetentionCancelled: The owning sweep is shutting down.
         """
-        self._check_cancelled()
+        self.check_cancelled()
         try:
             with Session(self.engine) as session:
                 run = inspect_run(
                     session, run_id, self.settings, evaluated_at, force=force
                 )
-            self._check_cancelled()
-            if run.exclusion is RetentionExclusion.OVERSIZED:
-                return ArchiveAttempt(
-                    run_id=run_id, outcome="oversized", exclusion=run.exclusion
-                )
+            self.check_cancelled()
             if run.exclusion is not None:
                 return ArchiveAttempt(
-                    run_id=run_id, outcome="skipped", exclusion=run.exclusion
+                    run_id=run_id,
+                    outcome=_refused_outcome(run.exclusion),
+                    exclusion=run.exclusion,
                 )
             return self._archive(run, evaluated_at, force)
         except _RetentionCancelled:
@@ -256,7 +268,7 @@ class RunArchiver:
                 match the capture; caught below and reported as a failure.
             _RetentionCancelled: The owning sweep is shutting down.
         """  # noqa: DOC502
-        self._check_cancelled()
+        self.check_cancelled()
         # Filled outside the locks so retirement need not validate every
         # step configuration again while it blocks the run's writers.
         projections: ProjectionCache = {}
@@ -266,13 +278,13 @@ class RunArchiver:
                     capture_run(
                         session,
                         run,
-                        check_cancelled=self._check_cancelled,
+                        check_cancelled=self.check_cancelled,
                         projections=projections,
                     )
                 )
         except ExecutionRetentionConflictError as error:
             return self._conflict_attempt(run.run_id, error)
-        self._check_cancelled()
+        self.check_cancelled()
         # The object name is random rather than derived from the run or its
         # content, so every attempt owns its object outright: a failed attempt
         # can remove its object without ever touching the one a concurrent,
@@ -286,12 +298,12 @@ class RunArchiver:
         try:
             self.storage.write(uri, encoded.data)
             object_written = True
-            self._check_cancelled()
+            self.check_cancelled()
             if self.storage.read(uri, len(encoded.data)) != encoded.data:
                 raise ExecutionRetentionIntegrityError(
                     "Uploaded archive object differs from the capture."
                 )
-            self._check_cancelled()
+            self.check_cancelled()
             retirement_started = True
             self._retire(
                 run, bundle_id, uri, encoded, evaluated_at, force, projections
@@ -314,18 +326,14 @@ class RunArchiver:
                 type(cause).__name__,
             )
             return ArchiveAttempt(run_id=run.run_id, outcome="failed")
-        except ExecutionRetentionConflictError as error:
-            if not retirement_started:
-                self.storage.remove(uri)
-            elif self._bundle_committed(bundle_id):
-                return ArchiveAttempt(run_id=run.run_id, outcome="archived")
-            return self._conflict_attempt(run.run_id, error)
         except Exception as error:
             if not retirement_started:
                 self.storage.remove(uri)
             elif self._bundle_committed(bundle_id):
                 # The commit succeeded but its acknowledgement was lost.
                 return ArchiveAttempt(run_id=run.run_id, outcome="archived")
+            if isinstance(error, ExecutionRetentionConflictError):
+                return self._conflict_attempt(run.run_id, error)
             logger.error(
                 "Archiving run %s failed (%s).",
                 run.run_id,
@@ -369,16 +377,15 @@ class RunArchiver:
             Oversized when the run exceeds a limit, otherwise skipped; a
             changed run is reconsidered by a later attempt.
         """
-        if error.error_code == RetentionFailure.OVERSIZED:
-            return ArchiveAttempt(
-                run_id=run_id,
-                outcome="oversized",
-                exclusion=RetentionExclusion.OVERSIZED,
-            )
+        exclusion = (
+            RetentionExclusion.OVERSIZED
+            if error.error_code == RetentionFailure.OVERSIZED
+            else RetentionExclusion.NOT_ELIGIBLE
+        )
         return ArchiveAttempt(
             run_id=run_id,
-            outcome="skipped",
-            exclusion=RetentionExclusion.NOT_ELIGIBLE,
+            outcome=_refused_outcome(exclusion),
+            exclusion=exclusion,
         )
 
     def _retire(
@@ -569,12 +576,7 @@ def preview_runs(
             if run.exclusion is None:
                 result.eligible += 1
                 continue
-            outcome: RunOutcome = (
-                "oversized"
-                if run.exclusion == RetentionExclusion.OVERSIZED
-                else "skipped"
-            )
-            tally(result, outcome)
+            tally(result, _refused_outcome(run.exclusion))
             refusals.append(
                 ArchiveRefusal(run_id=run_id, reason=run.exclusion)
             )
@@ -612,7 +614,6 @@ class ArchivePass:
         self.engine = engine
         self.storage = storage
         self.settings = settings
-        self.cancel_event = cancel_event
         self.archiver = RunArchiver(
             engine, storage, settings, cancel_event=cancel_event
         )
@@ -647,7 +648,7 @@ class ArchivePass:
         """
         started = monotonic()
         try:
-            self._check_cancelled()
+            self.archiver.check_cancelled()
             if not self.storage.probe():
                 return self._finish(
                     RetentionOutcome.FAILED,
@@ -664,7 +665,7 @@ class ArchivePass:
                     self.state.oversized_run_ids,
                 )
             for cursor in candidates[: self.settings.max_runs_per_pass]:
-                self._check_cancelled()
+                self.archiver.check_cancelled()
                 if monotonic() - started >= self.MAX_SECONDS:
                     return self._finish(RetentionOutcome.PAUSED)
                 self._process(cursor, evaluated_at)
@@ -686,15 +687,6 @@ class ArchivePass:
             return self._finish(
                 RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
             )
-
-    def _check_cancelled(self) -> None:
-        """Stop the pass before beginning more payload work.
-
-        Raises:
-            _RetentionCancelled: If scheduler shutdown was requested.
-        """
-        if self.cancel_event is not None and self.cancel_event.is_set():
-            raise _RetentionCancelled()
 
     def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
         """Archive or skip one run and save the position after it.

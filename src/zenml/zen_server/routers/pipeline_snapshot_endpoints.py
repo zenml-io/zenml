@@ -62,12 +62,12 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
-    ReadAuthorizer,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -380,7 +380,7 @@ def get_snapshot_code_download_token(
     snapshot = store.get_snapshot(
         snapshot_id=snapshot_id,
         hydrate=True,
-        authorizer=ReadAuthorizer(),
+        authorizer=verify_read_permission_for_model,
         step_configuration_filter=[],
         include_config_schema=False,
     )

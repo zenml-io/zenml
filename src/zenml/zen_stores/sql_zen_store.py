@@ -65,7 +65,6 @@ from typing import (
     Literal,
     NoReturn,
     Optional,
-    Protocol,
     Sequence,
     Set,
     Tuple,
@@ -658,22 +657,8 @@ AnyHeader = TypeVar(
 )
 
 
-class HeaderAuthorizer(Protocol[AnyHeader]):
-    """Permission check that a getter runs on an entity's header row.
-
-    A getter refuses to hydrate an archived entity. Checking permissions on
-    the fetched response, as callers usually do, would let that refusal reach
-    a caller who may not see the entity at all. The getter therefore hands the
-    header row, without metadata or resources, to this check first, within
-    the query it already runs.
-    """
-
-    def authorize(self, header: AnyHeader) -> None:
-        """Raise unless the caller may access the entity.
-
-        Args:
-            header: The entity without its metadata and resources.
-        """
+# Getters authorize a header before revealing that its detail is archived.
+HeaderAuthorizer = Callable[[AnyHeader], None]
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -5716,7 +5701,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             if authorizer is not None:
-                authorizer.authorize(
+                authorizer(
                     snapshot.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -5739,7 +5724,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                         query_options=[load_only(*self._RUN_HEADER_COLUMNS)],
                     )
-                    authorizer.authorize(
+                    authorizer(
                         owner.to_model(
                             include_metadata=False, include_resources=False
                         )
@@ -6753,7 +6738,7 @@ class SqlZenStore(BaseZenStore):
                 ],
             )
             if authorizer is not None:
-                authorizer.authorize(
+                authorizer(
                     run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -7435,7 +7420,7 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
             if authorizer is not None:
-                authorizer.authorize(
+                authorizer(
                     run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -7443,15 +7428,10 @@ class SqlZenStore(BaseZenStore):
             if hydrate and run.is_archived:
                 raise ExecutionArchivedError.for_entity(run.id, run.id)
             return run.to_model(
-                include_metadata=hydrate,
+                include_metadata=hydrate or run.is_archived,
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
-                archive_metadata=run.fetch_metadata(
-                    include_full_metadata=include_full_metadata
-                )
-                if run.is_archived
-                else None,
             )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
@@ -7778,14 +7758,9 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 custom_schema_to_model_conversion=lambda schema: (
                     schema.to_model(
-                        include_metadata=hydrate and not schema.is_archived,
+                        include_metadata=hydrate,
                         include_resources=True,
                         include_full_metadata=include_full_metadata,
-                        archive_metadata=schema.fetch_metadata(
-                            include_full_metadata=include_full_metadata,
-                        )
-                        if hydrate and schema.is_archived
-                        else None,
                     )
                 ),
                 apply_query_options_from_schema=True,
@@ -7929,11 +7904,8 @@ class SqlZenStore(BaseZenStore):
             session.refresh(existing_run)
 
             return existing_run.to_model(
-                include_metadata=not existing_run.is_archived,
+                include_metadata=True,
                 include_resources=True,
-                archive_metadata=existing_run.fetch_metadata()
-                if existing_run.is_archived
-                else None,
             )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -13065,7 +13037,7 @@ class SqlZenStore(BaseZenStore):
                 ],
             )
             if authorizer is not None:
-                authorizer.authorize(
+                authorizer(
                     step.pipeline_run.to_model(
                         include_metadata=False, include_resources=False
                     )
@@ -13076,12 +13048,8 @@ class SqlZenStore(BaseZenStore):
                     step.id, step.pipeline_run_id
                 )
             return step.to_model(
-                include_metadata=hydrate and not archived,
+                include_metadata=hydrate or archived,
                 include_resources=True,
-                archive_metadata=step.fetch_metadata() if archived else None,
-                archive_parent_step_ids=[p.parent_id for p in step.parents]
-                if archived
-                else None,
             )
 
     def list_run_steps(
@@ -13100,31 +13068,16 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all step runs matching the filter criteria.
         """
-
-        def convert(step: StepRunSchema) -> StepRunResponse:
-            archived = step.has_archived_configuration
-            return step.to_model(
-                include_metadata=hydrate and not archived,
-                include_resources=True,
-                archive_metadata=step.fetch_metadata()
-                if hydrate and archived
-                else None,
-                archive_parent_step_ids=[p.parent_id for p in step.parents]
-                if hydrate and archived
-                else None,
-            )
-
         with Session(self.engine) as session:
             self._set_filter_project_id(
                 filter_model=step_run_filter_model,
                 session=session,
             )
             query = select(StepRunSchema)
-            page = self.filter_and_paginate(
+            page: Page[StepRunResponse] = self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=StepRunSchema,
-                custom_schema_to_model_conversion=convert,
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,

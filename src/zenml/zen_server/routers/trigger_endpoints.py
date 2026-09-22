@@ -50,11 +50,11 @@ from zenml.zen_server.pipeline_execution.utils import (
     validate_snapshot_for_server_execution,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
-    ReadAuthorizer,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -316,7 +316,9 @@ def attach_trigger_to_snapshot(
 
     verify_permission_for_model(model=trigger, action=Action.UPDATE)
     snapshot = zen_store().get_snapshot(
-        snapshot_id=snapshot_id, hydrate=True, authorizer=ReadAuthorizer()
+        snapshot_id=snapshot_id,
+        hydrate=True,
+        authorizer=verify_read_permission_for_model,
     )
 
     if trigger.project_id != snapshot.project_id:

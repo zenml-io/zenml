@@ -298,7 +298,7 @@ def test_get_entity_header_authorization_precedes_dehydration(
 
     def get(entity_id, *, authorizer, hydrate):
         assert entity_id == resource_id and hydrate is True
-        authorizer.authorize(header)
+        authorizer(header)
         events.append(("hydrate", hydrated))
         return hydrated
 

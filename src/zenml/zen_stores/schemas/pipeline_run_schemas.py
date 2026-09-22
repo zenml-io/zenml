@@ -692,7 +692,6 @@ class PipelineRunSchema(
         include_resources: bool = False,
         include_python_packages: bool = False,
         include_full_metadata: bool = False,
-        archive_metadata: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -702,7 +701,6 @@ class PipelineRunSchema(
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
             include_full_metadata: Whether the full metadata will be included.
-            archive_metadata: Retained run metadata for an archived summary.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -711,16 +709,16 @@ class PipelineRunSchema(
         """
         archive = None
         if self.archive_bundle_id is not None:
-            if archive_metadata is None and include_metadata:
-                archive_metadata = self.fetch_metadata(
-                    include_full_metadata=include_full_metadata
-                )
             archive = PipelineRunArchiveDescriptor(
                 bundle_id=self.archive_bundle_id,
                 restore_run_id=self.id,
                 start_time=self.start_time,
                 end_time=self.end_time,
-                run_metadata=archive_metadata,
+                run_metadata=self.fetch_metadata(
+                    include_full_metadata=include_full_metadata
+                )
+                if include_metadata
+                else None,
             )
 
         body = PipelineRunResponseBody(

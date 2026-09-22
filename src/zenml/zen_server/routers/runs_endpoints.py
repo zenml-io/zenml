@@ -56,9 +56,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import (
-    ExecutionArchivedError,
-)
 from zenml.logger import get_logger
 from zenml.models import (
     LogsResponse,
@@ -92,12 +89,12 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
-    ReadAuthorizer,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
+    verify_read_permission_for_model,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -516,7 +513,7 @@ def get_run_dag(
     return store.get_pipeline_run_dag(
         pipeline_run_id=run_id,
         include_step_metadata=include_step_metadata,
-        authorizer=ReadAuthorizer(),
+        authorizer=verify_read_permission_for_model,
     )
 
 
@@ -737,31 +734,23 @@ def disable_run_heartbeat(
     zen_store().disable_run_heartbeat(run_id=run_id)
 
 
-class ReplayAuthorizer:
-    """Checks that the caller may replay a run, from the run's header row."""
+def _verify_replay_permissions(header: PipelineRunResponse) -> None:
+    """Verify replay permissions before the run's detail is read.
 
-    def authorize(self, header: PipelineRunResponse) -> None:
-        """Verify replay permissions before the run's detail is read.
-
-        Args:
-            header: The run to replay, without its metadata and resources.
-
-        Raises:
-            ExecutionArchivedError: If the run must be restored first.
-        """
-        verify_permission_for_model(header, action=Action.READ)
-        for resource_type in (
-            ResourceType.PIPELINE_SNAPSHOT,
-            ResourceType.PIPELINE_RUN,
-        ):
-            verify_permission(
-                resource_type=resource_type,
-                action=Action.CREATE,
-                project_id=header.project_id,
-            )
-        check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
-        if header.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(header.id, header.id)
+    Args:
+        header: The run to replay, without its metadata and resources.
+    """
+    verify_permission_for_model(header, action=Action.READ)
+    for resource_type in (
+        ResourceType.PIPELINE_SNAPSHOT,
+        ResourceType.PIPELINE_RUN,
+    ):
+        verify_permission(
+            resource_type=resource_type,
+            action=Action.CREATE,
+            project_id=header.project_id,
+        )
+    check_entitlement(feature=RUN_TEMPLATE_TRIGGERS_FEATURE_NAME)
 
 
 @workload_router.post(
@@ -801,7 +790,7 @@ def replay_run(
     run = zen_store().get_run(
         run_id=run_id,
         hydrate=True,
-        authorizer=ReplayAuthorizer(),
+        authorizer=_verify_replay_permissions,
     )
     run = dehydrate_response_model(run)
     if not run.snapshot:

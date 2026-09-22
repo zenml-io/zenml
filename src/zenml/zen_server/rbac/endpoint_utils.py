@@ -55,16 +55,15 @@ AnyUpdate = TypeVar("AnyUpdate", bound=BaseUpdate)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
-class ReadAuthorizer:
-    """Checks read permission on the header rows a store getter hands over."""
+def verify_read_permission_for_model(
+    header: BaseIdentifiedResponse[Any, Any, Any],
+) -> None:
+    """Verify read permission on an entity's header row.
 
-    def authorize(self, header: BaseIdentifiedResponse[Any, Any, Any]) -> None:
-        """Verify read permission on an entity's header row.
-
-        Args:
-            header: The entity without its metadata and resources.
-        """
-        verify_permission_for_model(header, action=Action.READ)
+    Args:
+        header: The entity without its metadata and resources.
+    """
+    verify_permission_for_model(header, action=Action.READ)
 
 
 def verify_permissions_and_create_entity(
@@ -231,7 +230,7 @@ def verify_permissions_and_get_entity(
         A model of the fetched entity.
     """
     if authorize_in_store:
-        get_method_kwargs["authorizer"] = ReadAuthorizer()
+        get_method_kwargs["authorizer"] = verify_read_permission_for_model
 
     model = get_method(id, **get_method_kwargs)
     if not authorize_in_store:
