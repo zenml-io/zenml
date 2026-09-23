@@ -186,18 +186,20 @@ the chance of the server receiving the maximum amount of retry requests.
 When ZenML Pro is configured to synchronize numeric Linux UID and GID claims
 from an external OIDC provider, the Kubernetes orchestrator automatically runs
 the orchestration pod and all step containers as that user. ZenML sets
-`runAsUser`, `runAsGroup`, and `fsGroup` on the pod and also sets `runAsUser`
-and `runAsGroup` on every container. These synchronized values take precedence
-over conflicting pod settings; unrelated security settings such as seccomp,
-capabilities, and supplemental groups are preserved.
+`runAsUser` and `runAsGroup` on the pod and every container. These synchronized
+values take precedence over conflicting pod settings; unrelated security
+settings such as `fsGroup`, seccomp, capabilities, and supplemental groups are
+preserved.
 
-Users without a complete synchronized UID/GID pair keep the existing
-Kubernetes behavior. Both values must be positive JSON integers; string and
-other claim values are retained on the user but are not applied. On OpenShift,
-the applicable SCC must permit the requested UID, GID, and `fsGroup`. For an
-existing scheduled pipeline, update or recreate its Kubernetes CronJob after
-the identity has synchronized so the stored pod template includes the security
-context.
+The UID and GID are applied independently. A synchronized UID sets
+`runAsUser`, while a synchronized GID sets `runAsGroup`. Missing values are
+omitted, while unexpected non-positive or non-integer values produce a warning
+and are ignored. ZenML does not derive `fsGroup` from the synchronized GID;
+administrators can configure it explicitly through the existing pod settings.
+On OpenShift, the applicable SCC must permit the requested UID, GID, and any
+configured `fsGroup`. For an existing scheduled pipeline, update or recreate
+its Kubernetes CronJob after the identity has synchronized so the stored pod
+template includes the security context.
 
 #### Kubernetes permissions and service accounts
 

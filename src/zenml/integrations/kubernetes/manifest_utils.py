@@ -204,33 +204,46 @@ def build_pod_manifest(
     if mount_local_stores:
         add_local_stores_mount(pod_spec)
 
-    if (
-        isinstance(run_as_user, int)
-        and not isinstance(run_as_user, bool)
-        and run_as_user > 0
-        and isinstance(run_as_group, int)
-        and not isinstance(run_as_group, bool)
-        and run_as_group > 0
+    if run_as_user is not None and (
+        not isinstance(run_as_user, int)
+        or isinstance(run_as_user, bool)
+        or run_as_user <= 0
     ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux UID: expected a positive integer."
+        )
+        run_as_user = None
+
+    if run_as_group is not None and (
+        not isinstance(run_as_group, int)
+        or isinstance(run_as_group, bool)
+        or run_as_group <= 0
+    ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux GID: expected a positive integer."
+        )
+        run_as_group = None
+
+    if run_as_user is not None or run_as_group is not None:
+        pod_security_context: Dict[str, int] = {}
+        if run_as_user is not None:
+            pod_security_context["runAsUser"] = run_as_user
+        if run_as_group is not None:
+            pod_security_context["runAsGroup"] = run_as_group
+
         if isinstance(pod_spec.security_context, dict):
-            pod_spec.security_context.update(
-                {
-                    "runAsUser": run_as_user,
-                    "runAsGroup": run_as_group,
-                    "fsGroup": run_as_group,
-                }
-            )
+            pod_spec.security_context.update(pod_security_context)
         elif isinstance(
             pod_spec.security_context, k8s_client.V1PodSecurityContext
         ):
-            pod_spec.security_context.run_as_user = run_as_user
-            pod_spec.security_context.run_as_group = run_as_group
-            pod_spec.security_context.fs_group = run_as_group
+            if run_as_user is not None:
+                pod_spec.security_context.run_as_user = run_as_user
+            if run_as_group is not None:
+                pod_spec.security_context.run_as_group = run_as_group
         else:
             pod_spec.security_context = k8s_client.V1PodSecurityContext(
                 run_as_user=run_as_user,
                 run_as_group=run_as_group,
-                fs_group=run_as_group,
             )
 
         containers: List[Any] = list(pod_spec.containers)
@@ -244,20 +257,25 @@ def build_pod_manifest(
             else:
                 container_security_context = container.security_context
 
+            container_security_context_update: Dict[str, int] = {}
+            if run_as_user is not None:
+                container_security_context_update["runAsUser"] = run_as_user
+            if run_as_group is not None:
+                container_security_context_update["runAsGroup"] = run_as_group
+
             if isinstance(container_security_context, dict):
                 container_security_context.update(
-                    {
-                        "runAsUser": run_as_user,
-                        "runAsGroup": run_as_group,
-                    }
+                    container_security_context_update
                 )
             else:
                 container_security_context = (
                     container_security_context
                     or k8s_client.V1SecurityContext()
                 )
-                container_security_context.run_as_user = run_as_user
-                container_security_context.run_as_group = run_as_group
+                if run_as_user is not None:
+                    container_security_context.run_as_user = run_as_user
+                if run_as_group is not None:
+                    container_security_context.run_as_group = run_as_group
                 if isinstance(container, dict):
                     container["securityContext"] = container_security_context
                 else:

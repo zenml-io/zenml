@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Unit tests for manifest_utils.py."""
 
+from typing import Any
+
 import pytest
 from kubernetes.client import (
     V1CronJob,
@@ -152,7 +154,7 @@ def test_build_pod_manifest_applies_linux_identity_after_pod_settings():
     )
 
     assert manifest.spec.security_context == {
-        "fsGroup": 1002,
+        "fsGroup": 43,
         "runAsGroup": 1002,
         "runAsUser": 1001,
         "supplementalGroups": [2000],
@@ -172,23 +174,42 @@ def test_build_pod_manifest_applies_linux_identity_after_pod_settings():
 
 
 @pytest.mark.parametrize(
-    ("run_as_user", "run_as_group"),
+    (
+        "run_as_user",
+        "run_as_group",
+        "expected_user",
+        "expected_group",
+        "warning",
+    ),
     [
-        (None, None),
-        (1001, None),
-        (None, 1002),
-        ("1001", 1002),
-        (1001, "1002"),
-        (0, 1002),
-        (1001, -1),
-        (True, 1002),
+        (None, None, None, None, None),
+        (1001, None, 1001, None, None),
+        (None, 1002, None, 1002, None),
+        ("1001", 1002, None, 1002, "Linux UID"),
+        (1001, "1002", 1001, None, "Linux GID"),
+        (0, None, None, None, "Linux UID"),
+        (None, -1, None, None, "Linux GID"),
+        (True, None, None, None, "Linux UID"),
     ],
 )
-def test_build_pod_manifest_without_complete_linux_identity_is_unchanged(
-    run_as_user,
-    run_as_group,
-):
-    """Absent or partial UID/GID values keep existing manifest behavior."""
+def test_build_pod_manifest_applies_valid_linux_identity_values(
+    run_as_user: Any,
+    run_as_group: Any,
+    expected_user: int | None,
+    expected_group: int | None,
+    warning: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Validate and apply UID/GID values independently.
+
+    Args:
+        run_as_user: UID value passed to the manifest builder.
+        run_as_group: GID value passed to the manifest builder.
+        expected_user: UID expected in generated security contexts.
+        expected_group: GID expected in generated security contexts.
+        warning: Warning fragment expected for invalid values.
+        caplog: Pytest log capture fixture.
+    """
     manifest = build_pod_manifest(
         pod_name="test-name",
         image_name="test-image",
@@ -199,11 +220,23 @@ def test_build_pod_manifest_without_complete_linux_identity_is_unchanged(
         run_as_group=run_as_group,
     )
 
-    assert manifest.spec.security_context is None
+    if expected_user is not None or expected_group is not None:
+        assert manifest.spec.security_context is not None
+        assert manifest.spec.security_context.run_as_user == expected_user
+        assert manifest.spec.security_context.run_as_group == expected_group
+        assert manifest.spec.security_context.fs_group is None
+    else:
+        assert manifest.spec.security_context is None
+
     container_context = manifest.spec.containers[0].security_context
     assert container_context.privileged is True
-    assert container_context.run_as_user is None
-    assert container_context.run_as_group is None
+    assert container_context.run_as_user == expected_user
+    assert container_context.run_as_group == expected_group
+
+    if warning:
+        assert warning in caplog.text
+    else:
+        assert "Ignoring invalid OIDC Linux" not in caplog.text
 
 
 @pytest.fixture
