@@ -595,6 +595,8 @@ METADATA_ORCHESTRATOR_LOGS_URL = "orchestrator_logs_url"
 METADATA_ORCHESTRATOR_RUN_ID = "orchestrator_run_id"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
+LINUX_UID_CLAIM_KEY = "linux_uid"
+LINUX_GID_CLAIM_KEY = "linux_gid"
 
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"

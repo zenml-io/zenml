@@ -109,6 +109,8 @@ def build_pod_manifest(
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     termination_grace_period_seconds: Optional[int] = 30,
+    run_as_user: Optional[int] = None,
+    run_as_group: Optional[int] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -129,6 +131,8 @@ def build_pod_manifest(
         owner_references: List of owner references for the pod.
         termination_grace_period_seconds: The amount of seconds to wait for a
             pod to shutdown gracefully.
+        run_as_user: User ID to apply to the pod and all containers.
+        run_as_group: Group ID to apply to the pod and all containers.
 
     Returns:
         Pod manifest.
@@ -199,6 +203,65 @@ def build_pod_manifest(
 
     if mount_local_stores:
         add_local_stores_mount(pod_spec)
+
+    if (
+        isinstance(run_as_user, int)
+        and not isinstance(run_as_user, bool)
+        and run_as_user > 0
+        and isinstance(run_as_group, int)
+        and not isinstance(run_as_group, bool)
+        and run_as_group > 0
+    ):
+        if isinstance(pod_spec.security_context, dict):
+            pod_spec.security_context.update(
+                {
+                    "runAsUser": run_as_user,
+                    "runAsGroup": run_as_group,
+                    "fsGroup": run_as_group,
+                }
+            )
+        elif isinstance(
+            pod_spec.security_context, k8s_client.V1PodSecurityContext
+        ):
+            pod_spec.security_context.run_as_user = run_as_user
+            pod_spec.security_context.run_as_group = run_as_group
+            pod_spec.security_context.fs_group = run_as_group
+        else:
+            pod_spec.security_context = k8s_client.V1PodSecurityContext(
+                run_as_user=run_as_user,
+                run_as_group=run_as_group,
+                fs_group=run_as_group,
+            )
+
+        containers: List[Any] = list(pod_spec.containers)
+        containers.extend(pod_spec.init_containers or [])
+        containers.extend(pod_spec.ephemeral_containers or [])
+        for container in containers:
+            if isinstance(container, dict):
+                container_security_context = container.setdefault(
+                    "securityContext", {}
+                )
+            else:
+                container_security_context = container.security_context
+
+            if isinstance(container_security_context, dict):
+                container_security_context.update(
+                    {
+                        "runAsUser": run_as_user,
+                        "runAsGroup": run_as_group,
+                    }
+                )
+            else:
+                container_security_context = (
+                    container_security_context
+                    or k8s_client.V1SecurityContext()
+                )
+                container_security_context.run_as_user = run_as_user
+                container_security_context.run_as_group = run_as_group
+                if isinstance(container, dict):
+                    container["securityContext"] = container_security_context
+                else:
+                    container.security_context = container_security_context
 
     return pod_manifest
 

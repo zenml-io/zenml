@@ -181,6 +181,24 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
+### Running with an externally synchronized Linux identity
+
+When ZenML Pro is configured to synchronize numeric Linux UID and GID claims
+from an external OIDC provider, the Kubernetes orchestrator automatically runs
+the orchestration pod and all step containers as that user. ZenML sets
+`runAsUser`, `runAsGroup`, and `fsGroup` on the pod and also sets `runAsUser`
+and `runAsGroup` on every container. These synchronized values take precedence
+over conflicting pod settings; unrelated security settings such as seccomp,
+capabilities, and supplemental groups are preserved.
+
+Users without a complete synchronized UID/GID pair keep the existing
+Kubernetes behavior. Both values must be positive JSON integers; string and
+other claim values are retained on the user but are not applied. On OpenShift,
+the applicable SCC must permit the requested UID, GID, and `fsGroup`. For an
+existing scheduled pipeline, update or recreate its Kubernetes CronJob after
+the identity has synchronized so the stored pod template includes the security
+context.
+
 #### Kubernetes permissions and service accounts
 
 For production setups, use separate identities for:

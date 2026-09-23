@@ -117,6 +117,95 @@ def test_build_pod_manifest_pod_settings(
     assert manifest.spec.containers[0].security_context.privileged is False
 
 
+def test_build_pod_manifest_applies_linux_identity_after_pod_settings():
+    """Authenticated UID/GID override conflicts and preserve other settings."""
+    manifest = build_pod_manifest(
+        pod_name="test-name",
+        image_name="test-image",
+        command=["test"],
+        args=[],
+        privileged=False,
+        pod_settings=KubernetesPodSettings(
+            container_security_context={
+                "allowPrivilegeEscalation": False,
+                "runAsUser": 42,
+                "runAsGroup": 43,
+            },
+            additional_pod_spec_args={
+                "init_containers": [
+                    {
+                        "image": "test-image",
+                        "name": "init",
+                        "securityContext": {"runAsUser": 42},
+                    }
+                ],
+                "security_context": {
+                    "fsGroup": 43,
+                    "runAsGroup": 43,
+                    "runAsUser": 42,
+                    "supplementalGroups": [2000],
+                },
+            },
+        ),
+        run_as_user=1001,
+        run_as_group=1002,
+    )
+
+    assert manifest.spec.security_context == {
+        "fsGroup": 1002,
+        "runAsGroup": 1002,
+        "runAsUser": 1001,
+        "supplementalGroups": [2000],
+    }
+    assert (
+        manifest.spec.containers[0].security_context[
+            "allowPrivilegeEscalation"
+        ]
+        is False
+    )
+    assert manifest.spec.containers[0].security_context["runAsUser"] == 1001
+    assert manifest.spec.containers[0].security_context["runAsGroup"] == 1002
+    assert manifest.spec.init_containers[0]["securityContext"] == {
+        "runAsUser": 1001,
+        "runAsGroup": 1002,
+    }
+
+
+@pytest.mark.parametrize(
+    ("run_as_user", "run_as_group"),
+    [
+        (None, None),
+        (1001, None),
+        (None, 1002),
+        ("1001", 1002),
+        (1001, "1002"),
+        (0, 1002),
+        (1001, -1),
+        (True, 1002),
+    ],
+)
+def test_build_pod_manifest_without_complete_linux_identity_is_unchanged(
+    run_as_user,
+    run_as_group,
+):
+    """Absent or partial UID/GID values keep existing manifest behavior."""
+    manifest = build_pod_manifest(
+        pod_name="test-name",
+        image_name="test-image",
+        command=["test"],
+        args=[],
+        privileged=True,
+        run_as_user=run_as_user,
+        run_as_group=run_as_group,
+    )
+
+    assert manifest.spec.security_context is None
+    container_context = manifest.spec.containers[0].security_context
+    assert container_context.privileged is True
+    assert container_context.run_as_user is None
+    assert container_context.run_as_group is None
+
+
 @pytest.fixture
 def minimal_job_template() -> V1JobTemplateSpec:
     """Build a minimal V1JobTemplateSpec fixture for CronJob tests."""

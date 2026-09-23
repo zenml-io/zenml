@@ -91,6 +91,7 @@ class UserSchema(NamedSchema, table=True):
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
+    oidc_claims: Optional[str] = Field(nullable=True)
 
     default_project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -187,6 +188,9 @@ class UserSchema(NamedSchema, table=True):
             user_metadata=json.dumps(model.user_metadata)
             if model.user_metadata
             else None,
+            oidc_claims=json.dumps(model.oidc_claims)
+            if model.oidc_claims
+            else None,
         )
 
     @classmethod
@@ -239,6 +243,8 @@ class UserSchema(NamedSchema, table=True):
             elif field == "user_metadata":
                 if value is not None:
                     self.user_metadata = json.dumps(value)
+            elif field == "oidc_claims":
+                self.oidc_claims = json.dumps(value) if value else None
             else:
                 setattr(self, field, value)
 
@@ -295,6 +301,9 @@ class UserSchema(NamedSchema, table=True):
                 external_user_id=self.external_user_id,
                 user_metadata=json.loads(self.user_metadata)
                 if self.user_metadata
+                else {},
+                oidc_claims=json.loads(self.oidc_claims)
+                if self.oidc_claims
                 else {},
             )
 
