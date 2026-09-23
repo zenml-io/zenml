@@ -15,6 +15,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Enable Event Triggers and Schedules for the Workspace Server
 
 ZenML Pro [schedule triggers](triggers.md#schedule-triggers) run pipelines on a

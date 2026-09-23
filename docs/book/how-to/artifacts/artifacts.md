@@ -5,6 +5,11 @@ description: >-
 icon: binary
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Artifacts
 
 Artifacts are a cornerstone of ZenML's ML pipeline management system. This guide explains what artifacts are, how they work, and how to use them effectively in your pipelines.

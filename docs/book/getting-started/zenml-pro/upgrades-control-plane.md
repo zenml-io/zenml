@@ -3,6 +3,11 @@ description: How to upgrade the ZenML Control Plane.
 icon: shield-halved
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Upgrading the Control Plane
 
 This page covers upgrade procedures for the ZenML Control Plane across different deployment scenarios.

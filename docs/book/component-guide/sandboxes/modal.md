@@ -2,6 +2,11 @@
 description: Running agent code in Modal sandboxes.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Modal Sandbox
 
 [Modal](https://modal.com) provides fast-booting, ephemeral compute containers ideal for running LLM-generated code as part of an AI-agent step. The Modal Sandbox flavor wraps Modal's `Sandbox` / `ContainerProcess` / `Image` primitives in ZenML's [Sandbox](README.md) interface, so an agent inside a step can `exec()` commands, stream output, snapshot the filesystem, reattach by id, and tear down — all without leaving ZenML.

@@ -2,6 +2,11 @@
 description: Deploying ZenML is the first step to production.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploying ZenML
 
 When you first get started with ZenML, it is based on the following architecture on your machine:

@@ -2,6 +2,11 @@
 description: Deploying your pipelines to AWS App Runner.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AWS App Runner Deployer
 
 [AWS App Runner](https://aws.amazon.com/apprunner/) is a fully managed serverless platform that allows you to deploy and run your code in a production-ready, repeatable cloud environment without the need to manage any infrastructure. The AWS App Runner deployer is a [deployer](./) flavor included in the ZenML AWS integration that deploys your pipelines to AWS App Runner.

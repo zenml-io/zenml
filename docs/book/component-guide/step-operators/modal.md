@@ -2,6 +2,11 @@
 description: Executing individual steps in Modal.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Modal Step Operator
 
 [Modal](https://modal.com) is a platform for running cloud infrastructure. It offers specialized compute instances to run your code and has a fast execution time, especially around building Docker images and provisioning hardware. ZenML's Modal step operator allows you to submit individual steps to be run on Modal compute instances.

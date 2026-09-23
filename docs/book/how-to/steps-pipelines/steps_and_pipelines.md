@@ -3,6 +3,11 @@ description: Steps and Pipelines are the core building blocks of ZenML
 icon: arrow-progress
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Steps & Pipelines
 
 Steps and Pipelines are the fundamental building blocks of ZenML. A **Step** is a reusable unit of computation, and a **Pipeline** is a directed acyclic graph (DAG) composed of steps. Together, they allow you to define, version, and execute machine learning workflows.

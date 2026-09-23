@@ -2,6 +2,11 @@
 description: Configuring the OAuth2 Service Connector to connect ZenML to OAuth2-protected HTTP APIs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # OAuth2 Service Connector
 
 The ZenML OAuth2 Service Connector authenticates to an HTTP API using OAuth2 and provides connector consumers with a pre-authenticated `requests` session that has a bearer token set on the `Authorization` header. The client credentials and refresh token methods exchange long-lived credentials for a short-lived access token, so that consumers only ever receive a temporary token and never the underlying client secret or refresh token.

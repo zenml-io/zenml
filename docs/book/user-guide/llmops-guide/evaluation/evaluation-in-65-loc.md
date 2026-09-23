@@ -2,6 +2,11 @@
 description: Learn how to implement evaluation for RAG in just 65 lines of code.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evaluation in 65 lines of code
 
 Our RAG guide included [a short example](../rag-with-zenml/rag-85-loc.md) for how to implement a basic RAG pipeline in just 85 lines of code. In this section, we'll build on that example to show how you can evaluate the performance of your RAG pipeline in just 65 lines. For the full code, please visit the project repository [here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/most\_basic\_eval.py). The code that follows requires the functions from the earlier RAG pipeline code to work.
