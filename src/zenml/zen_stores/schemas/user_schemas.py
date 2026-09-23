@@ -15,10 +15,10 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import JSON, TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -91,7 +91,9 @@ class UserSchema(NamedSchema, table=True):
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
-    oidc_claims: Optional[str] = Field(nullable=True)
+    oidc_claims: Optional[Dict[str, Any]] = Field(
+        sa_column=Column(JSON, nullable=True)
+    )
 
     default_project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -188,9 +190,7 @@ class UserSchema(NamedSchema, table=True):
             user_metadata=json.dumps(model.user_metadata)
             if model.user_metadata
             else None,
-            oidc_claims=json.dumps(model.oidc_claims)
-            if model.oidc_claims
-            else None,
+            oidc_claims=model.oidc_claims,
         )
 
     @classmethod
@@ -244,7 +244,7 @@ class UserSchema(NamedSchema, table=True):
                 if value is not None:
                     self.user_metadata = json.dumps(value)
             elif field == "oidc_claims":
-                self.oidc_claims = json.dumps(value) if value else None
+                self.oidc_claims = value
             else:
                 setattr(self, field, value)
 
@@ -302,9 +302,7 @@ class UserSchema(NamedSchema, table=True):
                 user_metadata=json.loads(self.user_metadata)
                 if self.user_metadata
                 else {},
-                oidc_claims=json.loads(self.oidc_claims)
-                if self.oidc_claims
-                else {},
+                oidc_claims=self.oidc_claims or {},
             )
 
         return UserResponse(
