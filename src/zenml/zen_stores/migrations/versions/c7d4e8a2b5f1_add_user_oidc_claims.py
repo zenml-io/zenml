@@ -1,7 +1,7 @@
 """Add user OIDC claims [c7d4e8a2b5f1].
 
 Revision ID: c7d4e8a2b5f1
-Revises: 9f2b8c7d6e5a
+Revises: 0.97.0
 Create Date: 2026-09-22 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlmodel
 from alembic import op
 
 revision = "c7d4e8a2b5f1"
-down_revision = "9f2b8c7d6e5a"
+down_revision = "0.97.0"
 branch_labels = None
 depends_on = None
 
