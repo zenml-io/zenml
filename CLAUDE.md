@@ -2,16 +2,6 @@
 
 This document provides guidance for Claude Code when working with the ZenML codebase. ZenML is an extensible, open-source MLOps framework for creating production-ready ML pipelines.
 
-## Project Structure
-
-- `/src/zenml/` - Core source code
-- `/tests/` - Test suite (unit, integration)
-- `/docs/` - Documentation
-- `/examples/` - Example projects
-- `/scripts/` - Development utilities
-
-Use filesystem navigation tools to explore the codebase structure as needed.
-
 ## Use ZenML Docs via MCP
 Claude Code can query ZenML documentation via the built-in GitBook MCP server: https://docs.zenml.io/~gitbook/mcp. This enables real-time, source-of-truth lookups from the docs while you code, reducing hallucinations and speeding up feature discovery.
 
@@ -23,8 +13,6 @@ claude mcp add zenmldocs --transport http https://docs.zenml.io/~gitbook/mcp
 Note: The MCP server indexes the latest released docs, not the develop branch. For full setup details and editor alternatives, see docs/book/reference/llms-txt.md.
 
 ## Code Style & Quality Standards
-
-- **Use US English spelling** in all code, comments, docstrings, and documentation (e.g., "initialize", "stabilize", "color"). The CI enforces this via `typos` (configured in `.typos.toml`).
 
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
@@ -68,16 +56,12 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
   - Runs Ruff, pydoclint (on `src/zenml tests/harness`), yamlfix, zizmor, and mypy
   - Note: Full mypy check is slow on the entire codebase
   - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
-- The primary code style is enforced by ruff, configured in `pyproject.toml`
-- YAML formatting uses yamlfix: `yamlfix .github -v`
 
 ### Python Standards
-- Use Python 3.10+ compatible code
 - Follow Google Python style for docstrings. Include `Args`, `Returns`,
   `Yields`, and `Raises` sections whenever the function contract requires them;
   do not use a summary-only docstring to omit applicable sections.
 - Type hint all function parameters and return values
-- Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
 
 #### Prefer typing over dynamic attribute checks
@@ -113,41 +97,12 @@ When deciding whether to place a helper function in a utils file or on a class, 
 - Subclasses can simply call `self.something()` instead of finding and importing from a util file
 - Keeps related functionality co-located
 
-**Example:** `requires_resources_in_orchestration_environment` in `base_orchestrator.py:495-514`
-
-```python
-# This is a @staticmethod on BaseOrchestrator, not a standalone util
-@staticmethod
-def requires_resources_in_orchestration_environment(step: "Step") -> bool:
-    """Check whether a step needs special orchestration resources.
-
-    Args:
-        step: The step to check.
-
-    Returns:
-        Whether the step needs special resources in the orchestration
-        environment.
-    """
-    if step.config.step_operator:
-        return False
-    return not step.config.resource_settings.empty
-```
-
-This method could be a global util, but it's placed on the class because:
-- All orchestrator subclasses frequently need it
-- Subclasses can call `self.requires_resources_in_orchestration_environment(step)` without imports
-- It's conceptually tied to orchestrator behavior
+**Example:** `BaseOrchestrator.requires_resources_in_orchestration_environment` is a `@staticmethod` on the base class, not a global util, because every orchestrator subclass needs it and can call it via `self` without an import.
 
 **When to use utils files:**
 - Truly generic functions used across unrelated modules
 - Functions that don't logically belong to any class
 - Pure utility functions (string manipulation, date formatting, etc.)
-
-**Key utils locations:**
-- `src/zenml/utils/` — General utilities
-- `src/zenml/orchestrators/utils.py` — Orchestrator-specific utilities
-- `src/zenml/orchestrators/step_run_utils.py` — Step execution utilities
-- `src/zenml/orchestrators/publish_utils.py` — Status/metadata publishing
 
 ### Private Methods and API Stability
 
@@ -204,24 +159,18 @@ Router, service, error-handling, and validation conventions for the server live 
     services. (in those cases we generally test things extensively locally and
     in the CI. So the developer might have to run things or set things up
     locally first.)
-- Tests live in the `/tests/` folder with structure loosely mirroring the main codebase
-- Unit tests go in `/tests/unit/`
-- Integration tests go in `/tests/integration/`
 
 #### Running Tests
 - Do NOT try to run the entire test suite locally - many tests require special environments
-- Run targeted tests for the specific components you've changed:
-  - `pytest tests/unit/path/to/test_file.py`
-  - `pytest tests/unit/path/to/test_file.py::test_specific_function`
+- Run targeted tests for the specific components you've changed
 - For full coverage, use CI (see CI section below)
 - Some tests use: `bash scripts/test-coverage-xml.sh` (but this won't run all tests)
 
 ## Dependencies & Runtime Constraints
-- Align contributions with the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm any new dependency in `pyproject.toml` before adoption.
+- Confirm any new dependency in `pyproject.toml` before adoption.
 - When changing server framework (e.g., `fastapi`) or database library versions, check whether related OpenTelemetry SDK, exporter, and instrumentation dependencies also need updates. Breaking changes in instrumented libraries can require coordinated OTel updates. Keep OTel SDK/exporter versions aligned with the matching OpenTelemetry instrumentation beta line.
 - The OSS runtime forbids async I/O in Claude-authored code even though FastAPI supports it—implement synchronous `def` handlers and delegate background/long-running work to workers or dependency-injected services; this supersedes generic async advice found elsewhere.
 - Prefer dependency injection over module-level singletons for clients, caches, and repositories so state management stays testable.
-- Cache static or frequently accessed data (e.g., dependency-scoped in-memory caches) and lazy-load heavyweight resources to control cold-start latency.
 - Document minimum supported versions when modifying dependency-heavy paths and explain performance trade-offs in PRs when serialization or caching strategies change.
 
 ## Development Workflow
@@ -231,15 +180,10 @@ Router, service, error-handling, and validation conventions for the server live 
 - Install ZenML in development mode: `pip install -e ".[dev]"`
 - Most scripts require these dependencies to be available
 - ZenML recommends using `uv` for Python package installation in local environments
-  - `uv` is also used in CI workflows
-  - It resolves dependencies more quickly and reliably than pip
-  - It can resolve dependency conflicts that pip sometimes struggles with or takes a long time to resolve
 
 ### Environment Variables
 - Several environment variables are useful during ZenML development:
   - `ZENML_LOGGING_VERBOSITY=DEBUG`: Controls logging verbosity
-  - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
-  - `MLSTACKS_ANALYTICS_OPT_OUT=true`: Disables MLStacks analytics
   - `AUTO_OPEN_DASHBOARD=false`: Prevents automatic dashboard opening
   - `ZENML_ENABLE_RICH_TRACEBACK=false`: Disables rich traceback formatting
   - `TOKENIZERS_PARALLELISM=false`: Avoids tokenizers parallelism warnings
@@ -266,20 +210,11 @@ Router, service, error-handling, and validation conventions for the server live 
 
 ### Security Guidelines
 - **NEVER** commit secrets, API keys, tokens, or passwords
-- Use environment variables or ZenML's secret management for sensitive data
 - Review changes for accidental credential exposure before committing
 - If you accidentally commit secrets, notify the team immediately
-- Follow the principle of least privilege when implementing access controls
-- Validate and sanitize all user inputs
 
 ### Database and Migration Guidelines
-- Database schema changes require Alembic migrations
-- Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
-- Test upgrade path: `alembic upgrade head` (downgrade testing is optional—ZenML doesn't support downgrades in most cases)
-- Never modify existing migrations that are already on main/develop branches
-- Always consider backward compatibility for rolling deployments
-- Include both schema changes and data migrations when needed
-- Run `scripts/check-alembic-branches.sh` to verify migration consistency
+- Schema changes require Alembic migrations. Never modify migrations already on `main`/`develop`. Full rules live in `src/zenml/zen_stores/migrations/AGENTS.md`.
 
 ### Commit Message Guidelines
 - Write clear, descriptive commit messages explaining the "why" not just the "what"
@@ -297,20 +232,8 @@ Router, service, error-handling, and validation conventions for the server live 
   Fixes #1234
   ```
 
-### When Implementing Features
-- Study existing similar implementations first
-- Follow the established patterns in the codebase
-- Keep backward compatibility in mind
-- Add appropriate error handling
-- Document public APIs thoroughly
-
 ### Field Description Standards
 Templates, the quality bar, and worked examples for Pydantic `Field(description=...)` text in stack component configs live in the `field-descriptions` skill. All descriptions must pass `python scripts/validate_descriptions.py` before merging.
-
-### When Fixing Bugs
-- Add regression tests that would have caught the bug
-- Understand root cause before implementing fix
-- Document the fix in commit messages
 
 ### Pull Request Guidelines
 - Use human-readable names for PRs (no prefixes like "feat:" or "doc:")
@@ -351,53 +274,7 @@ Templates, the quality bar, and worked examples for Pydantic `Field(description=
   3. **ZenML models**: Namespaces that group artifacts, metadata, and other resources related to an ML model
 - Be careful with these terms when reading/writing code to avoid confusion
 
-### Pipeline Architecture
-- Pipelines are collections of steps
-- Steps produce and consume artifacts
-- Artifacts are serialized/deserialized by materializers
-- Pipelines are executed by orchestrators
-- Stack components provide functionality like storage, orchestration, etc.
-
-### Key Abstractions
-- `StackComponent` - Base for stack components
-- `Pipeline` - Pipeline definition
-- `BaseStep` - Step implementation
-- `BaseMaterializer` - Artifact serialization
-- `BaseOrchestrator` - Pipeline execution
-- `BaseStepOperator` - Remote step execution (submit/status/wait/cancel lifecycle)
-
-## Common Tasks
-
-### Adding New Integrations
-1. Create integration package in `/src/zenml/integrations/`
-2. Implement required abstractions and register flavors
-3. Add tests in `/tests/integrations/`
-4. Add documentation in `/docs/book/component-guide/`
-
-### Modifying Core Functionality
-1. Understand the impact on existing components
-2. Maintain backward compatibility where possible
-3. Add comprehensive test coverage
-4. Update type hints and documentation
-
-## Task Planning Approach
-
-When tackling complex tasks:
-1. Break down the task into smaller sub-tasks
-2. Research existing implementations in the codebase
-3. Plan approach before implementation
-4. Test incrementally as you implement
-5. Document design decisions in code comments
-
-## Expert Tips
-
-- ZenML follows a plugin architecture - study how components are registered
-- API stability is important - don't break public interfaces
-- Review similar PRs for implementation patterns
-- Pipeline execution is complex - test thoroughly when modifying
-- Centralize FastAPI logging, tracing, and unexpected error handling inside middleware; measure latency/throughput for new endpoints, cache static payloads, lazy-load heavyweight resources, and articulate serialization trade-offs in PR notes.
-
-### Summary Checklist for PR Reviewers
+## Summary Checklist for PR Reviewers
 
 Quick reference for common review concerns. Detailed explanations live in the nested AGENTS.md files.
 

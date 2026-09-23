@@ -2,64 +2,11 @@
 
 This document provides guidance for AI assistants working with ZenML's GitHub Actions workflows.
 
-## Workflow Organization
-
-### Categories
-
-| Category | Workflows | Purpose |
-|----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml | Primary PR testing and reusable test jobs |
-| **Linting/Quality** | linting.yml, spellcheck.yml, zizmor.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml | Code quality, docs links, changelog, and workflow security checks |
-| **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
-| **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
-| **Maintenance** | stale-prs.yml, pr_labeler.yml, require-release-label.yml, snack-it.yml, notify-*.yml, dependabot.yml | Repo automation and project notifications |
-| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml | Template syncing, tutorial/example regression tests, and profiling |
-
-### Entry Points vs Reusable Workflows
-
-**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
-
-**Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, base-package-functionality.yml, publish_*.yml
-
-All reusable workflows use `secrets: inherit` for centralized secret management.
-
 ## Two-Tier CI Architecture
 
-### ci-fast.yml (Every PR)
-
-Runs automatically on all PRs and pushes to main:
-- Spellcheck
-- SQLite migration testing
-- Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
-- API docs buildability test
-- Template example updates (PRs only, same-repo only)
-
-### ci-slow.yml (Full Matrix, Requires Label)
-
-Gated by `run-slow-ci` label (checked dynamically):
-- Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
-- Full database migration tests (MySQL, MariaDB, SQLite)
-- VSCode tutorial pipeline tests
-- Base package functionality tests
+`ci-fast.yml` runs on every PR. `ci-slow.yml` (multi-OS, multi-Python, full MySQL/MariaDB/SQLite migration tests, tutorial pipelines) is gated by the `run-slow-ci` label.
 
 **Label mechanism**: Maintainers add `run-slow-ci` label and rerun workflow to trigger full CI without code changes.
-
-## Release Process
-
-Triggered by tag push. Sequence:
-
-1. Unit tests (ubuntu, Python 3.11)
-2. Database migration tests (MySQL, SQLite, MariaDB) - parallel
-3. Publish to PyPI (trusted publishing with OIDC)
-4. Wait 4 minutes (PyPI CDN propagation)
-5. Publish Docker image (Google Cloud Build)
-6. Publish Helm chart (AWS ECR Public)
-7. Wait 4 minutes
-8. Publish stack templates
-9. Tag zenml-cloud-plugins repo
 
 ## Security Hardening with zizmor
 
@@ -112,103 +59,7 @@ workflow shape:
 Keep PR and push paths read-only. Do not grant write permissions to the audit or
 gate jobs just because scheduled maintenance needs them.
 
-### Environment Variables
-
-Standard settings used across workflows:
-
-```yaml
-env:
-  ZENML_LOGGING_VERBOSITY: debug
-  ZENML_ANALYTICS_OPT_IN: false
-  ZENML_DEBUG: true
-  PYTHONIOENCODING: utf-8
-  UV_HTTP_TIMEOUT: 600
-```
-
-For testing stability:
-```yaml
-env:
-  ZENML_LOGGING_VERBOSITY: INFO
-  AUTO_OPEN_DASHBOARD: false
-  ZENML_ENABLE_RICH_TRACEBACK: false
-  TOKENIZERS_PARALLELISM: false
-```
-
-### Concurrency
-
-All CI workflows use:
-```yaml
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-```
-
-This cancels previous runs when new commits are pushed to the same branch.
-
-### Path Filtering
-
-ci-fast and ci-slow ignore:
-- `docs/**` - Documentation changes
-- `*.md` - Markdown files
-- `.claude/**` - Claude configuration
-- `.github/workflows/claude.yml` - Claude workflow
-
-But explicitly include `pyproject.toml` changes.
-
-### Caching
-
-uv cache key pattern:
-```yaml
-key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-```
-
-Cache invalidates when integrations change.
-
-## Key Supporting Files
-
-| File | Purpose |
-|------|---------|
-| `actions/setup_environment/action.yml` | Composite action for Python + ZenML dev setup |
-| `zizmor.yml` | Security linter configuration used by `scripts/lint.sh` and `.github/workflows/zizmor.yml` |
-| `codecov.yml` | Coverage reporting (lenient thresholds) |
-| `dependabot.yml` | Weekly GitHub Actions updates on Tuesdays 07:00 Europe/Amsterdam, grouped by minor/patch updates with cooldowns |
-| `teams.yml` | Internal team members for privileged workflows |
-| `branch-labels.yml` | Auto-labeling rules based on branch patterns |
-| `markdown_check_config.json` | Markdown link checker configuration |
-
-## Template Workflows
-
-### update-templates-to-examples.yml
-
-Syncs external template repos to `examples/` folder:
-- `zenml-io/template-e2e-batch` → `examples/e2e`
-- `zenml-io/template-nlp` → `examples/e2e_nlp`
-- `zenml-io/zenml-project-templates` → `examples/mlops_starter`
-- `zenml-io/template-llm-finetuning` → `examples/llm_finetuning`
-
-**Important**: These template repos use `@main` branch intentionally and are excluded from SHA pinning.
-
-### templates-test.yml
-
-Tests template compatibility by running test actions from template repos. Failure indicates breaking changes that need template updates.
-
 ## Special Workflows
-
-### claude.yml
-
-AI code review integration. Triggered by `@claude` mentions in issues/PRs. Gated to internal team members via `teams.yml`.
-
-### snack-it.yml
-
-Creates tracking issues from PRs when `snack-it` label is applied. Adds to GitHub Projects roadmap.
-
-### zizmor.yml
-
-Runs GitHub Actions security analysis on workflow/config changes, pushes to `main`/`develop`, a weekly schedule, and manual dispatch. Use the same config locally with `GH_TOKEN=$(gh auth token) uvx zizmor --config=.github/zizmor.yml .github/workflows/`.
-
-### publish_staging_workspace_runtime.yml
-
-Dispatches a `zenml-develop-updated` repository event to `zenml-cloud-plugins` on every push to `develop`, carrying the exact merge SHA. That repository builds and publishes the internal staging workspace image; this repo only needs the `CLOUD_PLUGINS_REPO_PAT` secret. Gated to the upstream repository so forks never fail on the missing secret.
 
 ### check-links.yml / check-markdown-links.yml / gitbook-redirect-check.yml
 
@@ -253,7 +104,7 @@ This runs yamlfix on YAML files to ensure consistent formatting.
 
 1. Use SHA-pinned actions with a version comment: `actions/checkout@<full-sha>  # v6.0.2`
 2. Add appropriate concurrency settings
-3. Include standard environment variables
+3. Reuse the `env:` block from `ci-fast.yml`
 4. Consider if it should be reusable (`workflow_call`)
 5. Run zizmor to check for security issues
 6. Update this document if adding new patterns
