@@ -16,11 +16,12 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator
+from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
 import pytest
 
-from zenml.artifacts.pruning import prune_artifact_versions
+from zenml.artifacts.pruning import ArtifactStorePruneHandler
 from zenml.enums import ExecutionStatus, HookType, StackComponentType
 from zenml.models import (
     ArtifactVersionPruneRequest,
@@ -415,8 +416,11 @@ def test_prune_artifact_versions_retains_hook_outputs(
     )
     created = sql_store.create_hook_invocation(request)
 
-    prune_artifact_versions(
-        sql_store, ArtifactVersionPruneRequest(project=project_id, apply=True)
+    sql_store.prune_artifact_versions(
+        ArtifactVersionPruneRequest(project=project_id, apply=True),
+        handler=ArtifactStorePruneHandler(
+            delete_external_data=False, artifact_store_loader=MagicMock()
+        ),
     )
 
     # The version is referenced only by the hook output, so it must survive.

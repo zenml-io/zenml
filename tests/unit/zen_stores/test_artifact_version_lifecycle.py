@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Tests for artifact-version liveness and pruning."""
+"""Tests for artifact-version liveness and pruning in the SQL store."""
 
 from pathlib import Path
-from typing import Any, Callable, List
-from unittest.mock import MagicMock, patch
+from typing import Callable, FrozenSet, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
 from sqlmodel import Session, select
 
-from zenml.artifacts import pruning
 from zenml.artifacts.pruning import (
-    ArtifactDataDeleter,
-    prune_artifact_versions,
+    ArtifactPruneBatch,
+    ArtifactPruneDatabaseChanges,
+    ArtifactPruneHandler,
+    ArtifactPrunePreparation,
 )
 from zenml.client import Client
 from zenml.enums import (
@@ -32,12 +32,13 @@ from zenml.enums import (
     ArtifactType,
     ExecutionStatus,
     MetadataResourceTypes,
+    TaggableResourceTypes,
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
     ArtifactRequest,
+    ArtifactUpdate,
     ArtifactVersionFilter,
-    ArtifactVersionLocation,
     ArtifactVersionPruneRequest,
     ArtifactVersionRequest,
     ModelRequest,
@@ -51,8 +52,39 @@ from zenml.zen_stores.schemas import (
     PipelineRunOutputSchema,
     PipelineRunSchema,
     RunMetadataResourceSchema,
+    TagResourceSchema,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+
+class _RecordingHandler(ArtifactPruneHandler):
+    """Prepares every candidate unless told otherwise and records the calls."""
+
+    def __init__(
+        self,
+        prepare: Optional[
+            Callable[[ArtifactPruneBatch], FrozenSet[UUID]]
+        ] = None,
+    ) -> None:
+        self._prepare = prepare
+        self.batches: List[ArtifactPruneBatch] = []
+        self.changes: List[ArtifactPruneDatabaseChanges] = []
+
+    def prepare_batch(
+        self, batch: ArtifactPruneBatch
+    ) -> ArtifactPrunePreparation:
+        self.batches.append(batch)
+        prepared = (
+            self._prepare(batch)
+            if self._prepare
+            else batch.artifact_version_ids
+        )
+        return ArtifactPrunePreparation(prepared_artifact_version_ids=prepared)
+
+    def database_changes_committed(
+        self, changes: ArtifactPruneDatabaseChanges
+    ) -> None:
+        self.changes.append(changes)
 
 
 @pytest.fixture
@@ -72,33 +104,38 @@ def project_id(clean_client: Client) -> UUID:
 def _prune(
     store: SqlZenStore,
     project_id: UUID,
-    only_versions: bool = True,
-    apply: bool = True,
-    **kwargs: Any,
+    handler: Optional[ArtifactPruneHandler] = None,
+    batch_size: Optional[int] = None,
+    **request_kwargs: bool,
 ) -> int:
     """Prune the project's unused artifact versions and return the count."""
+    request_kwargs.setdefault("apply", True)
+    extra = {"batch_size": batch_size} if batch_size else {}
     return (
-        prune_artifact_versions(
-            store,
-            ArtifactVersionPruneRequest(
-                project=project_id, only_versions=only_versions, apply=apply
-            ),
-            **kwargs,
+        store.prune_artifact_versions(
+            ArtifactVersionPruneRequest(project=project_id, **request_kwargs),
+            handler=handler or _RecordingHandler(),
+            **extra,
         ).artifact_version_count
         or 0
     )
 
 
-def _deleter(
-    delete: Callable[[ArtifactVersionLocation], bool],
-) -> ArtifactDataDeleter:
-    """A data deleter whose `delete` is the given function."""
-    deleter = MagicMock(spec=ArtifactDataDeleter)
-    deleter.delete.side_effect = delete
-    return deleter
+def _tag_links(store: SqlZenStore, resource_id: UUID) -> List[str]:
+    """The resource types of the tag links pointing at a resource."""
+    with Session(store.engine) as session:
+        return list(
+            session.exec(
+                select(TagResourceSchema.resource_type).where(
+                    TagResourceSchema.resource_id == resource_id
+                )
+            ).all()
+        )
 
 
-def _create_artifact_version(store: SqlZenStore, project_id: UUID) -> UUID:
+def _create_artifact_version(
+    store: SqlZenStore, project_id: UUID, tags: Optional[List[str]] = None
+) -> UUID:
     return store.create_artifact_version(
         ArtifactVersionRequest(
             artifact_name=f"artifact-{uuid4().hex[:8]}",
@@ -109,6 +146,7 @@ def _create_artifact_version(store: SqlZenStore, project_id: UUID) -> UUID:
             materializer="zenml.materializers.BuiltInMaterializer",
             data_type="builtins.str",
             save_type=ArtifactSaveType.MANUAL,
+            tags=tags,
         )
     ).id
 
@@ -226,10 +264,21 @@ def test_only_unused_excludes_pipeline_outputs(
     assert {version.id for version in unused.items} == {unused_version_id}
 
 
+def test_dry_run_only_counts(store: SqlZenStore, project_id: UUID) -> None:
+    """A dry run neither deletes nor calls the handler."""
+    version_id = _create_artifact_version(store, project_id)
+    handler = _RecordingHandler()
+
+    assert _prune(store, project_id, handler=handler, apply=False) == 1
+
+    assert handler.batches == [] and handler.changes == []
+    store.get_artifact_version(version_id)
+
+
 def test_prune_keeps_other_project_artifacts(
     store: SqlZenStore, project_id: UUID
 ) -> None:
-    """Pruning stays within the requested project."""
+    """Pruning versions and empty artifacts stays within the project."""
     other_project = store.create_project(
         ProjectRequest(name=f"project-{uuid4().hex[:8]}")
     )
@@ -238,35 +287,53 @@ def test_prune_keeps_other_project_artifacts(
             project=other_project.id, name=f"artifact-{uuid4().hex[:8]}"
         )
     )
+    other_version_id = _create_artifact_version(store, other_project.id)
     unused_version_id = _create_artifact_version(store, project_id)
+    handler = _RecordingHandler()
 
-    assert _prune(store, project_id, only_versions=False) == 1
+    assert _prune(store, project_id, handler=handler, only_versions=False) == 1
 
+    assert [batch.artifact_version_ids for batch in handler.batches] == [
+        {unused_version_id}
+    ]
     with pytest.raises(KeyError):
         store.get_artifact_version(unused_version_id)
+    store.get_artifact_version(other_version_id)
     store.get_artifact(empty_artifact.id)
 
 
-def test_prune_deletes_in_batches(
+def test_prune_walks_batches_once_without_an_open_transaction(
     store: SqlZenStore, project_id: UUID
 ) -> None:
-    """Pruning walks the unused versions in bounded batches."""
-    version_ids = [
+    """Every candidate is handed over once, while no connection is in use."""
+    version_ids = sorted(
         _create_artifact_version(store, project_id) for _ in range(3)
-    ]
+    )
+    checked_out: List[int] = []
 
-    with patch.object(pruning, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
-        assert _prune(store, project_id) == 3
+    def _prepare(batch: ArtifactPruneBatch) -> FrozenSet[UUID]:
+        checked_out.append(store.engine.pool.checkedout())
+        return batch.artifact_version_ids
+
+    handler = _RecordingHandler(_prepare)
+
+    assert _prune(store, project_id, handler=handler, batch_size=2) == 3
+
+    assert [
+        [c.artifact_version_id for c in batch.candidates]
+        for batch in handler.batches
+    ] == [version_ids[:2], version_ids[2:]]
+    assert checked_out == [0, 0]
     for version_id in version_ids:
         with pytest.raises(KeyError):
             store.get_artifact_version(version_id)
 
 
-def test_prune_with_data_keeps_versions_whose_data_stays(
-    store: SqlZenStore, project_id: UUID, caplog: pytest.LogCaptureFixture
+def test_prune_deletes_only_prepared_and_still_unused_versions(
+    store: SqlZenStore, project_id: UUID
 ) -> None:
-    """Data goes first; versions whose data stays or that get referenced survive."""
-    fine_id, broken_id, raced_id = (
+    """Unprepared versions stay; versions referenced meanwhile are retained."""
+    fine_id, unprepared_id, raced_id = (
         _create_artifact_version(store, project_id) for _ in range(3)
     )
     store.create_run_metadata(
@@ -281,34 +348,24 @@ def test_prune_with_data_keeps_versions_whose_data_stays(
             types={"rows": MetadataTypeEnum.INT},
         )
     )
-    deleted_batches: List[List[UUID]] = []
 
-    def _delete_artifact_data(location: ArtifactVersionLocation) -> bool:
-        if location.id == raced_id:
-            # Referenced between data and metadata deletion.
+    def _prepare(batch: ArtifactPruneBatch) -> FrozenSet[UUID]:
+        if raced_id in batch.artifact_version_ids:
+            # Referenced between preparation and metadata deletion.
             _link_to_model_version(store, project_id, raced_id)
-        return location.id != broken_id
+        return batch.artifact_version_ids - {unprepared_id}
 
-    with patch.object(pruning, "ARTIFACT_VERSION_PRUNE_BATCH_SIZE", 2):
-        pruned = prune_artifact_versions(
-            store,
-            ArtifactVersionPruneRequest(
-                project=project_id,
-                delete_from_artifact_store=True,
-                apply=True,
-            ),
-            artifact_data_deleter=_deleter(_delete_artifact_data),
-            on_deleted=deleted_batches.append,
-        ).artifact_version_count
+    handler = _RecordingHandler(_prepare)
 
-    assert pruned == 1
-    assert deleted_batches == [[fine_id]]
-    assert str(raced_id) in caplog.text and "data is gone" in caplog.text
-    # Every batch reports its data deletion times.
-    assert "Deleting the data of 2 artifact version(s) took" in caplog.text
-    assert "Deleting the data of 1 artifact version(s) took" in caplog.text
-    assert "median" in caplog.text
-    store.get_artifact_version(broken_id)
+    assert _prune(store, project_id, handler=handler) == 1
+
+    assert handler.changes == [
+        ArtifactPruneDatabaseChanges(
+            deleted_artifact_version_ids=frozenset({fine_id}),
+            retained_artifact_version_ids=frozenset({raced_id}),
+        )
+    ]
+    store.get_artifact_version(unprepared_id)
     store.get_artifact_version(raced_id)
     with pytest.raises(KeyError):
         store.get_artifact_version(fine_id)
@@ -323,57 +380,106 @@ def test_prune_with_data_keeps_versions_whose_data_stays(
         )
 
 
-def test_metadata_only_prune_never_deletes_data(
+def test_prune_deletes_empty_artifacts_and_tag_links(
     store: SqlZenStore, project_id: UUID
 ) -> None:
-    """A deleter passed along is ignored unless data deletion is requested."""
-    version_id = _create_artifact_version(store, project_id)
-    deleter = _deleter(lambda location: True)
+    """Tag links of deleted versions and artifacts go in the same prune."""
+    version_id = _create_artifact_version(store, project_id, tags=["pruned"])
+    artifact_id = store.get_artifact_version(version_id).artifact.id
+    store.update_artifact(artifact_id, ArtifactUpdate(add_tags=["pruned"]))
+    assert sorted(
+        _tag_links(store, version_id) + _tag_links(store, artifact_id)
+    ) == [
+        TaggableResourceTypes.ARTIFACT.value,
+        TaggableResourceTypes.ARTIFACT_VERSION.value,
+    ]
+    handler = _RecordingHandler()
 
-    assert _prune(store, project_id, artifact_data_deleter=deleter) == 1
+    assert _prune(store, project_id, handler=handler, only_versions=False) == 1
 
-    deleter.delete.assert_not_called()
+    assert handler.changes == [
+        ArtifactPruneDatabaseChanges(
+            deleted_artifact_version_ids=frozenset({version_id})
+        ),
+        ArtifactPruneDatabaseChanges(
+            deleted_artifact_ids=frozenset({artifact_id})
+        ),
+    ]
     with pytest.raises(KeyError):
-        store.get_artifact_version(version_id)
-
-
-def test_prune_with_data_requires_a_way_to_delete_it(
-    store: SqlZenStore, project_id: UUID
-) -> None:
-    """Data deletion needs a deleter."""
-    with pytest.raises(ValueError):
-        prune_artifact_versions(
-            store,
-            ArtifactVersionPruneRequest(
-                project=project_id,
-                delete_from_artifact_store=True,
-                apply=True,
-            ),
-        )
+        store.get_artifact(artifact_id)
+    assert _tag_links(store, version_id) == []
+    assert _tag_links(store, artifact_id) == []
 
 
 def test_data_only_prune_keeps_metadata(
     store: SqlZenStore, project_id: UUID
 ) -> None:
-    """`--only-artifact`: the data goes, the versions stay."""
+    """`--only-artifact`: prepared versions are counted but stay."""
     version_id = _create_artifact_version(store, project_id)
-    seen: List[UUID] = []
+    handler = _RecordingHandler()
 
-    pruned = prune_artifact_versions(
-        store,
-        ArtifactVersionPruneRequest(
-            project=project_id,
+    assert (
+        _prune(
+            store,
+            project_id,
+            handler=handler,
             delete_metadata=False,
             delete_from_artifact_store=True,
-            apply=True,
-        ),
-        artifact_data_deleter=_deleter(
-            lambda location: seen.append(location.id) is None
-        ),
-    ).artifact_version_count
+        )
+        == 1
+    )
 
-    assert pruned == 1 and seen == [version_id]
+    assert len(handler.batches) == 1 and handler.changes == []
     store.get_artifact_version(version_id)
+
+
+def test_prune_rejects_versions_prepared_outside_the_batch(
+    store: SqlZenStore, project_id: UUID
+) -> None:
+    """A handler cannot smuggle other versions into the delete."""
+    version_id = _create_artifact_version(store, project_id)
+    handler = _RecordingHandler(
+        lambda batch: batch.artifact_version_ids | {uuid4()}
+    )
+
+    with pytest.raises(ValueError, match="outside the batch"):
+        _prune(store, project_id, handler=handler)
+
+    store.get_artifact_version(version_id)
+
+
+def test_handler_failure_before_the_delete_keeps_metadata(
+    store: SqlZenStore, project_id: UUID
+) -> None:
+    """A failing preparation aborts the prune before anything is deleted."""
+    version_id = _create_artifact_version(store, project_id)
+
+    def _fail(batch: ArtifactPruneBatch) -> FrozenSet[UUID]:
+        raise RuntimeError("storage down")
+
+    with pytest.raises(RuntimeError, match="storage down"):
+        _prune(store, project_id, handler=_RecordingHandler(_fail))
+
+    store.get_artifact_version(version_id)
+
+
+def test_handler_failure_after_the_commit_keeps_the_deletion(
+    store: SqlZenStore, project_id: UUID
+) -> None:
+    """A failing post-commit step cannot undo the committed deletion."""
+    version_id = _create_artifact_version(store, project_id)
+
+    class _FailingHandler(_RecordingHandler):
+        def database_changes_committed(
+            self, changes: ArtifactPruneDatabaseChanges
+        ) -> None:
+            raise RuntimeError("rbac down")
+
+    with pytest.raises(RuntimeError, match="rbac down"):
+        _prune(store, project_id, handler=_FailingHandler())
+
+    with pytest.raises(KeyError):
+        store.get_artifact_version(version_id)
 
 
 def test_client_prunes_a_local_store_itself(

@@ -5909,20 +5909,19 @@ class Client(metaclass=ClientMetaClass):
         if isinstance(self.zen_store, RestZenStore):
             return self.zen_store.prune_artifact_versions(prune_request)
 
-        # No server can prune a local database, so the client runs the
-        # prune loop itself, loading the artifact stores it has access to.
-        from zenml.artifacts.pruning import (
-            ArtifactDataDeleter,
-            prune_artifact_versions,
-        )
+        # No server can prune a local database, so the client prunes it
+        # itself, loading the artifact stores it has access to.
+        from zenml.artifacts.pruning import ArtifactStorePruneHandler
         from zenml.artifacts.utils import load_artifact_store
         from zenml.zen_stores.sql_zen_store import SqlZenStore
 
         assert isinstance(self.zen_store, SqlZenStore)
-        return prune_artifact_versions(
-            self.zen_store,
-            prune_request,
-            artifact_data_deleter=ArtifactDataDeleter(load_artifact_store),
+        return self.zen_store.prune_artifact_versions(
+            prune_request=prune_request,
+            handler=ArtifactStorePruneHandler(
+                delete_external_data=prune_request.delete_from_artifact_store,
+                artifact_store_loader=load_artifact_store,
+            ),
         )
 
     # --------------------------- Artifact Versions ---------------------------

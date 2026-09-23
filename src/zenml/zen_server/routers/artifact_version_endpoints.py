@@ -14,6 +14,7 @@
 """Endpoint definitions for artifact versions."""
 
 import os
+from functools import partial
 from typing import List, Sequence, Union
 from uuid import UUID
 
@@ -44,13 +45,16 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
+from zenml.zen_server.artifact_pruning import (
+    ServerArtifactPruneHandler,
+    load_accessible_artifact_store,
+)
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
     generate_download_token,
     verify_download_token,
 )
-from zenml.zen_server.controllers import artifacts as artifact_controller
 from zenml.zen_server.download_utils import (
     create_artifact_archive,
     verify_artifact_is_downloadable,
@@ -75,6 +79,7 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
+    submit_maintenance_task,
     zen_store,
 )
 
@@ -280,7 +285,7 @@ def delete_artifact_version(
                 "Artifact version has no artifact store, cannot delete data."
             )
 
-        artifact_store = artifact_controller.load_accessible_artifact_store(
+        artifact_store = load_accessible_artifact_store(
             artifact_version.artifact_store_id
         )
         try:
@@ -322,7 +327,13 @@ def prune_artifact_versions(
         action=Action.PRUNE,
         project_id=prune_request.project,
     )
-    return artifact_controller.prune_artifact_versions(prune_request)
+    if not prune_request.apply:
+        return _prune_artifact_versions(prune_request)
+    return ArtifactVersionPruneResponse(
+        task_id=submit_maintenance_task(
+            partial(_prune_artifact_versions, prune_request)
+        )
+    )
 
 
 @artifact_version_router.delete(
@@ -352,11 +363,28 @@ def prune_artifact_versions_legacy(
         action=Action.PRUNE,
         project_id=project_id,
     )
-    artifact_controller.prune_artifact_versions(
+    _prune_artifact_versions(
         ArtifactVersionPruneRequest(
             project=project_id, only_versions=only_versions, apply=True
-        ),
-        in_background=False,
+        )
+    )
+
+
+def _prune_artifact_versions(
+    prune_request: ArtifactVersionPruneRequest,
+) -> ArtifactVersionPruneResponse:
+    """Count or prune unused artifact versions on behalf of the caller.
+
+    Args:
+        prune_request: Which artifact versions to prune and whether to
+            delete them or only count them.
+
+    Returns:
+        The number of unused or pruned artifact versions.
+    """
+    return zen_store().prune_artifact_versions(
+        prune_request=prune_request,
+        handler=ServerArtifactPruneHandler(prune_request),
     )
 
 
