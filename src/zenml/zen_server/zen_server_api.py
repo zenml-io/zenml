@@ -97,7 +97,6 @@ from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
 )
 from zenml.zen_server.utils import (
-    archive_storage,
     cleanup_artifact_store_cache,
     cleanup_request_manager,
     initialize_artifact_store_cache,
@@ -106,7 +105,6 @@ from zenml.zen_server.utils import (
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
-    initialize_retention_capacity,
     initialize_snapshot_executor,
     initialize_snapshot_run_dispatcher,
     initialize_streaming,
@@ -170,7 +168,7 @@ def _check_archive_store_on_startup() -> None:
     # probe below is allowed to degrade to a startup warning.
     retention.archive_settings()
     try:
-        usable = archive_storage().probe()
+        usable = retention.archive_storage().probe()
     except Exception:
         usable = False
     if not usable:
@@ -202,7 +200,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # avoid race conditions
         await initialize_request_manager()
         initialize_zen_store()
-        initialize_retention_capacity()
         _check_archive_store_on_startup()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()

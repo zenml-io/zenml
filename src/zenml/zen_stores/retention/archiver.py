@@ -9,8 +9,9 @@ It inserts the bundle row and sets the markers together, so the database
 decides every race: two archivers racing on one run leave one bundle, and the
 loser's object is removed.
 
-``archive_runs`` needs no lease because each run is retired under its own
-row locks. It follows normal policy unless the caller requests force.
+Concurrent requests for the same run can only duplicate work, because each
+run is retired under its own row locks. Normal policy applies unless the
+caller requests force.
 
 Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
@@ -18,14 +19,7 @@ their headers keep describing the execution rather than the archiving.
 
 from contextlib import contextmanager
 from datetime import datetime
-from typing import (
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Protocol,
-    Sequence,
-)
+from typing import Iterator, List, Literal, Optional, Sequence
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel
@@ -33,10 +27,11 @@ from sqlalchemy import Engine, bindparam, delete, select, update
 from sqlmodel import Session, SQLModel, col
 
 from zenml.config.server_config import ArchiveSettings
-from zenml.enums import RetentionExclusion, RetentionFailure
+from zenml.enums import RetentionExclusion
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
+    ExecutionRetentionOversizedError,
 )
 from zenml.logger import get_logger
 from zenml.models.v2.misc.retention import (
@@ -83,30 +78,49 @@ class ArchiveAttempt(BaseModel):
     exclusion: Optional[RetentionExclusion] = None
 
 
-class RunCounts(Protocol):
-    """The four per-run outcome counters, tallied the same way everywhere."""
-
-    archived: int
-    skipped: int
-    oversized: int
-    failed: int
-
-
-def tally(counts: RunCounts, outcome: RunOutcome) -> None:
+def tally(result: ArchiveResponse, outcome: RunOutcome) -> None:
     """Count one attempt against the archive result.
 
     Args:
-        counts: Counters to advance.
+        result: Counters to advance.
         outcome: How the attempt ended.
     """
     if outcome == "archived":
-        counts.archived += 1
+        result.archived += 1
     elif outcome == "oversized":
-        counts.oversized += 1
+        result.oversized += 1
     elif outcome == "failed":
-        counts.failed += 1
+        result.failed += 1
     else:
-        counts.skipped += 1
+        result.skipped += 1
+
+
+def _record_refusals(
+    result: ArchiveResponse, refusals: List[ArchiveRefusal]
+) -> None:
+    """Attach a capped list of refused runs to the result.
+
+    Args:
+        result: Result to complete.
+        refusals: Every refused run, in attempt order.
+    """
+    result.refusals = refusals[:MAX_REFUSALS]
+    result.refusals_truncated = len(refusals) > MAX_REFUSALS
+
+
+def _failed_attempt(run_id: UUID, error: BaseException) -> ArchiveAttempt:
+    """Log a failed attempt and report it as failed.
+
+    Args:
+        run_id: Run whose archiving failed.
+        error: The failure.
+
+    Returns:
+        A failed attempt.
+    """
+    # SQL errors can contain archived payloads; log only their type.
+    logger.error("Archiving run %s failed (%s).", run_id, type(error).__name__)
+    return ArchiveAttempt(run_id=run_id, outcome="failed")
 
 
 def _refused_outcome(exclusion: RetentionExclusion) -> RunOutcome:
@@ -209,11 +223,7 @@ class RunArchiver:
                 )
             return self._archive(run, evaluated_at, force)
         except Exception as error:
-            # SQL errors can contain archived payloads; log only their type.
-            logger.error(
-                "Archiving run %s failed (%s).", run_id, type(error).__name__
-            )
-            return ArchiveAttempt(run_id=run_id, outcome="failed")
+            return _failed_attempt(run_id, error)
 
     def _archive(
         self, run: ArchivableRun, evaluated_at: datetime, force: bool
@@ -273,12 +283,7 @@ class RunArchiver:
                 return self._conflict_attempt(run.run_id, cause)
             if transactions.is_transient_lock_error(cause):
                 return ArchiveAttempt(run_id=run.run_id, outcome="skipped")
-            logger.error(
-                "Archiving run %s failed (%s).",
-                run.run_id,
-                type(cause).__name__,
-            )
-            return ArchiveAttempt(run_id=run.run_id, outcome="failed")
+            return _failed_attempt(run.run_id, cause)
         except Exception as error:
             if not retirement_started:
                 self.storage.remove(uri)
@@ -287,12 +292,7 @@ class RunArchiver:
                 return ArchiveAttempt(run_id=run.run_id, outcome="archived")
             if isinstance(error, ExecutionRetentionConflictError):
                 return self._conflict_attempt(run.run_id, error)
-            logger.error(
-                "Archiving run %s failed (%s).",
-                run.run_id,
-                type(error).__name__,
-            )
-            return ArchiveAttempt(run_id=run.run_id, outcome="failed")
+            return _failed_attempt(run.run_id, error)
 
     def _bundle_committed(self, bundle_id: UUID) -> bool:
         """Check only for positive evidence that retirement committed.
@@ -332,7 +332,7 @@ class RunArchiver:
         """
         exclusion = (
             RetentionExclusion.OVERSIZED
-            if error.error_code == RetentionFailure.OVERSIZED
+            if isinstance(error, ExecutionRetentionOversizedError)
             else RetentionExclusion.NOT_ELIGIBLE
         )
         return ArchiveAttempt(
@@ -457,18 +457,15 @@ def archive_runs(
     """Archive named runs now under normal policy or an explicit override.
 
     The safety rules still apply, so a run that is unfinished, resumable, or
-    owned by an active root stays in the database with its reason. No lease
-    is taken: every run is retired under its own row locks, so a targeted
-    archive requests can only ever duplicate work, never
-    corrupt each other.
+    owned by an active root stays in the database with its reason.
 
     Args:
         engine: Metadata database.
         storage: Archive storage.
         settings: The server's archive settings.
         run_ids: Runs to archive, already authorized by the caller.
-        force: Ignore age, model links, and restore grace while preserving all
-            execution-safety exclusions.
+        force: Ignore the minimum age while preserving all execution-safety
+            exclusions.
 
     Returns:
         Counts and a capped list of the runs that were refused.
@@ -485,8 +482,7 @@ def archive_runs(
             refusals.append(
                 ArchiveRefusal(run_id=attempt.run_id, reason=attempt.exclusion)
             )
-    result.refusals = refusals[:MAX_REFUSALS]
-    result.refusals_truncated = len(refusals) > MAX_REFUSALS
+    _record_refusals(result, refusals)
     return result
 
 
@@ -503,8 +499,8 @@ def preview_runs(
         engine: Metadata database.
         settings: The server's archive settings.
         run_ids: Runs to inspect, already authorized by the caller.
-        force: Ignore age, model links, and restore grace while preserving all
-            execution-safety exclusions.
+        force: Ignore the minimum age while preserving all execution-safety
+            exclusions.
 
     Returns:
         Eligible and excluded counts with a capped refusal list.
@@ -533,8 +529,7 @@ def preview_runs(
             refusals.append(
                 ArchiveRefusal(run_id=run_id, reason=run.exclusion)
             )
-    result.refusals = refusals[:MAX_REFUSALS]
-    result.refusals_truncated = len(refusals) > MAX_REFUSALS
+    _record_refusals(result, refusals)
     return result
 
 

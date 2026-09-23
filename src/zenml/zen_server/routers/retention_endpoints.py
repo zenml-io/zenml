@@ -54,8 +54,11 @@ def get_retention_status(
         raise IllegalOperationError(
             "Only server admins can read the execution archive status."
         )
-    return zen_store().get_retention_status(
-        ServerConfiguration.get_server_config().archive
+    settings = ServerConfiguration.get_server_config().archive
+    return RetentionStatusResponse(
+        archive_enabled=settings.new_archives_enabled,
+        archive_configured=settings.configured,
+        archive_after_days=settings.after_days,
     )
 
 
@@ -77,11 +80,12 @@ def archive_runs(
 ) -> ArchiveResponse:
     """Archive or preview the named runs in a bounded request.
 
-    Normal retention policy applies unless `force` explicitly overrides minimum age. Execution-safety exclusions always
-    apply. A pipeline or project request is bounded; continue with the returned
-    `next_after_run_id` while `pending` is true. A dry run performs the same
-    selection and eligibility checks without archiving execution data or
-    accessing archive storage.
+    Normal retention policy applies unless `force` explicitly overrides the
+    minimum age. Execution-safety exclusions always apply. A pipeline or
+    project request is bounded; continue with the returned `next_after_run_id`
+    while `pending` is true. A dry run performs the same selection and
+    eligibility checks without archiving execution data or accessing archive
+    storage.
 
     Args:
         request: Runs, pipeline, or project to archive. Mutating requests need

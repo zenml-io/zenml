@@ -629,14 +629,8 @@ class ArchiveBackend(StrEnum):
     AZURE = "azure"
 
 
-class RetentionFailure(StrEnum):
-    """Safe failure codes shared by wire models and archive passes."""
-
-    OVERSIZED = "oversized"
-
-
 class RetentionExclusion(StrEnum):
-    """Why an archive pass leaves a run's detail in the database."""
+    """Why archiving leaves a run's detail in the database."""
 
     NOT_ELIGIBLE = "not_eligible"
     NOT_OLD = "not_old"

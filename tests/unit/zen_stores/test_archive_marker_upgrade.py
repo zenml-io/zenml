@@ -87,9 +87,6 @@ def test_marker_upgrade_preserves_referencing_rows(tmp_path, monkeypatch):
         assert connection.execute(
             sa.select(upgraded.c.archive_bundle_id)
         ).scalars().all() == [None, None]
-        assert {
-            index["name"] for index in inspector.get_indexes("pipeline_run")
-        } >= {"ix_pipeline_run_end_time_id"}
         assert (
             connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
         )

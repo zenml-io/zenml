@@ -29,10 +29,9 @@ from pydantic import (
 )
 from typing_extensions import Self
 
-from zenml.enums import RetentionFailure
 from zenml.exceptions import (
-    ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
+    ExecutionRetentionOversizedError,
 )
 
 FORMAT_VERSION = 1
@@ -270,13 +269,12 @@ def _serialize_and_hash(document: ArchiveDocument) -> tuple[bytes, str]:
         The canonical bytes and their SHA-256 hash.
 
     Raises:
-        ExecutionRetentionConflictError: The document exceeds the size cap.
+        ExecutionRetentionOversizedError: The document exceeds the size cap.
     """
     decoded = canonical_json(document.model_dump(mode="json"))
     if len(decoded) > MAX_DECODED_BYTES:
-        raise ExecutionRetentionConflictError(
+        raise ExecutionRetentionOversizedError(
             "Run exceeds the archive size limit.",
-            error_code=RetentionFailure.OVERSIZED,
         )
     return decoded, hashlib.sha256(decoded).hexdigest()
 
@@ -291,7 +289,7 @@ def compute_content_hash(document: ArchiveDocument) -> str:
         The SHA-256 hash used by encoded archive objects.
 
     Raises:
-        ExecutionRetentionConflictError: The document exceeds the size cap.
+        ExecutionRetentionOversizedError: The document exceeds the size cap.
     """  # noqa: DOC502
     _, content_hash = _serialize_and_hash(document)
     return content_hash
@@ -307,7 +305,7 @@ def encode(document: ArchiveDocument) -> EncodedDocument:
         The object bytes and content hash.
 
     Raises:
-        ExecutionRetentionConflictError: The document exceeds the size cap.
+        ExecutionRetentionOversizedError: The document exceeds the size cap.
     """  # noqa: DOC502
     decoded, content_hash = _serialize_and_hash(document)
     return EncodedDocument(

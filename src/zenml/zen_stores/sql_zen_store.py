@@ -26,7 +26,10 @@ from zenml.zen_stores.retention import archiver as retention_archiver
 from zenml.zen_stores.retention import eligibility as retention_eligibility
 from zenml.zen_stores.retention import fences, transactions
 from zenml.zen_stores.retention import restorer as retention_restorer
-from zenml.zen_stores.retention.eligibility import ArchiveBatch
+from zenml.zen_stores.retention.eligibility import (
+    MAX_ARCHIVE_BATCH_SIZE,
+    ArchiveBatch,
+)
 from zenml.zen_stores.retention.storage import ArchiveStorage
 
 try:
@@ -397,7 +400,6 @@ from zenml.models.v2.misc.retention import (
     ArchiveRequest,
     ArchiveResponse,
     RestoreResponse,
-    RetentionStatusResponse,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -2054,7 +2056,7 @@ class SqlZenStore(BaseZenStore):
         sql_url = make_url(self.config.url)
         model.database_type = ServerDatabaseType(sql_url.drivername)
         model.execution_archiving_enabled = (
-            model.database_type == ServerDatabaseType.MYSQL
+            self.supports_execution_retention
             and ServerConfiguration.get_server_config().archive.new_archives_enabled
         )
         settings = self.get_server_settings(hydrate=True)
@@ -14605,7 +14607,7 @@ class SqlZenStore(BaseZenStore):
         """
         return self.config.driver == SQLDatabaseDriver.MYSQL
 
-    def _require_execution_retention(self) -> None:
+    def require_execution_retention(self) -> None:
         """Refuse retention on a database whose locking it relies on.
 
         Raises:
@@ -14628,7 +14630,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The runs to authorize, and whether the owner has more of them.
         """
-        self._require_execution_retention()
+        self.require_execution_retention()
         return retention_eligibility.expand_target(self.engine, request)
 
     def preview_archive(
@@ -14647,7 +14649,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Eligible and excluded counts with the refused runs' reasons.
         """
-        self._require_execution_retention()
+        self.require_execution_retention()
         return retention_archiver.preview_runs(
             self.engine, settings, run_ids, force=force
         )
@@ -14676,7 +14678,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Counts and the runs that were refused, each with a reason.
         """
-        self._require_execution_retention()
+        self.require_execution_retention()
         return retention_archiver.archive_runs(
             self.engine, storage, settings, run_ids, force=force
         )
@@ -14696,7 +14698,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Restored, or a no-op when the run's detail is already in SQL.
         """
-        self._require_execution_retention()
+        self.require_execution_retention()
         return retention_restorer.restore_run(self.engine, storage, run_id)
 
     def delete_unused_archive_objects(self, storage: ArchiveStorage) -> None:
@@ -14720,41 +14722,26 @@ class SqlZenStore(BaseZenStore):
                     )
                     .where(col(ArchiveBundleSchema.run_id).is_(None))
                     .order_by(col(ArchiveBundleSchema.id))
-                    .limit(200)
+                    .limit(MAX_ARCHIVE_BATCH_SIZE)
                 )
                 if after_id is not None:
                     query = query.where(col(ArchiveBundleSchema.id) > after_id)
                 objects = session.execute(query).all()
             if not objects:
                 return
-            for bundle_id, uri in objects:
-                if storage.remove(uri):
-                    with Session(self.engine) as session:
-                        session.execute(
-                            delete(ArchiveBundleSchema).where(
-                                col(ArchiveBundleSchema.id) == bundle_id,
-                                col(ArchiveBundleSchema.run_id).is_(None),
-                            )
+            removed = [
+                bundle_id for bundle_id, uri in objects if storage.remove(uri)
+            ]
+            if removed:
+                with Session(self.engine) as session:
+                    session.execute(
+                        delete(ArchiveBundleSchema).where(
+                            col(ArchiveBundleSchema.id).in_(removed),
+                            col(ArchiveBundleSchema.run_id).is_(None),
                         )
-                        session.commit()
+                    )
+                    session.commit()
             after_id = objects[-1].id
-
-    def get_retention_status(
-        self, settings: ArchiveSettings
-    ) -> RetentionStatusResponse:
-        """Read archive configuration without scanning runs or storage.
-
-        Args:
-            settings: Archive configuration to report.
-
-        Returns:
-            Current archive configuration.
-        """
-        return RetentionStatusResponse(
-            archive_enabled=settings.new_archives_enabled,
-            archive_configured=settings.configured,
-            archive_after_days=settings.after_days,
-        )
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

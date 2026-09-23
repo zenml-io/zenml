@@ -88,39 +88,38 @@ class ArchiveBatch(BaseModel):
 
 
 def _finished_unarchived(
-    position: Any, after: Optional[Tuple[datetime, UUID]], limit: int
+    after: Optional[Tuple[datetime, UUID]], limit: int
 ) -> Select[Any]:
-    """Select finished runs whose detail is still in SQL, in keyset order.
+    """Select finished runs whose detail is still in SQL, oldest first.
 
     The archive marker is deliberately not part of any index, so a scan reads
     past runs that are already archived; continuing from the last examined
-    position keeps that to one pass over them.
+    run keeps that to one pass over them. Runs are ordered by creation time,
+    which the existing owner indexes already serve.
 
     Args:
-        position: Timestamp column that orders the scan, with the run ID as
-            tiebreaker. It has to lead an index for the scan to stay cheap.
-        after: Position and ID of the last examined run, or None to start
-            from the beginning.
+        after: Creation time and ID of the last examined run, or None to
+            start from the beginning.
         limit: Maximum number of rows.
 
     Returns:
-        Ordered, limited query over run positions and IDs.
+        Ordered, limited query over run creation times and IDs.
     """
+    created = col(PipelineRunSchema.created)
     statement = (
-        select(position, col(PipelineRunSchema.id))
+        select(created, col(PipelineRunSchema.id))
         .where(
             col(PipelineRunSchema.archive_bundle_id).is_(None),
             col(PipelineRunSchema.end_time).is_not(None),
         )
-        .order_by(position, col(PipelineRunSchema.id))
+        .order_by(created, col(PipelineRunSchema.id))
         .limit(limit)
     )
     if after is not None:
         statement = statement.where(
             or_(
-                position > after[0],
-                (position == after[0])
-                & (col(PipelineRunSchema.id) > after[1]),
+                created > after[0],
+                (created == after[0]) & (col(PipelineRunSchema.id) > after[1]),
             )
         )
     return statement
@@ -155,14 +154,13 @@ def expand_target(engine: Engine, request: ArchiveRequest) -> ArchiveBatch:
         if request.pipeline_id is not None
         else col(PipelineRunSchema.project_id) == request.project_id
     )
-    # Existing owner indexes serve creation order, so targeted archiving
-    # does not need another index on the run table.
-    created = col(PipelineRunSchema.created)
     with Session(engine) as session:
         after = None
         if request.after_run_id is not None:
             cursor = session.execute(
-                select(created, col(PipelineRunSchema.id)).where(
+                select(
+                    col(PipelineRunSchema.created), col(PipelineRunSchema.id)
+                ).where(
                     col(PipelineRunSchema.id) == request.after_run_id, owner
                 )
             ).one_or_none()
@@ -174,7 +172,7 @@ def expand_target(engine: Engine, request: ArchiveRequest) -> ArchiveBatch:
                 )
             after = (cursor.created, cursor.id)
         rows = session.execute(
-            _finished_unarchived(created, after, limit + 1).where(owner)
+            _finished_unarchived(after, limit + 1).where(owner)
         ).all()
     selected = rows[:limit]
     more = len(rows) > limit
@@ -219,9 +217,12 @@ def inspect_run(
     run.exclusion = _first_exclusion(
         session, run_id, header.project_id, settings, now, force
     )
-    _count_rows(session, run, header.snapshot_id)
-    if run.exclusion is None and run.row_count > MAX_RECORDS:
-        run.exclusion = RetentionExclusion.OVERSIZED
+    # Owned snapshots and the row count only matter for a run that may still
+    # be archived, and they cost several queries.
+    if run.exclusion is None:
+        _count_rows(session, run, header.snapshot_id)
+        if run.row_count > MAX_RECORDS:
+            run.exclusion = RetentionExclusion.OVERSIZED
     return run
 
 

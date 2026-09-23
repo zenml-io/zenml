@@ -9,7 +9,7 @@ block writers of unrelated runs.
 Every retention mutation locks rows in the same order: the run, its steps,
 its owned snapshots, then their step configurations. Ordinary writers that
 lock a step before its run can still deadlock with retirement; MySQL then
-rolls one of them back and the archive pass skips that run.
+rolls one of them back and archiving skips that run.
 """
 
 from contextlib import contextmanager
@@ -101,7 +101,7 @@ def database_now(session: Session) -> datetime:
         execution rows.
     """
     # MySQL's CURRENT_TIMESTAMP follows the session time zone, which would
-    # shift every age, grace, and lease comparison on a non-UTC server.
+    # shift every age comparison on a non-UTC server.
     # SQLite's is always UTC and has no UTC_TIMESTAMP function.
     clock = (
         func.utc_timestamp()

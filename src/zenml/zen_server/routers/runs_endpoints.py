@@ -1083,9 +1083,8 @@ def restore_pipeline_run(
     # exactly what the caller could read before the run was archived, and the
     # dashboard restores when a user opens a run page, which a viewer must be
     # able to do. What a viewer can cost the server is bounded: a restored run
-    # is a no-op to restore again, stays out of archiving for the restore
-    # grace period, and each replica admits only a few restores at once.
-    verify_permission_for_model(
-        model=zen_store().get_run_header(run_id), action=Action.READ
-    )
-    return retention.restore_pipeline_run(run_id)
+    # is a no-op to restore again, and each replica admits only a few
+    # restores at once.
+    run = zen_store().get_run_header(run_id)
+    verify_permission_for_model(model=run, action=Action.READ)
+    return retention.restore_pipeline_run(run)

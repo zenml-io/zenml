@@ -167,7 +167,7 @@ def test_archived_summaries_need_no_archive_storage(
     opened.assert_not_called()
 
     with pytest.raises(ExecutionRetentionUnavailableError) as error:
-        retention.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(retention_store.get_run_header(ids.run))
     exception = http_exception_from_error(error.value)
     assert exception.status_code == 503
     assert exception.headers["Retry-After"]

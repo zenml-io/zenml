@@ -9,6 +9,7 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import inspect
+from sqlalchemy.engine import make_url
 
 from zenml.artifact_stores.base_artifact_store import (
     BaseArtifactStore,
@@ -26,7 +27,7 @@ from zenml.zen_server import archive_storage as storage_module
 from zenml.zen_server.archive_storage import ArtifactStoreArchiveStorage
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.migrations.alembic import Alembic
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.sql_zen_store import SQLDatabaseDriver, SqlZenStore
 
 
 def test_server_model_archive_capability_defaults_to_false() -> None:
@@ -106,7 +107,14 @@ def test_store_info_reports_manual_archive_capability(
         enable_analytics=False,
     )
     store = object.__new__(SqlZenStore)
-    object.__setattr__(store, "config", SimpleNamespace(url=database_url))
+    object.__setattr__(
+        store,
+        "config",
+        SimpleNamespace(
+            url=database_url,
+            driver=SQLDatabaseDriver(make_url(database_url).drivername),
+        ),
+    )
     monkeypatch.setattr(
         BaseZenStore, "get_store_info", lambda _store: base_info
     )
@@ -146,7 +154,9 @@ def test_archive_startup_database_validation_is_fatal(
     monkeypatch.setattr(
         zen_server_api.retention, "archive_settings", unsupported
     )
-    monkeypatch.setattr(zen_server_api, "archive_storage", lambda: storage)
+    monkeypatch.setattr(
+        zen_server_api.retention, "archive_storage", lambda: storage
+    )
 
     with pytest.raises(IllegalOperationError, match="unsupported database"):
         zen_server_api._check_archive_store_on_startup()
@@ -171,7 +181,9 @@ def test_archive_startup_storage_failure_is_a_warning(
     monkeypatch.setattr(
         zen_server_api.retention, "archive_settings", lambda: archive
     )
-    monkeypatch.setattr(zen_server_api, "archive_storage", lambda: storage)
+    monkeypatch.setattr(
+        zen_server_api.retention, "archive_storage", lambda: storage
+    )
     monkeypatch.setattr(zen_server_api.logger, "warning", warning)
 
     zen_server_api._check_archive_store_on_startup()

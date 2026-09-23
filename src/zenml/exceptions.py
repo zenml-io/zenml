@@ -16,8 +16,6 @@
 from typing import Dict, Optional
 from uuid import UUID
 
-from zenml.enums import RetentionFailure
-
 
 class ZenMLBaseException(Exception):
     """Base exception for all ZenML Exceptions."""
@@ -158,17 +156,9 @@ class IllegalOperationError(ZenMLBaseException):
 class ExecutionRetentionConflictError(ZenMLBaseException):
     """Raised when SQL ownership conflicts with a retention operation."""
 
-    def __init__(
-        self, message: str, error_code: Optional[RetentionFailure] = None
-    ) -> None:
-        """Describe a conflict with an optional stable lifecycle code.
 
-        Args:
-            message: Explanation safe for the caller.
-            error_code: Closed classification for retry and operation status.
-        """
-        super().__init__(message)
-        self.error_code = error_code
+class ExecutionRetentionOversizedError(ExecutionRetentionConflictError):
+    """Raised when a run exceeds an archive record or byte limit."""
 
 
 class ExecutionRetentionIntegrityError(ZenMLBaseException):

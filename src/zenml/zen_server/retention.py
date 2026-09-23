@@ -29,18 +29,23 @@ from uuid import UUID
 from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.enums import RestoreOutcome
 from zenml.exceptions import (
+    ExecutionArchivedError,
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     ExecutionRetentionUnavailableError,
-    IllegalOperationError,
 )
-from zenml.models import ArchiveRequest, ArchiveResponse, RestoreResponse
-from zenml.zen_server.utils import (
-    archive_storage,
-    retention_capacity,
-    zen_store,
+from zenml.logger import get_logger
+from zenml.models import (
+    ArchiveRequest,
+    ArchiveResponse,
+    PipelineRunResponse,
+    RestoreResponse,
 )
+from zenml.zen_server.archive_storage import ArtifactStoreArchiveStorage
+from zenml.zen_server.utils import zen_store
 from zenml.zen_stores.retention.eligibility import ArchiveBatch
+
+logger = get_logger(__name__)
 
 MAX_CONCURRENT_RETENTION_OPERATIONS = 4
 
@@ -59,7 +64,6 @@ class RetentionCapacity:
         """
         if max_operations < 1:
             raise ValueError("Retention capacity must be positive.")
-        self.max_operations = max_operations
         self._semaphore = BoundedSemaphore(max_operations)
         self._keys: Set[Hashable] = set()
         self._lock = Lock()
@@ -98,19 +102,20 @@ class RetentionCapacity:
                 self._semaphore.release()
 
 
+# One budget and one storage client per replica. The storage is created on
+# first use, so a server without archive storage still serves everything
+# that needs none.
+_capacity = RetentionCapacity(MAX_CONCURRENT_RETENTION_OPERATIONS)
+_storage: Optional[ArtifactStoreArchiveStorage] = None
+
+
 def retention_policy() -> ArchiveSettings:
     """Read the retention policy of a server that can apply it.
 
     Returns:
         The server's archive settings, whether or not storage is configured.
-
-    Raises:
-        IllegalOperationError: The metadata database cannot run retention.
     """
-    if not zen_store().supports_execution_retention:
-        raise IllegalOperationError(
-            "Execution archiving requires a MySQL database."
-        )
+    zen_store().require_execution_retention()
     return ServerConfiguration.get_server_config().archive
 
 
@@ -134,23 +139,19 @@ def archive_settings() -> ArchiveSettings:
     return settings
 
 
-def new_archive_settings() -> ArchiveSettings:
-    """Read the settings of a server that may create archives now.
+def archive_storage() -> ArtifactStoreArchiveStorage:
+    """Return the archive storage named by the server's settings.
 
     Returns:
-        The configured archive settings.
-
-    Raises:
-        ExecutionRetentionConflictError: New archive creation is paused.
+        Storage rooted at the configured archive URI.
     """
-    settings = archive_settings()
-    if not settings.enabled:
-        raise ExecutionRetentionConflictError(
-            "New execution archiving is paused by "
-            "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
-            "restorable, and `dry_run` still previews the current policy."
+    global _storage
+    if _storage is None:
+        settings = archive_settings()
+        _storage = ArtifactStoreArchiveStorage.from_uri(
+            settings.root_uri, connector_id=settings.connector_id
         )
-    return settings
+    return _storage
 
 
 def archive_batch(
@@ -164,6 +165,9 @@ def archive_batch(
 
     Returns:
         Counts and the runs that were refused, each with a reason.
+
+    Raises:
+        ExecutionRetentionConflictError: New archive creation is paused.
     """
     store = zen_store()
     if request.dry_run:
@@ -173,8 +177,14 @@ def archive_batch(
             batch.run_ids, retention_policy(), force=request.force
         )
     else:
-        settings = new_archive_settings()
-        with retention_capacity().claim():
+        settings = archive_settings()
+        if not settings.enabled:
+            raise ExecutionRetentionConflictError(
+                "New execution archiving is paused by "
+                "ZENML_SERVER_ARCHIVE__ENABLED. Existing archives remain "
+                "restorable, and `dry_run` still previews the current policy."
+            )
+        with _capacity.claim():
             result = store.archive_runs(
                 batch.run_ids,
                 storage=archive_storage(),
@@ -186,35 +196,44 @@ def archive_batch(
     return result
 
 
-def restore_pipeline_run(run_id: UUID) -> RestoreResponse:
+def restore_pipeline_run(run: PipelineRunResponse) -> RestoreResponse:
     """Restore an archived run's detail within the request.
 
     A run whose detail is in SQL is answered without touching storage or
-    capacity, so deleting an ordinary run never depends on archive storage.
+    capacity.
 
     Args:
-        run_id: Authorized run.
+        run: Header of the authorized run.
 
     Returns:
         Restored, or a no-op when the run's detail is already in SQL.
     """
-    store = zen_store()
-    if store.get_run_header(run_id).archive_bundle_id is None:
-        return RestoreResponse(run_id=run_id, outcome=RestoreOutcome.NOOP)
+    if run.archive_bundle_id is None:
+        return RestoreResponse(run_id=run.id, outcome=RestoreOutcome.NOOP)
     # The store checks the marker again under its own locks, so a restore
     # that finished while this one waited reports a no-op.
-    with retention_capacity().claim(key=("restore", run_id)):
-        return store.restore_pipeline_run(run_id, storage=archive_storage())
+    with _capacity.claim(key=("restore", run.id)):
+        return zen_store().restore_pipeline_run(
+            run.id, storage=archive_storage()
+        )
 
 
 def delete_pipeline_run(run_id: UUID) -> None:
     """Delete a run while preserving the detail of its surviving snapshot.
 
+    The store refuses to delete an archived run under its row lock, so only
+    that case pays for a restore, and an ordinary deletion never depends on
+    archive storage.
+
     Args:
         run_id: Run the caller is authorized to delete.
     """
-    restore_pipeline_run(run_id)
-    zen_store().delete_run(run_id)
+    store = zen_store()
+    try:
+        store.delete_run(run_id)
+    except ExecutionArchivedError:
+        restore_pipeline_run(store.get_run_header(run_id))
+        store.delete_run(run_id)
 
 
 def delete_unused_archive_objects() -> None:
@@ -223,18 +242,22 @@ def delete_unused_archive_objects() -> None:
     This is a best-effort background task. Failed deletions keep their catalog
     entries for a later cleanup; they do not roll back the database deletion.
     """
-    from zenml.logger import get_logger
-
+    store = zen_store()
     if (
-        not zen_store().supports_execution_retention
+        not store.supports_execution_retention
         or not ServerConfiguration.get_server_config().archive.configured
     ):
         return
     try:
-        with retention_capacity().claim(key="archive-cleanup"):
-            zen_store().delete_unused_archive_objects(archive_storage())
+        with _capacity.claim(key="archive-cleanup"):
+            store.delete_unused_archive_objects(archive_storage())
+    except ExecutionRetentionBusyError:
+        # A running cleanup, or a replica at capacity, leaves the catalog
+        # entries for the next deletion to pick up.
+        return
     except Exception as error:
-        get_logger(__name__).warning(
-            "Archive object cleanup failed (%s); catalog entries remain for retry.",
+        logger.warning(
+            "Archive object cleanup failed (%s); catalog entries remain for "
+            "retry.",
             type(error).__name__,
         )

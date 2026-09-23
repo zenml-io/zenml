@@ -109,7 +109,7 @@ class ArchiveSettings(BaseModel):
     `ZENML_SERVER_ARCHIVE__BACKEND` and `ZENML_SERVER_ARCHIVE__URI`.
     Archive storage is configured independently from permission to create new
     archives. This keeps existing objects restorable while new archiving is
-    paused, and allows operators to run archiving manually without a schedule.
+    paused.
     """
 
     model_config = ConfigDict(extra="forbid")

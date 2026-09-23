@@ -144,6 +144,7 @@ def test_v1_archive_restores_to_current_schema(
         retention_store: Disposable MySQL store migrated to the current head.
         storage: Temporary local archive storage.
         kind: Execution definition variant.
+        retention: Server retention functions bound to the test store.
     """
     project = retention_store.list_projects(ProjectFilter()).items[0].id
     document, data, content_hash = _fixture(kind, project)
@@ -161,7 +162,9 @@ def test_v1_archive_restores_to_current_schema(
     )
     _seed_archived_headers(retention_store, document, bundle, kind)
 
-    result = retention.restore_pipeline_run(document.run_id)
+    result = retention.restore_pipeline_run(
+        retention_store.get_run_header(document.run_id)
+    )
 
     assert result.outcome == RestoreOutcome.RESTORED
     with retention_store.engine.connect() as connection:

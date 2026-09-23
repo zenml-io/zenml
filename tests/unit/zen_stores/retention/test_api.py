@@ -805,7 +805,7 @@ def test_retention_capacity_returns_actionable_busy_response(
 ):
     """A replica at its retention capacity says so instead of queueing."""
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(utils, "_retention_capacity", capacity)
+    monkeypatch.setattr(http.retention, "_capacity", capacity)
 
     with capacity.claim():
         response = http.client.post(

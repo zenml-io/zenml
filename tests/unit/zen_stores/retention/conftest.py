@@ -37,10 +37,10 @@ def storage(tmp_path, monkeypatch) -> ArtifactStoreArchiveStorage:
 def retention(retention_store, storage, monkeypatch):
     """Drive retention the way a server replica does."""
     monkeypatch.setattr(server_utils, "_zen_store", retention_store)
-    monkeypatch.setattr(server_utils, "_archive_storage", storage)
+    monkeypatch.setattr(server_retention, "_storage", storage)
     monkeypatch.setattr(
-        server_utils,
-        "_retention_capacity",
+        server_retention,
+        "_capacity",
         RetentionCapacity(MAX_CONCURRENT_RETENTION_OPERATIONS),
     )
     return server_retention

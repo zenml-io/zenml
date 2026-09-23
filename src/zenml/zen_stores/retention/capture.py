@@ -10,7 +10,6 @@ the first capture, without relying on writers refreshing ``updated``.
 import hashlib
 from typing import (
     Any,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -28,10 +27,10 @@ from sqlmodel import Session, SQLModel
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
-from zenml.enums import RetentionFailure
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
+    ExecutionRetentionOversizedError,
 )
 from zenml.zen_stores.retention.eligibility import ArchivableRun
 from zenml.zen_stores.retention.format import (
@@ -121,7 +120,6 @@ class RunCapturer:
         self,
         session: Session,
         run: ArchivableRun,
-        check_cancelled: Optional[Callable[[], None]] = None,
         projections: Optional[ProjectionCache] = None,
     ) -> None:
         """Bind a capture to one transaction and inspected run.
@@ -129,14 +127,12 @@ class RunCapturer:
         Args:
             session: Read session or the locked retirement transaction.
             run: Eligible run with its exclusively owned snapshots.
-            check_cancelled: Optional cooperative cancellation check.
             projections: Step projections from an earlier capture of this
                 run. Entries are reused while their inputs are unchanged and
                 replaced by the ones this capture derives.
         """
         self.session = session
         self.run = run
-        self.check_cancelled = check_cancelled
         self.projections: ProjectionCache = (
             projections if projections is not None else {}
         )
@@ -155,11 +151,6 @@ class RunCapturer:
             if name not in {"step_type", "substitutions"}
         ]
 
-    def _check_cancelled(self) -> None:
-        """Run the optional cooperative cancellation check."""
-        if self.check_cancelled is not None:
-            self.check_cancelled()
-
     def capture(self) -> ArchiveDocument:
         """Read the run's detail in record order.
 
@@ -167,10 +158,9 @@ class RunCapturer:
             The validated document.
 
         Raises:
-            ExecutionRetentionConflictError: The run is excluded, changed, or
-                exceeds a capture limit.
+            ExecutionRetentionConflictError: The run is excluded or changed.
+            ExecutionRetentionOversizedError: The run exceeds a capture limit.
         """
-        self._check_cancelled()
         if self.run.exclusion is not None:
             raise ExecutionRetentionConflictError(
                 "Run is not eligible for archiving."
@@ -187,16 +177,13 @@ class RunCapturer:
                 "Run disappeared or was archived during capture."
             )
         self.run_row = found[0]
-        self._check_cancelled()
         self.step_rows = self._read_table(
             step_table,
             [*self.step_fields, "archive_bundle_id"],
             (step_table.c.pipeline_run_id, [self.run.run_id]),
         )
         snapshots = self._capture_snapshots()
-        self._check_cancelled()
         self._capture_configurations()
-        self._check_cancelled()
         step_records = self._capture_steps()
         record_count = (
             1
@@ -205,9 +192,8 @@ class RunCapturer:
             + len(self.owned_configurations)
         )
         if record_count > MAX_RECORDS:
-            raise ExecutionRetentionConflictError(
+            raise ExecutionRetentionOversizedError(
                 "Run exceeds the archive record limit.",
-                error_code=RetentionFailure.OVERSIZED,
             )
         document = ArchiveDocument(
             project_id=self.run.project,
@@ -238,7 +224,7 @@ class RunCapturer:
             Unique row mappings ordered by identity.
 
         Raises:
-            ExecutionRetentionConflictError: More source rows or payload bytes
+            ExecutionRetentionOversizedError: More source rows or payload bytes
                 exist than one capture permits.
         """
         columns = [table.c[name] for name in fields]
@@ -259,7 +245,6 @@ class RunCapturer:
             for group in batches(identities):
                 after_id = None
                 while True:
-                    self._check_cancelled()
                     remaining = MAX_SOURCE_BYTES - self.source_bytes
                     source_rows, fetched_bytes = self._read_page(
                         table=table,
@@ -272,16 +257,14 @@ class RunCapturer:
                         after_id=after_id,
                         remaining=remaining,
                     )
-                    self._check_cancelled()
                     if not source_rows:
                         break
                     self.source_bytes += fetched_bytes
                     for source_row in source_rows:
                         selected[source_row["id"]] = source_row
                         if len(selected) > MAX_RECORDS:
-                            raise ExecutionRetentionConflictError(
+                            raise ExecutionRetentionOversizedError(
                                 "Run source exceeds the capture record limit.",
-                                error_code=RetentionFailure.OVERSIZED,
                             )
                     after_id = source_rows[-1]["id"]
         return [selected[identity] for identity in sorted(selected)]
@@ -317,7 +300,7 @@ class RunCapturer:
             marks the end of this predicate batch.
 
         Raises:
-            ExecutionRetentionConflictError: The first unread row exceeds the
+            ExecutionRetentionOversizedError: The first unread row exceeds the
                 remaining capture budget.
         """  # noqa: DOC502
         candidate_statement = select(table.c.id.label(_SOURCE_ID_LABEL)).where(
@@ -415,11 +398,10 @@ class RunCapturer:
         """Raise the canonical source-byte limit failure.
 
         Raises:
-            ExecutionRetentionConflictError: Always.
+            ExecutionRetentionOversizedError: Always.
         """
-        raise ExecutionRetentionConflictError(
+        raise ExecutionRetentionOversizedError(
             "Run source exceeds the capture byte limit.",
-            error_code=RetentionFailure.OVERSIZED,
         )
 
     def _capture_snapshots(self) -> List[SnapshotRecord]:
@@ -637,7 +619,6 @@ class RunCapturer:
 def capture_run(
     session: Session,
     run: ArchivableRun,
-    check_cancelled: Optional[Callable[[], None]] = None,
     projections: Optional[ProjectionCache] = None,
 ) -> ArchiveDocument:
     """Capture one inspected run in the caller's transaction.
@@ -645,7 +626,6 @@ def capture_run(
     Args:
         session: Read session or the locked retirement transaction.
         run: Eligible run with its exclusively owned snapshots.
-        check_cancelled: Optional cooperative cancellation check.
         projections: Step projections shared between the two captures of one
             run; read and refreshed in place.
 
@@ -656,12 +636,7 @@ def capture_run(
         ExecutionRetentionIntegrityError: The captured rows break the format.
     """
     try:
-        return RunCapturer(
-            session,
-            run,
-            check_cancelled=check_cancelled,
-            projections=projections,
-        ).capture()
+        return RunCapturer(session, run, projections=projections).capture()
     except ValueError as error:
         # Pydantic validation errors subclass ValueError; captured SQL rows
         # that violate the document closure mean the database is inconsistent.

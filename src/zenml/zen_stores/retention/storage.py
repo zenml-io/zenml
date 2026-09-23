@@ -76,11 +76,3 @@ class ArchiveStorage(ABC):
         Returns:
             True when absent; False if deletion failed.
         """
-
-    @abstractmethod
-    def probe(self) -> bool:
-        """Check that new objects can be written and read back.
-
-        Returns:
-            Whether a unique probe object round-tripped.
-        """

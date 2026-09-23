@@ -39,12 +39,12 @@ from zenml.enums import (
     ExecutionStatus,
     RestoreOutcome,
     RetentionExclusion,
-    RetentionFailure,
 )
 from zenml.exceptions import (
     ExecutionArchivedError,
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
+    ExecutionRetentionOversizedError,
     IllegalOperationError,
 )
 from zenml.models import (
@@ -58,7 +58,6 @@ from zenml.models import (
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
-from zenml.zen_server import utils as server_utils
 from zenml.zen_server.retention import RetentionCapacity
 from zenml.zen_stores.retention import (
     archiver,
@@ -125,7 +124,9 @@ def test_archive_restore_round_trip(
     ).get_body()
     assert header.type == before[1]["body"]["type"]
     assert header.substitutions == before[1]["body"]["substitutions"]
-    restored = retention.restore_pipeline_run(ids.run)
+    restored = retention.restore_pipeline_run(
+        retention_store.get_run_header(ids.run)
+    )
 
     assert restored.outcome == RestoreOutcome.RESTORED
     assert restored.restored_at is not None
@@ -508,7 +509,9 @@ def test_interrupted_retirement(
         assert not list(Path(storage.root).rglob("*.json.gz"))
     else:
         assert state.archived == 1
-        restored = retention.restore_pipeline_run(ids.run)
+        restored = retention.restore_pipeline_run(
+            retention_store.get_run_header(ids.run)
+        )
         assert restored.outcome == RestoreOutcome.RESTORED
         assert retention_store.get_run(ids.run).model_dump() == before[1]
 
@@ -580,7 +583,7 @@ def test_one_capacity_budget_covers_all_retention_payload_paths(
     archive_run(retention_store, archived)
     candidate = run_factory(retention_store)
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(server_utils, "_retention_capacity", capacity)
+    monkeypatch.setattr(retention, "_capacity", capacity)
 
     with capacity.claim():
         with pytest.raises(ExecutionRetentionBusyError):
@@ -588,7 +591,9 @@ def test_one_capacity_budget_covers_all_retention_payload_paths(
         with pytest.raises(ExecutionRetentionBusyError):
             archive_project()
         with pytest.raises(ExecutionRetentionBusyError):
-            retention.restore_pipeline_run(archived.run)
+            retention.restore_pipeline_run(
+                retention_store.get_run_header(archived.run)
+            )
 
 
 def test_duplicate_restore_is_rejected_before_second_download(
@@ -603,7 +608,7 @@ def test_duplicate_restore_is_rejected_before_second_download(
     ids = run_factory(retention_store)
     archive_run(retention_store, ids)
     capacity = RetentionCapacity(2)
-    monkeypatch.setattr(server_utils, "_retention_capacity", capacity)
+    monkeypatch.setattr(retention, "_capacity", capacity)
     entered = Event()
     release = Event()
     reads = 0
@@ -618,10 +623,15 @@ def test_duplicate_restore_is_rejected_before_second_download(
 
     monkeypatch.setattr(storage, "read", blocked_read)
     with ThreadPoolExecutor(1) as pool:
-        first = pool.submit(retention.restore_pipeline_run, ids.run)
+        first = pool.submit(
+            retention.restore_pipeline_run,
+            retention_store.get_run_header(ids.run),
+        )
         assert entered.wait(3)
         with pytest.raises(ExecutionRetentionBusyError):
-            retention.restore_pipeline_run(ids.run)
+            retention.restore_pipeline_run(
+                retention_store.get_run_header(ids.run)
+            )
         release.set()
         assert first.result(timeout=5).outcome == RestoreOutcome.RESTORED
 
@@ -645,10 +655,8 @@ def test_capture_classifies_late_record_growth_as_oversized(
             NOW,
         )
         monkeypatch.setattr(capture, "MAX_RECORDS", 5)
-        with pytest.raises(ExecutionRetentionConflictError) as error:
+        with pytest.raises(ExecutionRetentionOversizedError):
             capture.capture_run(session, inspected)
-
-    assert error.value.error_code == RetentionFailure.OVERSIZED
 
 
 def test_capture_counts_utf8_bytes() -> None:
@@ -882,14 +890,13 @@ def test_capture_guards_payload_before_driver_buffering(
             capturer = capture.RunCapturer(
                 session, ArchivableRun(run_id=uuid4())
             )
-            with pytest.raises(ExecutionRetentionConflictError) as error:
+            with pytest.raises(ExecutionRetentionOversizedError):
                 capturer._read_table(
                     table,
                     ["id", "payload"],
                     (table.c.id, [1, 2]),
                 )
 
-        assert error.value.error_code == RetentionFailure.OVERSIZED
         assert fetched_bytes and max(fetched_bytes) <= cap
     finally:
         table.drop(retention_store.engine)
@@ -1017,7 +1024,7 @@ def test_writer_racing_archive_preserves_committed_detail(
             retention_store.get_snapshot(ids.snapshot).archive_bundle_id
             is None
         )
-    retention.restore_pipeline_run(ids.run)
+    retention.restore_pipeline_run(retention_store.get_run_header(ids.run))
     if writer_kind == "step":
         assert retention_store.get_run_step(written.id).config.name == "late"
     elif writer_kind == "update":
@@ -1054,7 +1061,9 @@ def test_restore_conflict_rolls_back_all_detail(
     event.listen(retention_store.engine, "before_cursor_execute", fail_insert)
     try:
         with pytest.raises(ExecutionRetentionConflictError):
-            retention.restore_pipeline_run(ids.run)
+            retention.restore_pipeline_run(
+                retention_store.get_run_header(ids.run)
+            )
     finally:
         event.remove(
             retention_store.engine, "before_cursor_execute", fail_insert
@@ -1089,7 +1098,7 @@ def test_restore_rejects_root_deleted_during_object_read(
     monkeypatch.setattr(storage, "read", delete_during_read)
 
     with pytest.raises(ExecutionRetentionConflictError, match="disappeared"):
-        retention.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(retention_store.get_run_header(ids.run))
 
 
 def test_restore_rejects_changed_root_snapshot(
@@ -1111,7 +1120,7 @@ def test_restore_rejects_changed_root_snapshot(
     with pytest.raises(
         ExecutionRetentionConflictError, match="owner or snapshot"
     ):
-        retention.restore_pipeline_run(ids.run)
+        retention.restore_pipeline_run(retention_store.get_run_header(ids.run))
 
 
 def test_targeted_archive_requires_explicit_policy_override(
@@ -1288,11 +1297,9 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     candidate = run_factory(retention_store)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
 
-    status = retention_store.get_retention_status(
-        ServerConfiguration.get_server_config().archive
-    )
-    assert status.archive_configured
-    assert not status.archive_enabled
+    settings = ServerConfiguration.get_server_config().archive
+    assert settings.configured
+    assert not settings.new_archives_enabled
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
         archive_request(ArchiveRequest(run_ids=[candidate.run], force=True))
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
@@ -1301,9 +1308,9 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
         ArchiveRequest(run_ids=[candidate.run], dry_run=True)
     )
     assert preview.eligible == 1
-    assert retention.restore_pipeline_run(archived.run).outcome == (
-        RestoreOutcome.RESTORED
-    )
+    assert retention.restore_pipeline_run(
+        retention_store.get_run_header(archived.run)
+    ).outcome == (RestoreOutcome.RESTORED)
 
 
 def test_deleted_archive_continuation_has_a_clear_error(
@@ -1370,7 +1377,9 @@ def test_restore_validation_reads_no_retained_payload(
 
     event.listen(retention_store.engine, "before_cursor_execute", observe)
     try:
-        restored = retention.restore_pipeline_run(ids.run)
+        restored = retention.restore_pipeline_run(
+            retention_store.get_run_header(ids.run)
+        )
     finally:
         event.remove(retention_store.engine, "before_cursor_execute", observe)
 
@@ -1413,7 +1422,7 @@ def test_archived_snapshot_cannot_be_named_without_restore(
             ids.snapshot, PipelineSnapshotUpdate(name="promoted")
         )
 
-    retention.restore_pipeline_run(ids.run)
+    retention.restore_pipeline_run(retention_store.get_run_header(ids.run))
     named = retention_store.update_snapshot(
         ids.snapshot, PipelineSnapshotUpdate(name="promoted")
     )

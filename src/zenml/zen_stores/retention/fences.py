@@ -51,7 +51,7 @@ def update_hot(session: Session, row: HotRow) -> None:
     touch no archived or execution-state column are left to the ORM flush,
     so retained fields stay writable on archived rows. Step updates can
     lock a step before its run while retirement locks the run first; MySQL
-    then rolls one of them back, and the archive pass skips that run.
+    then rolls one of them back, and archiving skips that run.
 
     Args:
         session: Current transaction, before the row can autoflush.

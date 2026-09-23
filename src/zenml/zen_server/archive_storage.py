@@ -197,18 +197,6 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
         """
         return f"{self.root}/{project_id}/{run_id}/{bundle_id}.json.gz"
 
-    @staticmethod
-    def root_of(uri: str) -> str:
-        """Recover the archive root an object URI was written under.
-
-        Args:
-            uri: URI produced by `object_uri`.
-
-        Returns:
-            The root, without the project, run, and object segments.
-        """
-        return uri.rsplit("/", 3)[0]
-
     def write(self, uri: str, data: bytes) -> None:
         """Write one uniquely named archive object.
 
@@ -268,7 +256,8 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
         """
         if uri.startswith(f"{self.root}/"):
             return self.artifact_store
-        former_root = self.root_of(uri)
+        # Drop the project, run, and object segments added by `object_uri`.
+        former_root = uri.rsplit("/", 3)[0]
         if former_root not in self._former_stores:
             self._former_stores[former_root] = self.from_uri(
                 former_root, connector_id=self.artifact_store.connector
@@ -302,13 +291,14 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
 
         Returns:
             Whether a unique probe object round-tripped.
-        """
+
+        Raises:
+            ExecutionRetentionUnavailableError: The write or read failed.
+        """  # noqa: DOC502
         uri = f"{self.root}/_probes/{uuid4()}"
         nonce = uuid4().hex.encode()
         try:
             self.write(uri, nonce)
             return self.read(uri, len(nonce)) == nonce
-        except ExecutionRetentionUnavailableError:
-            return False
         finally:
             self.remove(uri)
