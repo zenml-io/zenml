@@ -32,6 +32,8 @@ jobs:
           version: 0.8.14
           enable-cache: false
       - name: Include latest dashboard
+        env:
+          ZENML_UI_RELEASE_TOKEN: ${{ secrets.ZENML_UI_RELEASE_TOKEN }}
         run: bash scripts/install-dashboard.sh
       - name: Verify version
         run: |-

@@ -62,6 +62,8 @@ jobs:
           # Update the src/zenml/VERSION file with the nightly version
           echo "$NIGHTLY_VERSION" > src/zenml/VERSION
       - name: Include latest dashboard
+        env:
+          ZENML_UI_RELEASE_TOKEN: ${{ secrets.ZENML_UI_RELEASE_TOKEN }}
         run: bash scripts/install-dashboard.sh
       - name: Build package
         run: uv build
