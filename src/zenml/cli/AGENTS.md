@@ -1,8 +1,8 @@
 # ZenML CLI Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/cli/` or below. For detailed
+This file applies to changes in `src/zenml/cli/` and below. For detailed
 CLI examples and command-family notes, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Key Files
 

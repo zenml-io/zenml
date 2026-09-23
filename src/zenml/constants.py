@@ -490,6 +490,7 @@ DEVICE_VERIFY = "/verify"
 DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
+ENTRIES = "/entries"
 EVENT_FLAVORS = "/event-flavors"
 FLAVORS = "/flavors"
 HEALTH = "/health"
@@ -610,6 +611,7 @@ STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
+MEDIUMBLOB_MAX_LENGTH = 2**24 - 1
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
@@ -642,6 +644,7 @@ LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
 
+# Maximum number of log entries returned per request.
 LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
     ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
 )
