@@ -30,6 +30,9 @@ from zenml.exceptions import (
     ExecutionRetentionIntegrityError,
     ExecutionRetentionUnavailableError,
     IllegalOperationError,
+    LogStoreError,
+    LogStoreRateLimitError,
+    LogStoreUnavailableError,
     MaxConcurrentTasksError,
     MethodNotAllowedError,
     SubscriptionUpgradeRequiredError,
@@ -101,7 +104,12 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     (ValueError, 422),
     # 429 Too Many Requests
     (ExecutionRetentionBusyError, 429),
+    (LogStoreRateLimitError, 429),
     (MaxConcurrentTasksError, 429),
+    # 502 Bad Gateway
+    (LogStoreError, 502),
+    # 503 Service Unavailable
+    (LogStoreUnavailableError, 503),
     # 500 Internal Server Error
     (EntityCreationError, 500),
     (RuntimeError, 500),
@@ -195,6 +203,12 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
             headers["X-Request-ID"] = str(request_id)
     except Exception:
         pass
+
+    if (
+        isinstance(error, LogStoreRateLimitError)
+        and error.retry_after is not None
+    ):
+        headers["Retry-After"] = str(max(0, error.retry_after))
 
     return HTTPException(
         status_code=status_code,
@@ -291,5 +305,12 @@ def exception_from_response(
         if not isinstance(exception(), CredentialsNotValid):
             if response.headers.get("WWW-Authenticate"):
                 return CredentialsNotValid(exc_msg)
+
+    if issubclass(exception, LogStoreRateLimitError):
+        retry_after = response.headers.get("Retry-After", "")
+        return exception(
+            exc_msg,
+            retry_after=int(retry_after) if retry_after.isdecimal() else None,
+        )
 
     return exception(exc_msg)

@@ -13,19 +13,30 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for logs."""
 
+from typing import Literal, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Security
+from fastapi import APIRouter, Depends, Query, Security
 
 from zenml.constants import (
     API,
+    ENTRIES,
     LOGS,
+    LOGS_RUNNER_SOURCE,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError
-from zenml.models import LogsRequest, LogsResponse, LogsUpdate
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsRequest,
+    LogsResponse,
+    LogsUpdate,
+)
+from zenml.utils.logging_utils import fetch_logs
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_update_entity,
@@ -38,6 +49,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    make_dependable,
     zen_store,
 )
 
@@ -46,6 +58,40 @@ router = APIRouter(
     tags=["logs"],
     responses={401: error_response, 403: error_response},
 )
+
+
+def _verify_log_read_permission(logs: LogsResponse) -> None:
+    """Verify read access to a log stream's pipeline run.
+
+    Args:
+        logs: The log stream to authorize.
+
+    Raises:
+        IllegalOperationError: If the stream has no associated run, step,
+            or hook invocation.
+    """
+    store = zen_store()
+
+    if logs.pipeline_run_id:
+        run_id = logs.pipeline_run_id
+    elif logs.step_run_id:
+        run_id = store.get_run_step(
+            step_run_id=logs.step_run_id, hydrate=False
+        ).pipeline_run_id
+    elif logs.hook_invocation_id:
+        run_id = store.get_hook_invocation(
+            hook_invocation_id=logs.hook_invocation_id, hydrate=False
+        ).pipeline_run_id
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run, step run or hook "
+            "invocation before fetching."
+        )
+
+    verify_permission_for_model(
+        model=store.get_run(run_id=run_id, hydrate=False),
+        action=Action.READ,
+    )
 
 
 @router.post(
@@ -122,40 +168,84 @@ def get_logs(
 
     Returns:
         The requested log model.
-
-    Raises:
-        IllegalOperationError: If the logs are not associated
-            with a pipeline run or step run before fetching.
     """
     logs = zen_store().get_logs(logs_id, hydrate=True)
-
-    if logs.pipeline_run_id:
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=logs.pipeline_run_id, hydrate=False
-            ),
-            action=Action.READ,
-        )
-    elif logs.step_run_id:
-        step = zen_store().get_run_step(
-            step_run_id=logs.step_run_id, hydrate=False
-        )
-        verify_permission_for_model(
-            model=zen_store().get_run(
-                run_id=step.pipeline_run_id, hydrate=False
-            ),
-            action=Action.READ,
-        )
-    else:
-        raise IllegalOperationError(
-            "Logs must be associated with a pipeline run or step run "
-            "before fetching."
-        )
+    _verify_log_read_permission(logs)
 
     if hydrate is False:
         logs.metadata = None
 
     return dehydrate_response_model(logs)
+
+
+@router.get(
+    "/{logs_id}" + ENTRIES,
+    responses={
+        400: error_response,
+        401: error_response,
+        404: error_response,
+        422: error_response,
+        429: error_response,
+        502: error_response,
+        503: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def get_logs_entries(
+    logs_id: UUID,
+    start: Optional[Literal["oldest", "newest"]] = None,
+    limit: Optional[int] = Query(default=None, gt=0),
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    filter_: LogsEntriesFilter = Depends(make_dependable(LogsEntriesFilter)),
+    _: AuthContext = Security(authorize),
+) -> LogsEntriesResponse:
+    """Return a page of log entries.
+
+    Args:
+        logs_id: ID of the log stream to read.
+        start: Read from the oldest or newest end of the stream. Defaults
+            to the log store's choice. Pages always use chronological order.
+        limit: Maximum entries to return. Defaults to the log store's page size.
+        before: Cursor towards older entries, from a previous response.
+        after: Cursor towards newer entries, from a previous response.
+            Mutually exclusive with `before`. Unsupported directions return 400.
+        filter_: Filters to apply while retrieving the entries.
+
+    Returns:
+        A page of log entries.
+
+    Raises:
+        ValueError: If runner logs have no associated pipeline run.
+    """
+    store = zen_store()
+    logs = store.get_logs(logs_id, hydrate=False)
+    _verify_log_read_permission(logs)
+
+    if logs.source == LOGS_RUNNER_SOURCE:
+        if logs.pipeline_run_id is None:
+            raise ValueError(
+                "Runner logs must be associated with a pipeline run."
+            )
+        return fetch_runner_logs(
+            run=store.get_run(logs.pipeline_run_id, hydrate=True),
+            logs=logs,
+            start=start,
+            limit=limit,
+            before=before,
+            after=after,
+            filter_=filter_,
+        )
+
+    return fetch_logs(
+        logs=logs,
+        zen_store=store,
+        start=start,
+        limit=limit,
+        before=before,
+        after=after,
+        filter_=filter_,
+    )
 
 
 @router.put(
