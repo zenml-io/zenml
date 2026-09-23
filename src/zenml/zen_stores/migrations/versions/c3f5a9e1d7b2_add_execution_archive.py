@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
-        sa.Column("project_id", sa.Uuid(), nullable=False),
+        sa.Column("project_id", sa.Uuid(), nullable=True),
         sa.Column("run_id", sa.Uuid(), nullable=True),
         sa.Column("uri", sa.TEXT(), nullable=False),
         sa.Column("size_bytes", sa.BigInteger(), nullable=False),
@@ -45,7 +45,7 @@ def upgrade() -> None:
             ["project_id"],
             ["project.id"],
             name="fk_archive_bundle_project_id_project",
-            ondelete="CASCADE",
+            ondelete="SET NULL",
         ),
         sa.ForeignKeyConstraint(
             ["run_id"],
@@ -56,10 +56,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_archive_bundle_run_id", "archive_bundle", ["run_id"])
-    with op.batch_alter_table("server_settings") as batch_op:
-        batch_op.add_column(
-            sa.Column("retention_state", sa.TEXT(), nullable=True)
-        )
 
     # The marker columns carry no foreign key and no index on purpose. These
     # are among the largest tables, and nothing looks rows up by marker alone:
@@ -81,15 +77,6 @@ def upgrade() -> None:
                 batch_op.add_column(
                     sa.Column("substitutions", sa.TEXT(), nullable=True)
                 )
-
-    # The one index retention does need: the sweep walks every project's runs
-    # in this order, so without it each pass filesorts the whole table. MySQL
-    # builds secondary indexes online, but on a large `pipeline_run` this
-    # still takes time. Targeted archives page by `created` instead, which
-    # the existing project and pipeline indexes already serve.
-    op.create_index(
-        "ix_pipeline_run_end_time_id", "pipeline_run", ["end_time", "id"]
-    )
 
 
 def downgrade() -> None:
@@ -113,7 +100,6 @@ def downgrade() -> None:
             "Keep the current database schema."
         )
 
-    op.drop_index("ix_pipeline_run_end_time_id", table_name="pipeline_run")
     for table in ARCHIVABLE_TABLES:
         if table == "step_run":
             op.drop_column(table, "substitutions")
@@ -121,5 +107,3 @@ def downgrade() -> None:
         op.drop_column(table, "archive_bundle_id")
 
     op.drop_table("archive_bundle")
-    # Native DROP avoids rebuilding the table and cascading dependent rows.
-    op.drop_column("server_settings", "retention_state")

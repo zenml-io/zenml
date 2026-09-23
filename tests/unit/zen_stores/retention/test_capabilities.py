@@ -37,21 +37,31 @@ def test_server_model_archive_capability_defaults_to_false() -> None:
     assert model.model_dump()["execution_archiving_enabled"] is False
 
 
-def test_fresh_database_has_sweep_index(
+@pytest.mark.parametrize("migrate", [False, True])
+def test_database_preserves_archive_catalog_on_project_delete(
     retention_store: SqlZenStore,
+    migrate: bool,
 ) -> None:
-    """Fresh create-all databases have the same index as upgraded databases."""
-    indexes = {
-        index["name"]: index["column_names"]
-        for index in inspect(retention_store.engine).get_indexes(
-            "pipeline_run"
-        )
-    }
-
+    """Deleted projects leave archive locations available for cleanup."""
+    if migrate:
+        migrations = Alembic(retention_store.engine)
+        migrations.downgrade("9f2b8c7d6e5a")
+        migrations.upgrade("c3f5a9e1d7b2")
+    inspector = inspect(retention_store.engine)
     assert Alembic(retention_store.engine).current_revisions() == [
         "c3f5a9e1d7b2"
     ]
-    assert indexes["ix_pipeline_run_end_time_id"] == ["end_time", "id"]
+    project_fk = next(
+        fk
+        for fk in inspector.get_foreign_keys("archive_bundle")
+        if fk["constrained_columns"] == ["project_id"]
+    )
+    assert project_fk["options"]["ondelete"] == "SET NULL"
+    assert next(
+        column
+        for column in inspector.get_columns("archive_bundle")
+        if column["name"] == "project_id"
+    )["nullable"]
 
 
 @pytest.mark.parametrize(
@@ -75,7 +85,6 @@ def test_fresh_database_has_sweep_index(
             ArchiveSettings(
                 backend="local",
                 uri="/tmp/archive",
-                schedule_enabled=False,
             ),
             True,
         ),
@@ -230,10 +239,10 @@ def test_archive_storage_does_not_replace_global_fileio_dispatch(
     }
 
 
-def test_objects_stay_readable_after_the_archive_root_changes(
+def test_objects_can_be_read_and_deleted_after_the_archive_root_changes(
     tmp_path,
 ) -> None:
-    """A recorded URI under a former root is read where it was written."""
+    """Reads and cleanup use an object's recorded location after a move."""
     former = ArtifactStoreArchiveStorage.from_uri(str(tmp_path / "former"))
     uri = former.object_uri(uuid4(), uuid4(), uuid4())
     former.write(uri, b"archived")
@@ -241,3 +250,6 @@ def test_objects_stay_readable_after_the_archive_root_changes(
     current = ArtifactStoreArchiveStorage.from_uri(str(tmp_path / "current"))
 
     assert current.read(uri, 8) == b"archived"
+    assert current.remove(uri) is True
+    assert not former.artifact_store.exists(uri)
+    assert current.remove(uri) is True

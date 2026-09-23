@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Archiving one run at a time, on a schedule or on demand.
+"""Archiving selected runs one at a time.
 
 Every run travels the same path: capture, encode, upload, and read back byte
 for byte before SQL changes. Retirement then runs in one transaction: it
@@ -9,10 +9,8 @@ It inserts the bundle row and sets the markers together, so the database
 decides every race: two archivers racing on one run leave one bundle, and the
 loser's object is removed.
 
-``ArchivePass`` adds the scheduled sweep on top: one lease across all
-replicas, a saved position, and counts. ``archive_runs`` is the targeted
-form and needs no lease, because each run is still retired under its own row
-locks. It follows normal policy unless the caller explicitly requests force.
+``archive_runs`` needs no lease because each run is retired under its own
+row locks. It follows normal policy unless the caller requests force.
 
 Retirement deliberately does not refresh ``updated`` on the retired rows, so
 their headers keep describing the execution rather than the archiving.
@@ -20,10 +18,7 @@ their headers keep describing the execution rather than the archiving.
 
 from contextlib import contextmanager
 from datetime import datetime
-from threading import Event
-from time import monotonic
 from typing import (
-    ClassVar,
     Iterator,
     List,
     Literal,
@@ -38,7 +33,7 @@ from sqlalchemy import Engine, bindparam, delete, select, update
 from sqlmodel import Session, SQLModel, col
 
 from zenml.config.server_config import ArchiveSettings
-from zenml.enums import RetentionExclusion, RetentionFailure, RetentionOutcome
+from zenml.enums import RetentionExclusion, RetentionFailure
 from zenml.exceptions import (
     ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
@@ -53,7 +48,6 @@ from zenml.zen_stores.retention import transactions
 from zenml.zen_stores.retention.capture import ProjectionCache, capture_run
 from zenml.zen_stores.retention.eligibility import (
     ArchivableRun,
-    discover_runs,
     inspect_run,
 )
 from zenml.zen_stores.retention.format import (
@@ -64,13 +58,11 @@ from zenml.zen_stores.retention.format import (
     compute_content_hash,
     encode,
 )
-from zenml.zen_stores.retention.state import Cursor, RetentionState
 from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
-    ServerSettingsSchema,
     StepConfigurationSchema,
     StepRunSchema,
 )
@@ -101,7 +93,7 @@ class RunCounts(Protocol):
 
 
 def tally(counts: RunCounts, outcome: RunOutcome) -> None:
-    """Count one attempt against a sweep's state or a targeted result.
+    """Count one attempt against the archive result.
 
     Args:
         counts: Counters to advance.
@@ -129,14 +121,6 @@ def _refused_outcome(exclusion: RetentionExclusion) -> RunOutcome:
     return (
         "oversized" if exclusion == RetentionExclusion.OVERSIZED else "skipped"
     )
-
-
-class _PassReplaced(Exception):
-    """Another sweep took over the saved state after its lease expired."""
-
-
-class _RetentionCancelled(Exception):
-    """Cooperative stop requested before another retirement starts."""
 
 
 class _RetirementRolledBack(Exception):
@@ -187,7 +171,6 @@ class RunArchiver:
         engine: Engine,
         storage: ArchiveStorage,
         settings: ArchiveSettings,
-        cancel_event: Optional[Event] = None,
     ) -> None:
         """Bind the database and storage without touching either.
 
@@ -195,21 +178,10 @@ class RunArchiver:
             engine: Metadata database.
             storage: Archive storage.
             settings: The server's archive settings.
-            cancel_event: Cooperative cancellation signal for a sweep.
         """
         self.engine = engine
         self.storage = storage
         self.settings = settings
-        self.cancel_event = cancel_event
-
-    def check_cancelled(self) -> None:
-        """Stop before beginning another irreversible phase.
-
-        Raises:
-            _RetentionCancelled: If the owning sweep is shutting down.
-        """
-        if self.cancel_event is not None and self.cancel_event.is_set():
-            raise _RetentionCancelled()
 
     def archive(
         self, run_id: UUID, evaluated_at: datetime, *, force: bool = False
@@ -219,21 +191,16 @@ class RunArchiver:
         Args:
             run_id: Candidate run.
             evaluated_at: Evaluation time shared by the whole batch.
-            force: Ignore the age, model-link, and restore-grace rules.
+            force: Ignore the minimum-age rule.
 
         Returns:
             How the attempt ended, with a reason when the run was refused.
-
-        Raises:
-            _RetentionCancelled: The owning sweep is shutting down.
         """
-        self.check_cancelled()
         try:
             with Session(self.engine) as session:
                 run = inspect_run(
                     session, run_id, self.settings, evaluated_at, force=force
                 )
-            self.check_cancelled()
             if run.exclusion is not None:
                 return ArchiveAttempt(
                     run_id=run_id,
@@ -241,8 +208,6 @@ class RunArchiver:
                     exclusion=run.exclusion,
                 )
             return self._archive(run, evaluated_at, force)
-        except _RetentionCancelled:
-            raise
         except Exception as error:
             # SQL errors can contain archived payloads; log only their type.
             logger.error(
@@ -266,9 +231,7 @@ class RunArchiver:
         Raises:
             ExecutionRetentionIntegrityError: The uploaded object does not
                 match the capture; caught below and reported as a failure.
-            _RetentionCancelled: The owning sweep is shutting down.
         """  # noqa: DOC502
-        self.check_cancelled()
         # Filled outside the locks so retirement need not validate every
         # step configuration again while it blocks the run's writers.
         projections: ProjectionCache = {}
@@ -278,13 +241,11 @@ class RunArchiver:
                     capture_run(
                         session,
                         run,
-                        check_cancelled=self.check_cancelled,
                         projections=projections,
                     )
                 )
         except ExecutionRetentionConflictError as error:
             return self._conflict_attempt(run.run_id, error)
-        self.check_cancelled()
         # The object name is random rather than derived from the run or its
         # content, so every attempt owns its object outright: a failed attempt
         # can remove its object without ever touching the one a concurrent,
@@ -294,25 +255,17 @@ class RunArchiver:
         bundle_id = uuid4()
         uri = self.storage.object_uri(run.project, run.run_id, bundle_id)
         retirement_started = False
-        object_written = False
         try:
             self.storage.write(uri, encoded.data)
-            object_written = True
-            self.check_cancelled()
             if self.storage.read(uri, len(encoded.data)) != encoded.data:
                 raise ExecutionRetentionIntegrityError(
                     "Uploaded archive object differs from the capture."
                 )
-            self.check_cancelled()
             retirement_started = True
             self._retire(
                 run, bundle_id, uri, encoded, evaluated_at, force, projections
             )
             return ArchiveAttempt(run_id=run.run_id, outcome="archived")
-        except _RetentionCancelled:
-            if object_written and not retirement_started:
-                self.storage.remove(uri)
-            raise
         except _RetirementRolledBack as failure:
             self.storage.remove(uri)
             cause = failure.error
@@ -506,7 +459,7 @@ def archive_runs(
     The safety rules still apply, so a run that is unfinished, resumable, or
     owned by an active root stays in the database with its reason. No lease
     is taken: every run is retired under its own row locks, so a targeted
-    archive and the scheduled sweep can only ever duplicate work, never
+    archive requests can only ever duplicate work, never
     corrupt each other.
 
     Args:
@@ -583,207 +536,6 @@ def preview_runs(
     result.refusals = refusals[:MAX_REFUSALS]
     result.refusals_truncated = len(refusals) > MAX_REFUSALS
     return result
-
-
-class ArchivePass:
-    """One bounded archive sweep over every project, oldest runs first.
-
-    The sweep owns the lease, the saved position and the counts, and hands
-    each candidate to a ``RunArchiver``. It deliberately does not inherit
-    that archiver: forcing one arbitrary run past the age and model-link
-    rules is not something a bounded sweep should be able to do.
-    """
-
-    MAX_SECONDS: ClassVar[int] = 60
-
-    def __init__(
-        self,
-        engine: Engine,
-        storage: ArchiveStorage,
-        settings: ArchiveSettings,
-        cancel_event: Optional[Event] = None,
-    ) -> None:
-        """Prepare a sweep without touching the database.
-
-        Args:
-            engine: Metadata database.
-            storage: Archive storage.
-            settings: The server's archive settings.
-            cancel_event: Cooperative cancellation signal from the scheduler.
-        """
-        self.engine = engine
-        self.storage = storage
-        self.settings = settings
-        self.archiver = RunArchiver(
-            engine, storage, settings, cancel_event=cancel_event
-        )
-        self.operation_id = uuid4()
-        self.settings_id: Optional[UUID] = None
-        self.state = RetentionState()
-
-    def accept(self) -> None:
-        """Take the server-wide sweep lease.
-
-        Raises:
-            ExecutionRetentionConflictError: Another replica is sweeping.
-        """
-        with transactions.transaction(self.engine) as session:
-            self._load(session)
-            now = transactions.database_now(session)
-            if self.state.is_live(now):
-                raise ExecutionRetentionConflictError(
-                    "An archive sweep is already running on this server. "
-                    "Retry after it finishes."
-                )
-            self.state.start(self.operation_id)
-            self._save(session, now)
-
-    def run(self) -> RetentionState:
-        """Archive a bounded batch and record the outcome.
-
-        The sweep must have taken the lease first.
-
-        Returns:
-            The saved state after the sweep.
-        """
-        started = monotonic()
-        try:
-            self.archiver.check_cancelled()
-            if not self.storage.probe():
-                return self._finish(
-                    RetentionOutcome.FAILED,
-                    RetentionFailure.STORAGE_CONFIGURATION,
-                )
-            with Session(self.engine) as session:
-                evaluated_at = transactions.database_now(session)
-                candidates = discover_runs(
-                    session,
-                    self.settings,
-                    evaluated_at,
-                    self.state.cursor,
-                    self.settings.max_runs_per_pass + 1,
-                    self.state.oversized_run_ids,
-                )
-            for cursor in candidates[: self.settings.max_runs_per_pass]:
-                self.archiver.check_cancelled()
-                if monotonic() - started >= self.MAX_SECONDS:
-                    return self._finish(RetentionOutcome.PAUSED)
-                self._process(cursor, evaluated_at)
-            return self._finish(
-                RetentionOutcome.SUCCEEDED
-                if len(candidates) <= self.settings.max_runs_per_pass
-                else RetentionOutcome.PAUSED
-            )
-        except _RetentionCancelled:
-            return self._finish(RetentionOutcome.PAUSED)
-        except _PassReplaced:
-            return self.state
-        except Exception as error:
-            # SQL errors can contain archived payloads; log only their type.
-            logger.error(
-                "Archive sweep failed (%s).",
-                type(error).__name__,
-            )
-            return self._finish(
-                RetentionOutcome.FAILED, RetentionFailure.ARCHIVE_FAILED
-            )
-
-    def _process(self, cursor: Cursor, evaluated_at: datetime) -> None:
-        """Archive or skip one run and save the position after it.
-
-        Args:
-            cursor: Run to examine.
-            evaluated_at: Evaluation time shared by the whole sweep.
-        """
-        attempt = self.archiver.archive(cursor.run_id, evaluated_at)
-        with self._update() as state:
-            state.cursor = cursor
-            tally(state, attempt.outcome)
-            if attempt.outcome == "oversized":
-                # Runs over the byte budget are only found by reading them.
-                state.remember_oversized(attempt.run_id)
-
-    def _load(self, session: Session) -> None:
-        """Lock the settings row while changing the latest sweep state.
-
-        This lock is held only for progress updates, never during capture,
-        storage I/O, or retirement. The operation ID still prevents a replaced
-        worker from publishing progress.
-
-        Args:
-            session: Current short progress transaction.
-        """
-        row = session.execute(
-            select(
-                col(ServerSettingsSchema.id),
-                col(ServerSettingsSchema.retention_state),
-            ).with_for_update()
-        ).one()
-        self.settings_id = row.id
-        self.state = RetentionState.load(row.retention_state)
-
-    def _save(self, session: Session, now: datetime) -> None:
-        """Save progress while holding the settings row lock.
-
-        The statement writes only ``retention_state``, so sweep progress
-        never looks like a settings change to clients watching ``updated``.
-
-        Args:
-            session: Transaction that locked and loaded the settings row.
-            now: Current database time for the lease and finish timestamp.
-        """
-        active = self.state.last_outcome == RetentionOutcome.RUNNING
-        self.state.operation_expires_at = (
-            now + RetentionState.LEASE if active else None
-        )
-        self.state.last_finished_at = None if active else now
-        session.execute(
-            update(ServerSettingsSchema)
-            .where(col(ServerSettingsSchema.id) == self.settings_id)
-            .values(retention_state=self.state.model_dump_json())
-        )
-
-    @contextmanager
-    def _update(self) -> Iterator[RetentionState]:
-        """Change progress only while this sweep still owns it.
-
-        Yields:
-            Locked state to update before committing the short transaction.
-
-        Raises:
-            _PassReplaced: Another sweep took over the state.
-        """
-        with transactions.transaction(self.engine) as session:
-            self._load(session)
-            if self.state.operation_id != self.operation_id:
-                raise _PassReplaced()
-            yield self.state
-            self._save(session, transactions.database_now(session))
-
-    def _finish(
-        self,
-        outcome: RetentionOutcome,
-        failure: Optional[RetentionFailure] = None,
-    ) -> RetentionState:
-        """Record the sweep outcome unless another sweep took over.
-
-        Args:
-            outcome: Final outcome.
-            failure: Safe failure classification for the server logs.
-
-        Returns:
-            The saved state.
-        """
-        try:
-            with self._update() as state:
-                state.last_outcome = outcome
-                if outcome == RetentionOutcome.SUCCEEDED:
-                    state.cursor = None
-        except _PassReplaced:
-            pass
-        if failure is not None:
-            logger.warning("Archive sweep failed (%s).", failure)
-        return self.state
 
 
 def _clear_detail(

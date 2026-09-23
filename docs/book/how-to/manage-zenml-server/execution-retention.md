@@ -26,12 +26,9 @@ metadata, indexes, and shared snapshots can continue growing. It does not
 delete artifact files, automatically reclaim database files, or shrink a
 database volume.
 
-{% hint style="warning" %}
-Archiving is server-wide and has **no opt-out**. Once enabled, the scheduled
-sweep considers eligible finished runs past `after_days` in every project,
-for every team on the server, subject to the protections below. There is no per-project switch and no way to pin a
-run. Choose `after_days` with that in mind before enabling it.
-{% endhint %}
+Archiving runs only when you invoke the CLI or SDK. There is no built-in
+archive scheduler. Choose a project, pipeline, or individual runs explicitly;
+if you need periodic archiving, schedule the CLI command with your own job runner.
 
 ## Configure archiving
 
@@ -42,35 +39,28 @@ and every setting takes effect after a restart:
 ZENML_SERVER_ARCHIVE__BACKEND=s3
 ZENML_SERVER_ARCHIVE__URI=s3://my-bucket/zenml-archive
 ZENML_SERVER_ARCHIVE__AFTER_DAYS=90
-ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED=true
-ZENML_SERVER_ARCHIVE__SCHEDULE="0 3 * * *"
 ```
 
-Configuring storage only allows manual archiving. Scheduled sweeps archive
-every eligible run on the server, so they stay off until you set
-`SCHEDULE_ENABLED=true`. Preview what the policy selects first with
+Configuring storage allows manual archiving. Preview the selected project
+before changing execution data:
 `zenml server retention archive --project <project> --dry-run`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `BACKEND` | `disabled` | `disabled`, `local`, `s3`, `gcs`, or `azure`. A non-disabled backend configures storage and requires `URI`. |
 | `ENABLED` | `true` | Allow new archives when storage is configured. Set `false` to pause new archiving while keeping restore available. |
-| `SCHEDULE_ENABLED` | `false` | Run automatic sweeps on `SCHEDULE`. Off by default, so configuring storage alone only allows manual archiving. |
 | `URI` | unset | Archive root. Its scheme must match the backend. |
 | `AFTER_DAYS` | 90 | Minimum age of a finished run, at least **7 days**. |
-| `SCHEDULE` | `0 3 * * *` | Cron expression for the sweep, in UTC. |
-| `MAX_RUNS_PER_PASS` | 200 | Runs one sweep examines. |
-| `RESTORED_GRACE_DAYS` | 30 | Days a restored run stays in the database before it may be archived again. |
-| `MODEL_LINKED_RUNS` | `false` | Whether runs linked to a model version may be archived. |
 | `CONNECTOR_ID` | unset | Service connector to authenticate with, instead of ambient credentials. |
 
-An incomplete or inconsistent group fails startup naming the exact variable,
-so a typo cannot silently leave archiving half-configured.
+With a non-disabled backend, a missing URI or mismatched URI scheme fails
+validation. Unknown fields within the `ARCHIVE` group are rejected. Omitting
+`BACKEND` leaves archiving disabled, even if a URI is supplied.
 
 {% hint style="info" %}
 **During a rolling upgrade, keep `BACKEND` disabled or unset until every
-replica runs the new version.** Do not introduce the new `ENABLED` or
-`SCHEDULE_ENABLED` settings into a mixed-version deployment: older replicas
+replica runs the new version.** Do not introduce the new `ENABLED`
+setting into a mixed-version deployment: older replicas
 reject unknown archive settings. The migration is additive and safe to apply
 first, but an old replica cannot see archive markers: it tries to load the
 detail that archiving removed and answers requests for an archived run with
@@ -105,7 +95,7 @@ configured, because deleting it would make archived runs unreadable.
 The server image must include the matching storage integration. The credentials
 must allow reading, writing, and deleting objects below the URI.
 
-At startup and before each sweep, the server writes, reads back, and removes
+At startup, the server writes, reads back, and removes
 a probe object at `{uri}/_probes/{uuid}`. A failed startup probe only logs a
 warning, so a transient outage does not stop the server. Archive objects live
 at `{uri}/{project_id}/{run_id}/{bundle_id}.json.gz`; the database records
@@ -120,9 +110,8 @@ pausing archiving:
 ZENML_SERVER_ARCHIVE__ENABLED=false
 ```
 
-This blocks new manual and scheduled archives after restart. Summaries and
-restore remain available. Leave `SCHEDULE_ENABLED` at its default of `false`
-for manual-only archiving. Setting `BACKEND=disabled` removes access to archive
+This blocks new archives after restart. Summaries and unarchive remain
+available. Setting `BACKEND=disabled` removes access to archive
 storage and therefore also prevents restore; use `ENABLED=false` to pause.
 
 Changing the configured URI or provider does not migrate existing objects.
@@ -131,66 +120,38 @@ stay in place, and the server's ambient credentials or configured
 `CONNECTOR_ID` must still be able to read it. The server image must keep the
 storage integration for the earlier provider installed.
 
-## What the sweep archives
+## Which runs can be archived
 
-A sweep examines runs across every project in age order, starting from where
-the previous sweep stopped. Runs that are too recent or linked to a model
-version, when the configuration protects them, are skipped before
-examination. Every other examined run is archived unless one of these
-applies, in which case a later sweep reconsiders it:
+Archiving considers finished runs in the selected target. They must meet
+`AFTER_DAYS` unless a server admin explicitly uses `--force`. Runs linked to
+model versions follow the same rules as other runs. Execution safety still
+prevents archiving in these cases:
 
 | Reason | Meaning |
 | --- | --- |
 | `not_eligible` | The run, one of its steps, one of its child runs, or a replay using it is still active, or a wait condition is unresolved. |
 | `resumable_failed` | The failed dynamic run can still be resumed, including locally without a server-runnable build. |
 | `root_active` | The run is a child of a root run that is still active or can still be resumed. Resuming a root reruns its child runs, which needs their details. |
-| `restored_grace` | The run was restored within the grace period. |
 | `oversized` | The run exceeds 50,000 archived rows. |
 
 Each run is archived on its own, including child runs of dynamic pipelines. A
 run's uncompressed archive document must fit within 64 MiB, and one capture
 accepts at most 128 MiB of text and binary source values read from SQL. A run
 that turns out larger during capture stays in the database and counts as
-`oversized`, and later sweeps skip it. These are document and source-transfer
+`oversized`. These are document and source-transfer
 limits, not a process-memory limit: model validation, serialization, and
 compression require additional working memory.
 
 Each server process admits at most four retention payload operations at once
-across manual archiving, sweeping, and restoration. Manual batches process
+across archiving, unarchiving, and archive-object cleanup. Manual batches process
 their runs sequentially within one admitted operation. This bound is local to
-one replica, not cluster-wide; the database-backed sweep lease separately
-ensures that only one replica performs a scheduled sweep.
-
-## The scheduled sweep
-
-Every replica schedules the sweep on `SCHEDULE`, and a lease decides which
-one actually runs it; the others do nothing. A sweep examines up to
-`MAX_RUNS_PER_PASS` runs and uses a **60-second soft budget checked between
-runs** before saving its position. A storage request, SQL lock wait, or an
-already-started retirement can take the pass beyond that budget. A sweep that
-stops on either budget reports `paused` and is resumed a few seconds later, so
-a backlog drains over several sweeps rather than in one long transaction.
-During server shutdown, cancellation is checked between phases and before a
-new retirement starts; shutdown waits for an active scheduled sweep, including
-an already-started transaction, to finish rather than interrupting its commit.
-Manual archive and restore requests are not drained on shutdown; an
-interrupted one rolls back or leaves its run unchanged and can be repeated.
-
-For S3, each SDK request uses a 10-second connection timeout, a 60-second
-socket-read timeout, and at most three total attempts. Those are per-request
-transport bounds, not a deadline for a complete archive operation, which can
-issue several requests. The current ZenML artifact-store contract exposes no
-portable whole-operation deadline for GCS, Azure, local filesystems, or SQL.
-Their provider and driver timeouts still apply, but this feature cannot promise
-a fixed maximum shutdown duration for those backends.
-
-There is no command to trigger a sweep. To archive something now, use the
-targeted command below.
+one replica, not cluster-wide. Concurrent archive requests recheck each
+run under database locks before removing any detail.
 
 ## Archive specific runs now
 
-Age-based sweeping cannot help when one noisy pipeline is filling the
-database today, so runs can also be archived on demand:
+Archive eligible runs in a selected pipeline or project, or name individual
+runs:
 
 ```shell
 zenml server retention archive --pipeline my-pipeline
@@ -198,18 +159,23 @@ zenml server retention archive --run-id <uuid> --run-id <uuid>
 zenml server retention archive --project default
 ```
 
-Manual archiving applies the same age, model-link, and restore-grace policy
-as the scheduled sweep. To deliberately override those three rules, add
+Archiving applies the configured minimum age. To archive newly finished
+runs before that age, add
 `--force`. Because it sets aside the policy the server admin configured,
 `--force` requires a server admin. The confirmation identifies the override.
 Active runs, resumable runs, and other execution-safety exclusions remain
 protected even with force.
 
-A pipeline or project target examines a bounded batch of its finished runs,
-earliest-created first. The response includes `pending` and `next_after_run_id`. When more
-candidates remain, pass the returned ID with `--after-run-id` on the next
-command. This advances past refused runs too; a page that archives nothing
-can still have more work after it. The CLI prints the continuation ID.
+The CLI examines finished, unarchived runs in creation order, in batches of
+up to 200. It automatically requests the next batch until the selected scan
+is complete, reporting each batch's results. Refused runs do not stop the scan.
+A batch with failed operations stops the command with a nonzero exit code;
+resolve the failure and rerun it. Already archived runs are skipped.
+
+The API and SDK return one batch with `pending` and `next_after_run_id`.
+Pass that ID as `after_run_id` to continue. The CLI also accepts
+`--after-run-id` for explicitly resuming at a known position. Stop the CLI
+with Ctrl+C; an in-flight server request may still finish its current batch.
 
 Archiving requires update permission on every run it archives. Naming a
 pipeline or project additionally requires update permission on that resource;
@@ -253,35 +219,10 @@ if result.pending:
 zenml server retention status
 ```
 
-Status shows the latest sweep outcome, when it finished, how many runs it
-archived, skipped, found oversized, or failed on, and whether storage is
-configured, new archives are enabled, and automatic sweeps are enabled.
-Counts accumulate across the resumed segments of one scan and reset when a
-new scan starts from the oldest run.
-`archive_configured` means storage settings are present; status does not
-construct an adapter or check the health of stored objects. It never scans
-runs or reads archive objects.
-Reading it requires a server admin.
-
-| Outcome | Meaning | Next action |
-| --- | --- | --- |
-| `idle` | No sweep has run on this server. | Wait for the schedule. |
-| `running` | A sweep is working. | Check again shortly. |
-| `succeeded` | The sweep reached the end of the eligible runs. | Nothing; the next scheduled sweep picks up newly eligible runs. |
-| `paused` | The sweep stopped at its run or time budget. | Nothing; it resumes automatically. |
-| `failed` | The sweep stopped early; the server log has the failure code. | Read the failure code in server logs and correct the cause. |
-| `expired` | A running sweep stopped updating for ten minutes, for example because its server process stopped. | The next sweep takes over. |
-
-| Failure | Meaning | Next action |
-| --- | --- | --- |
-| `storage_configuration` | The storage probe failed. | Check the archive URI, the integration, and the server's credentials. |
-| `archive_failed` | The sweep itself hit an unexpected error, such as an unreachable database. | Inspect the server logs. |
-
-A run that changed while it was being archived is skipped and reconsidered
-later. A run whose own archiving failed is counted in `failed` and the sweep
-carries on with the next one, so a sweep can report `succeeded` with a
-non-zero `failed` count; the server log names each error type. Those runs are
-reconsidered by the next sweep.
+Status reports whether archive storage is configured, whether new archives
+are enabled, and the minimum archive age. It does not scan runs or check
+storage health. Reading it requires a server admin. Batch results are reported
+by the archive command; the server does not maintain a sweep history.
 
 ## What users see
 
@@ -321,20 +262,20 @@ not affect header reads. A restore during an outage returns **503** with
 `Retry-After`; an object that fails verification returns **500**. Either
 failure leaves the archived SQL rows unchanged.
 
-## Restore
+## Unarchive
 
 Restore writes an archived run's detail back into the database:
 
 ```shell
-zenml pipeline runs restore my-run
+zenml pipeline runs unarchive my-run
 ```
 
 The command accepts a run name, ID, or unique ID prefix and finishes when the
 run is restored. Restore is all-or-nothing: it needs every archived row to
 still exist with its archive marker, and any mismatch returns **409** without
-changing anything. A run that is not archived returns `noop`. A restored run
-is protected from scheduled and normal manual archiving for
-`restored_grace_days`; an explicit `--force` overrides this grace period.
+changing anything. A run that is not archived returns `noop`. There is no grace
+period after unarchiving: a later manual archive command can archive the run
+again if its original completion time meets the minimum age.
 
 Restore requires read permission on the run, so a user who can open a run can
 also make its cold detail available; the dashboard relies on this when it
@@ -350,14 +291,22 @@ Deleting an archived run first restores its detail, then deletes the run.
 Its snapshot remains readable and reusable, just as after deleting an
 unarchived run. Deletion requires delete permission on the run and available
 archive storage; if restoration fails, the run remains intact. Deleting the
-run is **irreversible**, and its archive object is kept.
+run is **irreversible**. After the database deletion commits, the server
+schedules asynchronous deletion of that run's archive objects. Deleting a
+project also schedules cleanup of its archived runs' objects. Unarchiving
+alone keeps the archive object.
+
+Object cleanup is best effort and runs after the response. A storage failure
+is logged and retains the catalog entry; a later run or project deletion
+retries pending cleanup. A server shutdown can interrupt that background
+work. Database deletion success does not confirm object deletion has finished.
 
 ## API routes
 
 | Method and route | Purpose | Permission |
 | --- | --- | --- |
 | `POST /api/v1/retention/archive` | Archive or preview named runs, a pipeline, or a project. | Update on the target and on every archived run; read for `dry_run=true`; server admin for `force=true` |
-| `GET /api/v1/retention/status` | Read the latest sweep. | Server admin |
+| `GET /api/v1/retention/status` | Read archive configuration. | Server admin |
 | `POST /api/v1/runs/{run_id}/restore` | Restore a run; returns the result. | Run read |
 
 Archiving and restoring can take a while. The shared SDK request layer sends
@@ -395,14 +344,19 @@ runs, because archive catalog records remain.
    detail or replaying a run. The bundled dashboard performs the same restore
    only during deliberate run-detail loading; lists and background refreshes
    remain read-only.
-3. **Archive objects are never deleted,** and archived detail depends on them staying available at the recorded URIs. A server process that is killed between uploading an object and committing its run can leave an object that no run refers to. Such an object only costs storage: it is any object below the archive root whose URI is not in the `archive_bundle.uri` column.
+3. **Archive objects stay available until their run is deleted.** Run and
+   project deletion trigger asynchronous cleanup; failures retain catalog
+   entries for a later retry. A process killed between upload and SQL commit
+   can still leave an uncataloged object. Do not delete objects solely by age:
+   a live archived run may still depend on them.
 4. **Only archive format version 1 exists.** Other versions are integrity errors; there are no format adapters.
 5. **Archived entries in detailed lists are summaries.** Check the archive
    descriptor before accessing cold detail; API clients restore explicitly
    when needed.
-6. **Only the latest sweep is recorded.** There is no operation history.
-7. **There is no opt-out.** Archiving is server-wide, and no project or run
-   can be excluded once it is enabled.
+6. **No built-in scheduler or operation history.** Run archiving manually or
+   schedule the CLI externally.
+7. **No unarchive grace period or model-link exception.** The selected runs
+   all follow the same minimum-age and execution-safety rules.
 8. **Metadata, hook invocations, and run wait conditions stay in the database.**
 9. **Shared snapshots stay in SQL,** including snapshots referenced by other
    archived runs. This keeps each run independently restorable but limits

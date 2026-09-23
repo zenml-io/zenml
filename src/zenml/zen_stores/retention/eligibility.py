@@ -1,14 +1,10 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Per-run archive eligibility, evaluated in SQL without reading payloads.
 
-Discovery walks every project oldest first and applies the filters that need
-no inspection: runs still in SQL, runs finished long enough ago, and the
-model-link rule, continuing from the sweep's saved position. Inspection then
-gives each candidate at most one exclusion reason and counts the rows its
-bundle would hold.
-
-A targeted archive applies the same policy by default. Operators can request
-``force`` explicitly to ignore the age, model-link, and restore-grace rules.
+Selection walks the requested project's or pipeline's finished runs in
+creation order. Inspection gives each candidate at most one exclusion reason
+and counts the rows its bundle would hold. Model links and previous restores
+do not exclude a run. Operators can request ``force`` to ignore minimum age.
 It never ignores the rules that keep a run readable while something is still
 using it: those would strip configuration a running orchestrator depends on.
 
@@ -34,11 +30,8 @@ from zenml.enums import (
 )
 from zenml.models.v2.misc.retention import ArchiveRequest
 from zenml.zen_stores.retention.format import MAX_RECORDS
-from zenml.zen_stores.retention.state import Cursor
 from zenml.zen_stores.schemas import (
-    ArchiveBundleSchema,
     DeploymentSchema,
-    ModelVersionPipelineRunSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
     RunTemplateSchema,
@@ -47,6 +40,8 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
     TriggerSnapshotSchema,
 )
+
+MAX_ARCHIVE_BATCH_SIZE = 200
 
 TERMINAL_STATUSES = [
     status.value for status in ExecutionStatus if status.is_finished
@@ -131,20 +126,17 @@ def _finished_unarchived(
     return statement
 
 
-def expand_target(
-    engine: Engine, request: ArchiveRequest, settings: ArchiveSettings
-) -> ArchiveBatch:
+def expand_target(engine: Engine, request: ArchiveRequest) -> ArchiveBatch:
     """Resolve one targeted archive request to a bounded batch of runs.
 
     Named runs are taken as given, deduplicated so one run cannot be counted
     twice. A pipeline or project yields its earliest-created finished runs
-    that are still in SQL, bounded by the same budget the sweep uses, because
+    that are still in SQL, in bounded batches because
     a project-wide request must not run unbounded inside one HTTP request.
 
     Args:
         engine: Metadata database.
         request: Validated target.
-        settings: The server's archive settings.
 
     Returns:
         The runs to attempt and whether the owner has more of them.
@@ -157,15 +149,14 @@ def expand_target(
         # A repeated ID would otherwise be archived on one thread and
         # refused on another, counting one run twice.
         return ArchiveBatch(run_ids=list(dict.fromkeys(request.run_ids)))
-    limit = settings.max_runs_per_pass
+    limit = MAX_ARCHIVE_BATCH_SIZE
     owner = (
         col(PipelineRunSchema.pipeline_id) == request.pipeline_id
         if request.pipeline_id is not None
         else col(PipelineRunSchema.project_id) == request.project_id
     )
-    # One owner's runs are paged by `created` rather than by the sweep's
-    # `end_time`: the existing owner indexes already serve that order, so a
-    # targeted archive costs the largest table no index of its own.
+    # Existing owner indexes serve creation order, so targeted archiving
+    # does not need another index on the run table.
     created = col(PipelineRunSchema.created)
     with Session(engine) as session:
         after = None
@@ -194,45 +185,6 @@ def expand_target(
     )
 
 
-def discover_runs(
-    session: Session,
-    settings: ArchiveSettings,
-    now: datetime,
-    after: Optional[Cursor],
-    limit: int,
-    skip: Sequence[UUID] = (),
-) -> List[Cursor]:
-    """Return the next candidates across every project, oldest first.
-
-    Args:
-        session: Read session.
-        settings: The server's archive settings.
-        now: Evaluation time.
-        after: Last examined run, or None to start from the oldest.
-        limit: Maximum number of candidates.
-        skip: Runs already known to exceed the byte budget.
-
-    Returns:
-        Candidate positions, oldest first.
-    """
-    statement = _finished_unarchived(
-        col(PipelineRunSchema.end_time),
-        (after.end_time, after.run_id) if after is not None else None,
-        limit,
-    ).where(
-        col(PipelineRunSchema.end_time)
-        < now - timedelta(days=settings.after_days),
-    )
-    if not settings.model_linked_runs:
-        statement = statement.where(~_model_link(col(PipelineRunSchema.id)))
-    if skip:
-        statement = statement.where(col(PipelineRunSchema.id).not_in(skip))
-    rows = session.execute(statement).all()
-    return [
-        Cursor(end_time=end_time, run_id=run_id) for end_time, run_id in rows
-    ]
-
-
 def inspect_run(
     session: Session,
     run_id: UUID,
@@ -248,8 +200,7 @@ def inspect_run(
         run_id: Candidate run.
         settings: The server's archive settings.
         now: Evaluation time.
-        force: Ignore the age, the model-link rule, and the restore grace
-            period, as a targeted archive does.
+        force: Ignore minimum age, as a targeted archive does.
 
     Returns:
         The run's owned snapshots, row count, and first exclusion, if any.
@@ -272,22 +223,6 @@ def inspect_run(
     if run.exclusion is None and run.row_count > MAX_RECORDS:
         run.exclusion = RetentionExclusion.OVERSIZED
     return run
-
-
-def _model_link(run_id: Any) -> ColumnElement[bool]:
-    """Match runs linked to a model version.
-
-    Args:
-        run_id: Run identity expression, possibly correlated.
-
-    Returns:
-        An EXISTS predicate.
-    """
-    return (
-        select(col(ModelVersionPipelineRunSchema.id))
-        .where(col(ModelVersionPipelineRunSchema.pipeline_run_id) == run_id)
-        .exists()
-    )
 
 
 def _resumable_failed(run_id: Any) -> ColumnElement[bool]:
@@ -333,7 +268,7 @@ def _first_exclusion(
         project_id: Project owning the run.
         settings: The server's archive settings.
         now: Evaluation time.
-        force: Drop the age, model-link, and restore-grace rules.
+        force: Drop the minimum-age rule.
 
     Returns:
         The first matching reason in precedence order, or None.
@@ -370,17 +305,6 @@ def _first_exclusion(
         ),
     }
     if not force:
-        checks[RetentionExclusion.RESTORED_GRACE] = (
-            select(col(ArchiveBundleSchema.id))
-            .where(
-                col(ArchiveBundleSchema.run_id) == run_id,
-                col(ArchiveBundleSchema.restored_at)
-                > now - timedelta(days=settings.restored_grace_days),
-            )
-            .exists()
-        )
-        if not settings.model_linked_runs:
-            checks[RetentionExclusion.MODEL_LINK] = _model_link(run_id)
         checks[RetentionExclusion.NOT_OLD] = this_run.where(
             col(PipelineRunSchema.end_time) >= cutoff
         ).exists()

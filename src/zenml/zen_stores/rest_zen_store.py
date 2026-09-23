@@ -4137,10 +4137,10 @@ class RestZenStore(BaseZenStore):
             )
 
     def get_retention_status(self) -> RetentionStatusResponse:
-        """Read the server's latest archive sweep without object access.
+        """Read the server's archive configuration without object access.
 
         Returns:
-            Latest saved sweep outcome, completion time, and configuration.
+            Current archive configuration.
         """
         with self._retention_route():
             return RetentionStatusResponse.model_validate(

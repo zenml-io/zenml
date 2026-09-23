@@ -788,7 +788,7 @@ def retention() -> None:
 
 @retention.command("status")
 def retention_status() -> None:
-    """Show the latest archive sweep without reading object storage."""
+    """Show archive configuration without reading object storage."""
     cli_utils.print_pydantic_model(
         "Execution archive status", Client().get_retention_status()
     )
@@ -823,8 +823,7 @@ def retention_status() -> None:
 @click.option(
     "--force",
     is_flag=True,
-    help="Override age, model-link, and restore-grace protections. "
-    "Requires a server admin.",
+    help="Override the minimum archive age. Requires a server admin.",
 )
 @click.option(
     "--dry-run",
@@ -841,10 +840,10 @@ def archive_runs(
     dry_run: bool,
     yes: bool,
 ) -> None:
-    """Archive or preview runs instead of waiting for a scheduled sweep.
+    """Archive or preview all selected runs in bounded batches.
 
     Normal retention policy applies unless `--force` explicitly overrides the
-    age, model-link, and restore-grace rules. Runs that something is still
+    minimum-age rule. Runs that something is still
     using are always listed with a reason rather than archived.
 
     Args:
@@ -852,7 +851,7 @@ def archive_runs(
         pipeline: Pipeline whose runs to archive.
         project: Project whose runs to archive.
         after_run_id: Last examined run from a prior owner-wide request.
-        force: Whether to override policy protections.
+        force: Whether to override the minimum archive age.
         dry_run: Whether to inspect eligibility without archiving runs.
         yes: Whether to archive without interactive confirmation.
     """
@@ -873,8 +872,8 @@ def archive_runs(
         else f"project '{project}'"
     )
     warning = (
-        " This overrides minimum age, model-version protection, and restore "
-        "grace; active and resumable execution safety checks still apply."
+        " This overrides minimum age; "
+        "active and resumable execution safety checks still apply."
         if force
         else ""
     )
@@ -889,47 +888,53 @@ def archive_runs(
     ):
         cli_utils.declare("Archiving canceled.")
         return
-    result = Client().archive_runs(
-        run_ids=list(run_ids) or None,
-        pipeline=pipeline,
-        project=project,
-        after_run_id=after_run_id,
-        force=force,
-        dry_run=dry_run,
-    )
-    if result.dry_run:
-        cli_utils.declare(
-            f"Dry run: eligible {result.eligible}, skipped {result.skipped}, "
-            f"oversized {result.oversized}, failed {result.failed}."
+    client = Client()
+    while True:
+        result = client.archive_runs(
+            run_ids=list(run_ids) or None,
+            pipeline=pipeline,
+            project=project,
+            after_run_id=after_run_id,
+            force=force,
+            dry_run=dry_run,
         )
-    else:
-        cli_utils.declare(
-            f"Archived {result.archived}, skipped {result.skipped}, "
-            f"oversized {result.oversized}, failed {result.failed}."
-        )
-    if result.refusals:
-        cli_utils.print_table(
-            [
-                {"run_id": str(refusal.run_id), "reason": refusal.reason.value}
-                for refusal in result.refusals
-            ],
-            title="Runs left in the database",
-        )
-    if result.refusals_truncated:
-        cli_utils.declare("More runs were refused than are listed here.")
-    if result.pending:
-        if result.next_after_run_id is not None:
+        if result.dry_run:
             cli_utils.declare(
-                "More runs remain; repeat the command with "
-                f"--after-run-id {result.next_after_run_id}."
+                f"Dry run: eligible {result.eligible}, skipped {result.skipped}, "
+                f"oversized {result.oversized}, failed {result.failed}."
             )
         else:
-            cli_utils.declare("More runs remain in this bounded request.")
-    elif not result.dry_run and result.refusals and not result.archived:
-        cli_utils.declare(
-            "Nothing moved; resolve the reasons above to archive these runs."
-        )
-    if result.failed:
-        cli_utils.error(
-            f"{result.failed} run(s) failed; the server log names each error."
-        )
+            cli_utils.declare(
+                f"Archived {result.archived}, skipped {result.skipped}, "
+                f"oversized {result.oversized}, failed {result.failed}."
+            )
+        if result.refusals:
+            cli_utils.print_table(
+                [
+                    {
+                        "run_id": str(refusal.run_id),
+                        "reason": refusal.reason.value,
+                    }
+                    for refusal in result.refusals
+                ],
+                title="Runs left in the database",
+            )
+        if result.refusals_truncated:
+            cli_utils.declare("More runs were refused than are listed here.")
+        if not result.dry_run and result.refusals and not result.archived:
+            cli_utils.declare(
+                "Nothing moved in this batch; see the reasons above."
+            )
+        if result.failed:
+            cli_utils.error(
+                f"{result.failed} run(s) failed; the server log names each error."
+            )
+        if not result.pending:
+            break
+        if (
+            result.next_after_run_id is None
+            or result.next_after_run_id == after_run_id
+        ):
+            cli_utils.error("The server returned no advancing archive cursor.")
+        after_run_id = result.next_after_run_id
+        cli_utils.declare("Continuing with the next batch...")

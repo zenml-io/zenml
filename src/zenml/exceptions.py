@@ -124,7 +124,7 @@ class ExecutionArchivedError(ZenMLBaseException):
         if run_id is not None:
             return cls(
                 f"Execution detail '{entity_id}' is archived; restore its run "
-                f"with `zenml pipeline runs restore {run_id}` before "
+                f"with `zenml pipeline runs unarchive {run_id}` before "
                 "accessing or modifying detail."
             )
         return cls(

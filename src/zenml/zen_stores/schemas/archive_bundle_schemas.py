@@ -40,9 +40,9 @@ class ArchiveBundleSchema(BaseSchema, table=True):
 
     The row is inserted in the same transaction that sets those markers, so
     a row exists exactly when an object is authoritative. It is kept after a
-    restore, with `restored_at` set, to enforce the restore grace period.
-    `run_id` is SET NULL rather than CASCADE because a snapshot archived in
-    the same bundle can outlive its run. Archive objects are never deleted.
+    restore, with `restored_at` recording completion. Deleting a run or
+    project clears its foreign key but keeps the URI until asynchronous
+    object deletion succeeds. Deleting a run first restores its snapshot.
     """
 
     __tablename__ = "archive_bundle"
@@ -50,13 +50,13 @@ class ArchiveBundleSchema(BaseSchema, table=True):
         build_index(table_name=__tablename__, column_names=["run_id"]),
     )
 
-    project_id: UUID = build_foreign_key_field(
+    project_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=ProjectSchema.__tablename__,
         source_column="project_id",
         target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
+        ondelete="SET NULL",
+        nullable=True,
     )
     run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

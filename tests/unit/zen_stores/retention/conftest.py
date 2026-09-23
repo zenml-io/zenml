@@ -11,7 +11,6 @@ from tests.unit.zen_stores.retention.fixture_graph import (
     graph_rows,
     insert_rows,
 )
-from zenml.enums import RetentionOutcome
 from zenml.models import ArchiveRequest, ArchiveResponse, ProjectFilter
 from zenml.zen_server import retention as server_retention
 from zenml.zen_server import utils as server_utils
@@ -31,7 +30,6 @@ def storage(tmp_path, monkeypatch) -> ArtifactStoreArchiveStorage:
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "local")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", root)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "7")
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "true")
     return archive
 
 
@@ -53,20 +51,18 @@ def archive_request(retention_store, retention):
     """Archive or preview a request whose runs need no authorization."""
 
     def archive(request: ArchiveRequest) -> ArchiveResponse:
-        batch = retention_store.select_runs_to_archive(
-            request, retention.retention_policy()
-        )
+        batch = retention_store.select_runs_to_archive(request)
         return retention.archive_batch(request, batch)
 
     return archive
 
 
 @pytest.fixture
-def archive_run(retention):
-    """Sweep one eligible run out of SQL and return its bundle ID."""
+def archive_run(archive_request):
+    """Archive one eligible run and return its bundle ID."""
 
     def archive(store: SqlZenStore, ids: "ExecutionRun") -> UUID:
-        assert retention.run_archive_sweep() == RetentionOutcome.SUCCEEDED
+        assert archive_request(ArchiveRequest(run_ids=[ids.run])).archived == 1
         bundle_id = store.get_run(ids.run, hydrate=False).archive_bundle_id
         assert bundle_id is not None
         return bundle_id
@@ -113,3 +109,14 @@ def run_factory(NOW):
         )
 
     return create
+
+
+@pytest.fixture
+def archive_project(retention_store, archive_request):
+    """Archive one batch from the test project through the manual path."""
+
+    def archive():
+        project = retention_store.list_projects(ProjectFilter()).items[0].id
+        return archive_request(ArchiveRequest(project_id=project))
+
+    return archive

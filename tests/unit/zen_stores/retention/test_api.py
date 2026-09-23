@@ -38,6 +38,7 @@ from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     logs_endpoints,
     pipeline_snapshot_endpoints,
+    projects_endpoints,
     retention_endpoints,
     run_metadata_endpoints,
     runs_endpoints,
@@ -52,6 +53,7 @@ ROUTERS = (
     runs_endpoints,
     steps_endpoints,
     pipeline_snapshot_endpoints,
+    projects_endpoints,
     curated_visualization_endpoints,
     logs_endpoints,
     trigger_endpoints,
@@ -59,7 +61,9 @@ ROUTERS = (
 
 
 @pytest.fixture
-def http(retention_store, retention, run_factory, monkeypatch):
+def http(
+    retention_store, retention, run_factory, monkeypatch, archive_project
+):
     """Mount real routers over the shared MySQL execution fixture."""
     ids = run_factory(retention_store)
 
@@ -95,6 +99,7 @@ def http(retention_store, retention, run_factory, monkeypatch):
             ids=ids,
             store=retention_store,
             retention=retention,
+            archive=archive_project,
         )
 
 
@@ -119,7 +124,7 @@ def test_denied_before_detail_storage_or_dispatch(
     http, storage, monkeypatch, method, path, action
 ):
     """Denied requests return 403 before 409 or any storage access."""
-    http.retention.run_archive_sweep()
+    http.archive()
     denied = Mock(side_effect=HTTPException(403, "Forbidden"))
     blocked = Mock(
         side_effect=AssertionError("denied request crossed boundary")
@@ -176,7 +181,7 @@ def test_related_endpoints_authorize_archived_owners(
     http, storage, monkeypatch, endpoint
 ):
     """Related resources check the execution owner's permission before detail."""
-    http.retention.run_archive_sweep()
+    http.archive()
     checked = []
 
     def deny_owner(model, *, action):
@@ -257,7 +262,7 @@ def test_read_permission_restores_without_allowing_run_updates(
     http, monkeypatch
 ):
     """A reader can restore detail without gaining run update permission."""
-    http.retention.run_archive_sweep()
+    http.archive()
     checked_actions = []
 
     def allow_read(model, action):
@@ -413,7 +418,7 @@ def test_archive_restore_http_lifecycle(http, monkeypatch):
     response = http.client.get(detail)
     assert (
         response.status_code == 409
-        and "zenml pipeline runs restore" in response.text
+        and "zenml pipeline runs unarchive" in response.text
     )
     assert (
         http.client.post(detail + "/restore").json()["outcome"] == "restored"
@@ -442,7 +447,7 @@ def test_metadata_writes_authorize_retained_run_headers(
 ):
     """Metadata writes require owning-run and project permissions, hot or cold."""
     if archived:
-        http.retention.run_archive_sweep()
+        http.archive()
     resource_id = getattr(http.ids, resource_attribute)
     opened = Mock(side_effect=AssertionError("metadata read archive storage"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
@@ -509,7 +514,7 @@ def test_metadata_writes_authorize_retained_run_headers(
 
 def test_archived_snapshot_rest_updates_follow_description_semantics(http):
     """REST permits tag changes but rejects real cold-description writes."""
-    http.retention.run_archive_sweep()
+    http.archive()
     path = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
 
     added = http.client.put(
@@ -557,7 +562,7 @@ def test_archived_http_summaries_and_logs_need_no_storage(
             ]
         )
         session.commit()
-    http.retention.run_archive_sweep()
+    http.archive()
     opened = Mock(side_effect=OSError("storage unavailable"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
     fetched = Mock(return_value=[])
@@ -598,7 +603,7 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
 ):
     """Real list routes serialize hot details and cold summaries during outages."""
     run_factory(http.store, age_days=1)
-    http.retention.run_archive_sweep()
+    http.archive()
     opened = Mock(side_effect=OSError("archive storage unavailable"))
     monkeypatch.setattr(storage.artifact_store, "open", opened)
 
@@ -628,7 +633,7 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
 def test_archived_snapshot_detail_outlives_deleted_run(http):
     """Deleting an archived owner preserves a readable, reusable snapshot."""
     before = http.store.get_snapshot(http.ids.snapshot)
-    http.retention.run_archive_sweep()
+    http.archive()
     deleted = http.client.delete(f"/api/v1/runs/{http.ids.run}")
     assert deleted.status_code == 200, deleted.text
 
@@ -654,7 +659,7 @@ def test_archived_snapshot_detail_outlives_deleted_run(http):
 
 def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
     """The owning restore run is disclosed only after its own read check."""
-    http.retention.run_archive_sweep()
+    http.archive()
     checked = []
 
     def verify(model, *, action):
@@ -687,7 +692,7 @@ def test_snapshot_restore_locator_requires_run_permission(http, monkeypatch):
 )
 def test_cold_configuration_and_replay_require_restore(http, method, path):
     """Operations that need archived definitions consistently return 409."""
-    http.retention.run_archive_sweep()
+    http.archive()
 
     response = http.client.request(
         method, "/api/v1/" + path.format(**http.ids.model_dump())
@@ -781,7 +786,7 @@ def test_paused_archive_request_is_not_advertised_as_retryable(
     http, monkeypatch
 ):
     """An intentional pause is a 409 and keeps explicit restore available."""
-    http.retention.run_archive_sweep()
+    http.archive()
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
     archive = http.client.post(
         "/api/v1/retention/archive",
@@ -813,7 +818,7 @@ def test_retention_capacity_returns_actionable_busy_response(
 
 def test_archived_run_and_snapshot_delete_over_http(http):
     """REST deletion authorizes from SQL headers, run before snapshot."""
-    http.retention.run_archive_sweep()
+    http.archive()
     snapshot = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
 
     assert http.client.delete(snapshot).status_code == 409
@@ -827,7 +832,7 @@ def test_archived_run_delete_preserves_run_when_storage_is_unavailable(
     http, storage, monkeypatch
 ):
     """Deletion cannot orphan snapshot detail when restoration fails."""
-    http.retention.run_archive_sweep()
+    http.archive()
     monkeypatch.setattr(
         storage,
         "read",
@@ -853,3 +858,108 @@ def test_misspelled_archive_control_field_is_rejected(http):
 
     assert response.status_code == 422, response.text
     assert http.store.get_run(http.ids.run).archive_bundle_id is None
+
+
+@pytest.mark.parametrize("storage_fails", [False, True])
+def test_run_delete_cleans_archive_after_commit(
+    http, storage, monkeypatch, storage_fails
+):
+    """Delete commits first; storage failure keeps a retryable catalog entry."""
+    from pathlib import Path
+
+    from sqlmodel import select
+
+    from zenml.zen_stores.schemas import ArchiveBundleSchema
+
+    http.archive()
+    with Session(http.store.engine) as session:
+        bundle = session.exec(select(ArchiveBundleSchema)).one()
+        bundle_id, uri = bundle.id, bundle.uri
+    original_remove = storage.remove
+
+    def remove_after_commit(path):
+        with pytest.raises(KeyError):
+            http.store.get_run_header(http.ids.run)
+        assert (
+            http.store.get_snapshot(http.ids.snapshot).archive_bundle_id
+            is None
+        )
+        return False if storage_fails else original_remove(path)
+
+    remove = Mock(side_effect=remove_after_commit)
+    monkeypatch.setattr(storage, "remove", remove)
+    response = http.client.delete(f"/api/v1/runs/{http.ids.run}")
+    assert response.status_code == 200, response.text
+    remove.assert_called_once_with(uri)
+    assert Path(uri).exists() == storage_fails
+    with Session(http.store.engine) as session:
+        assert (
+            session.get(ArchiveBundleSchema, bundle_id) is not None
+        ) == storage_fails
+    if storage_fails:
+        monkeypatch.setattr(storage, "remove", original_remove)
+        http.retention.delete_unused_archive_objects()
+        assert not Path(uri).exists()
+        with Session(http.store.engine) as session:
+            assert session.get(ArchiveBundleSchema, bundle_id) is None
+
+
+def test_failed_run_delete_does_not_remove_archive(http, storage, monkeypatch):
+    """A failed SQL deletion must never schedule removal of the archive."""
+    http.archive()
+    remove = Mock(wraps=storage.remove)
+    monkeypatch.setattr(storage, "remove", remove)
+    monkeypatch.setattr(
+        type(http.store),
+        "delete_run",
+        Mock(side_effect=RuntimeError("delete failed")),
+    )
+    response = http.client.delete(f"/api/v1/runs/{http.ids.run}")
+    assert response.status_code == 500
+    remove.assert_not_called()
+
+
+def test_project_delete_keeps_uris_until_async_cleanup(
+    http, storage, archive_request, NOW, monkeypatch
+):
+    """Project cascades keep catalog URIs until their objects are removed."""
+    from datetime import timedelta
+    from pathlib import Path
+
+    from sqlmodel import select
+
+    from tests.unit.zen_stores.retention.fixture_graph import (
+        graph_rows,
+        insert_rows,
+    )
+    from zenml.models import ArchiveRequest, ProjectRequest
+    from zenml.zen_stores.schemas import ArchiveBundleSchema
+
+    project = http.store.create_project(
+        ProjectRequest(name=f"delete-{uuid4()}")
+    )
+    graph = graph_rows(project.id, NOW - timedelta(days=100), "static")
+    insert_rows(http.store, graph)
+    run_id = graph["pipeline_run"][0]["id"]
+    assert archive_request(ArchiveRequest(run_ids=[run_id])).archived == 1
+    with Session(http.store.engine) as session:
+        bundle = session.exec(
+            select(ArchiveBundleSchema).where(
+                ArchiveBundleSchema.run_id == run_id
+            )
+        ).one()
+        uri = bundle.uri
+    original_remove = storage.remove
+
+    def remove_after_commit(path):
+        with pytest.raises(KeyError):
+            http.store.get_project(project.id)
+        with Session(http.store.engine) as session:
+            row = session.get(ArchiveBundleSchema, bundle.id)
+            assert row.project_id is None and row.run_id is None
+        return original_remove(path)
+
+    monkeypatch.setattr(storage, "remove", remove_after_commit)
+    response = http.client.delete(f"/api/v1/projects/{project.id}")
+    assert response.status_code == 200, response.text
+    assert not Path(uri).exists()

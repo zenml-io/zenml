@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Wire models for archive sweeps, targeted archiving, and restore."""
+"""Wire models for targeted archiving and restore."""
 
 from datetime import datetime
 from typing import List, Optional
@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from zenml.enums import (
     RestoreOutcome,
     RetentionExclusion,
-    RetentionOutcome,
 )
 
 # An archive result is stored as an API transaction result, so a project-wide
@@ -19,19 +18,11 @@ MAX_REFUSALS = 100
 
 
 class RetentionStatusResponse(BaseModel):
-    """Latest sweep outcome without scanning runs or storage."""
+    """Archive configuration without scanning runs or storage."""
 
-    outcome: RetentionOutcome = RetentionOutcome.IDLE
     archive_enabled: bool = False
     archive_configured: bool = False
-    archive_scheduled: bool = False
     archive_after_days: Optional[int] = None
-    schedule: Optional[str] = None
-    finished_at: Optional[datetime] = None
-    archived: int = 0
-    skipped: int = 0
-    oversized: int = 0
-    failed: int = 0
 
 
 class ArchiveRequest(BaseModel):

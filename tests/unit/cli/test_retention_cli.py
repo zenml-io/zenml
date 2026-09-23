@@ -41,12 +41,15 @@ def test_archive_requires_one_target_and_confirmation(
 def test_archive_reports_refusals(monkeypatch):
     """Refused runs are listed with their reason, not silently counted."""
     archive = Mock(
-        return_value=ArchiveResponse(
-            skipped=1,
-            refusals=[{"run_id": RUN_ID, "reason": "resumable_failed"}],
-            pending=True,
-            next_after_run_id=RUN_ID,
-        )
+        side_effect=[
+            ArchiveResponse(
+                skipped=1,
+                refusals=[{"run_id": RUN_ID, "reason": "resumable_failed"}],
+                pending=True,
+                next_after_run_id=RUN_ID,
+            ),
+            ArchiveResponse(archived=1),
+        ]
     )
     monkeypatch.setattr(Client, "archive_runs", archive)
     result = CliRunner().invoke(
@@ -54,23 +57,10 @@ def test_archive_reports_refusals(monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert "resumable_failed" in result.output
-    assert "repeat the command" in result.output
-    assert "--after-run-id" in result.output
-    assert RUN_ID in result.output
-
-    continued = CliRunner().invoke(
-        retention,
-        [
-            "archive",
-            "--project",
-            "demo",
-            "--after-run-id",
-            RUN_ID,
-            "--yes",
-        ],
-    )
-    assert continued.exit_code == 0, continued.output
+    assert "Continuing with the next batch" in result.output
+    assert archive.call_count == 2
     assert archive.call_args.kwargs["after_run_id"] == UUID(RUN_ID)
+    assert "Archived 1" in result.output
 
 
 def test_force_confirmation_names_every_policy_override(monkeypatch):
@@ -86,8 +76,6 @@ def test_force_confirmation_names_every_policy_override(monkeypatch):
 
     assert result.exit_code == 0, result.output
     assert "minimum age" in result.output
-    assert "model-version protection" in result.output
-    assert "restore grace" in result.output
     assert "active and resumable" in result.output
     assert archive.call_args.kwargs["force"] is True
 
@@ -125,3 +113,50 @@ def test_failed_attempts_fail_the_command(monkeypatch):
 
     assert result.exit_code != 0
     assert "Archived 1" in result.output
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_archive_automatically_traverses_batches(monkeypatch, dry_run):
+    """One command visits every page, including preview pages with no writes."""
+    cursors = [uuid4(), uuid4()]
+    archive = Mock(
+        side_effect=[
+            ArchiveResponse(
+                dry_run=dry_run, pending=True, next_after_run_id=cursors[0]
+            ),
+            ArchiveResponse(
+                dry_run=dry_run, pending=True, next_after_run_id=cursors[1]
+            ),
+            ArchiveResponse(dry_run=dry_run),
+        ]
+    )
+    monkeypatch.setattr(Client, "archive_runs", archive)
+    args = [
+        "archive",
+        "--project",
+        "demo",
+        "--dry-run" if dry_run else "--yes",
+    ]
+    result = CliRunner().invoke(retention, args)
+    assert result.exit_code == 0, result.output
+    assert [
+        call.kwargs["after_run_id"] for call in archive.call_args_list
+    ] == [None, *cursors]
+    assert all(
+        call.kwargs["dry_run"] == dry_run for call in archive.call_args_list
+    )
+
+
+def test_archive_stops_after_failed_batch(monkeypatch):
+    """Do not advance past a failed page and report the full scan as success."""
+    archive = Mock(
+        return_value=ArchiveResponse(
+            failed=1, pending=True, next_after_run_id=uuid4()
+        )
+    )
+    monkeypatch.setattr(Client, "archive_runs", archive)
+    result = CliRunner().invoke(
+        retention, ["archive", "--project", "demo", "--yes"]
+    )
+    assert result.exit_code != 0
+    assert archive.call_count == 1

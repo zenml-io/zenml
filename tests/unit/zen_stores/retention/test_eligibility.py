@@ -83,9 +83,9 @@ def make_resumable(
         ("replay_in_progress", "not_eligible"),
         ("finished_replay", None),
         ("not_old", "not_old"),
-        ("model_link", "model_link"),
+        ("model_link", None),
         ("resumable_failed", "resumable_failed"),
-        ("restored_grace", "restored_grace"),
+        ("restored", None),
     ],
 )
 def test_each_exclusion(
@@ -143,7 +143,7 @@ def test_each_exclusion(
                     model_version_id=version.id, pipeline_run_id=run.run
                 )
             )
-        elif rule == "restored_grace":
+        elif rule == "restored":
             session.add(
                 ArchiveBundleSchema(
                     project_id=run.project,
@@ -161,7 +161,7 @@ def test_each_exclusion(
 
     assert inspected.exclusion == expected
     forced = inspect(retention_store, run, NOW, force=True)
-    if rule in {"not_old", "model_link", "restored_grace"}:
+    if rule == "not_old":
         assert forced.exclusion is None
     else:
         assert forced.exclusion == expected
@@ -241,10 +241,10 @@ def test_run_over_the_record_cap_is_oversized(
     assert inspect(retention_store, run, NOW).exclusion == "oversized"
 
 
-def test_restore_grace_uses_any_recent_restoration(
+def test_recent_restoration_does_not_prevent_archiving(
     retention_store, run_factory, NOW
 ) -> None:
-    """UUID ordering cannot hide a more recently restored bundle."""
+    """A recently unarchived run follows the ordinary age policy."""
     run = run_factory(retention_store)
     with Session(retention_store.engine) as session:
         session.add_all(
@@ -277,4 +277,4 @@ def test_restore_grace_uses_any_recent_restoration(
         )
         session.commit()
 
-    assert inspect(retention_store, run, NOW).exclusion == "restored_grace"
+    assert inspect(retention_store, run, NOW).exclusion is None

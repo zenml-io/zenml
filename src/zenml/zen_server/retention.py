@@ -22,12 +22,12 @@ authorized, and only then archived.
 """
 
 from contextlib import contextmanager
-from threading import BoundedSemaphore, Event, Lock
+from threading import BoundedSemaphore, Lock
 from typing import Hashable, Iterator, Optional, Set
 from uuid import UUID
 
 from zenml.config.server_config import ArchiveSettings, ServerConfiguration
-from zenml.enums import RestoreOutcome, RetentionOutcome
+from zenml.enums import RestoreOutcome
 from zenml.exceptions import (
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
@@ -186,36 +186,6 @@ def archive_batch(
     return result
 
 
-def run_archive_sweep(
-    cancel_event: Optional[Event] = None,
-) -> RetentionOutcome:
-    """Run one bounded archive sweep, if no other replica is sweeping.
-
-    Args:
-        cancel_event: Cooperative scheduler shutdown signal.
-
-    Returns:
-        The sweep outcome.
-
-    Raises:
-        ExecutionRetentionConflictError: Scheduled archiving is switched off,
-            or another replica holds the lease.
-    """  # noqa: DOC502
-    settings = new_archive_settings()
-    if not settings.schedule_enabled:
-        raise ExecutionRetentionConflictError(
-            "Scheduled execution archiving is disabled by "
-            "ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED. Use a manual archive "
-            "request instead."
-        )
-    with retention_capacity().claim():
-        return zen_store().run_archive_sweep(
-            storage=archive_storage(),
-            settings=settings,
-            cancel_event=cancel_event,
-        )
-
-
 def restore_pipeline_run(run_id: UUID) -> RestoreResponse:
     """Restore an archived run's detail within the request.
 
@@ -245,3 +215,26 @@ def delete_pipeline_run(run_id: UUID) -> None:
     """
     restore_pipeline_run(run_id)
     zen_store().delete_run(run_id)
+
+
+def delete_unused_archive_objects() -> None:
+    """Remove deleted runs' objects after the deletion response is sent.
+
+    This is a best-effort background task. Failed deletions keep their catalog
+    entries for a later cleanup; they do not roll back the database deletion.
+    """
+    from zenml.logger import get_logger
+
+    if (
+        not zen_store().supports_execution_retention
+        or not ServerConfiguration.get_server_config().archive.configured
+    ):
+        return
+    try:
+        with retention_capacity().claim(key="archive-cleanup"):
+            zen_store().delete_unused_archive_objects(archive_storage())
+    except Exception as error:
+        get_logger(__name__).warning(
+            "Archive object cleanup failed (%s); catalog entries remain for retry.",
+            type(error).__name__,
+        )

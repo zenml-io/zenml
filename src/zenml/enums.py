@@ -629,22 +629,9 @@ class ArchiveBackend(StrEnum):
     AZURE = "azure"
 
 
-class RetentionOutcome(StrEnum):
-    """Outcome of the server's latest archive sweep."""
-
-    IDLE = "idle"
-    EXPIRED = "expired"
-    RUNNING = "running"
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-    PAUSED = "paused"
-
-
 class RetentionFailure(StrEnum):
     """Safe failure codes shared by wire models and archive passes."""
 
-    ARCHIVE_FAILED = "archive_failed"
-    STORAGE_CONFIGURATION = "storage_configuration"
     OVERSIZED = "oversized"
 
 
@@ -655,8 +642,6 @@ class RetentionExclusion(StrEnum):
     NOT_OLD = "not_old"
     RESUMABLE_FAILED = "resumable_failed"
     ROOT_ACTIVE = "root_active"
-    RESTORED_GRACE = "restored_grace"
-    MODEL_LINK = "model_link"
     OVERSIZED = "oversized"
 
 

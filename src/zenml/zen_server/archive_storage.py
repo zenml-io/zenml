@@ -275,21 +275,27 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
             ).artifact_store
         return self._former_stores[former_root]
 
-    def remove(self, uri: str) -> None:
-        """Remove an object that never became authoritative, if possible.
+    def remove(self, uri: str) -> bool:
+        """Remove an unneeded object, including one at a former archive root.
 
         Args:
-            uri: Object URI below the archive root.
+            uri: Recorded object URI.
+
+        Returns:
+            True if the object is absent; False if deletion failed.
         """
         try:
-            if self.artifact_store.exists(uri):
-                self.artifact_store.remove(uri)
+            store = self._store_for(uri)
+            if store.exists(uri):
+                store.remove(uri)
+            return True
         except Exception as error:
-            # An unreferenced object is harmless; the failure is only logged.
             logger.warning(
-                "Could not remove unreferenced archive object (%s).",
+                "Could not remove archive object at %s (%s).",
+                uri,
                 type(error).__name__,
             )
+            return False
 
     def probe(self) -> bool:
         """Check that the root accepts a write and returns the same bytes.

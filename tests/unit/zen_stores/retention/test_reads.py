@@ -171,7 +171,9 @@ def test_archived_summaries_need_no_archive_storage(
     exception = http_exception_from_error(error.value)
     assert exception.status_code == 503
     assert exception.headers["Retry-After"]
-    with pytest.raises(ExecutionArchivedError, match="pipeline runs restore"):
+    with pytest.raises(
+        ExecutionArchivedError, match="pipeline runs unarchive"
+    ):
         retention_store.create_run_step(dynamic_step(ids, "late", NOW))
 
 

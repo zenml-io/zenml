@@ -40,7 +40,6 @@ from zenml.enums import (
     RestoreOutcome,
     RetentionExclusion,
     RetentionFailure,
-    RetentionOutcome,
 )
 from zenml.exceptions import (
     ExecutionArchivedError,
@@ -71,31 +70,12 @@ from zenml.zen_stores.retention import (
     format as archive_format,
 )
 from zenml.zen_stores.retention.eligibility import ArchivableRun
-from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.schemas import (
     ArchiveBundleSchema,
     PipelineRunSchema,
-    ServerSettingsSchema,
     StepRunSchema,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
-
-
-def saved_state(store: SqlZenStore) -> RetentionState:
-    """Read the server's saved sweep state.
-
-    Args:
-        store: Metadata store.
-
-    Returns:
-        The saved state.
-    """
-    with Session(store.engine) as session:
-        return RetentionState.load(
-            session.execute(
-                select(ServerSettingsSchema.retention_state)
-            ).scalar_one()
-        )
 
 
 @pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
@@ -415,6 +395,7 @@ def test_retirement_capture_queries_scale_by_page(
 
 @pytest.mark.parametrize("writer_kind", ["update", "replay", "delete"])
 def test_write_after_retirement_fails_with_the_restore_command(
+    archive_project,
     retention_store,
     run_factory,
     monkeypatch,
@@ -437,7 +418,7 @@ def test_write_after_retirement_fails_with_the_restore_command(
         ThreadPoolExecutor(1, thread_name_prefix="archive") as archivers,
         ThreadPoolExecutor(1, thread_name_prefix="writer") as writers,
     ):
-        archive = archivers.submit(retention.run_archive_sweep)
+        archive = archivers.submit(archive_project)
         assert locked.wait(20)
         operations = {
             "update": lambda: retention_store.update_run(
@@ -463,113 +444,16 @@ def test_write_after_retirement_fails_with_the_restore_command(
                 writer.result(timeout=1)
         finally:
             release.set()
-        assert archive.result(timeout=20) == RetentionOutcome.SUCCEEDED
+        assert archive.result(timeout=20).archived == 1
         with pytest.raises(
-            ExecutionArchivedError, match="pipeline runs restore"
+            ExecutionArchivedError, match="pipeline runs unarchive"
         ):
             writer.result(timeout=20)
 
 
-def test_live_lease_refuses_a_second_sweep(
-    retention_store,
-    run_factory,
-    storage,
-    monkeypatch,
-    retention,
-):
-    """A replica that finds the sweep lease held does not sweep as well."""
-    ids = run_factory(retention_store)
-    uploaded, release = Event(), Event()
-    original = storage.write
-
-    def pause_after_upload(uri, data):
-        original(uri, data)
-        if uri.endswith(".json.gz"):
-            uploaded.set()
-            assert release.wait(20)
-
-    monkeypatch.setattr(storage, "write", pause_after_upload)
-    with ThreadPoolExecutor(1) as pool:
-        holder = pool.submit(retention.run_archive_sweep)
-        try:
-            assert uploaded.wait(20)
-            with pytest.raises(ExecutionRetentionConflictError):
-                retention.run_archive_sweep()
-        finally:
-            release.set()
-        assert holder.result(timeout=20) == RetentionOutcome.SUCCEEDED
-
-    assert retention_store.get_run_header(ids.run).archive_bundle_id
-
-
-def test_losing_pass_removes_its_object(
-    retention_store,
-    run_factory,
-    storage,
-    monkeypatch,
-    NOW,
-    retention,
-):
-    """Two passes racing on one run leave one bundle and one object."""
-    ids = run_factory(retention_store)
-    uploaded, release = Event(), Event()
-    original = storage.write
-
-    def pause_after_upload(uri, data):
-        original(uri, data)
-        if current_thread().name.startswith("stale") and uri.endswith(
-            ".json.gz"
-        ):
-            uploaded.set()
-            assert release.wait(20)
-
-    monkeypatch.setattr(storage, "write", pause_after_upload)
-    with ThreadPoolExecutor(1, thread_name_prefix="stale") as pool:
-        stale = pool.submit(retention.run_archive_sweep)
-        try:
-            assert uploaded.wait(20)
-            with Session(retention_store.engine) as session:
-                settings = session.execute(
-                    select(ServerSettingsSchema)
-                ).scalar_one()
-                state = RetentionState.load(settings.retention_state)
-                state.operation_expires_at = NOW - timedelta(seconds=1)
-                settings.retention_state = state.model_dump_json()
-                session.add(settings)
-                session.commit()
-            assert (
-                retention_store.get_retention_status(
-                    ServerConfiguration.get_server_config().archive
-                ).outcome
-                == RetentionOutcome.EXPIRED
-            )
-            winner = retention.run_archive_sweep()
-            assert winner == RetentionOutcome.SUCCEEDED
-        finally:
-            release.set()
-        stale.result(timeout=20)
-
-    with Session(retention_store.engine) as session:
-        bundles = session.scalars(
-            select(ArchiveBundleSchema).where(
-                ArchiveBundleSchema.run_id == ids.run
-            )
-        ).all()
-    state = saved_state(retention_store)
-    assert state.last_outcome == RetentionOutcome.SUCCEEDED
-    assert state.archived == 1
-    assert len(bundles) == 1
-    assert (
-        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
-        == bundles[0].id
-    )
-    assert list(Path(storage.root).rglob("*.json.gz")) == [
-        Path(bundles[0].uri)
-    ]
-
-
 @pytest.mark.parametrize("failure", ["upload", "retirement", "commit_ack"])
 def test_interrupted_retirement(
+    archive_project,
     retention_store,
     run_factory,
     storage,
@@ -613,12 +497,11 @@ def test_interrupted_retirement(
         with monkeypatch.context() as patch:
             patch.setattr(retention_store.engine.dialect, "do_commit", commit)
             patch.setattr(storage, "write", write)
-            outcome = retention.run_archive_sweep()
+            outcome = archive_project()
     finally:
         event.remove(retention_store.engine, "before_cursor_execute", observe)
 
-    assert outcome == RetentionOutcome.SUCCEEDED
-    state = saved_state(retention_store)
+    state = outcome
     if failure != "commit_ack":
         assert state.failed == 1
         assert rows(retention_store) == before[0]
@@ -683,42 +566,8 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
             connection.close()
 
 
-def test_cancelled_sweep_does_not_start_retirement_after_object_read(
-    retention_store,
-    run_factory,
-    storage,
-    monkeypatch,
-    retention,
-) -> None:
-    """Cancellation after blocking I/O removes the uncommitted upload."""
-    ids = run_factory(retention_store)
-    entered = Event()
-    release = Event()
-    cancel = Event()
-    original_read = storage.read
-
-    def blocked_read(uri, max_bytes):
-        if uri.endswith(".json.gz"):
-            entered.set()
-            assert release.wait(5)
-        return original_read(uri, max_bytes)
-
-    monkeypatch.setattr(storage, "read", blocked_read)
-    with ThreadPoolExecutor(1) as pool:
-        future = pool.submit(retention.run_archive_sweep, cancel_event=cancel)
-        assert entered.wait(3)
-        cancel.set()
-        release.set()
-        assert future.result(timeout=5) == RetentionOutcome.PAUSED
-
-    assert (
-        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
-        is None
-    )
-    assert not list(Path(storage.root).rglob("*.json.gz"))
-
-
 def test_one_capacity_budget_covers_all_retention_payload_paths(
+    archive_project,
     retention_store,
     run_factory,
     archive_run,
@@ -726,7 +575,7 @@ def test_one_capacity_budget_covers_all_retention_payload_paths(
     retention,
     archive_request,
 ) -> None:
-    """Manual archive, sweep, and restore share one replica-local budget."""
+    """Manual archive and restore share one replica-local budget."""
     archived = run_factory(retention_store)
     archive_run(retention_store, archived)
     candidate = run_factory(retention_store)
@@ -737,7 +586,7 @@ def test_one_capacity_budget_covers_all_retention_payload_paths(
         with pytest.raises(ExecutionRetentionBusyError):
             archive_request(ArchiveRequest(run_ids=[candidate.run]))
         with pytest.raises(ExecutionRetentionBusyError):
-            retention.run_archive_sweep()
+            archive_project()
         with pytest.raises(ExecutionRetentionBusyError):
             retention.restore_pipeline_run(archived.run)
 
@@ -1046,61 +895,6 @@ def test_capture_guards_payload_before_driver_buffering(
         table.drop(retention_store.engine)
 
 
-def test_sweep_continues_from_its_saved_position(
-    retention_store,
-    run_factory,
-    monkeypatch,
-    retention,
-):
-    """Each sweep examines the next runs, including excluded ones."""
-    runs = [
-        run_factory(retention_store, age_days=100 - index)
-        for index in range(3)
-    ]
-    with Session(retention_store.engine) as session:
-        # A run still marked running stays in SQL but is examined.
-        oldest = session.get(PipelineRunSchema, runs[0].run)
-        oldest.status = ExecutionStatus.RUNNING.value
-        session.add(oldest)
-        session.commit()
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
-
-    assert retention.run_archive_sweep() == RetentionOutcome.PAUSED
-    assert saved_state(retention_store).skipped == 1
-    assert retention.run_archive_sweep() == RetentionOutcome.PAUSED
-    assert retention.run_archive_sweep() == RetentionOutcome.SUCCEEDED
-
-    archived = [
-        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
-        for ids in runs
-    ]
-    assert archived[0] is None and all(archived[1:])
-    assert saved_state(retention_store).cursor is None
-
-
-def test_status_reports_storage_failure_without_probing(
-    retention_store,
-    storage,
-    monkeypatch,
-    retention,
-):
-    """Status reads safe saved diagnostics even while storage is unavailable."""
-    monkeypatch.setattr(storage, "probe", lambda: False)
-    assert retention.run_archive_sweep() == RetentionOutcome.FAILED
-    monkeypatch.setattr(
-        storage,
-        "probe",
-        lambda: pytest.fail("status probed archive storage"),
-    )
-
-    status = retention_store.get_retention_status(
-        ServerConfiguration.get_server_config().archive
-    )
-
-    assert status.archive_configured and status.archive_enabled
-    assert status.outcome == RetentionOutcome.FAILED
-
-
 def test_archived_snapshot_is_deleted_only_after_its_run(
     retention_store, run_factory, archive_run, storage, retention
 ):
@@ -1126,6 +920,7 @@ def test_archived_snapshot_is_deleted_only_after_its_run(
     "writer_kind", ["step", "update", "snapshot", "replay"]
 )
 def test_writer_racing_archive_preserves_committed_detail(
+    archive_project,
     retention_store,
     run_factory,
     monkeypatch,
@@ -1194,7 +989,7 @@ def test_writer_racing_archive_preserves_committed_detail(
         writer = pool.submit(writers[writer_kind])
         try:
             assert entered.wait(10)
-            archive = archives.submit(retention.run_archive_sweep)
+            archive = archives.submit(archive_project)
             with pytest.raises(FutureTimeout):
                 archive.result(timeout=0.5)
         finally:
@@ -1205,7 +1000,7 @@ def test_writer_racing_archive_preserves_committed_detail(
         retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
         is None
     )
-    retention.run_archive_sweep()
+    archive_project()
     if writer_kind == "replay":
         assert retention_store.get_run(ids.run).archive_bundle_id is None
         replay, _ = written
@@ -1215,7 +1010,7 @@ def test_writer_racing_archive_preserves_committed_detail(
                 .where(PipelineRunSchema.id == replay.id)
                 .values(status=ExecutionStatus.COMPLETED, in_progress=False)
             )
-        retention.run_archive_sweep()
+        archive_project()
     assert retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
     if writer_kind == "snapshot":
         assert (
@@ -1367,7 +1162,7 @@ def test_targeted_archive_is_bounded_and_reports_more_work(
         run_factory(retention_store, age_days=100 - index)
         for index in range(2)
     ]
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+    monkeypatch.setattr(eligibility, "MAX_ARCHIVE_BATCH_SIZE", 1)
 
     first = archive_request(ArchiveRequest(project_id=runs[0].project))
     second = archive_request(
@@ -1422,7 +1217,7 @@ def test_targeted_archive_continues_past_refusal_only_batches(
     else:
         retention_store.create_run_step(dynamic_step(oldest, "extra", NOW))
         monkeypatch.setattr(eligibility, "MAX_RECORDS", 6)
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+    monkeypatch.setattr(eligibility, "MAX_ARCHIVE_BATCH_SIZE", 1)
 
     first = archive_request(ArchiveRequest(project_id=oldest.project))
     second = archive_request(
@@ -1479,6 +1274,7 @@ def test_archive_preview_is_bounded_and_side_effect_free(
 
 
 def test_pausing_new_archives_keeps_preview_and_restore_available(
+    archive_project,
     retention_store,
     run_factory,
     archive_run,
@@ -1497,11 +1293,10 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     )
     assert status.archive_configured
     assert not status.archive_enabled
-    assert not status.archive_scheduled
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
         archive_request(ArchiveRequest(run_ids=[candidate.run], force=True))
     with pytest.raises(ExecutionRetentionConflictError, match="paused"):
-        retention.run_archive_sweep()
+        archive_project()
     preview = archive_request(
         ArchiveRequest(run_ids=[candidate.run], dry_run=True)
     )
@@ -1509,29 +1304,6 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     assert retention.restore_pipeline_run(archived.run).outcome == (
         RestoreOutcome.RESTORED
     )
-
-
-def test_manual_only_configuration_rejects_sweeps(
-    retention_store,
-    run_factory,
-    monkeypatch,
-    retention,
-    archive_request,
-):
-    """Disabling the schedule preserves manual archiving."""
-    ids = run_factory(retention_store)
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "false")
-
-    with pytest.raises(ExecutionRetentionConflictError, match="manual"):
-        retention.run_archive_sweep()
-    result = archive_request(ArchiveRequest(run_ids=[ids.run]))
-
-    assert result.archived == 1
-    status = retention_store.get_retention_status(
-        ServerConfiguration.get_server_config().archive
-    )
-    assert status.archive_enabled and not status.archive_scheduled
-    assert status.schedule is None
 
 
 def test_deleted_archive_continuation_has_a_clear_error(
@@ -1545,7 +1317,7 @@ def test_deleted_archive_continuation_has_a_clear_error(
         run_factory(retention_store, age_days=100 - index)
         for index in range(2)
     ]
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__MAX_RUNS_PER_PASS", "1")
+    monkeypatch.setattr(eligibility, "MAX_ARCHIVE_BATCH_SIZE", 1)
     first = archive_request(
         ArchiveRequest(project_id=runs[0].project, dry_run=True)
     )

@@ -39,13 +39,13 @@ router = APIRouter(
 def get_retention_status(
     auth_context: AuthContext = Security(authorize),
 ) -> RetentionStatusResponse:
-    """Read the latest archive sweep without reading storage.
+    """Read archive configuration without reading storage.
 
     Args:
         auth_context: Authentication context.
 
     Returns:
-        The latest sweep outcome, counts, and archive configuration.
+        Current archive configuration.
 
     Raises:
         IllegalOperationError: The caller is not a server admin.
@@ -75,10 +75,9 @@ def archive_runs(
     request: ArchiveRequest,
     auth_context: AuthContext = Security(authorize),
 ) -> ArchiveResponse:
-    """Archive or preview the named runs without waiting for a sweep.
+    """Archive or preview the named runs in a bounded request.
 
-    Normal retention policy applies unless `force` explicitly overrides age,
-    model-link, and restore-grace rules. Execution-safety exclusions always
+    Normal retention policy applies unless `force` explicitly overrides minimum age. Execution-safety exclusions always
     apply. A pipeline or project request is bounded; continue with the returned
     `next_after_run_id` while `pending` is true. A dry run performs the same
     selection and eligibility checks without archiving execution data or
@@ -117,7 +116,7 @@ def archive_runs(
             model=store.get_project(request.project_id, hydrate=False),
             action=action,
         )
-    batch = store.select_runs_to_archive(request, retention.retention_policy())
+    batch = store.select_runs_to_archive(request)
     # Runs are their own RBAC resource: permission on the pipeline or project
     # that owns them does not by itself allow archiving them.
     batch_verify_permissions_for_models(

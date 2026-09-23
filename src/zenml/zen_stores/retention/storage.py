@@ -64,15 +64,17 @@ class ArchiveStorage(ABC):
         """  # noqa: DOC502
 
     @abstractmethod
-    def remove(self, uri: str) -> None:
-        """Remove an object that never became authoritative, if possible.
+    def remove(self, uri: str) -> bool:
+        """Remove an object after its detail is no longer needed.
 
-        Only called for objects no committed bundle row points at, so a
-        failure leaks storage but never detail. Implementations must not
-        raise.
+        Implementations must not raise. A failed cleanup retains its catalog
+        entry so a later deletion request can retry it.
 
         Args:
-            uri: Location returned by `object_uri`.
+            uri: Recorded object location, possibly at a former archive root.
+
+        Returns:
+            True when absent; False if deletion failed.
         """
 
     @abstractmethod

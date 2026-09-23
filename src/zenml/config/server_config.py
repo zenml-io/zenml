@@ -122,16 +122,7 @@ class ArchiveSettings(BaseModel):
     uri: Optional[str] = None
     connector_id: Optional[UUID] = None
     enabled: bool = True
-    # Sweeps archive every eligible run on the server, with no per-project
-    # opt-out. Configuring storage therefore only allows manual archiving;
-    # the schedule is switched on separately, once a dry run has shown what
-    # the policy selects.
-    schedule_enabled: bool = False
     after_days: int = Field(default=90, ge=7)
-    model_linked_runs: bool = False
-    restored_grace_days: int = Field(default=30, ge=0)
-    max_runs_per_pass: int = Field(default=200, gt=0)
-    schedule: str = "0 3 * * *"
 
     @property
     def configured(self) -> bool:
@@ -150,15 +141,6 @@ class ArchiveSettings(BaseModel):
             Whether storage is configured and new archiving is enabled.
         """
         return self.configured and self.enabled
-
-    @property
-    def scheduled(self) -> bool:
-        """Return whether this server schedules archive sweeps.
-
-        Returns:
-            Whether new archiving and scheduled sweeps are both enabled.
-        """
-        return self.new_archives_enabled and self.schedule_enabled
 
     @property
     def root_uri(self) -> str:
@@ -183,7 +165,7 @@ class ArchiveSettings(BaseModel):
 
         Raises:
             ValueError: The group is incomplete, the URI does not match the
-                backend, or the schedule is not a cron expression.
+                backend.
         """
         if not self.configured:
             return self
@@ -204,13 +186,6 @@ class ArchiveSettings(BaseModel):
                 "ZENML_SERVER_ARCHIVE__URI must start with "
                 f"{' or '.join(schemes)} for the "
                 f"'{self.backend.value}' backend."
-            )
-        from croniter import croniter
-
-        if not croniter.is_valid(self.schedule):
-            raise ValueError(
-                "ZENML_SERVER_ARCHIVE__SCHEDULE is not a valid cron "
-                f"expression: '{self.schedule}'."
             )
         return self
 

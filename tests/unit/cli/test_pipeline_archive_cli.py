@@ -27,7 +27,7 @@ def test_pipeline_run_row_marks_archived_runs(sample_pipeline_run) -> None:
     assert row["archived"] is True
 
 
-def test_restore_explains_which_detail_is_available(
+def test_unarchive_explains_which_detail_is_available(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Successful restore output names the newly available operations."""
@@ -42,7 +42,7 @@ def test_restore_explains_which_detail_is_available(
         ),
     )
 
-    result = CliRunner().invoke(pipeline, ["runs", "restore", str(run_id)])
+    result = CliRunner().invoke(pipeline, ["runs", "unarchive", str(run_id)])
 
     assert result.exit_code == 0, result.output
     assert "Configuration, DAG" in result.output

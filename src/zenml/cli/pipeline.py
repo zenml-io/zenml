@@ -1189,10 +1189,12 @@ def _interactive_resolve_wait_conditions(
                     skipped_condition_ids.add(condition.id)
 
 
-@runs.command("restore")
+@runs.command("unarchive")
 @click.argument("run_name_or_id", type=str, required=True)
-def restore_pipeline_run(run_name_or_id: str) -> None:
+def unarchive_pipeline_run(run_name_or_id: str) -> None:
     """Write an archived pipeline run's detail back into the database.
+
+    The archive object remains until the run or its project is deleted.
 
     Args:
         run_name_or_id: Run name, ID or prefix.
@@ -1200,11 +1202,11 @@ def restore_pipeline_run(run_name_or_id: str) -> None:
     result = Client().restore_pipeline_run(run_name_or_id)
     if result.outcome == RestoreOutcome.NOOP:
         cli_utils.declare(
-            f"Run `{result.run_id}` is not archived; nothing to restore."
+            f"Run `{result.run_id}` is not archived; nothing to unarchive."
         )
     else:
         cli_utils.success(
-            f"Restored run `{result.run_id}`. Configuration, DAG inspection, "
+            f"Unarchived run `{result.run_id}`. Configuration, DAG inspection, "
             "and replay are available again."
         )
 

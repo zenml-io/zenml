@@ -91,10 +91,6 @@ def test_event_sources_reject_invalid_values() -> None:
             {"backend": "local", "uri": "s3://bucket"},
             "must be a local directory path",
         ),
-        (
-            {"backend": "s3", "uri": "s3://b", "schedule": "not a cron"},
-            "ZENML_SERVER_ARCHIVE__SCHEDULE",
-        ),
         ({"backend": "s3", "uri": "s3://b", "after_days": 3}, "after_days"),
     ],
 )
@@ -112,18 +108,16 @@ def test_archive_is_disabled_without_a_backend() -> None:
 
     assert not config.archive.configured
     assert not config.archive.new_archives_enabled
-    assert not config.archive.scheduled
     assert config.archive.backend == ArchiveBackend.DISABLED
 
 
-def test_configured_storage_does_not_schedule_sweeps() -> None:
-    """Storage alone allows manual archiving; sweeps are switched on apart."""
+def test_configured_storage_allows_manual_archiving() -> None:
+    """Configured storage allows manual archiving."""
     config = ServerConfiguration(
         archive={"backend": "s3", "uri": "s3://bucket/archive"}
     )
 
     assert config.archive.new_archives_enabled
-    assert not config.archive.scheduled
 
 
 def test_archive_settings_come_from_one_nested_group(monkeypatch) -> None:
@@ -131,18 +125,13 @@ def test_archive_settings_come_from_one_nested_group(monkeypatch) -> None:
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "s3")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", "s3://bucket/archive")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "45")
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE", "0 3 * * 0")
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__SCHEDULE_ENABLED", "true")
 
     config = ServerConfiguration.get_server_config()
 
     assert config.archive.configured
     assert config.archive.new_archives_enabled
-    assert config.archive.scheduled
     assert config.archive.uri == "s3://bucket/archive"
     assert config.archive.after_days == 45
-    assert config.archive.schedule == "0 3 * * 0"
-    assert config.archive.max_runs_per_pass == 200
 
 
 def test_archive_can_pause_new_writes_without_losing_storage() -> None:
@@ -153,5 +142,4 @@ def test_archive_can_pause_new_writes_without_losing_storage() -> None:
 
     assert archive.configured
     assert not archive.new_archives_enabled
-    assert not archive.scheduled
     assert archive.root_uri == "/tmp/archive"

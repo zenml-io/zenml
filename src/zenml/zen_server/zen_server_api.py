@@ -25,7 +25,7 @@ import os
 from asyncio.log import logger
 from contextlib import asynccontextmanager
 from genericpath import isfile
-from typing import Any, AsyncGenerator, List, Optional
+from typing import Any, AsyncGenerator, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
@@ -49,7 +49,6 @@ from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
 from zenml.zen_server import retention
-from zenml.zen_server.archive_scheduler import ArchiveScheduler
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
@@ -182,20 +181,6 @@ def _check_archive_store_on_startup() -> None:
         )
 
 
-def _start_archive_scheduler() -> Optional[ArchiveScheduler]:
-    """Start archive sweeps only when scheduled archiving is enabled.
-
-    Returns:
-        The running scheduler, or None while scheduling is disabled.
-    """
-    archive = server_config().archive
-    if not archive.scheduled:
-        return None
-    scheduler = ArchiveScheduler(archive.schedule)
-    scheduler.start()
-    return scheduler
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage the ZenML server application lifespan.
@@ -226,8 +211,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         initialize_workload_manager()
         initialize_snapshot_executor()
         initialize_maintenance_executor()
-        # Sweeps run on the maintenance executor, so it has to exist first.
-        archive_scheduler = _start_archive_scheduler()
         await initialize_snapshot_run_dispatcher()
         initialize_artifact_store_cache()
         await initialize_streaming()
@@ -249,8 +232,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         stop_event_loop_lag_monitor()
 
     try:
-        if archive_scheduler is not None:
-            await archive_scheduler.shutdown()
         snapshot_executor().shutdown(wait=True)
         maintenance_executor().shutdown(wait=True)
         await shutdown_snapshot_run_dispatcher()

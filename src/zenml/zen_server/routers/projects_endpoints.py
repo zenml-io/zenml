@@ -16,7 +16,7 @@
 from typing import Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter, BackgroundTasks, Depends, Security
 
 from zenml.constants import (
     API,
@@ -35,6 +35,7 @@ from zenml.models import (
     ProjectStatistics,
     ProjectUpdate,
 )
+from zenml.zen_server import retention
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -216,11 +217,13 @@ def update_project(
 @async_fastapi_endpoint_wrapper
 def delete_project(
     project_name_or_id: Union[str, UUID],
+    background_tasks: BackgroundTasks,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a project.
 
     Args:
+        background_tasks: Object cleanup to run after deletion commits.
         project_name_or_id: Name or ID of the project.
     """
     project = verify_permissions_and_delete_entity(
@@ -231,6 +234,7 @@ def delete_project(
     if server_config().feature_gate_enabled:
         if ResourceType.PROJECT in server_config().reportable_resources:
             report_decrement(ResourceType.PROJECT, resource_id=project.id)
+    background_tasks.add_task(retention.delete_unused_archive_objects)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration

@@ -1166,7 +1166,7 @@ class Client(metaclass=ClientMetaClass):
         force: bool = False,
         dry_run: bool = False,
     ) -> ArchiveResponse:
-        """Archive or preview runs without waiting for the next sweep.
+        """Archive or preview runs in a bounded request.
 
         Exactly one target is archived. Naming a pipeline or a project
         handles a bounded batch of its oldest finished runs. Continue with the
@@ -1177,7 +1177,7 @@ class Client(metaclass=ClientMetaClass):
             pipeline: Pipeline whose runs to archive, by name or ID.
             project: Project whose runs to archive, by name or ID.
             after_run_id: Last examined run from a prior owner-wide request.
-            force: Override age, model-link, and restore-grace protections.
+            force: Override minimum-age protection.
             dry_run: Inspect eligibility without archiving runs or storage access.
 
         Returns:
@@ -1198,10 +1198,10 @@ class Client(metaclass=ClientMetaClass):
         return self._retention_store().archive_runs(request)
 
     def get_retention_status(self) -> RetentionStatusResponse:
-        """Read the server's latest archive sweep without object access.
+        """Read the server's archive configuration without object access.
 
         Returns:
-            Latest sweep outcome, counts, and archive configuration.
+            Current archive configuration.
         """
         return self._retention_store().get_retention_status()
 
