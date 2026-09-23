@@ -53,11 +53,12 @@ from zenml.models import (
     StepRunResponseMetadata,
     StepRunUpdate,
 )
+from zenml.models.v2.base.execution import ExecutionArchiveDescriptor
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import (
-    StepRunArchiveDescriptor,
     StepRunInputResponse,
     StepRunResponseResources,
+    StepRunSummary,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
@@ -533,6 +534,15 @@ class StepRunSchema(
         archived = self.has_archived_configuration
         step = None if archived else self.get_step_configuration()
 
+        summary = StepRunSummary(
+            snapshot_id=self.snapshot_id,
+            pipeline_run_id=self.pipeline_run_id,
+            original_step_run_id=self.original_step_run_id,
+            run_metadata=self.fetch_metadata() if include_metadata else None,
+            parent_step_ids=[p.parent_id for p in self.parents]
+            if include_metadata
+            else None,
+        )
         archive = None
         if archived:
             bundle_id = (
@@ -545,18 +555,8 @@ class StepRunSchema(
                 )
             )
             assert bundle_id is not None
-            archive = StepRunArchiveDescriptor(
-                bundle_id=bundle_id,
-                restore_run_id=self.pipeline_run_id,
-                snapshot_id=self.snapshot_id,
-                pipeline_run_id=self.pipeline_run_id,
-                original_step_run_id=self.original_step_run_id,
-                run_metadata=self.fetch_metadata()
-                if include_metadata
-                else None,
-                parent_step_ids=[p.parent_id for p in self.parents]
-                if include_metadata
-                else None,
+            archive = ExecutionArchiveDescriptor(
+                bundle_id=bundle_id, restore_run_id=self.pipeline_run_id
             )
 
         body = StepRunResponseBody(
@@ -577,6 +577,7 @@ class StepRunSchema(
             heartbeat_threshold=self.heartbeat_threshold,
             archive_bundle_id=self.archive_bundle_id,
             archive=archive,
+            summary=summary,
         )
         metadata = None
         if include_metadata and archive is None:
@@ -597,8 +598,8 @@ class StepRunSchema(
                 snapshot_id=self.snapshot_id,
                 pipeline_run_id=self.pipeline_run_id,
                 original_step_run_id=self.original_step_run_id,
-                parent_step_ids=[p.parent_id for p in self.parents],
-                run_metadata=self.fetch_metadata(),
+                parent_step_ids=summary.parent_step_ids or [],
+                run_metadata=summary.run_metadata or {},
             )
 
         resources = None

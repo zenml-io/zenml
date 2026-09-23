@@ -57,9 +57,10 @@ from zenml.models import (
     PipelineRunUpdate,
     RunMetadataEntry,
 )
+from zenml.models.v2.base.execution import ExecutionArchiveDescriptor
 from zenml.models.v2.core.pipeline_run import (
-    PipelineRunArchiveDescriptor,
     PipelineRunResponseResources,
+    PipelineRunSummary,
 )
 from zenml.utils.run_utils import (
     build_dag,
@@ -703,19 +704,22 @@ class PipelineRunSchema(
         Returns:
             The created `PipelineRunResponse`.
         """
-        archive = None
-        if self.archive_bundle_id is not None:
-            archive = PipelineRunArchiveDescriptor(
-                bundle_id=self.archive_bundle_id,
-                restore_run_id=self.id,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                run_metadata=self.fetch_metadata(
-                    include_full_metadata=include_full_metadata
-                )
-                if include_metadata
-                else None,
+        summary = PipelineRunSummary(
+            start_time=self.start_time,
+            end_time=self.end_time,
+            run_metadata=self.fetch_metadata(
+                include_full_metadata=include_full_metadata
             )
+            if include_metadata
+            else None,
+        )
+        archive = (
+            ExecutionArchiveDescriptor(
+                bundle_id=self.archive_bundle_id, restore_run_id=self.id
+            )
+            if self.archive_bundle_id is not None
+            else None
+        )
 
         body = PipelineRunResponseBody(
             user_id=self.user_id,
@@ -731,6 +735,7 @@ class PipelineRunSchema(
             root_run_id=self.root_run_id,
             archive_bundle_id=self.archive_bundle_id,
             archive=archive,
+            summary=summary,
         )
         metadata = None
         if include_metadata and archive is None:
@@ -786,9 +791,7 @@ class PipelineRunSchema(
                     )
 
             metadata = PipelineRunResponseMetadata(
-                run_metadata=self.fetch_metadata(
-                    include_full_metadata=include_full_metadata
-                ),
+                run_metadata=summary.run_metadata or {},
                 config=config,
                 start_time=self.start_time,
                 end_time=self.end_time,

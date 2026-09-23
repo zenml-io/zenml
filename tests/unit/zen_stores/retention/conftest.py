@@ -27,7 +27,6 @@ def storage(tmp_path, monkeypatch) -> ArtifactStoreArchiveStorage:
     """Enable archiving against a temporary local directory."""
     root = str(tmp_path / "objects")
     archive = ArtifactStoreArchiveStorage.from_uri(root)
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "local")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", root)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "7")
     return archive

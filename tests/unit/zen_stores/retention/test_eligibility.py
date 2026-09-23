@@ -27,7 +27,7 @@ from zenml.zen_stores.schemas import (
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
-SETTINGS = ArchiveSettings(backend="local", uri="/tmp", after_days=90)
+SETTINGS = ArchiveSettings(uri="/tmp", after_days=90)
 
 
 def update_record(

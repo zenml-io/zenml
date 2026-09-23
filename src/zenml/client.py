@@ -3041,7 +3041,7 @@ class Client(metaclass=ClientMetaClass):
         tags: StringFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUID | None = None,
-        archive_bundle_id: UUIDFilterOption = None,
+        is_archived: Optional[bool] = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -3070,13 +3070,13 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             trigger_id: Filter by trigger ID (attached trigger to snapshot).
-            archive_bundle_id: Filter on the archive bundle holding detail.
+            is_archived: Filter by whether execution detail is archived.
 
         Returns:
             A page with snapshots fitting the filter description
         """
         snapshot_filter_model = PipelineSnapshotFilter(
-            archive_bundle_id=archive_bundle_id,
+            is_archived=is_archived,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5249,13 +5249,9 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
             include_full_metadata=include_full_metadata,
         )
-        if (
-            hydrate
-            and not is_valid_uuid(name_id_or_prefix)
-            and run.archive_bundle_id is not None
-        ):
-            # Name and prefix resolution returns a SQL-only list projection.
-            # Load archived detail through the explicit getter after resolution.
+        if hydrate and run.metadata is None:
+            # List-based resolution may return a summary. Enforce the
+            # requested detail contract through the individual getter.
             return self.zen_store.get_run(
                 run.id,
                 hydrate=True,
@@ -5375,7 +5371,7 @@ class Client(metaclass=ClientMetaClass):
         trigger_id: UUIDFilterOption = None,
         parent_run_id: UUIDFilterOption = None,
         root_runs_only: Optional[bool] = None,
-        archive_bundle_id: UUIDFilterOption = None,
+        is_archived: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5431,13 +5427,13 @@ class Client(metaclass=ClientMetaClass):
             trigger_id: The ID of the trigger that generated this run.
             parent_run_id: The parent run ID for nested child pipeline runs.
             root_runs_only: Whether to include only root runs. Ignored if False.
-            archive_bundle_id: Filter on the archive bundle holding detail.
+            is_archived: Filter by whether execution detail is archived.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
         """
         runs_filter_model = PipelineRunFilter(
-            archive_bundle_id=archive_bundle_id,
+            is_archived=is_archived,
             sort_by=sort_by,
             page=page,
             size=size,
@@ -5653,7 +5649,7 @@ class Client(metaclass=ClientMetaClass):
         exclude_retried: Optional[bool] = None,
         version: IntegerFilterOption = None,
         hydrate: bool = False,
-        archive_bundle_id: UUIDFilterOption = None,
+        is_archived: Optional[bool] = None,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
 
@@ -5687,13 +5683,13 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            archive_bundle_id: Filter on the archive bundle holding detail.
+            is_archived: Filter by whether execution detail is archived.
 
         Returns:
             A page with Pipeline fitting the filter description
         """
         step_run_filter_model = StepRunFilter(
-            archive_bundle_id=archive_bundle_id,
+            is_archived=is_archived,
             sort_by=sort_by,
             page=page,
             size=size,

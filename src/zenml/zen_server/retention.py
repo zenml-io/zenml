@@ -33,6 +33,7 @@ from zenml.exceptions import (
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     ExecutionRetentionUnavailableError,
+    MaxConcurrentTasksError,
 )
 from zenml.logger import get_logger
 from zenml.models import (
@@ -42,7 +43,7 @@ from zenml.models import (
     RestoreResponse,
 )
 from zenml.zen_server.archive_storage import ArtifactStoreArchiveStorage
-from zenml.zen_server.utils import zen_store
+from zenml.zen_server.utils import submit_maintenance_task, zen_store
 from zenml.zen_stores.retention.eligibility import ArchiveBatch
 
 logger = get_logger(__name__)
@@ -134,7 +135,7 @@ def archive_settings() -> ArchiveSettings:
         raise ExecutionRetentionUnavailableError(
             "Execution archive storage is not configured on this server; "
             "ask your server administrator to set "
-            "ZENML_SERVER_ARCHIVE__BACKEND and ZENML_SERVER_ARCHIVE__URI."
+            "ZENML_SERVER_ARCHIVE__URI."
         )
     return settings
 
@@ -148,10 +149,18 @@ def archive_storage() -> ArtifactStoreArchiveStorage:
     global _storage
     if _storage is None:
         settings = archive_settings()
-        _storage = ArtifactStoreArchiveStorage.from_uri(
-            settings.root_uri, connector_id=settings.connector_id
-        )
+        _storage = ArtifactStoreArchiveStorage.from_uri(settings.root_uri)
     return _storage
+
+
+def initialize_retention() -> None:
+    """Validate configured retention without contacting object storage.
+
+    Raises:
+        IllegalOperationError: Archiving is configured on an unsupported database.
+    """  # noqa: DOC502
+    if ServerConfiguration.get_server_config().archive.configured:
+        archive_settings()
 
 
 def archive_batch(
@@ -236,11 +245,11 @@ def delete_pipeline_run(run_id: UUID) -> None:
         store.delete_run(run_id)
 
 
-def delete_unused_archive_objects() -> None:
-    """Remove deleted runs' objects after the deletion response is sent.
+def schedule_archive_cleanup() -> None:
+    """Submit bounded object cleanup after SQL deletion has committed.
 
-    This is a best-effort background task. Failed deletions keep their catalog
-    entries for a later cleanup; they do not roll back the database deletion.
+    Busy or stopping workers leave catalog entries for a later deletion to
+    retry, without turning the committed deletion into an error response.
     """
     store = zen_store()
     if (
@@ -248,16 +257,23 @@ def delete_unused_archive_objects() -> None:
         or not ServerConfiguration.get_server_config().archive.configured
     ):
         return
+
+    def cleanup() -> None:
+        try:
+            with _capacity.claim():
+                store.delete_unused_archive_objects(archive_storage())
+        except ExecutionRetentionBusyError:
+            logger.debug(
+                "Archive cleanup deferred: retention capacity is busy."
+            )
+
     try:
-        with _capacity.claim(key="archive-cleanup"):
-            store.delete_unused_archive_objects(archive_storage())
-    except ExecutionRetentionBusyError:
-        # A running cleanup, or a replica at capacity, leaves the catalog
-        # entries for the next deletion to pick up.
-        return
+        submit_maintenance_task(cleanup)
+    except MaxConcurrentTasksError:
+        logger.debug("Archive cleanup deferred: maintenance executor is busy.")
     except Exception as error:
         logger.warning(
-            "Archive object cleanup failed (%s); catalog entries remain for "
-            "retry.",
+            "Could not schedule archive cleanup (%s); catalog entries remain "
+            "for retry.",
             type(error).__name__,
         )

@@ -155,30 +155,6 @@ def _configure_uvicorn_logging() -> None:
         _uvicorn_logger.propagate = True
 
 
-def _check_archive_store_on_startup() -> None:
-    """Validate configured archive storage, including while writes are paused.
-
-    Raises:
-        IllegalOperationError: Archive storage is configured on an unsupported
-            database.
-    """  # noqa: DOC502
-    if not server_config().archive.configured:
-        return
-    # Database and configuration failures are fatal. Only the external storage
-    # probe below is allowed to degrade to a startup warning.
-    retention.archive_settings()
-    try:
-        usable = retention.archive_storage().probe()
-    except Exception:
-        usable = False
-    if not usable:
-        logger.warning(
-            "Execution archive storage is configured, but "
-            "ZENML_SERVER_ARCHIVE__URI cannot be written and read back. "
-            "Check the URI and the server's credentials."
-        )
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage the ZenML server application lifespan.
@@ -200,7 +176,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # avoid race conditions
         await initialize_request_manager()
         initialize_zen_store()
-        _check_archive_store_on_startup()
+        retention.initialize_retention()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()
         initialize_rbac()

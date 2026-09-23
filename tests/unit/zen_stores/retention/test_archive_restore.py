@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import pymysql
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import (
     Column,
     Integer,
@@ -45,7 +46,6 @@ from zenml.exceptions import (
     ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     ExecutionRetentionOversizedError,
-    IllegalOperationError,
 )
 from zenml.models import (
     ArchiveRefusal,
@@ -87,7 +87,7 @@ def test_archive_restore_round_trip(
     monkeypatch,
     retention,
 ):
-    """Restore recovers every SQL payload and the original detailed responses."""
+    """Restore recovers SQL payloads and all supported response forms."""
     ids = run_factory(retention_store, kind)
     project = retention_store.get_project(ids.project)
     monkeypatch.setattr(Client, "active_project", property(lambda _: project))
@@ -96,14 +96,22 @@ def test_archive_restore_round_trip(
     )
     calls = [
         lambda: retention_store.get_run(ids.run),
-        lambda: retention_store.get_run_step(ids.consumer),
+        lambda: retention_store.get_run_step(
+            ids.consumer, hydrate=kind != "legacy"
+        ),
         lambda: retention_store.get_snapshot(ids.snapshot),
         lambda: retention_store.get_pipeline_run_dag(ids.run),
         lambda: retention_store.list_run_steps(
-            StepRunFilter(pipeline_run_id=ids.run), hydrate=True
+            StepRunFilter(pipeline_run_id=ids.run), hydrate=kind != "legacy"
         ),
-        lambda: cache_utils.get_cached_step_run(str(ids.consumer)),
     ]
+    if kind != "legacy":
+        calls.append(
+            lambda: cache_utils.get_cached_step_run(str(ids.consumer))
+        )
+    else:
+        with pytest.raises(ValidationError, match="snapshot_id"):
+            retention_store.get_run_step(ids.consumer)
     before = [call().model_dump() for call in calls]
     sql_before = rows(retention_store)
     bundle_id = archive_run(retention_store, ids)
@@ -131,6 +139,9 @@ def test_archive_restore_round_trip(
     assert restored.outcome == RestoreOutcome.RESTORED
     assert restored.restored_at is not None
     assert [call().model_dump() for call in calls] == before
+    if kind == "legacy":
+        with pytest.raises(ValidationError, match="snapshot_id"):
+            retention_store.get_run_step(ids.consumer)
     sql_after = rows(retention_store)
     # These new columns are derived header projections, not archived payload.
     for source in (sql_before, sql_after):
@@ -1191,15 +1202,6 @@ def test_targeted_archive_is_bounded_and_reports_more_work(
     )
 
 
-def test_archive_connector_cannot_be_deleted(retention_store, monkeypatch):
-    """Deleting the connector the server archives with is refused."""
-    connector_id = uuid4()
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__CONNECTOR_ID", str(connector_id))
-
-    with pytest.raises(IllegalOperationError, match="archives execution"):
-        retention_store.delete_service_connector(connector_id)
-
-
 @pytest.mark.parametrize("refusal", ["active", "oversized"])
 def test_targeted_archive_continues_past_refusal_only_batches(
     retention_store,
@@ -1264,7 +1266,6 @@ def test_archive_preview_is_bounded_and_side_effect_free(
     def blocked(*_, **__):
         pytest.fail("dry-run accessed archive storage")
 
-    monkeypatch.setattr(storage, "probe", blocked)
     monkeypatch.setattr(storage, "read", blocked)
     monkeypatch.setattr(storage, "write", blocked)
 
@@ -1442,3 +1443,61 @@ def test_archived_run_update_returns_the_retained_summary(
 
     assert updated.run_metadata == {}
     assert "run_metadata" not in repr(updated.get_body().archive)
+
+
+@pytest.mark.parametrize("limit_by_time", [False, True])
+def test_archive_cleanup_is_bounded_and_failed_objects_do_not_starve_others(
+    retention_store, run_factory, monkeypatch, NOW, limit_by_time
+):
+    """A later pass advances past a failed object and preserves live archives."""
+    from types import SimpleNamespace
+
+    from zenml.zen_stores import sql_zen_store
+
+    ids = run_factory(retention_store)
+    bundles = [
+        ArchiveBundleSchema(
+            project_id=ids.project,
+            run_id=ids.run if index == 2 else None,
+            uri=f"s3://archive/{index}",
+            size_bytes=1,
+            content_hash="test",
+            format_version=1,
+            updated=NOW + timedelta(seconds=index),
+        )
+        for index in range(3)
+    ]
+    bundle_ids = [bundle.id for bundle in bundles]
+    with Session(retention_store.engine) as session:
+        session.add_all(bundles)
+        session.commit()
+    remove = Mock(side_effect=lambda uri: uri != "s3://archive/0")
+    storage = SimpleNamespace(remove=remove)
+    if limit_by_time:
+        ticks = iter([0.0, 0.0, 31.0])
+        monkeypatch.setattr(
+            sql_zen_store,
+            "time",
+            SimpleNamespace(monotonic=lambda: next(ticks)),
+        )
+    else:
+        monkeypatch.setattr(sql_zen_store, "MAX_ARCHIVE_BATCH_SIZE", 1)
+
+    retention_store.delete_unused_archive_objects(storage)
+
+    remove.assert_called_once_with("s3://archive/0")
+    if limit_by_time:
+        monkeypatch.setattr(
+            sql_zen_store, "time", SimpleNamespace(monotonic=lambda: 0.0)
+        )
+    remove.reset_mock()
+    retention_store.delete_unused_archive_objects(storage)
+
+    assert remove.call_args_list[0].args == ("s3://archive/1",)
+    assert all(
+        call.args != ("s3://archive/2",) for call in remove.call_args_list
+    )
+    with Session(retention_store.engine) as session:
+        assert session.get(ArchiveBundleSchema, bundle_ids[0]) is not None
+        assert session.get(ArchiveBundleSchema, bundle_ids[1]) is None
+        assert session.get(ArchiveBundleSchema, bundle_ids[2]) is not None

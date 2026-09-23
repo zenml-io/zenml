@@ -34,6 +34,11 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, PipelineRunTriggeredByType
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.execution import (
+    ArchivableFilter,
+    ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
+)
 from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     IntegerFilterOption,
@@ -41,8 +46,6 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
-    ArchivableResponseBody,
-    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -274,13 +277,13 @@ class PipelineRunUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineRunArchiveDescriptor(ExecutionArchiveDescriptor):
-    """Retained SQL summary for an archived pipeline run."""
+class PipelineRunSummary(BaseZenModel):
+    """Retained SQL fields available before and after archiving."""
 
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     # Hydration warnings print changed body fields; metadata can be large or
-    # sensitive, so it stays out of the descriptor's representation.
+    # sensitive, so it stays out of the summary's representation.
     run_metadata: Optional[Dict[str, MetadataType]] = Field(
         default=None, repr=False
     )
@@ -318,7 +321,7 @@ class PipelineRunResponseBody(
         default=None,
         title="The ID of the top-level parent run of this run's nesting tree.",
     )
-    archive: Optional[PipelineRunArchiveDescriptor] = None
+    summary: Optional[PipelineRunSummary] = None
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -535,34 +538,50 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self._get_complete_archive()
-        if archive is not None and archive.run_metadata is not None:
-            return archive.run_metadata
-        return self.get_metadata().run_metadata
+        summary = self._get_summary(include_metadata=True)
+        assert summary.run_metadata is not None
+        return summary.run_metadata
 
-    def _get_complete_archive(self) -> Optional[PipelineRunArchiveDescriptor]:
-        """Return the archived summary, including what list pages leave out.
+    def _get_summary(
+        self, include_metadata: bool = False
+    ) -> PipelineRunSummary:
+        """Read retained fields without loading archived detail.
 
-        A page of runs carries archived summaries without their run metadata.
-        Reading it fetches the run once, the way reading metadata hydrates a
-        run that is not archived.
+        Args:
+            include_metadata: Load metadata and relationships omitted from a
+                lightweight response.
 
         Returns:
-            The archived summary, or None if the run is not archived.
+            The SQL summary. Older server responses fall back to their
+            existing metadata representation.
+
+        Raises:
+            RuntimeError: An archived entity's server omitted its summary.
         """
         body = self.get_body()
-        if body.archive is None or body.archive.run_metadata is not None:
-            return body.archive
+        summary = body.summary
+        if summary is None or (
+            include_metadata and (summary.run_metadata is None)
+        ):
+            if body.archive is not None:
+                from zenml.client import Client
 
-        from zenml.client import Client
-
-        body.archive = (
-            Client()
-            .zen_store.get_run(self.id, hydrate=False)
-            .get_body()
-            .archive
-        )
-        return body.archive
+                summary = (
+                    Client()
+                    .zen_store.get_run(self.id, hydrate=False)
+                    .get_body()
+                    .summary
+                )
+                if summary is None:
+                    raise RuntimeError(
+                        "Archived response is missing its SQL summary."
+                    )
+            else:
+                summary = PipelineRunSummary.model_validate(
+                    self.get_metadata(), from_attributes=True
+                )
+            body.summary = summary
+        return summary
 
     @property
     def steps(self) -> Dict[str, "StepRunResponse"]:
@@ -599,10 +618,8 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.start_time
-        return self.get_metadata().start_time
+        summary = self._get_summary()
+        return summary.start_time
 
     @property
     def end_time(self) -> Optional[datetime]:
@@ -611,10 +628,8 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.end_time
-        return self.get_metadata().end_time
+        summary = self._get_summary()
+        return summary.end_time
 
     @property
     def in_progress(self) -> bool:
@@ -899,11 +914,11 @@ class PipelineRunResponse(
         return self.get_body().archive_bundle_id
 
     @property
-    def archive(self) -> Optional[PipelineRunArchiveDescriptor]:
-        """The retained archive summary, if this run is archived.
+    def archive(self) -> Optional[ExecutionArchiveDescriptor]:
+        """The archive location descriptor, if this run is archived.
 
         Returns:
-            The archive summary, or None while detail remains in SQL.
+            The archive descriptor, or None while detail remains in SQL.
         """
         return self.get_body().archive
 
@@ -912,16 +927,12 @@ class PipelineRunResponse(
 
 
 class PipelineRunFilter(
-    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+    ProjectScopedFilter,
+    TaggableFilter,
+    RunMetadataFilterMixin,
+    ArchivableFilter,
 ):
     """Model to enable advanced filtering of all pipeline runs."""
-
-    archive_bundle_id: UUIDFilterOption = Field(
-        default=None,
-        description="The bundle holding archived execution detail. The "
-        "column is not indexed; combine it with a project or pipeline "
-        "filter on large servers.",
-    )
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -933,6 +944,7 @@ class PipelineRunFilter(
         "model_version",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ArchivableFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,

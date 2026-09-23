@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+"""Step cache keys and candidate selection."""
+
 import sys
 from typing import Tuple
 from unittest import mock
@@ -294,11 +296,20 @@ def test_fetching_cached_step_run_queries_cache_candidates(
         cache_key="cache_key",
         cache_expired=False,
         status=ExecutionStatus.COMPLETED,
-        archive_bundle_id="isnull:",
+        is_archived=False,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
         hydrate=True,
     )
+
+    from zenml.models import ExecutionArchiveDescriptor
+
+    cache_candidate.get_body().archive = ExecutionArchiveDescriptor(
+        bundle_id=cache_candidate.id,
+        restore_run_id=cache_candidate.pipeline_run_id,
+    )
+    cache_candidate.metadata = None
+    assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
 
     mock_list_run_steps.side_effect = ExecutionArchivedError("archived")
     assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
@@ -310,9 +321,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_run_request_model,
     sample_step_request_model,
 ):
-    """Tests that the latest step run with the same cache key is used for
-    caching.
-    """
+    """The latest step run with the same cache key is used for caching."""
     pipeline = clean_client.zen_store.create_pipeline(
         PipelineRequest(
             name="sample_pipeline",

@@ -12,10 +12,6 @@ from zenml.enums import (
     RetentionExclusion,
 )
 
-# An archive result is stored as an API transaction result, so a project-wide
-# request must not be able to write an unbounded refusal list to the database.
-MAX_REFUSALS = 100
-
 
 class RetentionStatusResponse(BaseModel):
     """Archive configuration without scanning runs or storage."""

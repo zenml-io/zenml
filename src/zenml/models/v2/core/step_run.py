@@ -38,7 +38,12 @@ from zenml.enums import (
     StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.execution import (
+    ArchivableFilter,
+    ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
+)
 from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     IntegerFilterOption,
@@ -46,8 +51,6 @@ from zenml.models.v2.base.filter import (
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
-    ArchivableResponseBody,
-    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -231,15 +234,15 @@ class StepRunUpdate(BaseUpdate):
 
 
 # ------------------ Response Model ------------------
-class StepRunArchiveDescriptor(ExecutionArchiveDescriptor):
-    """Retained SQL summary for an archived step run."""
+class StepRunSummary(BaseZenModel):
+    """Retained SQL fields available before and after archiving."""
 
     snapshot_id: Optional[UUID] = None
     pipeline_run_id: UUID
     original_step_run_id: Optional[UUID] = None
     parent_step_ids: Optional[List[UUID]] = None
     # Hydration warnings print changed body fields; metadata can be large or
-    # sensitive, so it stays out of the descriptor's representation.
+    # sensitive, so it stays out of the summary's representation.
     run_metadata: Optional[Dict[str, MetadataType]] = Field(
         default=None, repr=False
     )
@@ -289,7 +292,7 @@ class StepRunResponseBody(ProjectScopedResponseBody, ArchivableResponseBody):
         title="The applied heartbeat healthiness threshold ",
         default=None,
     )
-    archive: Optional[StepRunArchiveDescriptor] = None
+    summary: Optional[StepRunSummary] = None
     model_config = ConfigDict(protected_namespaces=())
 
 
@@ -338,8 +341,8 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     )
 
     # References
-    snapshot_id: Optional[UUID] = Field(
-        default=None, title="The snapshot associated with the step run."
+    snapshot_id: UUID = Field(
+        title="The snapshot associated with the step run."
     )
     pipeline_run_id: UUID = Field(
         title="The ID of the pipeline run that this step run belongs to.",
@@ -696,15 +699,15 @@ class StepRunResponse(
         return self.get_body().heartbeat_threshold
 
     @property
-    def snapshot_id(self) -> Optional[UUID]:
+    def snapshot_id(self) -> UUID:
         """The `snapshot_id` property.
 
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.snapshot_id
+        summary = self._get_summary()
+        if summary.snapshot_id is not None:
+            return summary.snapshot_id
         return self.get_metadata().snapshot_id
 
     @property
@@ -714,10 +717,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.pipeline_run_id
-        return self.get_metadata().pipeline_run_id
+        summary = self._get_summary()
+        return summary.pipeline_run_id
 
     @property
     def original_step_run_id(self) -> Optional[UUID]:
@@ -726,10 +727,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.original_step_run_id
-        return self.get_metadata().original_step_run_id
+        summary = self._get_summary()
+        return summary.original_step_run_id
 
     @property
     def parent_step_ids(self) -> List[UUID]:
@@ -738,10 +737,9 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self._get_complete_archive()
-        if archive is not None and archive.parent_step_ids is not None:
-            return archive.parent_step_ids
-        return self.get_metadata().parent_step_ids
+        summary = self._get_summary(include_metadata=True)
+        assert summary.parent_step_ids is not None
+        return summary.parent_step_ids
 
     @property
     def exception_info(self) -> Optional[ExceptionInfo]:
@@ -759,39 +757,51 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        archive = self._get_complete_archive()
-        if archive is not None and archive.run_metadata is not None:
-            return archive.run_metadata
-        return self.get_metadata().run_metadata
+        summary = self._get_summary(include_metadata=True)
+        assert summary.run_metadata is not None
+        return summary.run_metadata
 
-    def _get_complete_archive(self) -> Optional[StepRunArchiveDescriptor]:
-        """Return the archived summary, including what list pages leave out.
+    def _get_summary(self, include_metadata: bool = False) -> StepRunSummary:
+        """Read retained fields without loading archived detail.
 
-        A page of step runs carries archived summaries without their run
-        metadata and parent step IDs. Reading either fetches the step run
-        once, the way reading metadata hydrates a step run that is not
-        archived.
+        Args:
+            include_metadata: Load metadata and relationships omitted from a
+                lightweight response.
 
         Returns:
-            The archived summary, or None if the step run is not archived.
+            The SQL summary. Older server responses fall back to their
+            existing metadata representation.
+
+        Raises:
+            RuntimeError: An archived entity's server omitted its summary.
         """
         body = self.get_body()
-        archive = body.archive
-        if archive is None or (
-            archive.run_metadata is not None
-            and archive.parent_step_ids is not None
+        summary = body.summary
+        if summary is None or (
+            include_metadata
+            and (
+                summary.run_metadata is None or summary.parent_step_ids is None
+            )
         ):
-            return archive
+            if body.archive is not None:
+                from zenml.client import Client
 
-        from zenml.client import Client
-
-        body.archive = (
-            Client()
-            .zen_store.get_run_step(self.id, hydrate=False)
-            .get_body()
-            .archive
-        )
-        return body.archive
+                summary = (
+                    Client()
+                    .zen_store.get_run_step(self.id, hydrate=False)
+                    .get_body()
+                    .summary
+                )
+                if summary is None:
+                    raise RuntimeError(
+                        "Archived response is missing its SQL summary."
+                    )
+            else:
+                summary = StepRunSummary.model_validate(
+                    self.get_metadata(), from_attributes=True
+                )
+            body.summary = summary
+        return summary
 
     @property
     def log_collection(self) -> Optional[List["LogsResponse"]]:
@@ -839,11 +849,11 @@ class StepRunResponse(
         return self.get_body().archive_bundle_id
 
     @property
-    def archive(self) -> Optional[StepRunArchiveDescriptor]:
-        """The retained archive summary, if this step is archived.
+    def archive(self) -> Optional[ExecutionArchiveDescriptor]:
+        """The archive location descriptor, if this step is archived.
 
         Returns:
-            The archive summary, or None while detail remains in SQL.
+            The archive descriptor, or None while detail remains in SQL.
         """
         return self.get_body().archive
 
@@ -851,17 +861,13 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
+class StepRunFilter(
+    ProjectScopedFilter, RunMetadataFilterMixin, ArchivableFilter
+):
     """Model to enable advanced filtering of step runs."""
 
-    archive_bundle_id: UUIDFilterOption = Field(
-        default=None,
-        description="The bundle holding archived execution detail. The "
-        "column is not indexed; combine it with a project or pipeline "
-        "filter on large servers.",
-    )
-
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ArchivableFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",

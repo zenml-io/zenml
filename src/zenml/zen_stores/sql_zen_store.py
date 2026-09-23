@@ -1278,7 +1278,9 @@ class SqlZenStore(BaseZenStore):
         run_ids = [
             run.id
             for run in page.items
-            if run.archive is not None and run.archive.run_metadata is None
+            if run.archive is not None
+            and (summary := run.get_body().summary) is not None
+            and summary.run_metadata is None
         ]
         if not run_ids:
             return
@@ -1306,8 +1308,10 @@ class SqlZenStore(BaseZenStore):
             for schema in schemas
         }
         for run in page.items:
-            if run.archive is not None and run.id in metadata:
-                run.archive.run_metadata = metadata[run.id]
+            if (
+                summary := run.get_body().summary
+            ) is not None and run.id in metadata:
+                summary.run_metadata = metadata[run.id]
 
     @staticmethod
     def _populate_archived_step_summaries(
@@ -1323,9 +1327,9 @@ class SqlZenStore(BaseZenStore):
             step.id
             for step in page.items
             if step.archive is not None
+            and (summary := step.get_body().summary) is not None
             and (
-                step.archive.run_metadata is None
-                or step.archive.parent_step_ids is None
+                summary.run_metadata is None or summary.parent_step_ids is None
             )
         ]
         if not step_ids:
@@ -1346,10 +1350,12 @@ class SqlZenStore(BaseZenStore):
             for schema in schemas
         }
         for step in page.items:
-            if step.archive is not None and step.id in summaries:
+            if (
+                summary := step.get_body().summary
+            ) is not None and step.id in summaries:
                 run_metadata, parent_step_ids = summaries[step.id]
-                step.archive.run_metadata = run_metadata
-                step.archive.parent_step_ids = parent_step_ids
+                summary.run_metadata = run_metadata
+                summary.parent_step_ids = parent_step_ids
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -11249,16 +11255,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             IllegalOperationError: If the service connector is still referenced
-                by one or more stack components, or by the execution archive.
+                by one or more stack components.
         """
-        archive = ServerConfiguration.get_server_config().archive
-        if archive.connector_id == service_connector_id:
-            raise IllegalOperationError(
-                f"Service connector with ID {service_connector_id} cannot be "
-                "deleted as this server archives execution detail with it. "
-                "Unset ZENML_SERVER_ARCHIVE__CONNECTOR_ID before deleting it, "
-                "or archived runs become unreadable."
-            )
         with Session(self.engine) as session:
             service_connector = self._get_schema_by_id(
                 resource_id=service_connector_id,
@@ -14702,46 +14700,56 @@ class SqlZenStore(BaseZenStore):
         return retention_restorer.restore_run(self.engine, storage, run_id)
 
     def delete_unused_archive_objects(self, storage: ArchiveStorage) -> None:
-        """Delete objects whose owning runs have been deleted.
+        """Remove a bounded batch of objects whose owning runs were deleted.
 
-        Foreign keys clear the run ID only when deletion commits. Keep the
-        catalog row until object deletion succeeds, so storage failures can
-        be retried by a later cleanup. Scan in bounded pages and advance past
-        failures rather than retrying one object indefinitely.
+        Each pass attempts at most MAX_ARCHIVE_BATCH_SIZE objects and stops
+        starting storage calls after 30 seconds. An in-flight call may exceed
+        that budget. Failed attempts move behind older catalog entries so
+        they cannot starve later objects on subsequent passes.
 
         Args:
             storage: Archive storage used to remove the recorded objects.
         """
-        after_id: Optional[UUID] = None
-        while True:
-            with Session(self.engine) as session:
-                query = (
-                    select(
-                        col(ArchiveBundleSchema.id),
-                        col(ArchiveBundleSchema.uri),
-                    )
-                    .where(col(ArchiveBundleSchema.run_id).is_(None))
-                    .order_by(col(ArchiveBundleSchema.id))
-                    .limit(MAX_ARCHIVE_BATCH_SIZE)
+        deadline = time.monotonic() + 30.0
+        with Session(self.engine) as session:
+            objects = session.execute(
+                select(ArchiveBundleSchema.id, ArchiveBundleSchema.uri)
+                .where(col(ArchiveBundleSchema.run_id).is_(None))
+                .order_by(
+                    col(ArchiveBundleSchema.updated),
+                    col(ArchiveBundleSchema.id),
                 )
-                if after_id is not None:
-                    query = query.where(col(ArchiveBundleSchema.id) > after_id)
-                objects = session.execute(query).all()
-            if not objects:
-                return
-            removed = [
-                bundle_id for bundle_id, uri in objects if storage.remove(uri)
-            ]
+                .limit(MAX_ARCHIVE_BATCH_SIZE)
+            ).all()
+        removed: List[UUID] = []
+        failed: List[UUID] = []
+        for bundle_id, uri in objects:
+            if time.monotonic() >= deadline:
+                break
+            if storage.remove(uri):
+                removed.append(bundle_id)
+            else:
+                failed.append(bundle_id)
+        if not removed and not failed:
+            return
+        with Session(self.engine) as session:
             if removed:
-                with Session(self.engine) as session:
-                    session.execute(
-                        delete(ArchiveBundleSchema).where(
-                            col(ArchiveBundleSchema.id).in_(removed),
-                            col(ArchiveBundleSchema.run_id).is_(None),
-                        )
+                session.execute(
+                    delete(ArchiveBundleSchema).where(
+                        col(ArchiveBundleSchema.id).in_(removed),
+                        col(ArchiveBundleSchema.run_id).is_(None),
                     )
-                    session.commit()
-            after_id = objects[-1].id
+                )
+            if failed:
+                session.execute(
+                    update(ArchiveBundleSchema)
+                    .where(
+                        col(ArchiveBundleSchema.id).in_(failed),
+                        col(ArchiveBundleSchema.run_id).is_(None),
+                    )
+                    .values(updated=utc_now())
+                )
+            session.commit()
 
     def get_project(
         self, project_name_or_id: Union[str, UUID], hydrate: bool = True

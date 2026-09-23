@@ -36,13 +36,16 @@ from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
+from zenml.models.v2.base.execution import (
+    ArchivableFilter,
+    ArchivableResponseBody,
+    ExecutionArchiveDescriptor,
+)
 from zenml.models.v2.base.filter import (
     StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
-    ArchivableResponseBody,
-    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -242,8 +245,8 @@ class PipelineSnapshotUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineSnapshotArchiveDescriptor(ExecutionArchiveDescriptor):
-    """Retained SQL summary for an archived pipeline snapshot."""
+class PipelineSnapshotSummary(BaseZenModel):
+    """Retained SQL fields available before and after archiving."""
 
     run_name_template: str
     client_version: Optional[str] = None
@@ -272,7 +275,7 @@ class PipelineSnapshotResponseBody(
         default=None,
         title="The ID of the pipeline associated with the snapshot.",
     )
-    archive: Optional[PipelineSnapshotArchiveDescriptor] = None
+    summary: Optional[PipelineSnapshotSummary] = None
 
 
 class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
@@ -457,6 +460,19 @@ class PipelineSnapshotResponse(
         """
         return self.get_metadata().source_code
 
+    def _get_summary(self) -> PipelineSnapshotSummary:
+        """Read retained fields with a fallback for older server responses.
+
+        Returns:
+            The snapshot's SQL summary.
+        """
+        body = self.get_body()
+        if body.summary is None:
+            body.summary = PipelineSnapshotSummary.model_validate(
+                self.get_metadata(), from_attributes=True
+            )
+        return body.summary
+
     @property
     def run_name_template(self) -> str:
         """The `run_name_template` property.
@@ -464,10 +480,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.run_name_template
-        return self.get_metadata().run_name_template
+        return self._get_summary().run_name_template
 
     @property
     def pipeline_configuration(self) -> PipelineConfiguration:
@@ -503,10 +516,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.client_version
-        return self.get_metadata().client_version
+        return self._get_summary().client_version
 
     @property
     def server_version(self) -> Optional[str]:
@@ -515,10 +525,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.server_version
-        return self.get_metadata().server_version
+        return self._get_summary().server_version
 
     @property
     def pipeline_version_hash(self) -> Optional[str]:
@@ -527,10 +534,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.pipeline_version_hash
-        return self.get_metadata().pipeline_version_hash
+        return self._get_summary().pipeline_version_hash
 
     @property
     def pipeline_spec(self) -> Optional[PipelineSpec]:
@@ -548,10 +552,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.code_path
-        return self.get_metadata().code_path
+        return self._get_summary().code_path
 
     @property
     def template_id(self) -> Optional[UUID]:
@@ -560,10 +561,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.template_id
-        return self.get_metadata().template_id
+        return self._get_summary().template_id
 
     @property
     def source_snapshot_id(self) -> Optional[UUID]:
@@ -572,10 +570,7 @@ class PipelineSnapshotResponse(
         Returns:
             the value of the property.
         """
-        archive = self.get_body().archive
-        if archive is not None:
-            return archive.source_snapshot_id
-        return self.get_metadata().source_snapshot_id
+        return self._get_summary().source_snapshot_id
 
     @property
     def config_schema(self) -> Optional[Dict[str, Any]]:
@@ -707,11 +702,11 @@ class PipelineSnapshotResponse(
         return self.get_body().archive_bundle_id
 
     @property
-    def archive(self) -> Optional[PipelineSnapshotArchiveDescriptor]:
-        """The retained archive summary, if this snapshot is archived.
+    def archive(self) -> Optional[ExecutionArchiveDescriptor]:
+        """The archive location descriptor, if this snapshot is archived.
 
         Returns:
-            The archive summary, or None while detail remains in SQL.
+            The archive descriptor, or None while detail remains in SQL.
         """
         return self.get_body().archive
 
@@ -719,17 +714,13 @@ class PipelineSnapshotResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
+class PipelineSnapshotFilter(
+    ProjectScopedFilter, TaggableFilter, ArchivableFilter
+):
     """Model for filtering pipeline snapshots."""
 
-    archive_bundle_id: UUIDFilterOption = Field(
-        default=None,
-        description="The bundle holding archived execution detail. The "
-        "column is not indexed; combine it with a project or pipeline "
-        "filter on large servers.",
-    )
-
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ArchivableFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "named_only",

@@ -35,7 +35,6 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.models.v2.misc.retention import (
-    MAX_REFUSALS,
     ArchiveRefusal,
     ArchiveResponse,
 )
@@ -63,6 +62,10 @@ from zenml.zen_stores.schemas import (
 )
 
 logger = get_logger(__name__)
+
+# Bound the refusal list persisted with each API transaction result.
+MAX_REFUSALS = 100
+
 
 RunOutcome = Literal["archived", "skipped", "oversized", "failed"]
 

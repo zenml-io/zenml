@@ -19,7 +19,10 @@ from zenml.enums import (
     SourceType,
     VisualizationResourceTypes,
 )
-from zenml.exceptions import ExecutionRetentionUnavailableError
+from zenml.exceptions import (
+    ExecutionRetentionUnavailableError,
+    MaxConcurrentTasksError,
+)
 from zenml.models import (
     PipelineRunRequest,
     PipelineSnapshotResponse,
@@ -65,6 +68,22 @@ def http(
     retention_store, retention, run_factory, monkeypatch, archive_project
 ):
     """Mount real routers over the shared MySQL execution fixture."""
+    executor = execution.BoundedThreadPoolExecutor(max_workers=1)
+    monkeypatch.setattr(utils, "_maintenance_executor", executor)
+    maintenance_tasks = []
+    original_submit = executor.submit
+
+    def submit(*args, **kwargs):
+        future = original_submit(*args, **kwargs)
+        maintenance_tasks.append(future)
+        return future
+
+    monkeypatch.setattr(executor, "submit", submit)
+
+    def wait_for_maintenance():
+        for future in maintenance_tasks:
+            future.result(timeout=10)
+
     ids = run_factory(retention_store)
 
     @asynccontextmanager
@@ -73,6 +92,7 @@ def http(
         try:
             yield
         finally:
+            executor.shutdown(wait=True)
             await utils.cleanup_request_manager()
 
     app = FastAPI(lifespan=lifespan)
@@ -100,6 +120,7 @@ def http(
             store=retention_store,
             retention=retention,
             archive=archive_project,
+            wait_for_maintenance=wait_for_maintenance,
         )
 
 
@@ -401,7 +422,7 @@ def test_archive_restore_http_lifecycle(http, monkeypatch):
     detail = f"/api/v1/runs/{http.ids.run}"
     body = {"run_ids": [str(http.ids.run)]}
     with monkeypatch.context() as disabled:
-        disabled.delenv("ZENML_SERVER_ARCHIVE__BACKEND")
+        disabled.delenv("ZENML_SERVER_ARCHIVE__URI")
         assert http.client.post(archive, json=body).status_code == 503
     assert http.client.post(archive, json={}).status_code == 422
     result = http.client.post(archive, json=body)
@@ -623,10 +644,10 @@ def test_mixed_hydrated_http_pages_preserve_archive_summaries(
         assert archive["bundle_id"]
         if resource == "pipeline_snapshots":
             assert archive["restore_run_id"] is None
-            assert archive["run_name_template"]
+            assert item["body"]["summary"]["run_name_template"]
         else:
             assert archive["restore_run_id"] == str(http.ids.run)
-            assert archive["run_metadata"] == {}
+            assert item["body"]["summary"]["run_metadata"] == {}
     opened.assert_not_called()
 
 
@@ -890,6 +911,7 @@ def test_run_delete_cleans_archive_after_commit(
     monkeypatch.setattr(storage, "remove", remove)
     response = http.client.delete(f"/api/v1/runs/{http.ids.run}")
     assert response.status_code == 200, response.text
+    http.wait_for_maintenance()
     remove.assert_called_once_with(uri)
     assert Path(uri).exists() == storage_fails
     with Session(http.store.engine) as session:
@@ -898,7 +920,8 @@ def test_run_delete_cleans_archive_after_commit(
         ) == storage_fails
     if storage_fails:
         monkeypatch.setattr(storage, "remove", original_remove)
-        http.retention.delete_unused_archive_objects()
+        http.retention.schedule_archive_cleanup()
+        http.wait_for_maintenance()
         assert not Path(uri).exists()
         with Session(http.store.engine) as session:
             assert session.get(ArchiveBundleSchema, bundle_id) is None
@@ -962,4 +985,42 @@ def test_project_delete_keeps_uris_until_async_cleanup(
     monkeypatch.setattr(storage, "remove", remove_after_commit)
     response = http.client.delete(f"/api/v1/projects/{project.id}")
     assert response.status_code == 200, response.text
+    http.wait_for_maintenance()
     assert not Path(uri).exists()
+
+
+@pytest.mark.parametrize(
+    "submission_error",
+    [MaxConcurrentTasksError("busy"), RuntimeError("stopping")],
+)
+def test_cleanup_submission_failure_preserves_successful_deletion(
+    http, storage, monkeypatch, submission_error
+):
+    """Busy or shutting-down maintenance cannot undo a successful deletion."""
+    from sqlmodel import select
+
+    from zenml.zen_stores.schemas import ArchiveBundleSchema
+
+    http.archive()
+    with Session(http.store.engine) as session:
+        bundle = session.exec(select(ArchiveBundleSchema)).one()
+        bundle_id, uri = bundle.id, bundle.uri
+    original_submit = utils.maintenance_executor().submit
+    submit = Mock(side_effect=submission_error)
+    monkeypatch.setattr(utils.maintenance_executor(), "submit", submit)
+
+    response = http.client.delete(f"/api/v1/runs/{http.ids.run}")
+
+    assert response.status_code == 200, response.text
+    submit.assert_called_once()
+    with pytest.raises(KeyError):
+        http.store.get_run_header(http.ids.run)
+    with Session(http.store.engine) as session:
+        assert session.get(ArchiveBundleSchema, bundle_id) is not None
+    assert storage.artifact_store.exists(uri)
+    monkeypatch.setattr(
+        utils.maintenance_executor(), "submit", original_submit
+    )
+    http.retention.schedule_archive_cleanup()
+    http.wait_for_maintenance()
+    assert not storage.artifact_store.exists(uri)

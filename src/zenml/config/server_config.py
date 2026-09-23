@@ -16,7 +16,7 @@
 import json
 import os
 from secrets import token_hex
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 from pydantic import (
@@ -68,7 +68,7 @@ from zenml.constants import (
     MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     VERSION_1,
 )
-from zenml.enums import ArchiveBackend, AuthScheme
+from zenml.enums import AuthScheme
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
 from zenml.utils.pydantic_utils import before_validator_handler
@@ -95,18 +95,11 @@ def generate_jwt_secret_key() -> str:
     return token_hex(32)
 
 
-ARCHIVE_BACKEND_SCHEMES: Dict[ArchiveBackend, Tuple[str, ...]] = {
-    ArchiveBackend.S3: ("s3://",),
-    ArchiveBackend.GCS: ("gs://",),
-    ArchiveBackend.AZURE: ("abfs://", "az://"),
-}
-
-
 class ArchiveSettings(BaseModel):
     """Execution archive configuration and retention policy for the server.
 
     Every value comes from one nested environment group, for example
-    `ZENML_SERVER_ARCHIVE__BACKEND` and `ZENML_SERVER_ARCHIVE__URI`.
+    `ZENML_SERVER_ARCHIVE__URI` and `ZENML_SERVER_ARCHIVE__ENABLED`.
     Archive storage is configured independently from permission to create new
     archives. This keeps existing objects restorable while new archiving is
     paused.
@@ -114,13 +107,7 @@ class ArchiveSettings(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # `backend` is deliberately redundant with the URI scheme, which is what
-    # actually selects the artifact store flavor. Naming it lets the validator
-    # below reject a URI whose scheme disagrees with the stated intent, rather
-    # than archive to wherever a mistyped URI points.
-    backend: ArchiveBackend = ArchiveBackend.DISABLED
     uri: Optional[str] = None
-    connector_id: Optional[UUID] = None
     enabled: bool = True
     after_days: int = Field(default=90, ge=7)
 
@@ -129,9 +116,9 @@ class ArchiveSettings(BaseModel):
         """Return whether archive storage is configured.
 
         Returns:
-            Whether a backend other than `disabled` is configured.
+            Whether an archive URI is configured.
         """
-        return self.backend != ArchiveBackend.DISABLED
+        return self.uri is not None
 
     @property
     def new_archives_enabled(self) -> bool:
@@ -156,38 +143,23 @@ class ArchiveSettings(BaseModel):
             raise RuntimeError("Execution archive storage is not configured.")
         return self.uri
 
-    @model_validator(mode="after")
-    def _validate_archive_settings(self) -> "ArchiveSettings":
-        """Name the exact variable that is missing or inconsistent.
+    @field_validator("uri")
+    @classmethod
+    def _validate_uri(cls, uri: Optional[str]) -> Optional[str]:
+        """Reject empty storage locations; the adapter validates the provider.
+
+        Args:
+            uri: Configured archive location, or None when unconfigured.
 
         Returns:
-            The validated settings.
+            The configured location.
 
         Raises:
-            ValueError: The group is incomplete, the URI does not match the
-                backend.
+            ValueError: The supplied URI is empty or only whitespace.
         """
-        if not self.configured:
-            return self
-        if not self.uri:
-            raise ValueError(
-                f"ZENML_SERVER_ARCHIVE__BACKEND is '{self.backend.value}', so "
-                "ZENML_SERVER_ARCHIVE__URI must be set to the archive root."
-            )
-        schemes = ARCHIVE_BACKEND_SCHEMES.get(self.backend)
-        if schemes is None:
-            if "://" in self.uri:
-                raise ValueError(
-                    "ZENML_SERVER_ARCHIVE__URI must be a local directory "
-                    "path for the 'local' backend."
-                )
-        elif not self.uri.startswith(schemes):
-            raise ValueError(
-                "ZENML_SERVER_ARCHIVE__URI must start with "
-                f"{' or '.join(schemes)} for the "
-                f"'{self.backend.value}' backend."
-            )
-        return self
+        if uri is not None and not uri.strip():
+            raise ValueError("ZENML_SERVER_ARCHIVE__URI must not be empty.")
+        return uri
 
 
 class ServerConfiguration(BaseModel):

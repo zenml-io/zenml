@@ -244,18 +244,24 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
             cache_key=cache_key,
             cache_expired=False,
             status=ExecutionStatus.COMPLETED,
-            archive_bundle_id="isnull:",
+            is_archived=False,
             sort_by=f"{SorterOps.DESCENDING}:created",
             size=1,
             hydrate=True,
         ).items
+        if not cache_candidates:
+            return None
+        candidate = cache_candidates[0]
+        if candidate.archive is not None:
+            return None
+        # Finish loading before returning: later cache consumers read metadata
+        # outside this exception boundary. A fully loaded response is usable
+        # even if its SQL detail is archived afterwards.
+        candidate.get_metadata()
+        return candidate
     except ExecutionArchivedError:
         # Retirement can race with loading a candidate's configuration.
         return None
-
-    if cache_candidates:
-        return cache_candidates[0]
-    return None
 
 
 def create_cached_step_runs_and_prune_snapshot(

@@ -619,16 +619,6 @@ class ServiceState(StrEnum):
     SCALED_TO_ZERO = "scaled_to_zero"
 
 
-class ArchiveBackend(StrEnum):
-    """Where the server writes archived execution detail."""
-
-    DISABLED = "disabled"
-    LOCAL = "local"
-    S3 = "s3"
-    GCS = "gcs"
-    AZURE = "azure"
-
-
 class RetentionExclusion(StrEnum):
     """Why archiving leaves a run's detail in the database."""
 

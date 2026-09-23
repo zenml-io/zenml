@@ -11,13 +11,13 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.pipeline import pipeline
 from zenml.client import Client
 from zenml.enums import RestoreOutcome
-from zenml.models.v2.core.pipeline_run import PipelineRunArchiveDescriptor
+from zenml.models.v2.base.execution import ExecutionArchiveDescriptor
 from zenml.models.v2.misc.retention import RestoreResponse
 
 
 def test_pipeline_run_row_marks_archived_runs(sample_pipeline_run) -> None:
     """The default run table can show archive state without hydration."""
-    sample_pipeline_run.get_body().archive = PipelineRunArchiveDescriptor(
+    sample_pipeline_run.get_body().archive = ExecutionArchiveDescriptor(
         bundle_id=uuid4(),
         restore_run_id=sample_pipeline_run.id,
     )

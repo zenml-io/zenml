@@ -36,7 +36,6 @@ Archiving is configured once per deployment through one environment group,
 and every setting takes effect after a restart:
 
 ```shell
-ZENML_SERVER_ARCHIVE__BACKEND=s3
 ZENML_SERVER_ARCHIVE__URI=s3://my-bucket/zenml-archive
 ZENML_SERVER_ARCHIVE__AFTER_DAYS=90
 ```
@@ -47,18 +46,17 @@ before changing execution data:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `BACKEND` | `disabled` | `disabled`, `local`, `s3`, `gcs`, or `azure`. A non-disabled backend configures storage and requires `URI`. |
 | `ENABLED` | `true` | Allow new archives when storage is configured. Set `false` to pause new archiving while keeping restore available. |
-| `URI` | unset | Archive root. Its scheme must match the backend. |
+| `URI` | unset | Archive root. Its scheme selects the storage provider; a plain directory path selects local storage. |
 | `AFTER_DAYS` | 90 | Minimum age of a finished run, at least **7 days**. |
-| `CONNECTOR_ID` | unset | Service connector to authenticate with, instead of ambient credentials. |
 
-With a non-disabled backend, a missing URI or mismatched URI scheme fails
-validation. Unknown fields within the `ARCHIVE` group are rejected. Omitting
-`BACKEND` leaves archiving disabled, even if a URI is supplied.
+Setting `URI` configures archive storage. Leave it unset to disable storage.
+An empty URI and unknown fields within the `ARCHIVE` group are rejected.
+The archive adapter selects and validates the provider using ZenML's existing
+artifact-store flavors when storage is initialized.
 
 {% hint style="info" %}
-**During a rolling upgrade, keep `BACKEND` disabled or unset until every
+**During a rolling upgrade, leave archive settings unset until every
 replica runs the new version.** Do not introduce the new `ENABLED`
 setting into a mixed-version deployment: older replicas
 reject unknown archive settings. The migration is additive and safe to apply
@@ -70,7 +68,7 @@ configure storage; set `ENABLED=false` if new archiving should remain paused.
 
 ### Credentials
 
-By default the server stores no credentials for the archive: the SDK behind
+The server stores no credentials for the archive: the SDK behind
 the URI's scheme uses the credentials of the server process itself.
 
 | Backend | Typical credentials |
@@ -87,23 +85,21 @@ server-side access to local paths for other artifact-store operations too; do
 not enable it on an untrusted or multi-tenant server merely to configure
 retention.
 
-Set `CONNECTOR_ID` to authenticate through a ZenML **service connector**
-instead; the server connects and refreshes it exactly as a registered stack
-component would. A connector named there cannot be deleted while it is
-configured, because deleting it would make archived runs unreadable.
+Archive storage uses server credentials. Service connectors are not supported
+in this iteration.
 
 The server image must include the matching storage integration. The credentials
 must allow reading, writing, and deleting objects below the URI.
 
-At startup, the server writes, reads back, and removes
-a probe object at `{uri}/_probes/{uuid}`. A failed startup probe only logs a
-warning, so a transient outage does not stop the server. Archive objects live
+Startup validates the archive configuration and database support without
+contacting object storage. Storage availability and credentials are checked
+when an archive, unarchive, or cleanup operation uses them. Archive objects live
 at `{uri}/{project_id}/{run_id}/{bundle_id}.json.gz`; the database records
 each object's full URI.
 
 Keep the storage and its objects available while any run is archived. ZenML
 keeps committed archive objects, and restoring their detail becomes impossible
-if they disappear. Keep the backend, URI, and credentials configured when
+if they disappear. Keep the URI and credentials configured when
 pausing archiving:
 
 ```shell
@@ -111,14 +107,13 @@ ZENML_SERVER_ARCHIVE__ENABLED=false
 ```
 
 This blocks new archives after restart. Summaries and unarchive remain
-available. Setting `BACKEND=disabled` removes access to archive
+available. Unsetting `URI` removes access to archive
 storage and therefore also prevents restore; use `ENABLED=false` to pause.
 
 Changing the configured URI or provider does not migrate existing objects.
 Restore reads each object at its recorded URI, so the earlier location must
-stay in place, and the server's ambient credentials or configured
-`CONNECTOR_ID` must still be able to read it. The server image must keep the
-storage integration for the earlier provider installed.
+stay in place, and the server's credentials must still be able to read it. The
+server image must keep the storage integration for the earlier provider installed.
 
 ## Which runs can be archived
 
@@ -236,8 +231,10 @@ archived rows; one archived row does not fail the entire page.
 
 Single-entity reads that request cold configuration, source, or DAG detail
 return **409** with restore instructions. Request the summary to inspect the
-retained information without restoring. The SDK's retained summary properties
-do not trigger a detail fetch. Artifact links and log references stay in SQL;
+retained information without restoring. Run, step, and snapshot responses expose
+retained fields in `body.summary`, independently of the archive descriptor.
+Existing full metadata fields remain available for unarchived entities. Summary
+fields can be read without a detail fetch. Artifact links and log references stay in SQL;
 log reads that do not need cold configuration do not require restore. The
 artifact or log store must still be available to read its contents.
 
@@ -247,7 +244,7 @@ sheet, or a create-snapshot page. Run lists and background refreshes remain
 read-only and do not initiate a restore. Other dashboards and API clients must
 handle the archived-detail 409 and call the restore route explicitly.
 
-Use `archive_bundle_id="isnull:"` to filter to unarchived runs when a caller
+Use `is_archived=False` to filter to unarchived runs, steps, or snapshots when a caller
 specifically requires full detail for every row.
 
 Archived steps are excluded from cache lookups. New runs execute those steps
@@ -296,10 +293,14 @@ schedules asynchronous deletion of that run's archive objects. Deleting a
 project also schedules cleanup of its archived runs' objects. Unarchiving
 alone keeps the archive object.
 
-Object cleanup is best effort and runs after the response. A storage failure
-is logged and retains the catalog entry; a later run or project deletion
-retries pending cleanup. A server shutdown can interrupt that background
-work. Database deletion success does not confirm object deletion has finished.
+Object cleanup is best effort and uses the server's existing maintenance
+executor after SQL deletion commits. Each pass considers pending objects from
+earlier deletions too, attempts at most 200 objects, and stops starting storage
+calls after 30 seconds; an in-flight call may exceed that budget. Failed objects
+keep their catalog entries and move behind older entries for later retries.
+A busy executor, storage failure, or shutdown can leave cleanup pending until
+another run or project deletion triggers it. Database deletion success does not
+confirm object deletion has finished.
 
 ## API routes
 
@@ -329,7 +330,9 @@ Version 1 objects remain readable when the server is upgraded. Changes to
 execution payloads or SQL columns must preserve restoration of existing v1
 objects; an SQL migration cannot transform copies already in object storage.
 The compatibility tests restore frozen static, dynamic, and legacy v1 archives
-into the current migrated schema and read their current response models.
+into the current migrated schema and check supported response models. Legacy
+steps without a snapshot ID can be archived and restored, but full-detail step
+reads remain unsupported: step response metadata still requires a snapshot UUID.
 A future incompatible format requires a specific compatible reader or restore
 conversion before that release can support existing archives.
 

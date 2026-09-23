@@ -25,7 +25,6 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     Header,
     HTTPException,
@@ -388,13 +387,11 @@ def update_run(
 @async_fastapi_endpoint_wrapper
 def delete_run(
     run_id: UUID,
-    background_tasks: BackgroundTasks,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Deletes a run.
 
     Args:
-        background_tasks: Object cleanup to run after deletion commits.
         run_id: ID of the run.
     """
     verify_permissions_and_delete_entity(
@@ -402,7 +399,7 @@ def delete_run(
         get_method=lambda id, _: zen_store().get_run(id, hydrate=False),
         delete_method=retention.delete_pipeline_run,
     )
-    background_tasks.add_task(retention.delete_unused_archive_objects)
+    retention.schedule_archive_cleanup()
 
 
 @router.get(

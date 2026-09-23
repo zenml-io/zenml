@@ -3,12 +3,10 @@
 
 This is the server's implementation of the store's `ArchiveStorage` port. The
 URI names a bucket prefix or a local directory, for example
-``s3://bucket/zenml-archive``. By default no credentials are configured
+``s3://bucket/zenml-archive``. No credentials are configured
 here: the artifact store flavor that owns the URI's scheme is instantiated
 without any, so its SDK uses the ambient credential chain of the server
-process, such as an IAM role, workload identity, or managed identity. A
-server may instead name a ZenML service connector, which that artifact store
-connects and refreshes exactly as a registered component would.
+process, such as an IAM role, workload identity, or managed identity.
 
 Archive I/O never goes through ``zenml.io.fileio``. That module dispatches on
 a process-wide filesystem registry, and outside the server every artifact
@@ -16,8 +14,8 @@ store instantiation re-registers its scheme with its own credentials. This
 wrapper keeps one artifact store instance and calls its methods directly.
 """
 
-from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4, uuid5
+from typing import Any, Dict, List
+from uuid import UUID, uuid5
 
 from zenml.artifact_stores.base_artifact_store import (
     BaseArtifactStore,
@@ -108,20 +106,13 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
         self._former_stores: Dict[str, BaseArtifactStore] = {}
 
     @classmethod
-    def from_uri(
-        cls, uri: str, connector_id: Optional[UUID] = None
-    ) -> "ArtifactStoreArchiveStorage":
+    def from_uri(cls, uri: str) -> "ArtifactStoreArchiveStorage":
         """Instantiate the artifact store flavor that owns an archive URI.
 
-        Without a connector the store authenticates with the server process's
-        ambient credentials. A connector ID hands it a ZenML service
-        connector instead, which the artifact store refreshes on its own once
-        the credentials expire.
+        Authentication uses the server process's ambient credentials.
 
         Args:
             uri: Archive root URI or local directory.
-            connector_id: Service connector to authenticate with, or None to
-                use ambient credentials.
 
         Returns:
             Storage rooted at the URI.
@@ -161,15 +152,13 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
                 user=None,
                 created=now,
                 updated=now,
-                connector=connector_id,
-                connector_requirements=flavor.service_connector_requirements,
+                connector=None,
                 register_filesystem=False,
             )
         except Exception as error:
             raise ExecutionRetentionUnavailableError(
                 "The execution archive URI cannot be used; check "
-                "ZENML_SERVER_ARCHIVE__URI, ZENML_SERVER_ARCHIVE__CONNECTOR_ID"
-                " and the server's installed integrations."
+                "ZENML_SERVER_ARCHIVE__URI and the server's installed integrations."
             ) from error
         return cls(store)
 
@@ -246,7 +235,7 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
 
         Artifact stores refuse paths outside their own root, so an object
         written before ZENML_SERVER_ARCHIVE__URI changed is read through a
-        store rooted where it was written, with the configured connector.
+        store rooted where it was written, using the server's credentials.
 
         Args:
             uri: Object URI recorded on a bundle row.
@@ -260,7 +249,7 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
         former_root = uri.rsplit("/", 3)[0]
         if former_root not in self._former_stores:
             self._former_stores[former_root] = self.from_uri(
-                former_root, connector_id=self.artifact_store.connector
+                former_root
             ).artifact_store
         return self._former_stores[former_root]
 
@@ -285,20 +274,3 @@ class ArtifactStoreArchiveStorage(ArchiveStorage):
                 type(error).__name__,
             )
             return False
-
-    def probe(self) -> bool:
-        """Check that the root accepts a write and returns the same bytes.
-
-        Returns:
-            Whether a unique probe object round-tripped.
-
-        Raises:
-            ExecutionRetentionUnavailableError: The write or read failed.
-        """  # noqa: DOC502
-        uri = f"{self.root}/_probes/{uuid4()}"
-        nonce = uuid4().hex.encode()
-        try:
-            self.write(uri, nonce)
-            return self.read(uri, len(nonce)) == nonce
-        finally:
-            self.remove(uri)

@@ -28,6 +28,7 @@ from zenml.models.v2.base.base import (
     BaseUpdate,
     BaseZenModel,
 )
+from zenml.models.v2.base.execution import ExecutionArchiveDescriptor
 from zenml.models.v2.base.filter import (
     BaseFilter,
     BoolFilter,
@@ -37,7 +38,6 @@ from zenml.models.v2.base.filter import (
 )
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    ExecutionArchiveDescriptor,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
@@ -229,18 +229,17 @@ from zenml.models.v2.core.pipeline_build import (
     PipelineBuildResponseResources,
 )
 from zenml.models.v2.core.pipeline_run import (
-    PipelineRunArchiveDescriptor,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunResponseResources,
+    PipelineRunSummary,
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
 )
 from zenml.models.v2.core.pipeline_snapshot import (
-    PipelineSnapshotArchiveDescriptor,
     PipelineSnapshotBase,
     PipelineSnapshotFilter,
     PipelineSnapshotPruneRequest,
@@ -251,6 +250,7 @@ from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotResponseMetadata,
     PipelineSnapshotResponseResources,
     PipelineSnapshotRunRequest,
+    PipelineSnapshotSummary,
     PipelineSnapshotUpdate,
 )
 from zenml.models.v2.core.project import (
@@ -363,13 +363,13 @@ from zenml.models.v2.core.stack import (
 from zenml.models.v2.core.step_run import (
     StepHeartbeatRequest,
     StepHeartbeatResponse,
-    StepRunArchiveDescriptor,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
     StepRunResponseResources,
+    StepRunSummary,
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
@@ -833,7 +833,7 @@ __all__ = [
     "PipelineBuildResponseMetadata",
     "PipelineBuildResponseResources",
     "PipelineSnapshotBase",
-    "PipelineSnapshotArchiveDescriptor",
+    "PipelineSnapshotSummary",
     "PipelineSnapshotRequest",
     "PipelineSnapshotUpdate",
     "PipelineSnapshotFilter",
@@ -845,7 +845,7 @@ __all__ = [
     "PipelineSnapshotPruneRequest",
     "PipelineSnapshotPruneResponse",
     "PipelineRunRequest",
-    "PipelineRunArchiveDescriptor",
+    "PipelineRunSummary",
     "PipelineRunUpdate",
     "PipelineRunFilter",
     "PipelineRunResponse",
@@ -931,7 +931,7 @@ __all__ = [
     "StackResponseMetadata",
     "StackResponseResources",
     "StepRunRequest",
-    "StepRunArchiveDescriptor",
+    "StepRunSummary",
     "StepRunUpdate",
     "StepRunFilter",
     "StepRunResponse",

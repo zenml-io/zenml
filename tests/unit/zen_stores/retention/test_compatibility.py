@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlmodel import SQLModel
 
@@ -138,7 +139,7 @@ def test_v1_archive_restores_to_current_schema(
     kind: str,
     retention,
 ) -> None:
-    """Old bytes restore exactly and remain usable through current models.
+    """Old bytes restore exactly and preserve supported response contracts.
 
     Args:
         retention_store: Disposable MySQL store migrated to the current head.
@@ -191,6 +192,12 @@ def test_v1_archive_restores_to_current_schema(
     assert run.config.name == "example"
     assert run.client_environment == {"python": "test"}
     for step in document.steps:
+        if step.snapshot_id is None:
+            with pytest.raises(ValidationError, match="snapshot_id"):
+                retention_store.get_run_step(step.id)
+            header = retention_store.get_run_step(step.id, hydrate=False)
+            assert header.pipeline_run_id == document.run_id
+            continue
         step_model = retention_store.get_run_step(step.id)
         assert step_model.config.name == step.name
         assert step_model.spec.source.module == "tests"

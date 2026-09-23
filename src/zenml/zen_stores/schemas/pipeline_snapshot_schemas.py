@@ -37,8 +37,9 @@ from zenml.models import (
     PipelineSnapshotResponseResources,
     PipelineSnapshotUpdate,
 )
+from zenml.models.v2.base.execution import ExecutionArchiveDescriptor
 from zenml.models.v2.core.pipeline_snapshot import (
-    PipelineSnapshotArchiveDescriptor,
+    PipelineSnapshotSummary,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.archivable_schemas import ArchivableSchema
@@ -556,19 +557,23 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
         ):
             deployable = True
 
-        archive = None
-        if self.archive_bundle_id is not None:
-            archive = PipelineSnapshotArchiveDescriptor(
+        archive = (
+            ExecutionArchiveDescriptor(
                 bundle_id=self.archive_bundle_id,
                 restore_run_id=archive_restore_run_id,
-                run_name_template=self.run_name_template,
-                client_version=self.client_version,
-                server_version=self.server_version,
-                pipeline_version_hash=self.pipeline_version_hash,
-                code_path=self.code_path,
-                template_id=self.template_id,
-                source_snapshot_id=self.source_snapshot_id,
             )
+            if self.archive_bundle_id is not None
+            else None
+        )
+        summary = PipelineSnapshotSummary(
+            run_name_template=self.run_name_template,
+            client_version=self.client_version,
+            server_version=self.server_version,
+            pipeline_version_hash=self.pipeline_version_hash,
+            code_path=self.code_path,
+            template_id=self.template_id,
+            source_snapshot_id=self.source_snapshot_id,
+        )
 
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
@@ -581,6 +586,7 @@ class PipelineSnapshotSchema(ArchivableSchema, BaseSchema, table=True):
             pipeline_id=self.pipeline_id,
             archive_bundle_id=self.archive_bundle_id,
             archive=archive,
+            summary=summary,
         )
         metadata = None
         if include_metadata and archive is None:

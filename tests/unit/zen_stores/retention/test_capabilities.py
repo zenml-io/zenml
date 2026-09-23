@@ -70,21 +70,18 @@ def test_database_preserves_archive_catalog_on_project_delete(
     [
         (
             "sqlite:///:memory:",
-            ArchiveSettings(backend="local", uri="/tmp/archive"),
+            ArchiveSettings(uri="/tmp/archive"),
             False,
         ),
         ("mysql://localhost", ArchiveSettings(), False),
         (
             "mysql://localhost",
-            ArchiveSettings(
-                backend="local", uri="/tmp/archive", enabled=False
-            ),
+            ArchiveSettings(uri="/tmp/archive", enabled=False),
             False,
         ),
         (
             "mysql://localhost",
             ArchiveSettings(
-                backend="local",
                 uri="/tmp/archive",
             ),
             True,
@@ -134,62 +131,58 @@ def test_store_info_reports_manual_archive_capability(
     assert info.execution_archiving_enabled is expected
 
 
-def test_archive_startup_database_validation_is_fatal(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Unsupported databases fail startup outside the storage probe guard."""
-    from zenml.zen_server import zen_server_api
-
-    archive = ArchiveSettings(backend="local", uri="/tmp/archive")
-    storage = SimpleNamespace(probe=Mock())
-
-    def unsupported() -> ArchiveSettings:
-        raise IllegalOperationError("unsupported database")
+def test_archive_startup_database_validation_is_fatal(monkeypatch) -> None:
+    """Unsupported databases still fail configured archive startup."""
+    from zenml.zen_server import retention
 
     monkeypatch.setattr(
-        zen_server_api,
-        "server_config",
-        lambda: SimpleNamespace(archive=archive),
+        ServerConfiguration,
+        "get_server_config",
+        classmethod(
+            lambda cls: SimpleNamespace(
+                archive=ArchiveSettings(uri="/tmp/archive")
+            )
+        ),
     )
     monkeypatch.setattr(
-        zen_server_api.retention, "archive_settings", unsupported
+        retention,
+        "zen_store",
+        lambda: SimpleNamespace(
+            require_execution_retention=Mock(
+                side_effect=IllegalOperationError("unsupported database")
+            )
+        ),
     )
-    monkeypatch.setattr(
-        zen_server_api.retention, "archive_storage", lambda: storage
-    )
-
     with pytest.raises(IllegalOperationError, match="unsupported database"):
-        zen_server_api._check_archive_store_on_startup()
-
-    storage.probe.assert_not_called()
+        retention.initialize_retention()
 
 
-def test_archive_startup_storage_failure_is_a_warning(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("configured", [False, True])
+def test_archive_startup_does_not_access_storage(
+    monkeypatch, configured
 ) -> None:
-    """A transient archive storage failure does not prevent server startup."""
-    from zenml.zen_server import zen_server_api
+    """Storage availability never delays or prevents server readiness."""
+    from zenml.zen_server import retention
 
-    archive = ArchiveSettings(backend="local", uri="/tmp/archive")
-    storage = SimpleNamespace(probe=Mock(side_effect=OSError("temporary")))
-    warning = Mock()
+    settings = ArchiveSettings(uri="s3://archive" if configured else None)
     monkeypatch.setattr(
-        zen_server_api,
-        "server_config",
-        lambda: SimpleNamespace(archive=archive),
+        ServerConfiguration,
+        "get_server_config",
+        classmethod(lambda cls: SimpleNamespace(archive=settings)),
     )
+    require_supported = Mock()
     monkeypatch.setattr(
-        zen_server_api.retention, "archive_settings", lambda: archive
+        retention,
+        "zen_store",
+        lambda: SimpleNamespace(require_execution_retention=require_supported),
     )
-    monkeypatch.setattr(
-        zen_server_api.retention, "archive_storage", lambda: storage
-    )
-    monkeypatch.setattr(zen_server_api.logger, "warning", warning)
+    storage = Mock(side_effect=AssertionError("startup accessed storage"))
+    monkeypatch.setattr(retention, "archive_storage", storage)
 
-    zen_server_api._check_archive_store_on_startup()
+    retention.initialize_retention()
 
-    storage.probe.assert_called_once_with()
-    warning.assert_called_once()
+    assert require_supported.call_count == int(configured)
+    storage.assert_not_called()
 
 
 def test_archive_storage_does_not_replace_global_fileio_dispatch(

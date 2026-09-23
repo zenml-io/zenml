@@ -146,9 +146,9 @@ def test_archived_summaries_need_no_archive_storage(
     monkeypatch.setattr(
         Client, "zen_store", property(lambda _: retention_store)
     )
-    run.archive.run_metadata = None
-    step.archive.run_metadata = None
-    step.archive.parent_step_ids = None
+    run.get_body().summary.run_metadata = None
+    step.get_body().summary.run_metadata = None
+    step.get_body().summary.parent_step_ids = None
     assert run.run_metadata == {"run-summary": "retained"}
     assert step.run_metadata == {"step-summary": "retained"}
     assert step.parent_step_ids == [ids.producer]
@@ -325,3 +325,138 @@ def test_run_dag_links_the_producer_to_its_consumer(
             edge.target for edge in dag.edges if edge.source in reachable
         }
     assert steps["consumer"].node_id in reachable
+
+
+@pytest.mark.parametrize("isolation", ["REPEATABLE READ", "READ COMMITTED"])
+def test_cache_lookup_when_archiving_between_selection_and_hydration(
+    retention_store, run_factory, archive_run, monkeypatch, isolation
+):
+    """An archive race returns either a usable snapshot or a cache miss."""
+    from sqlalchemy import event
+
+    from zenml.orchestrators.cache_utils import get_cached_step_run
+
+    ids = run_factory(retention_store)
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
+    monkeypatch.setattr(
+        Client,
+        "active_project",
+        property(lambda _: retention_store.get_project(ids.project)),
+    )
+    expected = retention_store.get_run_step(ids.producer).get_metadata()
+    previous_options = retention_store.engine.get_execution_options()
+    retention_store.engine.update_execution_options(isolation_level=isolation)
+    selected = False
+
+    def archive_after_selection(
+        connection, cursor, statement, parameters, context, many
+    ):
+        nonlocal selected
+        if (
+            not selected
+            and statement.lstrip().startswith("SELECT")
+            and "step_run.cache_key =" in statement
+            and "count(" not in statement.lower()
+        ):
+            selected = True
+            archive_run(retention_store, ids)
+
+    event.listen(
+        retention_store.engine, "after_cursor_execute", archive_after_selection
+    )
+    try:
+        candidate = get_cached_step_run(str(ids.producer))
+    finally:
+        event.remove(
+            retention_store.engine,
+            "after_cursor_execute",
+            archive_after_selection,
+        )
+        retention_store.engine.update_execution_options(
+            isolation_level=previous_options.get(
+                "isolation_level", "REPEATABLE READ"
+            )
+        )
+    assert selected
+    if candidate is not None:
+        assert candidate.archive is None
+        assert candidate.metadata is not None
+        assert candidate.cache_expires_at is None
+        assert candidate.source_code is not None
+        assert candidate.docstring == expected.docstring
+        assert candidate.source_code == expected.source_code
+    if isolation == "READ COMMITTED":
+        assert candidate is None
+
+
+@pytest.mark.parametrize("identifier_kind", ["uuid", "name", "prefix"])
+def test_run_detail_lookup_enforces_hydration_after_resolution(
+    retention_store, run_factory, archive_run, monkeypatch, identifier_kind
+):
+    """Every identifier preserves ordinary detail and rejects archived detail."""
+    ids = run_factory(retention_store)
+    with Session(retention_store.engine) as session:
+        session.get(PipelineRunSchema, ids.run).name = "lookup-example"
+        session.commit()
+    expected = retention_store.get_run(ids.run)
+    identifier = {
+        "uuid": ids.run,
+        "name": expected.name,
+        "prefix": str(ids.run)[:8],
+    }[identifier_kind]
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
+    client = object.__new__(Client)
+    assert (
+        client.get_pipeline_run(identifier, project=ids.project).metadata
+        == expected.metadata
+    )
+    archive_run(retention_store, ids)
+    assert (
+        client.get_pipeline_run(
+            identifier, project=ids.project, hydrate=False
+        ).id
+        == ids.run
+    )
+    with pytest.raises(ExecutionArchivedError):
+        client.get_pipeline_run(identifier, project=ids.project, hydrate=True)
+
+
+def test_archive_state_filters_execution_lists(
+    retention_store, run_factory, archive_run, monkeypatch
+):
+    """SDK archive-state filters select the right entities in SQL."""
+    hot = run_factory(retention_store)
+    cold = run_factory(retention_store)
+    archive_run(retention_store, cold)
+    monkeypatch.setattr(
+        Client, "zen_store", property(lambda _: retention_store)
+    )
+    client = object.__new__(Client)
+    for state, expected_runs in [
+        (False, {hot.run}),
+        (True, {cold.run}),
+        (None, {hot.run, cold.run}),
+    ]:
+        runs = client.list_pipeline_runs(
+            project=hot.project, is_archived=state
+        )
+        assert {run.id for run in runs.items} == expected_runs
+        steps = client.list_run_steps(project=hot.project, is_archived=state)
+        assert {step.pipeline_run_id for step in steps.items} == expected_runs
+        snapshots = client.list_snapshots(
+            project=hot.project, is_archived=state, named_only=False
+        )
+        expected_snapshots = (
+            {hot.snapshot}
+            if state is False
+            else {cold.snapshot}
+            if state is True
+            else {hot.snapshot, cold.snapshot}
+        )
+        assert {
+            snapshot.id for snapshot in snapshots.items
+        } == expected_snapshots
