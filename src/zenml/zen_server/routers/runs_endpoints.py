@@ -80,6 +80,7 @@ from zenml.utils.logging_utils import (
     search_logs_by_id,
     search_logs_by_source,
 )
+from zenml.zen_server import retention
 from zenml.zen_server.auth import (
     AuthContext,
     authorize,
@@ -126,7 +127,6 @@ from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
     make_dependable,
-    retention_controller,
     server_config,
     set_filter_project_scope,
     stream_broadcaster,
@@ -397,7 +397,7 @@ def delete_run(
     verify_permissions_and_delete_entity(
         id=run_id,
         get_method=lambda id, _: zen_store().get_run(id, hydrate=False),
-        delete_method=retention_controller().delete_pipeline_run,
+        delete_method=retention.delete_pipeline_run,
     )
 
 
@@ -1084,4 +1084,4 @@ def restore_pipeline_run(
     verify_permission_for_model(
         model=zen_store().get_run_header(run_id), action=Action.READ
     )
-    return retention_controller().restore_pipeline_run(run_id)
+    return retention.restore_pipeline_run(run_id)

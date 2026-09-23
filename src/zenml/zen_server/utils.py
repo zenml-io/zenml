@@ -75,6 +75,7 @@ from zenml.zen_server.streaming.brokers.base import StreamBroker
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
+from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 if TYPE_CHECKING:
@@ -82,10 +83,10 @@ if TYPE_CHECKING:
 
     from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
-    from zenml.zen_server.controllers.retention import RetentionController
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
     )
+    from zenml.zen_server.retention import RetentionCapacity
     from zenml.zen_server.streaming.run_end_handler import (
         StreamEndEventHandler,
     )
@@ -110,7 +111,8 @@ _stream_broker: Optional[StreamBroker] = None
 _stream_broadcaster: Optional[StreamBroadcaster] = None
 _stream_end_handler: Optional["StreamEndEventHandler"] = None
 _artifact_store_cache: Optional["ArtifactStoreCache"] = None
-_retention_controller: Optional["RetentionController"] = None
+_retention_capacity: Optional["RetentionCapacity"] = None
+_archive_storage: Optional[ArchiveStorage] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -639,27 +641,54 @@ def artifact_store_cache() -> "ArtifactStoreCache":
     return _artifact_store_cache
 
 
-def retention_controller() -> "RetentionController":
-    """Return this replica's execution retention controller.
+def retention_capacity() -> "RetentionCapacity":
+    """Return this replica's execution retention admission budget.
 
     Returns:
-        The execution retention controller.
+        The retention capacity.
 
     Raises:
-        RuntimeError: If the retention controller is not initialized.
+        RuntimeError: If the retention capacity is not initialized.
     """
-    global _retention_controller
-    if _retention_controller is None:
-        raise RuntimeError("Retention controller not initialized")
-    return _retention_controller
+    if _retention_capacity is None:
+        raise RuntimeError("Retention capacity not initialized")
+    return _retention_capacity
 
 
-def initialize_retention_controller() -> None:
-    """Initialize the execution retention controller."""
-    global _retention_controller
-    from zenml.zen_server.controllers.retention import RetentionController
+def initialize_retention_capacity() -> None:
+    """Initialize this replica's execution retention admission budget."""
+    global _retention_capacity
+    from zenml.zen_server.retention import (
+        MAX_CONCURRENT_RETENTION_OPERATIONS,
+        RetentionCapacity,
+    )
 
-    _retention_controller = RetentionController(zen_store())
+    _retention_capacity = RetentionCapacity(
+        MAX_CONCURRENT_RETENTION_OPERATIONS
+    )
+
+
+def archive_storage() -> ArchiveStorage:
+    """Return the archive storage named by the server's settings.
+
+    It is created on first use rather than at startup, so a server whose
+    storage is not configured still serves everything that needs none.
+
+    Returns:
+        Storage rooted at the configured archive URI.
+    """
+    global _archive_storage
+    if _archive_storage is None:
+        from zenml.zen_server.archive_storage import (
+            ArtifactStoreArchiveStorage,
+        )
+        from zenml.zen_server.retention import archive_settings
+
+        settings = archive_settings()
+        _archive_storage = ArtifactStoreArchiveStorage.from_uri(
+            settings.root_uri, connector_id=settings.connector_id
+        )
+    return _archive_storage
 
 
 def initialize_artifact_store_cache() -> None:

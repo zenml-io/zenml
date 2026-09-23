@@ -13,16 +13,21 @@ from tests.unit.zen_stores.retention.fixture_graph import (
 )
 from zenml.enums import RetentionOutcome
 from zenml.models import ArchiveRequest, ArchiveResponse, ProjectFilter
-from zenml.zen_server.controllers.retention import RetentionController
-from zenml.zen_stores.retention.storage import ArchiveStorage
+from zenml.zen_server import retention as server_retention
+from zenml.zen_server import utils as server_utils
+from zenml.zen_server.archive_storage import ArtifactStoreArchiveStorage
+from zenml.zen_server.retention import (
+    MAX_CONCURRENT_RETENTION_OPERATIONS,
+    RetentionCapacity,
+)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
-def storage(tmp_path, monkeypatch) -> ArchiveStorage:
+def storage(tmp_path, monkeypatch) -> ArtifactStoreArchiveStorage:
     """Enable archiving against a temporary local directory."""
     root = str(tmp_path / "objects")
-    archive = ArchiveStorage.from_uri(root)
+    archive = ArtifactStoreArchiveStorage.from_uri(root)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__BACKEND", "local")
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__URI", root)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__AFTER_DAYS", "7")
@@ -31,19 +36,27 @@ def storage(tmp_path, monkeypatch) -> ArchiveStorage:
 
 
 @pytest.fixture
-def retention(retention_store, storage) -> RetentionController:
+def retention(retention_store, storage, monkeypatch):
     """Drive retention the way a server replica does."""
-    return RetentionController(retention_store, storage=storage)
+    monkeypatch.setattr(server_utils, "_zen_store", retention_store)
+    monkeypatch.setattr(server_utils, "_archive_storage", storage)
+    monkeypatch.setattr(
+        server_utils,
+        "_retention_capacity",
+        RetentionCapacity(MAX_CONCURRENT_RETENTION_OPERATIONS),
+    )
+    return server_retention
 
 
 @pytest.fixture
-def archive_request(retention):
+def archive_request(retention_store, retention):
     """Archive or preview a request whose runs need no authorization."""
 
     def archive(request: ArchiveRequest) -> ArchiveResponse:
-        return retention.archive_batch(
-            request, retention.expand_target(request)
+        batch = retention_store.select_runs_to_archive(
+            request, retention.retention_policy()
         )
+        return retention.archive_batch(request, batch)
 
     return archive
 

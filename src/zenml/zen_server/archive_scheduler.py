@@ -25,7 +25,8 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.utils.native_schedules import next_occurrence_for_cron
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.utils import maintenance_executor, retention_controller
+from zenml.zen_server import retention
+from zenml.zen_server.utils import maintenance_executor
 
 logger = get_logger(__name__)
 
@@ -103,9 +104,7 @@ class ArchiveScheduler:
             lease.
         """
         try:
-            return retention_controller().run_archive_sweep(
-                cancel_event=self._cancel_event
-            )
+            return retention.run_archive_sweep(cancel_event=self._cancel_event)
         except ExecutionRetentionBusyError:
             logger.debug("This replica is at its retention capacity.")
             return RetentionOutcome.PAUSED

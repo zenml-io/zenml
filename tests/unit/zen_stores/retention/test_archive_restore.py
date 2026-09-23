@@ -34,6 +34,7 @@ from tests.unit.zen_stores.retention.fixture_graph import (
     read_tables as rows,
 )
 from zenml.client import Client
+from zenml.config.server_config import ServerConfiguration
 from zenml.enums import (
     ExecutionStatus,
     RestoreOutcome,
@@ -58,6 +59,8 @@ from zenml.models import (
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
+from zenml.zen_server import utils as server_utils
+from zenml.zen_server.retention import RetentionCapacity
 from zenml.zen_stores.retention import (
     archiver,
     capture,
@@ -67,7 +70,6 @@ from zenml.zen_stores.retention import (
 from zenml.zen_stores.retention import (
     format as archive_format,
 )
-from zenml.zen_stores.retention.capacity import RetentionCapacity
 from zenml.zen_stores.retention.eligibility import ArchivableRun
 from zenml.zen_stores.retention.state import RetentionState
 from zenml.zen_stores.schemas import (
@@ -305,7 +307,7 @@ def test_shared_configuration_change_invalidates_projections(
     monkeypatch.setattr(storage, "write", change_after_upload)
 
     attempt = archiver.RunArchiver(
-        retention_store.engine, storage, retention.archive_settings
+        retention_store.engine, storage, retention.archive_settings()
     ).archive(ids.run, NOW)
 
     assert attempt.outcome == "skipped"
@@ -394,7 +396,7 @@ def test_retirement_capture_queries_scale_by_page(
         outcome = archiver.RunArchiver(
             retention_store.engine,
             storage,
-            retention.archive_settings,
+            retention.archive_settings(),
         ).archive(ids.run, NOW)
     finally:
         event.remove(
@@ -536,7 +538,9 @@ def test_losing_pass_removes_its_object(
                 session.add(settings)
                 session.commit()
             assert (
-                retention_store.get_retention_status().outcome
+                retention_store.get_retention_status(
+                    ServerConfiguration.get_server_config().archive
+                ).outcome
                 == RetentionOutcome.EXPIRED
             )
             winner = retention.run_archive_sweep()
@@ -656,7 +660,7 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
     worker = archiver.RunArchiver(
         retention_store.engine,
         storage,
-        retention.archive_settings,
+        retention.archive_settings(),
     )
     try:
         attempt = worker.archive(ids.run, NOW)
@@ -727,7 +731,7 @@ def test_one_capacity_budget_covers_all_retention_payload_paths(
     archive_run(retention_store, archived)
     candidate = run_factory(retention_store)
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(retention, "capacity", capacity)
+    monkeypatch.setattr(server_utils, "_retention_capacity", capacity)
 
     with capacity.claim():
         with pytest.raises(ExecutionRetentionBusyError):
@@ -750,7 +754,7 @@ def test_duplicate_restore_is_rejected_before_second_download(
     ids = run_factory(retention_store)
     archive_run(retention_store, ids)
     capacity = RetentionCapacity(2)
-    monkeypatch.setattr(retention, "capacity", capacity)
+    monkeypatch.setattr(server_utils, "_retention_capacity", capacity)
     entered = Event()
     release = Event()
     reads = 0
@@ -788,7 +792,7 @@ def test_capture_classifies_late_record_growth_as_oversized(
         inspected = eligibility.inspect_run(
             session,
             ids.run,
-            retention.archive_settings,
+            retention.archive_settings(),
             NOW,
         )
         monkeypatch.setattr(capture, "MAX_RECORDS", 5)
@@ -1089,7 +1093,9 @@ def test_status_reports_storage_failure_without_probing(
         lambda: pytest.fail("status probed archive storage"),
     )
 
-    status = retention_store.get_retention_status()
+    status = retention_store.get_retention_status(
+        ServerConfiguration.get_server_config().archive
+    )
 
     assert status.archive_configured and status.archive_enabled
     assert status.outcome == RetentionOutcome.FAILED
@@ -1486,7 +1492,9 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     candidate = run_factory(retention_store)
     monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
 
-    status = retention_store.get_retention_status()
+    status = retention_store.get_retention_status(
+        ServerConfiguration.get_server_config().archive
+    )
     assert status.archive_configured
     assert not status.archive_enabled
     assert not status.archive_scheduled
@@ -1519,7 +1527,9 @@ def test_manual_only_configuration_rejects_sweeps(
     result = archive_request(ArchiveRequest(run_ids=[ids.run]))
 
     assert result.archived == 1
-    status = retention_store.get_retention_status()
+    status = retention_store.get_retention_status(
+        ServerConfiguration.get_server_config().archive
+    )
     assert status.archive_enabled and not status.archive_scheduled
     assert status.schedule is None
 

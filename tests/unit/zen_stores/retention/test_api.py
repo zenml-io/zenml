@@ -33,6 +33,7 @@ from zenml.zen_server.pipeline_execution import utils as execution
 from zenml.zen_server.rbac import endpoint_utils
 from zenml.zen_server.rbac import utils as rbac_utils
 from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.retention import RetentionCapacity
 from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     logs_endpoints,
@@ -43,7 +44,6 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     trigger_endpoints,
 )
-from zenml.zen_stores.retention.capacity import RetentionCapacity
 from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
 
 ROUTERS = (
@@ -80,8 +80,6 @@ def http(retention_store, retention, run_factory, monkeypatch):
     for module in (runs_endpoints, pipeline_snapshot_endpoints):
         app.include_router(module.workload_router, prefix=module.router.prefix)
     monkeypatch.setattr(utils, "zen_store", lambda: retention_store)
-    for module in (retention_endpoints, runs_endpoints):
-        monkeypatch.setattr(module, "retention_controller", lambda: retention)
     auth_context = AuthContext(
         user=retention_store.list_users(UserFilter()).items[0]
     )
@@ -802,7 +800,7 @@ def test_retention_capacity_returns_actionable_busy_response(
 ):
     """A replica at its retention capacity says so instead of queueing."""
     capacity = RetentionCapacity(1)
-    monkeypatch.setattr(http.retention, "capacity", capacity)
+    monkeypatch.setattr(utils, "_retention_capacity", capacity)
 
     with capacity.claim():
         response = http.client.post(

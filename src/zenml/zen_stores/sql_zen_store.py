@@ -22,8 +22,13 @@ from zenml.zen_stores.migrations.backup.base import BaseDatabaseBackupEngine
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
+from zenml.zen_stores.retention import archiver as retention_archiver
+from zenml.zen_stores.retention import eligibility as retention_eligibility
 from zenml.zen_stores.retention import fences, transactions
+from zenml.zen_stores.retention import restorer as retention_restorer
+from zenml.zen_stores.retention.eligibility import ArchiveBatch
 from zenml.zen_stores.retention.state import RetentionState
+from zenml.zen_stores.retention.storage import ArchiveStorage
 
 try:
     import sqlalchemy  # noqa
@@ -53,6 +58,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
+from threading import Event
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -139,7 +145,7 @@ from zenml.config.pipeline_run_configuration import (
     ReplayRunConfiguration,
 )
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
-from zenml.config.server_config import ServerConfiguration
+from zenml.config.server_config import ArchiveSettings, ServerConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
@@ -173,6 +179,7 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
+    RetentionOutcome,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -390,6 +397,9 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
 from zenml.models.v2.misc.retention import (
+    ArchiveRequest,
+    ArchiveResponse,
+    RestoreResponse,
     RetentionStatusResponse,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -5630,7 +5640,6 @@ class SqlZenStore(BaseZenStore):
                 )
 
             try:
-                session.flush()
                 session.commit()
             except IntegrityError as e:
                 session.rollback()
@@ -14588,8 +14597,149 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=False, include_resources=False
             )
 
-    def get_retention_status(self) -> RetentionStatusResponse:
+    @property
+    def supports_execution_retention(self) -> bool:
+        """Whether this database can run execution retention.
+
+        Retention relies on MySQL row locks and `READ COMMITTED` isolation.
+
+        Returns:
+            Whether the metadata database is MySQL.
+        """
+        return self.config.driver == SQLDatabaseDriver.MYSQL
+
+    def _require_execution_retention(self) -> None:
+        """Refuse retention on a database whose locking it relies on.
+
+        Raises:
+            IllegalOperationError: The metadata database is not MySQL.
+        """
+        if not self.supports_execution_retention:
+            raise IllegalOperationError(
+                "Execution archiving requires a MySQL database."
+            )
+
+    def select_runs_to_archive(
+        self, request: ArchiveRequest, settings: ArchiveSettings
+    ) -> ArchiveBatch:
+        """Resolve an archive request to the bounded batch of runs it names.
+
+        This only selects runs, so the caller can authorize them before
+        previewing or archiving the batch.
+
+        Args:
+            request: Runs, pipeline, or project to archive.
+            settings: Archive policy bounding a pipeline or project batch.
+
+        Returns:
+            The runs to authorize, and whether the owner has more of them.
+        """
+        self._require_execution_retention()
+        return retention_eligibility.expand_target(
+            self.engine, request, settings
+        )
+
+    def preview_archive(
+        self,
+        run_ids: Sequence[UUID],
+        settings: ArchiveSettings,
+        force: bool = False,
+    ) -> ArchiveResponse:
+        """Report which runs the archive policy would archive now.
+
+        Args:
+            run_ids: Authorized runs to inspect.
+            settings: Archive policy to apply.
+            force: Ignore age, model-link, and restore-grace rules.
+
+        Returns:
+            Eligible and excluded counts with the refused runs' reasons.
+        """
+        self._require_execution_retention()
+        return retention_archiver.preview_runs(
+            self.engine, settings, run_ids, force=force
+        )
+
+    def archive_runs(
+        self,
+        run_ids: Sequence[UUID],
+        storage: ArchiveStorage,
+        settings: ArchiveSettings,
+        force: bool = False,
+    ) -> ArchiveResponse:
+        """Move the named runs' execution detail into archive objects.
+
+        Each run is captured, written and read back through `storage` with no
+        transaction open, then retired in one transaction that rechecks
+        eligibility under row locks. A run that loses that recheck keeps its
+        detail in SQL and its object is removed.
+
+        Args:
+            run_ids: Authorized runs to archive.
+            storage: Where archive objects are written.
+            settings: Archive policy to apply.
+            force: Ignore age, model-link, and restore-grace rules while
+                keeping every execution-safety exclusion.
+
+        Returns:
+            Counts and the runs that were refused, each with a reason.
+        """
+        self._require_execution_retention()
+        return retention_archiver.archive_runs(
+            self.engine, storage, settings, run_ids, force=force
+        )
+
+    def run_archive_sweep(
+        self,
+        storage: ArchiveStorage,
+        settings: ArchiveSettings,
+        cancel_event: Optional[Event] = None,
+    ) -> RetentionOutcome:
+        """Take the server-wide sweep lease and archive one bounded batch.
+
+        Args:
+            storage: Where archive objects are written.
+            settings: Archive policy and per-sweep budget.
+            cancel_event: Cooperative shutdown signal checked between runs.
+
+        Returns:
+            The sweep outcome.
+
+        Raises:
+            ExecutionRetentionConflictError: Another sweep holds the lease.
+        """  # noqa: DOC502
+        self._require_execution_retention()
+        archive_pass = retention_archiver.ArchivePass(
+            self.engine, storage, settings, cancel_event=cancel_event
+        )
+        archive_pass.accept()
+        return archive_pass.run().last_outcome
+
+    def restore_pipeline_run(
+        self, run_id: UUID, storage: ArchiveStorage
+    ) -> RestoreResponse:
+        """Write an archived run's detail back into SQL, all or nothing.
+
+        The object is read through `storage` before the restore transaction
+        opens.
+
+        Args:
+            run_id: Authorized run.
+            storage: Where the run's archive object is read from.
+
+        Returns:
+            Restored, or a no-op when the run's detail is already in SQL.
+        """
+        self._require_execution_retention()
+        return retention_restorer.restore_run(self.engine, storage, run_id)
+
+    def get_retention_status(
+        self, settings: ArchiveSettings
+    ) -> RetentionStatusResponse:
         """Read the latest sweep without scanning runs or storage.
+
+        Args:
+            settings: Archive configuration to report with the sweep state.
 
         Returns:
             Latest sweep outcome, counts, and archive configuration.
@@ -14600,7 +14750,6 @@ class SqlZenStore(BaseZenStore):
             ).scalar_one()
             now = transactions.database_now(session)
         state = RetentionState.load(raw)
-        settings = ServerConfiguration.get_server_config().archive
         return state.to_response(settings, now=now)
 
     def get_project(

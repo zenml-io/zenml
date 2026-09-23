@@ -3,6 +3,7 @@
 
 from fastapi import APIRouter, Security
 
+from zenml.config.server_config import ServerConfiguration
 from zenml.constants import API, RETENTION, VERSION_1
 from zenml.exceptions import IllegalOperationError
 from zenml.models.v2.misc.retention import (
@@ -10,6 +11,7 @@ from zenml.models.v2.misc.retention import (
     ArchiveResponse,
     RetentionStatusResponse,
 )
+from zenml.zen_server import retention
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action
@@ -19,7 +21,6 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
-    retention_controller,
     zen_store,
 )
 
@@ -53,7 +54,9 @@ def get_retention_status(
         raise IllegalOperationError(
             "Only server admins can read the execution archive status."
         )
-    return zen_store().get_retention_status()
+    return zen_store().get_retention_status(
+        ServerConfiguration.get_server_config().archive
+    )
 
 
 @router.post(
@@ -114,11 +117,10 @@ def archive_runs(
             model=store.get_project(request.project_id, hydrate=False),
             action=action,
         )
-    controller = retention_controller()
-    batch = controller.expand_target(request)
+    batch = store.select_runs_to_archive(request, retention.retention_policy())
     # Runs are their own RBAC resource: permission on the pipeline or project
     # that owns them does not by itself allow archiving them.
     batch_verify_permissions_for_models(
         models=store.get_run_headers(batch.run_ids), action=action
     )
-    return controller.archive_batch(request, batch)
+    return retention.archive_batch(request, batch)

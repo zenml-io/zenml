@@ -48,6 +48,7 @@ from zenml.enums import AuthScheme
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
+from zenml.zen_server import retention
 from zenml.zen_server.archive_scheduler import ArchiveScheduler
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
@@ -97,6 +98,7 @@ from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
 )
 from zenml.zen_server.utils import (
+    archive_storage,
     cleanup_artifact_store_cache,
     cleanup_request_manager,
     initialize_artifact_store_cache,
@@ -105,7 +107,7 @@ from zenml.zen_server.utils import (
     initialize_rbac,
     initialize_request_manager,
     initialize_resource_pool_store,
-    initialize_retention_controller,
+    initialize_retention_capacity,
     initialize_snapshot_executor,
     initialize_snapshot_run_dispatcher,
     initialize_streaming,
@@ -114,7 +116,6 @@ from zenml.zen_server.utils import (
     maintenance_executor,
     register_event_handlers,
     register_webhook_event_handlers,
-    retention_controller,
     server_config,
     shutdown_snapshot_run_dispatcher,
     shutdown_streaming,
@@ -166,12 +167,11 @@ def _check_archive_store_on_startup() -> None:
     """  # noqa: DOC502
     if not server_config().archive.configured:
         return
-    controller = retention_controller()
     # Database and configuration failures are fatal. Only the external storage
     # probe below is allowed to degrade to a startup warning.
-    _ = controller.archive_settings
+    retention.archive_settings()
     try:
-        usable = controller.archive_storage.probe()
+        usable = archive_storage().probe()
     except Exception:
         usable = False
     if not usable:
@@ -217,7 +217,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # avoid race conditions
         await initialize_request_manager()
         initialize_zen_store()
-        initialize_retention_controller()
+        initialize_retention_capacity()
         _check_archive_store_on_startup()
         initialize_resource_pool_store()
         service_connector_registry.register_builtin_service_connectors()

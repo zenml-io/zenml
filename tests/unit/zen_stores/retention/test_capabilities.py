@@ -22,10 +22,10 @@ from zenml.io import fileio, filesystem_registry
 from zenml.io.local_filesystem import LocalFilesystem
 from zenml.models import ServerModel
 from zenml.utils.time_utils import utc_now
+from zenml.zen_server import archive_storage as storage_module
+from zenml.zen_server.archive_storage import ArtifactStoreArchiveStorage
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.migrations.alembic import Alembic
-from zenml.zen_stores.retention import storage as storage_module
-from zenml.zen_stores.retention.storage import ArchiveStorage
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
@@ -126,12 +126,8 @@ def test_archive_startup_database_validation_is_fatal(
     archive = ArchiveSettings(backend="local", uri="/tmp/archive")
     storage = SimpleNamespace(probe=Mock())
 
-    class UnsupportedController:
-        archive_storage = storage
-
-        @property
-        def archive_settings(self) -> ArchiveSettings:
-            raise IllegalOperationError("unsupported database")
+    def unsupported() -> ArchiveSettings:
+        raise IllegalOperationError("unsupported database")
 
     monkeypatch.setattr(
         zen_server_api,
@@ -139,8 +135,9 @@ def test_archive_startup_database_validation_is_fatal(
         lambda: SimpleNamespace(archive=archive),
     )
     monkeypatch.setattr(
-        zen_server_api, "retention_controller", UnsupportedController
+        zen_server_api.retention, "archive_settings", unsupported
     )
+    monkeypatch.setattr(zen_server_api, "archive_storage", lambda: storage)
 
     with pytest.raises(IllegalOperationError, match="unsupported database"):
         zen_server_api._check_archive_store_on_startup()
@@ -156,10 +153,6 @@ def test_archive_startup_storage_failure_is_a_warning(
 
     archive = ArchiveSettings(backend="local", uri="/tmp/archive")
     storage = SimpleNamespace(probe=Mock(side_effect=OSError("temporary")))
-    controller = SimpleNamespace(
-        archive_settings=archive,
-        archive_storage=storage,
-    )
     warning = Mock()
     monkeypatch.setattr(
         zen_server_api,
@@ -167,8 +160,9 @@ def test_archive_startup_storage_failure_is_a_warning(
         lambda: SimpleNamespace(archive=archive),
     )
     monkeypatch.setattr(
-        zen_server_api, "retention_controller", lambda: controller
+        zen_server_api.retention, "archive_settings", lambda: archive
     )
+    monkeypatch.setattr(zen_server_api, "archive_storage", lambda: storage)
     monkeypatch.setattr(zen_server_api.logger, "warning", warning)
 
     zen_server_api._check_archive_store_on_startup()
@@ -225,7 +219,7 @@ def test_archive_storage_does_not_replace_global_fileio_dispatch(
     )
     before = registry.get_filesystem_for_path("s3://ordinary/object")
 
-    archive = ArchiveStorage.from_uri("s3://archive")
+    archive = ArtifactStoreArchiveStorage.from_uri("s3://archive")
 
     after = registry.get_filesystem_for_path("s3://ordinary/object")
     assert after is before
@@ -240,10 +234,10 @@ def test_objects_stay_readable_after_the_archive_root_changes(
     tmp_path,
 ) -> None:
     """A recorded URI under a former root is read where it was written."""
-    former = ArchiveStorage.from_uri(str(tmp_path / "former"))
+    former = ArtifactStoreArchiveStorage.from_uri(str(tmp_path / "former"))
     uri = former.object_uri(uuid4(), uuid4(), uuid4())
     former.write(uri, b"archived")
 
-    current = ArchiveStorage.from_uri(str(tmp_path / "current"))
+    current = ArtifactStoreArchiveStorage.from_uri(str(tmp_path / "current"))
 
     assert current.read(uri, 8) == b"archived"

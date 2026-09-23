@@ -137,9 +137,7 @@ def test_scheduler_treats_a_sweep_conflict_as_running(
     controller.run_archive_sweep.side_effect = ExecutionRetentionConflictError(
         "Archive sweep lease is already held."
     )
-    monkeypatch.setattr(
-        archive_scheduler, "retention_controller", lambda: controller
-    )
+    monkeypatch.setattr(archive_scheduler, "retention", controller)
 
     scheduler = ArchiveScheduler("* * * * *")
     outcome = scheduler._sweep()
@@ -188,9 +186,7 @@ async def test_shutdown_waits_for_active_sweep(
         return RetentionOutcome.PAUSED
 
     controller.run_archive_sweep.side_effect = blocked_sweep
-    monkeypatch.setattr(
-        archive_scheduler, "retention_controller", lambda: controller
-    )
+    monkeypatch.setattr(archive_scheduler, "retention", controller)
     monkeypatch.setattr(scheduler, "_seconds_until_next_sweep", lambda: 0.0)
     scheduler.start()
     assert await asyncio.to_thread(entered.wait, 3)
