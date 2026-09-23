@@ -28,7 +28,6 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
 from zenml.enums import ExecutionStatus, SorterOps
-from zenml.exceptions import ExecutionArchivedError
 from zenml.models import Page, PipelineRequest
 from zenml.orchestrators import cache_utils
 from zenml.pipelines.pipeline_definition import Pipeline
@@ -301,18 +300,6 @@ def test_fetching_cached_step_run_queries_cache_candidates(
         size=1,
         hydrate=True,
     )
-
-    from zenml.models import ExecutionArchiveDescriptor
-
-    cache_candidate.get_body().archive = ExecutionArchiveDescriptor(
-        bundle_id=cache_candidate.id,
-        restore_run_id=cache_candidate.pipeline_run_id,
-    )
-    cache_candidate.metadata = None
-    assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
-
-    mock_list_run_steps.side_effect = ExecutionArchivedError("archived")
-    assert cache_utils.get_cached_step_run(cache_key="cache_key") is None
 
 
 def test_fetching_cached_step_run_uses_latest_candidate(

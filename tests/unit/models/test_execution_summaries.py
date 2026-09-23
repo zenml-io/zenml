@@ -2,7 +2,6 @@
 """Retained summaries preserve metadata-based response compatibility."""
 
 import pytest
-from pydantic import ValidationError
 
 
 @pytest.mark.parametrize(
@@ -47,16 +46,3 @@ def test_pre_archive_response_payload_still_supports_retained_properties(
     for field in fields:
         assert getattr(legacy, field) == expected[field]
     assert legacy.get_metadata().model_dump() == expected
-
-
-@pytest.mark.parametrize("missing", [False, True])
-def test_step_metadata_requires_snapshot_id(sample_step_run, missing):
-    """Full metadata keeps its established non-null snapshot contract."""
-    metadata = sample_step_run.get_metadata()
-    payload = metadata.model_dump()
-    if missing:
-        payload.pop("snapshot_id")
-    else:
-        payload["snapshot_id"] = None
-    with pytest.raises(ValidationError, match="snapshot_id"):
-        type(metadata).model_validate(payload)

@@ -1,7 +1,6 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 """Writer fences that keep ordinary writes off archived rows.
 
-Updates to runs and steps carry a still-hot condition in the UPDATE itself.
 Writes that add detail to a run, or new uses to a snapshot, first lock the
 owner row and check its marker. Retirement locks the same rows, so either the
 write commits first and retirement's locked recapture sees it, or retirement
@@ -10,86 +9,19 @@ archived, and ``FOR UPDATE`` compiles to nothing, so these fences cost only
 the reads.
 """
 
-from typing import Any, Dict, Sequence, Union
 from uuid import UUID
 
-from sqlalchemy import inspect, select, update
-from sqlalchemy.orm.attributes import set_committed_value
+from sqlalchemy import select
 from sqlmodel import Session, col
 
 from zenml.exceptions import (
     ExecutionArchivedError,
     ExecutionRetentionConflictError,
-    IllegalOperationError,
 )
-from zenml.zen_stores.retention.format import RunRecord, StepRecord
 from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     PipelineSnapshotSchema,
-    StepRunSchema,
 )
-
-# Execution-state columns that must not change once a row is retired, in
-# addition to the archived columns themselves. Every other column, such as
-# cache expiry or `updated`, stays writable on an archived row.
-_STATE_COLUMNS = frozenset(
-    {"status", "status_reason", "in_progress", "end_time"}
-)
-_FENCED_COLUMNS = {
-    PipelineRunSchema: _STATE_COLUMNS | set(RunRecord.archived_columns),
-    StepRunSchema: _STATE_COLUMNS | set(StepRecord.archived_columns),
-}
-
-HotRow = Union[PipelineRunSchema, StepRunSchema]
-
-
-def update_hot(session: Session, row: HotRow) -> None:
-    """Carry the archive predicate in the existing row update, without a SELECT.
-
-    Callers must modify the row and invoke this function inside no_autoflush
-    so an ORM flush cannot publish an unfenced update first. Changes that
-    touch no archived or execution-state column are left to the ORM flush,
-    so retained fields stay writable on archived rows. Step updates can
-    lock a step before its run while retirement locks the run first; MySQL
-    then rolls one of them back, and archiving skips that run.
-
-    Args:
-        session: Current transaction, before the row can autoflush.
-        row: Modified existing run or step row.
-
-    Raises:
-        IllegalOperationError: If the row is not a persistent SQL identity.
-        ExecutionArchivedError: If retirement won the concurrent row lock.
-    """
-    state = inspect(row)
-    if state is None or not state.persistent:
-        raise IllegalOperationError(
-            "Conditional retention writes require an existing row."
-        )
-    changes: Dict[str, Any] = {
-        attribute.key: state.dict[attribute.key]
-        for attribute in state.mapper.column_attrs
-        if state.attrs[attribute.key].history.has_changes()
-    }
-    schema = type(row)
-    if _FENCED_COLUMNS[schema].isdisjoint(changes):
-        return
-    statement = (
-        update(schema)
-        .where(
-            col(schema.id) == row.id,
-            col(schema.archive_bundle_id).is_(None),
-        )
-        .values(**changes)
-    )
-    if session.connection().execute(statement).rowcount != 1:
-        run_id = (
-            row.pipeline_run_id if isinstance(row, StepRunSchema) else row.id
-        )
-        raise ExecutionArchivedError.for_entity(row.id, run_id)
-    # The conditional statement replaces this ORM flush, not an extra write.
-    for column_name, column_value in changes.items():
-        set_committed_value(row, column_name, column_value)
 
 
 def protect_run(session: Session, run_id: UUID) -> None:
@@ -120,36 +52,28 @@ def protect_run(session: Session, run_id: UUID) -> None:
         raise ExecutionArchivedError.for_entity(run.id, run.id)
 
 
-def protect_snapshot_owners(
-    session: Session,
-    snapshot_ids: Sequence[UUID],
-) -> None:
-    """Serialize ownership changes on the snapshot itself, not all sharing runs.
+def lock_unarchived_snapshot(session: Session, snapshot_id: UUID) -> None:
+    """Lock a snapshot and require its detail before creating a new use.
 
     Args:
-        session: Current association mutation transaction.
-        snapshot_ids: Resolved snapshots whose owner sets will change.
+        session: Transaction that will commit the new use.
+        snapshot_id: Snapshot whose detail must remain available.
 
     Raises:
-        ExecutionRetentionConflictError: If an owner snapshot disappeared.
-        ExecutionArchivedError: If new operational use targets archived detail.
+        ExecutionRetentionConflictError: If the snapshot disappeared.
+        ExecutionArchivedError: If the snapshot's detail is archived.
     """
-    if not snapshot_ids:
-        return
-    ids = sorted(set(snapshot_ids))
-    rows = session.execute(
+    row = session.execute(
         select(
             col(PipelineSnapshotSchema.id),
             col(PipelineSnapshotSchema.archive_bundle_id),
         )
-        .where(col(PipelineSnapshotSchema.id).in_(ids))
-        .order_by(col(PipelineSnapshotSchema.id))
+        .where(col(PipelineSnapshotSchema.id) == snapshot_id)
         .with_for_update()
-    ).all()
-    if len(rows) != len(ids):
+    ).one_or_none()
+    if row is None:
         raise ExecutionRetentionConflictError(
             "Snapshot disappeared before ownership mutation."
         )
-    for row in rows:
-        if row.archive_bundle_id is not None:
-            raise ExecutionArchivedError.for_entity(row.id, None)
+    if row.archive_bundle_id is not None:
+        raise ExecutionArchivedError.for_entity(row.id, None)

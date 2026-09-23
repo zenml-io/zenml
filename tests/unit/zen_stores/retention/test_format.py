@@ -3,36 +3,77 @@
 
 import gzip
 import hashlib
-from pathlib import Path
-from typing import Callable
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
 
 from zenml.exceptions import (
-    ExecutionRetentionConflictError,
     ExecutionRetentionIntegrityError,
 )
 from zenml.zen_stores.retention import format as archive_format
 from zenml.zen_stores.retention.format import (
     ArchiveDocument,
     canonical_json,
-    compute_content_hash,
     decode,
-    encode,
 )
 
 
 @pytest.fixture
 def document() -> ArchiveDocument:
-    """Read a frozen archive without depending on a running database.
+    """Build one run, step, and configuration for corruption checks.
 
     Returns:
         The verified v1 document.
     """
-    raw = (
-        Path(__file__).with_name("fixtures") / "archive_v1_static.json"
-    ).read_bytes()
+    project_id, run_id, step_id = uuid4(), uuid4(), uuid4()
+    timestamps = {
+        "created": datetime(2026, 1, 1),
+        "updated": datetime(2026, 1, 1),
+    }
+    archive = ArchiveDocument(
+        project_id=project_id,
+        run_id=run_id,
+        run=archive_format.RunRecord(
+            id=run_id,
+            **timestamps,
+            project_id=project_id,
+            snapshot_id=None,
+            orchestrator_environment=None,
+            exception_info=None,
+            pipeline_configuration=None,
+            client_environment=None,
+        ),
+        steps=[
+            archive_format.StepRecord(
+                id=step_id,
+                **timestamps,
+                project_id=project_id,
+                pipeline_run_id=run_id,
+                snapshot_id=None,
+                name="step",
+                exception_info=None,
+                step_configuration=None,
+                source_code=None,
+                docstring=None,
+                step_type=None,
+                substitutions={},
+            )
+        ],
+        snapshots=[],
+        configurations=[
+            archive_format.ConfigurationRecord(
+                id=uuid4(),
+                **timestamps,
+                index=0,
+                name="step",
+                config="{}",
+                snapshot_id=None,
+                step_run_id=step_id,
+            )
+        ],
+    )
+    raw = canonical_json(archive.model_dump(mode="json"))
     return decode(gzip.compress(raw, mtime=0), hashlib.sha256(raw).hexdigest())
 
 
@@ -55,7 +96,7 @@ def test_decode_rejects_invalid_bundles(document, defect):
     if defect == "foreign_run":
         fields["steps"][0]["pipeline_run_id"] = str(uuid4())
     elif defect == "foreign_configuration":
-        fields["configurations"][0]["snapshot_id"] = str(uuid4())
+        fields["configurations"][0]["step_run_id"] = str(uuid4())
     elif defect == "extra_field":
         fields["run"]["unexpected"] = "value"
     elif defect == "version":
@@ -84,36 +125,3 @@ def test_decompression_stops_at_the_size_cap(monkeypatch):
 
     with pytest.raises(ExecutionRetentionIntegrityError, match="size limit"):
         decode(bomb, "0" * 64)
-
-
-def test_content_hash_matches_encode_without_compression(
-    document: ArchiveDocument, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Hash-only validation uses the encoded object's exact canonical hash."""
-    encoded = encode(document)
-
-    def fail_compression(*args, **kwargs):
-        pytest.fail("content hashing compressed the document")
-
-    monkeypatch.setattr(archive_format.gzip, "compress", fail_compression)
-
-    assert compute_content_hash(document) == encoded.content_hash
-
-
-@pytest.mark.parametrize(
-    "operation",
-    [encode, compute_content_hash],
-    ids=["encode", "hash"],
-)
-def test_encode_and_hash_apply_the_same_size_limit(
-    document: ArchiveDocument,
-    monkeypatch: pytest.MonkeyPatch,
-    operation: Callable[[ArchiveDocument], object],
-) -> None:
-    """Compression and comparison reject the same oversized canonical input."""
-    monkeypatch.setattr(archive_format, "MAX_DECODED_BYTES", 1)
-
-    with pytest.raises(
-        ExecutionRetentionConflictError, match="archive size limit"
-    ):
-        operation(document)

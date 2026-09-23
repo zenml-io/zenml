@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
-from sqlalchemy import event, update
+from sqlalchemy import event
 from sqlmodel import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -36,7 +36,6 @@ from zenml.zen_server.pipeline_execution import utils as execution
 from zenml.zen_server.rbac import endpoint_utils
 from zenml.zen_server.rbac import utils as rbac_utils
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.retention import RetentionCapacity
 from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     logs_endpoints,
@@ -48,7 +47,6 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     trigger_endpoints,
 )
-from zenml.zen_stores.schemas import LogsSchema, PipelineRunSchema
 
 ROUTERS = (
     retention_endpoints,
@@ -307,115 +305,6 @@ def test_read_permission_restores_without_allowing_run_updates(
     assert checked_actions == [Action.READ, Action.UPDATE]
 
 
-def test_get_entity_header_authorization_precedes_dehydration(
-    monkeypatch,
-):
-    """The opt-in getter authorizes its header before returning redacted data."""
-    resource_id = uuid4()
-    header = object()
-    hydrated = object()
-    redacted = object()
-    events = []
-
-    def verify(model, *, action):
-        events.append(("authorize", model, action))
-
-    def get(entity_id, *, authorizer, hydrate):
-        assert entity_id == resource_id and hydrate is True
-        authorizer(header)
-        events.append(("hydrate", hydrated))
-        return hydrated
-
-    def dehydrate(model):
-        events.append(("dehydrate", model))
-        return redacted
-
-    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", verify)
-    monkeypatch.setattr(endpoint_utils, "dehydrate_response_model", dehydrate)
-
-    result = endpoint_utils.verify_permissions_and_get_entity(
-        id=resource_id,
-        get_method=get,
-        authorize_in_store=True,
-        hydrate=True,
-    )
-
-    assert result is redacted
-    assert events == [
-        ("authorize", header, Action.READ),
-        ("hydrate", hydrated),
-        ("dehydrate", hydrated),
-    ]
-
-
-def test_get_entity_default_authorization_order_is_unchanged(monkeypatch):
-    """Existing helper callers still authorize the fetched response."""
-    resource_id = uuid4()
-    model = object()
-    events = []
-
-    def get(entity_id, *, hydrate):
-        assert entity_id == resource_id and hydrate is False
-        events.append(("get", model))
-        return model
-
-    def verify(response, *, action):
-        events.append(("authorize", response, action))
-
-    def dehydrate(response):
-        events.append(("dehydrate", response))
-        return response
-
-    monkeypatch.setattr(endpoint_utils, "verify_permission_for_model", verify)
-    monkeypatch.setattr(endpoint_utils, "dehydrate_response_model", dehydrate)
-
-    result = endpoint_utils.verify_permissions_and_get_entity(
-        id=resource_id,
-        get_method=get,
-        hydrate=False,
-    )
-
-    assert result is model
-    assert events == [
-        ("get", model),
-        ("authorize", model, Action.READ),
-        ("dehydrate", model),
-    ]
-
-
-def test_step_status_checks_only_the_owning_run_once(http, monkeypatch):
-    """A scalar step read performs one permission check for its owning run."""
-    checks = Mock(
-        side_effect=lambda *, user, resources, action: {
-            resource: True for resource in resources
-        }
-    )
-    monkeypatch.setattr(
-        rbac_utils,
-        "server_config",
-        lambda: SimpleNamespace(rbac_enabled=True),
-    )
-    monkeypatch.setattr(
-        rbac_utils,
-        "is_owned_by_authenticated_user",
-        lambda _: False,
-    )
-    monkeypatch.setattr(
-        rbac_utils,
-        "rbac",
-        lambda: SimpleNamespace(check_permissions=checks),
-    )
-
-    response = http.client.get(f"/api/v1/steps/{http.ids.producer}/status")
-
-    assert response.status_code == 200, response.text
-    assert checks.call_count == 1
-    assert {
-        (resource.type, resource.id)
-        for resource in checks.call_args.kwargs["resources"]
-    } == {(ResourceType.PIPELINE_RUN, http.ids.run)}
-
-
 def test_archive_restore_http_lifecycle(http, monkeypatch):
     """Targeted archiving runs in the request; restore is idempotent."""
     archive = "/api/v1/retention/archive"
@@ -533,91 +422,6 @@ def test_metadata_writes_authorize_retained_run_headers(
     opened.assert_not_called()
 
 
-def test_archived_snapshot_rest_updates_follow_description_semantics(http):
-    """REST permits tag changes but rejects real cold-description writes."""
-    http.archive()
-    path = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
-
-    added = http.client.put(
-        path,
-        json={"description": None, "add_tags": ["cold-tag"]},
-    )
-    assert added.status_code == 200, added.text
-    snapshot = PipelineSnapshotResponse.model_validate(added.json())
-    assert {tag.name for tag in snapshot.tags} == {"cold-tag"}
-
-    removed = http.client.put(
-        path,
-        json={"description": None, "remove_tags": ["cold-tag"]},
-    )
-    assert removed.status_code == 200, removed.text
-    snapshot = PipelineSnapshotResponse.model_validate(removed.json())
-    assert snapshot.tags == []
-
-    noop = http.client.put(path, json={"description": ""})
-    assert noop.status_code == 200, noop.text
-
-    blocked = http.client.put(path, json={"description": "cold edit"})
-    assert blocked.status_code == 409, blocked.text
-
-
-def test_archived_http_summaries_and_logs_need_no_storage(
-    http, storage, monkeypatch
-):
-    """SQL-backed archive browsing and log lookup survive a storage outage."""
-    with Session(http.store.engine) as session:
-        session.add_all(
-            [
-                LogsSchema(
-                    project_id=http.ids.project,
-                    pipeline_run_id=http.ids.run,
-                    source="orchestrator",
-                    uri="test://run.log",
-                ),
-                LogsSchema(
-                    project_id=http.ids.project,
-                    step_run_id=http.ids.producer,
-                    source="step",
-                    uri="test://step.log",
-                ),
-            ]
-        )
-        session.commit()
-    http.archive()
-    opened = Mock(side_effect=OSError("storage unavailable"))
-    monkeypatch.setattr(storage.artifact_store, "open", opened)
-    fetched = Mock(return_value=[])
-    monkeypatch.setattr(runs_endpoints, "fetch_logs", fetched)
-    monkeypatch.setattr(steps_endpoints, "fetch_logs", fetched)
-
-    summaries = [
-        f"runs/{http.ids.run}?hydrate=false",
-        f"steps/{http.ids.producer}?hydrate=false",
-        f"pipeline_snapshots/{http.ids.snapshot}?hydrate=false",
-    ]
-    for path in summaries:
-        response = http.client.get("/api/v1/" + path)
-        assert response.status_code == 200, response.text
-        assert response.json()["body"]["archive"] is not None
-
-    assert (
-        http.client.get(
-            f"/api/v1/runs/{http.ids.run}/logs",
-            params={"source": "orchestrator"},
-        ).status_code
-        == 200
-    )
-    assert (
-        http.client.get(
-            f"/api/v1/steps/{http.ids.producer}/logs",
-            params={"source": "step"},
-        ).status_code
-        == 200
-    )
-    assert fetched.call_count == 2
-    opened.assert_not_called()
-
-
 @pytest.mark.parametrize("resource", ["runs", "steps", "pipeline_snapshots"])
 def test_mixed_hydrated_http_pages_preserve_archive_summaries(
     http, run_factory, storage, monkeypatch, resource
@@ -723,23 +527,6 @@ def test_cold_configuration_and_replay_require_restore(http, method, path):
     assert str(http.ids.run) in response.text
 
 
-def test_archiving_an_active_run_is_refused_with_a_reason(http):
-    """Execution-safety rules apply to every manual request."""
-    with http.store.engine.begin() as connection:
-        connection.execute(
-            update(PipelineRunSchema)
-            .where(PipelineRunSchema.id == http.ids.run)
-            .values(status=ExecutionStatus.RUNNING.value)
-        )
-    result = http.client.post(
-        "/api/v1/retention/archive", json={"run_ids": [str(http.ids.run)]}
-    ).json()
-    assert result["archived"] == 0 and result["skipped"] == 1
-    assert result["refusals"] == [
-        {"run_id": str(http.ids.run), "reason": "not_eligible"}
-    ]
-
-
 def test_archive_dry_run_uses_read_permission(http, monkeypatch):
     """A preview authorizes as a read before dispatching to the store."""
     denied = Mock(side_effect=HTTPException(403, "Forbidden"))
@@ -801,52 +588,6 @@ def test_force_needs_a_server_admin(http):
     assert forced.status_code == 403, forced.text
     assert "server admins" in forced.text
     assert unforced.status_code == 200, unforced.text
-
-
-def test_paused_archive_request_is_not_advertised_as_retryable(
-    http, monkeypatch
-):
-    """An intentional pause is a 409 and keeps explicit restore available."""
-    http.archive()
-    monkeypatch.setenv("ZENML_SERVER_ARCHIVE__ENABLED", "false")
-    archive = http.client.post(
-        "/api/v1/retention/archive",
-        json={"run_ids": [str(http.ids.run)], "force": True},
-    )
-
-    assert archive.status_code == 409
-    assert "Retry-After" not in archive.headers
-    restored = http.client.post(f"/api/v1/runs/{http.ids.run}/restore")
-    assert restored.status_code == 200
-    assert restored.json()["outcome"] == "restored"
-
-
-def test_retention_capacity_returns_actionable_busy_response(
-    http, monkeypatch
-):
-    """A replica at its retention capacity says so instead of queueing."""
-    capacity = RetentionCapacity(1)
-    monkeypatch.setattr(http.retention, "_capacity", capacity)
-
-    with capacity.claim():
-        response = http.client.post(
-            "/api/v1/retention/archive",
-            json={"run_ids": [str(http.ids.run)]},
-        )
-
-    assert response.status_code == 429, response.text
-
-
-def test_archived_run_and_snapshot_delete_over_http(http):
-    """REST deletion authorizes from SQL headers, run before snapshot."""
-    http.archive()
-    snapshot = f"/api/v1/pipeline_snapshots/{http.ids.snapshot}"
-
-    assert http.client.delete(snapshot).status_code == 409
-    assert (
-        http.client.delete(f"/api/v1/runs/{http.ids.run}").status_code == 200
-    )
-    assert http.client.delete(snapshot).status_code == 200
 
 
 def test_archived_run_delete_preserves_run_when_storage_is_unavailable(

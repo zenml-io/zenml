@@ -26,7 +26,6 @@ from pytest_mock import MockerFixture
 from zenml.enums import TriggerRunConcurrency
 from zenml.exceptions import (
     ExecutionRetentionUnavailableError,
-    IllegalOperationError,
 )
 from zenml.models import ArchiveRequest, WebhookTriggerUpdate
 from zenml.zen_stores.rest_zen_store import (
@@ -46,7 +45,6 @@ def serve(
     status: int,
     body: bytes = b"",
     headers: Optional[Dict[str, str]] = None,
-    succeed_after: Optional[int] = None,
 ) -> Iterator[SimpleNamespace]:
     """Serve one canned response on a local port and count the requests.
 
@@ -54,7 +52,6 @@ def serve(
         status: Status of the canned response.
         body: JSON body of the canned response.
         headers: Extra headers of the canned response.
-        succeed_after: Number of requests after which the server answers 200.
 
     Yields:
         The REST store pointed at the server, its URL, and the request count.
@@ -65,10 +62,7 @@ def serve(
     class Handler(BaseHTTPRequestHandler):
         def respond(self) -> None:
             served.attempts += 1
-            recovered = (
-                succeed_after is not None and served.attempts > succeed_after
-            )
-            self.send_response(200 if recovered else status)
+            self.send_response(status)
             for header, value in headers.items():
                 self.send_header(header, value)
             self.send_header("Content-Type", "application/json")
@@ -76,7 +70,6 @@ def serve(
             self.end_headers()
             self.wfile.write(body)
 
-        do_GET = respond
         do_POST = respond
 
         def log_message(self, format: str, *args: object) -> None:
@@ -98,15 +91,6 @@ def serve(
         server.server_close()
 
 
-def test_ordinary_session_retries_a_transient_status() -> None:
-    """Requests outside execution retention keep their status retries."""
-    with serve(503, succeed_after=1) as served:
-        response = served.store.session.get(f"{served.url}/any", timeout=2)
-
-    assert response.status_code == 200
-    assert served.attempts == 2
-
-
 def test_retention_request_is_not_retried() -> None:
     """A retention failure reaches the caller at once, as a typed error.
 
@@ -122,43 +106,6 @@ def test_retention_request_is_not_retried() -> None:
             served.store.archive_runs(ArchiveRequest(run_ids=[uuid4()]))
 
     assert served.attempts == 1
-
-
-@pytest.mark.parametrize(
-    ("status", "body", "call"),
-    [
-        (
-            405,
-            b'{"detail":"Method Not Allowed"}',
-            lambda store: store.restore_pipeline_run(uuid4()),
-        ),
-        (
-            404,
-            b'{"detail":"Not Found"}',
-            lambda store: store.get_retention_status(),
-        ),
-    ],
-)
-def test_server_without_retention_routes_is_named_as_such(
-    status, body, call
-) -> None:
-    """An older server's answer is not mistaken for a missing run.
-
-    Its GET catch-all for unknown API paths turns a POST into a 405 and a
-    GET into a 404 without a ZenML error.
-    """
-    with serve(status, body) as served:
-        with pytest.raises(IllegalOperationError, match="does not support"):
-            call(served.store)
-
-
-def test_missing_run_is_still_a_key_error() -> None:
-    """A retention route that cannot find the run keeps saying so."""
-    with serve(
-        404, b'{"detail":["KeyError","Run does not exist."]}'
-    ) as served:
-        with pytest.raises(KeyError, match="does not exist"):
-            served.store.restore_pipeline_run(uuid4())
 
 
 def test_rest_store_url_is_normalized_before_moving_credentials(

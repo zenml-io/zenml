@@ -5620,8 +5620,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             if snapshot.source_snapshot:
-                fences.protect_snapshot_owners(
-                    session, [snapshot.source_snapshot]
+                fences.lock_unarchived_snapshot(
+                    session, snapshot.source_snapshot
                 )
             new_snapshot = PipelineSnapshotSchema.from_request(
                 snapshot, code_reference_id=code_reference_id
@@ -5825,7 +5825,7 @@ class SqlZenStore(BaseZenStore):
             if snapshot_update.description or isinstance(
                 snapshot_update.name, str
             ):
-                fences.protect_snapshot_owners(session, [snapshot_id])
+                fences.lock_unarchived_snapshot(session, snapshot_id)
             else:
                 transactions.lock_ids(
                     session, PipelineSnapshotSchema, [snapshot_id]
@@ -6037,7 +6037,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="deployer",
             )
-            fences.protect_snapshot_owners(session, [deployment.snapshot_id])
+            fences.lock_unarchived_snapshot(session, deployment.snapshot_id)
             deployment_schema = DeploymentSchema.from_request(deployment)
             session.add(deployment_schema)
             session.commit()
@@ -6151,8 +6151,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             if deployment_update.snapshot_id:
-                fences.protect_snapshot_owners(
-                    session, [deployment_update.snapshot_id]
+                fences.lock_unarchived_snapshot(
+                    session, deployment_update.snapshot_id
                 )
             deployment.update(deployment_update)
             session.add(deployment)
@@ -6492,7 +6492,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            fences.protect_snapshot_owners(session, [snapshot.id])
+            fences.lock_unarchived_snapshot(session, snapshot.id)
             template_utils.validate_snapshot_is_templatable(snapshot)
 
             template_schema = RunTemplateSchema.from_request(request=template)
@@ -6594,10 +6594,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if template.source_snapshot_id is not None:
-                fences.protect_snapshot_owners(
-                    session, [template.source_snapshot_id]
-                )
             template.update(template_update)
             session.add(template)
             session.commit()
@@ -7282,7 +7278,7 @@ class SqlZenStore(BaseZenStore):
 
         # Index allocation commits, so acquire these locks afterwards and
         # hold them until the new use is visible to retirement.
-        fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
+        fences.lock_unarchived_snapshot(session, pipeline_run.snapshot)
 
         root_run_id: Optional[UUID] = None
         if pipeline_run.parent_run_id:
@@ -7654,7 +7650,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
-            fences.protect_snapshot_owners(session, [pipeline_run.snapshot])
+            fences.lock_unarchived_snapshot(session, pipeline_run.snapshot)
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -7805,16 +7801,18 @@ class SqlZenStore(BaseZenStore):
             The updated pipeline run.
 
         Raises:
+            ExecutionArchivedError: If archived exception detail would change.
             IllegalOperationError: If the orchestrator run id is being updated
                 on a non-placeholder run or if the orchestrator run id is
                 already set and is different from the new orchestrator run id.
-        """
+        """  # noqa: DOC503
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = self._get_schema_by_id(
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
+                for_update=True,
             )
 
             if run_update.status is not None:
@@ -7824,6 +7822,8 @@ class SqlZenStore(BaseZenStore):
                     requested_status=run_update.status,
                     status_reason=run_update.status_reason,
                 )
+                # Status updates commit independently, releasing the first lock.
+                session.refresh(existing_run, with_for_update=True)
 
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
@@ -7859,9 +7859,12 @@ class SqlZenStore(BaseZenStore):
                         reference_type="output artifact version",
                     )
 
-            with session.no_autoflush:
-                existing_run.update(run_update=run_update)
-                fences.update_hot(session, existing_run)
+            if (
+                existing_run.archive_bundle_id is not None
+                and run_update.exception_info is not None
+            ):
+                raise ExecutionArchivedError.for_entity(run_id, run_id)
+            existing_run.update(run_update=run_update)
             session.add(existing_run)
             if run_update.outputs is not None:
                 session.execute(
@@ -9239,7 +9242,7 @@ class SqlZenStore(BaseZenStore):
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
 
-            fences.protect_snapshot_owners(session, [snapshot_id])
+            fences.lock_unarchived_snapshot(session, snapshot_id)
 
             trigger = session.get(TriggerSchema, trigger_id)
 
@@ -13404,15 +13407,19 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
 
+        Raises:
+            ExecutionArchivedError: If archived step detail or execution state would change.
+
         Returns:
             The updated step run.
-        """
+        """  # noqa: DOC503
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = self._get_schema_by_id(
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
+                for_update=True,
             )
 
             if step_run_update.status:
@@ -13456,9 +13463,22 @@ class SqlZenStore(BaseZenStore):
                 step_run_update.status = ExecutionStatus.STOPPED
 
             # Update the step
-            with session.no_autoflush:
-                existing_step_run.update(step_run_update)
-                fences.update_hot(session, existing_step_run)
+            if existing_step_run.archive_bundle_id is not None and (
+                step_run_update.exception_info is not None
+                or (
+                    step_run_update.status is not None
+                    and step_run_update.status.value
+                    != existing_step_run.status
+                )
+                or (
+                    step_run_update.end_time is not None
+                    and step_run_update.end_time != existing_step_run.end_time
+                )
+            ):
+                raise ExecutionArchivedError.for_entity(
+                    step_run_id, existing_step_run.pipeline_run_id
+                )
+            existing_step_run.update(step_run_update)
             session.add(existing_step_run)
 
             # Update the artifacts.
@@ -13760,21 +13780,43 @@ class SqlZenStore(BaseZenStore):
             requested_status: The requested status of the pipeline run.
             status_reason: The reason for the status of the pipeline run.
 
+        Raises:
+            ExecutionArchivedError: If archived execution state would change.
+
         Returns:
             A tuple containing whether the schema was updated, the updated
             pipeline run schema and the previous status.
-        """
+        """  # noqa: DOC503
         pipeline_run = session.exec(
-            select(PipelineRunSchema).where(
-                PipelineRunSchema.id == pipeline_run_id
-            )
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.id == pipeline_run_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
         ).one()
         previous_status = ExecutionStatus(pipeline_run.status)
+        previous_state = (
+            pipeline_run.status,
+            pipeline_run.status_reason,
+            pipeline_run.in_progress,
+            pipeline_run.end_time,
+        )
         with session.no_autoflush:
             did_update = pipeline_run.update_status(
                 requested_status=requested_status, status_reason=status_reason
             )
-            fences.update_hot(session, pipeline_run)
+            if (
+                pipeline_run.archive_bundle_id is not None
+                and previous_state
+                != (
+                    pipeline_run.status,
+                    pipeline_run.status_reason,
+                    pipeline_run.in_progress,
+                    pipeline_run.end_time,
+                )
+            ):
+                raise ExecutionArchivedError.for_entity(
+                    pipeline_run_id, pipeline_run_id
+                )
         session.add(pipeline_run)
         return did_update, pipeline_run, previous_status
 
@@ -15049,6 +15091,8 @@ class SqlZenStore(BaseZenStore):
         resource_type: Optional[str] = None,
         project_id: Optional[UUID] = None,
         query_options: Optional[Sequence[ExecutableOption]] = None,
+        *,
+        for_update: bool = False,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
@@ -15061,6 +15105,8 @@ class SqlZenStore(BaseZenStore):
                 from the schema class.
             project_id: Optional ID of a project to filter by.
             query_options: Optional list of query options to apply to the query.
+            for_update: Lock the row until the transaction ends and refresh any
+                previously loaded state before mutating it.
 
         Returns:
             The schema object.
@@ -15089,6 +15135,11 @@ class SqlZenStore(BaseZenStore):
 
         if query_options:
             query = query.options(*query_options)
+
+        if for_update:
+            query = query.with_for_update().execution_options(
+                populate_existing=True
+            )
 
         schema = session.exec(query).first()
 

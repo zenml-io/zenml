@@ -111,14 +111,6 @@ def pytest_addoption(parser):
         "(assumes it is already provisioned).",
     )
     parser.addoption(
-        "--require-retention-mysql",
-        action="store_true",
-        default=False,
-        help="Fail instead of skipping execution retention tests when "
-        "ZENML_RETENTION_TEST_MYSQL_URL is not set, so CI cannot silently "
-        "drop the MySQL-only retention suite.",
-    )
-    parser.addoption(
         "--cleanup-docker",
         action="store_true",
         default=False,

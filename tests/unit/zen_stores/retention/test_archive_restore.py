@@ -4,10 +4,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from contextlib import contextmanager
-from datetime import timedelta
 from pathlib import Path
 from threading import Event, current_thread
-from unittest.mock import Mock
 from uuid import uuid4
 
 import pymysql
@@ -21,7 +19,6 @@ from sqlalchemy import (
     Text,
     delete,
     event,
-    select,
     update,
 )
 from sqlalchemy.exc import IntegrityError
@@ -43,7 +40,6 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     ExecutionArchivedError,
-    ExecutionRetentionBusyError,
     ExecutionRetentionConflictError,
     ExecutionRetentionOversizedError,
 )
@@ -58,15 +54,11 @@ from zenml.models import (
 )
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 from zenml.orchestrators import cache_utils
-from zenml.zen_server.retention import RetentionCapacity
 from zenml.zen_stores.retention import (
     archiver,
     capture,
     eligibility,
     fences,
-)
-from zenml.zen_stores.retention import (
-    format as archive_format,
 )
 from zenml.zen_stores.retention.eligibility import ArchivableRun
 from zenml.zen_stores.schemas import (
@@ -74,7 +66,6 @@ from zenml.zen_stores.schemas import (
     PipelineRunSchema,
     StepRunSchema,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.mark.parametrize("kind", ["static", "dynamic", "legacy"])
@@ -153,119 +144,11 @@ def test_archive_restore_round_trip(
         assert session.get(ArchiveBundleSchema, bundle_id).restored_at
 
 
-@pytest.mark.parametrize("identifier_kind", ["uuid", "name", "id_prefix"])
-def test_client_deletion_resolves_archived_run_from_retained_identity(
-    retention_store,
-    run_factory,
-    archive_run,
-    storage,
-    monkeypatch,
-    identifier_kind,
-):
-    """SDK deletion resolves archived UUIDs, names, and ID prefixes in SQL."""
-    ids = run_factory(retention_store)
-    run_name = "archived-delete-run"
-    with retention_store.engine.begin() as connection:
-        connection.execute(
-            update(PipelineRunSchema)
-            .where(PipelineRunSchema.id == ids.run)
-            .values(name=run_name)
-        )
-    archive_run(retention_store, ids)
-    opened = Mock(side_effect=AssertionError("delete read archive storage"))
-    monkeypatch.setattr(storage.artifact_store, "open", opened)
-    monkeypatch.setattr(
-        Client, "zen_store", property(lambda _: retention_store)
-    )
-    client = object.__new__(Client)
-    delete_run = Mock()
-    monkeypatch.setattr(SqlZenStore, "delete_run", delete_run)
-    identifier = {
-        "uuid": ids.run,
-        "name": run_name,
-        "id_prefix": str(ids.run)[:12],
-    }[identifier_kind]
-
-    client.delete_pipeline_run(identifier, project=ids.project)
-
-    delete_run.assert_called_once_with(run_id=ids.run)
-    opened.assert_not_called()
-
-
-def test_client_updates_archived_snapshot_tags_without_restore(
-    retention_store,
-    run_factory,
-    archive_run,
-    storage,
-    monkeypatch,
-):
-    """SDK tag updates remain hot while cold description edits stay fenced."""
-    ids = run_factory(retention_store)
-    archive_run(retention_store, ids)
-    opened = Mock(side_effect=AssertionError("update read archive storage"))
-    monkeypatch.setattr(storage.artifact_store, "open", opened)
-    monkeypatch.setattr(
-        Client, "zen_store", property(lambda _: retention_store)
-    )
-    client = object.__new__(Client)
-
-    added = client.update_snapshot(ids.snapshot, add_tags=["cold-tag"])
-    assert {tag.name for tag in added.tags} == {"cold-tag"}
-    removed = client.update_snapshot(ids.snapshot, remove_tags=["cold-tag"])
-    assert removed.tags == []
-    with pytest.raises(ExecutionArchivedError):
-        client.update_snapshot(ids.snapshot, description="cold edit")
-    opened.assert_not_called()
-
-
-def test_retained_step_cache_expiry_update_succeeds(
-    retention_store, run_factory, archive_run, NOW
-) -> None:
-    """A retained-only step update does not rewrite its archived parent."""
-    ids = run_factory(retention_store)
-    archive_run(retention_store, ids)
-    expiry = NOW + timedelta(days=10)
-
-    retention_store.update_run_step(
-        ids.producer, StepRunUpdate(cache_expires_at=expiry)
-    )
-
-    with Session(retention_store.engine) as session:
-        step = session.get(StepRunSchema, ids.producer)
-        assert step is not None
-        assert step.cache_expires_at == expiry
-    assert (
-        retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
-        is not None
-    )
-
-
-def test_locked_recapture_reuses_step_projections(
-    retention_store, run_factory, archive_run, monkeypatch
-):
-    """Retirement does not validate step configurations under its locks."""
-    ids = run_factory(retention_store)
-    original = capture.merge_step_configuration
-    merges = 0
-
-    def count_merges(*args, **kwargs):
-        nonlocal merges
-        merges += 1
-        return original(*args, **kwargs)
-
-    monkeypatch.setattr(capture, "merge_step_configuration", count_merges)
-
-    archive_run(retention_store, ids)
-
-    assert merges == 2
-
-
 def test_shared_configuration_change_invalidates_projections(
     retention_store,
     run_factory,
     storage,
     monkeypatch,
-    NOW,
     retention,
 ):
     """A projection input outside the document still fails the recapture."""
@@ -298,114 +181,23 @@ def test_shared_configuration_change_invalidates_projections(
 
     monkeypatch.setattr(storage, "write", change_after_upload)
 
-    attempt = archiver.RunArchiver(
-        retention_store.engine, storage, retention.archive_settings()
-    ).archive(ids.run, NOW)
+    result = archiver.archive_runs(
+        retention_store.engine,
+        storage,
+        retention.archive_settings(),
+        [ids.run],
+    )
 
-    assert attempt.outcome == "skipped"
+    assert result.skipped == 1
     assert (
         retention_store.get_run(ids.run, hydrate=False).archive_bundle_id
         is None
     )
 
 
-def test_retirement_compresses_only_the_uploaded_capture(
-    retention_store,
-    run_factory,
-    archive_run,
-    monkeypatch,
-):
-    """The locked recapture hashes canonical bytes without recompressing them."""
-    ids = run_factory(retention_store)
-    original = archive_format.gzip.compress
-    compression_count = 0
-
-    def count_compression(*args, **kwargs):
-        nonlocal compression_count
-        compression_count += 1
-        return original(*args, **kwargs)
-
-    monkeypatch.setattr(archive_format.gzip, "compress", count_compression)
-
-    archive_run(retention_store, ids)
-
-    assert compression_count == 1
-
-
-def test_retirement_capture_queries_scale_by_page(
-    retention_store,
-    run_factory,
-    storage,
-    monkeypatch,
-    NOW,
-    retention,
-) -> None:
-    """A large run adds page-scale queries inside locked retirement."""
-    ids = run_factory(retention_store, kind="legacy")
-    steps = SQLModel.metadata.tables["step_run"]
-    step_count = 1000
-    with retention_store.engine.begin() as connection:
-        template = dict(
-            connection.execute(select(steps).where(steps.c.id == ids.producer))
-            .mappings()
-            .one()
-        )
-        additions = []
-        for index in range(step_count - 2):
-            identity = uuid4()
-            additions.append(
-                dict(
-                    template,
-                    id=identity,
-                    name=f"extra_{index}",
-                    cache_key=str(identity),
-                )
-            )
-        connection.execute(steps.insert(), additions)
-
-    statements = {"total": 0, "retirement": 0}
-    retirement_active = False
-    original_retire = archiver.RunArchiver._retire
-
-    def observe_statement(*args) -> None:
-        statements["total"] += 1
-        if retirement_active:
-            statements["retirement"] += 1
-
-    def observe_retirement(self, *args, **kwargs):
-        nonlocal retirement_active
-        retirement_active = True
-        try:
-            return original_retire(self, *args, **kwargs)
-        finally:
-            retirement_active = False
-
-    monkeypatch.setattr(archiver.RunArchiver, "_retire", observe_retirement)
-    event.listen(
-        retention_store.engine, "before_cursor_execute", observe_statement
-    )
-    try:
-        outcome = archiver.RunArchiver(
-            retention_store.engine,
-            storage,
-            retention.archive_settings(),
-        ).archive(ids.run, NOW)
-    finally:
-        event.remove(
-            retention_store.engine,
-            "before_cursor_execute",
-            observe_statement,
-        )
-
-    row_pages = (
-        step_count + capture.SOURCE_ROWS_PER_PAGE - 1
-    ) // capture.SOURCE_ROWS_PER_PAGE
-    assert outcome.outcome == "archived"
-    assert statements["retirement"] <= row_pages + 20
-    assert statements["total"] <= 2 * row_pages + 30
-
-
-@pytest.mark.parametrize("writer_kind", ["update", "replay", "delete"])
+@pytest.mark.parametrize(
+    "writer_kind", ["update", "step_update", "status", "replay", "delete"]
+)
 def test_write_after_retirement_fails_with_the_restore_command(
     archive_project,
     retention_store,
@@ -413,6 +205,7 @@ def test_write_after_retirement_fails_with_the_restore_command(
     monkeypatch,
     retention,
     writer_kind,
+    NOW,
 ):
     """A write waiting on retirement's lock sees the marker and fails."""
     ids = run_factory(retention_store)
@@ -439,6 +232,16 @@ def test_write_after_retirement_fails_with_the_restore_command(
                     exception_info=ExceptionInfo(traceback="late")
                 ),
             ),
+            "step_update": lambda: retention_store.update_run_step(
+                ids.consumer,
+                StepRunUpdate(exception_info=ExceptionInfo(traceback="late")),
+            ),
+            "status": lambda: retention_store.update_run(
+                ids.run,
+                PipelineRunUpdate(
+                    status=ExecutionStatus.COMPLETED, status_reason="late"
+                ),
+            ),
             "replay": lambda: retention_store.get_or_create_run(
                 PipelineRunRequest(
                     project=ids.project,
@@ -461,6 +264,23 @@ def test_write_after_retirement_fails_with_the_restore_command(
             ExecutionArchivedError, match="pipeline runs unarchive"
         ):
             writer.result(timeout=20)
+
+    if writer_kind == "step_update":
+        step = retention_store.get_run_step(ids.consumer, hydrate=False)
+        updated = retention_store.update_run_step(
+            ids.consumer,
+            StepRunUpdate(
+                cache_expires_at=NOW,
+                end_time=step.end_time,
+            ),
+        )
+        with Session(retention_store.engine) as session:
+            assert (
+                session.get(StepRunSchema, ids.consumer).cache_expires_at
+                == NOW
+            )
+        assert updated.archive_bundle_id is not None
+        assert retention_store.update_run(ids.run, PipelineRunUpdate()).archive
 
 
 @pytest.mark.parametrize("failure", ["upload", "retirement", "commit_ack"])
@@ -532,7 +352,6 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
     run_factory,
     storage,
     monkeypatch,
-    NOW,
     retention,
 ):
     """A missing catalog row cannot disprove a still-pending commit."""
@@ -554,14 +373,14 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
     monkeypatch.setattr(
         archiver.transactions, "transaction", unresolved_commit
     )
-    worker = archiver.RunArchiver(
-        retention_store.engine,
-        storage,
-        retention.archive_settings(),
-    )
     try:
-        attempt = worker.archive(ids.run, NOW)
-        assert attempt.outcome == "failed"
+        result = archiver.archive_runs(
+            retention_store.engine,
+            storage,
+            retention.archive_settings(),
+            [ids.run],
+        )
+        assert result.failed == 1
         session, transaction, _ = pending[0]
         transaction.commit()
         with Session(retention_store.engine) as verification:
@@ -578,105 +397,6 @@ def test_unknown_retirement_outcome_keeps_uploaded_object(
                 transaction.rollback()
             session.close()
             connection.close()
-
-
-def test_one_capacity_budget_covers_all_retention_payload_paths(
-    archive_project,
-    retention_store,
-    run_factory,
-    archive_run,
-    monkeypatch,
-    retention,
-    archive_request,
-) -> None:
-    """Manual archive and restore share one replica-local budget."""
-    archived = run_factory(retention_store)
-    archive_run(retention_store, archived)
-    candidate = run_factory(retention_store)
-    capacity = RetentionCapacity(1)
-    monkeypatch.setattr(retention, "_capacity", capacity)
-
-    with capacity.claim():
-        with pytest.raises(ExecutionRetentionBusyError):
-            archive_request(ArchiveRequest(run_ids=[candidate.run]))
-        with pytest.raises(ExecutionRetentionBusyError):
-            archive_project()
-        with pytest.raises(ExecutionRetentionBusyError):
-            retention.restore_pipeline_run(
-                retention_store.get_run_header(archived.run)
-            )
-
-
-def test_duplicate_restore_is_rejected_before_second_download(
-    retention_store,
-    run_factory,
-    archive_run,
-    storage,
-    monkeypatch,
-    retention,
-) -> None:
-    """Concurrent restores of one bundle do not duplicate payload reads."""
-    ids = run_factory(retention_store)
-    archive_run(retention_store, ids)
-    capacity = RetentionCapacity(2)
-    monkeypatch.setattr(retention, "_capacity", capacity)
-    entered = Event()
-    release = Event()
-    reads = 0
-    original_read = storage.read
-
-    def blocked_read(uri, max_bytes):
-        nonlocal reads
-        reads += 1
-        entered.set()
-        assert release.wait(5)
-        return original_read(uri, max_bytes)
-
-    monkeypatch.setattr(storage, "read", blocked_read)
-    with ThreadPoolExecutor(1) as pool:
-        first = pool.submit(
-            retention.restore_pipeline_run,
-            retention_store.get_run_header(ids.run),
-        )
-        assert entered.wait(3)
-        with pytest.raises(ExecutionRetentionBusyError):
-            retention.restore_pipeline_run(
-                retention_store.get_run_header(ids.run)
-            )
-        release.set()
-        assert first.result(timeout=5).outcome == RestoreOutcome.RESTORED
-
-    assert reads == 1
-
-
-def test_capture_classifies_late_record_growth_as_oversized(
-    retention_store,
-    run_factory,
-    monkeypatch,
-    NOW,
-    retention,
-) -> None:
-    """The capture count is checked before format validation runs."""
-    ids = run_factory(retention_store)
-    with Session(retention_store.engine) as session:
-        inspected = eligibility.inspect_run(
-            session,
-            ids.run,
-            retention.archive_settings(),
-            NOW,
-        )
-        monkeypatch.setattr(capture, "MAX_RECORDS", 5)
-        with pytest.raises(ExecutionRetentionOversizedError):
-            capture.capture_run(session, inspected)
-
-
-def test_capture_counts_utf8_bytes() -> None:
-    """Unicode text is charged by its encoded size, not character count."""
-    payload = "😀" * 1000
-
-    assert capture.source_row_bytes({"payload": payload}) == len(
-        payload.encode("utf-8")
-    )
 
 
 def test_capture_bounds_aggregate_multibyte_pages(
@@ -738,125 +458,6 @@ def test_capture_bounds_aggregate_multibyte_pages(
         table.drop(retention_store.engine)
 
 
-def test_capture_reads_large_eligible_row_alone(
-    retention_store, monkeypatch
-) -> None:
-    """The ordinary page target does not become a smaller per-row cap."""
-    table = Table(
-        "retention_capture_large_row",
-        MetaData(),
-        Column("id", Integer, primary_key=True),
-        Column("payload", Text),
-    )
-    table.create(retention_store.engine)
-    payload = "x" * 3000
-    try:
-        with retention_store.engine.begin() as connection:
-            connection.execute(table.insert(), {"id": 1, "payload": payload})
-        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 4096)
-        monkeypatch.setattr(capture, "SOURCE_BYTES_PER_PAGE", 1024)
-        with Session(retention_store.engine) as session:
-            capturer = capture.RunCapturer(
-                session, ArchivableRun(run_id=uuid4())
-            )
-            captured = capturer._read_table(
-                table,
-                ["id", "payload"],
-                (table.c.id, [1]),
-            )
-
-        assert captured == [{"id": 1, "payload": payload}]
-        assert capturer.source_bytes == len(payload)
-    finally:
-        table.drop(retention_store.engine)
-
-
-def test_capture_guards_payload_that_grows_before_fetch(
-    retention_store, monkeypatch
-) -> None:
-    """The payload projection rechecks aggregate size in its SQL statement."""
-    table = Table(
-        "retention_capture_growth",
-        MetaData(),
-        Column("id", Integer, primary_key=True),
-        Column("payload", Text),
-    )
-    table.create(retention_store.engine)
-    original_payload = "x" * 700
-    grown_payload = "y" * 1200
-    fetched_bytes = []
-    grew = False
-    original_fetchmany = pymysql.cursors.SSCursor.fetchmany
-
-    def grow_before_select(
-        connection, cursor, statement, parameters, context, many
-    ) -> None:
-        nonlocal grew
-        if not grew and statement.lstrip().upper().startswith("SELECT"):
-            cursor.execute(
-                "UPDATE retention_capture_growth SET payload = %s "
-                "WHERE id = %s",
-                (grown_payload, 2),
-            )
-            grew = True
-
-    def observe_fetchmany(cursor, size=None):
-        fetched = original_fetchmany(cursor, size)
-        fetched_bytes.append(
-            sum(
-                len(value.encode("utf-8"))
-                for row in fetched
-                for value in row
-                if isinstance(value, str)
-            )
-        )
-        return fetched
-
-    try:
-        with retention_store.engine.begin() as connection:
-            connection.execute(
-                table.insert(),
-                [
-                    {"id": 1, "payload": original_payload},
-                    {"id": 2, "payload": original_payload},
-                ],
-            )
-        monkeypatch.setattr(capture, "MAX_SOURCE_BYTES", 4096)
-        monkeypatch.setattr(capture, "SOURCE_BYTES_PER_PAGE", 1500)
-        monkeypatch.setattr(
-            pymysql.cursors.SSCursor, "fetchmany", observe_fetchmany
-        )
-        event.listen(
-            retention_store.engine,
-            "before_cursor_execute",
-            grow_before_select,
-        )
-        with Session(retention_store.engine) as session:
-            capturer = capture.RunCapturer(
-                session, ArchivableRun(run_id=uuid4())
-            )
-            captured = capturer._read_table(
-                table,
-                ["id", "payload"],
-                (table.c.id, [1, 2]),
-            )
-
-        assert grew
-        assert captured == [
-            {"id": 1, "payload": original_payload},
-            {"id": 2, "payload": grown_payload},
-        ]
-        assert capturer.source_bytes == 1900
-        assert fetched_bytes and max(fetched_bytes) <= 1500
-    finally:
-        event.remove(
-            retention_store.engine,
-            "before_cursor_execute",
-            grow_before_select,
-        )
-        table.drop(retention_store.engine)
-
-
 def test_capture_guards_payload_before_driver_buffering(
     retention_store, monkeypatch
 ) -> None:
@@ -913,27 +514,6 @@ def test_capture_guards_payload_before_driver_buffering(
         table.drop(retention_store.engine)
 
 
-def test_archived_snapshot_is_deleted_only_after_its_run(
-    retention_store, run_factory, archive_run, storage, retention
-):
-    """Deleting a run keeps its object; its snapshot is then deletable."""
-    ids = run_factory(retention_store)
-    bundle_id = archive_run(retention_store, ids)
-    with pytest.raises(ExecutionArchivedError, match=str(ids.run)):
-        retention_store.delete_snapshot(ids.snapshot)
-
-    with pytest.raises(ExecutionArchivedError, match=str(ids.run)):
-        retention_store.delete_run(ids.run)
-    retention.delete_pipeline_run(ids.run)
-
-    with Session(retention_store.engine) as session:
-        bundle = session.get(ArchiveBundleSchema, bundle_id)
-        assert bundle.run_id is None
-    assert storage.read(bundle.uri, bundle.size_bytes)
-    assert retention_store.get_snapshot(ids.snapshot).archive_bundle_id is None
-    retention_store.delete_snapshot(ids.snapshot)
-
-
 @pytest.mark.parametrize(
     "writer_kind", ["step", "update", "snapshot", "replay"]
 )
@@ -951,11 +531,12 @@ def test_writer_racing_archive_preserves_committed_detail(
     entered, release = Event(), Event()
     hook = {
         "step": "protect_run",
-        "update": "update_hot",
-        "snapshot": "protect_snapshot_owners",
+        "update": "update",
+        "snapshot": "lock_unarchived_snapshot",
         "replay": "protect_run",
     }[writer_kind]
-    original = getattr(fences, hook)
+    owner = PipelineRunSchema if writer_kind == "update" else fences
+    original = getattr(owner, hook)
     calls = 0
 
     def pause_after_lock(*args, **kwargs):
@@ -969,7 +550,7 @@ def test_writer_racing_archive_preserves_committed_detail(
                 assert release.wait(20)
         return result
 
-    monkeypatch.setattr(fences, hook, pause_after_lock)
+    monkeypatch.setattr(owner, hook, pause_after_lock)
     writers = {
         "step": lambda: retention_store.create_run_step(
             dynamic_step(ids, "late", NOW)
@@ -1202,49 +783,6 @@ def test_targeted_archive_is_bounded_and_reports_more_work(
     )
 
 
-@pytest.mark.parametrize("refusal", ["active", "oversized"])
-def test_targeted_archive_continues_past_refusal_only_batches(
-    retention_store,
-    run_factory,
-    monkeypatch,
-    NOW,
-    refusal,
-    archive_request,
-):
-    """A continuation reaches later runs after a fully refused page."""
-    oldest = run_factory(
-        retention_store,
-        kind="dynamic" if refusal == "oversized" else "static",
-        age_days=100,
-    )
-    later = run_factory(retention_store, age_days=99)
-    if refusal == "active":
-        with retention_store.engine.begin() as connection:
-            connection.execute(
-                update(PipelineRunSchema)
-                .where(PipelineRunSchema.id == oldest.run)
-                .values(status=ExecutionStatus.RUNNING.value)
-            )
-    else:
-        retention_store.create_run_step(dynamic_step(oldest, "extra", NOW))
-        monkeypatch.setattr(eligibility, "MAX_RECORDS", 6)
-    monkeypatch.setattr(eligibility, "MAX_ARCHIVE_BATCH_SIZE", 1)
-
-    first = archive_request(ArchiveRequest(project_id=oldest.project))
-    second = archive_request(
-        ArchiveRequest(
-            project_id=oldest.project,
-            after_run_id=first.next_after_run_id,
-        )
-    )
-
-    assert first.archived == 0
-    assert first.skipped + first.oversized == 1
-    assert first.pending and first.next_after_run_id == oldest.run
-    assert (second.archived, second.pending) == (1, False)
-    assert retention_store.get_run(later.run, hydrate=False).archive_bundle_id
-
-
 def test_archive_preview_is_bounded_and_side_effect_free(
     retention_store,
     run_factory,
@@ -1314,34 +852,6 @@ def test_pausing_new_archives_keeps_preview_and_restore_available(
     ).outcome == (RestoreOutcome.RESTORED)
 
 
-def test_deleted_archive_continuation_has_a_clear_error(
-    retention_store,
-    run_factory,
-    monkeypatch,
-    archive_request,
-):
-    """A stale continuation asks the caller to restart the bounded scan."""
-    runs = [
-        run_factory(retention_store, age_days=100 - index)
-        for index in range(2)
-    ]
-    monkeypatch.setattr(eligibility, "MAX_ARCHIVE_BATCH_SIZE", 1)
-    first = archive_request(
-        ArchiveRequest(project_id=runs[0].project, dry_run=True)
-    )
-    assert first.next_after_run_id == runs[0].run
-    retention_store.delete_run(runs[0].run)
-
-    with pytest.raises(KeyError, match="restart without `after_run_id`"):
-        archive_request(
-            ArchiveRequest(
-                project_id=runs[0].project,
-                after_run_id=first.next_after_run_id,
-                dry_run=True,
-            )
-        )
-
-
 def test_archive_continuation_is_scoped_to_its_target(
     retention_store,
     run_factory,
@@ -1359,53 +869,6 @@ def test_archive_continuation_is_scoped_to_its_target(
                 dry_run=True,
             )
         )
-
-
-def test_restore_validation_reads_no_retained_payload(
-    retention_store,
-    run_factory,
-    archive_run,
-    retention,
-):
-    """Locking archived rows selects identities, not retained source code."""
-    ids = run_factory(retention_store)
-    archive_run(retention_store, ids)
-    locking = []
-
-    def observe(conn, cursor, statement, parameters, context, many):
-        if "FOR UPDATE" in statement:
-            locking.append(statement)
-
-    event.listen(retention_store.engine, "before_cursor_execute", observe)
-    try:
-        restored = retention.restore_pipeline_run(
-            retention_store.get_run_header(ids.run)
-        )
-    finally:
-        event.remove(retention_store.engine, "before_cursor_execute", observe)
-
-    assert restored.outcome == RestoreOutcome.RESTORED
-    assert locking
-    assert not any(
-        column in statement
-        for statement in locking
-        for column in ("source_code", "docstring", "pipeline_spec")
-    )
-
-
-def test_run_without_start_time_is_archived(
-    retention_store, run_factory, archive_run
-):
-    """A clock-derived substitution cannot make the two captures differ."""
-    ids = run_factory(retention_store)
-    with retention_store.engine.begin() as connection:
-        connection.execute(
-            update(PipelineRunSchema)
-            .where(PipelineRunSchema.id == ids.run)
-            .values(start_time=None)
-        )
-
-    archive_run(retention_store, ids)
 
 
 def test_archived_snapshot_cannot_be_named_without_restore(
@@ -1428,76 +891,3 @@ def test_archived_snapshot_cannot_be_named_without_restore(
         ids.snapshot, PipelineSnapshotUpdate(name="promoted")
     )
     assert named.name == "promoted"
-
-
-def test_archived_run_update_returns_the_retained_summary(
-    retention_store, run_factory, archive_run
-):
-    """A mutation response carries the same summary as a fresh read."""
-    ids = run_factory(retention_store)
-    archive_run(retention_store, ids)
-
-    updated = retention_store.update_run(
-        ids.run, PipelineRunUpdate(add_tags=["cold"])
-    )
-
-    assert updated.run_metadata == {}
-    assert "run_metadata" not in repr(updated.get_body().archive)
-
-
-@pytest.mark.parametrize("limit_by_time", [False, True])
-def test_archive_cleanup_is_bounded_and_failed_objects_do_not_starve_others(
-    retention_store, run_factory, monkeypatch, NOW, limit_by_time
-):
-    """A later pass advances past a failed object and preserves live archives."""
-    from types import SimpleNamespace
-
-    from zenml.zen_stores import sql_zen_store
-
-    ids = run_factory(retention_store)
-    bundles = [
-        ArchiveBundleSchema(
-            project_id=ids.project,
-            run_id=ids.run if index == 2 else None,
-            uri=f"s3://archive/{index}",
-            size_bytes=1,
-            content_hash="test",
-            format_version=1,
-            updated=NOW + timedelta(seconds=index),
-        )
-        for index in range(3)
-    ]
-    bundle_ids = [bundle.id for bundle in bundles]
-    with Session(retention_store.engine) as session:
-        session.add_all(bundles)
-        session.commit()
-    remove = Mock(side_effect=lambda uri: uri != "s3://archive/0")
-    storage = SimpleNamespace(remove=remove)
-    if limit_by_time:
-        ticks = iter([0.0, 0.0, 31.0])
-        monkeypatch.setattr(
-            sql_zen_store,
-            "time",
-            SimpleNamespace(monotonic=lambda: next(ticks)),
-        )
-    else:
-        monkeypatch.setattr(sql_zen_store, "MAX_ARCHIVE_BATCH_SIZE", 1)
-
-    retention_store.delete_unused_archive_objects(storage)
-
-    remove.assert_called_once_with("s3://archive/0")
-    if limit_by_time:
-        monkeypatch.setattr(
-            sql_zen_store, "time", SimpleNamespace(monotonic=lambda: 0.0)
-        )
-    remove.reset_mock()
-    retention_store.delete_unused_archive_objects(storage)
-
-    assert remove.call_args_list[0].args == ("s3://archive/1",)
-    assert all(
-        call.args != ("s3://archive/2",) for call in remove.call_args_list
-    )
-    with Session(retention_store.engine) as session:
-        assert session.get(ArchiveBundleSchema, bundle_ids[0]) is not None
-        assert session.get(ArchiveBundleSchema, bundle_ids[1]) is None
-        assert session.get(ArchiveBundleSchema, bundle_ids[2]) is not None

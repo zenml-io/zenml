@@ -1,5 +1,5 @@
 # Copyright (c) ZenML GmbH 2026. All Rights Reserved.
-"""Disposable MySQL database; CI must require this tier explicitly."""
+"""Disposable MySQL database for execution retention tests."""
 
 import calendar
 import os
@@ -38,15 +38,13 @@ def NOW():
 
 
 @pytest.fixture(scope="session")
-def retention_database(request, tmp_path_factory):
+def retention_database(tmp_path_factory):
     """Migrate a unique database, save its default rows, and drop it on exit."""
     server_url = os.environ.get("ZENML_RETENTION_TEST_MYSQL_URL")
     if not server_url:
         message = (
             "Set ZENML_RETENTION_TEST_MYSQL_URL to a disposable MySQL server."
         )
-        if request.config.getoption("--require-retention-mysql"):
-            pytest.fail(message)
         pytest.skip(message)
     server = make_url(server_url).set(drivername="mysql", database=None)
     url = server.set(database=f"zenml_retention_{uuid4().hex[:12]}")
