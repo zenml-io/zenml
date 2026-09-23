@@ -54,11 +54,20 @@ class AzureIntegration(Integration):
         "kubernetes>=18.20.0",
         "requests>=2.27.11,<3.0.0",
         "azure-ai-ml>=1.23.1,<2.0.0",
+        # Keep these aligned with the core pins in pyproject.toml. Installing
+        # Azure ML into an existing image can otherwise upgrade OpenTelemetry
+        # through its Azure Monitor dependency.
+        "opentelemetry-instrumentation-logging==0.64b0",
+        "opentelemetry-sdk==1.43.0",
         # Marshmallow>4.0 leads to the following error with the AzureML SDK:
         # ImportError: cannot import name 'FieldInstanceResolutionError' from 'marshmallow.utils'
         "marshmallow<4.0.0",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
+        "kubernetes",
+        "opentelemetry-instrumentation-logging",
+        "opentelemetry-sdk",
+    ]
 
     @classmethod
     def activate(cls) -> None:
