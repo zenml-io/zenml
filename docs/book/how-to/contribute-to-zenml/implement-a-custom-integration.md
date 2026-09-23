@@ -3,6 +3,11 @@ description: Creating an external integration and contributing to ZenML
 icon: cubes
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Custom Integration
 
 ![ZenML integrates with a number of tools from the MLOps landscape](../../.gitbook/assets/sam-side-by-side-full-text.png)

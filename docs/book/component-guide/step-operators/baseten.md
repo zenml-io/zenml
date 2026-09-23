@@ -2,6 +2,11 @@
 description: Executing individual steps as Baseten training jobs, including multi-node distributed training.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Baseten Step Operator
 
 [Baseten](https://www.baseten.co/) provides on-demand H100/H200 (and more) GPU capacity through

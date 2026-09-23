@@ -3,6 +3,11 @@ description: >-
   Learn how to configure ZenML pipelines using YAML configuration files.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Configuration with YAML
 
 ZenML provides configuration capabilities through YAML files that allow you to customize pipeline and step behavior without changing your code. This is particularly useful for separating configuration from code, experimenting with different parameters, and ensuring reproducibility.

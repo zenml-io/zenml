@@ -60,6 +60,11 @@ model, train_acc = svc_trainer(X_train=X_train, y_train=y_train)
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 ## Next steps – from notebook to production
 
 Once your logic stabilizes it usually makes sense to move code out of the notebook and into regular Python modules so that it can be version‑controlled and tested.  At that point just assemble the same steps inside a `@pipeline` function and trigger it from the CLI or a CI workflow.

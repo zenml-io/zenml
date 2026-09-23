@@ -3,6 +3,11 @@ description: 5-minute Quick Wins
 icon: bolt
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Quick Wins
 
 Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML

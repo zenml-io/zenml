@@ -2,6 +2,11 @@
 description: Deploying ZenML in a Docker container.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Deploy with Docker
 
 The ZenML server container image is available at [`zenmldocker/zenml-server`](https://hub.docker.com/r/zenmldocker/zenml/) and can be used to deploy ZenML with a container management or orchestration tool like Docker and docker-compose, or a serverless platform like [Cloud Run](https://cloud.google.com/run), [Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview), and more! This guide walks you through the various configuration options that the ZenML server container expects as well as a few deployment use cases.

@@ -2,6 +2,11 @@
 description: Evaluate the performance of your reranking model.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evaluating reranking performance
 
 We've already set up an evaluation pipeline, so adding reranking evaluation is relatively straightforward. In this section, we'll explore how to evaluate the performance of your reranking model using ZenML.

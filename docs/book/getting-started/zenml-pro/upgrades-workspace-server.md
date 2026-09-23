@@ -3,6 +3,11 @@ description: How to upgrade ZenML Workspace Servers.
 icon: database
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Upgrading the Workspace Server
 
 This page covers upgrade procedures for ZenML Workspace Servers across different deployment scenarios.

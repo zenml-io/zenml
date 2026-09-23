@@ -3,6 +3,11 @@ description: Isolated code execution for AI agents and tool-use loops.
 icon: box-archive
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Sandboxes
 
 A **Sandbox** is a stack component that provides an isolated environment (container, microVM, or pod) in which a ZenML step can execute code. It's primarily designed for AI-agent workloads: an agent running inside a step uses the active stack's Sandbox to execute generated code as a tool, possibly across many turns of an agent loop.
