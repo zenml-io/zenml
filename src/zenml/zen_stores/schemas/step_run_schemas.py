@@ -406,7 +406,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Args:
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
-                if the caller already loaded it.
+                if the caller already parsed it.
 
         Raises:
             ValueError: If the step run has no step configuration.
@@ -485,7 +485,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_resources: Whether the resources will be filled.
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
-                if the caller already loaded it.
+                if the caller already parsed it.
             **kwargs: Keyword arguments to allow schema specific logic
 
 

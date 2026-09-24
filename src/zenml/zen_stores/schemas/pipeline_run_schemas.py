@@ -23,6 +23,7 @@ from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import (
     Session,
+    defaultload,
     defer,
     joinedload,
     object_session,
@@ -382,13 +383,24 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
-    def detail_columns(cls) -> List[Any]:
-        """Large columns that only hydrated run responses read.
+    def defer_detail_columns(cls) -> List[Any]:
+        """Defer the large columns that only hydrated run responses read.
+
+        The configuration and client environment columns are only filled for
+        runs created before snapshots existed.
 
         Returns:
-            The column attributes.
+            The query options.
         """
-        return [cls.orchestrator_environment, cls.exception_info]
+        return [
+            defer(jl_arg(column))
+            for column in [
+                cls.orchestrator_environment,
+                cls.exception_info,
+                cls.pipeline_configuration,
+                cls.client_environment,
+            ]
+        ]
 
     @classmethod
     def get_query_options(
@@ -437,41 +449,37 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     ).selectinload(jl_arg(StepRunSchema.run_metadata))
                 )
         else:
-            options.extend(
-                defer(jl_arg(column)) for column in cls.detail_columns()
-            )
+            options.extend(cls.defer_detail_columns())
 
         if include_resources:
-            # The parent run and the source snapshot are converted without
-            # metadata, so none of their large columns are ever read.
-            snapshot_payload_columns = (
-                PipelineSnapshotSchema.configuration_columns()
-                + PipelineSnapshotSchema.detail_columns()
-            )
+            # Related runs and the source snapshot are converted without
+            # metadata, so none of their large columns are ever read. Hydrated
+            # run responses read the configuration of their own snapshot, but
+            # never its detail columns.
             options.extend(
                 [
                     selectinload(jl_arg(PipelineRunSchema.outputs)),
                     single_loader(
                         jl_arg(PipelineRunSchema.parent_run)
-                    ).options(
-                        *(
-                            defer(jl_arg(column))
-                            for column in cls.detail_columns()
-                        )
-                    ),
+                    ).options(*cls.defer_detail_columns()),
+                    defaultload(
+                        jl_arg(PipelineRunSchema.original_run)
+                    ).options(*cls.defer_detail_columns()),
                     single_loader(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    single_loader(jl_arg(PipelineRunSchema.snapshot))
-                    .joinedload(jl_arg(PipelineSnapshotSchema.source_snapshot))
-                    .options(
+                    single_loader(jl_arg(PipelineRunSchema.snapshot)).options(
                         *(
-                            defer(jl_arg(column))
-                            for column in snapshot_payload_columns
+                            PipelineSnapshotSchema.defer_detail_columns()
+                            if include_metadata
+                            else PipelineSnapshotSchema.defer_large_columns()
                         )
                     ),
+                    single_loader(jl_arg(PipelineRunSchema.snapshot))
+                    .joinedload(jl_arg(PipelineSnapshotSchema.source_snapshot))
+                    .options(*PipelineSnapshotSchema.defer_large_columns()),
                     single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
@@ -496,21 +504,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
                     single_loader(jl_arg(PipelineRunSchema.trigger)),
                 ]
-            )
-
-            # Hydrated run responses read the configuration of their own
-            # snapshot, but never its detail columns.
-            options.append(
-                single_loader(jl_arg(PipelineRunSchema.snapshot)).options(
-                    *(
-                        defer(jl_arg(column))
-                        for column in (
-                            PipelineSnapshotSchema.detail_columns()
-                            if include_metadata
-                            else snapshot_payload_columns
-                        )
-                    )
-                )
             )
 
         return options

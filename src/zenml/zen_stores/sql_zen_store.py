@@ -13533,12 +13533,12 @@ class SqlZenStore(BaseZenStore):
         if new_status != previous_status:
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
-                # Only convert to model if there are handlers to notify.
-                # Handlers run inline in this status update, so the event
-                # only carries the body of the run.
+                # Only convert to model if there are handlers to notify
                 dispatcher.dispatch_event(
                     PipelineRunStatusUpdate(
-                        run=pipeline_run.to_model(),
+                        run=pipeline_run.to_model(
+                            include_metadata=False, include_resources=False
+                        ),
                         previous_status=previous_status,
                     )
                 )

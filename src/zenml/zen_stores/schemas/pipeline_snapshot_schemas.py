@@ -398,22 +398,32 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         raise RuntimeError("Missing DB session to fetch step configurations.")
 
     @classmethod
-    def configuration_columns(cls) -> List[Any]:
-        """Large columns that hydrated snapshot and run responses read.
+    def defer_detail_columns(cls) -> List[Any]:
+        """Defer the large columns that only hydrated snapshot responses read.
 
         Returns:
-            The column attributes.
+            The query options.
         """
-        return [cls.pipeline_configuration, cls.client_environment]
+        return [
+            defer(jl_arg(column))
+            for column in [cls.pipeline_spec, cls.source_code, cls.description]
+        ]
 
     @classmethod
-    def detail_columns(cls) -> List[Any]:
-        """Large columns that only hydrated snapshot responses read.
+    def defer_large_columns(cls) -> List[Any]:
+        """Defer every large column, for snapshots converted without metadata.
+
+        Hydrated run responses also read the configuration and the client
+        environment of their snapshot, so only these conversions can skip
+        them.
 
         Returns:
-            The column attributes.
+            The query options.
         """
-        return [cls.pipeline_spec, cls.source_code, cls.description]
+        return cls.defer_detail_columns() + [
+            defer(jl_arg(column))
+            for column in [cls.pipeline_configuration, cls.client_environment]
+        ]
 
     @classmethod
     def get_query_options(
@@ -437,11 +447,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         options: List[ExecutableOption] = []
 
         if not include_metadata:
-            options.extend(
-                defer(jl_arg(column))
-                for column in cls.configuration_columns()
-                + cls.detail_columns()
-            )
+            options.extend(cls.defer_large_columns())
 
         if include_resources:
             options.extend(
