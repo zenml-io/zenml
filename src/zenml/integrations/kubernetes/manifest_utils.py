@@ -109,6 +109,8 @@ def build_pod_manifest(
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     termination_grace_period_seconds: Optional[int] = 30,
+    run_as_user: Optional[int] = None,
+    run_as_group: Optional[int] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -129,6 +131,8 @@ def build_pod_manifest(
         owner_references: List of owner references for the pod.
         termination_grace_period_seconds: The amount of seconds to wait for a
             pod to shutdown gracefully.
+        run_as_user: User ID to apply to the pod and all containers.
+        run_as_group: Group ID to apply to the pod and all containers.
 
     Returns:
         Pod manifest.
@@ -199,6 +203,83 @@ def build_pod_manifest(
 
     if mount_local_stores:
         add_local_stores_mount(pod_spec)
+
+    if run_as_user is not None and (
+        not isinstance(run_as_user, int)
+        or isinstance(run_as_user, bool)
+        or run_as_user <= 0
+    ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux UID: expected a positive integer."
+        )
+        run_as_user = None
+
+    if run_as_group is not None and (
+        not isinstance(run_as_group, int)
+        or isinstance(run_as_group, bool)
+        or run_as_group <= 0
+    ):
+        logger.warning(
+            "Ignoring invalid OIDC Linux GID: expected a positive integer."
+        )
+        run_as_group = None
+
+    if run_as_user is not None or run_as_group is not None:
+        pod_security_context: Dict[str, int] = {}
+        if run_as_user is not None:
+            pod_security_context["runAsUser"] = run_as_user
+        if run_as_group is not None:
+            pod_security_context["runAsGroup"] = run_as_group
+
+        if isinstance(pod_spec.security_context, dict):
+            pod_spec.security_context.update(pod_security_context)
+        elif isinstance(
+            pod_spec.security_context, k8s_client.V1PodSecurityContext
+        ):
+            if run_as_user is not None:
+                pod_spec.security_context.run_as_user = run_as_user
+            if run_as_group is not None:
+                pod_spec.security_context.run_as_group = run_as_group
+        else:
+            pod_spec.security_context = k8s_client.V1PodSecurityContext(
+                run_as_user=run_as_user,
+                run_as_group=run_as_group,
+            )
+
+        containers: List[Any] = list(pod_spec.containers)
+        containers.extend(pod_spec.init_containers or [])
+        containers.extend(pod_spec.ephemeral_containers or [])
+        for container in containers:
+            if isinstance(container, dict):
+                container_security_context = container.setdefault(
+                    "securityContext", {}
+                )
+            else:
+                container_security_context = container.security_context
+
+            container_security_context_update: Dict[str, int] = {}
+            if run_as_user is not None:
+                container_security_context_update["runAsUser"] = run_as_user
+            if run_as_group is not None:
+                container_security_context_update["runAsGroup"] = run_as_group
+
+            if isinstance(container_security_context, dict):
+                container_security_context.update(
+                    container_security_context_update
+                )
+            else:
+                container_security_context = (
+                    container_security_context
+                    or k8s_client.V1SecurityContext()
+                )
+                if run_as_user is not None:
+                    container_security_context.run_as_user = run_as_user
+                if run_as_group is not None:
+                    container_security_context.run_as_group = run_as_group
+                if isinstance(container, dict):
+                    container["securityContext"] = container_security_context
+                else:
+                    container.security_context = container_security_context
 
     return pod_manifest
 
