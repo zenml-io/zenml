@@ -14,6 +14,7 @@
 """Endpoint definitions for artifact versions."""
 
 import os
+from functools import partial
 from typing import List, Sequence, Union
 from uuid import UUID
 
@@ -22,27 +23,31 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
-from zenml.artifacts.utils import (
-    load_artifact_store,
-    load_artifact_visualization,
-)
+from zenml.artifacts.utils import load_artifact_visualization
 from zenml.constants import (
     API,
     ARTIFACT_VERSIONS,
     BATCH,
     DATA,
     DOWNLOAD_TOKEN,
+    PRUNE,
     VERSION_1,
     VISUALIZE,
 )
 from zenml.enums import DownloadType
 from zenml.models import (
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     LoadedVisualization,
     Page,
+)
+from zenml.zen_server.artifact_pruning import (
+    ServerArtifactPruneHandler,
+    load_accessible_artifact_store,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -59,7 +64,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
     verify_permissions_and_get_entity,
-    verify_permissions_and_prune_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
@@ -68,12 +72,14 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     delete_model_resource,
     get_allowed_resource_ids,
+    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
     set_filter_project_scope,
+    submit_maintenance_task,
     zen_store,
 )
 
@@ -268,9 +274,9 @@ def delete_artifact_version(
         )
         if not unused_versions.items:
             raise ValueError(
-                "The metadata of artifact versions that are used in runs "
-                "cannot be deleted. Please delete all runs that use this "
-                "artifact version first."
+                "The metadata of artifact versions that are still referenced "
+                "by runs or model versions cannot be deleted. Please remove "
+                "all references to this artifact version first."
             )
 
     if delete_from_artifact_store:
@@ -279,28 +285,10 @@ def delete_artifact_version(
                 "Artifact version has no artifact store, cannot delete data."
             )
 
-        artifact_store_model = zen_store().get_stack_component(
-            artifact_version.artifact_store_id, hydrate=True
+        artifact_store = load_accessible_artifact_store(
+            artifact_version.artifact_store_id
         )
-        verify_permission_for_model(
-            artifact_store_model,
-            action=Action.READ,
-        )
-        if artifact_store_model.connector:
-            verify_permission_for_model(
-                artifact_store_model.connector,
-                action=Action.READ,
-            )
-            verify_permission_for_model(
-                artifact_store_model.connector,
-                action=Action.CLIENT,
-            )
-
         try:
-            artifact_store = load_artifact_store(
-                artifact_store_id=artifact_version.artifact_store_id,
-                zen_store=zen_store(),
-            )
             if artifact_store.exists(artifact_version.uri):
                 artifact_store.rmtree(artifact_version.uri)
         except Exception as e:
@@ -315,30 +303,88 @@ def delete_artifact_version(
         delete_model_resource(artifact_version)
 
 
-@artifact_version_router.delete(
-    "",
-    responses={401: error_response, 404: error_response, 422: error_response},
+@artifact_version_router.post(
+    PRUNE,
+    responses={401: error_response, 422: error_response, 429: error_response},
 )
 @async_fastapi_endpoint_wrapper
 def prune_artifact_versions(
+    prune_request: ArtifactVersionPruneRequest,
+    _: AuthContext = Security(authorize),
+) -> ArtifactVersionPruneResponse:
+    """Counts unused artifact versions, or prunes them in the background.
+
+    Args:
+        prune_request: Which artifact versions to prune and whether to
+            delete them or only count them.
+
+    Returns:
+        The number of unused artifact versions for a dry run, or the ID of
+        the task pruning them.
+    """
+    verify_permission(
+        resource_type=ResourceType.ARTIFACT_VERSION,
+        action=Action.PRUNE,
+        project_id=prune_request.project,
+    )
+    if not prune_request.apply:
+        return _prune_artifact_versions(prune_request)
+    return ArtifactVersionPruneResponse(
+        task_id=submit_maintenance_task(
+            partial(_prune_artifact_versions, prune_request)
+        )
+    )
+
+
+@artifact_version_router.delete(
+    "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
+@async_fastapi_endpoint_wrapper
+def prune_artifact_versions_legacy(
     project_name_or_id: Union[str, UUID],
     only_versions: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Prunes unused artifact versions and their artifacts.
+    """Prunes unused artifact versions synchronously.
+
+    Kept for clients older than the `prune` route, which delete artifact
+    data themselves before calling it.
 
     Args:
         project_name_or_id: The project name or ID to prune artifact
             versions for.
-        only_versions: Only delete artifact versions, keeping artifacts
+        only_versions: Only delete artifact versions, keeping artifacts.
     """
     project_id = zen_store().get_project(project_name_or_id).id
-
-    verify_permissions_and_prune_entities(
+    verify_permission(
         resource_type=ResourceType.ARTIFACT_VERSION,
-        prune_method=zen_store().prune_artifact_versions,
-        only_versions=only_versions,
+        action=Action.PRUNE,
         project_id=project_id,
+    )
+    _prune_artifact_versions(
+        ArtifactVersionPruneRequest(
+            project=project_id, only_versions=only_versions, apply=True
+        )
+    )
+
+
+def _prune_artifact_versions(
+    prune_request: ArtifactVersionPruneRequest,
+) -> ArtifactVersionPruneResponse:
+    """Count or prune unused artifact versions on behalf of the caller.
+
+    Args:
+        prune_request: Which artifact versions to prune and whether to
+            delete them or only count them.
+
+    Returns:
+        The number of unused or pruned artifact versions.
+    """
+    return zen_store().prune_artifact_versions(
+        prune_request=prune_request,
+        handler=ServerArtifactPruneHandler(prune_request),
     )
 
 
