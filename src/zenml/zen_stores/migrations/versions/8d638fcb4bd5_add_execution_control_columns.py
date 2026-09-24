@@ -1,7 +1,7 @@
 """Add execution control columns [8d638fcb4bd5].
 
 Revision ID: 8d638fcb4bd5
-Revises: 0.97.0
+Revises: c7d4e8a2b5f1
 Create Date: 2026-09-24 00:20:46.000000
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "8d638fcb4bd5"
-down_revision = "0.97.0"
+down_revision = "c7d4e8a2b5f1"
 branch_labels = None
 depends_on = None
 
