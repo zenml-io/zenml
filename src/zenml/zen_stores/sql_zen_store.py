@@ -657,6 +657,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             tokens.
         aws_rds_iam_role_arn: Optional web-identity role used only for RDS IAM
             authentication.
+        aws_rds_iam_max_wait_seconds: Maximum total time a connection attempt
+            spends waiting for newly created IAM roles and policies to
+            propagate.
         secrets_store: The configuration of the secrets store to use.
             This defaults to a SQL secrets store that extends the SQL ZenML
             store.
@@ -699,6 +702,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     auth_mode: SQLDatabaseAuthMode = SQLDatabaseAuthMode.PASSWORD
     aws_region: Optional[str] = None
     aws_rds_iam_role_arn: Optional[str] = None
+    aws_rds_iam_max_wait_seconds: float = Field(default=30.0, ge=0.0)
     ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
@@ -1043,6 +1047,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             engine,
             self.aws_region,
             role_arn=self.aws_rds_iam_role_arn,
+            max_wait_seconds=self.aws_rds_iam_max_wait_seconds,
         )
 
     @staticmethod
