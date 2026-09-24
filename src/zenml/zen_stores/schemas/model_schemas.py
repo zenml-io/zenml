@@ -401,7 +401,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.MODEL_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ModelVersionSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
-            overlaps="run_metadata",
+            viewonly=True,
         ),
     )
     pipeline_runs: List["PipelineRunSchema"] = Relationship(

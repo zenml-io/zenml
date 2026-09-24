@@ -28,6 +28,7 @@ from uuid import UUID, uuid4
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError, OperationalError, ProgrammingError
+from sqlmodel import Session, select
 
 from tests.integration.functional.utils import sample_name
 from tests.integration.functional.zen_stores.utils import (
@@ -148,6 +149,7 @@ from zenml.models import (
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.zen_stores.rest_zen_store import RestZenStore
+from zenml.zen_stores.schemas import RunMetadataSchema
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 _ORIGINAL_INITIALIZE_DATABASE = SqlZenStore._initialize_database
@@ -6185,12 +6187,13 @@ class TestRunMetadata:
         else:
             raise ValueError("Unknown/untested MetadataResourceType.")
 
+        key = sample_name("foo")
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
                 project=client.active_project.id,
                 resources=[RunMetadataResource(id=resource.id, type=type_)],
-                values={"foo": "bar"},
-                types={"foo": MetadataTypeEnum.STRING},
+                values={key: "bar"},
+                types={key: MetadataTypeEnum.STRING},
                 stack_component_id=sc.id
                 if type_ == MetadataResourceTypes.PIPELINE_RUN
                 or type_ == MetadataResourceTypes.STEP_RUN
@@ -6199,15 +6202,15 @@ class TestRunMetadata:
         )
         if type_ == MetadataResourceTypes.PIPELINE_RUN:
             rm = client.zen_store.get_run(resource.id, True).run_metadata
-            assert rm["foo"] == "bar"
+            assert rm[key] == "bar"
 
         elif type_ == MetadataResourceTypes.STEP_RUN:
             rm = client.zen_store.get_run_step(resource.id, True).run_metadata
-            assert rm["foo"] == "bar"
+            assert rm[key] == "bar"
 
         elif type_ == MetadataResourceTypes.SCHEDULE:
             rm = client.zen_store.get_schedule(resource.id, True).run_metadata
-            assert rm["foo"] == "bar"
+            assert rm[key] == "bar"
 
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
@@ -6226,6 +6229,16 @@ class TestRunMetadata:
 
         client.zen_store.delete_pipeline(pipeline_model.id)
         client.zen_store.delete_stack_component(sc.id)
+
+        store = client.zen_store
+        if isinstance(store, SqlZenStore):
+            # The value was only linked to the deleted resource.
+            with Session(store.engine) as session:
+                assert not session.exec(
+                    select(RunMetadataSchema).where(
+                        RunMetadataSchema.key == key
+                    )
+                ).all()
 
 
 @pytest.mark.parametrize(
