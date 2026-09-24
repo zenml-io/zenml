@@ -425,6 +425,34 @@ server:
     # server certificate. Defaults to false.
     sslVerifyServerCert: false
 
+    # Execution payload storage: moves large, write-once execution data
+    # (pipeline configurations, specs, source code, environments) out of the
+    # database into an object store. Off by default: without it, payloads stay
+    # in their database rows. The configuration is passed to the server through
+    # its Kubernetes Secret.
+    #
+    # Prefer cloud identities over keys: on EKS, annotate the service account
+    # with an IAM role (IRSA, see `serviceAccount.annotations`); on GKE, use
+    # workload identity; on AKS, a managed identity. Without keys in the
+    # backend configuration, the standard credential chain of the cloud SDK is
+    # used, which also picks up environment variables such as the ones set
+    # with `zenml.secretEnvironment`.
+    #
+    # Only switch `offload_enabled` on once every server replica and every
+    # process that opens the database runs a release that reads offloaded
+    # payloads. Every backend that ever received payloads must stay
+    # configured.
+    #
+    # payloadStorage:
+    #   offload_enabled: true
+    #   write_backend: s3        # s3, gcs or azure
+    #   backends:
+    #     s3:
+    #       path: s3://my-bucket/zenml-payloads
+    #   cache_size: 134217728    # bytes of resolved payloads kept per process
+    #   timeout: 30              # seconds before a storage call fails
+    payloadStorage: {}
+
     # Connection pool settings (only relevant for MySQL databases).
     #
     # NOTE: these values should be coordinated with the `zenml.threadPoolSize`

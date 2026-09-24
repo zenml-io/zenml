@@ -105,6 +105,9 @@ Returns:
   A dictionary with the secret values configured for the ZenML store.
 */}}
 {{- define "zenml.storeSecretConfigurationAttrs" -}}
+{{- if .ZenML.database.payloadStorage }}
+payload_storage: {{ .ZenML.database.payloadStorage | toJson | quote }}
+{{- end }}
 {{- if .ZenML.database.url }}
 url: {{ .ZenML.database.url | quote }}
 {{- if and .ZenML.database.sslCa .ZenML.database.sslCa.value }}
