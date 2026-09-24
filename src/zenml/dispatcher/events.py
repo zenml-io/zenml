@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """Event envelopes dispatched to process-wide event handlers."""
 
+from typing import Optional
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import ExecutionStatus
-from zenml.models import PipelineRunResponse
+from zenml.models import PipelineRunResponse, TriggerExecutionInfo
 
 
 class Event(BaseModel):
@@ -29,9 +32,14 @@ class PipelineRunStatusUpdate(Event):
     """A pipeline run status transition.
 
     Handlers run inline in the status update that dispatches the event, so
-    `run` only carries its body. Reading its metadata or resources hydrates
-    the run, which fetches the full run again.
+    `run` only carries its body. The event carries the run's snapshots and
+    trigger lineage as well, so that handlers never need to hydrate the run:
+    that fetches the full run again, including its offloaded payloads, and
+    fails the handler whenever payload storage is unavailable.
     """
 
     run: PipelineRunResponse
     previous_status: ExecutionStatus
+    snapshot_id: Optional[UUID] = None
+    source_snapshot_id: Optional[UUID] = None
+    trigger_execution_info: Optional[TriggerExecutionInfo] = None

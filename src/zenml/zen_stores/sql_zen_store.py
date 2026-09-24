@@ -364,6 +364,7 @@ from zenml.models import (
     TagResponse,
     TagUpdate,
     TriggerDispatchStatusCode,
+    TriggerExecutionInfo,
     TriggerFilter,
     TriggerRequest,
     TriggerSnapshotDispatchState,
@@ -13502,6 +13503,48 @@ class SqlZenStore(BaseZenStore):
         session.add(pipeline_run)
         return did_update, pipeline_run, previous_status
 
+    @staticmethod
+    def _get_run_status_update_event(
+        pipeline_run: PipelineRunSchema,
+        previous_status: ExecutionStatus,
+        session: Session,
+    ) -> PipelineRunStatusUpdate:
+        """Build the status event of a run from its SQL columns only.
+
+        Args:
+            pipeline_run: The run whose status changed.
+            previous_status: The status of the run before the change.
+            session: The database session to use.
+
+        Returns:
+            The status event.
+        """
+        source_snapshot_id = (
+            session.exec(
+                select(PipelineSnapshotSchema.source_snapshot_id).where(
+                    PipelineSnapshotSchema.id == pipeline_run.snapshot_id
+                )
+            ).first()
+            if pipeline_run.snapshot_id
+            else None
+        )
+        trigger_execution = pipeline_run.trigger_execution
+        return PipelineRunStatusUpdate(
+            run=pipeline_run.to_model(
+                include_metadata=False, include_resources=False
+            ),
+            previous_status=previous_status,
+            snapshot_id=pipeline_run.snapshot_id,
+            source_snapshot_id=source_snapshot_id,
+            trigger_execution_info=(
+                TriggerExecutionInfo.model_validate_json(
+                    trigger_execution.info
+                )
+                if trigger_execution and trigger_execution.info
+                else None
+            ),
+        )
+
     def _update_pipeline_run_status(
         self,
         pipeline_run_id: UUID,
@@ -13541,11 +13584,10 @@ class SqlZenStore(BaseZenStore):
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
                 dispatcher.dispatch_event(
-                    PipelineRunStatusUpdate(
-                        run=pipeline_run.to_model(
-                            include_metadata=False, include_resources=False
-                        ),
+                    self._get_run_status_update_event(
+                        pipeline_run=pipeline_run,
                         previous_status=previous_status,
+                        session=session,
                     )
                 )
 
