@@ -297,6 +297,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
+                    # Snapshot responses only read the ID, status and user
+                    # of the latest run.
+                    .options(*PipelineRunSchema.defer_detail_columns())
                 )
                 .scalars()
                 .one_or_none()
