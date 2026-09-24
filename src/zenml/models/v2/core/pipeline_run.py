@@ -1352,9 +1352,7 @@ class PipelineRunFilter(
                     # components, but the best we can do currently with our
                     # table columns.
                     PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
-                    col(PipelineBuildSchema.is_local).is_(False),
-                    col(PipelineBuildSchema.stack_id).is_not(None),
+                    PipelineSnapshotSchema.runnable_filter(),
                 )
             else:
                 templatable_filter = or_(

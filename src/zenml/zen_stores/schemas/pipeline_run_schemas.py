@@ -75,6 +75,10 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+    run_pipeline_configuration,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -548,22 +552,17 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.snapshot:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
+            configuration = self.snapshot.pipeline_configuration
         elif self.pipeline_configuration:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
+            configuration = self.pipeline_configuration
         else:
             raise RuntimeError(
                 "Pipeline run has no snapshot and no pipeline configuration."
             )
 
-        pipeline_config.finalize_substitutions(
-            start_time=self.start_time, inplace=True
+        return run_pipeline_configuration(
+            configuration=configuration, start_time=self.start_time
         )
-        return pipeline_config
 
     def get_step_configuration(self, step_name: str) -> Step:
         """Get the step configuration for the pipeline run.
@@ -579,11 +578,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         if self.snapshot:
             pipeline_configuration = self.get_pipeline_configuration()
-            return Step.from_dict(
-                data=json.loads(
-                    self.snapshot.get_step_configuration(step_name).config
-                ),
-                pipeline_configuration=pipeline_configuration,
+            return merge_step_configuration(
+                self.snapshot.get_step_configuration(step_name).config,
+                pipeline_configuration,
                 exclude_hook_sources=self.snapshot.is_dynamic,
             )
         else:
@@ -688,33 +685,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The created `PipelineRunResponse`.
-
-        Raises:
-            RuntimeError: if the model creation fails.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -730,6 +701,28 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
+            # Only the metadata needs the configuration and environments, so
+            # a page of summaries does not pay for parsing them per row.
+            config = self.get_pipeline_configuration()
+            if self.snapshot is not None:
+                client_environment = json.loads(
+                    self.snapshot.client_environment
+                )
+            else:
+                client_environment = (
+                    json.loads(self.client_environment)
+                    if self.client_environment
+                    else {}
+                )
+            orchestrator_environment = (
+                json.loads(self.orchestrator_environment)
+                if self.orchestrator_environment
+                else {}
+            )
+            if not include_python_packages:
+                client_environment.pop("python_packages", None)
+                orchestrator_environment.pop("python_packages", None)
+
             is_templatable = False
             if (
                 self.snapshot
@@ -738,16 +731,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 and self.snapshot.build.stack_id
             ):
                 is_templatable = True
-
-            orchestrator_environment = (
-                json.loads(self.orchestrator_environment)
-                if self.orchestrator_environment
-                else {}
-            )
-
-            if not include_python_packages:
-                client_environment.pop("python_packages", None)
-                orchestrator_environment.pop("python_packages", None)
 
             trigger_info: Optional[PipelineRunTriggerInfo] = None
             if self.triggered_by and self.triggered_by_type:

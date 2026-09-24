@@ -25,7 +25,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import (
@@ -59,6 +58,10 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
+)
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+    run_pipeline_configuration,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
@@ -388,18 +391,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         if self.snapshot is not None:
             if config_schema := (self.dynamic_config or self.static_config):
-                pipeline_configuration = (
-                    PipelineConfiguration.model_validate_json(
-                        self.snapshot.pipeline_configuration
-                    )
+                pipeline_configuration = run_pipeline_configuration(
+                    self.snapshot.pipeline_configuration,
+                    self.pipeline_run.start_time,
                 )
-                pipeline_configuration.finalize_substitutions(
-                    start_time=self.pipeline_run.start_time,
-                    inplace=True,
-                )
-                step = Step.from_dict(
-                    json.loads(config_schema.config),
-                    pipeline_configuration=pipeline_configuration,
+                step = merge_step_configuration(
+                    config_schema.config,
+                    pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
 

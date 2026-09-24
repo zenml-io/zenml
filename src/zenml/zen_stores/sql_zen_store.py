@@ -130,7 +130,6 @@ from zenml.analytics.utils import (
     track_handler,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
     ReplayRunConfiguration,
@@ -416,6 +415,7 @@ from zenml.zen_stores.dag.models import (
     DAGStepView,
 )
 from zenml.zen_stores.dag.utils import (
+    add_run_context,
     load_input_artifact_rows,
     load_output_artifact_rows,
     load_step_run_metadata,
@@ -6448,7 +6448,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The DAG of the pipeline run.
         """
-        helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
@@ -6471,10 +6470,14 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).load_only(
+                        jl_arg(StepRunSchema.snapshot_id),
                         jl_arg(StepRunSchema.name),
                         jl_arg(StepRunSchema.status),
                         jl_arg(StepRunSchema.start_time),
                         jl_arg(StepRunSchema.end_time),
+                        # Legacy steps keep their merged definition inline;
+                        # deferring it would lazy-load once per step.
+                        jl_arg(StepRunSchema.step_configuration),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -6501,52 +6504,33 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            assert run.snapshot is not None
+            helper = DAGGeneratorHelper()
+            add_run_context(helper=helper, run=run)
             snapshot = run.snapshot
-            for condition in run.wait_conditions:
-                node_metadata: Dict[str, Any] = {
-                    "status": condition.status,
-                    "type": condition.type,
-                    "created_at": condition.created.isoformat(),
-                }
-                if condition.resolution:
-                    node_metadata["resolution"] = condition.resolution
-                if condition.question:
-                    node_metadata["question"] = condition.question
-                if condition.resolved_at:
-                    node_metadata["resolved_at"] = (
-                        condition.resolved_at.isoformat()
-                    )
-
-                helper.add_wait_condition_node(
-                    node_id=helper.get_wait_condition_node_id(condition.name),
-                    id=condition.id,
-                    name=condition.name,
-                    **node_metadata,
-                )
-
             step_runs = {
                 step.name: step
                 for step in run.step_runs
                 if step.status != ExecutionStatus.RETRIED.value
             }
-
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                snapshot.pipeline_configuration
-            )
-            pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
-            )
-
-            if snapshot.is_dynamic:
-                # Ignore static config templates for dynamic pipeline DAGs
-                steps = {
-                    name: DAGStepView.from_dict(
-                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
+            pipeline_configuration = run.get_pipeline_configuration()
+            if snapshot is None or snapshot.is_dynamic:
+                # A dynamic pipeline ignores the static config templates, and
+                # a legacy run without a snapshot only has the definitions
+                # stored with its steps.
+                steps = {}
+                for name, configured_step in step_runs.items():
+                    configuration = configured_step.dynamic_config
+                    step_definition = (
+                        json.loads(configuration.config)
+                        if configuration is not None
+                        else configured_step.get_step_configuration().model_dump(
+                            mode="json"
+                        )
+                    )
+                    steps[name] = DAGStepView.from_dict(
+                        step_definition,
                         substitutions=pipeline_configuration.substitutions,
                     )
-                    for name, step_run in step_runs.items()
-                }
             else:
                 steps = {
                     config_table.name: DAGStepView.from_dict(
@@ -6930,30 +6914,6 @@ class SqlZenStore(BaseZenStore):
                         source=upstream_node.node_id,
                         target=step_node.node_id,
                     )
-
-            for child_run in run.child_runs:
-                child_run_metadata: Dict[str, Any] = {
-                    "status": child_run.status,
-                }
-                if child_run.start_time:
-                    child_run_metadata["start_time"] = (
-                        child_run.start_time.isoformat()
-                    )
-                    if child_run.end_time:
-                        child_run_metadata["end_time"] = (
-                            child_run.end_time.isoformat()
-                        )
-                        child_run_metadata["duration"] = (
-                            child_run.end_time - child_run.start_time
-                        ).total_seconds()
-
-                helper.add_child_run_node(
-                    node_id=helper.get_child_run_node_id(child_run.name),
-                    id=child_run.id,
-                    name=child_run.name,
-                    **child_run_metadata,
-                )
-                # TODO: maybe include nodes for outputs and connect via edges?
 
         return helper.finalize_dag(
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)

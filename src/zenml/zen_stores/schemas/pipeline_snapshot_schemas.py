@@ -21,11 +21,11 @@ from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.logger import get_logger
@@ -51,6 +51,9 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
+from zenml.zen_stores.schemas.step_configuration_utils import (
+    merge_step_configuration,
+)
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
@@ -497,6 +500,20 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             and self.build.stack_id is not None
         )
 
+    @classmethod
+    def runnable_filter(cls) -> ColumnElement[bool]:
+        """Express the server's runnable-snapshot contract in SQL.
+
+        Returns:
+            Predicate equivalent to ``is_runnable`` without loading a build.
+        """
+        return col(cls.build_id).in_(
+            select(PipelineBuildSchema.id).where(
+                col(PipelineBuildSchema.is_local).is_(False),
+                col(PipelineBuildSchema.stack_id).is_not(None),
+            )
+        )
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -544,10 +561,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             for step_configuration in self.get_step_configurations(
                 include=step_configuration_filter
             ):
-                step_configurations[step_configuration.name] = Step.from_dict(
-                    json.loads(step_configuration.config),
-                    pipeline_configuration,
-                    exclude_hook_sources=self.is_dynamic,
+                step_configurations[step_configuration.name] = (
+                    merge_step_configuration(
+                        step_configuration.config,
+                        pipeline_configuration,
+                        exclude_hook_sources=self.is_dynamic,
+                    )
                 )
 
             client_environment = json.loads(self.client_environment)
@@ -565,8 +584,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     # we still need to get all of them to generate the config
                     # template and schema
                     all_step_configurations = {
-                        step_configuration.name: Step.from_dict(
-                            json.loads(step_configuration.config),
+                        step_configuration.name: merge_step_configuration(
+                            step_configuration.config,
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
                         )

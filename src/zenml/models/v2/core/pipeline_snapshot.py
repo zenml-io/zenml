@@ -763,7 +763,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
         from zenml.zen_stores.schemas import (
             DeploymentSchema,
-            PipelineBuildSchema,
             PipelineSchema,
             PipelineSnapshotSchema,
             StackComponentSchema,
@@ -811,17 +810,11 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
                 )
 
         if self.runnable is True:
-            runnable_filter = and_(
-                # The following condition is not perfect as it does not
-                # consider stacks with custom flavor components or local
-                # components, but the best we can do currently with our
-                # table columns.
-                PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
-                col(PipelineBuildSchema.is_local).is_(False),
-                col(PipelineBuildSchema.stack_id).is_not(None),
-            )
-
-            custom_filters.append(runnable_filter)
+            # The following condition is not perfect as it does not
+            # consider stacks with custom flavor components or local
+            # components, but the best we can do currently with our
+            # table columns.
+            custom_filters.append(PipelineSnapshotSchema.runnable_filter())
 
         if self.deployable is True:
             deployer_exists = (
