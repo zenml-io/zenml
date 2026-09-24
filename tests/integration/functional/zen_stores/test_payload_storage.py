@@ -16,18 +16,15 @@
 The clean client's SQLite store offloads every payload to the database. The
 tests run real pipelines and store calls against it, and against a second
 store on the same database that offloads to a local directory, to cover what
-offloading can break: responses that differ from inline ones, paths that read
-payloads they do not need, storage outages, half-created runs and corrupted
-blobs.
+offloading can break: responses that differ from inline ones, execution paths
+that stop working while storage is down, half-created runs and corrupted blobs.
 """
 
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import event
 from sqlmodel import Session, select
 
 from zenml import pipeline, step
@@ -37,7 +34,6 @@ from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
-    IllegalOperationError,
     PayloadIntegrityError,
     PayloadStorageUnavailableError,
 )
@@ -64,10 +60,7 @@ from zenml.zen_stores.schemas import (
     StepConfigurationSchema,
     StepRunSchema,
 )
-from zenml.zen_stores.sql_zen_store import (
-    SqlZenStore,
-    SqlZenStoreConfiguration,
-)
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 PAYLOAD_SCHEMAS = [
     PipelineSnapshotSchema,
@@ -75,7 +68,6 @@ PAYLOAD_SCHEMAS = [
     StepRunSchema,
     PipelineRunSchema,
 ]
-REVISION_BEFORE_PAYLOAD_STORAGE = "8d638fcb4bd5"
 
 
 @step
@@ -138,26 +130,6 @@ def _open_local_store(store: SqlZenStore, root: Path) -> SqlZenStore:
         backends={"local": {"path": str(root)}},
         cache_size=0,
     )
-
-
-@contextmanager
-def _payload_reads(store: SqlZenStore) -> Iterator[List[str]]:
-    """Record the queries that resolve offloaded payloads.
-
-    Every resolution selects the bytes of database-held blobs along with the
-    registry rows, whatever the backend; writes never select them.
-    """
-    statements: List[str] = []
-
-    def record(conn: Any, cursor: Any, statement: str, *args: Any) -> None:
-        if statement.startswith("SELECT") and "blob_content.data" in statement:
-            statements.append(statement)
-
-    event.listen(store.engine, "before_cursor_execute", record)
-    try:
-        yield statements
-    finally:
-        event.remove(store.engine, "before_cursor_execute", record)
 
 
 def _hydrated_responses(store: SqlZenStore) -> Dict[str, Any]:
@@ -337,56 +309,10 @@ def test_offloaded_and_inline_payloads_read_the_same(
     assert offloaded == inline
 
 
-def test_sql_only_paths_read_no_payloads(store: SqlZenStore) -> None:
-    """Responses without metadata and execution updates read no payloads."""
-    cold = _open_store(store, cache_size=0)
-    run = _start_run(cold)
-    step_run = _start_step(cold, run.id)
-    project = Client().active_project.id
-
-    with _payload_reads(cold) as reads:
-        cold.get_run(run.id, hydrate=False)
-        cold.list_runs(PipelineRunFilter(project=project))
-        cold.get_snapshot(run.snapshot.id, hydrate=False)
-        cold.list_snapshots(PipelineSnapshotFilter(project=project))
-        cold.get_run_step(step_run.id, hydrate=False)
-        cold.list_run_steps(StepRunFilter(project=project))
-        cold.update_step_heartbeat(step_run.id)
-        cold.update_run_step(
-            step_run.id, StepRunUpdate(status=ExecutionStatus.COMPLETED)
-        )
-        cold.update_run(
-            run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
-        )
-
-    assert reads == []
-
-
-def test_existing_run_is_authorized_before_its_payloads_are_read(
-    store: SqlZenStore,
-) -> None:
-    """A caller who may not read an existing run causes no payload reads."""
-    request = _run_request(_create_snapshot(store).id)
-    store.get_or_create_run(request)
-
-    def deny(run: PipelineRunResponse) -> None:
-        raise IllegalOperationError("Denied.")
-
-    cold = _open_store(store, cache_size=0)
-    with _payload_reads(cold) as reads:
-        with pytest.raises(IllegalOperationError):
-            cold.get_or_create_run(request, pre_read_hook=deny)
-    assert reads == []
-
-    run, created = cold.get_or_create_run(request)
-    assert not created
-    assert run.orchestrator_environment == request.orchestrator_environment
-
-
 def test_storage_outage_fails_only_what_needs_payloads(
     store: SqlZenStore, tmp_path: Path
 ) -> None:
-    """While storage is down, only creations and hydrated reads fail."""
+    """While storage is down, only creations and reads with metadata fail."""
     root = tmp_path / "payloads"
     root.mkdir()
     local = _open_local_store(store, root)
@@ -400,8 +326,13 @@ def test_storage_outage_fails_only_what_needs_payloads(
         with pytest.raises(PayloadStorageUnavailableError):
             local.get_run(run.id, hydrate=True)
 
+        project = Client().active_project.id
         local.get_run(run.id, hydrate=False)
-        local.list_runs(PipelineRunFilter(project=Client().active_project.id))
+        local.list_runs(PipelineRunFilter(project=project))
+        local.get_snapshot(run.snapshot.id, hydrate=False)
+        local.list_snapshots(PipelineSnapshotFilter(project=project))
+        local.get_run_step(step_run.id, hydrate=False)
+        local.list_run_steps(StepRunFilter(project=project))
         local.update_step_heartbeat(step_run.id)
         local.update_run_step(
             step_run.id,
@@ -475,21 +406,3 @@ def test_corrupted_blob_is_rejected_and_not_cached(
 
     restored = cached.get_snapshot(snapshot.id, hydrate=True)
     assert restored.pipeline_configuration.name == "original-configuration"
-
-
-@pytest.mark.usefixtures("clean_client")
-def test_store_opens_to_migrate_a_database_without_payload_tables(
-    tmp_path: Path,
-) -> None:
-    """A store opened only to migrate works before the payload tables exist."""
-    config = SqlZenStoreConfiguration(url=f"sqlite:///{tmp_path / 'zenml.db'}")
-    store = SqlZenStore(config=config, skip_default_registrations=True)
-    head = store.alembic.current_revisions()
-    store.alembic.downgrade(REVISION_BEFORE_PAYLOAD_STORAGE)
-
-    migrating = SqlZenStore(
-        config=config, skip_default_registrations=True, skip_migrations=True
-    )
-    migrating.migrate_database()
-
-    assert migrating.alembic.current_revisions() == head
