@@ -157,11 +157,14 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 ### 🧐 Linting, formatting, and tests
 
-To install ZenML from your local checked out files including all core dev-dependencies, run:
-
-```
+```bash
+# Using pip:
 pip install -e ".[server,dev]"
+
+# Fast installation using uv (recommended):
+uv pip install -e ".[server,dev]"
 ```
+
 
 Optionally, you might want to run the following commands to ensure you have all
 integrations for `mypy` checks:
