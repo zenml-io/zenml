@@ -48,12 +48,27 @@ def upgrade() -> None:
 
     # Nullable columns without foreign keys or indexes, so that MySQL can
     # append them without rebuilding or copying these large tables.
-    for table, columns in BLOB_REFERENCE_COLUMNS.items():
-        with op.batch_alter_table(table, schema=None) as batch_op:
-            for column in columns:
-                batch_op.add_column(
-                    sa.Column(column, sa.Uuid(), nullable=True)
+    bind = op.get_bind()
+    if bind.dialect.name == "mysql":
+        # MySQL allows 64 instant column changes per table before it has to
+        # copy the table, and counts one per statement. Batch mode issues one
+        # statement per column, so each table gets a single statement here.
+        uuid_type = sa.Uuid().compile(dialect=bind.dialect)
+        for table, columns in BLOB_REFERENCE_COLUMNS.items():
+            op.execute(
+                f"ALTER TABLE `{table}` "
+                + ", ".join(
+                    f"ADD COLUMN `{column}` {uuid_type} NULL"
+                    for column in columns
                 )
+            )
+    else:
+        for table, columns in BLOB_REFERENCE_COLUMNS.items():
+            with op.batch_alter_table(table, schema=None) as batch_op:
+                for column in columns:
+                    batch_op.add_column(
+                        sa.Column(column, sa.Uuid(), nullable=True)
+                    )
 
 
 def downgrade() -> None:
