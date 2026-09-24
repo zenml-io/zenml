@@ -94,8 +94,11 @@ class BaseZenStore(
         if data["config"].type == StoreType.SQL:
             from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
+            # Environment overrides are merged into the configuration without
+            # validation, so a structured setting such as `payload_storage`
+            # can still be its JSON string here. It is validated right below.
             data["config"] = SqlZenStoreConfiguration(
-                **data["config"].model_dump()
+                **data["config"].model_dump(warnings=False)
             )
 
         elif data["config"].type == StoreType.REST:

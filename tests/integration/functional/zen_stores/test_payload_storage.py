@@ -13,18 +13,21 @@
 #  permissions and limitations under the License.
 """End-to-end checks of execution payload storage.
 
-The clean client's SQLite store offloads every payload to the database. The
-tests run real pipelines and store calls against it, and remove or alter the
-stored bytes of blobs to cover what offloading can break: responses that differ
-from inline ones, execution paths that stop working when payloads cannot be
-read, half-created runs and corrupted blobs.
+Each test starts a local S3 server, and the clean client's SQLite store
+offloads every payload to it. The tests run real pipelines and store calls, and
+stop the server or remove or alter stored blobs to cover what offloading can
+break: responses that differ from inline ones, execution paths that stop working
+while storage is down, half-created runs and corrupted blobs.
 """
 
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, Dict, Generator, List, Optional
 from uuid import UUID, uuid4
 
+import boto3
 import pytest
-from sqlmodel import Session, delete, select
+from moto.server import ThreadedMotoServer
+from sqlmodel import Session, select
 
 from zenml import pipeline, step
 from zenml.client import Client
@@ -32,7 +35,10 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import PayloadIntegrityError
+from zenml.exceptions import (
+    PayloadIntegrityError,
+    PayloadStorageUnavailableError,
+)
 from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
@@ -50,7 +56,6 @@ from zenml.models import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.schemas import (
-    BlobContentSchema,
     BlobSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
@@ -59,6 +64,8 @@ from zenml.zen_stores.schemas import (
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
+BUCKET = "payloads"
+PREFIX = "blobs"
 PAYLOAD_SCHEMAS = [
     PipelineSnapshotSchema,
     StepConfigurationSchema,
@@ -101,12 +108,61 @@ def dynamic_pipeline() -> None:
 
 
 @pytest.fixture
-def store(clean_client: Client) -> SqlZenStore:
-    """The store of a clean client, which offloads payloads to its database."""
-    zen_store = clean_client.zen_store
+def s3_server() -> Generator[ThreadedMotoServer, None, None]:
+    """A local S3 server with an empty bucket for the payloads."""
+    server = ThreadedMotoServer(ip_address="127.0.0.1", port=0, verbose=False)
+    server.start()
+    _get_s3_client(server).create_bucket(Bucket=BUCKET)
+    yield server
+    server.stop()
+
+
+@pytest.fixture
+def store(
+    s3_server: ThreadedMotoServer,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+) -> SqlZenStore:
+    """The store of a clean client, which offloads payloads to the S3 server."""
+    host, port = s3_server.get_host_and_port()
+    monkeypatch.setenv(
+        "ZENML_STORE_PAYLOAD_STORAGE",
+        json.dumps(
+            {
+                "offload_enabled": True,
+                "write_backend": "s3",
+                "backends": {
+                    "s3": {
+                        "path": f"s3://{BUCKET}/{PREFIX}",
+                        "key": "test",
+                        "secret": "test",
+                        "client_kwargs": {
+                            "endpoint_url": f"http://{host}:{port}",
+                            "region_name": "us-east-1",
+                        },
+                    }
+                },
+            }
+        ),
+    )
+    # Created only now, so that its store reads the settings above.
+    client = request.getfixturevalue("clean_client")
+    zen_store = client.zen_store
     assert isinstance(zen_store, SqlZenStore)
     assert zen_store.payload_store.offload_enabled
     return zen_store
+
+
+def _get_s3_client(server: ThreadedMotoServer) -> Any:
+    """A boto3 client of the local S3 server."""
+    host, port = server.get_host_and_port()
+    return boto3.client(
+        "s3",
+        endpoint_url=f"http://{host}:{port}",
+        region_name="us-east-1",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    )
 
 
 def _open_store(store: SqlZenStore, **payload_storage: Any) -> SqlZenStore:
@@ -259,17 +315,14 @@ def _start_step(store: SqlZenStore, run_id: UUID) -> StepRunResponse:
     )
 
 
-def _get_config_blob_content(
-    session: Session, snapshot_id: UUID
-) -> BlobContentSchema:
-    """The stored bytes of the pipeline configuration of a snapshot."""
-    snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
-    assert snapshot and snapshot.pipeline_configuration_blob_id
-    blob = session.get(BlobSchema, snapshot.pipeline_configuration_blob_id)
-    assert blob
-    content = session.get(BlobContentSchema, blob.sha256)
-    assert content
-    return content
+def _get_config_blob_key(store: SqlZenStore, snapshot_id: UUID) -> str:
+    """The S3 key of the pipeline configuration of a snapshot."""
+    with Session(store.engine) as session:
+        snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+        assert snapshot and snapshot.pipeline_configuration_blob_id
+        blob = session.get(BlobSchema, snapshot.pipeline_configuration_blob_id)
+        assert blob
+        return f"{PREFIX}/{blob.sha256}"
 
 
 def test_offloaded_and_inline_payloads_read_the_same(
@@ -290,18 +343,18 @@ def test_offloaded_and_inline_payloads_read_the_same(
     assert offloaded == inline
 
 
-def test_paths_without_metadata_work_while_payloads_are_unreadable(
-    store: SqlZenStore,
+def test_storage_outage_fails_only_what_needs_payloads(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
-    """Execution updates and responses without metadata never read payloads."""
-    cold = _open_store(store, cache_size=0)
+    """While storage is down, only creations and reads with metadata fail."""
+    cold = _open_store(store, cache_size=0, timeout=5)
     run = _start_run(cold)
     step_run = _start_step(cold, run.id)
-    with Session(cold.engine) as session:
-        session.execute(delete(BlobContentSchema))
-        session.commit()
+    s3_server.stop()
 
-    with pytest.raises(RuntimeError, match="missing"):
+    with pytest.raises(PayloadStorageUnavailableError):
+        _create_snapshot(cold)
+    with pytest.raises(PayloadStorageUnavailableError):
         cold.get_run(run.id, hydrate=True)
 
     project = Client().active_project.id
@@ -326,20 +379,19 @@ def test_paths_without_metadata_work_while_payloads_are_unreadable(
     assert updated.status == ExecutionStatus.FAILED
 
 
-def test_run_creation_writes_nothing_when_payloads_are_unreadable(
-    store: SqlZenStore,
+def test_run_creation_writes_nothing_when_storage_fails(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
-    """A payload read failure while creating a run leaves no half-created run."""
+    """A storage failure while creating a run leaves no half-created run."""
     cold = _open_store(store, cache_size=0)
     snapshot = _create_snapshot(cold)
     request = _run_request(snapshot.id, tags=["payloads"])
-    with Session(cold.engine) as session:
-        content = _get_config_blob_content(session, snapshot.id)
-        sha256, data = content.sha256, content.data
-        session.delete(content)
-        session.commit()
+    s3 = _get_s3_client(s3_server)
+    key = _get_config_blob_key(cold, snapshot.id)
+    data = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
+    s3.delete_object(Bucket=BUCKET, Key=key)
 
-    with pytest.raises(RuntimeError, match="missing"):
+    with pytest.raises(PayloadStorageUnavailableError):
         cold.get_or_create_run(request)
 
     with Session(cold.engine) as session:
@@ -348,31 +400,32 @@ def test_run_creation_writes_nothing_when_payloads_are_unreadable(
                 PipelineRunSchema.snapshot_id == snapshot.id
             )
         ).all()
-        session.add(BlobContentSchema(sha256=sha256, data=data))
-        session.commit()
 
+    s3.put_object(Bucket=BUCKET, Key=key, Body=data)
     run, created = cold.get_or_create_run(request)
     assert created
     assert [tag.name for tag in run.tags] == ["payloads"]
 
 
-def test_corrupted_blob_is_rejected_and_not_cached(store: SqlZenStore) -> None:
+def test_corrupted_blob_is_rejected_and_not_cached(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
+) -> None:
     """Bytes that are not the registered ones never reach a response."""
     snapshot = _create_snapshot(store, config_name="original-configuration")
     cached = _open_store(store, cache_size=64 * 1024 * 1024)
-
-    def replace_config_bytes(old: bytes, new: bytes) -> None:
-        with Session(store.engine) as session:
-            content = _get_config_blob_content(session, snapshot.id)
-            content.data = content.data.replace(old, new)
-            session.add(content)
-            session.commit()
+    s3 = _get_s3_client(s3_server)
+    key = _get_config_blob_key(store, snapshot.id)
+    original = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
 
     # Same size, so that only the SHA-256 tells the bytes apart.
-    replace_config_bytes(b"original", b"tampered")
+    s3.put_object(
+        Bucket=BUCKET,
+        Key=key,
+        Body=original.replace(b"original", b"tampered"),
+    )
     with pytest.raises(PayloadIntegrityError):
         cached.get_snapshot(snapshot.id, hydrate=True)
 
-    replace_config_bytes(b"tampered", b"original")
+    s3.put_object(Bucket=BUCKET, Key=key, Body=original)
     restored = cached.get_snapshot(snapshot.id, hydrate=True)
     assert restored.pipeline_configuration.name == "original-configuration"

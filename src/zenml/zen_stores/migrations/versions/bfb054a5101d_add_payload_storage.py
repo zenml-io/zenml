@@ -8,7 +8,6 @@ Create Date: 2026-09-24 15:58:32.000000
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
 revision = "bfb054a5101d"
@@ -46,16 +45,6 @@ def upgrade() -> None:
         ),
     )
     op.create_index("ix_blob_stored_in", "blob", ["stored_in"])
-    op.create_table(
-        "blob_content",
-        sa.Column("sha256", sa.String(length=64), nullable=False),
-        sa.Column(
-            "data",
-            sa.LargeBinary().with_variant(mysql.MEDIUMBLOB, "mysql"),
-            nullable=False,
-        ),
-        sa.PrimaryKeyConstraint("sha256"),
-    )
 
     # Nullable columns without foreign keys or indexes, so that MySQL can
     # append them without rebuilding or copying these large tables.
@@ -74,6 +63,5 @@ def downgrade() -> None:
             for column in reversed(columns):
                 batch_op.drop_column(column)
 
-    op.drop_table("blob_content")
     op.drop_index("ix_blob_stored_in", table_name="blob")
     op.drop_table("blob")

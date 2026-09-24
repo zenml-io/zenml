@@ -22,7 +22,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    Optional,
     Sequence,
     Set,
     Tuple,
@@ -33,7 +32,7 @@ from uuid import UUID
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, SQLModel, and_, col, select
+from sqlmodel import Session, SQLModel, col, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from zenml.exceptions import (
@@ -53,10 +52,7 @@ from zenml.zen_stores.payload_storage.payloads import (
     PayloadSchema,
     PayloadValue,
 )
-from zenml.zen_stores.schemas.blob_schemas import (
-    BlobContentSchema,
-    BlobSchema,
-)
+from zenml.zen_stores.schemas.blob_schemas import BlobSchema
 
 IDENTITY_CODEC = "identity"
 MAX_CONCURRENT_BACKEND_CALLS = 32
@@ -160,9 +156,9 @@ class OffloadedPayloads:
 class PayloadStore:
     """Offloads the payloads of execution schemas and resolves them.
 
-    Payloads are stored as content-addressed blobs: each distinct value is
-    stored once, in the backend that was the write backend when the value was
-    first offloaded. The `blob` table registers every blob, and a blob is only
+    Payloads are stored as content-addressed blobs in object storage: each
+    distinct value is stored once, in the backend that was the write backend
+    when the value was first offloaded. The `blob` table registers every blob, and a blob is only
     registered once its bytes are durable, so that a reference never points to
     missing bytes.
     """
@@ -177,19 +173,13 @@ class PayloadStore:
             config: The payload storage configuration.
         """
         self._engine = engine
-        if config.offload_enabled is None:
-            # A SQLite database is only opened by processes of the same ZenML
-            # installation, so none of them misses the offloaded payloads.
-            self._offload_enabled = engine.dialect.name == "sqlite"
-        else:
-            self._offload_enabled = config.offload_enabled
+        self._offload_enabled = config.offload_enabled
         self._write_backend = config.write_backend
         self._backends: Dict[PayloadBackendType, PayloadBackend] = {
             backend_type: create_payload_backend(
                 backend_type, configuration, timeout=config.timeout
             )
             for backend_type, configuration in config.backends.items()
-            if backend_type != PayloadBackendType.DATABASE
         }
         self._cache = PayloadCache(max_size=config.cache_size)
         self._timeout = config.timeout
@@ -220,8 +210,7 @@ class PayloadStore:
         unconfigured = [
             backend_type.value
             for backend_type in PayloadBackendType
-            if backend_type != PayloadBackendType.DATABASE
-            and backend_type not in self._backends
+            if backend_type not in self._backends
         ]
         with Session(self._engine) as session:
             stored_in = session.exec(
@@ -252,31 +241,23 @@ class PayloadStore:
         Returns:
             The offloaded payloads, which reference the blobs from schemas.
         """
-        if not self._offload_enabled:
+        if not self._offload_enabled or self._write_backend is None:
             return OffloadedPayloads.disabled()
 
         values_by_key = {_get_blob_key(value): value for value in values}
         blob_ids: Dict[BlobKey, UUID] = {}
         if values_by_key:
-            backend = self._backends.get(self._write_backend)
+            backend = self._backends[self._write_backend]
             with Session(self._engine) as session:
-                blob_ids, database_sha256s = self._get_registered_blobs(
+                blob_ids = self._get_registered_blobs(
                     values_by_key, session=session
                 )
-                new_values = [
-                    value
-                    for key, value in values_by_key.items()
-                    if key not in blob_ids
-                ]
-                if new_values and backend is None:
-                    # The database backend stores the bytes along with their
-                    # registration, so no I/O happens in between.
-                    blob_ids.update(
-                        self._register(new_values, session, database_sha256s)
-                    )
-                    new_values = []
-
-            if new_values and backend:
+            new_values = [
+                value
+                for key, value in values_by_key.items()
+                if key not in blob_ids
+            ]
+            if new_values:
                 unique_values = {v.sha256: v for v in new_values}.values()
                 self._call_backend(
                     lambda value: backend.put(value.sha256, value.data),
@@ -310,7 +291,7 @@ class PayloadStore:
 
     def _get_registered_blobs(
         self, values_by_key: Dict[BlobKey, PayloadValue], session: Session
-    ) -> Tuple[Dict[BlobKey, UUID], Set[str]]:
+    ) -> Dict[BlobKey, UUID]:
         """Get the registered blobs of payload values.
 
         Args:
@@ -318,25 +299,18 @@ class PayloadStore:
             session: The session to use.
 
         Returns:
-            The IDs of the blobs registered for the values, and the hashes
-            whose bytes the database holds.
+            The IDs of the blobs registered for the values.
         """
         blob_ids: Dict[BlobKey, UUID] = {}
-        database_sha256s: Set[str] = set()
         for sha256s in _batched({sha256 for sha256, _ in values_by_key}):
-            for blob_id, sha256, media_type, stored_in in session.exec(
+            for blob_id, sha256, media_type in session.exec(
                 select(
-                    BlobSchema.id,
-                    BlobSchema.sha256,
-                    BlobSchema.media_type,
-                    BlobSchema.stored_in,
+                    BlobSchema.id, BlobSchema.sha256, BlobSchema.media_type
                 ).where(col(BlobSchema.sha256).in_(sha256s))
             ):
                 if (sha256, media_type) in values_by_key:
                     blob_ids[(sha256, media_type)] = blob_id
-                if stored_in == PayloadBackendType.DATABASE.value:
-                    database_sha256s.add(sha256)
-        return blob_ids, database_sha256s
+        return blob_ids
 
     def _create_blob(self, value: PayloadValue) -> BlobSchema:
         """Create the registry row of a payload value.
@@ -347,6 +321,7 @@ class PayloadStore:
         Returns:
             The registry row.
         """
+        assert self._write_backend
         return BlobSchema(
             sha256=value.sha256,
             media_type=value.media_type.value,
@@ -356,20 +331,13 @@ class PayloadStore:
         )
 
     def _register(
-        self,
-        values: List[PayloadValue],
-        session: Session,
-        database_sha256s: Optional[Set[str]] = None,
+        self, values: List[PayloadValue], session: Session
     ) -> Dict[BlobKey, UUID]:
         """Register the blobs of payload values whose bytes are durable.
-
-        The `database` backend stores the bytes in the same transaction.
 
         Args:
             values: The payload values.
             session: The session to register them with.
-            database_sha256s: The hashes whose bytes the database already
-                holds.
 
         Returns:
             The IDs of the registered blobs.
@@ -377,15 +345,6 @@ class PayloadStore:
         # Sorted, so that concurrent writers lock the same keys in the same
         # order and never deadlock each other.
         values = sorted(values, key=_get_blob_key)
-        if self._write_backend == PayloadBackendType.DATABASE:
-            stored = set(database_sha256s or ())
-            for value in values:
-                if value.sha256 not in stored:
-                    session.add(
-                        BlobContentSchema(sha256=value.sha256, data=value.data)
-                    )
-                    stored.add(value.sha256)
-
         blobs = [self._create_blob(value) for value in values]
         session.add_all(blobs)
         try:
@@ -411,14 +370,6 @@ class PayloadStore:
             The ID of the blob.
         """
         with Session(self._engine) as session:
-            if self._write_backend == PayloadBackendType.DATABASE:
-                self._get_or_insert(
-                    BlobContentSchema(sha256=value.sha256, data=value.data),
-                    select(BlobContentSchema).where(
-                        BlobContentSchema.sha256 == value.sha256
-                    ),
-                    session=session,
-                )
             blob = self._get_or_insert(
                 self._create_blob(value),
                 select(BlobSchema).where(
@@ -468,42 +419,28 @@ class PayloadStore:
             The values by blob ID.
 
         Raises:
-            RuntimeError: If a blob is not registered or its bytes are
-                missing from the database.
+            RuntimeError: If a blob is not registered.
             PayloadStorageUnavailableError: If a blob is held by a backend
                 that is not configured.
         """
         blobs: List[BlobSchema] = []
-        data: Dict[str, bytes] = {}
         with Session(self._engine) as session:
             for batch in _batched(blob_ids):
-                # One query reads the registry rows and, for blobs held by
-                # the database, their bytes.
-                for blob, content in session.exec(
-                    select(BlobSchema, BlobContentSchema.data)
-                    .outerjoin(
-                        BlobContentSchema,
-                        and_(
-                            col(BlobContentSchema.sha256) == BlobSchema.sha256,
-                            col(BlobSchema.stored_in)
-                            == PayloadBackendType.DATABASE.value,
-                        ),
+                blobs.extend(
+                    session.exec(
+                        select(BlobSchema).where(col(BlobSchema.id).in_(batch))
                     )
-                    .where(col(BlobSchema.id).in_(batch))
-                ):
-                    blobs.append(blob)
-                    if content is not None:
-                        data[blob.sha256] = content
+                )
         if missing := set(blob_ids) - {blob.id for blob in blobs}:
             raise RuntimeError(
                 f"Payload blobs {sorted(str(blob_id) for blob_id in missing)} "
                 "are referenced but not registered."
             )
 
+        data: Dict[str, bytes] = {}
         sha256s_by_backend: Dict[str, Set[str]] = defaultdict(set)
         for blob in blobs:
-            if blob.stored_in != PayloadBackendType.DATABASE.value:
-                sha256s_by_backend[blob.stored_in].add(blob.sha256)
+            sha256s_by_backend[blob.stored_in].add(blob.sha256)
         for stored_in, sha256s in sha256s_by_backend.items():
             backend = self._backends.get(PayloadBackendType(stored_in))
             if backend is None:
@@ -513,12 +450,6 @@ class PayloadStore:
                 )
             ordered = sorted(sha256s)
             data.update(zip(ordered, self._call_backend(backend.get, ordered)))
-
-        if missing_data := {blob.sha256 for blob in blobs} - set(data):
-            raise RuntimeError(
-                f"The bytes of payload blobs {sorted(missing_data)} are "
-                "missing from the database."
-            )
         return {
             blob.id: self._decode(blob, data[blob.sha256]) for blob in blobs
         }

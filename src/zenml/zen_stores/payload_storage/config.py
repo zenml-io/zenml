@@ -21,9 +21,8 @@ from zenml.utils.enum_utils import StrEnum
 
 
 class PayloadBackendType(StrEnum):
-    """Backends that can hold payload blobs."""
+    """Object stores that can hold payload blobs."""
 
-    DATABASE = "database"
     S3 = "s3"
     GCS = "gcs"
     AZURE = "azure"
@@ -32,20 +31,21 @@ class PayloadBackendType(StrEnum):
 class PayloadStorageConfiguration(BaseModel):
     """Configuration of the storage of execution payloads.
 
+    Without an object store, payloads stay in the rows of their entities.
+
     Attributes:
         offload_enabled: Whether new snapshots, step runs and runs move their
             payloads to the write backend. Reads resolve offloaded payloads
-            whatever this is set to, so it can be switched off again. Defaults
-            to on for SQLite databases and off for MySQL databases, where it
-            should only be switched on once every process that opens the
-            database runs a version that can read offloaded payloads.
-        write_backend: The backend that receives new payloads.
-        backends: The backends holding payload blobs and their configuration.
-            Every backend that ever received payloads must stay configured,
-            since blobs are read from the backend they were written to. The
-            `database` backend is always available and takes no
-            configuration. `s3`, `gcs` and `azure` take the configuration of
-            the artifact store flavor of the same name, such as a `path` like
+            whatever this is set to, so it can be switched off again. Only
+            switch it on once every process that opens the database runs a
+            version that can read offloaded payloads.
+        write_backend: The object store that receives new payloads. Required
+            when offloading is enabled.
+        backends: The object stores holding payload blobs and their
+            configuration. Every backend that ever received payloads must stay
+            configured, since blobs are read from the backend they were
+            written to. `s3`, `gcs` and `azure` take the configuration of the
+            artifact store flavor of the same name, such as a `path` like
             `s3://bucket/prefix` and optional credentials; without
             credentials, the implicit credentials of the environment are used.
         cache_size: The maximum memory in bytes taken by the resolved
@@ -55,8 +55,8 @@ class PayloadStorageConfiguration(BaseModel):
             quickly instead of holding them.
     """
 
-    offload_enabled: Optional[bool] = None
-    write_backend: PayloadBackendType = PayloadBackendType.DATABASE
+    offload_enabled: bool = False
+    write_backend: Optional[PayloadBackendType] = None
     backends: Dict[PayloadBackendType, Dict[str, Any]] = Field(
         default_factory=dict
     )
@@ -69,18 +69,21 @@ class PayloadStorageConfiguration(BaseModel):
 
     @model_validator(mode="after")
     def _validate_write_backend(self) -> "PayloadStorageConfiguration":
-        """Validate that the write backend is configured.
+        """Validate that offloading has a configured write backend.
 
         Returns:
             The validated configuration.
 
         Raises:
-            ValueError: If the write backend has no configuration.
+            ValueError: If offloading is enabled without a write backend, or
+                the write backend has no configuration.
         """
-        if (
-            self.write_backend != PayloadBackendType.DATABASE
-            and self.write_backend not in self.backends
-        ):
+        if self.offload_enabled and self.write_backend is None:
+            raise ValueError(
+                "Offloading payloads needs a `write_backend`: `s3`, `gcs` or "
+                "`azure`."
+            )
+        if self.write_backend and self.write_backend not in self.backends:
             raise ValueError(
                 f"Payloads are written to the `{self.write_backend}` backend, "
                 "which has no configuration in `backends`."

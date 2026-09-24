@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL schemas of the payload blob registry and of database-held blobs."""
+"""SQL schema of the payload blob registry."""
 
 from datetime import datetime
 from uuid import UUID, uuid4
@@ -19,11 +19,9 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     BigInteger,
     Column,
-    LargeBinary,
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from sqlmodel import Field, SQLModel
 
 from zenml.utils.time_utils import utc_now
@@ -57,16 +55,3 @@ class BlobSchema(SQLModel, table=True):
     size: int = Field(sa_column=Column(BigInteger, nullable=False))
     stored_in: str = Field(sa_column=Column(String(16), nullable=False))
     created: datetime = Field(default_factory=utc_now, nullable=False)
-
-
-class BlobContentSchema(SQLModel, table=True):
-    """Bytes of a blob held by the `database` payload backend."""
-
-    __tablename__ = "blob_content"
-
-    sha256: str = Field(sa_column=Column(String(64), primary_key=True))
-    data: bytes = Field(
-        sa_column=Column(
-            LargeBinary().with_variant(MEDIUMBLOB, "mysql"), nullable=False
-        )
-    )
