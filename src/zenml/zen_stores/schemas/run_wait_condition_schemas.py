@@ -136,7 +136,7 @@ class RunWaitConditionSchema(BaseSchema, RunMetadataInterface, table=True):
             secondary="run_metadata_resource",
             primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.WAIT_CONDITION.value}', foreign(RunMetadataResourceSchema.resource_id)==RunWaitConditionSchema.id)",
             secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
-            overlaps="run_metadata",
+            viewonly=True,
         ),
     )
 
