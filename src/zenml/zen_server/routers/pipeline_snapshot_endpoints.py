@@ -362,29 +362,34 @@ def get_snapshot_code_download_token(
     Raises:
         ValueError: If the snapshot has no code path or stack.
     """
-    store = zen_store()
-    snapshot = store.get_snapshot(snapshot_id, hydrate=False)
-
-    if not snapshot.stack:
-        raise ValueError(f"Snapshot {snapshot_id} has no stack.")
-
-    artifact_store_id = snapshot.stack.components[
-        StackComponentType.ARTIFACT_STORE
-    ][0].id
-    artifact_store_model = zen_store().get_stack_component(artifact_store_id)
-
-    models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store_model]
-    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
     # The code path is part of the metadata, which carries payloads that can
-    # live in external storage, so it is only fetched once the caller is
-    # authorized.
-    snapshot = store.get_snapshot(
+    # live in external storage, so the caller is authorized before it is
+    # loaded.
+    def _verify(snapshot: PipelineSnapshotResponse) -> None:
+        if not snapshot.stack:
+            raise ValueError(f"Snapshot {snapshot_id} has no stack.")
+        artifact_store_model = zen_store().get_stack_component(
+            snapshot.stack.components[StackComponentType.ARTIFACT_STORE][0].id
+        )
+        models: List[BaseModel] = [
+            snapshot,
+            snapshot.stack,
+            artifact_store_model,
+        ]
+        batch_verify_permissions_for_models(models=models, action=Action.READ)
+
+    snapshot = zen_store().get_snapshot(
         snapshot_id,
         hydrate=True,
         step_configuration_filter=[],
         include_config_schema=False,
+        pre_read_hook=_verify,
     )
+    assert snapshot.stack
+    artifact_store_id = snapshot.stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].id
     if not snapshot.code_path:
         raise ValueError(f"Snapshot {snapshot_id} has no code path.")
 

@@ -539,13 +539,14 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    store = zen_store()
-    run = store.get_run(run_id, hydrate=False)
-    verify_permission_for_model(run, action=Action.READ)
-    verify_permission_for_model(run, action=Action.UPDATE)
+
     # The metadata of the run carries payloads that can live in external
-    # storage, so it is only fetched once the caller is authorized.
-    run = store.get_run(run_id, hydrate=True)
+    # storage, so the caller is authorized before it is loaded.
+    def _verify(run: PipelineRunResponse) -> None:
+        verify_permission_for_model(run, action=Action.READ)
+        verify_permission_for_model(run, action=Action.UPDATE)
+
+    run = zen_store().get_run(run_id, hydrate=True, pre_read_hook=_verify)
     dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 

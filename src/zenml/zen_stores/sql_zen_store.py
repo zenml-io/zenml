@@ -5689,6 +5689,9 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
+        pre_read_hook: Optional[
+            Callable[[PipelineSnapshotResponse], None]
+        ] = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -5701,6 +5704,8 @@ class SqlZenStore(BaseZenStore):
                 included.
             include_config_schema: Whether to include the config schema in the
                 response.
+            pre_read_hook: Optional function to run with the snapshot, without
+                its metadata, before its payloads are resolved.
 
         Returns:
             The snapshot.
@@ -5715,6 +5720,8 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
+            if pre_read_hook:
+                pre_read_hook(snapshot.to_model(include_resources=True))
             payloads = (
                 self._resolve_payloads(
                     session,
@@ -5764,9 +5771,14 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
                 get_to_model_kwargs=lambda snapshots: {
-                    "payloads": self._resolve_page_payloads(
-                        session, snapshots, hydrate
+                    "payloads": self._resolve_payloads(
+                        session,
+                        PipelineSnapshotSchema.get_page_payload_blob_ids(
+                            snapshots
+                        ),
                     )
+                    if hydrate
+                    else UNRESOLVED
                 },
             )
 
@@ -6465,7 +6477,10 @@ class SqlZenStore(BaseZenStore):
             )
 
     def get_run_template(
-        self, template_id: UUID, hydrate: bool = True
+        self,
+        template_id: UUID,
+        hydrate: bool = True,
+        pre_read_hook: Optional[Callable[[RunTemplateResponse], None]] = None,
     ) -> RunTemplateResponse:
         """Get a run template with a given ID.
 
@@ -6473,6 +6488,8 @@ class SqlZenStore(BaseZenStore):
             template_id: ID of the template.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            pre_read_hook: Optional function to run with the template, without
+                its metadata, before its payloads are resolved.
 
         Returns:
             The template.
@@ -6483,6 +6500,8 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
+            if pre_read_hook:
+                pre_read_hook(template.to_model(include_resources=True))
             return template.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -6522,9 +6541,18 @@ class SqlZenStore(BaseZenStore):
                 filter_model=template_filter_model,
                 hydrate=hydrate,
                 get_to_model_kwargs=lambda templates: {
-                    "payloads": self._resolve_page_payloads(
-                        session, templates, hydrate
+                    "payloads": self._resolve_payloads(
+                        session,
+                        PipelineSnapshotSchema.get_page_payload_blob_ids(
+                            [
+                                template.source_snapshot
+                                for template in templates
+                                if template.source_snapshot
+                            ]
+                        ),
                     )
+                    if hydrate
+                    else UNRESOLVED
                 },
             )
 
@@ -7377,6 +7405,7 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         include_full_metadata: bool = False,
         include_python_packages: bool = False,
+        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -7388,6 +7417,8 @@ class SqlZenStore(BaseZenStore):
                 full metadata in the response.
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
+            pre_read_hook: Optional function to run with the run, without
+                its metadata, before its payloads are resolved.
 
         Returns:
             The pipeline run.
@@ -7403,6 +7434,8 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
+            if pre_read_hook:
+                pre_read_hook(run.to_model(include_resources=True))
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -13073,7 +13106,10 @@ class SqlZenStore(BaseZenStore):
             return step_run_response
 
     def get_run_step(
-        self, step_run_id: UUID, hydrate: bool = True
+        self,
+        step_run_id: UUID,
+        hydrate: bool = True,
+        pre_read_hook: Optional[Callable[[StepRunResponse], None]] = None,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -13081,6 +13117,8 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            pre_read_hook: Optional function to run with the step run, without
+                its metadata, before its payloads are resolved.
 
         Returns:
             The step run.
@@ -13094,6 +13132,8 @@ class SqlZenStore(BaseZenStore):
                     include_metadata=hydrate, include_resources=True
                 ),
             )
+            if pre_read_hook:
+                pre_read_hook(step_run.to_model(include_resources=True))
             return step_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,

@@ -64,7 +64,6 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
-    server_config,
     set_filter_project_scope,
     zen_store,
 )
@@ -159,18 +158,16 @@ def _get_step_with_permission(
     Returns:
         The fetched step.
     """
+
     # The metadata of a step carries payloads that can live in external
-    # storage, so with RBAC enabled, it is only fetched once the caller is
-    # authorized.
-    authorize_first = hydrate and server_config().rbac_enabled
-    step = zen_store().get_run_step(
-        step_id, hydrate=hydrate and not authorize_first
+    # storage, so the caller is authorized before it is loaded.
+    def _verify(step: StepRunResponse) -> None:
+        pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
+        verify_permission_for_model(pipeline_run, action=action)
+
+    return zen_store().get_run_step(
+        step_id, hydrate=hydrate, pre_read_hook=_verify
     )
-    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
-    verify_permission_for_model(pipeline_run, action=action)
-    if authorize_first:
-        step = zen_store().get_run_step(step_id, hydrate=True)
-    return step
 
 
 @router.get(

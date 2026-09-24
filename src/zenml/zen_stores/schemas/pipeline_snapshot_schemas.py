@@ -446,6 +446,38 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
         raise RuntimeError("Missing DB session to fetch step configurations.")
 
+    @staticmethod
+    def get_page_payload_blob_ids(
+        snapshots: Sequence["PipelineSnapshotSchema"],
+    ) -> List[Optional[UUID]]:
+        """Get the blobs that converting a page of snapshots with metadata reads.
+
+        Like `get_payload_blob_ids` for each snapshot of a page with all its
+        step configurations, but with one query for the whole page.
+
+        Args:
+            snapshots: The snapshots of the page.
+
+        Raises:
+            RuntimeError: If no session for the schemas exists.
+
+        Returns:
+            The blob IDs.
+        """
+        if not snapshots:
+            return []
+        if session := object_session(snapshots[0]):
+            step_configuration_blob_ids = session.execute(
+                select(StepConfigurationSchema.config_blob_id).where(
+                    col(StepConfigurationSchema.snapshot_id).in_(
+                        [snapshot.id for snapshot in snapshots]
+                    )
+                )
+            ).scalars()
+            return [*get_blob_ids(*snapshots), *step_configuration_blob_ids]
+
+        raise RuntimeError("Missing DB session to fetch step configurations.")
+
     def get_upstream_steps(self) -> Optional[Dict[str, List[str]]]:
         """Get the upstream steps of each step of the snapshot.
 

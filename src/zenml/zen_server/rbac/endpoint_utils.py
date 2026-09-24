@@ -240,29 +240,31 @@ def verify_permissions_and_get_entity_with_payloads(
     """Verify permissions and fetch an entity whose metadata carries payloads.
 
     The metadata of runs, step runs, snapshots and run templates carries
-    payloads that can live in external storage. These are only resolved once
-    the caller is authorized to read the entity, so with RBAC enabled, the
-    entity is first fetched without its metadata.
+    payloads that can live in external storage. The get method calls its
+    `pre_read_hook` with the entity without its metadata, so the caller is
+    authorized before any payload is resolved, with a single fetch.
 
     Args:
         id: The ID of the entity to fetch.
-        get_method: The method to fetch the entity.
+        get_method: The method to fetch the entity. It must accept a
+            `pre_read_hook`.
         hydrate: Whether to include the metadata of the entity.
         get_method_kwargs: Keyword arguments to pass to the get method.
 
     Returns:
         A model of the fetched entity.
     """
-    if hydrate and server_config().rbac_enabled:
-        verify_permission_for_model(
-            get_method(id, hydrate=False), action=Action.READ
-        )
-        return dehydrate_response_model(
-            get_method(id, hydrate=True, **get_method_kwargs)
-        )
 
-    return verify_permissions_and_get_entity(
-        id=id, get_method=get_method, hydrate=hydrate, **get_method_kwargs
+    def _verify_read(model: AnyResponse) -> None:
+        verify_permission_for_model(model, action=Action.READ)
+
+    return dehydrate_response_model(
+        get_method(
+            id,
+            hydrate=hydrate,
+            pre_read_hook=_verify_read,
+            **get_method_kwargs,
+        )
     )
 
 
