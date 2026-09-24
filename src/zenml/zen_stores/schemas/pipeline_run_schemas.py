@@ -15,7 +15,16 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -33,7 +42,6 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionMode,
@@ -62,6 +70,15 @@ from zenml.utils.run_utils import (
     find_all_downstream_steps,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.payload_storage import (
+    UNRESOLVED,
+    PayloadField,
+    PayloadMediaType,
+    PayloadValue,
+    ResolvedPayloads,
+    get_blob_ids,
+    read_payload,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -151,6 +168,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
+    )
+    orchestrator_environment_blob_id: Optional[UUID] = None
+
+    PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
+        PayloadField(
+            name="orchestrator_environment",
+            media_type=PayloadMediaType.JSON,
+            nullable=True,
+        ),
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
@@ -530,14 +556,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The created `PipelineRunSchema`.
         """
-        orchestrator_environment = json.dumps(request.orchestrator_environment)
-        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
-            logger.warning(
-                "Orchestrator environment is too large to be stored in the "
-                "database. Skipping."
-            )
-            orchestrator_environment = "{}"
-
         triggered_by = None
         triggered_by_type = None
         if request.trigger_info:
@@ -553,7 +571,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=request.user,
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
-            orchestrator_environment=orchestrator_environment,
+            orchestrator_environment=cls.get_orchestrator_environment(
+                request
+            ).text,
             start_time=request.start_time,
             end_time=request.end_time,
             status=request.status.value,
@@ -574,8 +594,52 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             root_run_id=root_run_id,
         )
 
-    def get_pipeline_configuration(self) -> PipelineConfiguration:
+    @staticmethod
+    def get_orchestrator_environment(
+        request: "PipelineRunRequest",
+    ) -> PayloadValue:
+        """Get the orchestrator environment payload of a run request.
+
+        Args:
+            request: The run request.
+
+        Returns:
+            The orchestrator environment payload.
+        """
+        orchestrator_environment = json.dumps(request.orchestrator_environment)
+        # The limit of the inline column applies to offloaded values as well,
+        # so that switching offloading off never changes what is stored.
+        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Orchestrator environment is too large to be stored in the "
+                "database. Skipping."
+            )
+            orchestrator_environment = "{}"
+        return PayloadValue(
+            text=orchestrator_environment, media_type=PayloadMediaType.JSON
+        )
+
+    def get_payload_blob_ids(self) -> List[Optional[UUID]]:
+        """Get the blobs that the conversion of this run with metadata reads.
+
+        Returns:
+            The blob IDs.
+        """
+        blob_ids = get_blob_ids(self)
+        if self.snapshot:
+            blob_ids += [
+                self.snapshot.pipeline_configuration_blob_id,
+                self.snapshot.client_environment_blob_id,
+            ]
+        return blob_ids
+
+    def get_pipeline_configuration(
+        self, payloads: ResolvedPayloads = UNRESOLVED
+    ) -> PipelineConfiguration:
         """Get the pipeline configuration for the pipeline run.
+
+        Args:
+            payloads: The resolver of offloaded payloads.
 
         Raises:
             RuntimeError: if the pipeline run has no snapshot and no pipeline
@@ -585,8 +649,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The pipeline configuration.
         """
         if self.snapshot:
-            pipeline_config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
+            pipeline_config = self.snapshot.get_pipeline_configuration(
+                payloads
             )
         elif self.pipeline_configuration:
             pipeline_config = PipelineConfiguration.model_validate_json(
@@ -612,30 +676,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return self.snapshot.get_execution_mode()
 
         return self.get_pipeline_configuration().execution_mode
-
-    def get_step_configuration(
-        self, step_name: str, pipeline_configuration: PipelineConfiguration
-    ) -> Step:
-        """Get the step configuration for the pipeline run.
-
-        Args:
-            step_name: The name of the step to get the configuration for.
-            pipeline_configuration: The pipeline configuration of the run as
-                returned by `get_pipeline_configuration`.
-
-        Raises:
-            RuntimeError: If the pipeline run has no snapshot.
-
-        Returns:
-            The step configuration.
-        """
-        if self.snapshot:
-            return self.snapshot.get_step_configuration(step_name).to_step(
-                pipeline_configuration,
-                exclude_hook_sources=self.snapshot.is_dynamic,
-            )
-        else:
-            raise RuntimeError("Pipeline run has no snapshot.")
 
     def _get_step_run_statuses(self) -> List[ExecutionStatus]:
         """Get the statuses of the steps in the pipeline run.
@@ -701,6 +741,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_resources: bool = False,
         include_python_packages: bool = False,
         include_full_metadata: bool = False,
+        payloads: ResolvedPayloads = UNRESOLVED,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -710,6 +751,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
             include_full_metadata: Whether the full metadata will be included.
+            payloads: The resolver of offloaded payloads, required to include
+                the metadata of a run whose payloads are offloaded.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -731,9 +774,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
-            config = self.get_pipeline_configuration()
+            config = self.get_pipeline_configuration(payloads)
             raw_client_environment = (
-                self.snapshot.client_environment
+                read_payload(
+                    self.snapshot.client_environment,
+                    self.snapshot.client_environment_blob_id,
+                    payloads,
+                )
                 if self.snapshot
                 else self.client_environment
             )
@@ -752,9 +799,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
+            raw_orchestrator_environment = read_payload(
+                self.orchestrator_environment,
+                self.orchestrator_environment_blob_id,
+                payloads,
+            )
             orchestrator_environment = (
-                json.loads(self.orchestrator_environment)
-                if self.orchestrator_environment
+                json.loads(raw_orchestrator_environment)
+                if raw_orchestrator_environment
                 else {}
             )
 
@@ -1109,10 +1161,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "ID of the run request."
             )
 
-        orchestrator_environment = json.dumps(request.orchestrator_environment)
-
         self.orchestrator_run_id = request.orchestrator_run_id
-        self.orchestrator_environment = orchestrator_environment
+        self.orchestrator_environment = self.get_orchestrator_environment(
+            request
+        ).text
+        # The environment of the placeholder may have been offloaded.
+        self.orchestrator_environment_blob_id = None
         self.status = request.status.value
         self.in_progress = not request.status.is_finished
 

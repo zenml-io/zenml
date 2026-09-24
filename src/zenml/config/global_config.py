@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality to support ZenML GlobalConfiguration."""
 
+import json
 import os
 import uuid
 from pathlib import Path
@@ -471,23 +472,31 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             store_dict.pop("backup_secrets_store", None) or {}
         )
 
+        def _to_env_value(value: Any) -> str:
+            # The store configurations decode nested values as JSON.
+            if isinstance(value, (dict, list)):
+                return json.dumps(value)
+            return str(value)
+
         for key, value in store_dict.items():
             if key in ["username", "password"]:
                 # Never include the username and password in the env vars. Use
                 # the API token instead.
                 continue
 
-            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = str(value)
+            environment_vars[ENV_ZENML_STORE_PREFIX + key.upper()] = (
+                _to_env_value(value)
+            )
 
         for key, value in secrets_store_dict.items():
             environment_vars[ENV_ZENML_SECRETS_STORE_PREFIX + key.upper()] = (
-                str(value)
+                _to_env_value(value)
             )
 
         for key, value in backup_secrets_store_dict.items():
             environment_vars[
                 ENV_ZENML_BACKUP_SECRETS_STORE_PREFIX + key.upper()
-            ] = str(value)
+            ] = _to_env_value(value)
 
         return environment_vars
 

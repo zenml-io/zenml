@@ -26,6 +26,10 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.blob_schemas import (
+    BlobContentSchema,
+    BlobSchema,
+)
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
     CodeRepositorySchema,
@@ -108,6 +112,8 @@ __all__ = [
     "ArtifactVersionSchema",
     "ArtifactVisualizationSchema",
     "BaseSchema",
+    "BlobContentSchema",
+    "BlobSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
     "DeploymentSchema",

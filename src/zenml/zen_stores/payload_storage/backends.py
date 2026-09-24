@@ -1,0 +1,320 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Backends that hold payload blobs outside the database."""
+
+import contextlib
+import os
+import tempfile
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Protocol, cast
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict
+
+from zenml.enums import StackComponentType
+from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.payload_storage.config import PayloadBackendType
+
+if TYPE_CHECKING:
+    from fsspec import AbstractFileSystem
+
+    from zenml.artifact_stores import BaseArtifactStoreFlavor
+
+
+class PayloadBackend(ABC):
+    """Holds payload bytes outside the database, addressed by their SHA-256.
+
+    Blobs are never overwritten with different bytes or deleted, so a backend
+    only needs to store and load them.
+    """
+
+    @abstractmethod
+    def put(self, sha256: str, data: bytes) -> None:
+        """Durably store bytes under their SHA-256.
+
+        Concurrent writers of the same content store identical bytes, so
+        storing bytes that are already stored must succeed.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+            data: The bytes to store.
+        """
+
+    @abstractmethod
+    def get(self, sha256: str) -> bytes:
+        """Load the bytes stored under a SHA-256.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+
+        Returns:
+            The stored bytes.
+        """
+
+
+class LocalPayloadBackendConfiguration(BaseModel):
+    """Configuration of the `local` payload backend.
+
+    Attributes:
+        path: The directory holding the blobs, usually on a mounted volume.
+    """
+
+    path: str
+
+    model_config = ConfigDict(extra="ignore")
+
+
+def _fsync_directory(path: str) -> None:
+    """Make the entries of a directory durable.
+
+    Args:
+        path: The directory.
+    """
+    # Windows cannot open a directory to flush it.
+    if os.name != "posix":
+        return
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+class LocalPayloadBackend(PayloadBackend):
+    """Holds payload blobs as files in a directory.
+
+    Blobs are sharded by the first bytes of their hash, as
+    `<root>/<sha[0:2]>/<sha[2:4]>/<sha256>`, and published durably: a file is
+    fully written and flushed under a temporary name before it is renamed to
+    its final name, and the renames and new directories are flushed as well.
+    """
+
+    def __init__(self, root: str) -> None:
+        """Initializes the backend.
+
+        Args:
+            root: The directory holding the blobs.
+        """
+        self._root = os.path.abspath(root)
+
+    def _get_path(self, sha256: str) -> str:
+        """Get the path of a blob.
+
+        Args:
+            sha256: The hex SHA-256 of the blob.
+
+        Returns:
+            The path of the blob file.
+        """
+        return os.path.join(self._root, sha256[:2], sha256[2:4], sha256)
+
+    def _make_directories(self, directory: str) -> None:
+        """Durably create the missing shard directories of a blob.
+
+        The root itself is never created: a missing root usually is a volume
+        that is not mounted, and blobs written to a new directory on the
+        container's own filesystem would be lost with the container.
+
+        Args:
+            directory: The shard directory to create.
+
+        Raises:
+            FileNotFoundError: If the root directory does not exist.
+        """
+        if not os.path.isdir(self._root):
+            raise FileNotFoundError(
+                f"The payload storage directory `{self._root}` does not exist."
+            )
+        missing = []
+        while directory != self._root and not os.path.isdir(directory):
+            missing.append(directory)
+            directory = os.path.dirname(directory)
+        for path in reversed(missing):
+            with contextlib.suppress(FileExistsError):
+                os.mkdir(path)
+            _fsync_directory(os.path.dirname(path))
+
+    def put(self, sha256: str, data: bytes) -> None:
+        """Durably store bytes under their SHA-256.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+            data: The bytes to store.
+
+        Raises:
+            BaseException: Any error of the write, once the temporary file is
+                removed.
+        """
+        path = self._get_path(sha256)
+        if os.path.exists(path):
+            return
+
+        directory = os.path.dirname(path)
+        self._make_directories(directory)
+        descriptor, temporary_path = tempfile.mkstemp(
+            dir=directory, prefix=".tmp-"
+        )
+        try:
+            with os.fdopen(descriptor, "wb") as file:
+                file.write(data)
+                file.flush()
+                os.fsync(file.fileno())
+            # Atomic, so readers never see a partial file, and concurrent
+            # writers of the same blob replace it with identical bytes.
+            os.replace(temporary_path, path)
+        except BaseException:
+            with contextlib.suppress(OSError):
+                os.unlink(temporary_path)
+            raise
+        _fsync_directory(directory)
+
+    def get(self, sha256: str) -> bytes:
+        """Load the bytes stored under a SHA-256.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+
+        Returns:
+            The stored bytes.
+        """
+        with open(self._get_path(sha256), "rb") as file:
+            return file.read()
+
+
+class ObjectStoreArtifactStore(Protocol):
+    """An artifact store whose files live in an fsspec filesystem."""
+
+    @property
+    def path(self) -> str:
+        """The root path of the artifact store."""
+
+    @property
+    def filesystem(self) -> "AbstractFileSystem":
+        """The filesystem holding the files of the artifact store."""
+
+
+class ArtifactStorePayloadBackend(PayloadBackend):
+    """Holds payload blobs in object storage through a ZenML artifact store.
+
+    Blobs are stored as `<path>/<sha256>`, where `path` is the path of the
+    artifact store, such as `s3://bucket/prefix`. Each blob takes a single
+    request to write or read, with the credentials of the artifact store.
+    """
+
+    def __init__(self, artifact_store: ObjectStoreArtifactStore) -> None:
+        """Initializes the backend.
+
+        Args:
+            artifact_store: The artifact store holding the blobs.
+        """
+        self._artifact_store = artifact_store
+        self._root = artifact_store.path.rstrip("/")
+
+    def put(self, sha256: str, data: bytes) -> None:
+        """Durably store bytes under their SHA-256.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+            data: The bytes to store.
+        """
+        # Object stores only make an object visible once its upload has
+        # completed, so the bytes are written straight to their final key.
+        self._artifact_store.filesystem.pipe_file(
+            f"{self._root}/{sha256}", data
+        )
+
+    def get(self, sha256: str) -> bytes:
+        """Load the bytes stored under a SHA-256.
+
+        Args:
+            sha256: The hex SHA-256 of the bytes.
+
+        Returns:
+            The stored bytes.
+        """
+        data: bytes = self._artifact_store.filesystem.cat_file(
+            f"{self._root}/{sha256}"
+        )
+        return data
+
+
+def _get_artifact_store_flavor(
+    backend_type: PayloadBackendType,
+) -> "BaseArtifactStoreFlavor":
+    """Get the artifact store flavor that implements a payload backend.
+
+    Args:
+        backend_type: The payload backend.
+
+    Returns:
+        The artifact store flavor.
+
+    Raises:
+        ValueError: If no artifact store flavor implements the backend.
+    """
+    if backend_type == PayloadBackendType.S3:
+        from zenml.integrations.s3.flavors import S3ArtifactStoreFlavor
+
+        return S3ArtifactStoreFlavor()
+    if backend_type == PayloadBackendType.GCS:
+        from zenml.integrations.gcp.flavors import GCPArtifactStoreFlavor
+
+        return GCPArtifactStoreFlavor()
+    if backend_type == PayloadBackendType.AZURE:
+        from zenml.integrations.azure.flavors import AzureArtifactStoreFlavor
+
+        return AzureArtifactStoreFlavor()
+    raise ValueError(
+        f"No artifact store implements the `{backend_type}` payload backend."
+    )
+
+
+def create_payload_backend(
+    backend_type: PayloadBackendType, configuration: Dict[str, Any]
+) -> PayloadBackend:
+    """Create a payload backend from its configuration.
+
+    Creating a backend never connects to its storage, so a store starts even
+    while its storage is unavailable.
+
+    Args:
+        backend_type: The backend to create.
+        configuration: The configuration of the backend.
+
+    Returns:
+        The payload backend.
+    """
+    if backend_type == PayloadBackendType.LOCAL:
+        return LocalPayloadBackend(
+            root=LocalPayloadBackendConfiguration(**configuration).path
+        )
+
+    flavor = _get_artifact_store_flavor(backend_type)
+    now = utc_now()
+    artifact_store = flavor.implementation_class(
+        name=f"payload-storage-{backend_type.value}",
+        id=uuid4(),
+        config=flavor.config_class(**configuration),
+        flavor=flavor.name,
+        type=StackComponentType.ARTIFACT_STORE,
+        user=None,
+        created=now,
+        updated=now,
+        register_filesystem=False,
+    )
+    # Every object store flavor above exposes its filesystem. It is created
+    # on first use, so that a store starts while its storage is unavailable.
+    return ArtifactStorePayloadBackend(
+        cast(ObjectStoreArtifactStore, artifact_store)
+    )

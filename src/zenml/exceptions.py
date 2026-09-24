@@ -51,6 +51,14 @@ class LogStoreUnavailableError(LogStoreError):
     """Raised when a log backend is temporarily unavailable."""
 
 
+class PayloadStorageUnavailableError(ZenMLBaseException):
+    """Raised when execution payload storage cannot be read or written."""
+
+
+class PayloadIntegrityError(ZenMLBaseException, RuntimeError):
+    """Raised when stored payload bytes do not match their registered blob."""
+
+
 class LogStoreRateLimitError(LogStoreError):
     """Raised when a log backend rate limits a request."""
 

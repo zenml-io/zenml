@@ -30,6 +30,8 @@ from zenml.exceptions import (
     LogStoreUnavailableError,
     MaxConcurrentTasksError,
     MethodNotAllowedError,
+    PayloadIntegrityError,
+    PayloadStorageUnavailableError,
     SubscriptionUpgradeRequiredError,
     ValidationError,
     ZenKeyError,
@@ -95,9 +97,11 @@ REST_API_EXCEPTIONS: List[Tuple[Type[Exception], int]] = [
     # 502 Bad Gateway
     (LogStoreError, 502),
     # 503 Service Unavailable
+    (PayloadStorageUnavailableError, 503),
     (LogStoreUnavailableError, 503),
     # 500 Internal Server Error
     (EntityCreationError, 500),
+    (PayloadIntegrityError, 500),
     (RuntimeError, 500),
     # 501 Not Implemented,
     (NotImplementedError, 501),
