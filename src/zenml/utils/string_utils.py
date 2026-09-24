@@ -260,3 +260,82 @@ def substitute_string(value: V, substitution_func: Callable[[str], str]) -> V:
         return cast(V, substitution_func(value))
 
     return value
+
+
+def truncate_str(value: str, max_length: int, suffix: str = "...") -> str:
+    """Truncate a string to a maximum length, appending a suffix if it is shortened.
+
+    This is useful for rendering long strings (e.g. artifact URIs, step names,
+    or run IDs) cleanly in CLI tables and Rich console panels without overflowing
+    fixed-width terminal columns.
+
+    Examples::
+
+        >>> truncate_str("a very long pipeline run name", max_length=20)
+        'a very long pipeli...'
+
+        >>> truncate_str("short", max_length=20)
+        'short'
+
+        >>> truncate_str("exactly20characterss", max_length=20)
+        'exactly20characterss'
+
+    Args:
+        value: The original string to truncate.
+        max_length: The maximum allowed character length of the output (including
+            the suffix). Must be greater than or equal to the length of
+            ``suffix``.
+        suffix: A suffix appended to indicate truncation. Defaults to ``"..."``.
+
+    Returns:
+        str: The original string if it fits within ``max_length``, otherwise the
+            string truncated to ``max_length - len(suffix)`` characters with
+            ``suffix`` appended.
+
+    Raises:
+        ValueError: If ``max_length`` is less than the length of ``suffix``,
+            making it impossible to construct a valid truncated result.
+    """
+    if max_length < len(suffix):
+        raise ValueError(
+            f"max_length ({max_length}) must be >= len(suffix) ({len(suffix)}). "
+            "Cannot truncate with a suffix longer than the allowed output."
+        )
+    if len(value) <= max_length:
+        return value
+    return value[: max_length - len(suffix)] + suffix
+
+
+def slugify(value: str, separator: str = "-") -> str:
+    """Convert a string into a URL/filesystem-safe slug.
+
+    Converts whitespace and non-alphanumeric characters to the given separator,
+    collapses consecutive separators, and lowercases the result. This is useful
+    for generating deterministic, human-readable identifiers from display names
+    (e.g., pipeline names, stack names) for use in URLs, file paths, or
+    run labels.
+
+    Examples::
+
+        >>> slugify("My Pipeline Run!")
+        'my-pipeline-run'
+
+        >>> slugify("Hello  World__2024", separator="_")
+        'hello_world_2024'
+
+    Args:
+        value: The string to slugify.
+        separator: The separator character to use between words. Defaults to
+            ``"-"``.
+
+    Returns:
+        str: A lowercased, separator-delimited slug derived from ``value``.
+    """
+    import re
+
+    # Lowercase and replace non-alphanumeric characters with the separator
+    slug = re.sub(r"[^a-zA-Z0-9]+", separator, value.strip().lower())
+    # Remove leading and trailing separators
+    slug = slug.strip(separator)
+    return slug
+
