@@ -14,18 +14,17 @@
 """End-to-end checks of execution payload storage.
 
 The clean client's SQLite store offloads every payload to the database. The
-tests run real pipelines and store calls against it, and against a second
-store on the same database that offloads to a local directory, to cover what
-offloading can break: responses that differ from inline ones, execution paths
-that stop working while storage is down, half-created runs and corrupted blobs.
+tests run real pipelines and store calls against it, and remove or alter the
+stored bytes of blobs to cover what offloading can break: responses that differ
+from inline ones, execution paths that stop working when payloads cannot be
+read, half-created runs and corrupted blobs.
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from zenml import pipeline, step
 from zenml.client import Client
@@ -33,10 +32,7 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import (
-    PayloadIntegrityError,
-    PayloadStorageUnavailableError,
-)
+from zenml.exceptions import PayloadIntegrityError
 from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
@@ -54,6 +50,7 @@ from zenml.models import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.schemas import (
+    BlobContentSchema,
     BlobSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
@@ -120,16 +117,6 @@ def _open_store(store: SqlZenStore, **payload_storage: Any) -> SqlZenStore:
         deep=True,
     )
     return SqlZenStore(config=config, skip_default_registrations=True)
-
-
-def _open_local_store(store: SqlZenStore, root: Path) -> SqlZenStore:
-    """Open a store that offloads to a local directory, without a cache."""
-    return _open_store(
-        store,
-        write_backend="local",
-        backends={"local": {"path": str(root)}},
-        cache_size=0,
-    )
 
 
 def _hydrated_responses(store: SqlZenStore) -> Dict[str, Any]:
@@ -272,23 +259,17 @@ def _start_step(store: SqlZenStore, run_id: UUID) -> StepRunResponse:
     )
 
 
-def _get_blob_path(store: SqlZenStore, root: Path, blob_id: UUID) -> Path:
-    """The file of a blob held by the local backend."""
-    with Session(store.engine) as session:
-        blob = session.get(BlobSchema, blob_id)
-        assert blob
-        return root / blob.sha256[:2] / blob.sha256[2:4] / blob.sha256
-
-
-def _get_config_blob_path(
-    store: SqlZenStore, root: Path, snapshot_id: UUID
-) -> Path:
-    """The file of the pipeline configuration of a snapshot."""
-    with Session(store.engine) as session:
-        snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
-        assert snapshot and snapshot.pipeline_configuration_blob_id
-        blob_id = snapshot.pipeline_configuration_blob_id
-    return _get_blob_path(store, root, blob_id)
+def _get_config_blob_content(
+    session: Session, snapshot_id: UUID
+) -> BlobContentSchema:
+    """The stored bytes of the pipeline configuration of a snapshot."""
+    snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
+    assert snapshot and snapshot.pipeline_configuration_blob_id
+    blob = session.get(BlobSchema, snapshot.pipeline_configuration_blob_id)
+    assert blob
+    content = session.get(BlobContentSchema, blob.sha256)
+    assert content
+    return content
 
 
 def test_offloaded_and_inline_payloads_read_the_same(
@@ -309,100 +290,89 @@ def test_offloaded_and_inline_payloads_read_the_same(
     assert offloaded == inline
 
 
-def test_storage_outage_fails_only_what_needs_payloads(
-    store: SqlZenStore, tmp_path: Path
+def test_paths_without_metadata_work_while_payloads_are_unreadable(
+    store: SqlZenStore,
 ) -> None:
-    """While storage is down, only creations and reads with metadata fail."""
-    root = tmp_path / "payloads"
-    root.mkdir()
-    local = _open_local_store(store, root)
-    run = _start_run(local)
-    step_run = _start_step(local, run.id)
+    """Execution updates and responses without metadata never read payloads."""
+    cold = _open_store(store, cache_size=0)
+    run = _start_run(cold)
+    step_run = _start_step(cold, run.id)
+    with Session(cold.engine) as session:
+        session.execute(delete(BlobContentSchema))
+        session.commit()
 
-    root.rename(tmp_path / "unmounted")
-    try:
-        with pytest.raises(PayloadStorageUnavailableError):
-            _create_snapshot(local)
-        with pytest.raises(PayloadStorageUnavailableError):
-            local.get_run(run.id, hydrate=True)
+    with pytest.raises(RuntimeError, match="missing"):
+        cold.get_run(run.id, hydrate=True)
 
-        project = Client().active_project.id
-        local.get_run(run.id, hydrate=False)
-        local.list_runs(PipelineRunFilter(project=project))
-        local.get_snapshot(run.snapshot.id, hydrate=False)
-        local.list_snapshots(PipelineSnapshotFilter(project=project))
-        local.get_run_step(step_run.id, hydrate=False)
-        local.list_run_steps(StepRunFilter(project=project))
-        local.update_step_heartbeat(step_run.id)
-        local.update_run_step(
-            step_run.id,
-            StepRunUpdate(
-                status=ExecutionStatus.FAILED,
-                end_time=utc_now(),
-                exception_info={
-                    "traceback": "Traceback: outage",
-                    "step_code_line": None,
-                },
-            ),
-        )
-        local.update_run(
-            run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
-        )
-    finally:
-        (tmp_path / "unmounted").rename(root)
-
-    assert local.get_run(run.id, hydrate=True).status == ExecutionStatus.FAILED
+    project = Client().active_project.id
+    cold.get_run(run.id, hydrate=False)
+    cold.list_runs(PipelineRunFilter(project=project))
+    cold.get_snapshot(run.snapshot.id, hydrate=False)
+    cold.list_snapshots(PipelineSnapshotFilter(project=project))
+    cold.get_run_step(step_run.id, hydrate=False)
+    cold.list_run_steps(StepRunFilter(project=project))
+    cold.update_step_heartbeat(step_run.id)
+    cold.update_run_step(
+        step_run.id,
+        StepRunUpdate(
+            status=ExecutionStatus.FAILED,
+            end_time=utc_now(),
+            exception_info={"traceback": "Traceback", "step_code_line": None},
+        ),
+    )
+    updated = cold.update_run(
+        run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
+    )
+    assert updated.status == ExecutionStatus.FAILED
 
 
-def test_run_creation_writes_nothing_when_storage_fails(
-    store: SqlZenStore, tmp_path: Path
+def test_run_creation_writes_nothing_when_payloads_are_unreadable(
+    store: SqlZenStore,
 ) -> None:
-    """A storage failure while creating a run leaves no half-created run."""
-    root = tmp_path / "payloads"
-    root.mkdir()
-    local = _open_local_store(store, root)
-    snapshot = _create_snapshot(local)
-    blob_path = _get_config_blob_path(local, root, snapshot.id)
+    """A payload read failure while creating a run leaves no half-created run."""
+    cold = _open_store(store, cache_size=0)
+    snapshot = _create_snapshot(cold)
     request = _run_request(snapshot.id, tags=["payloads"])
+    with Session(cold.engine) as session:
+        content = _get_config_blob_content(session, snapshot.id)
+        sha256, data = content.sha256, content.data
+        session.delete(content)
+        session.commit()
 
-    blob_path.rename(tmp_path / "missing")
-    try:
-        with pytest.raises(PayloadStorageUnavailableError):
-            local.get_or_create_run(request)
-    finally:
-        (tmp_path / "missing").rename(blob_path)
+    with pytest.raises(RuntimeError, match="missing"):
+        cold.get_or_create_run(request)
 
-    with Session(local.engine) as session:
+    with Session(cold.engine) as session:
         assert not session.exec(
             select(PipelineRunSchema.id).where(
                 PipelineRunSchema.snapshot_id == snapshot.id
             )
         ).all()
+        session.add(BlobContentSchema(sha256=sha256, data=data))
+        session.commit()
 
-    run, created = local.get_or_create_run(request)
+    run, created = cold.get_or_create_run(request)
     assert created
     assert [tag.name for tag in run.tags] == ["payloads"]
 
 
-def test_corrupted_blob_is_rejected_and_not_cached(
-    store: SqlZenStore, tmp_path: Path
-) -> None:
+def test_corrupted_blob_is_rejected_and_not_cached(store: SqlZenStore) -> None:
     """Bytes that are not the registered ones never reach a response."""
-    root = tmp_path / "payloads"
-    root.mkdir()
-    local = _open_local_store(store, root)
-    snapshot = _create_snapshot(local, config_name="original-configuration")
-    blob_path = _get_config_blob_path(local, root, snapshot.id)
-    original = blob_path.read_bytes()
+    snapshot = _create_snapshot(store, config_name="original-configuration")
+    cached = _open_store(store, cache_size=64 * 1024 * 1024)
+
+    def replace_config_bytes(old: bytes, new: bytes) -> None:
+        with Session(store.engine) as session:
+            content = _get_config_blob_content(session, snapshot.id)
+            content.data = content.data.replace(old, new)
+            session.add(content)
+            session.commit()
+
     # Same size, so that only the SHA-256 tells the bytes apart.
-    blob_path.write_bytes(original.replace(b"original", b"tampered"))
+    replace_config_bytes(b"original", b"tampered")
+    with pytest.raises(PayloadIntegrityError):
+        cached.get_snapshot(snapshot.id, hydrate=True)
 
-    cached = _open_store(local, cache_size=64 * 1024 * 1024)
-    try:
-        with pytest.raises(PayloadIntegrityError):
-            cached.get_snapshot(snapshot.id, hydrate=True)
-    finally:
-        blob_path.write_bytes(original)
-
+    replace_config_bytes(b"tampered", b"original")
     restored = cached.get_snapshot(snapshot.id, hydrate=True)
     assert restored.pipeline_configuration.name == "original-configuration"

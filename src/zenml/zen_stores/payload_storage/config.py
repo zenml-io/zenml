@@ -24,7 +24,6 @@ class PayloadBackendType(StrEnum):
     """Backends that can hold payload blobs."""
 
     DATABASE = "database"
-    LOCAL = "local"
     S3 = "s3"
     GCS = "gcs"
     AZURE = "azure"
@@ -45,8 +44,7 @@ class PayloadStorageConfiguration(BaseModel):
             Every backend that ever received payloads must stay configured,
             since blobs are read from the backend they were written to. The
             `database` backend is always available and takes no
-            configuration. `local` takes the `path` of a directory on a
-            mounted volume. `s3`, `gcs` and `azure` take the configuration of
+            configuration. `s3`, `gcs` and `azure` take the configuration of
             the artifact store flavor of the same name, such as a `path` like
             `s3://bucket/prefix` and optional credentials; without
             credentials, the implicit credentials of the environment are used.
