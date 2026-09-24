@@ -343,12 +343,13 @@ def run_snapshot(
         )
         response_run = zen_store().get_run(run_id=execution_request.run_id)
     else:
-        response_run = zen_store().update_run(
+        zen_store().update_run(
             run_id=execution_request.run_id,
             run_update=PipelineRunUpdate(
                 status_reason=SNAPSHOT_RUN_QUEUED_STATUS_REASON
             ),
         )
+        response_run = zen_store().get_run(run_id=execution_request.run_id)
         try:
             snapshot_run_dispatcher().submit(execution_request)
         except SnapshotRunQueueFullError:

@@ -5408,7 +5408,11 @@ class SqlZenStore(BaseZenStore):
         # Serialize before opening the session so that a serialization failure
         # never reaches the database and the transaction only holds DB work.
         serialized_step_configurations = [
-            (step_name, step_configuration.model_dump_json(exclude={"config"}))
+            (
+                step_name,
+                step_configuration.model_dump_json(exclude={"config"}),
+                json.dumps(step_configuration.spec.upstream_steps),
+            )
             for step_name, step_configuration in snapshot.step_configurations.items()
         ]
 
@@ -5488,6 +5492,7 @@ class SqlZenStore(BaseZenStore):
             for index, (
                 step_name,
                 serialized_configuration,
+                upstream_steps,
             ) in enumerate(serialized_step_configurations):
                 session.add(
                     StepConfigurationSchema(
@@ -5497,6 +5502,7 @@ class SqlZenStore(BaseZenStore):
                         # configurations, we reconstruct it in the `to_model`
                         # method using the pipeline configuration.
                         config=serialized_configuration,
+                        upstream_steps=upstream_steps,
                         snapshot_id=new_snapshot.id,
                     )
                 )
@@ -5559,6 +5565,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
+                query_options=PipelineSnapshotSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
 
             return snapshot.to_model(
@@ -7000,17 +7009,6 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
-    @staticmethod
-    def _get_enable_run_heartbeat(snapshot: PipelineSnapshotSchema) -> bool:
-        value = json.loads(snapshot.pipeline_configuration).get(
-            "enable_heartbeat"
-        )
-
-        if value is None:
-            return True
-        else:
-            return bool(value)
-
     def _create_run(
         self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
@@ -7067,7 +7065,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_run,
             pipeline_id=snapshot.pipeline_id,
             index=index,
-            enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
+            enable_heartbeat=snapshot.get_enable_heartbeat(),
             root_run_id=root_run_id,
         )
 
@@ -7133,7 +7131,7 @@ class SqlZenStore(BaseZenStore):
 
         try:
             model_version_id = self._get_or_create_model_version_for_run(
-                new_run
+                new_run, config=new_run.get_pipeline_configuration()
             )
         except KeyError as e:
             session.delete(new_run)
@@ -7660,8 +7658,11 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(existing_run)
 
+            # Status updates must not depend on loading the run's
+            # configuration, so the response is built without metadata.
+            # Callers that need it hydrate the response lazily.
             return existing_run.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=False, include_resources=True
             )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -12260,9 +12261,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
             if run.status == ExecutionStatus.FAILED:
-                execution_mode = (
-                    run.get_pipeline_configuration().execution_mode
-                )
+                execution_mode = run.get_execution_mode()
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
@@ -12278,9 +12277,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            # Parsing the pipeline configuration is expensive, so it is parsed
+            # once and reused for everything this step creation needs.
+            pipeline_configuration = run.get_pipeline_configuration()
             step_config = (
                 step_run.dynamic_config
-                or run.get_step_configuration(step_name=step_run.name)
+                or run.get_step_configuration(
+                    step_name=step_run.name,
+                    pipeline_configuration=pipeline_configuration,
+                )
             )
             resource_runtime: Optional[StepRuntime] = None
             resource_request_heartbeat_enabled: Optional[bool] = None
@@ -12409,6 +12414,7 @@ class SqlZenStore(BaseZenStore):
 
             session.add(step_schema)
 
+            resolved_step_config = step_config
             if step_run.dynamic_config:
                 if not run.snapshot or not run.snapshot.is_dynamic:
                     raise IllegalOperationError(
@@ -12428,6 +12434,18 @@ class SqlZenStore(BaseZenStore):
                     step_run_id=step_schema.id,
                 )
                 session.add(step_configuration_schema)
+                # Resolved like reads resolve it, so that the values copied
+                # below match what reads would compute.
+                resolved_step_config = step_configuration_schema.to_step(
+                    pipeline_configuration,
+                    exclude_hook_sources=run.snapshot.is_dynamic,
+                )
+
+            step_type = resolved_step_config.config.step_type
+            step_schema.step_type = step_type.value if step_type else None
+            step_schema.substitutions = json.dumps(
+                resolved_step_config.config.substitutions
+            )
 
             try:
                 session.commit()
@@ -12524,7 +12542,7 @@ class SqlZenStore(BaseZenStore):
 
                 cascading_tags = [
                     tag
-                    for tag in run.get_pipeline_configuration().tags or []
+                    for tag in pipeline_configuration.tags or []
                     if isinstance(tag, Tag) and tag.cascade
                 ]
 
@@ -12586,7 +12604,7 @@ class SqlZenStore(BaseZenStore):
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
                         input_overrides = set(
-                            run.get_pipeline_configuration().get_invocation_input_overrides(
+                            pipeline_configuration.get_invocation_input_overrides(
                                 invocation_id=step_run.name,
                                 step_name=step_config.config.name,
                             )
@@ -12643,7 +12661,7 @@ class SqlZenStore(BaseZenStore):
                 model_version_id = existing_step_runs[-1].model_version_id
             else:
                 model_version_id = self._get_or_create_model_version_for_run(
-                    step_schema
+                    step_schema, config=resolved_step_config.config
                 )
 
             if model_version_id:
@@ -12724,7 +12742,9 @@ class SqlZenStore(BaseZenStore):
                 session.refresh(step_schema)
 
             step_run_response = step_schema.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                pipeline_configuration=pipeline_configuration,
             )
             if (
                 created_resource_request is not None
@@ -13220,8 +13240,11 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
+            # Status updates must not depend on loading the step's
+            # configuration, so the response is built without metadata.
+            # Callers that need it hydrate the response lazily.
             return existing_step_run.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=False, include_resources=True
             )
 
     def _get_step_run_input_artifact_from_cached_step_run(
@@ -13510,10 +13533,12 @@ class SqlZenStore(BaseZenStore):
         if new_status != previous_status:
             dispatcher = EventDispatcher()
             if dispatcher.has_handlers():
-                # Only convert to model if there are handlers to notify
+                # Only convert to model if there are handlers to notify.
+                # Handlers run inline in this status update, so the event
+                # only carries the body of the run.
                 dispatcher.dispatch_event(
                     PipelineRunStatusUpdate(
-                        run=pipeline_run.to_model(include_metadata=True),
+                        run=pipeline_run.to_model(),
                         previous_status=previous_status,
                     )
                 )
@@ -15402,28 +15427,27 @@ class SqlZenStore(BaseZenStore):
             )
 
     def _get_or_create_model_version_for_run(
-        self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
+        self,
+        pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema],
+        config: Union[PipelineConfiguration, StepConfiguration],
     ) -> Optional[UUID]:
         """Get or create a model version for a pipeline or step run.
 
         Args:
             pipeline_or_step_run: The pipeline or step run for which to create
                 the model version.
+            config: The resolved configuration of the pipeline or step run.
 
         Returns:
             The model version.
         """
         if isinstance(pipeline_or_step_run, PipelineRunSchema):
             producer_run_id = pipeline_or_step_run.id
-            pipeline_run = pipeline_or_step_run.to_model(include_metadata=True)
-            configured_model = pipeline_run.config.model
-            substitutions = pipeline_run.config.substitutions
         else:
             producer_run_id = pipeline_or_step_run.pipeline_run_id
-            step_run = pipeline_or_step_run.to_model(include_metadata=True)
-            configured_model = step_run.config.model
-            substitutions = step_run.config.substitutions
 
+        configured_model = config.model
+        substitutions = config.substitutions
         if not configured_model:
             return None
 

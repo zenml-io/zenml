@@ -328,6 +328,7 @@ class DynamicPipelineRunner:
         self._parent_runner = parent_runner
         self._snapshot = snapshot
         self._pipeline: Optional["DynamicPipeline"] = None
+        self._triggered_by_deployment: Optional[bool] = None
         self._fail_fast = (
             snapshot.pipeline_configuration.execution_mode
             == ExecutionMode.FAIL_FAST
@@ -468,6 +469,21 @@ class DynamicPipelineRunner:
             The pipeline snapshot.
         """
         return self._snapshot
+
+    @property
+    def triggered_by_deployment(self) -> bool:
+        """Whether a deployment triggered the run executed by this runner.
+
+        The trigger of a run never changes, so it is read once. Run update
+        responses don't include metadata, and reading the trigger from each
+        updated run would fetch the full run again.
+
+        Returns:
+            Whether a deployment triggered the run.
+        """
+        if self._triggered_by_deployment is None:
+            self._triggered_by_deployment = self._run.triggered_by_deployment
+        return self._triggered_by_deployment
 
     @property
     def orchestrator_run_id(self) -> str:
@@ -913,7 +929,7 @@ class DynamicPipelineRunner:
                         HookType.RUN_RESUME,
                     )
 
-                if not self._run.triggered_by_deployment:
+                if not self.triggered_by_deployment:
                     # Only run the init hook if the run is not triggered by
                     # a deployment, as the deployment service will have
                     # already run the init hook.
@@ -933,7 +949,7 @@ class DynamicPipelineRunner:
                 try:
                     self._run_entrypoint_and_finalize()
                 finally:
-                    if not self._run.triggered_by_deployment:
+                    if not self.triggered_by_deployment:
                         # Only run the cleanup hook if the run is not
                         # triggered by a deployment, as the deployment
                         # service will have already run the cleanup hook.
@@ -1363,7 +1379,7 @@ class DynamicPipelineRunner:
         inputs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
 
         config_overrides = None
-        if self._run and self._run.triggered_by_deployment:
+        if self.triggered_by_deployment:
             # Deployment-specific step overrides
             config_overrides = StepConfigurationUpdate(
                 enable_cache=False,

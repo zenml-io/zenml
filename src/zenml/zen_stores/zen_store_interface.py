@@ -1697,7 +1697,8 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             run_update: The update to be applied to the pipeline run.
 
         Returns:
-            The updated pipeline run.
+            The updated pipeline run, without metadata. Accessing a metadata
+            field hydrates it.
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
@@ -2838,7 +2839,8 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
             step_run_update: The update to be applied to the step.
 
         Returns:
-            The updated step run.
+            The updated step run, without metadata. Accessing a metadata
+            field hydrates it.
 
         Raises:
             KeyError: if the step run doesn't exist.

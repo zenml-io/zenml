@@ -56,7 +56,7 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
         status=ExecutionStatus.INITIALIZING,
         status_reason=utils.SNAPSHOT_RUN_QUEUED_STATUS_REASON,
     )
-    store.update_run.return_value = queued_run
+    store.get_run.return_value = queued_run
 
     monkeypatch.setattr(
         utils,
@@ -84,6 +84,9 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
     )
 
     assert result is queued_run
+    run_update = store.update_run.call_args.kwargs["run_update"]
+    assert run_update.status_reason == utils.SNAPSHOT_RUN_QUEUED_STATUS_REASON
+    store.get_run.assert_called_once_with(run_id=placeholder_run.id)
     dispatcher.submit.assert_called_once_with(
         SnapshotRunExecutionRequest(
             run_id=placeholder_run.id,

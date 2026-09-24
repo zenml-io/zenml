@@ -466,3 +466,46 @@ def test_step_hooks_terminal_failure_fires_failure_hook(
     assert len(failure_calls) == 1
     assert isinstance(failure_calls[0][0], RuntimeError)
     assert types.count(HookType.STEP_SUCCESS) == 0
+
+
+def test_step_level_init_and_cleanup_hooks_use_loaded_snapshot(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    """Tests that step-level run hooks get the snapshot the step already
+    loaded instead of the run's unhydrated snapshot.
+    """
+    _patch_step_runner_io(mocker)
+    orchestrator_class = type(local_stack.orchestrator)
+    mocker.patch.object(
+        orchestrator_class,
+        "run_init_cleanup_at_step_level",
+        new_callable=mocker.PropertyMock,
+        return_value=True,
+    )
+    mock_init_hook = mocker.patch.object(orchestrator_class, "run_init_hook")
+    mock_cleanup_hook = mocker.patch.object(
+        orchestrator_class, "run_cleanup_hook"
+    )
+
+    step = _step_with_hooks(f"{HOOK_MODULE}.successful_step")
+    step_run_info = _hook_step_run_info(
+        step, sample_snapshot_response_model, sample_step_run
+    )
+    StepRunner(step=step, stack=local_stack).run(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
+        input_artifacts={},
+        output_artifact_uris={},
+    )
+
+    mock_init_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+    mock_cleanup_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )

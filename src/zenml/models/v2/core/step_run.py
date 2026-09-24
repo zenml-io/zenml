@@ -232,6 +232,11 @@ class StepRunUpdate(BaseUpdate):
 class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
+    pipeline_run_id: Optional[UUID] = Field(
+        title="The ID of the pipeline run that this step run belongs to.",
+        # Servers before this field existed only return it in the metadata.
+        default=None,
+    )
     type: Optional[StepType] = Field(
         title="The type of the step.",
         default=None,
@@ -694,6 +699,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
+        if (pipeline_run_id := self.get_body().pipeline_run_id) is not None:
+            return pipeline_run_id
         return self.get_metadata().pipeline_run_id
 
     @property

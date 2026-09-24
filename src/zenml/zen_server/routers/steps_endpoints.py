@@ -136,13 +136,32 @@ def create_run_step(
     Returns:
         The created run step.
     """
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
 
     return verify_permissions_and_create_entity(
         request_model=step,
         create_method=zen_store().create_run_step,
         surrogate_models=[pipeline_run],
     )
+
+
+def _get_step_with_permission(
+    step_id: UUID, action: Action, hydrate: bool = False
+) -> StepRunResponse:
+    """Fetch a step and verify the caller is permitted to `action` its run.
+
+    Args:
+        step_id: The step run to fetch.
+        action: The RBAC action to check against the step's pipeline run.
+        hydrate: Whether to hydrate the returned step.
+
+    Returns:
+        The fetched step.
+    """
+    step = zen_store().get_run_step(step_id, hydrate=hydrate)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
+    verify_permission_for_model(pipeline_run, action=action)
+    return step
 
 
 @router.get(
@@ -165,16 +184,7 @@ def get_step(
     Returns:
         The step.
     """
-    # We always fetch the step hydrated because we need the pipeline_run_id
-    # for the permission checks. If the user requested an unhydrated response,
-    # we later remove the metadata
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
-    if hydrate is False:
-        step.metadata = None
-
+    step = _get_step_with_permission(step_id, Action.READ, hydrate=hydrate)
     return dehydrate_response_model(step)
 
 
@@ -197,9 +207,7 @@ def update_step(
     Returns:
         The updated step model.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
+    _get_step_with_permission(step_id, Action.UPDATE)
 
     updated_step = zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
@@ -260,10 +268,7 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
+    step = _get_step_with_permission(step_id, Action.READ, hydrate=True)
     return step.config.model_dump()
 
 
@@ -284,11 +289,7 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    step = zen_store().get_run_step(step_id, hydrate=True)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.READ)
-
-    return step.status
+    return _get_step_with_permission(step_id, Action.READ).status
 
 
 @router.get(
@@ -329,7 +330,7 @@ def get_step_logs(
 
     store = zen_store()
 
-    step = store.get_run_step(step_id, hydrate=True)
+    step = store.get_run_step(step_id, hydrate=False)
 
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN,
