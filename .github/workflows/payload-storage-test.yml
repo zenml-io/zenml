@@ -1,0 +1,55 @@
+---
+# Offloading execution payloads to object storage is off by default, so the
+# regular test jobs only cover payloads kept in their rows. This job runs the
+# store, pipeline and step tests with every payload offloaded to a local S3
+# server (moto), which surfaces any read path that misses an offloaded payload.
+# Locally: ZENML_TEST_PAYLOAD_STORAGE=s3 pytest tests/integration/functional/zen_stores
+name: Payload Storage Tests
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      - src/zenml/**
+      - tests/**
+      - pyproject.toml
+      - .github/workflows/payload-storage-test.yml
+  workflow_dispatch:
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  offloaded-payloads:
+    name: Tests with offloaded payloads
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      ZENML_DEBUG: true
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_LOGGING_VERBOSITY: INFO
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      ZENML_TEST_PAYLOAD_STORAGE: s3
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      AUTO_OPEN_DASHBOARD: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.11'
+      - name: Install ZenML
+        run: |
+          python -m pip install --upgrade pip uv
+          ./scripts/install-zenml-dev.sh --system
+      - name: Run the tests with offloaded payloads
+        run: |-
+          pytest tests/integration/functional/zen_stores \
+            tests/integration/functional/pipelines \
+            tests/integration/functional/steps \
+            --durations=20

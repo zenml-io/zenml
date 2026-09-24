@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 import os
 import shutil
 import sys
@@ -53,13 +54,88 @@ from zenml.utils import source_utils
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 
+# Offloading payloads is off by default, so the suites only cover payloads kept
+# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE=s3`, every store of the
+# session offloads its payloads to a local S3 server instead.
+TEST_PAYLOAD_STORAGE_ENV = "ZENML_TEST_PAYLOAD_STORAGE"
+PAYLOAD_STORAGE_SERVER = pytest.StashKey[object]()
 
-def pytest_configure() -> None:
-    """Prevent the macOS OpenMP preload from reaching child processes."""
+
+def _offload_payloads_to_local_s3(config: pytest.Config) -> None:
+    """Start a local S3 server and offload every payload of the session to it.
+
+    Args:
+        config: The pytest configuration, which keeps the server.
+    """
+    import boto3
+    from moto.server import ThreadedMotoServer
+
+    server = ThreadedMotoServer(ip_address="127.0.0.1", port=0, verbose=False)
+    server.start()
+    config.stash[PAYLOAD_STORAGE_SERVER] = server
+    host, port = server.get_host_and_port()
+    endpoint = f"http://{host}:{port}"
+    boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        region_name="us-east-1",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    ).create_bucket(Bucket="payloads")
+    # Set before any store exists, so every store of the session, and the
+    # processes it starts, offloads.
+    os.environ["ZENML_STORE_PAYLOAD_STORAGE"] = json.dumps(
+        {
+            "offload_enabled": True,
+            "write_backend": "s3",
+            "backends": {
+                "s3": {
+                    "path": "s3://payloads/tests",
+                    "key": "test",
+                    "secret": "test",
+                    "client_kwargs": {
+                        "endpoint_url": endpoint,
+                        "region_name": "us-east-1",
+                    },
+                }
+            },
+        }
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Prepare the process environment of the test session.
+
+    Args:
+        config: The pytest configuration.
+
+    Raises:
+        pytest.UsageError: If the payload storage to test is unknown.
+    """
     # macOS consumes this variable before Python starts. Child processes may
     # use a different architecture or load a different native library stack.
     if os.environ.get("PYTEST_DYLD_INSERT_LIBRARIES"):
         os.environ.pop("DYLD_INSERT_LIBRARIES", None)
+
+    payload_storage = os.environ.get(TEST_PAYLOAD_STORAGE_ENV)
+    if payload_storage == "s3":
+        _offload_payloads_to_local_s3(config)
+    elif payload_storage:
+        raise pytest.UsageError(
+            f"{TEST_PAYLOAD_STORAGE_ENV} only supports `s3`, not "
+            f"`{payload_storage}`."
+        )
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    """Stop the local S3 server of the session, if any.
+
+    Args:
+        config: The pytest configuration.
+    """
+    server = config.stash.get(PAYLOAD_STORAGE_SERVER, None)
+    if server is not None:
+        server.stop()  # type: ignore[attr-defined]
 
 
 def pytest_addoption(parser):
