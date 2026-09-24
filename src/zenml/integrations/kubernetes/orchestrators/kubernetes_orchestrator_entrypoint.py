@@ -296,11 +296,13 @@ def main() -> None:
             orchestrator_run_id = orchestrator_pod_name
 
             if args.run_id:
+                # Step run creation reads the metadata of this run.
                 pipeline_run = client.zen_store.update_run(
                     run_id=args.run_id,
                     run_update=PipelineRunUpdate(
                         orchestrator_run_id=orchestrator_run_id
                     ),
+                    hydrate=True,
                 )
             else:
                 pipeline_run = create_placeholder_run(
