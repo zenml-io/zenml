@@ -48,7 +48,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
+    verify_permissions_and_get_entity_with_payloads,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
@@ -174,7 +174,7 @@ def get_run_template(
     Returns:
         The run template.
     """
-    return verify_permissions_and_get_entity(
+    return verify_permissions_and_get_entity_with_payloads(
         id=template_id,
         get_method=zen_store().get_run_template,
         hydrate=hydrate,
@@ -268,7 +268,7 @@ if server_config().workload_manager_enabled:
         with track_handler(
             event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
         ) as analytics_handler:
-            template = verify_permissions_and_get_entity(
+            template = verify_permissions_and_get_entity_with_payloads(
                 id=template_id,
                 get_method=zen_store().get_run_template,
                 hydrate=True,

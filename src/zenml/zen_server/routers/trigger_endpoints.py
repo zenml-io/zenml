@@ -95,12 +95,14 @@ def verify_permissions_for_source_entity(
         )
     elif source_type == SourceType.PIPELINE_RUN:
         verify_permission_for_model(
-            model=zen_store().get_run(run_id=source_id),
+            model=zen_store().get_run(run_id=source_id, hydrate=False),
             action=Action.UPDATE,
         )
     elif source_type == SourceType.PIPELINE_SNAPSHOT:
         verify_permission_for_model(
-            model=zen_store().get_snapshot(snapshot_id=source_id),
+            model=zen_store().get_snapshot(
+                snapshot_id=source_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     else:
@@ -311,7 +313,7 @@ def attach_trigger_to_snapshot(
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
-    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
+    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=False)
 
     if trigger.project_id != snapshot.project_id:
         raise KeyError(f"Snapshot {snapshot_id} not found.")
@@ -357,6 +359,10 @@ def attach_trigger_to_snapshot(
         action=Action.CREATE,
         project_id=snapshot.project_id,
     )
+
+    # The metadata of the snapshot carries payloads that can live in external
+    # storage, so it is only fetched once the caller is authorized.
+    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     # Validates and creates a runnable snapshot from the source snapshot + run configuration
     build, stack, model_version = validate_snapshot_for_server_execution(
@@ -404,7 +410,7 @@ def detach_trigger_from_snapshot(
     )
 
     verify_permission_for_model(
-        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=False),
         action=Action.READ,
     )
 

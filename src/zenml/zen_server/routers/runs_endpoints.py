@@ -90,6 +90,7 @@ from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
+    verify_permissions_and_get_entity_with_payloads,
     verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
@@ -309,7 +310,7 @@ def get_run(
         The pipeline run.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity(
+    run = verify_permissions_and_get_entity_with_payloads(
         id=run_id,
         get_method=store.get_run,
         hydrate=hydrate,
@@ -433,7 +434,7 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    run = verify_permissions_and_get_entity(
+    run = verify_permissions_and_get_entity_with_payloads(
         id=run_id, get_method=zen_store().get_run, hydrate=True
     )
     return run.config.model_dump()
@@ -511,7 +512,7 @@ def refresh_run_status(
             the status of individual steps.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity(
+    run = verify_permissions_and_get_entity_with_payloads(
         id=run_id,
         get_method=store.get_run,
         hydrate=True,
@@ -538,9 +539,13 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    run = zen_store().get_run(run_id, hydrate=True)
+    store = zen_store()
+    run = store.get_run(run_id, hydrate=False)
     verify_permission_for_model(run, action=Action.READ)
     verify_permission_for_model(run, action=Action.UPDATE)
+    # The metadata of the run carries payloads that can live in external
+    # storage, so it is only fetched once the caller is authorized.
+    run = store.get_run(run_id, hydrate=True)
     dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 
@@ -584,7 +589,7 @@ def run_logs(
     store = zen_store()
 
     run = verify_permissions_and_get_entity(
-        id=run_id, get_method=store.get_run, hydrate=True
+        id=run_id, get_method=store.get_run, hydrate=False
     )
 
     logs: Optional["LogsResponse"] = None
@@ -682,7 +687,7 @@ if server_config().workload_manager_enabled:
             run_snapshot,
         )
 
-        run = verify_permissions_and_get_entity(
+        run = verify_permissions_and_get_entity_with_payloads(
             id=run_id,
             get_method=zen_store().get_run,
             hydrate=True,

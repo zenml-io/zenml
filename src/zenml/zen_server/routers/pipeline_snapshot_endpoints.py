@@ -64,7 +64,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
+    verify_permissions_and_get_entity_with_payloads,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
@@ -223,7 +223,7 @@ def get_pipeline_snapshot(
     Returns:
         A specific snapshot object.
     """
-    return verify_permissions_and_get_entity(
+    return verify_permissions_and_get_entity_with_payloads(
         id=snapshot_id,
         get_method=zen_store().get_snapshot,
         hydrate=hydrate,
@@ -363,15 +363,7 @@ def get_snapshot_code_download_token(
         ValueError: If the snapshot has no code path or stack.
     """
     store = zen_store()
-    snapshot = store.get_snapshot(
-        snapshot_id,
-        hydrate=True,
-        step_configuration_filter=[],
-        include_config_schema=False,
-    )
-
-    if not snapshot.code_path:
-        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
+    snapshot = store.get_snapshot(snapshot_id, hydrate=False)
 
     if not snapshot.stack:
         raise ValueError(f"Snapshot {snapshot_id} has no stack.")
@@ -383,6 +375,18 @@ def get_snapshot_code_download_token(
 
     models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store_model]
     batch_verify_permissions_for_models(models=models, action=Action.READ)
+
+    # The code path is part of the metadata, which carries payloads that can
+    # live in external storage, so it is only fetched once the caller is
+    # authorized.
+    snapshot = store.get_snapshot(
+        snapshot_id,
+        hydrate=True,
+        step_configuration_filter=[],
+        include_config_schema=False,
+    )
+    if not snapshot.code_path:
+        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
 
     artifact_store = load_artifact_store(
         artifact_store_id=artifact_store_id, zen_store=zen_store()
@@ -488,7 +492,7 @@ if server_config().workload_manager_enabled:
         with track_handler(
             event=AnalyticsEvent.EXECUTED_SNAPSHOT,
         ) as analytics_handler:
-            snapshot = verify_permissions_and_get_entity(
+            snapshot = verify_permissions_and_get_entity_with_payloads(
                 id=snapshot_id,
                 get_method=zen_store().get_snapshot,
                 hydrate=True,

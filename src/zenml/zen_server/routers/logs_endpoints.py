@@ -231,7 +231,7 @@ def get_logs_entries(
                 "Runner logs must be associated with a pipeline run."
             )
         return fetch_runner_logs(
-            run=store.get_run(logs.pipeline_run_id, hydrate=True),
+            run=store.get_run(logs.pipeline_run_id, hydrate=False),
             logs=logs,
             start=start,
             limit=limit,

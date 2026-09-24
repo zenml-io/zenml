@@ -156,14 +156,25 @@ def verify_permissions_and_batch_create_entity(
 def verify_permissions_and_get_or_create_entity(
     request_model: AnyRequest,
     get_or_create_method: Callable[
-        [AnyRequest, Optional[Callable[[], None]]], Tuple[AnyResponse, bool]
+        [
+            AnyRequest,
+            Optional[Callable[[], None]],
+            Optional[Callable[[AnyResponse], None]],
+        ],
+        Tuple[AnyResponse, bool],
     ],
 ) -> Tuple[AnyResponse, bool]:
     """Verify permissions and create the entity if authorized.
 
+    Permission to read an existing entity is verified before its metadata is
+    loaded, since the metadata can carry payloads in external storage.
+
     Args:
         request_model: The entity request model.
-        get_or_create_method: The method to get or create the entity.
+        get_or_create_method: The method to get or create the entity. It
+            calls its second argument before creating the entity, and its
+            third argument with an existing entity, without its metadata,
+            before loading its metadata.
 
     Returns:
         The entity and a boolean indicating whether the entity was created.
@@ -187,11 +198,14 @@ def verify_permissions_and_get_or_create_entity(
         if resource_type and needs_usage_increment:
             check_entitlement(feature=resource_type)
 
-    model, created = get_or_create_method(request_model, _pre_creation_hook)
+    def _pre_read_hook(existing: AnyResponse) -> None:
+        verify_permission_for_model(model=existing, action=Action.READ)
 
-    if not created:
-        verify_permission_for_model(model=model, action=Action.READ)
-    elif resource_type and needs_usage_increment:
+    model, created = get_or_create_method(
+        request_model, _pre_creation_hook, _pre_read_hook
+    )
+
+    if created and resource_type and needs_usage_increment:
         report_usage(resource_type, resource_id=model.id)
 
     return dehydrate_response_model(model), created
@@ -215,6 +229,41 @@ def verify_permissions_and_get_entity(
     model = get_method(id, **get_method_kwargs)
     verify_permission_for_model(model, action=Action.READ)
     return dehydrate_response_model(model)
+
+
+def verify_permissions_and_get_entity_with_payloads(
+    id: UUIDOrStr,
+    get_method: Callable[..., AnyResponse],
+    hydrate: bool = True,
+    **get_method_kwargs: Any,
+) -> AnyResponse:
+    """Verify permissions and fetch an entity whose metadata carries payloads.
+
+    The metadata of runs, step runs, snapshots and run templates carries
+    payloads that can live in external storage. These are only resolved once
+    the caller is authorized to read the entity, so with RBAC enabled, the
+    entity is first fetched without its metadata.
+
+    Args:
+        id: The ID of the entity to fetch.
+        get_method: The method to fetch the entity.
+        hydrate: Whether to include the metadata of the entity.
+        get_method_kwargs: Keyword arguments to pass to the get method.
+
+    Returns:
+        A model of the fetched entity.
+    """
+    if hydrate and server_config().rbac_enabled:
+        verify_permission_for_model(
+            get_method(id, hydrate=False), action=Action.READ
+        )
+        return dehydrate_response_model(
+            get_method(id, hydrate=True, **get_method_kwargs)
+        )
+
+    return verify_permissions_and_get_entity(
+        id=id, get_method=get_method, hydrate=hydrate, **get_method_kwargs
+    )
 
 
 def verify_permissions_and_list_entities(
@@ -309,7 +358,9 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    model = get_method(id, True)
+    # Permission checks only need the body, and the metadata of some
+    # entities carries payloads that deleting must not depend on.
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id, **delete_method_kwargs)
     delete_model_resource(model)

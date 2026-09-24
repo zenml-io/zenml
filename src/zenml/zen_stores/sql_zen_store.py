@@ -7531,7 +7531,11 @@ class SqlZenStore(BaseZenStore):
         )
 
     def _get_run_by_orchestrator_run_id(
-        self, orchestrator_run_id: str, snapshot_id: UUID, session: Session
+        self,
+        orchestrator_run_id: str,
+        snapshot_id: UUID,
+        session: Session,
+        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunResponse:
         """Get a pipeline run based on snapshot and orchestrator run ID.
 
@@ -7539,6 +7543,8 @@ class SqlZenStore(BaseZenStore):
             orchestrator_run_id: The orchestrator run ID.
             snapshot_id: The snapshot ID.
             session: SQLAlchemy session.
+            pre_read_hook: Optional function to run with the run, without its
+                metadata, before its payloads are resolved.
 
         Raises:
             KeyError: If no run exists for the snapshot and orchestrator run
@@ -7569,6 +7575,8 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
+        if pre_read_hook:
+            pre_read_hook(run_schema.to_model())
         return run_schema.to_model(
             include_metadata=True,
             include_resources=True,
@@ -7581,6 +7589,7 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         pre_creation_hook: Optional[Callable[[], None]] = None,
+        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
@@ -7591,6 +7600,8 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
             pre_creation_hook: Optional function to run before creating the
                 pipeline run or replacing its placeholder run.
+            pre_read_hook: Optional function to run with an existing run,
+                without its metadata, before its payloads are resolved.
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
@@ -7609,6 +7620,7 @@ class SqlZenStore(BaseZenStore):
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
                             snapshot_id=pipeline_run.snapshot,
                             session=session,
+                            pre_read_hook=pre_read_hook,
                         ),
                         False,
                     )
@@ -7723,6 +7735,7 @@ class SqlZenStore(BaseZenStore):
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
                             snapshot_id=pipeline_run.snapshot,
                             session=session,
+                            pre_read_hook=pre_read_hook,
                         ),
                         False,
                     )

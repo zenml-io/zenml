@@ -32,7 +32,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity,
+    verify_permissions_and_get_entity_with_payloads,
     verify_permissions_and_list_entities,
 )
 from zenml.zen_server.rbac.models import ResourceType
@@ -219,7 +219,7 @@ def get_deployment(
     Returns:
         A specific deployment object.
     """
-    deployment = verify_permissions_and_get_entity(
+    deployment = verify_permissions_and_get_entity_with_payloads(
         id=deployment_id,
         get_method=zen_store().get_snapshot,
         hydrate=hydrate,
