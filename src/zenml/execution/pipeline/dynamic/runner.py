@@ -405,11 +405,14 @@ class DynamicPipelineRunner:
             )
 
         if run and not run.orchestrator_run_id:
+            # The runner and its inline steps read the metadata of the run,
+            # so its updates return it instead of costing another request.
             run = Client().zen_store.update_run(
                 run_id=run.id,
                 run_update=PipelineRunUpdate(
                     orchestrator_run_id=resolved_orchestrator_run_id,
                 ),
+                hydrate=True,
             )
         else:
             existing_runs = Client().list_pipeline_runs(
@@ -875,6 +878,7 @@ class DynamicPipelineRunner:
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
                     ),
+                    hydrate=True,
                 )
                 logger.info("Resuming run `%s`.", str(self._run.id))
             elif self._run.status == ExecutionStatus.RUNNING:
@@ -891,6 +895,7 @@ class DynamicPipelineRunner:
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.RUNNING,
                     ),
+                    hydrate=True,
                 )
                 run_start_hook = True
 

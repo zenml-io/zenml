@@ -7536,13 +7536,18 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdate
+        self,
+        run_id: UUID,
+        run_update: PipelineRunUpdate,
+        hydrate: bool = False,
     ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run to update.
             run_update: The update to be applied to the pipeline run.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated pipeline run.
@@ -7658,11 +7663,10 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(existing_run)
 
-            # Status updates must not depend on loading the run's
-            # configuration, so the response is built without metadata.
-            # Callers that need it hydrate the response lazily.
+            # Metadata is opt-in so that status updates never depend on
+            # loading the run's configuration.
             return existing_run.to_model(
-                include_metadata=False, include_resources=True
+                include_metadata=hydrate, include_resources=True
             )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -13117,12 +13121,15 @@ class SqlZenStore(BaseZenStore):
         self,
         step_run_id: UUID,
         step_run_update: StepRunUpdate,
+        hydrate: bool = False,
     ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated step run.
@@ -13240,11 +13247,10 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
-            # Status updates must not depend on loading the step's
-            # configuration, so the response is built without metadata.
-            # Callers that need it hydrate the response lazily.
+            # Metadata is opt-in so that status updates never depend on
+            # loading the step's configuration.
             return existing_step_run.to_model(
-                include_metadata=False, include_resources=True
+                include_metadata=hydrate, include_resources=True
             )
 
     def _get_step_run_input_artifact_from_cached_step_run(

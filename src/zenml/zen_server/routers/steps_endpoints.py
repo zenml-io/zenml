@@ -196,6 +196,7 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
+    hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Updates a step.
@@ -203,6 +204,8 @@ def update_step(
     Args:
         step_id: ID of the step.
         step_model: Step model to use for the update.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response.
 
     Returns:
         The updated step model.
@@ -210,7 +213,7 @@ def update_step(
     _get_step_with_permission(step_id, Action.UPDATE)
 
     updated_step = zen_store().update_run_step(
-        step_run_id=step_id, step_run_update=step_model
+        step_run_id=step_id, step_run_update=step_model, hydrate=hydrate
     )
     return dehydrate_response_model(updated_step)
 
