@@ -32,11 +32,11 @@ from uuid import UUID
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, SQLModel, col, select
-from sqlmodel.sql.expression import SelectOfScalar
+from sqlmodel import Session, col, select
 
 from zenml.exceptions import (
     PayloadIntegrityError,
+    PayloadStorageError,
     PayloadStorageUnavailableError,
 )
 from zenml.zen_stores.payload_storage.backends import (
@@ -64,7 +64,6 @@ BlobKey = Tuple[str, str]
 
 T = TypeVar("T")
 R = TypeVar("R")
-RowT = TypeVar("RowT", bound=SQLModel)
 
 
 def _get_blob_key(value: PayloadValue) -> BlobKey:
@@ -189,13 +188,13 @@ class PayloadStore:
         )
 
     @property
-    def offload_enabled(self) -> bool:
-        """Whether new payloads are offloaded.
+    def has_backends(self) -> bool:
+        """Whether any backend is configured, so that blobs can exist.
 
         Returns:
-            Whether new payloads are offloaded.
+            Whether any backend is configured.
         """
-        return self._offload_enabled
+        return bool(self._backends)
 
     def verify_backends(self) -> None:
         """Verify that every backend holding blobs is configured.
@@ -368,46 +367,30 @@ class PayloadStore:
 
         Returns:
             The ID of the blob.
-        """
-        with Session(self._engine) as session:
-            blob = self._get_or_insert(
-                self._create_blob(value),
-                select(BlobSchema).where(
-                    BlobSchema.sha256 == value.sha256,
-                    BlobSchema.media_type == value.media_type.value,
-                ),
-                session=session,
-            )
-            return blob.id
-
-    @staticmethod
-    def _get_or_insert(
-        row: RowT, existing: SelectOfScalar[RowT], session: Session
-    ) -> RowT:
-        """Insert a row unless a concurrent writer inserted it first.
-
-        Args:
-            row: The row to insert.
-            existing: The query of the row inserted by another writer.
-            session: The session to use.
-
-        Returns:
-            The inserted or the existing row.
 
         Raises:
-            IntegrityError: If the insert failed for another reason.
+            IntegrityError: If the insert failed for another reason than a
+                concurrent registration.
         """
-        session.add(row)
-        try:
-            session.commit()
-            return row
-        except IntegrityError:
-            session.rollback()
-            # The rollback ended the transaction, so this read sees the row
-            # committed by the other writer.
-            if existing_row := session.exec(existing).first():
-                return existing_row
-            raise
+        with Session(self._engine) as session:
+            blob = self._create_blob(value)
+            session.add(blob)
+            try:
+                session.commit()
+                return blob.id
+            except IntegrityError:
+                session.rollback()
+                # The rollback ended the transaction, so this read sees the
+                # blob registered by the concurrent writer.
+                existing = session.exec(
+                    select(BlobSchema.id).where(
+                        BlobSchema.sha256 == value.sha256,
+                        BlobSchema.media_type == value.media_type.value,
+                    )
+                ).first()
+                if existing is None:
+                    raise
+                return existing
 
     def _read(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
         """Read blobs from their backends.
@@ -420,8 +403,8 @@ class PayloadStore:
 
         Raises:
             RuntimeError: If a blob is not registered.
-            PayloadStorageUnavailableError: If a blob is held by a backend
-                that is not configured.
+            PayloadStorageError: If a blob is held by a backend that is not
+                configured.
         """
         blobs: List[BlobSchema] = []
         with Session(self._engine) as session:
@@ -442,9 +425,13 @@ class PayloadStore:
         for blob in blobs:
             sha256s_by_backend[blob.stored_in].add(blob.sha256)
         for stored_in, sha256s in sha256s_by_backend.items():
-            backend = self._backends.get(PayloadBackendType(stored_in))
+            # A backend name may also come from a newer release.
+            backend = next(
+                (b for t, b in self._backends.items() if t.value == stored_in),
+                None,
+            )
             if backend is None:
-                raise PayloadStorageUnavailableError(
+                raise PayloadStorageError(
                     f"Execution payloads are stored in the `{stored_in}` "
                     "payload backend, which is not configured."
                 )
@@ -499,6 +486,9 @@ class PayloadStore:
         Raises:
             PayloadStorageUnavailableError: If a call fails or does not
                 return in time.
+            PayloadStorageError: If the storage refuses a call in a way that
+                retrying does not fix, such as a missing object or denied
+                access.
         """
         futures = [self._executor.submit(function, item) for item in items]
         _, pending = wait(futures, timeout=self._timeout)
@@ -511,6 +501,12 @@ class PayloadStore:
             )
         try:
             return [future.result() for future in futures]
+        except (FileNotFoundError, PermissionError) as e:
+            # Retrying brings back neither a missing object nor access, so
+            # these fail at once instead of as a retried 503.
+            raise PayloadStorageError(
+                f"Execution payload storage refused the request: {e}"
+            ) from e
         except Exception as e:
             raise PayloadStorageUnavailableError(
                 f"Execution payload storage failed: {e}"

@@ -364,20 +364,11 @@ def get_snapshot_code_download_token(
     """
 
     # The code path is part of the metadata, which carries payloads that can
-    # live in external storage, so the caller is authorized before it is
-    # loaded.
+    # live in external storage, so reading the snapshot is authorized before
+    # it is loaded. Its stack and artifact store are checked before any token
+    # is issued.
     def _verify(snapshot: PipelineSnapshotResponse) -> None:
-        if not snapshot.stack:
-            raise ValueError(f"Snapshot {snapshot_id} has no stack.")
-        artifact_store_model = zen_store().get_stack_component(
-            snapshot.stack.components[StackComponentType.ARTIFACT_STORE][0].id
-        )
-        models: List[BaseModel] = [
-            snapshot,
-            snapshot.stack,
-            artifact_store_model,
-        ]
-        batch_verify_permissions_for_models(models=models, action=Action.READ)
+        verify_permission_for_model(snapshot, action=Action.READ)
 
     snapshot = zen_store().get_snapshot(
         snapshot_id,
@@ -386,10 +377,16 @@ def get_snapshot_code_download_token(
         include_config_schema=False,
         pre_read_hook=_verify,
     )
-    assert snapshot.stack
+    if not snapshot.stack:
+        raise ValueError(f"Snapshot {snapshot_id} has no stack.")
+
     artifact_store_id = snapshot.stack.components[
         StackComponentType.ARTIFACT_STORE
     ][0].id
+    artifact_store_model = zen_store().get_stack_component(artifact_store_id)
+    models: List[BaseModel] = [snapshot.stack, artifact_store_model]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
+
     if not snapshot.code_path:
         raise ValueError(f"Snapshot {snapshot_id} has no code path.")
 

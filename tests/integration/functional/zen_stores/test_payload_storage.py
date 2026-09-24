@@ -37,6 +37,7 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     PayloadIntegrityError,
+    PayloadStorageError,
     PayloadStorageUnavailableError,
 )
 from zenml.models import (
@@ -149,7 +150,7 @@ def store(
     client = request.getfixturevalue("clean_client")
     zen_store = client.zen_store
     assert isinstance(zen_store, SqlZenStore)
-    assert zen_store.payload_store.offload_enabled
+    assert zen_store.config.payload_storage.offload_enabled
     return zen_store
 
 
@@ -382,7 +383,7 @@ def test_storage_outage_fails_only_what_needs_payloads(
 def test_run_creation_writes_nothing_when_storage_fails(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
-    """A storage failure while creating a run leaves no half-created run."""
+    """A missing blob while creating a run leaves no half-created run."""
     cold = _open_store(store, cache_size=0)
     snapshot = _create_snapshot(cold)
     request = _run_request(snapshot.id, tags=["payloads"])
@@ -391,7 +392,7 @@ def test_run_creation_writes_nothing_when_storage_fails(
     data = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
     s3.delete_object(Bucket=BUCKET, Key=key)
 
-    with pytest.raises(PayloadStorageUnavailableError):
+    with pytest.raises(PayloadStorageError):
         cold.get_or_create_run(request)
 
     with Session(cold.engine) as session:

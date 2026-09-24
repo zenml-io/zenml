@@ -55,7 +55,11 @@ class PayloadStorageUnavailableError(ZenMLBaseException):
     """Raised when execution payload storage cannot be read or written."""
 
 
-class PayloadIntegrityError(ZenMLBaseException, RuntimeError):
+class PayloadStorageError(ZenMLBaseException, RuntimeError):
+    """Raised when payload storage fails in a way that retrying does not fix."""
+
+
+class PayloadIntegrityError(PayloadStorageError):
     """Raised when stored payload bytes do not match their registered blob."""
 
 

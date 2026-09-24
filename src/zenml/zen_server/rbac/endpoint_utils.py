@@ -198,17 +198,23 @@ def verify_permissions_and_get_or_create_entity(
         if resource_type and needs_usage_increment:
             check_entitlement(feature=resource_type)
 
-    def _pre_read_hook(existing: AnyResponse) -> None:
-        verify_permission_for_model(model=existing, action=Action.READ)
-
     model, created = get_or_create_method(
-        request_model, _pre_creation_hook, _pre_read_hook
+        request_model, _pre_creation_hook, _verify_read_permission
     )
 
     if created and resource_type and needs_usage_increment:
         report_usage(resource_type, resource_id=model.id)
 
     return dehydrate_response_model(model), created
+
+
+def _verify_read_permission(model: AnyResponse) -> None:
+    """Verify that the caller may read an entity.
+
+    Args:
+        model: The entity.
+    """
+    verify_permission_for_model(model, action=Action.READ)
 
 
 def verify_permissions_and_get_entity(
@@ -254,15 +260,11 @@ def verify_permissions_and_get_entity_with_payloads(
     Returns:
         A model of the fetched entity.
     """
-
-    def _verify_read(model: AnyResponse) -> None:
-        verify_permission_for_model(model, action=Action.READ)
-
     return dehydrate_response_model(
         get_method(
             id,
             hydrate=hydrate,
-            pre_read_hook=_verify_read,
+            pre_read_hook=_verify_read_permission,
             **get_method_kwargs,
         )
     )
