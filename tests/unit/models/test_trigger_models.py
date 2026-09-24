@@ -386,6 +386,28 @@ def test_schedule_trigger_timezone_normalization():
     assert req.start_time == datetime(2026, 1, 1, 10, 0)
 
 
+def test_schedule_trigger_update_recomputes_next_occurrence():
+    def _update(**scheduling_option) -> ScheduleTriggerUpdate:
+        return ScheduleTriggerUpdate(
+            name="sched",
+            active=True,
+            type=TriggerType.SCHEDULE,
+            flavor=TriggerFlavor.NATIVE_SCHEDULE,
+            **scheduling_option,
+        )
+
+    future = datetime.utcnow().replace(microsecond=0) + timedelta(days=1)
+
+    cron = _update(cron_expression="0 * * * *")
+    assert cron.get_extra_fields()["next_occurrence"] is not None
+
+    interval = _update(interval=3600, start_time=future)
+    assert interval.get_extra_fields()["next_occurrence"] == future
+
+    run_once = _update(run_once_start_time=future)
+    assert run_once.get_extra_fields()["next_occurrence"] == future
+
+
 def test_schedule_trigger_response_next_occurrence_behavior():
     active = ScheduleTriggerResponseBody(
         project_id=uuid4(),
