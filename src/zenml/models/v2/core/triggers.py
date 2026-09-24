@@ -740,6 +740,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
             self.start_time,
             self.cron_expression,
             self.interval,
+            self.run_once_start_time,
         ]
 
         if not self.flavor == TriggerFlavor.NATIVE_SCHEDULE:
