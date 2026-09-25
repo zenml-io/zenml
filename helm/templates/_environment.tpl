@@ -155,8 +155,10 @@ Returns:
 {{- if le (float64 .timeout) 0.0 }}
 {{- fail (printf "zenml.database.payloadStorage.timeout must be a number of seconds above 0, not `%v`." .timeout) }}
 {{- end }}
-{{- if lt (int64 .cacheSize) 0 }}
-{{- fail (printf "zenml.database.payloadStorage.cacheSize must be a number of bytes, 0 or more, not `%v`." .cacheSize) }}
+{{- /* Checked before converting it, which turns any text into 0 and cuts decimals. */ -}}
+{{- $isNumber := or (kindIs "float64" .cacheSize) (kindIs "int64" .cacheSize) (kindIs "int" .cacheSize) }}
+{{- if not (and $isNumber (ge (float64 .cacheSize) 0.0) (eq (float64 .cacheSize) (floor .cacheSize))) }}
+{{- fail (printf "zenml.database.payloadStorage.cacheSize must be a whole number of bytes, 0 or more, not `%v`." .cacheSize) }}
 {{- end }}
 offload_enabled: {{ .enabled }}
 write_backend: {{ .backend }}
