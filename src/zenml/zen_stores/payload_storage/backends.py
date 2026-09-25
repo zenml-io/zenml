@@ -14,12 +14,22 @@
 """Backends that hold payload blobs outside the database."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Protocol, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Protocol,
+    TypeVar,
+    cast,
+)
 from uuid import uuid4
 
 from zenml.enums import StackComponentType
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage.config import PayloadBackendType
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
@@ -70,6 +80,57 @@ class ObjectStoreArtifactStore(Protocol):
         """The filesystem holding the files of the artifact store."""
 
 
+# s3fs raises `PermissionError` and `FileNotFoundError` itself. gcsfs reports
+# a 403 as a plain `OSError` and a 401 as its own `HttpError`, and adlfs lets
+# Azure's exceptions through. Retrying fixes none of these, so they must not
+# look like an unavailable backend.
+
+
+def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
+    """Whether a provider error means that access was denied.
+
+    Args:
+        backend_type: The backend that raised the error.
+        error: The error.
+
+    Returns:
+        Whether access was denied.
+    """
+    if backend_type == PayloadBackendType.GCS:
+        from gcsfs.retry import HttpError
+
+        return (isinstance(error, HttpError) and error.code in (401, 403)) or (
+            type(error) is OSError and str(error).startswith("Forbidden")
+        )
+    if backend_type == PayloadBackendType.AZURE:
+        from azure.core.exceptions import (
+            ClientAuthenticationError,
+            HttpResponseError,
+        )
+
+        return isinstance(error, ClientAuthenticationError) or (
+            isinstance(error, HttpResponseError) and error.status_code == 403
+        )
+    return False
+
+
+def _is_missing(backend_type: PayloadBackendType, error: Exception) -> bool:
+    """Whether a provider error means that the object or bucket is missing.
+
+    Args:
+        backend_type: The backend that raised the error.
+        error: The error.
+
+    Returns:
+        Whether the object or bucket is missing.
+    """
+    if backend_type == PayloadBackendType.AZURE:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        return isinstance(error, ResourceNotFoundError)
+    return False
+
+
 class ArtifactStorePayloadBackend(PayloadBackend):
     """Holds payload blobs in object storage through a ZenML artifact store.
 
@@ -84,17 +145,45 @@ class ArtifactStorePayloadBackend(PayloadBackend):
     """
 
     def __init__(
-        self, artifact_store: ObjectStoreArtifactStore, timeout: float
+        self,
+        backend_type: PayloadBackendType,
+        artifact_store: ObjectStoreArtifactStore,
+        timeout: float,
     ) -> None:
         """Initializes the backend.
 
         Args:
+            backend_type: The backend.
             artifact_store: The artifact store holding the blobs.
             timeout: The number of seconds after which a call is cancelled.
         """
+        self._backend_type = backend_type
         self._artifact_store = artifact_store
         self._root = artifact_store.path.rstrip("/")
         self._timeout = timeout
+
+    def _call(self, function: Callable[[], T]) -> T:
+        """Call the filesystem, with denied and missing errors translated.
+
+        Args:
+            function: The filesystem call.
+
+        Returns:
+            The result of the call.
+
+        Raises:
+            PermissionError: If access to the object was denied.
+            FileNotFoundError: If the object or its bucket is missing.
+            Exception: Any other error of the call.
+        """
+        try:
+            return function()
+        except Exception as e:
+            if _is_denied(self._backend_type, e):
+                raise PermissionError(str(e)) from e
+            if _is_missing(self._backend_type, e):
+                raise FileNotFoundError(str(e)) from e
+            raise
 
     def put(self, sha256: str, data: bytes) -> None:
         """Durably store bytes under their SHA-256.
@@ -105,8 +194,10 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         """
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
-        self._artifact_store.filesystem.pipe_file(
-            f"{self._root}/{sha256}", data, timeout=self._timeout
+        self._call(
+            lambda: self._artifact_store.filesystem.pipe_file(
+                f"{self._root}/{sha256}", data, timeout=self._timeout
+            )
         )
 
     def get(self, sha256: str) -> bytes:
@@ -118,8 +209,10 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         Returns:
             The stored bytes.
         """
-        data: bytes = self._artifact_store.filesystem.cat_file(
-            f"{self._root}/{sha256}", timeout=self._timeout
+        data: bytes = self._call(
+            lambda: self._artifact_store.filesystem.cat_file(
+                f"{self._root}/{sha256}", timeout=self._timeout
+            )
         )
         return data
 
@@ -189,5 +282,7 @@ def create_payload_backend(
     # Every object store flavor above exposes its filesystem. It is created
     # on first use, so that a store starts while its storage is unavailable.
     return ArtifactStorePayloadBackend(
-        cast(ObjectStoreArtifactStore, artifact_store), timeout=timeout
+        backend_type,
+        cast(ObjectStoreArtifactStore, artifact_store),
+        timeout=timeout,
     )
