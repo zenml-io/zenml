@@ -8,7 +8,9 @@ extend-exclude = [
     "tests/integration/functional/cli/test_pipeline.py",
     "src/zenml/zen_server/dashboard/",
     "src/zenml/zen_server/dashboard_legacy/",
-    "examples/llm_finetuning/lit_gpt/"
+    "examples/llm_finetuning/lit_gpt/",
+    # Banking77's intent labels are fixed British-English dataset keys.
+    "examples/system_one_distillation/banking77_data.py"
 ]
 
 [default.extend-identifiers]
