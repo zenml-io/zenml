@@ -59,6 +59,10 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_server.pipeline_execution import utils as execution_utils
+from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunExecutionRequest,
+)
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.schemas import (
     BlobSchema,
@@ -291,6 +295,15 @@ def _start_step(store: SqlZenStore, run_id: UUID) -> StepRunResponse:
     )
 
 
+class _AccessDenied(Exception):
+    """Raised by a permission check that denies a read."""
+
+
+def _deny(model: Any) -> None:
+    """A permission check that denies every read."""
+    raise _AccessDenied(model.id)
+
+
 def _get_config_blob_key(store: SqlZenStore, snapshot_id: UUID) -> str:
     """The S3 key of the pipeline configuration of a snapshot."""
     with Session(store.engine) as session:
@@ -444,3 +457,56 @@ def test_corrupted_blob_is_rejected_and_not_cached(
     s3.put_object(Bucket=BUCKET, Key=key, Body=original)
     restored = cached.get_snapshot(snapshot.id, hydrate=True)
     assert restored.pipeline_configuration.name == "original-configuration"
+
+
+@pytest.mark.parametrize("entity", ["run", "step", "snapshot"])
+def test_denied_read_fails_before_any_payload_is_read(
+    store: SqlZenStore, s3_server: ThreadedMotoServer, entity: str
+) -> None:
+    """A read denied by its permission check never reaches payload storage.
+
+    Storage is down, so a payload read before the check would fail the read
+    with a storage error instead of the denial.
+    """
+    cold = _open_store(store, cache_size=0, timeout=5)
+    run = _start_run(cold)
+    step_run = _start_step(cold, run.id)
+    reads = {
+        "run": lambda: cold.get_run(run.id, pre_read_hook=_deny),
+        "step": lambda: cold.get_run_step(step_run.id, pre_read_hook=_deny),
+        "snapshot": lambda: cold.get_snapshot(
+            run.snapshot.id, pre_read_hook=_deny
+        ),
+    }
+    s3_server.stop()
+
+    with pytest.raises(_AccessDenied):
+        reads[entity]()
+
+
+def test_prepared_run_that_cannot_start_is_failed(
+    store: SqlZenStore,
+    s3_server: ThreadedMotoServer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A storage failure while the server starts a prepared run fails the run.
+
+    Otherwise the run stays initializing forever, and a synchronous start
+    returns a retryable error, on which clients start another run.
+    """
+    cold = _open_store(store, cache_size=0, timeout=5)
+    snapshot = _create_snapshot(cold)
+    run, _ = cold.get_or_create_run(
+        _run_request(snapshot.id).model_copy(
+            update={"status": ExecutionStatus.INITIALIZING}
+        )
+    )
+    monkeypatch.setattr(execution_utils, "zen_store", lambda: cold)
+    s3_server.stop()
+
+    with pytest.raises(RuntimeError, match="Failed to start pipeline run"):
+        execution_utils.execute_snapshot_run(
+            SnapshotRunExecutionRequest(run_id=run.id, snapshot_id=snapshot.id)
+        )
+
+    assert cold.get_run_status(run.id) == ExecutionStatus.FAILED
