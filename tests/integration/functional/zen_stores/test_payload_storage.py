@@ -280,11 +280,13 @@ def _create_snapshot(
 
 
 def _run_request(
-    snapshot_id: UUID, tags: Optional[List[str]] = None
+    snapshot_id: UUID,
+    tags: Optional[List[str]] = None,
+    project_id: Optional[UUID] = None,
 ) -> PipelineRunRequest:
     """A request for a new running run of a snapshot."""
     return PipelineRunRequest(
-        project=Client().active_project.id,
+        project=project_id or Client().active_project.id,
         name=f"run-{uuid4().hex[:8]}",
         snapshot=snapshot_id,
         status=ExecutionStatus.RUNNING,
@@ -406,6 +408,26 @@ def test_run_creation_writes_nothing_when_storage_fails(
     run, created = cold.get_or_create_run(request)
     assert created
     assert [tag.name for tag in run.tags] == ["payloads"]
+
+
+def test_run_with_a_snapshot_of_another_project_stores_nothing(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
+) -> None:
+    """A run referencing another project's snapshot is rejected up front."""
+    snapshot = _create_snapshot(store)
+    other_project = Client().create_project(
+        name=f"other-{uuid4().hex[:8]}", description="Another project."
+    )
+    s3 = _get_s3_client(s3_server)
+    objects = s3.list_objects_v2(Bucket=BUCKET)["KeyCount"]
+
+    with pytest.raises(KeyError):
+        store.get_or_create_run(
+            _run_request(snapshot.id, project_id=other_project.id)
+        )
+
+    # Its new orchestrator environment was not offloaded either.
+    assert s3.list_objects_v2(Bucket=BUCKET)["KeyCount"] == objects
 
 
 def test_corrupted_blob_is_rejected_and_not_cached(

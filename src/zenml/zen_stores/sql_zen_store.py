@@ -7728,9 +7728,23 @@ class SqlZenStore(BaseZenStore):
                 select(
                     PipelineSnapshotSchema.pipeline_configuration_blob_id,
                     PipelineSnapshotSchema.client_environment_blob_id,
-                ).where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
+                )
+                .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
+                .where(
+                    PipelineSnapshotSchema.project_id == pipeline_run.project
+                )
             ).first()
-            session.commit()
+            if snapshot_blob_ids is None:
+                # The snapshot is unknown or belongs to another project: the
+                # scoped reference check raises before any storage work. Only
+                # this path loads the whole snapshot row.
+                self._get_reference_schema_by_id(
+                    resource=pipeline_run,
+                    reference_schema=PipelineSnapshotSchema,
+                    reference_id=pipeline_run.snapshot,
+                    session=session,
+                )
+            self._end_read_transaction(session)
             offloaded_payloads = self.payload_store.offload(
                 [PipelineRunSchema.get_orchestrator_environment(pipeline_run)]
             )
