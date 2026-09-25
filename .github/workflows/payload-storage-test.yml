@@ -6,25 +6,34 @@
 # Locally: ZENML_TEST_PAYLOAD_STORAGE=s3 pytest tests/integration/functional/zen_stores
 name: Payload Storage Tests
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
-    paths:
-      - src/zenml/**
-      - tests/**
-      - pyproject.toml
-      - .github/workflows/payload-storage-test.yml
+  workflow_call:
+    inputs:
+      os:
+        description: OS
+        type: string
+        required: true
+      python-version:
+        description: Python version
+        type: string
+        required: true
   workflow_dispatch:
-concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    inputs:
+      os:
+        description: OS
+        type: string
+        required: false
+        default: ubuntu-latest
+      python-version:
+        description: Python version
+        type: string
+        required: false
+        default: '3.11'
 permissions:
   contents: read
 jobs:
   offloaded-payloads:
     name: Tests with offloaded payloads
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    runs-on: ${{ inputs.os }}
     env:
       ZENML_DEBUG: true
       ZENML_ANALYTICS_OPT_IN: false
@@ -39,14 +48,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+      - name: Setup environment
+        uses: $/.github/actions/setup_environment
         with:
-          python-version: '3.11'
-      - name: Install ZenML
-        run: |
-          python -m pip install --upgrade pip uv
-          ./scripts/install-zenml-dev.sh --system
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          install_integrations: 'no'
       - name: Run the tests with offloaded payloads
         run: |-
           pytest tests/integration/functional/zen_stores \
