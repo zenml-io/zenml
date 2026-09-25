@@ -206,15 +206,13 @@ class PayloadStore:
         if not inspect(self._engine).has_table(BlobSchema.__tablename__):
             return
 
-        unconfigured = [
-            backend_type.value
-            for backend_type in PayloadBackendType
-            if backend_type not in self._backends
-        ]
+        # Compared with the stored names rather than the known ones, so that
+        # blobs of a backend added by a newer release are found as well.
+        configured = [backend_type.value for backend_type in self._backends]
         with Session(self._engine) as session:
             stored_in = session.exec(
                 select(BlobSchema.stored_in)
-                .where(col(BlobSchema.stored_in).in_(unconfigured))
+                .where(col(BlobSchema.stored_in).not_in(configured))
                 .limit(1)
             ).first()
         if stored_in:
