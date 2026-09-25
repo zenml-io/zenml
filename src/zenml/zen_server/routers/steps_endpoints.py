@@ -196,7 +196,7 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
-    hydrate: bool = False,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Updates a step.
@@ -205,7 +205,9 @@ def update_step(
         step_id: ID of the step.
         step_model: Step model to use for the update.
         hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
+            by including metadata fields in the response. Defaults to true,
+            as before the flag existed; ZenML clients always set it, and
+            status updates skip the metadata.
 
     Returns:
         The updated step model.
