@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import PayloadStorageUnavailableError
 from zenml.zen_server.pipeline_execution import utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunDispatchError,
@@ -40,10 +41,16 @@ def test_invalid_snapshot_does_not_create_or_report_usage(monkeypatch) -> None:
     report_usage.assert_not_called()
 
 
+@pytest.mark.parametrize("payload_storage_fails", [False, True])
 def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
-    monkeypatch,
+    monkeypatch, payload_storage_fails: bool
 ) -> None:
-    """Async snapshot runs dispatch durable IDs and return the placeholder."""
+    """Async snapshot runs dispatch durable IDs once and return the run.
+
+    Once the run is queued, a payload storage failure only drops the metadata
+    from the response: failing the request would make clients retry it and
+    start the run a second time.
+    """
     source_snapshot = SimpleNamespace(id=uuid4())
     target_snapshot = SimpleNamespace(id=uuid4())
     placeholder_run = SimpleNamespace(id=uuid4())
@@ -56,8 +63,14 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
         status=ExecutionStatus.INITIALIZING,
         status_reason=utils.SNAPSHOT_RUN_QUEUED_STATUS_REASON,
     )
+
+    def get_run(run_id, hydrate=True):
+        if hydrate and payload_storage_fails:
+            raise PayloadStorageUnavailableError("Payload storage is down.")
+        return queued_run
+
     # The response is read once the run is queued.
-    store.get_run.return_value = queued_run
+    store.get_run.side_effect = get_run
 
     monkeypatch.setattr(
         utils,
