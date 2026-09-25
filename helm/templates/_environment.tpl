@@ -105,8 +105,10 @@ Returns:
   A dictionary with the secret values configured for the ZenML store.
 */}}
 {{- define "zenml.storeSecretConfigurationAttrs" -}}
-{{- if .ZenML.database.payloadStorage }}
-payload_storage: {{ .ZenML.database.payloadStorage | toJson | quote }}
+{{- with .ZenML.database.payloadStorage }}
+{{- if or .enabled .path }}
+payload_storage: {{ include "zenml.payloadStorageConfiguration" . | fromYaml | toJson | quote }}
+{{- end }}
 {{- end }}
 {{- if .ZenML.database.url }}
 url: {{ .ZenML.database.url | quote }}
@@ -120,6 +122,52 @@ ssl_cert: {{ .ZenML.database.sslCert.value | quote }}
 ssl_key: {{ .ZenML.database.sslKey.value | quote }}
 {{- end }}
 {{- end }}
+{{- end }}
+
+
+{{/*
+Execution payload storage configuration.
+
+Builds the `payload_storage` setting of the SQL store from the typed
+`zenml.database.payloadStorage` values, and fails the release for values the
+server would reject.
+
+Args:
+  .: The `zenml.database.payloadStorage` values.
+Returns:
+  The payload storage configuration, as YAML.
+*/}}
+{{- define "zenml.payloadStorageConfiguration" -}}
+{{- $schemes := dict "s3" (list "s3://") "gcs" (list "gs://") "azure" (list "az://" "abfs://") -}}
+{{- if not (hasKey $schemes .backend) }}
+{{- fail (printf "zenml.database.payloadStorage.backend must be `s3`, `gcs` or `azure`, not `%s`." .backend) }}
+{{- end }}
+{{- $validPath := false -}}
+{{- range (get $schemes .backend) }}
+{{- if hasPrefix . $.path }}{{ $validPath = true }}{{ end }}
+{{- end }}
+{{- if not $validPath }}
+{{- fail (printf "zenml.database.payloadStorage.path must be a `%s` location, such as `%sbucket/prefix`, not `%s`." .backend (first (get $schemes .backend)) .path) }}
+{{- end }}
+{{- if and (ne .backend "s3") (or .region .endpointUrl) }}
+{{- fail "zenml.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
+{{- end }}
+offload_enabled: {{ .enabled }}
+write_backend: {{ .backend }}
+backends:
+  {{ .backend }}:
+    path: {{ .path | quote }}
+    {{- if or .region .endpointUrl }}
+    client_kwargs:
+      {{- if .region }}
+      region_name: {{ .region | quote }}
+      {{- end }}
+      {{- if .endpointUrl }}
+      endpoint_url: {{ .endpointUrl | quote }}
+      {{- end }}
+    {{- end }}
+cache_size: {{ int64 .cacheSize }}
+timeout: {{ .timeout }}
 {{- end }}
 
 

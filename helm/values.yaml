@@ -427,31 +427,36 @@ server:
 
     # Execution payload storage: moves large, write-once execution data
     # (pipeline configurations, specs, source code, environments) out of the
-    # database into an object store. Off by default: without it, payloads stay
-    # in their database rows. The configuration is passed to the server through
-    # its Kubernetes Secret.
+    # database into an object store. Disabled by default: payloads then stay
+    # in their database rows. The resulting configuration is passed to the
+    # server through its Kubernetes Secret.
     #
-    # Prefer cloud identities over keys: on EKS, annotate the service account
-    # with an IAM role (IRSA, see `serviceAccount.annotations`); on GKE, use
-    # workload identity; on AKS, a managed identity. Without keys in the
-    # backend configuration, the standard credential chain of the cloud SDK is
-    # used, which also picks up environment variables such as the ones set
-    # with `zenml.secretEnvironment`.
-    #
-    # Only switch `offload_enabled` on once every server replica and every
-    # process that opens the database runs a release that reads offloaded
-    # payloads. Every backend that ever received payloads must stay
-    # configured.
-    #
-    # payloadStorage:
-    #   offload_enabled: true
-    #   write_backend: s3        # s3, gcs or azure
-    #   backends:
-    #     s3:
-    #       path: s3://my-bucket/zenml-payloads
-    #   cache_size: 134217728    # bytes of resolved payloads kept per process
-    #   timeout: 30              # seconds before a storage call fails
-    payloadStorage: {}
+    # No keys are configured here: the server uses the cloud identity of its
+    # pods. On EKS, annotate the service account with an IAM role (IRSA, see
+    # `serviceAccount.annotations`); on GKE, use workload identity; on AKS, a
+    # managed identity. Environment variables such as AWS_* set through
+    # `zenml.secretEnvironment` are picked up as well.
+    payloadStorage:
+      # Move new payloads to the object store. Only enable once every server
+      # replica and every process that opens the database runs a release that
+      # reads offloaded payloads. Disabling it again keeps the store below
+      # configured, so that payloads moved earlier stay readable.
+      enabled: false
+      # The object store: `s3`, `gcs` or `azure`. Payloads stay readable only
+      # while their store stays configured, so do not change it once enabled.
+      backend: s3
+      # Where blobs are written, for example `s3://my-bucket/zenml-payloads`,
+      # `gs://my-bucket/zenml-payloads` or `az://my-container/zenml-payloads`.
+      # Enable versioning on the bucket and do not expire current objects.
+      path: ""
+      # Only for `s3`: the region, and the endpoint of an S3-compatible store
+      # such as MinIO.
+      region: ""
+      endpointUrl: ""
+      # Bytes of resolved payloads each server process keeps in memory.
+      cacheSize: 134217728
+      # Seconds before a call to the object store fails the request.
+      timeout: 30
 
     # Connection pool settings (only relevant for MySQL databases).
     #
