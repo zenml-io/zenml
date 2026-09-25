@@ -25,6 +25,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -168,6 +169,17 @@ class PayloadSchema(Protocol):
     """A schema with payload columns."""
 
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]]
+
+
+class ReadsPayloads(Protocol):
+    """A schema whose conversion reads its offloaded payloads."""
+
+    def get_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
+        """Get the blobs that converting the schema reads.
+
+        Returns:
+            The blob IDs, with None for values that are not offloaded.
+        """
 
 
 def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:

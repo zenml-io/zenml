@@ -408,6 +408,25 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
         return step_configs[0]
 
+    def _builds_config_template(
+        self, include_config_schema: Optional[bool]
+    ) -> bool:
+        """Whether a conversion builds the config template and schema.
+
+        They are built from every step configuration, so such a conversion
+        reads them all, whatever step configurations it returns.
+
+        Args:
+            include_config_schema: Whether to include the config schema, as
+                passed to `to_model`.
+
+        Returns:
+            Whether the conversion builds them.
+        """
+        return bool(
+            include_config_schema and self.build and self.build.stack_id
+        )
+
     def get_payload_blob_ids(
         self,
         step_configuration_filter: Optional[List[str]] = None,
@@ -427,9 +446,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The blob IDs.
         """
-        # The config template and schema are built from every step
-        # configuration.
-        if include_config_schema and self.build and self.build.stack_id:
+        if self._builds_config_template(include_config_schema):
             step_configuration_filter = None
 
         if session := object_session(self):
@@ -822,7 +839,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             config_template = None
             config_schema = None
 
-            if include_config_schema and self.build and self.build.stack_id:
+            if self._builds_config_template(include_config_schema):
                 from zenml.zen_stores import template_utils
 
                 if step_configuration_filter:

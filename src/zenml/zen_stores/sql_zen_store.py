@@ -429,6 +429,7 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadStorageConfiguration,
+    ReadsPayloads,
     ResolvedPayloads,
     UnconfiguredPayloads,
     get_blob_ids,
@@ -1461,13 +1462,16 @@ class SqlZenStore(BaseZenStore):
         return ResolvedPayloads(values)
 
     def _resolve_page_payloads(
-        self, session: Session, schemas: Sequence[Any], hydrate: bool
+        self,
+        session: Session,
+        schemas: Sequence[ReadsPayloads],
+        hydrate: bool,
     ) -> ResolvedPayloads:
         """Resolve the offloaded payloads that converting a page reads.
 
         Args:
             session: The session of the page.
-            schemas: The schemas of the page, which have payloads.
+            schemas: The schemas of the page.
             hydrate: Whether the conversions include metadata. Conversions
                 without metadata read no payloads.
 
