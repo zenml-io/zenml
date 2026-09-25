@@ -15,7 +15,15 @@
 
 import contextvars
 from contextlib import nullcontext
-from typing import TYPE_CHECKING, Any, ContextManager, Dict, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ContextManager,
+    Dict,
+    NamedTuple,
+    Optional,
+)
+from uuid import UUID
 
 from zenml.constants import (
     ENV_ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE,
@@ -80,3 +88,46 @@ def record_step_run(step_run: "StepRunResponse") -> None:
 
     if execution_context := ExecutionContext.get():
         execution_context.step_runs[step_run.name] = step_run
+
+
+class ActiveRunContext(NamedTuple):
+    """IDs of the pipeline run (and step run) the current code runs in."""
+
+    pipeline_run_id: UUID
+    step_run_id: Optional[UUID]
+    step_name: Optional[str]
+
+
+def get_active_run_context() -> Optional[ActiveRunContext]:
+    """Get the pipeline run and step run the current code is executing in.
+
+    A step context wins over a dynamic pipeline run context: a step of a
+    dynamic pipeline can execute while both are active, and code in a step
+    should be attributed to that step. Outside of a step, the dynamic
+    pipeline run context covers the pipeline function body and run-level
+    hooks.
+
+    Returns:
+        The active run context, or None if neither a step nor a dynamic
+        pipeline run is active.
+    """
+    from zenml.execution.pipeline.dynamic.run_context import (
+        DynamicPipelineRunContext,
+    )
+    from zenml.steps.step_context import StepContext
+
+    if step_context := StepContext.get():
+        return ActiveRunContext(
+            pipeline_run_id=step_context.pipeline_run.id,
+            step_run_id=step_context.step_run.id,
+            step_name=step_context.step_name,
+        )
+
+    if run_context := DynamicPipelineRunContext.get():
+        return ActiveRunContext(
+            pipeline_run_id=run_context.run.id,
+            step_run_id=None,
+            step_name=None,
+        )
+
+    return None

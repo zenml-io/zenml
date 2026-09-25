@@ -106,6 +106,22 @@ log_metadata(
 
 When logging from within a step to the pipeline run, the metadata key will have the pattern `step_name::metadata_key`, allowing multiple steps to use the same metadata key.
 
+In a [dynamic pipeline](../steps-pipelines/dynamic_pipelines.md), code outside of a step still runs inside the pipeline run: the pipeline function body and run-level hooks such as `on_end`. A bare `log_metadata` call there has no step to attach to, so it logs the metadata to the current pipeline run instead:
+
+```python
+from typing import Optional
+
+from zenml import log_metadata, pipeline
+
+def log_run_summary(exception: Optional[BaseException] = None) -> None:
+    log_metadata(metadata={"succeeded": exception is None})
+
+@pipeline(dynamic=True, on_end=log_run_summary)
+def my_dynamic_pipeline():
+    log_metadata(metadata={"launched_by": "nightly-job"})
+    ...
+```
+
 ### Attaching Metadata to Artifacts
 
 Artifacts are the data objects produced by pipeline steps. You can log metadata for these artifacts to provide more context about the data:

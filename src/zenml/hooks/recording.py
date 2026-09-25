@@ -27,6 +27,7 @@ from uuid import UUID, uuid4
 from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
 from zenml.client import Client
 from zenml.enums import ArtifactSaveType, ExecutionStatus, HookType
+from zenml.execution.context import get_active_run_context
 from zenml.models import (
     ExceptionInfo,
     HookInvocationRequest,
@@ -125,18 +126,8 @@ def _resolve_hook_context() -> Tuple[UUID, Optional[UUID]]:
     Returns:
         The pipeline run ID and the optional step run ID.
     """
-    from zenml.execution.pipeline.dynamic.run_context import (
-        DynamicPipelineRunContext,
-    )
-    from zenml.steps.step_context import StepContext
-
-    step_context = StepContext.get()
-    if step_context is not None:
-        return step_context.pipeline_run.id, step_context.step_run.id
-
-    run_context = DynamicPipelineRunContext.get()
-    if run_context is not None:
-        return run_context.run.id, None
+    if active_run := get_active_run_context():
+        return active_run.pipeline_run_id, active_run.step_run_id
 
     raise RuntimeError(
         "Recording a hook invocation requires an active pipeline run context. "

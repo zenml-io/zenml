@@ -3,6 +3,8 @@ from uuid import uuid4
 import pytest
 from mock import MagicMock
 
+from zenml.enums import MetadataResourceTypes
+from zenml.execution.context import ActiveRunContext
 from zenml.models import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
@@ -11,7 +13,7 @@ from zenml.models import (
     StepRunIdentifier,
 )
 from zenml.utils import metadata_utils
-from zenml.utils.metadata_utils import bulk_log_metadata
+from zenml.utils.metadata_utils import bulk_log_metadata, log_metadata
 
 
 def test_bulk_log_metadata_validations(monkeypatch):
@@ -185,3 +187,50 @@ def test_combined_infer_with_explicit_options(monkeypatch):
             == 3
         )
         assert mock_step_context.add_output_metadata.call_count == 2
+
+
+@pytest.mark.parametrize("in_step", [True, False])
+def test_bare_log_metadata_targets_active_step_or_run(monkeypatch, in_step):
+    """Tests bare `log_metadata` inside a step and outside one in a dynamic run.
+
+    Inside a step, the step run gets the metadata. Outside a step (dynamic
+    pipeline function body or run-level hook), the pipeline run gets it.
+    """
+    pipeline_run_id, step_run_id = uuid4(), uuid4()
+    active_run = ActiveRunContext(
+        pipeline_run_id=pipeline_run_id,
+        step_run_id=step_run_id if in_step else None,
+        step_name="trainer" if in_step else None,
+    )
+    mock_client = MagicMock()
+
+    with monkeypatch.context() as m:
+        m.setattr(metadata_utils, "Client", lambda: mock_client)
+        m.setattr(metadata_utils, "get_active_run_context", lambda: active_run)
+        log_metadata(metadata={"x": 1})
+
+    kwargs = mock_client.create_run_metadata.call_args.kwargs
+    if in_step:
+        assert kwargs["resources"] == [
+            RunMetadataResource(
+                id=step_run_id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ]
+        assert kwargs["publisher_step_id"] == step_run_id
+    else:
+        assert kwargs["resources"] == [
+            RunMetadataResource(
+                id=pipeline_run_id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ]
+        assert kwargs["publisher_step_id"] is None
+
+
+def test_bare_log_metadata_without_context_raises(monkeypatch):
+    """Tests that bare `log_metadata` fails outside a step or dynamic run."""
+    with monkeypatch.context() as m:
+        m.setattr(metadata_utils, "Client", MagicMock)
+        m.setattr(metadata_utils, "get_active_run_context", lambda: None)
+
+        with pytest.raises(ValueError):
+            log_metadata(metadata={"x": 1})

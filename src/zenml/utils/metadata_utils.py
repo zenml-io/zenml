@@ -18,6 +18,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.enums import MetadataResourceTypes, ModelStages
+from zenml.execution.context import get_active_run_context
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import (
@@ -134,6 +135,11 @@ def log_metadata(
 ) -> None:
     """Logs metadata for various resource types in a generalized way.
 
+    If no identifiers are provided, the target is inferred: inside a step,
+    the metadata is logged on the step run; outside a step but inside a
+    dynamic pipeline (the pipeline function body or a run-level hook), it
+    is logged on the pipeline run.
+
     Args:
         metadata: The metadata to log.
         step_id: The ID of the step.
@@ -151,8 +157,9 @@ def log_metadata(
             inferred from the step context.
 
     Raises:
-        ValueError: If no identifiers are provided and the function is not
-            called from within a step.
+        ValueError: If no identifiers are provided and the function is
+            called neither from within a step nor from within a dynamic
+            pipeline run.
     """
     client = Client()
 
@@ -297,10 +304,10 @@ def log_metadata(
         )
         return
 
-    # If every additional value is None, that means we are calling it bare bones
-    # and this call needs to happen during a step execution. We will use the
-    # step context to fetch the step, run and possibly the model version and
-    # attach the metadata accordingly.
+    # If every additional value is None, that means we are calling it bare
+    # bones. Inside a step, the metadata goes to the step run. Outside a step
+    # but inside a dynamic pipeline (the pipeline function body or a run-level
+    # hook), it goes to the pipeline run.
     elif all(
         v is None
         for v in [
@@ -315,23 +322,30 @@ def log_metadata(
             model_version,
         ]
     ):
-        try:
-            step_context = get_step_context()
-        except RuntimeError:
+        active_run = get_active_run_context()
+        if active_run is None:
             raise ValueError(
-                "You are calling 'log_metadata()' outside of a step execution. "
-                "If you would like to add metadata to a ZenML entity outside "
-                "of the step execution, please provide the required "
+                "You are calling 'log_metadata()' outside of a step or a "
+                "dynamic pipeline run. If you would like to add metadata to "
+                "a ZenML entity from here, please provide the required "
                 "identifiers."
             )
 
-        resources = [
-            RunMetadataResource(
-                id=step_context.step_run.id,
-                type=MetadataResourceTypes.STEP_RUN,
-            )
-        ]
-        publisher_step_id = step_context.step_run.id
+        if active_run.step_run_id is not None:
+            resources = [
+                RunMetadataResource(
+                    id=active_run.step_run_id,
+                    type=MetadataResourceTypes.STEP_RUN,
+                )
+            ]
+            publisher_step_id = active_run.step_run_id
+        else:
+            resources = [
+                RunMetadataResource(
+                    id=active_run.pipeline_run_id,
+                    type=MetadataResourceTypes.PIPELINE_RUN,
+                )
+            ]
 
     else:
         raise ValueError(
@@ -340,6 +354,10 @@ def log_metadata(
             include:
             
             # Automatic logging to a step (within a step)
+            log_metadata(metadata={})
+            
+            # Automatic logging to a run (within a dynamic pipeline function
+            # or a run-level hook of a dynamic pipeline)
             log_metadata(metadata={})
             
             # Manual logging to a step

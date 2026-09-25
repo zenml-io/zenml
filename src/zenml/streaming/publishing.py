@@ -24,7 +24,6 @@ from typing import (
     Dict,
     FrozenSet,
     List,
-    NamedTuple,
     Optional,
 )
 from uuid import UUID
@@ -40,6 +39,7 @@ from zenml.constants import (
     STREAM_EVENT_PAYLOAD_BYTES_MAX,
     STREAM_PUBLISHER_BATCH_SIZE,
 )
+from zenml.execution.context import get_active_run_context
 from zenml.logger import get_logger
 from zenml.models import StreamBatchRequest, StreamEvent
 from zenml.utils.singleton import SingletonMetaClass
@@ -55,48 +55,6 @@ _PAYLOAD_ADAPTER: TypeAdapter[Dict[str, Any]] = TypeAdapter(Dict[str, Any])
 _RESERVED_KINDS: FrozenSet[str] = frozenset(
     {"end", "gap", "error", "cursor", "system"}
 )
-
-
-class _PublishContext(NamedTuple):
-    """Publish context."""
-
-    pipeline_run_id: UUID
-    step_run_id: Optional[UUID]
-    step_name: Optional[str]
-
-
-def _resolve_publish_context() -> Optional[_PublishContext]:
-    """Resolve the publish context.
-
-    Returns:
-        Publish context if within an active pipeline run, None otherwise.
-    """
-    # TODO: maybe we should use root run ID here, to keep all sub-pipelines in
-    # a single stream?
-    from zenml.execution.pipeline.dynamic.run_context import (
-        DynamicPipelineRunContext,
-    )
-    from zenml.steps.step_context import get_step_context
-
-    try:
-        step_context = get_step_context()
-    except RuntimeError:
-        pass
-    else:
-        return _PublishContext(
-            pipeline_run_id=step_context.pipeline_run.id,
-            step_run_id=step_context.step_run.id,
-            step_name=step_context.step_name,
-        )
-
-    if run_context := DynamicPipelineRunContext.get():
-        return _PublishContext(
-            pipeline_run_id=run_context.run.id,
-            step_run_id=None,
-            step_name=None,
-        )
-
-    return None
 
 
 class _StreamPublisher(metaclass=SingletonMetaClass):
@@ -351,7 +309,9 @@ def publish(
             f"`{kind}` is reserved for server-emitted control frames "
             f"({sorted(_RESERVED_KINDS)})"
         )
-    ctx = _resolve_publish_context()
+    # TODO: maybe we should use root run ID here, to keep all sub-pipelines in
+    # a single stream?
+    ctx = get_active_run_context()
     if ctx is None:
         logger.warning(
             "`publish(...)` called outside a pipeline run, ignoring event: %s",

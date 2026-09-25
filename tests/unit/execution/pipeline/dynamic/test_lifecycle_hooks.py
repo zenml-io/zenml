@@ -17,7 +17,7 @@ from typing import List, Optional
 
 import pytest
 
-from zenml import pipeline, step, wait
+from zenml import log_metadata, pipeline, step, wait
 from zenml.client import Client
 from zenml.enums import (
     ExecutionStatus,
@@ -79,6 +79,21 @@ def raising_step() -> None:
 @step(on_start=record_start, on_end=record_end)
 def hooked_step() -> None:
     pass
+
+
+def log_metadata_on_end(exception: Optional[BaseException] = None) -> None:
+    log_metadata(metadata={"logged_from": "on_end"})
+
+
+@step
+def log_metadata_step() -> None:
+    log_metadata(metadata={"logged_from": "step"})
+
+
+@pipeline(dynamic=True, enable_cache=False, on_end=log_metadata_on_end)
+def dynamic_pipeline_logging_metadata() -> None:
+    log_metadata(metadata={"from_body": True})
+    log_metadata_step()
 
 
 def _run_hook_types(pipeline_run_id) -> List[HookType]:
@@ -332,3 +347,20 @@ def test_pause_and_resume_fire_hooks():
         HookType.RUN_END,
         HookType.RUN_SUCCESS,
     ]
+
+
+def test_bare_log_metadata_targets_dynamic_run_outside_steps():
+    """Tests bare `log_metadata` in a dynamic pipeline body, step and hook.
+
+    The pipeline body and the run end hook have no step context, so their
+    metadata lands on the pipeline run. The step keeps its own metadata.
+    """
+    run = dynamic_pipeline_logging_metadata()
+    assert run.status.is_successful
+
+    run = Client().get_pipeline_run(run.id)
+    assert run.run_metadata["from_body"] is True
+    assert run.run_metadata["logged_from"] == "on_end"
+    assert run.steps["log_metadata_step"].run_metadata == {
+        "logged_from": "step"
+    }

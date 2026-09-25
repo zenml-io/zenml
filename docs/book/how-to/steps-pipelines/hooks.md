@@ -107,6 +107,23 @@ def my_step(some_parameter: int = 1):
     raise ValueError("My exception")
 ```
 
+To attach metadata from a hook, call `log_metadata` without any identifiers.
+In a step-scope hook it lands on the step run. In a run-scope hook of a
+dynamic pipeline there is no step, so it lands on the pipeline run.
+
+```python
+from typing import Optional
+
+from zenml import log_metadata, pipeline
+
+def record_outcome(exception: Optional[BaseException] = None):
+    log_metadata(metadata={"succeeded": exception is None})
+
+@pipeline(dynamic=True, on_end=record_outcome)
+def my_pipeline():
+    ...
+```
+
 ### Sending alerts from hooks
 
 Use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters)

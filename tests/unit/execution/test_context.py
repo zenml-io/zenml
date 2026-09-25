@@ -15,7 +15,8 @@
 
 import os
 from contextlib import nullcontext
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
 
 from zenml.constants import (
     ENV_ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE,
@@ -23,10 +24,16 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.execution.context import (
+    ActiveRunContext,
     ExecutionContext,
+    get_active_run_context,
     record_step_run,
     setup_execution_context,
 )
+from zenml.execution.pipeline.dynamic.run_context import (
+    DynamicPipelineRunContext,
+)
+from zenml.steps.step_context import StepContext
 
 
 def test_setup_can_be_disabled_via_environment_variable():
@@ -72,3 +79,44 @@ def test_step_run_eviction(create_step_run):
     )
 
     assert list(context.step_runs) == ["step_4", "step_5"]
+
+
+def test_active_run_context_prefers_step_over_dynamic_run():
+    """Tests that the step context wins when both contexts are active."""
+    step_context = MagicMock(step_name="trainer")
+    run_context = MagicMock()
+
+    with (
+        patch.object(StepContext, "get", return_value=step_context),
+        patch.object(
+            DynamicPipelineRunContext, "get", return_value=run_context
+        ),
+    ):
+        assert get_active_run_context() == ActiveRunContext(
+            pipeline_run_id=step_context.pipeline_run.id,
+            step_run_id=step_context.step_run.id,
+            step_name="trainer",
+        )
+
+
+def test_active_run_context_falls_back_to_dynamic_run():
+    """Tests the fallback to the dynamic pipeline run outside of a step."""
+    run_context = MagicMock()
+    run_context.run.id = uuid4()
+
+    with (
+        patch.object(StepContext, "get", return_value=None),
+        patch.object(
+            DynamicPipelineRunContext, "get", return_value=run_context
+        ),
+    ):
+        assert get_active_run_context() == ActiveRunContext(
+            pipeline_run_id=run_context.run.id,
+            step_run_id=None,
+            step_name=None,
+        )
+
+
+def test_active_run_context_is_none_without_any_context():
+    """Tests that no active context resolves to None."""
+    assert get_active_run_context() is None
