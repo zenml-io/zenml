@@ -20,20 +20,24 @@ break: responses that differ from inline ones, execution paths that stop working
 while storage is down, half-created runs and corrupted blobs.
 """
 
-import json
 from typing import Any, Dict, Generator, List, Optional
 from uuid import UUID, uuid4
 
-import boto3
 import pytest
 from moto.server import ThreadedMotoServer
 from sqlmodel import Session, select
 
+from tests.harness.utils import (
+    local_s3_client,
+    local_s3_payload_storage,
+    start_local_s3,
+)
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     PayloadIntegrityError,
@@ -111,9 +115,7 @@ def dynamic_pipeline() -> None:
 @pytest.fixture
 def s3_server() -> Generator[ThreadedMotoServer, None, None]:
     """A local S3 server with an empty bucket for the payloads."""
-    server = ThreadedMotoServer(ip_address="127.0.0.1", port=0, verbose=False)
-    server.start()
-    _get_s3_client(server).create_bucket(Bucket=BUCKET)
+    server = start_local_s3(BUCKET)
     yield server
     server.stop()
 
@@ -125,26 +127,9 @@ def store(
     request: pytest.FixtureRequest,
 ) -> SqlZenStore:
     """The store of a clean client, which offloads payloads to the S3 server."""
-    host, port = s3_server.get_host_and_port()
     monkeypatch.setenv(
-        "ZENML_STORE_PAYLOAD_STORAGE",
-        json.dumps(
-            {
-                "offload_enabled": True,
-                "write_backend": "s3",
-                "backends": {
-                    "s3": {
-                        "path": f"s3://{BUCKET}/{PREFIX}",
-                        "key": "test",
-                        "secret": "test",
-                        "client_kwargs": {
-                            "endpoint_url": f"http://{host}:{port}",
-                            "region_name": "us-east-1",
-                        },
-                    }
-                },
-            }
-        ),
+        f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE",
+        local_s3_payload_storage(s3_server, f"s3://{BUCKET}/{PREFIX}"),
     )
     # Created only now, so that its store reads the settings above.
     client = request.getfixturevalue("clean_client")
@@ -152,18 +137,6 @@ def store(
     assert isinstance(zen_store, SqlZenStore)
     assert zen_store.config.payload_storage.offload_enabled
     return zen_store
-
-
-def _get_s3_client(server: ThreadedMotoServer) -> Any:
-    """A boto3 client of the local S3 server."""
-    host, port = server.get_host_and_port()
-    return boto3.client(
-        "s3",
-        endpoint_url=f"http://{host}:{port}",
-        region_name="us-east-1",
-        aws_access_key_id="test",
-        aws_secret_access_key="test",
-    )
 
 
 def _open_store(store: SqlZenStore, **payload_storage: Any) -> SqlZenStore:
@@ -389,7 +362,7 @@ def test_run_creation_writes_nothing_when_storage_fails(
     cold = _open_store(store, cache_size=0)
     snapshot = _create_snapshot(cold)
     request = _run_request(snapshot.id, tags=["payloads"])
-    s3 = _get_s3_client(s3_server)
+    s3 = local_s3_client(s3_server)
     key = _get_config_blob_key(cold, snapshot.id)
     data = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
     s3.delete_object(Bucket=BUCKET, Key=key)
@@ -416,7 +389,7 @@ def test_update_with_metadata_writes_nothing_when_storage_fails(
     """A storage failure while updating a run with its metadata changes nothing."""
     cold = _open_store(store, cache_size=0)
     run = _start_run(cold)
-    s3 = _get_s3_client(s3_server)
+    s3 = local_s3_client(s3_server)
     s3.delete_object(
         Bucket=BUCKET, Key=_get_config_blob_key(cold, run.snapshot.id)
     )
@@ -437,7 +410,7 @@ def test_run_with_a_snapshot_of_another_project_stores_nothing(
     other_project = Client().create_project(
         name=f"other-{uuid4().hex[:8]}", description="Another project."
     )
-    s3 = _get_s3_client(s3_server)
+    s3 = local_s3_client(s3_server)
     objects = s3.list_objects_v2(Bucket=BUCKET)["KeyCount"]
 
     with pytest.raises(KeyError):
@@ -455,7 +428,7 @@ def test_corrupted_blob_is_rejected_and_not_cached(
     """Bytes that are not the registered ones never reach a response."""
     snapshot = _create_snapshot(store, config_name="original-configuration")
     cached = _open_store(store, cache_size=64 * 1024 * 1024)
-    s3 = _get_s3_client(s3_server)
+    s3 = local_s3_client(s3_server)
     key = _get_config_blob_key(store, snapshot.id)
     original = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
 

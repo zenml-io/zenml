@@ -1393,17 +1393,42 @@ class SqlZenStore(BaseZenStore):
         finally:
             session.expire_on_commit = expire_on_commit
 
+    def _run_pre_read_hook(
+        self,
+        session: Session,
+        pre_read_hook: Optional[Callable[[AnyResponse], None]],
+        get_model: Callable[[], AnyResponse],
+    ) -> None:
+        """Run a hook with an entity, without its metadata, before its payloads.
+
+        Permission checks can take a while (on Pro, they are HTTP calls), so
+        the read transaction ends first and no connection is held meanwhile.
+
+        Args:
+            session: The session that loaded the entity.
+            pre_read_hook: The hook, if any.
+            get_model: Converts the entity without its metadata.
+        """
+        if pre_read_hook:
+            model = get_model()
+            self._end_read_transaction(session)
+            pre_read_hook(model)
+
     def _resolve_payloads(
         self,
         session: Session,
         get_blob_ids: Callable[[], Iterable[Optional[UUID]]],
         offloaded_payloads: Optional[OffloadedPayloads] = None,
+        hydrate: bool = True,
     ) -> ResolvedPayloads:
         """Resolve the offloaded payloads that the conversions of a session read.
 
         Payload storage is only read outside of a transaction: if blobs remain
         to be read after the offloaded values, the read transaction of the
-        session ends first, and the objects it loaded stay usable.
+        session ends first, and the objects it loaded stay usable. Methods
+        that write call this before any write, so that a storage failure never
+        fails a request whose change is already committed; an update changes
+        no payload.
 
         Args:
             session: The session of the conversions, which must not hold any
@@ -1412,15 +1437,17 @@ class SqlZenStore(BaseZenStore):
                 are ignored.
             offloaded_payloads: Payloads just offloaded, which are resolved
                 from memory.
+            hydrate: Whether the conversions include metadata. Conversions
+                without metadata read no payloads.
 
         Returns:
             The resolved payloads.
         """
+        if not hydrate:
+            return UNRESOLVED
         values = offloaded_payloads.values if offloaded_payloads else {}
-        # Without any backend, as on OSS by default, the blob IDs are not
-        # even collected. Offloaded rows only show up here if other processes
-        # offload while this one runs without the backend, and reading them
-        # then says so.
+        # Blob IDs are not even collected without any backend; see
+        # `UnconfiguredPayloads`.
         if not self.payload_store.has_backends:
             return UnconfiguredPayloads(values)
         missing = {
@@ -1447,8 +1474,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The resolved payloads.
         """
-        if not hydrate:
-            return UNRESOLVED
         return self._resolve_payloads(
             session,
             lambda: (
@@ -1456,6 +1481,7 @@ class SqlZenStore(BaseZenStore):
                 for schema in schemas
                 for blob_id in schema.get_payload_blob_ids()
             ),
+            hydrate=hydrate,
         )
 
     def get_session(self) -> Session:
@@ -5743,22 +5769,14 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
-            if pre_read_hook:
-                model = snapshot.to_model()
-                # Permission checks can take a while (on Pro, they are
-                # HTTP calls), so no connection is held meanwhile.
-                self._end_read_transaction(session)
-                pre_read_hook(model)
-            payloads = (
-                self._resolve_payloads(
-                    session,
-                    lambda: snapshot.get_payload_blob_ids(
-                        step_configuration_filter=step_configuration_filter,
-                        include_config_schema=include_config_schema,
-                    ),
-                )
-                if hydrate
-                else UNRESOLVED
+            self._run_pre_read_hook(session, pre_read_hook, snapshot.to_model)
+            payloads = self._resolve_payloads(
+                session,
+                lambda: snapshot.get_payload_blob_ids(
+                    step_configuration_filter=step_configuration_filter,
+                    include_config_schema=include_config_schema,
+                ),
+                hydrate=hydrate,
             )
             return snapshot.to_model(
                 include_metadata=hydrate,
@@ -5805,9 +5823,8 @@ class SqlZenStore(BaseZenStore):
                                 snapshots
                             )
                         ),
+                        hydrate=hydrate,
                     )
-                    if hydrate
-                    else UNRESOLVED
                 },
             )
 
@@ -5836,8 +5853,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
-            # Resolved before anything is written, so that a storage failure
-            # never fails a request whose change is already committed.
+            # Before any write; see `_resolve_payloads`.
             payloads = self._resolve_payloads(
                 session, snapshot.get_payload_blob_ids
             )
@@ -6478,8 +6494,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             template_utils.validate_snapshot_is_templatable(snapshot)
-            # Resolved before anything is written, so that a storage failure
-            # never fails a request whose change is already committed.
+            # Before any write; see `_resolve_payloads`.
             payloads = self._resolve_payloads(
                 session, snapshot.get_payload_blob_ids
             )
@@ -6535,20 +6550,13 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
-            if pre_read_hook:
-                model = template.to_model()
-                # Permission checks can take a while (on Pro, they are
-                # HTTP calls), so no connection is held meanwhile.
-                self._end_read_transaction(session)
-                pre_read_hook(model)
+            self._run_pre_read_hook(session, pre_read_hook, template.to_model)
             return template.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 payloads=self._resolve_payloads(
-                    session, template.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED,
+                    session, template.get_payload_blob_ids, hydrate=hydrate
+                ),
             )
 
     def list_run_templates(
@@ -6591,9 +6599,8 @@ class SqlZenStore(BaseZenStore):
                                 ]
                             )
                         ),
+                        hydrate=hydrate,
                     )
-                    if hydrate
-                    else UNRESOLVED
                 },
             )
 
@@ -6617,8 +6624,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
-            # Resolved before anything is written, so that a storage failure
-            # never fails a request whose change is already committed.
+            # Before any write; see `_resolve_payloads`.
             payloads = self._resolve_payloads(
                 session, template.get_payload_blob_ids
             )
@@ -7478,22 +7484,15 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
-            if pre_read_hook:
-                model = run.to_model()
-                # Permission checks can take a while (on Pro, they are
-                # HTTP calls), so no connection is held meanwhile.
-                self._end_read_transaction(session)
-                pre_read_hook(model)
+            self._run_pre_read_hook(session, pre_read_hook, run.to_model)
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
                 payloads=self._resolve_payloads(
-                    session, run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED,
+                    session, run.get_payload_blob_ids, hydrate=hydrate
+                ),
             )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
@@ -7661,12 +7660,7 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
-        if pre_read_hook:
-            model = run_schema.to_model()
-            # Permission checks can take a while (on Pro, they are
-            # HTTP calls), so no connection is held meanwhile.
-            self._end_read_transaction(session)
-            pre_read_hook(model)
+        self._run_pre_read_hook(session, pre_read_hook, run_schema.to_model)
         return run_schema.to_model(
             include_metadata=True,
             include_resources=True,
@@ -7746,7 +7740,8 @@ class SqlZenStore(BaseZenStore):
                     reference_id=pipeline_run.snapshot,
                     session=session,
                 )
-            self._end_read_transaction(session)
+            if self.payload_store.has_backends:
+                self._end_read_transaction(session)
             offloaded_payloads = self.payload_store.offload(
                 [PipelineRunSchema.get_orchestrator_environment(pipeline_run)]
             )
@@ -7927,15 +7922,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            # Resolved before anything is written, so that a storage failure
-            # never fails a request whose change is already committed. An
-            # update changes no payload.
-            payloads = (
-                self._resolve_payloads(
-                    session, existing_run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED
+            # Before any write; see `_resolve_payloads`.
+            payloads = self._resolve_payloads(
+                session, existing_run.get_payload_blob_ids, hydrate=hydrate
             )
 
             if run_update.status is not None:
@@ -13204,20 +13193,13 @@ class SqlZenStore(BaseZenStore):
                     include_metadata=hydrate, include_resources=True
                 ),
             )
-            if pre_read_hook:
-                model = step_run.to_model()
-                # Permission checks can take a while (on Pro, they are
-                # HTTP calls), so no connection is held meanwhile.
-                self._end_read_transaction(session)
-                pre_read_hook(model)
+            self._run_pre_read_hook(session, pre_read_hook, step_run.to_model)
             return step_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 payloads=self._resolve_payloads(
-                    session, step_run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED,
+                    session, step_run.get_payload_blob_ids, hydrate=hydrate
+                ),
             )
 
     def list_run_steps(
@@ -13581,15 +13563,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
-            # Resolved before anything is written, so that a storage failure
-            # never fails a request whose change is already committed. An
-            # update changes no payload.
-            payloads = (
-                self._resolve_payloads(
-                    session, existing_step_run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED
+            # Before any write; see `_resolve_payloads`.
+            payloads = self._resolve_payloads(
+                session,
+                existing_step_run.get_payload_blob_ids,
+                hydrate=hydrate,
             )
 
             if step_run_update.status:

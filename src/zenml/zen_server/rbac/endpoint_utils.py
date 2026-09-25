@@ -199,7 +199,7 @@ def verify_permissions_and_get_or_create_entity(
             check_entitlement(feature=resource_type)
 
     model, created = get_or_create_method(
-        request_model, _pre_creation_hook, _verify_read_permission
+        request_model, _pre_creation_hook, get_read_permission_hook()
     )
 
     if created and resource_type and needs_usage_increment:
@@ -215,6 +215,18 @@ def _verify_read_permission(model: AnyResponse) -> None:
         model: The entity.
     """
     verify_permission_for_model(model, action=Action.READ)
+
+
+def get_read_permission_hook() -> Optional[Callable[[Any], None]]:
+    """Get the `pre_read_hook` that verifies the caller may read an entity.
+
+    Returns:
+        The hook, or None without RBAC: nothing is verified then, and store
+        getters skip the work they do to run a hook.
+    """
+    if not server_config().rbac_enabled:
+        return None
+    return _verify_read_permission
 
 
 def verify_permissions_and_get_entity(
@@ -264,7 +276,7 @@ def verify_permissions_and_get_entity_with_payloads(
         get_method(
             id,
             hydrate=hydrate,
-            pre_read_hook=_verify_read_permission,
+            pre_read_hook=get_read_permission_hook(),
             **get_method_kwargs,
         )
     )

@@ -62,6 +62,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
+    get_read_permission_hook,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity_with_payloads,
@@ -362,20 +363,16 @@ def get_snapshot_code_download_token(
     Raises:
         ValueError: If the snapshot has no code path or stack.
     """
-
     # The code path is part of the metadata, which carries payloads that can
     # live in external storage, so reading the snapshot is authorized before
     # it is loaded. Its stack and artifact store are checked before any token
     # is issued.
-    def _verify(snapshot: PipelineSnapshotResponse) -> None:
-        verify_permission_for_model(snapshot, action=Action.READ)
-
     snapshot = zen_store().get_snapshot(
         snapshot_id,
         hydrate=True,
         step_configuration_filter=[],
         include_config_schema=False,
-        pre_read_hook=_verify,
+        pre_read_hook=get_read_permission_hook(),
     )
     if not snapshot.stack:
         raise ValueError(f"Snapshot {snapshot_id} has no stack.")

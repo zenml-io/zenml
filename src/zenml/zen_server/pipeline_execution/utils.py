@@ -45,7 +45,12 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
+from zenml.exceptions import (
+    IllegalOperationError,
+    MaxConcurrentTasksError,
+    PayloadStorageError,
+    PayloadStorageUnavailableError,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -341,7 +346,7 @@ def run_snapshot(
             auth_context=auth_context,
             wait_for_completion=wait_runner_pod,
         )
-        response_run = zen_store().get_run(run_id=execution_request.run_id)
+        response_run = _get_started_run(execution_request.run_id)
     else:
         # Without metadata, so that nothing but the database stands between
         # the prepared run and its submission. The response is read once the
@@ -383,9 +388,31 @@ def run_snapshot(
             raise SnapshotRunDispatchError(
                 "Failed to queue snapshot execution request."
             ) from exc
-        response_run = zen_store().get_run(run_id=execution_request.run_id)
+        response_run = _get_started_run(execution_request.run_id)
 
     return response_run
+
+
+def _get_started_run(run_id: UUID) -> PipelineRunResponse:
+    """Get a run that was already queued or executed, for the response.
+
+    Its payloads can live in external storage. A storage failure then only
+    drops the metadata from the response: failing the request would make
+    clients retry it and start the run a second time.
+
+    Args:
+        run_id: The run.
+
+    Returns:
+        The run, with its metadata unless payload storage failed.
+    """
+    try:
+        return zen_store().get_run(run_id=run_id)
+    except (PayloadStorageError, PayloadStorageUnavailableError):
+        logger.exception(
+            "Failed to load the metadata of started run %s.", run_id
+        )
+        return zen_store().get_run(run_id=run_id, hydrate=False)
 
 
 def prepare_snapshot_run(

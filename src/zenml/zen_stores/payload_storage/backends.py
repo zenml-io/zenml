@@ -41,7 +41,10 @@ class PayloadBackend(ABC):
     """Holds payload bytes outside the database, addressed by their SHA-256.
 
     Blobs are never overwritten with different bytes or deleted, so a backend
-    only needs to store and load them.
+    only needs to store and load them. A denied access raises
+    `PermissionError` and a missing object or bucket `FileNotFoundError`: the
+    payload store fails those at once, and treats any other error as an
+    unavailable backend that a retry may find again.
     """
 
     @abstractmethod
@@ -78,12 +81,6 @@ class ObjectStoreArtifactStore(Protocol):
     @property
     def filesystem(self) -> "AbstractFileSystem":
         """The filesystem holding the files of the artifact store."""
-
-
-# s3fs raises `PermissionError` and `FileNotFoundError` itself. gcsfs reports
-# a 403 as a plain `OSError` and a 401 as its own `HttpError`, and adlfs lets
-# Azure's exceptions through. Retrying fixes none of these, so they must not
-# look like an unavailable backend.
 
 
 def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
@@ -164,6 +161,10 @@ class ArtifactStorePayloadBackend(PayloadBackend):
 
     def _call(self, function: Callable[[], T]) -> T:
         """Call the filesystem, with denied and missing errors translated.
+
+        s3fs raises `PermissionError` and `FileNotFoundError` itself. gcsfs
+        reports a 403 as a plain `OSError` and a 401 as its own `HttpError`,
+        and adlfs lets Azure's exceptions through.
 
         Args:
             function: The filesystem call.

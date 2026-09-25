@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 import os
 import shutil
 import sys
@@ -31,6 +30,8 @@ from tests.harness.utils import (
     clean_default_client_session,
     clean_project_session,
     environment_session,
+    local_s3_payload_storage,
+    start_local_s3,
 )
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifact_stores.local_artifact_store import (
@@ -38,7 +39,10 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
+from zenml.constants import (
+    ENV_ZENML_CUSTOM_SOURCE_ROOT,
+    ENV_ZENML_STORE_PREFIX,
+)
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -58,48 +62,20 @@ DEFAULT_ENVIRONMENT_NAME = "default"
 # in their rows. With `ZENML_TEST_PAYLOAD_STORAGE=s3`, every store of the
 # session offloads its payloads to a local S3 server instead.
 TEST_PAYLOAD_STORAGE_ENV = "ZENML_TEST_PAYLOAD_STORAGE"
-PAYLOAD_STORAGE_SERVER = pytest.StashKey[object]()
 
 
 def _offload_payloads_to_local_s3(config: pytest.Config) -> None:
     """Start a local S3 server and offload every payload of the session to it.
 
     Args:
-        config: The pytest configuration, which keeps the server.
+        config: The pytest configuration, which stops the server at the end.
     """
-    import boto3
-    from moto.server import ThreadedMotoServer
-
-    server = ThreadedMotoServer(ip_address="127.0.0.1", port=0, verbose=False)
-    server.start()
-    config.stash[PAYLOAD_STORAGE_SERVER] = server
-    host, port = server.get_host_and_port()
-    endpoint = f"http://{host}:{port}"
-    boto3.client(
-        "s3",
-        endpoint_url=endpoint,
-        region_name="us-east-1",
-        aws_access_key_id="test",
-        aws_secret_access_key="test",
-    ).create_bucket(Bucket="payloads")
+    server = start_local_s3("payloads")
+    config.add_cleanup(server.stop)
     # Set before any store exists, so every store of the session, and the
     # processes it starts, offloads.
-    os.environ["ZENML_STORE_PAYLOAD_STORAGE"] = json.dumps(
-        {
-            "offload_enabled": True,
-            "write_backend": "s3",
-            "backends": {
-                "s3": {
-                    "path": "s3://payloads/tests",
-                    "key": "test",
-                    "secret": "test",
-                    "client_kwargs": {
-                        "endpoint_url": endpoint,
-                        "region_name": "us-east-1",
-                    },
-                }
-            },
-        }
+    os.environ[f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE"] = (
+        local_s3_payload_storage(server, "s3://payloads/tests")
     )
 
 
@@ -125,17 +101,6 @@ def pytest_configure(config: pytest.Config) -> None:
             f"{TEST_PAYLOAD_STORAGE_ENV} only supports `s3`, not "
             f"`{payload_storage}`."
         )
-
-
-def pytest_unconfigure(config: pytest.Config) -> None:
-    """Stop the local S3 server of the session, if any.
-
-    Args:
-        config: The pytest configuration.
-    """
-    server = config.stash.get(PAYLOAD_STORAGE_SERVER, None)
-    if server is not None:
-        server.stop()  # type: ignore[attr-defined]
 
 
 def pytest_addoption(parser):

@@ -6,6 +6,8 @@ Create Date: 2026-09-24 15:58:32.000000
 
 """
 
+from typing import List
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -28,6 +30,32 @@ BLOB_REFERENCE_COLUMNS = {
 }
 
 
+def _add_columns(table: str, columns: List[sa.Column]) -> None:  # type: ignore[type-arg]
+    """Add nullable columns to a table.
+
+    Args:
+        table: The table.
+        columns: The columns to add.
+    """
+    bind = op.get_bind()
+    if bind.dialect.name == "mysql":
+        # MySQL allows 64 instant column changes per table before it has to
+        # copy the table, and counts one per statement. Batch mode issues one
+        # statement per column, so each table gets a single statement here.
+        op.execute(
+            f"ALTER TABLE `{table}` "
+            + ", ".join(
+                f"ADD COLUMN `{column.name}` "
+                f"{column.type.compile(dialect=bind.dialect)} NULL"
+                for column in columns
+            )
+        )
+    else:
+        with op.batch_alter_table(table, schema=None) as batch_op:
+            for column in columns:
+                batch_op.add_column(column)
+
+
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     op.create_table(
@@ -48,27 +76,14 @@ def upgrade() -> None:
 
     # Nullable columns without foreign keys or indexes, so that MySQL can
     # append them without rebuilding or copying these large tables.
-    bind = op.get_bind()
-    if bind.dialect.name == "mysql":
-        # MySQL allows 64 instant column changes per table before it has to
-        # copy the table, and counts one per statement. Batch mode issues one
-        # statement per column, so each table gets a single statement here.
-        uuid_type = sa.Uuid().compile(dialect=bind.dialect)
-        for table, columns in BLOB_REFERENCE_COLUMNS.items():
-            op.execute(
-                f"ALTER TABLE `{table}` "
-                + ", ".join(
-                    f"ADD COLUMN `{column}` {uuid_type} NULL"
-                    for column in columns
-                )
-            )
-    else:
-        for table, columns in BLOB_REFERENCE_COLUMNS.items():
-            with op.batch_alter_table(table, schema=None) as batch_op:
-                for column in columns:
-                    batch_op.add_column(
-                        sa.Column(column, sa.Uuid(), nullable=True)
-                    )
+    for table, columns in BLOB_REFERENCE_COLUMNS.items():
+        _add_columns(
+            table,
+            [
+                sa.Column(column, sa.Uuid(), nullable=True)
+                for column in columns
+            ],
+        )
 
 
 def downgrade() -> None:

@@ -45,7 +45,6 @@ from zenml.zen_stores.payload_storage.backends import (
 )
 from zenml.zen_stores.payload_storage.cache import PayloadCache
 from zenml.zen_stores.payload_storage.config import (
-    PayloadBackendType,
     PayloadStorageConfiguration,
 )
 from zenml.zen_stores.payload_storage.payloads import (
@@ -172,10 +171,13 @@ class PayloadStore:
             config: The payload storage configuration.
         """
         self._engine = engine
-        self._offload_enabled = config.offload_enabled
-        self._write_backend = config.write_backend
-        self._backends: Dict[PayloadBackendType, PayloadBackend] = {
-            backend_type: create_payload_backend(
+        # The backend receiving new payloads; None keeps them inline.
+        self._write_backend = (
+            config.write_backend if config.offload_enabled else None
+        )
+        # Keyed by the name stored in `blob.stored_in`.
+        self._backends: Dict[str, PayloadBackend] = {
+            backend_type.value: create_payload_backend(
                 backend_type, configuration, timeout=config.timeout
             )
             for backend_type, configuration in config.backends.items()
@@ -208,7 +210,7 @@ class PayloadStore:
 
         # Compared with the stored names rather than the known ones, so that
         # blobs of a backend added by a newer release are found as well.
-        configured = [backend_type.value for backend_type in self._backends]
+        configured = list(self._backends)
         with Session(self._engine) as session:
             stored_in = session.exec(
                 select(BlobSchema.stored_in)
@@ -238,13 +240,13 @@ class PayloadStore:
         Returns:
             The offloaded payloads, which reference the blobs from schemas.
         """
-        if not self._offload_enabled or self._write_backend is None:
+        if self._write_backend is None:
             return OffloadedPayloads.disabled()
 
         values_by_key = {_get_blob_key(value): value for value in values}
         blob_ids: Dict[BlobKey, UUID] = {}
         if values_by_key:
-            backend = self._backends[self._write_backend]
+            backend = self._backends[self._write_backend.value]
             with Session(self._engine) as session:
                 blob_ids = self._get_registered_blobs(
                     values_by_key, session=session
@@ -426,11 +428,7 @@ class PayloadStore:
         for blob in blobs:
             sha256s_by_backend[blob.stored_in].add(blob.sha256)
         for stored_in, sha256s in sha256s_by_backend.items():
-            # A backend name may also come from a newer release.
-            backend = next(
-                (b for t, b in self._backends.items() if t.value == stored_in),
-                None,
-            )
+            backend = self._backends.get(stored_in)
             if backend is None:
                 raise PayloadStorageError(
                     f"Execution payloads are stored in the `{stored_in}` "
