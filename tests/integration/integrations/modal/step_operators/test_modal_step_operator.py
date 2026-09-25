@@ -170,6 +170,10 @@ def _submit_with_stubs(
 
         def __init__(self):
             self.terminate_calls = 0
+            self.tags = None
+
+        def set_tags(self, tags):
+            self.tags = dict(tags)
 
         def terminate(self):
             self.terminate_calls += 1
@@ -304,6 +308,38 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
 
     assert result is None
     assert "running on CPU only" in caplog.text
+
+
+def test_create_modal_sandbox_keeps_sandbox_when_tagging_fails(
+    monkeypatch, caplog
+) -> None:
+    class SandboxStub:
+        object_id = "sandbox-id"
+
+        def set_tags(self, tags):
+            raise RuntimeError("tagging unavailable")
+
+    sandbox = SandboxStub()
+    monkeypatch.setattr(
+        sandbox_utils.modal,
+        "Sandbox",
+        SimpleNamespace(create=lambda *args, **kwargs: sandbox),
+    )
+
+    with caplog.at_level("WARNING"):
+        result = sandbox_utils.create_modal_sandbox(
+            ["python", "-m", "step"],
+            app="app",
+            image="image",
+            settings=ModalStepOperatorSettings(),
+            resource_settings=ResourceSettingsStub(gpu_count=None),
+            environment={},
+            modal_client=None,
+            tags={"zenml-step": "train"},
+        )
+
+    assert result is sandbox
+    assert "Failed to tag Modal sandbox `sandbox-id`" in caplog.text
 
 
 def test_create_modal_client_from_credentials_normalizes_values(
@@ -527,7 +563,7 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
     ]
     runtime_secret = recorded["secrets"][0]
     assert recorded["app_lookup"] == (
-        ("zenml-step-run-id-train",),
+        ("zenml-step-operator",),
         {
             "create_if_missing": True,
             "environment_name": "staging",
@@ -576,6 +612,10 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
         {},
     )
     assert run_metadata == expected_metadata
+    assert recorded["sandbox"].tags == {
+        sandbox_utils.STEP_RUN_ID_SANDBOX_TAG: "step-run-id",
+        sandbox_utils.STEP_NAME_SANDBOX_TAG: "train",
+    }
 
 
 def test_modal_submit_passes_registry_credentials_to_image_from_registry(
