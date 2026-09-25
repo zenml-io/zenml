@@ -36,6 +36,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml.exceptions import PayloadStorageError
 from zenml.utils.enum_utils import StrEnum
 
 
@@ -240,6 +241,40 @@ class ResolvedPayloads:
 
 
 UNRESOLVED = ResolvedPayloads()
+
+
+class UnconfiguredPayloads(ResolvedPayloads):
+    """Resolved payloads of a process that has no payload storage backend.
+
+    Such a process never reads payload storage. It only meets offloaded
+    payloads when other processes offload while it runs without the backend,
+    for example when a rolling upgrade enables offloading and configures the
+    backend at once: reading one then fails with an error that says so.
+    """
+
+    def get(self, blob_id: UUID) -> str:
+        """Get the value held by a blob.
+
+        Args:
+            blob_id: The blob to read.
+
+        Returns:
+            The payload value.
+
+        Raises:
+            PayloadStorageError: If the blob was not resolved, since this
+                process cannot read payload storage.
+        """
+        try:
+            return super().get(blob_id)
+        except UnresolvedPayloadError:
+            raise PayloadStorageError(
+                f"The payload stored in blob `{blob_id}` is in object "
+                "storage, but this process has no payload storage backend "
+                "configured. Configure the same payload storage backends in "
+                "every process that opens the database, and only then enable "
+                "offloading."
+            ) from None
 
 
 @overload

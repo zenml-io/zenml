@@ -430,6 +430,7 @@ from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadStorageConfiguration,
     ResolvedPayloads,
+    UnconfiguredPayloads,
     get_blob_ids,
     get_inline_payloads,
     read_payload,
@@ -1416,11 +1417,12 @@ class SqlZenStore(BaseZenStore):
             The resolved payloads.
         """
         values = offloaded_payloads.values if offloaded_payloads else {}
-        # Rows only reference blobs of configured backends (the store refuses
-        # to start otherwise), so without any backend, as on OSS by default,
-        # the blob IDs are not even collected.
+        # Without any backend, as on OSS by default, the blob IDs are not
+        # even collected. Offloaded rows only show up here if other processes
+        # offload while this one runs without the backend, and reading them
+        # then says so.
         if not self.payload_store.has_backends:
-            return ResolvedPayloads(values)
+            return UnconfiguredPayloads(values)
         missing = {
             blob_id
             for blob_id in get_blob_ids()

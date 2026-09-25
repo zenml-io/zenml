@@ -437,10 +437,13 @@ server:
     # managed identity. Environment variables such as AWS_* set through
     # `zenml.secretEnvironment` are picked up as well.
     payloadStorage:
-      # Move new payloads to the object store. Only enable once every server
-      # replica and every process that opens the database runs a release that
-      # reads offloaded payloads. Disabling it again keeps the store below
-      # configured, so that payloads moved earlier stay readable.
+      # Move new payloads to the object store. Enable it in two steps: first
+      # roll out `backend` and `path` with `enabled: false`, until every
+      # server replica and every other process that opens the database runs
+      # with them; only then set `enabled: true`. Setting both at once lets
+      # new pods write payloads that the pods they replace cannot read yet.
+      # Disabling it again keeps the store configured, so that payloads moved
+      # earlier stay readable.
       enabled: false
       # The object store: `s3`, `gcs` or `azure`. Payloads stay readable only
       # while their store stays configured, so do not change it once enabled.
