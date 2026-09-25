@@ -343,12 +343,14 @@ def run_snapshot(
         )
         response_run = zen_store().get_run(run_id=execution_request.run_id)
     else:
-        response_run = zen_store().update_run(
+        # Without metadata, so that nothing but the database stands between
+        # the prepared run and its submission. The response is read once the
+        # run is queued.
+        zen_store().update_run(
             run_id=execution_request.run_id,
             run_update=PipelineRunUpdate(
                 status_reason=SNAPSHOT_RUN_QUEUED_STATUS_REASON
             ),
-            hydrate=True,
         )
         try:
             snapshot_run_dispatcher().submit(execution_request)
@@ -381,6 +383,7 @@ def run_snapshot(
             raise SnapshotRunDispatchError(
                 "Failed to queue snapshot execution request."
             ) from exc
+        response_run = zen_store().get_run(run_id=execution_request.run_id)
 
     return response_run
 

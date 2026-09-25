@@ -7925,6 +7925,16 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
+            # Resolved before anything is written, so that a storage failure
+            # never fails a request whose change is already committed. An
+            # update changes no payload.
+            payloads = (
+                self._resolve_payloads(
+                    session, existing_run.get_payload_blob_ids
+                )
+                if hydrate
+                else UNRESOLVED
+            )
 
             if run_update.status is not None:
                 self._update_pipeline_run_status(
@@ -8029,11 +8039,7 @@ class SqlZenStore(BaseZenStore):
             return existing_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
-                payloads=self._resolve_payloads(
-                    session, existing_run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED,
+                payloads=payloads,
             )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -13573,6 +13579,16 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
+            # Resolved before anything is written, so that a storage failure
+            # never fails a request whose change is already committed. An
+            # update changes no payload.
+            payloads = (
+                self._resolve_payloads(
+                    session, existing_step_run.get_payload_blob_ids
+                )
+                if hydrate
+                else UNRESOLVED
+            )
 
             if step_run_update.status:
                 self._verify_step_status_transition(
@@ -13684,11 +13700,7 @@ class SqlZenStore(BaseZenStore):
             return existing_step_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
-                payloads=self._resolve_payloads(
-                    session, existing_step_run.get_payload_blob_ids
-                )
-                if hydrate
-                else UNRESOLVED,
+                payloads=payloads,
             )
 
     def _get_step_run_input_artifact_from_cached_step_run(

@@ -56,7 +56,8 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
         status=ExecutionStatus.INITIALIZING,
         status_reason=utils.SNAPSHOT_RUN_QUEUED_STATUS_REASON,
     )
-    store.update_run.return_value = queued_run
+    # The response is read once the run is queued.
+    store.get_run.return_value = queued_run
 
     monkeypatch.setattr(
         utils,

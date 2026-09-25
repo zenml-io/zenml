@@ -410,6 +410,25 @@ def test_run_creation_writes_nothing_when_storage_fails(
     assert [tag.name for tag in run.tags] == ["payloads"]
 
 
+def test_update_with_metadata_writes_nothing_when_storage_fails(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
+) -> None:
+    """A storage failure while updating a run with its metadata changes nothing."""
+    cold = _open_store(store, cache_size=0)
+    run = _start_run(cold)
+    s3 = _get_s3_client(s3_server)
+    s3.delete_object(
+        Bucket=BUCKET, Key=_get_config_blob_key(cold, run.snapshot.id)
+    )
+
+    with pytest.raises(PayloadStorageError):
+        cold.update_run(
+            run.id, PipelineRunUpdate(add_tags=["updated"]), hydrate=True
+        )
+
+    assert cold.get_run(run.id, hydrate=False).tags == []
+
+
 def test_run_with_a_snapshot_of_another_project_stores_nothing(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
