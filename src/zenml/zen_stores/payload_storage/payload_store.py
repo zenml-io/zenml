@@ -345,6 +345,10 @@ class PayloadStore:
         # order and never deadlock each other.
         values = sorted(values, key=_get_blob_key)
         blobs = [self._create_blob(value) for value in values]
+        # Read before the commit expires the rows, which would reload each.
+        blob_ids = {
+            _get_blob_key(value): blob.id for value, blob in zip(values, blobs)
+        }
         session.add_all(blobs)
         try:
             session.commit()
@@ -355,9 +359,7 @@ class PayloadStore:
                 _get_blob_key(value): self._get_or_register(value)
                 for value in values
             }
-        return {
-            _get_blob_key(value): blob.id for value, blob in zip(values, blobs)
-        }
+        return blob_ids
 
     def _get_or_register(self, value: PayloadValue) -> UUID:
         """Register the blob of a payload value unless it already exists.
@@ -374,10 +376,12 @@ class PayloadStore:
         """
         with Session(self._engine) as session:
             blob = self._create_blob(value)
+            # Read before the commit expires the row, which would reload it.
+            blob_id = blob.id
             session.add(blob)
             try:
                 session.commit()
-                return blob.id
+                return blob_id
             except IntegrityError:
                 session.rollback()
                 # The rollback ended the transaction, so this read sees the
