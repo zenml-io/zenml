@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
 from zenml.webhooks.providers.base import (
+    WEBHOOK_MAX_TARGET_EVENTS,
     BaseWebhookProvider,
     WebhookConfiguration,
     WebhookPayloadError,
@@ -28,6 +29,10 @@ from zenml.webhooks.providers.base import (
     authenticate_hmac_sha256,
     matches_string_collection_filter,
     matches_string_filter,
+)
+from zenml.webhooks.providers.dynamic import (
+    DynamicWebhookTargetEvent,
+    matches_webhook_target,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -125,7 +130,8 @@ GitHubWebhookTargetEvent: TypeAlias = Annotated[
     | WorkflowRunCompleted
     | PushEvent
     | ReleasePublished
-    | IssueOpened,
+    | IssueOpened
+    | DynamicWebhookTargetEvent,
     Field(discriminator="type"),
 ]
 
@@ -133,7 +139,9 @@ GitHubWebhookTargetEvent: TypeAlias = Annotated[
 class GitHubWebhookConfiguration(WebhookConfiguration):
     """Typed configuration for a GitHub webhook trigger."""
 
-    target_events: list[GitHubWebhookTargetEvent] = Field(min_length=1)
+    target_events: list[GitHubWebhookTargetEvent] = Field(
+        min_length=1, max_length=WEBHOOK_MAX_TARGET_EVENTS
+    )
 
 
 def _string_at(payload: Mapping[str, Any], *path: str) -> str | None:
@@ -414,7 +422,7 @@ class GitHubWebhookProvider(BaseWebhookProvider):
     async def pre_validate(
         self, headers: Mapping[str, str]
     ) -> WebhookPreValidationResult:
-        """Reject malformed and ignore unsupported GitHub event families.
+        """Reject missing event metadata before processing a GitHub delivery.
 
         Args:
             headers: The untrusted request headers.
@@ -430,10 +438,6 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             raise WebhookPayloadError(
                 f"Missing or empty {GITHUB_EVENT_HEADER} header."
             )
-        try:
-            GitHubWebhookEventType(event_type)
-        except ValueError:
-            return WebhookPreValidationResult.IGNORE
         return WebhookPreValidationResult.PROCESS
 
     def authenticate(
@@ -518,16 +522,23 @@ class GitHubWebhookProvider(BaseWebhookProvider):
             Matching triggers and their shared semantic event.
         """
         semantic = self.parse_semantic_event(event)
-        if semantic is None:
-            return WebhookTriggerMatch(triggers=[])
+        semantic_matcher = semantic.matches if semantic is not None else None
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             targets = self._cast_runtime_targets(trigger)
-            if any(semantic.matches(target) for target in targets):
+            if any(
+                matches_webhook_target(
+                    target=target,
+                    event_type=event.event_type,
+                    payload=event.payload,
+                    semantic_matcher=semantic_matcher,
+                )
+                for target in targets
+            ):
                 matches.append(trigger)
         return WebhookTriggerMatch(
             triggers=matches,
-            event=semantic.model_dump(mode="json"),
+            event=(semantic.model_dump(mode="json") if semantic else None),
         )
 
     def parse_semantic_event(
