@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Backends that hold payload blobs outside the database."""
 
+import asyncio
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -44,7 +45,10 @@ class PayloadBackend(ABC):
     only needs to store and load them. A denied access raises
     `PermissionError` and a missing object or bucket `FileNotFoundError`: the
     payload store fails those at once, and treats any other error as an
-    unavailable backend that a retry may find again.
+    unavailable backend that a retry may find again. Every call returns or
+    raises within the timeout the backend was created with, since a stuck
+    call keeps one of the threads that the payload store shares between
+    requests.
     """
 
     @abstractmethod
@@ -175,11 +179,18 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         Raises:
             PermissionError: If access to the object was denied.
             FileNotFoundError: If the object or its bucket is missing.
+            TimeoutError: If the call did not return in time.
             Exception: Any other error of the call.
         """
         try:
             return function()
         except Exception as e:
+            # fsspec's timeout error subclasses `asyncio.TimeoutError` and
+            # has no message.
+            if isinstance(e, asyncio.TimeoutError):
+                raise TimeoutError(
+                    f"The call did not return within {self._timeout} seconds."
+                ) from e
             if _is_denied(self._backend_type, e):
                 raise PermissionError(str(e)) from e
             if _is_missing(self._backend_type, e):

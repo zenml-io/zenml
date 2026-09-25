@@ -15,7 +15,7 @@
 
 import hashlib
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import (
     Callable,
     Collection,
@@ -493,24 +493,43 @@ class PayloadStore:
                 retrying does not fix, such as a missing object or denied
                 access.
         """
+        # The threads are shared by every request of the process, so a large
+        # batch or a busy process queues calls, and a deadline for the whole
+        # batch would fail healthy storage. The batch fails once none of its
+        # calls returns for a whole timeout instead: stalled storage causes
+        # that within one timeout, whether the calls of the batch run or wait
+        # behind stuck ones. The first failure cancels the calls still queued.
         futures = [self._executor.submit(function, item) for item in items]
-        _, pending = wait(futures, timeout=self._timeout)
-        if pending:
-            for future in pending:
-                future.cancel()
+        pending = set(futures)
+        stalled = False
+        while pending:
+            done, pending = wait(
+                pending, timeout=self._timeout, return_when=FIRST_COMPLETED
+            )
+            stalled = not done
+            if stalled or any(future.exception() for future in done):
+                break
+        for future in pending:
+            future.cancel()
+
+        # In item order, so that the same failures always give the same error.
+        for future in futures:
+            if not future.done() or future.cancelled():
+                continue
+            error = future.exception()
+            if isinstance(error, (FileNotFoundError, PermissionError)):
+                # Retrying brings back neither a missing object nor access, so
+                # these fail at once instead of as a retried 503.
+                raise PayloadStorageError(
+                    f"Execution payload storage refused the request: {error}"
+                ) from error
+            if error:
+                raise PayloadStorageUnavailableError(
+                    f"Execution payload storage failed: {error}"
+                ) from error
+        if stalled:
             raise PayloadStorageUnavailableError(
                 "Execution payload storage did not respond within "
                 f"{self._timeout} seconds."
             )
-        try:
-            return [future.result() for future in futures]
-        except (FileNotFoundError, PermissionError) as e:
-            # Retrying brings back neither a missing object nor access, so
-            # these fail at once instead of as a retried 503.
-            raise PayloadStorageError(
-                f"Execution payload storage refused the request: {e}"
-            ) from e
-        except Exception as e:
-            raise PayloadStorageUnavailableError(
-                f"Execution payload storage failed: {e}"
-            ) from e
+        return [future.result() for future in futures]
