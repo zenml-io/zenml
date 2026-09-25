@@ -152,6 +152,12 @@ Returns:
 {{- if and (ne .backend "s3") (or .region .endpointUrl) }}
 {{- fail "zenml.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
 {{- end }}
+{{- if le (float64 .timeout) 0.0 }}
+{{- fail (printf "zenml.database.payloadStorage.timeout must be a number of seconds above 0, not `%v`." .timeout) }}
+{{- end }}
+{{- if lt (int64 .cacheSize) 0 }}
+{{- fail (printf "zenml.database.payloadStorage.cacheSize must be a number of bytes, 0 or more, not `%v`." .cacheSize) }}
+{{- end }}
 offload_enabled: {{ .enabled }}
 write_backend: {{ .backend }}
 backends:
