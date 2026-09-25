@@ -147,9 +147,7 @@ def _get_artifact_store_flavor(
 
 
 def create_payload_backend(
-    backend_type: PayloadBackendType,
-    configuration: Dict[str, Any],
-    timeout: float,
+    backend_type: PayloadBackendType, configuration: Dict[str, Any]
 ) -> PayloadBackend:
     """Create a payload backend from its configuration.
 
@@ -159,28 +157,10 @@ def create_payload_backend(
     Args:
         backend_type: The backend to create.
         configuration: The configuration of the backend.
-        timeout: The number of seconds a request waits for the backend.
 
     Returns:
         The payload backend.
     """
-    if backend_type == PayloadBackendType.S3:
-        # A request stops waiting after the timeout, but its call keeps a
-        # backend thread until the client gives up. With the client defaults,
-        # one read against a stalled S3 took 173 s (s3fs retries five times on
-        # top of the attempts of botocore), so the threads stayed busy and
-        # later requests queued. These bound each call to about twice the
-        # timeout, unless the configuration sets them itself.
-        configuration = {
-            "retries": 1,
-            **configuration,
-            "config_kwargs": {
-                "connect_timeout": timeout,
-                "read_timeout": timeout,
-                "retries": {"total_max_attempts": 2},
-                **(configuration.get("config_kwargs") or {}),
-            },
-        }
     flavor = _get_artifact_store_flavor(backend_type)
     now = utc_now()
     artifact_store = flavor.implementation_class(

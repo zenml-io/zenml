@@ -175,9 +175,7 @@ class PayloadStore:
         self._offload_enabled = config.offload_enabled
         self._write_backend = config.write_backend
         self._backends: Dict[PayloadBackendType, PayloadBackend] = {
-            backend_type: create_payload_backend(
-                backend_type, configuration, timeout=config.timeout
-            )
+            backend_type: create_payload_backend(backend_type, configuration)
             for backend_type, configuration in config.backends.items()
         }
         self._cache = PayloadCache(max_size=config.cache_size)
