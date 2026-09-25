@@ -16,6 +16,7 @@
 import base64
 import functools
 import random
+import re
 import string
 from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
@@ -331,8 +332,6 @@ def slugify(value: str, separator: str = "-") -> str:
     Returns:
         str: A lowercased, separator-delimited slug derived from ``value``.
     """
-    import re
-
     # Lowercase and replace non-alphanumeric characters with the separator
     slug = re.sub(r"[^a-zA-Z0-9]+", separator, value.strip().lower())
     # Remove leading and trailing separators
