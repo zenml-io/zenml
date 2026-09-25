@@ -50,9 +50,10 @@ class PayloadStorageConfiguration(BaseModel):
             credentials, the implicit credentials of the environment are used.
         cache_size: The maximum memory in bytes taken by the resolved
             payloads that each process keeps. 0 disables the cache.
-        timeout: The number of seconds to wait for the payload backend before
-            failing a request. Payload storage that hangs then fails requests
-            quickly instead of holding them.
+        timeout: The number of seconds after which a call to the payload
+            backend is cancelled, retries included, and the request fails.
+            Payload storage that hangs then fails requests quickly instead of
+            holding them and their threads.
     """
 
     offload_enabled: bool = False

@@ -76,16 +76,25 @@ class ArtifactStorePayloadBackend(PayloadBackend):
     Blobs are stored as `<path>/<sha256>`, where `path` is the path of the
     artifact store, such as `s3://bucket/prefix`. Each blob takes a single
     request to write or read, with the credentials of the artifact store.
+
+    Every call is cancelled after the timeout, retries included. s3fs, gcsfs
+    and adlfs are fsspec async filesystems, whose calls take a `timeout`; on
+    their own, a call against a stalled endpoint keeps its thread for minutes
+    (s3fs retries five times, gcsfs six).
     """
 
-    def __init__(self, artifact_store: ObjectStoreArtifactStore) -> None:
+    def __init__(
+        self, artifact_store: ObjectStoreArtifactStore, timeout: float
+    ) -> None:
         """Initializes the backend.
 
         Args:
             artifact_store: The artifact store holding the blobs.
+            timeout: The number of seconds after which a call is cancelled.
         """
         self._artifact_store = artifact_store
         self._root = artifact_store.path.rstrip("/")
+        self._timeout = timeout
 
     def put(self, sha256: str, data: bytes) -> None:
         """Durably store bytes under their SHA-256.
@@ -97,7 +106,7 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
         self._artifact_store.filesystem.pipe_file(
-            f"{self._root}/{sha256}", data
+            f"{self._root}/{sha256}", data, timeout=self._timeout
         )
 
     def get(self, sha256: str) -> bytes:
@@ -110,7 +119,7 @@ class ArtifactStorePayloadBackend(PayloadBackend):
             The stored bytes.
         """
         data: bytes = self._artifact_store.filesystem.cat_file(
-            f"{self._root}/{sha256}"
+            f"{self._root}/{sha256}", timeout=self._timeout
         )
         return data
 
@@ -147,7 +156,9 @@ def _get_artifact_store_flavor(
 
 
 def create_payload_backend(
-    backend_type: PayloadBackendType, configuration: Dict[str, Any]
+    backend_type: PayloadBackendType,
+    configuration: Dict[str, Any],
+    timeout: float,
 ) -> PayloadBackend:
     """Create a payload backend from its configuration.
 
@@ -157,6 +168,7 @@ def create_payload_backend(
     Args:
         backend_type: The backend to create.
         configuration: The configuration of the backend.
+        timeout: The number of seconds after which a call is cancelled.
 
     Returns:
         The payload backend.
@@ -177,5 +189,5 @@ def create_payload_backend(
     # Every object store flavor above exposes its filesystem. It is created
     # on first use, so that a store starts while its storage is unavailable.
     return ArtifactStorePayloadBackend(
-        cast(ObjectStoreArtifactStore, artifact_store)
+        cast(ObjectStoreArtifactStore, artifact_store), timeout=timeout
     )
