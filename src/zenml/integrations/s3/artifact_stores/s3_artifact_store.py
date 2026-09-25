@@ -86,6 +86,22 @@ class ZenMLS3Filesystem(s3fs.S3FileSystem):  # type: ignore[misc]
 
     cachable = False
 
+    def __init__(
+        self, *args: Any, retries: Optional[int] = None, **kwargs: Any
+    ) -> None:
+        """Initializes the filesystem.
+
+        Args:
+            *args: Positional arguments of `s3fs.S3FileSystem`.
+            retries: Maximum number of attempts for each call that fails with
+                a retryable error. Defaults to the s3fs default.
+            **kwargs: Keyword arguments of `s3fs.S3FileSystem`.
+        """
+        super().__init__(*args, **kwargs)
+        if retries is not None:
+            # s3fs only reads this from an attribute, which every call uses.
+            self.retries = retries
+
     @staticmethod
     async def _safe_aexit_s3_creator(s3_creator: Any) -> None:
         """Exit an aiobotocore client context manager, tolerating double-close.
@@ -288,7 +304,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self.config.client_kwargs:
             client_kwargs.update(self.config.client_kwargs)
 
-        return dict(
+        kwargs: Dict[str, Any] = dict(
             key=key,
             secret=secret,
             token=token,
@@ -296,6 +312,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             config_kwargs=self.config.config_kwargs,
             s3_additional_kwargs=self.config.s3_additional_kwargs,
         )
+        if self.config.retries is not None:
+            kwargs["retries"] = self.config.retries
+        return kwargs
 
     @property
     def filesystem(self) -> ZenMLS3Filesystem:

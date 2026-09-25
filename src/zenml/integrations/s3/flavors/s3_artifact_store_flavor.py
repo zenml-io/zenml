@@ -95,6 +95,16 @@ class S3ArtifactStoreConfig(
         description="Additional keyword arguments for S3 operations. "
         "For example: {'ACL': 'bucket-owner-full-control'}",
     )
+    retries: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Maximum number of attempts s3fs makes for each S3 call "
+        "that fails with a retryable error such as a timeout, on top of the "
+        "retries of the S3 client itself. Must be at least 1. Example: 1 to "
+        "fail as soon as the client gives up, which bounds how long a call "
+        "can take against a stalled S3 endpoint. Defaults to the s3fs "
+        "default of 5",
+    )
 
     _bucket: Optional[str] = None
 

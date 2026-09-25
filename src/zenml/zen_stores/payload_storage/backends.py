@@ -87,15 +87,6 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         self._artifact_store = artifact_store
         self._root = artifact_store.path.rstrip("/")
 
-    @property
-    def _filesystem(self) -> "AbstractFileSystem":
-        """The filesystem holding the blobs.
-
-        Returns:
-            The filesystem of the artifact store.
-        """
-        return self._artifact_store.filesystem
-
     def put(self, sha256: str, data: bytes) -> None:
         """Durably store bytes under their SHA-256.
 
@@ -105,7 +96,9 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         """
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
-        self._filesystem.pipe_file(f"{self._root}/{sha256}", data)
+        self._artifact_store.filesystem.pipe_file(
+            f"{self._root}/{sha256}", data
+        )
 
     def get(self, sha256: str) -> bytes:
         """Load the bytes stored under a SHA-256.
@@ -116,31 +109,10 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         Returns:
             The stored bytes.
         """
-        data: bytes = self._filesystem.cat_file(f"{self._root}/{sha256}")
+        data: bytes = self._artifact_store.filesystem.cat_file(
+            f"{self._root}/{sha256}"
+        )
         return data
-
-
-class S3PayloadBackend(ArtifactStorePayloadBackend):
-    """Holds payload blobs in S3, with each call bounded by its client timeouts.
-
-    s3fs retries every call five times on its own, on top of the attempts of
-    botocore. Against an S3 that hangs, one read then holds a backend thread
-    for minutes even with short client timeouts (measured: 173 s with 3 s
-    timeouts), so s3fs makes a single attempt here.
-    """
-
-    @property
-    def _filesystem(self) -> "AbstractFileSystem":
-        """The filesystem holding the blobs.
-
-        Returns:
-            The s3fs filesystem of the artifact store, without its own retries.
-        """
-        filesystem = super()._filesystem
-        # `retries` is an s3fs constructor argument that the S3 artifact
-        # store does not expose, and s3fs reads it on every call.
-        setattr(filesystem, "retries", 1)
-        return filesystem
 
 
 def _get_artifact_store_flavor(
@@ -194,9 +166,13 @@ def create_payload_backend(
     """
     if backend_type == PayloadBackendType.S3:
         # A request stops waiting after the timeout, but its call keeps a
-        # backend thread until the client gives up. Without these, a hung S3
-        # holds the threads for minutes and the requests after it queue.
+        # backend thread until the client gives up. With the client defaults,
+        # one read against a stalled S3 took 173 s (s3fs retries five times on
+        # top of the attempts of botocore), so the threads stayed busy and
+        # later requests queued. These bound each call to about twice the
+        # timeout, unless the configuration sets them itself.
         configuration = {
+            "retries": 1,
             **configuration,
             "config_kwargs": {
                 "connect_timeout": timeout,
@@ -220,9 +196,6 @@ def create_payload_backend(
     )
     # Every object store flavor above exposes its filesystem. It is created
     # on first use, so that a store starts while its storage is unavailable.
-    backend_class = (
-        S3PayloadBackend
-        if backend_type == PayloadBackendType.S3
-        else ArtifactStorePayloadBackend
+    return ArtifactStorePayloadBackend(
+        cast(ObjectStoreArtifactStore, artifact_store)
     )
-    return backend_class(cast(ObjectStoreArtifactStore, artifact_store))
