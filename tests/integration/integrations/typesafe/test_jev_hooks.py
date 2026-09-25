@@ -32,7 +32,7 @@ from zenml.client import Client  # noqa: E402
 from zenml.integrations.typesafe.hooks import (  # noqa: E402
     jev_classify_and_log,
     jev_failure_triage_hook,
-    jev_hooks,  # noqa: E402
+    jev_hooks,
     jev_run_summary_hook,
 )
 
@@ -61,8 +61,8 @@ class FakeTypeSafeClient:
     calls: List[Dict[str, Any]] = []
     error: Exception | None = None
 
-    def __init__(self, api_key: str) -> None:
-        self.api_key = api_key
+    def __init__(self, **kwargs: Any) -> None:
+        pass
 
     def __enter__(self) -> "FakeTypeSafeClient":
         return self
@@ -71,7 +71,7 @@ class FakeTypeSafeClient:
         pass
 
     def system_one(
-        self, state: Any, questions: Mapping[str, Question], model: Any
+        self, state: Any, questions: Mapping[str, Question], **kwargs: Any
     ) -> SystemOneResponse:
         FakeTypeSafeClient.calls.append(
             {"state": state, "questions": dict(questions)}
@@ -124,9 +124,7 @@ def dynamic_failing_pipeline() -> None:
 
 def test_response_to_metadata_flattens_every_answer_type() -> None:
     response = SystemOneResponse.model_validate_json(
-        json.dumps(
-            {"model": "jev-test", "usage": {}, "answers": dict(ANSWERS)}
-        )
+        json.dumps({"model": "jev-test", "usage": {}, "answers": ANSWERS})
     )
 
     metadata = jev_hooks.response_to_metadata(response, prefix="jev")
@@ -151,9 +149,11 @@ def test_failure_hook_logs_triage_on_failed_step(
         static_failing_pipeline()
 
     [call] = fake_jev.calls
-    assert call["state"]["exception_type"] == "ConnectionResetError"
     assert call["state"]["step_name"] == "flaky_step"
-    assert "Connection reset by peer" in call["state"]["traceback"]
+    assert (
+        "ConnectionResetError: Connection reset by peer"
+        in call["state"]["traceback"]
+    )
 
     run = clean_client.get_pipeline("static_failing_pipeline").last_run
     metadata = run.steps["flaky_step"].run_metadata
@@ -173,7 +173,7 @@ def test_failure_hook_logs_triage_on_dynamic_run(
         dynamic_failing_pipeline()
 
     [call] = fake_jev.calls
-    assert call["state"]["exception_type"] == "ValueError"
+    assert "ValueError: bad input data" in call["state"]["traceback"]
     assert "step_name" not in call["state"]
 
     run = clean_client.get_pipeline("dynamic_failing_pipeline").last_run
@@ -191,7 +191,10 @@ def test_run_summary_hook_logs_assessment_on_dynamic_run(
     assert state["pipeline_name"] == "dynamic_pipeline"
     assert state["status"] == "completed"
     assert [s["name"] for s in state["steps"]] == ["ok_step"]
-    assert [r["status"] for r in state["recent_runs"]] == ["completed"]
+    [previous_run] = state["recent_runs"]
+    assert previous_run["status"] == "completed"
+    assert previous_run["step_count"] == 1
+    assert previous_run["duration_seconds"] is not None
 
     run = clean_client.get_pipeline("dynamic_pipeline").last_run
     assert run.run_metadata["jev.needs_attention"] == 0.1
@@ -212,7 +215,6 @@ def test_run_summary_hook_skips_outside_dynamic_run(fake_jev: type) -> None:
 def test_classify_skips_without_api_key(
     fake_jev: type, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("TYPESAFE_API_KEY")
     monkeypatch.setattr(jev_hooks, "_get_api_key", lambda: None)
 
     assert jev_classify_and_log("text", questions={}) is None

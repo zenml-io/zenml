@@ -23,7 +23,7 @@ hooks or `Client().list_pipeline_runs(run_metadata=...)` for run hooks.
 
 import os
 import traceback
-from datetime import datetime
+from datetime import timedelta
 from typing import Any, Dict, List, Mapping, Optional
 from uuid import UUID
 
@@ -36,6 +36,7 @@ from typesafe_sdk import (
     NoulAnswer,
     Question,
     Score,
+    ScoreAnswer,
     SystemOneResponse,
     TypeSafeClient,
     TypeSafeError,
@@ -47,6 +48,7 @@ from zenml.execution.pipeline.dynamic.run_context import (
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import PipelineResponse, PipelineRunResponse
 from zenml.steps.step_context import StepContext
 from zenml.utils.metadata_utils import log_metadata
 
@@ -141,24 +143,22 @@ def _answer_to_metadata(key: str, answer: Answer) -> Dict[str, MetadataType]:
     """
     if isinstance(answer, NoulAnswer):
         return {key: answer.noul}
-    if isinstance(answer, ChoiceAnswer):
-        return {
-            key: answer.choice,
-            f"{key}.confidence": answer.confidence,
-            f"{key}.probabilities": dict(answer.probabilities),
-        }
-    return {
-        key: answer.score,
+    metadata: Dict[str, MetadataType] = {
+        key: answer.choice
+        if isinstance(answer, ChoiceAnswer)
+        else answer.score,
         f"{key}.confidence": answer.confidence,
         # Score levels are integers in the SDK but metadata dicts need string
         # keys to survive the JSON round-trip.
         f"{key}.probabilities": {
-            str(level): p for level, p in answer.probabilities.items()
-        },
-        f"{key}.legend": {
-            str(level): str(text) for level, text in answer.legend.items()
+            str(label): p for label, p in answer.probabilities.items()
         },
     }
+    if isinstance(answer, ScoreAnswer):
+        metadata[f"{key}.legend"] = {
+            str(level): str(text) for level, text in answer.legend.items()
+        }
+    return metadata
 
 
 def response_to_metadata(
@@ -287,60 +287,72 @@ def jev_failure_triage_hook(exception: BaseException) -> None:
     Args:
         exception: The exception that caused the failure.
     """
-    state: Dict[str, Any] = {
-        "exception_type": type(exception).__name__,
-        "exception_message": str(exception),
-        "traceback": _format_exception(exception),
-    }
+    # The traceback's last line already carries the exception type and
+    # message, so they are not sent separately.
+    state: Dict[str, Any] = {"traceback": _format_exception(exception)}
     if step_context := StepContext.get():
         state["step_name"] = step_context.step_run.name
     jev_classify_and_log(state=state, questions=FAILURE_TRIAGE_QUESTIONS)
 
 
-def _seconds_between(
-    start: Optional[datetime], end: Optional[datetime]
-) -> Optional[float]:
-    """Compute a duration in seconds if both ends are known.
+def _seconds(duration: Optional[timedelta]) -> Optional[float]:
+    """Convert an optional duration to rounded seconds.
 
     Args:
-        start: The start time.
-        end: The end time.
+        duration: The duration.
 
     Returns:
-        The duration in seconds, or `None` if either time is missing.
+        The duration in seconds, or `None` if it is unknown.
     """
-    if start is None or end is None:
+    return round(duration.total_seconds(), 1) if duration else None
+
+
+def _run_duration(run: PipelineRunResponse) -> Optional[timedelta]:
+    """Compute a pipeline run's duration if it has started and ended.
+
+    Args:
+        run: The pipeline run.
+
+    Returns:
+        The duration, or `None` if either time is missing.
+    """
+    if run.start_time is None or run.end_time is None:
         return None
-    return round((end - start).total_seconds(), 1)
+    return run.end_time - run.start_time
 
 
 def _summarize_recent_runs(
-    pipeline_id: Optional[UUID], exclude_run_id: UUID
+    pipeline: PipelineResponse, exclude_run_id: UUID
 ) -> List[Dict[str, Any]]:
     """Summarize the latest previous runs of a pipeline as a baseline.
 
     Args:
-        pipeline_id: The pipeline to look up runs for.
+        pipeline: The pipeline to look up runs for.
         exclude_run_id: The run being assessed, which is left out.
 
     Returns:
         Status, duration and step count of up to
         `RECENT_RUNS_FOR_COMPARISON` recent runs.
     """
-    if pipeline_id is None:
-        return []
-    runs = Client().list_pipeline_runs(
-        pipeline_id=pipeline_id,
+    client = Client()
+    # Hydrated because start and end times live in the run metadata, which
+    # would otherwise be fetched with one extra request per run.
+    runs = pipeline.get_runs(
         sort_by="desc:created",
         size=RECENT_RUNS_FOR_COMPARISON + 1,
+        hydrate=True,
     )
     return [
         {
             "status": run.status.value,
-            "duration_seconds": _seconds_between(run.start_time, run.end_time),
-            "step_count": len(run.steps),
+            "duration_seconds": _seconds(_run_duration(run)),
+            # Only the count is needed, so ask for a one-item page instead of
+            # listing every step.
+            "step_count": client.list_run_steps(
+                pipeline_run_id=run.id, exclude_retried=True, size=1
+            ).total,
         }
-        for run in runs.items
+        for run in runs
         if run.id != exclude_run_id
     ][:RECENT_RUNS_FOR_COMPARISON]
 
@@ -371,23 +383,22 @@ def jev_run_summary_hook(exception: Optional[BaseException] = None) -> None:
     # The context holds the run as it was when execution started, so fetch it
     # again for the final status and end time.
     run = Client().get_pipeline_run(run_context.run.id)
+    pipeline = run.pipeline
     state: Dict[str, Any] = {
-        "pipeline_name": run.pipeline.name if run.pipeline else None,
+        "pipeline_name": pipeline.name if pipeline else None,
         "status": run.status.value,
-        "duration_seconds": _seconds_between(run.start_time, run.end_time),
+        "duration_seconds": _seconds(_run_duration(run)),
         "steps": [
             {
                 "name": name,
                 "status": step.status.value,
-                "duration_seconds": _seconds_between(
-                    step.start_time, step.end_time
-                ),
+                "duration_seconds": _seconds(step.duration),
             }
             for name, step in run.steps.items()
         ],
-        "recent_runs": _summarize_recent_runs(
-            run.pipeline.id if run.pipeline else None, exclude_run_id=run.id
-        ),
+        "recent_runs": _summarize_recent_runs(pipeline, run.id)
+        if pipeline
+        else [],
     }
     if exception is not None:
         state["exception"] = f"{type(exception).__name__}: {exception}"
