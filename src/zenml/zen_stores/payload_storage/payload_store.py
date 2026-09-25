@@ -420,7 +420,10 @@ class PayloadStore:
                 "are referenced but not registered."
             )
 
-        data: Dict[str, bytes] = {}
+        # The same bytes can be stored in several backends, for example under
+        # two media types after a backend switch, so each object is checked
+        # against the bytes of its own backend.
+        data: Dict[Tuple[str, str], bytes] = {}
         sha256s_by_backend: Dict[str, Set[str]] = defaultdict(set)
         for blob in blobs:
             sha256s_by_backend[blob.stored_in].add(blob.sha256)
@@ -436,9 +439,13 @@ class PayloadStore:
                     "payload backend, which is not configured."
                 )
             ordered = sorted(sha256s)
-            data.update(zip(ordered, self._call_backend(backend.get, ordered)))
+            for sha256, content in zip(
+                ordered, self._call_backend(backend.get, ordered)
+            ):
+                data[(stored_in, sha256)] = content
         return {
-            blob.id: self._decode(blob, data[blob.sha256]) for blob in blobs
+            blob.id: self._decode(blob, data[(blob.stored_in, blob.sha256)])
+            for blob in blobs
         }
 
     @staticmethod
