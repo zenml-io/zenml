@@ -15,7 +15,12 @@
 
 import hashlib
 from collections import defaultdict
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import (
+    FIRST_COMPLETED,
+    Future,
+    ThreadPoolExecutor,
+    wait,
+)
 from typing import (
     Callable,
     Collection,
@@ -497,25 +502,7 @@ class PayloadStore:
                 retrying does not fix, such as a missing object or denied
                 access.
         """
-        # The threads are shared by every request of the process, so a large
-        # batch or a busy process queues calls, and a deadline for the whole
-        # batch would fail healthy storage. The batch fails once none of its
-        # calls returns for a whole timeout instead: stalled storage causes
-        # that within one timeout, whether the calls of the batch run or wait
-        # behind stuck ones. The first failure cancels the calls still queued.
-        futures = [self._executor.submit(function, item) for item in items]
-        pending = set(futures)
-        stalled = False
-        while pending:
-            done, pending = wait(
-                pending, timeout=self._timeout, return_when=FIRST_COMPLETED
-            )
-            stalled = not done
-            if stalled or any(future.exception() for future in done):
-                break
-        for future in pending:
-            future.cancel()
-
+        futures, stalled = self._run_calls(function, items)
         # In item order, so that the same failures always give the same error.
         for future in futures:
             if not future.done() or future.cancelled():
@@ -537,3 +524,47 @@ class PayloadStore:
                 f"{self._timeout} seconds."
             )
         return [future.result() for future in futures]
+
+    def _run_calls(
+        self, function: Callable[[T], R], items: Sequence[T]
+    ) -> Tuple[List["Future[R]"], bool]:
+        """Run backend calls on the shared threads until they end or stall.
+
+        The threads are shared by every request of the process. A batch keeps
+        at most one call per thread submitted, and submits the next one as a
+        call returns, so that the calls of other requests queue behind at most
+        one round of its calls instead of all of them.
+
+        The calls stall once none of them returns for a whole timeout, which
+        stalled storage causes within one timeout. A deadline for the whole
+        batch would instead fail healthy storage that is busy. The first
+        failure or a stall cancels the calls still queued.
+
+        Args:
+            function: The backend call.
+            items: The items to call it for.
+
+        Returns:
+            The submitted calls in item order, which are all done unless one
+            failed or they stalled, and whether they stalled.
+        """
+        futures: List["Future[R]"] = []
+        pending: Set["Future[R]"] = set()
+        stalled = False
+        while pending or len(futures) < len(items):
+            while (
+                len(futures) < len(items)
+                and len(pending) < MAX_CONCURRENT_BACKEND_CALLS
+            ):
+                future = self._executor.submit(function, items[len(futures)])
+                futures.append(future)
+                pending.add(future)
+            done, pending = wait(
+                pending, timeout=self._timeout, return_when=FIRST_COMPLETED
+            )
+            stalled = not done
+            if stalled or any(future.exception() for future in done):
+                break
+        for future in pending:
+            future.cancel()
+        return futures, stalled
