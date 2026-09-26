@@ -1688,13 +1688,18 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
     @abstractmethod
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdate
+        self,
+        run_id: UUID,
+        run_update: PipelineRunUpdate,
+        hydrate: bool = False,
     ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run to update.
             run_update: The update to be applied to the pipeline run.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated pipeline run.
@@ -2830,12 +2835,15 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         self,
         step_run_id: UUID,
         step_run_update: StepRunUpdate,
+        hydrate: bool = False,
     ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated step run.

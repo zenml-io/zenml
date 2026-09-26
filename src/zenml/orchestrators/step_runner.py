@@ -232,13 +232,14 @@ class StepRunner:
                             step_run.id,
                         )
                         heartbeat_worker.start()
-                    if (
-                        # TODO: do we need to disable this for dynamic pipelines?
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    # TODO: do we need to disable this for dynamic pipelines?
+                    if self._stack.orchestrator.run_init_cleanup_at_step_level:
+                        # The step run info carries the snapshot the
+                        # entrypoint already loaded. The run's snapshot is
+                        # unhydrated and reading its configuration would fetch
+                        # the full snapshot again.
                         self._stack.orchestrator.run_init_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_run_info.snapshot
                         )
 
                     # Get all step environment variables. For most
@@ -379,12 +380,9 @@ class StepRunner:
 
                     # We run the cleanup hook at step level if we're not in an
                     # environment that supports a shared run context
-                    if (
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    if self._stack.orchestrator.run_init_cleanup_at_step_level:
                         self._stack.orchestrator.run_cleanup_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_run_info.snapshot
                         )
 
             # Update the status and output artifacts of the step run.

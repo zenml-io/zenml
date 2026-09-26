@@ -2261,14 +2261,18 @@ class RestZenStore(BaseZenStore):
         return RunStatisticsResponse.model_validate(response_body)
 
     def update_run(
-        self, run_id: UUID, run_update: PipelineRunUpdate
+        self,
+        run_id: UUID,
+        run_update: PipelineRunUpdate,
+        hydrate: bool = False,
     ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run to update.
             run_update: The update to be applied to the pipeline run.
-
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated pipeline run.
@@ -2278,6 +2282,7 @@ class RestZenStore(BaseZenStore):
             resource_update=run_update,
             response_model=PipelineRunResponse,
             route=RUNS,
+            params={"hydrate": hydrate},
         )
 
     def delete_run(self, run_id: UUID) -> None:
@@ -3917,12 +3922,15 @@ class RestZenStore(BaseZenStore):
         self,
         step_run_id: UUID,
         step_run_update: StepRunUpdate,
+        hydrate: bool = False,
     ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
 
         Returns:
             The updated step run.
@@ -3932,6 +3940,7 @@ class RestZenStore(BaseZenStore):
             resource_update=step_run_update,
             response_model=StepRunResponse,
             route=STEPS,
+            params={"hydrate": hydrate},
         )
 
     def update_step_heartbeat(

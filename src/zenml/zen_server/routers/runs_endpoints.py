@@ -343,6 +343,7 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdate,
+    hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Updates a run.
@@ -350,6 +351,10 @@ def update_run(
     Args:
         run_id: ID of the run.
         run_model: Run model to use for the update.
+        hydrate: Flag deciding whether to hydrate the output model(s)
+            by including metadata fields in the response. Defaults to true,
+            as before the flag existed; ZenML clients always set it, and
+            status updates skip the metadata.
 
     Returns:
         The updated run model.
@@ -359,6 +364,7 @@ def update_run(
         update_model=run_model,
         get_method=zen_store().get_run,
         update_method=zen_store().update_run,
+        hydrate=hydrate,
     )
 
 

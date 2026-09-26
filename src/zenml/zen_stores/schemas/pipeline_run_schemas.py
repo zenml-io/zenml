@@ -23,6 +23,8 @@ from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import (
     Session,
+    defaultload,
+    defer,
     joinedload,
     object_session,
     selectinload,
@@ -31,7 +33,6 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
-from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -382,6 +383,26 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
+    def defer_detail_columns(cls) -> List[Any]:
+        """Defer the large columns that only hydrated run responses read.
+
+        The configuration and client environment columns are only filled for
+        runs created before snapshots existed.
+
+        Returns:
+            The query options.
+        """
+        return [
+            defer(jl_arg(column))
+            for column in [
+                cls.orchestrator_environment,
+                cls.exception_info,
+                cls.pipeline_configuration,
+                cls.client_environment,
+            ]
+        ]
+
+    @classmethod
     def get_query_options(
         cls,
         include_metadata: bool = False,
@@ -412,7 +433,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         single_loader = selectinload if many else joinedload
 
-        options = []
+        options: List[ExecutableOption] = []
 
         if include_metadata:
             options.extend(
@@ -427,22 +448,38 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.run_metadata))
                 )
+        else:
+            options.extend(cls.defer_detail_columns())
 
         if include_resources:
+            # Related runs and the source snapshot are converted without
+            # metadata, so none of their large columns are ever read. Hydrated
+            # run responses read the configuration of their own snapshot, but
+            # never its detail columns.
             options.extend(
                 [
                     selectinload(jl_arg(PipelineRunSchema.outputs)),
-                    single_loader(jl_arg(PipelineRunSchema.parent_run)),
+                    single_loader(
+                        jl_arg(PipelineRunSchema.parent_run)
+                    ).options(*cls.defer_detail_columns()),
+                    defaultload(
+                        jl_arg(PipelineRunSchema.original_run)
+                    ).options(*cls.defer_detail_columns()),
                     single_loader(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    single_loader(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(
-                        jl_arg(PipelineSnapshotSchema.source_snapshot)
+                    single_loader(jl_arg(PipelineRunSchema.snapshot)).options(
+                        *(
+                            PipelineSnapshotSchema.defer_detail_columns()
+                            if include_metadata
+                            else PipelineSnapshotSchema.defer_large_columns()
+                        )
                     ),
+                    single_loader(jl_arg(PipelineRunSchema.snapshot))
+                    .joinedload(jl_arg(PipelineSnapshotSchema.source_snapshot))
+                    .options(*PipelineSnapshotSchema.defer_large_columns()),
                     single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
@@ -565,11 +602,26 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         return pipeline_config
 
-    def get_step_configuration(self, step_name: str) -> Step:
+    def get_execution_mode(self) -> ExecutionMode:
+        """Get the execution mode of the pipeline run.
+
+        Returns:
+            The execution mode.
+        """
+        if self.snapshot:
+            return self.snapshot.get_execution_mode()
+
+        return self.get_pipeline_configuration().execution_mode
+
+    def get_step_configuration(
+        self, step_name: str, pipeline_configuration: PipelineConfiguration
+    ) -> Step:
         """Get the step configuration for the pipeline run.
 
         Args:
             step_name: The name of the step to get the configuration for.
+            pipeline_configuration: The pipeline configuration of the run as
+                returned by `get_pipeline_configuration`.
 
         Raises:
             RuntimeError: If the pipeline run has no snapshot.
@@ -578,35 +630,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The step configuration.
         """
         if self.snapshot:
-            pipeline_configuration = self.get_pipeline_configuration()
-            return Step.from_dict(
-                data=json.loads(
-                    self.snapshot.get_step_configuration(step_name).config
-                ),
-                pipeline_configuration=pipeline_configuration,
+            return self.snapshot.get_step_configuration(step_name).to_step(
+                pipeline_configuration,
                 exclude_hook_sources=self.snapshot.is_dynamic,
             )
-        else:
-            raise RuntimeError("Pipeline run has no snapshot.")
-
-    def get_upstream_steps(self) -> Dict[str, List[str]]:
-        """Get the list of all the upstream steps for each step.
-
-        Returns:
-            The list of upstream steps for each step.
-
-        Raises:
-            RuntimeError: If the pipeline run has no snapshot or
-                the snapshot has no pipeline spec.
-        """
-        if self.snapshot and self.snapshot.pipeline_spec:
-            pipeline_spec = PipelineSpec.model_validate_json(
-                self.snapshot.pipeline_spec
-            )
-            steps = {}
-            for step_spec in pipeline_spec.steps:
-                steps[step_spec.invocation_id] = step_spec.upstream_steps
-            return steps
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
 
@@ -688,33 +715,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         Returns:
             The created `PipelineRunResponse`.
-
-        Raises:
-            RuntimeError: if the model creation fails.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -730,6 +731,18 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
+            config = self.get_pipeline_configuration()
+            raw_client_environment = (
+                self.snapshot.client_environment
+                if self.snapshot
+                else self.client_environment
+            )
+            client_environment = (
+                json.loads(raw_client_environment)
+                if raw_client_environment
+                else {}
+            )
+
             is_templatable = False
             if (
                 self.snapshot
@@ -1155,7 +1168,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return True
 
         if run_status == ExecutionStatus.FAILED:
-            execution_mode = self.get_pipeline_configuration().execution_mode
+            execution_mode = self.get_execution_mode()
 
             if execution_mode in [
                 ExecutionMode.FAIL_FAST,
@@ -1180,9 +1193,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         )
                     ).all()
 
-                    if self.snapshot and self.snapshot.pipeline_spec:
-                        step_dict = self.get_upstream_steps()
-
+                    if (
+                        self.snapshot
+                        and (step_dict := self.snapshot.get_upstream_steps())
+                        is not None
+                    ):
                         dag = build_dag(step_dict)
 
                         step_name_to_id = {

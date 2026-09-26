@@ -26,7 +26,12 @@ class Event(BaseModel):
 
 
 class PipelineRunStatusUpdate(Event):
-    """A pipeline run status transition."""
+    """A pipeline run status transition.
+
+    Handlers run inline in the status update that dispatches the event, so
+    `run` only carries its body. Reading its metadata or resources hydrates
+    the run, which fetches the full run again.
+    """
 
     run: PipelineRunResponse
     previous_status: ExecutionStatus

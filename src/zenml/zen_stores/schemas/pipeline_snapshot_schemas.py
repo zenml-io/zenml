@@ -14,7 +14,7 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
@@ -27,7 +27,11 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
+from zenml.enums import (
+    ExecutionMode,
+    TaggableResourceTypes,
+    VisualizationResourceTypes,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotRequest,
@@ -127,6 +131,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
+    # Copied from the pipeline configuration at creation so that run status
+    # and heartbeat decisions don't need to parse the configuration JSON.
+    # Snapshots created before these columns existed store NULL.
+    execution_mode: Optional[str] = Field(nullable=True, default=None)
+    enable_heartbeat: Optional[bool] = Field(nullable=True, default=None)
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -288,6 +297,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
+                    # Snapshot responses only read the ID, status and user
+                    # of the latest run.
+                    .options(*PipelineRunSchema.defer_detail_columns())
                 )
                 .scalars()
                 .one_or_none()
@@ -351,6 +363,71 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
         return step_configs[0]
 
+    def get_upstream_steps(self) -> Optional[Dict[str, List[str]]]:
+        """Get the upstream steps of each step of the snapshot.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The upstream steps of each step, or None if the snapshot has no
+            step graph.
+        """
+        # Snapshots created before the control columns existed have no
+        # execution mode and only store the step graph in the pipeline spec.
+        if self.execution_mode is None:
+            if not self.pipeline_spec:
+                return None
+            pipeline_spec = PipelineSpec.model_validate_json(
+                self.pipeline_spec
+            )
+            return {
+                step_spec.invocation_id: step_spec.upstream_steps
+                for step_spec in pipeline_spec.steps
+            }
+
+        if session := object_session(self):
+            rows = session.execute(
+                select(
+                    StepConfigurationSchema.name,
+                    StepConfigurationSchema.upstream_steps,
+                ).where(StepConfigurationSchema.snapshot_id == self.id)
+            ).all()
+            return {
+                name: json.loads(upstream_steps or "[]")
+                for name, upstream_steps in rows
+            }
+
+        raise RuntimeError("Missing DB session to fetch step configurations.")
+
+    @classmethod
+    def defer_detail_columns(cls) -> List[Any]:
+        """Defer the large columns that only hydrated snapshot responses read.
+
+        Returns:
+            The query options.
+        """
+        return [
+            defer(jl_arg(column))
+            for column in [cls.pipeline_spec, cls.source_code, cls.description]
+        ]
+
+    @classmethod
+    def defer_large_columns(cls) -> List[Any]:
+        """Defer every large column, for snapshots converted without metadata.
+
+        Hydrated run responses also read the configuration and the client
+        environment of their snapshot, so only these conversions can skip
+        them.
+
+        Returns:
+            The query options.
+        """
+        return cls.defer_detail_columns() + [
+            defer(jl_arg(column))
+            for column in [cls.pipeline_configuration, cls.client_environment]
+        ]
+
     @classmethod
     def get_query_options(
         cls,
@@ -370,19 +447,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             A list of query options.
         """
-        options = []
+        options: List[ExecutableOption] = []
 
         if not include_metadata:
-            # pipeline_configuration and client_environment are large columns
-            # only read when metadata is included. Skip fetching them otherwise.
-            options.extend(
-                [
-                    defer(
-                        jl_arg(PipelineSnapshotSchema.pipeline_configuration)
-                    ),
-                    defer(jl_arg(PipelineSnapshotSchema.client_environment)),
-                ]
-            )
+            options.extend(cls.defer_large_columns())
 
         if include_resources:
             options.extend(
@@ -449,6 +517,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             code_reference_id=code_reference_id,
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
+            execution_mode=request.pipeline_configuration.execution_mode.value,
+            enable_heartbeat=cls._resolve_enable_heartbeat(
+                request.pipeline_configuration.enable_heartbeat
+            ),
             step_count=len(request.step_configurations),
             client_environment=client_env,
             client_version=request.client_version,
@@ -483,6 +555,46 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
         self.updated = utc_now()
         return self
+
+    @staticmethod
+    def _resolve_enable_heartbeat(value: Optional[bool]) -> bool:
+        """Resolve the configured run heartbeat setting.
+
+        Heartbeats are enabled unless the pipeline explicitly disables them.
+
+        Args:
+            value: The `enable_heartbeat` value of the pipeline configuration.
+
+        Returns:
+            Whether run heartbeats are enabled.
+        """
+        return True if value is None else bool(value)
+
+    def get_enable_heartbeat(self) -> bool:
+        """Get whether run heartbeats are enabled for this snapshot.
+
+        Returns:
+            Whether run heartbeats are enabled.
+        """
+        if self.enable_heartbeat is not None:
+            return self.enable_heartbeat
+
+        return self._resolve_enable_heartbeat(
+            json.loads(self.pipeline_configuration).get("enable_heartbeat")
+        )
+
+    def get_execution_mode(self) -> ExecutionMode:
+        """Get the execution mode of this snapshot.
+
+        Returns:
+            The execution mode.
+        """
+        if self.execution_mode is not None:
+            return ExecutionMode(self.execution_mode)
+
+        return PipelineConfiguration.model_validate_json(
+            self.pipeline_configuration
+        ).execution_mode
 
     @property
     def is_runnable(self) -> bool:
@@ -544,10 +656,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             for step_configuration in self.get_step_configurations(
                 include=step_configuration_filter
             ):
-                step_configurations[step_configuration.name] = Step.from_dict(
-                    json.loads(step_configuration.config),
-                    pipeline_configuration,
-                    exclude_hook_sources=self.is_dynamic,
+                step_configurations[step_configuration.name] = (
+                    step_configuration.to_step(
+                        pipeline_configuration,
+                        exclude_hook_sources=self.is_dynamic,
+                    )
                 )
 
             client_environment = json.loads(self.client_environment)
@@ -565,8 +678,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     # we still need to get all of them to generate the config
                     # template and schema
                     all_step_configurations = {
-                        step_configuration.name: Step.from_dict(
-                            json.loads(step_configuration.config),
+                        step_configuration.name: step_configuration.to_step(
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
                         )
@@ -690,6 +802,19 @@ class StepConfigurationSchema(BaseSchema, table=True):
             nullable=False,
         )
     )
+    # JSON list of the invocation IDs this step depends on, copied from the
+    # step spec at creation so that run status checks don't need to parse
+    # the full pipeline spec. NULL for rows created before this column
+    # existed.
+    upstream_steps: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        ),
+        default=None,
+    )
 
     snapshot_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -707,3 +832,28 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
+
+    def to_step(
+        self,
+        pipeline_configuration: PipelineConfiguration,
+        exclude_hook_sources: bool,
+    ) -> Step:
+        """Resolve the stored step configuration.
+
+        Every read resolves a step this way, by merging its stored
+        configuration with the pipeline configuration.
+
+        Args:
+            pipeline_configuration: The pipeline configuration of the run or
+                snapshot.
+            exclude_hook_sources: Whether to skip propagating the pipeline's
+                lifecycle hook sources to the step.
+
+        Returns:
+            The resolved step.
+        """
+        return Step.from_dict(
+            json.loads(self.config),
+            pipeline_configuration=pipeline_configuration,
+            exclude_hook_sources=exclude_hook_sources,
+        )

@@ -516,9 +516,11 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                     )
                 return run
 
+            # Step run creation reads the metadata of this run.
             return client.zen_store.update_run(
                 run_id=run.id,
                 run_update=PipelineRunUpdate(orchestrator_run_id=modal_run_id),
+                hydrate=True,
             )
 
         return create_placeholder_run(

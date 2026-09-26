@@ -348,6 +348,7 @@ def run_snapshot(
             run_update=PipelineRunUpdate(
                 status_reason=SNAPSHOT_RUN_QUEUED_STATUS_REASON
             ),
+            hydrate=True,
         )
         try:
             snapshot_run_dispatcher().submit(execution_request)

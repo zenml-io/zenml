@@ -119,7 +119,7 @@ def create_logs(
             action=Action.UPDATE,
         )
     elif logs.step_run_id:
-        step = zen_store().get_run_step(logs.step_run_id)
+        step = zen_store().get_run_step(logs.step_run_id, hydrate=False)
         verify_permission_for_model(
             model=zen_store().get_run(
                 run_id=step.pipeline_run_id, hydrate=False
