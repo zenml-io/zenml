@@ -50,6 +50,7 @@ from zenml.zen_stores.payload_storage.backends import (
     create_payload_backend,
 )
 from zenml.zen_stores.payload_storage.cache import PayloadCache
+from zenml.zen_stores.payload_storage.circuit_breaker import CircuitBreaker
 from zenml.zen_stores.payload_storage.config import (
     PayloadStorageConfiguration,
 )
@@ -61,6 +62,8 @@ from zenml.zen_stores.schemas.blob_schemas import BlobSchema
 
 IDENTITY_CODEC = "identity"
 MAX_CONCURRENT_BACKEND_CALLS = 32
+# Failed backend calls in a row after which calls to the backend are paused.
+FAILURES_TO_PAUSE = 3
 # Bounds the size of the `IN` lists of registry queries.
 QUERY_BATCH_SIZE = 500
 
@@ -190,6 +193,13 @@ class PayloadStore:
             )
             for backend_type, configuration in config.backends.items()
         }
+        # Paused for as long as a call may take.
+        self._breakers = {
+            name: CircuitBreaker(
+                name, failures_to_pause=FAILURES_TO_PAUSE, pause=config.timeout
+            )
+            for name in self._backends
+        }
         self._cache = PayloadCache(max_size=config.cache_size)
         self._timeout = config.timeout
         self._executor = ThreadPoolExecutor(
@@ -276,6 +286,7 @@ class PayloadStore:
             if new_values:
                 unique_values = {v.sha256: v for v in new_values}.values()
                 self._call_backend(
+                    self._write_backend.value,
                     lambda value: backend.put(value.sha256, value.data),
                     list(unique_values),
                 )
@@ -468,7 +479,7 @@ class PayloadStore:
                 )
             ordered = sorted(sha256s)
             for sha256, content in zip(
-                ordered, self._call_backend(backend.get, ordered)
+                ordered, self._call_backend(stored_in, backend.get, ordered)
             ):
                 data[(stored_in, sha256)] = content
         return {
@@ -507,11 +518,12 @@ class PayloadStore:
         return data.decode("utf-8")
 
     def _call_backend(
-        self, function: Callable[[T], R], items: Sequence[T]
+        self, backend_name: str, function: Callable[[T], R], items: Sequence[T]
     ) -> List[R]:
         """Call a backend for several items concurrently.
 
         Args:
+            backend_name: The backend, as named in `blob.stored_in`.
             function: The backend call.
             items: The items to call it for.
 
@@ -520,46 +532,48 @@ class PayloadStore:
 
         Raises:
             PayloadStorageUnavailableError: If a call fails or does not
-                return in time.
+                return in time, or calls to the backend are paused after it
+                failed repeatedly.
             PayloadStorageError: If the storage refuses a call in a way that
                 retrying does not fix, such as a missing object or denied
                 access.
         """
-        futures, stalled = self._run_calls(function, items)
-        # The first in item order, so that the same failures always give the
-        # same error.
-        error = next(
-            (
-                error
-                for future in futures
-                if future.done()
-                and not future.cancelled()
-                and (error := future.exception())
-            ),
-            None,
-        )
-        if error is None and not stalled:
-            return [future.result() for future in futures]
+        with self._breakers[backend_name].guard():
+            futures, stalled = self._run_calls(function, items)
+            # The first in item order, so that the same failures always give
+            # the same error.
+            error = next(
+                (
+                    error
+                    for future in futures
+                    if future.done()
+                    and not future.cancelled()
+                    and (error := future.exception())
+                ),
+                None,
+            )
+            if error is None and not stalled:
+                return [future.result() for future in futures]
 
-        logger.warning(
-            "Execution payload storage failed in a batch of %d calls: %s",
-            len(items),
-            error or f"no call returned within {self._timeout} seconds",
-        )
-        if isinstance(error, (FileNotFoundError, PermissionError)):
-            # Retrying brings back neither a missing object nor access, so
-            # these fail at once instead of as a retried 503.
-            raise PayloadStorageError(
-                f"Execution payload storage refused the request: {error}"
-            ) from error
-        if error:
+            logger.warning(
+                "Execution payload storage failed in a batch of %d calls: %s",
+                len(items),
+                error or f"no call returned within {self._timeout} seconds",
+            )
+            if isinstance(error, (FileNotFoundError, PermissionError)):
+                # Retrying brings back neither a missing object nor access, so
+                # these fail at once instead of as a retried 503.
+                raise PayloadStorageError(
+                    f"Execution payload storage refused the request: {error}"
+                ) from error
+            if error:
+                raise PayloadStorageUnavailableError(
+                    f"Execution payload storage failed: {error}"
+                ) from error
             raise PayloadStorageUnavailableError(
-                f"Execution payload storage failed: {error}"
-            ) from error
-        raise PayloadStorageUnavailableError(
-            "Execution payload storage did not respond within "
-            f"{self._timeout} seconds."
-        )
+                "Execution payload storage did not respond within "
+                f"{self._timeout} seconds."
+            )
 
     def _run_calls(
         self, function: Callable[[T], R], items: Sequence[T]

@@ -55,7 +55,9 @@ class PayloadStorageConfiguration(BaseModel):
             Payload storage that hangs then fails requests quickly instead of
             holding them and their threads. The default stays below the
             server's request timeout (20 seconds), so that the storage error
-            reaches the client.
+            reaches the client. After three failed calls in a row, calls to
+            the backend also fail at once for this long, until one call finds
+            it recovered.
     """
 
     offload_enabled: bool = False
