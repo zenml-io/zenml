@@ -84,7 +84,19 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade database schema and/or data back to the previous revision."""
+    """Downgrade database schema and/or data back to the previous revision.
+
+    Raises:
+        RuntimeError: If payloads were offloaded, since dropping the reference
+            columns would lose which blob each row points to.
+    """
+    if op.get_bind().execute(sa.text("SELECT 1 FROM blob LIMIT 1")).first():
+        raise RuntimeError(
+            "Execution payloads were offloaded to object storage, and this "
+            "downgrade would lose which blob each row references. Only "
+            "databases without offloaded payloads can be downgraded below "
+            "this revision."
+        )
     for table, columns in BLOB_REFERENCE_COLUMNS.items():
         with op.batch_alter_table(table, schema=None) as batch_op:
             for column in reversed(columns):
