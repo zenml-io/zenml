@@ -88,10 +88,8 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 )
 from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
-    get_permission_hook,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
-    verify_permissions_and_get_entity_with_payloads,
     verify_permissions_and_get_or_create_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
@@ -312,7 +310,7 @@ def get_run(
         The pipeline run.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity_with_payloads(
+    run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=store.get_run,
         hydrate=hydrate,
@@ -444,7 +442,7 @@ def get_pipeline_configuration(
     Returns:
         The pipeline configuration of the pipeline run.
     """
-    run = verify_permissions_and_get_entity_with_payloads(
+    run = verify_permissions_and_get_entity(
         id=run_id, get_method=zen_store().get_run, hydrate=True
     )
     return run.config.model_dump()
@@ -522,7 +520,7 @@ def refresh_run_status(
             the status of individual steps.
     """
     store = zen_store()
-    run = verify_permissions_and_get_entity_with_payloads(
+    run = verify_permissions_and_get_entity(
         id=run_id,
         get_method=store.get_run,
         hydrate=True,
@@ -549,13 +547,9 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-    # The metadata of the run carries payloads that can live in external
-    # storage, so the caller is authorized before it is loaded.
-    run = zen_store().get_run(
-        run_id,
-        hydrate=True,
-        pre_read_hook=get_permission_hook(Action.READ, Action.UPDATE),
-    )
+    run = zen_store().get_run(run_id, hydrate=True)
+    verify_permission_for_model(run, action=Action.READ)
+    verify_permission_for_model(run, action=Action.UPDATE)
     dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 
@@ -697,7 +691,7 @@ if server_config().workload_manager_enabled:
             run_snapshot,
         )
 
-        run = verify_permissions_and_get_entity_with_payloads(
+        run = verify_permissions_and_get_entity(
             id=run_id,
             get_method=zen_store().get_run,
             hydrate=True,

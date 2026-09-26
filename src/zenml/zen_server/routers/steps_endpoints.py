@@ -51,7 +51,6 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    get_permission_hook,
     verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
@@ -60,6 +59,7 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permission,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -159,21 +159,9 @@ def _get_step_with_permission(
     Returns:
         The fetched step.
     """
-    verify = get_permission_hook(
-        action,
-        get_permission_model=lambda step: zen_store().get_run(
-            step.pipeline_run_id, hydrate=False
-        ),
-    )
-    if hydrate:
-        # The metadata of a step carries payloads that can live in external
-        # storage, so the caller is authorized before it is loaded.
-        return zen_store().get_run_step(
-            step_id, hydrate=True, pre_read_hook=verify
-        )
-    step = zen_store().get_run_step(step_id, hydrate=False)
-    if verify:
-        verify(step)
+    step = zen_store().get_run_step(step_id, hydrate=hydrate)
+    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
+    verify_permission_for_model(pipeline_run, action=action)
     return step
 
 

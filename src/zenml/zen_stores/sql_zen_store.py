@@ -1437,8 +1437,8 @@ class SqlZenStore(BaseZenStore):
         """End the read transaction of a session and release its connection.
 
         The objects the session loaded stay usable. Callers do this before
-        waiting on something else, such as payload storage or a permission
-        check, so that no connection or transaction is held meanwhile.
+        waiting on payload storage, so that no connection or transaction is
+        held meanwhile.
 
         Args:
             session: The session, which must not hold uncommitted changes.
@@ -1450,27 +1450,6 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         finally:
             session.expire_on_commit = expire_on_commit
-
-    def _run_pre_read_hook(
-        self,
-        session: Session,
-        pre_read_hook: Optional[Callable[[AnyResponse], None]],
-        get_model: Callable[[], AnyResponse],
-    ) -> None:
-        """Run a hook with an entity, without its metadata, before its payloads.
-
-        Permission checks can take a while (on Pro, they are HTTP calls), so
-        the read transaction ends first and no connection is held meanwhile.
-
-        Args:
-            session: The session that loaded the entity.
-            pre_read_hook: The hook, if any.
-            get_model: Converts the entity without its metadata.
-        """
-        if pre_read_hook:
-            model = get_model()
-            self._end_read_transaction(session)
-            pre_read_hook(model)
 
     def _resolve_payloads(
         self,
@@ -5820,9 +5799,6 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
-        pre_read_hook: Optional[
-            Callable[[PipelineSnapshotResponse], None]
-        ] = None,
     ) -> PipelineSnapshotResponse:
         """Get a snapshot with a given ID.
 
@@ -5835,8 +5811,6 @@ class SqlZenStore(BaseZenStore):
                 included.
             include_config_schema: Whether to include the config schema in the
                 response.
-            pre_read_hook: Optional function to run with the snapshot, without
-                its metadata, before its payloads are resolved.
 
         Returns:
             The snapshot.
@@ -5851,7 +5825,6 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
-            self._run_pre_read_hook(session, pre_read_hook, snapshot.to_model)
             payloads = self._resolve_payloads(
                 session,
                 lambda: snapshot.get_payload_blob_ids(
@@ -6612,7 +6585,6 @@ class SqlZenStore(BaseZenStore):
         self,
         template_id: UUID,
         hydrate: bool = True,
-        pre_read_hook: Optional[Callable[[RunTemplateResponse], None]] = None,
     ) -> RunTemplateResponse:
         """Get a run template with a given ID.
 
@@ -6620,8 +6592,6 @@ class SqlZenStore(BaseZenStore):
             template_id: ID of the template.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            pre_read_hook: Optional function to run with the template, without
-                its metadata, before its payloads are resolved.
 
         Returns:
             The template.
@@ -6632,7 +6602,6 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
-            self._run_pre_read_hook(session, pre_read_hook, template.to_model)
             return template.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -7532,7 +7501,6 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = True,
         include_full_metadata: bool = False,
         include_python_packages: bool = False,
-        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
@@ -7544,8 +7512,6 @@ class SqlZenStore(BaseZenStore):
                 full metadata in the response.
             include_python_packages: Flag deciding whether to include the
                 python packages in the response.
-            pre_read_hook: Optional function to run with the run, without
-                its metadata, before its payloads are resolved.
 
         Returns:
             The pipeline run.
@@ -7561,7 +7527,6 @@ class SqlZenStore(BaseZenStore):
                     include_full_metadata=include_full_metadata,
                 ),
             )
-            self._run_pre_read_hook(session, pre_read_hook, run.to_model)
             return run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
@@ -7697,7 +7662,6 @@ class SqlZenStore(BaseZenStore):
         orchestrator_run_id: str,
         snapshot_id: UUID,
         session: Session,
-        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> PipelineRunResponse:
         """Get a pipeline run based on snapshot and orchestrator run ID.
 
@@ -7705,8 +7669,6 @@ class SqlZenStore(BaseZenStore):
             orchestrator_run_id: The orchestrator run ID.
             snapshot_id: The snapshot ID.
             session: SQLAlchemy session.
-            pre_read_hook: Optional function to run with the run, without its
-                metadata, before its payloads are resolved.
 
         Raises:
             KeyError: If no run exists for the snapshot and orchestrator run
@@ -7737,7 +7699,6 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
-        self._run_pre_read_hook(session, pre_read_hook, run_schema.to_model)
         return run_schema.to_model(
             include_metadata=True,
             include_resources=True,
@@ -7781,7 +7742,6 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         pre_creation_hook: Optional[Callable[[], None]] = None,
-        pre_read_hook: Optional[Callable[[PipelineRunResponse], None]] = None,
     ) -> Tuple[PipelineRunResponse, bool]:
         """Gets or creates a pipeline run.
 
@@ -7792,8 +7752,6 @@ class SqlZenStore(BaseZenStore):
             pipeline_run: The pipeline run to get or create.
             pre_creation_hook: Optional function to run before creating the
                 pipeline run or replacing its placeholder run.
-            pre_read_hook: Optional function to run with an existing run,
-                without its metadata, before its payloads are resolved.
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
@@ -7812,7 +7770,6 @@ class SqlZenStore(BaseZenStore):
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
                             snapshot_id=pipeline_run.snapshot,
                             session=session,
-                            pre_read_hook=pre_read_hook,
                         ),
                         False,
                     )
@@ -7926,7 +7883,6 @@ class SqlZenStore(BaseZenStore):
                             orchestrator_run_id=pipeline_run.orchestrator_run_id,
                             snapshot_id=pipeline_run.snapshot,
                             session=session,
-                            pre_read_hook=pre_read_hook,
                         ),
                         False,
                     )
@@ -13253,7 +13209,6 @@ class SqlZenStore(BaseZenStore):
         self,
         step_run_id: UUID,
         hydrate: bool = True,
-        pre_read_hook: Optional[Callable[[StepRunResponse], None]] = None,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -13261,8 +13216,6 @@ class SqlZenStore(BaseZenStore):
             step_run_id: The ID of the step run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            pre_read_hook: Optional function to run with the step run, without
-                its metadata, before its payloads are resolved.
 
         Returns:
             The step run.
@@ -13276,7 +13229,6 @@ class SqlZenStore(BaseZenStore):
                     include_metadata=hydrate, include_resources=True
                 ),
             )
-            self._run_pre_read_hook(session, pre_read_hook, step_run.to_model)
             return step_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,

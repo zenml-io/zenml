@@ -62,10 +62,9 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
-    get_permission_hook,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
-    verify_permissions_and_get_entity_with_payloads,
+    verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
@@ -224,7 +223,7 @@ def get_pipeline_snapshot(
     Returns:
         A specific snapshot object.
     """
-    return verify_permissions_and_get_entity_with_payloads(
+    return verify_permissions_and_get_entity(
         id=snapshot_id,
         get_method=zen_store().get_snapshot,
         hydrate=hydrate,
@@ -363,17 +362,17 @@ def get_snapshot_code_download_token(
     Raises:
         ValueError: If the snapshot has no code path or stack.
     """
-    # The code path is part of the metadata, which carries payloads that can
-    # live in external storage, so reading the snapshot is authorized before
-    # it is loaded. Its stack and artifact store are checked before any token
-    # is issued.
-    snapshot = zen_store().get_snapshot(
+    store = zen_store()
+    snapshot = store.get_snapshot(
         snapshot_id,
         hydrate=True,
         step_configuration_filter=[],
         include_config_schema=False,
-        pre_read_hook=get_permission_hook(Action.READ),
     )
+
+    if not snapshot.code_path:
+        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
+
     if not snapshot.stack:
         raise ValueError(f"Snapshot {snapshot_id} has no stack.")
 
@@ -381,11 +380,9 @@ def get_snapshot_code_download_token(
         StackComponentType.ARTIFACT_STORE
     ][0].id
     artifact_store_model = zen_store().get_stack_component(artifact_store_id)
-    models: List[BaseModel] = [snapshot.stack, artifact_store_model]
-    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
-    if not snapshot.code_path:
-        raise ValueError(f"Snapshot {snapshot_id} has no code path.")
+    models: List[BaseModel] = [snapshot, snapshot.stack, artifact_store_model]
+    batch_verify_permissions_for_models(models=models, action=Action.READ)
 
     artifact_store = load_artifact_store(
         artifact_store_id=artifact_store_id, zen_store=zen_store()
@@ -491,7 +488,7 @@ if server_config().workload_manager_enabled:
         with track_handler(
             event=AnalyticsEvent.EXECUTED_SNAPSHOT,
         ) as analytics_handler:
-            snapshot = verify_permissions_and_get_entity_with_payloads(
+            snapshot = verify_permissions_and_get_entity(
                 id=snapshot_id,
                 get_method=zen_store().get_snapshot,
                 hydrate=True,
