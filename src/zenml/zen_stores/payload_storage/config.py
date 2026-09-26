@@ -53,7 +53,9 @@ class PayloadStorageConfiguration(BaseModel):
         timeout: The number of seconds after which a call to the payload
             backend is cancelled, retries included, and the request fails.
             Payload storage that hangs then fails requests quickly instead of
-            holding them and their threads.
+            holding them and their threads. The default stays below the
+            server's request timeout (20 seconds), so that the storage error
+            reaches the client.
     """
 
     offload_enabled: bool = False
@@ -62,7 +64,7 @@ class PayloadStorageConfiguration(BaseModel):
         default_factory=dict
     )
     cache_size: int = Field(default=128 * 1024 * 1024, ge=0)
-    timeout: float = Field(default=30, gt=0)
+    timeout: float = Field(default=10, gt=0)
 
     # Like the store configuration that holds it, so that a configuration
     # written by a newer release still loads.

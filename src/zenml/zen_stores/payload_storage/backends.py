@@ -90,6 +90,9 @@ class ObjectStoreArtifactStore(Protocol):
 def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
     """Whether a provider error means that access was denied.
 
+    Missing credentials count as denied access: they are a configuration
+    error that no retry fixes.
+
     Args:
         backend_type: The backend that raised the error.
         error: The error.
@@ -97,11 +100,21 @@ def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
     Returns:
         Whether access was denied.
     """
+    if backend_type == PayloadBackendType.S3:
+        from botocore.exceptions import (
+            NoCredentialsError,
+            PartialCredentialsError,
+        )
+
+        return isinstance(error, (NoCredentialsError, PartialCredentialsError))
     if backend_type == PayloadBackendType.GCS:
         from gcsfs.retry import HttpError
+        from google.auth.exceptions import DefaultCredentialsError
 
-        return (isinstance(error, HttpError) and error.code in (401, 403)) or (
-            type(error) is OSError and str(error).startswith("Forbidden")
+        return (
+            isinstance(error, DefaultCredentialsError)
+            or (isinstance(error, HttpError) and error.code in (401, 403))
+            or (type(error) is OSError and str(error).startswith("Forbidden"))
         )
     if backend_type == PayloadBackendType.AZURE:
         from azure.core.exceptions import (
@@ -109,8 +122,14 @@ def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
             HttpResponseError,
         )
 
-        return isinstance(error, ClientAuthenticationError) or (
-            isinstance(error, HttpResponseError) and error.status_code == 403
+        return (
+            isinstance(error, ClientAuthenticationError)
+            or (
+                isinstance(error, HttpResponseError)
+                and error.status_code == 403
+            )
+            # adlfs, when neither an account nor a connection string is set.
+            or (type(error) is ValueError and "account_name" in str(error))
         )
     return False
 

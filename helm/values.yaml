@@ -435,7 +435,8 @@ server:
     # pods. On EKS, annotate the service account with an IAM role (IRSA, see
     # `serviceAccount.annotations`); on GKE, use workload identity; on AKS, a
     # managed identity. Environment variables such as AWS_* set through
-    # `zenml.secretEnvironment` are picked up as well.
+    # `zenml.secretEnvironment` are picked up as well. Azure also needs the
+    # storage account, as AZURE_STORAGE_ACCOUNT_NAME in `zenml.environment`.
     payloadStorage:
       # Move new payloads to the object store. Enable it in two steps: first
       # roll out `backend` and `path` with `enabled: false`, until every
@@ -458,8 +459,10 @@ server:
       endpointUrl: ""
       # Bytes of resolved payloads each server process keeps in memory.
       cacheSize: 134217728
-      # Seconds before a call to the object store fails the request.
-      timeout: 30
+      # Seconds before a call to the object store fails the request. Keep it
+      # below the server's request timeout (20 seconds by default), so that
+      # clients get the storage error.
+      timeout: 10
 
     # Connection pool settings (only relevant for MySQL databases).
     #

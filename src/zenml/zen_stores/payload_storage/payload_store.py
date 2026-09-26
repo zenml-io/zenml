@@ -44,6 +44,7 @@ from zenml.exceptions import (
     PayloadStorageError,
     PayloadStorageUnavailableError,
 )
+from zenml.logger import get_logger
 from zenml.zen_stores.payload_storage.backends import (
     PayloadBackend,
     create_payload_backend,
@@ -68,6 +69,8 @@ BlobKey = Tuple[str, str]
 
 T = TypeVar("T")
 R = TypeVar("R")
+
+logger = get_logger(__name__)
 
 
 def _get_blob_key(value: PayloadValue) -> BlobKey:
@@ -523,27 +526,40 @@ class PayloadStore:
                 access.
         """
         futures, stalled = self._run_calls(function, items)
-        # In item order, so that the same failures always give the same error.
-        for future in futures:
-            if not future.done() or future.cancelled():
-                continue
-            error = future.exception()
-            if isinstance(error, (FileNotFoundError, PermissionError)):
-                # Retrying brings back neither a missing object nor access, so
-                # these fail at once instead of as a retried 503.
-                raise PayloadStorageError(
-                    f"Execution payload storage refused the request: {error}"
-                ) from error
-            if error:
-                raise PayloadStorageUnavailableError(
-                    f"Execution payload storage failed: {error}"
-                ) from error
-        if stalled:
+        # The first in item order, so that the same failures always give the
+        # same error.
+        error = next(
+            (
+                error
+                for future in futures
+                if future.done()
+                and not future.cancelled()
+                and (error := future.exception())
+            ),
+            None,
+        )
+        if error is None and not stalled:
+            return [future.result() for future in futures]
+
+        logger.warning(
+            "Execution payload storage failed in a batch of %d calls: %s",
+            len(items),
+            error or f"no call returned within {self._timeout} seconds",
+        )
+        if isinstance(error, (FileNotFoundError, PermissionError)):
+            # Retrying brings back neither a missing object nor access, so
+            # these fail at once instead of as a retried 503.
+            raise PayloadStorageError(
+                f"Execution payload storage refused the request: {error}"
+            ) from error
+        if error:
             raise PayloadStorageUnavailableError(
-                "Execution payload storage did not respond within "
-                f"{self._timeout} seconds."
-            )
-        return [future.result() for future in futures]
+                f"Execution payload storage failed: {error}"
+            ) from error
+        raise PayloadStorageUnavailableError(
+            "Execution payload storage did not respond within "
+            f"{self._timeout} seconds."
+        )
 
     def _run_calls(
         self, function: Callable[[T], R], items: Sequence[T]
