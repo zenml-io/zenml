@@ -283,6 +283,7 @@ def create_payload_backend(
     backend_type: PayloadBackendType,
     configuration: Dict[str, Any],
     timeout: float,
+    concurrent_calls: int,
 ) -> PayloadBackend:
     """Create a payload backend from its configuration.
 
@@ -293,10 +294,22 @@ def create_payload_backend(
         backend_type: The backend to create.
         configuration: The configuration of the backend.
         timeout: The number of seconds after which a call is cancelled.
+        concurrent_calls: The number of calls the backend receives at once.
 
     Returns:
         The payload backend.
     """
+    if backend_type == PayloadBackendType.S3:
+        # The S3 client keeps 10 connections by default, and the timeout of a
+        # call also runs while it waits for one, so calls beyond 10 would
+        # time out on healthy storage.
+        configuration = {
+            **configuration,
+            "config_kwargs": {
+                "max_pool_connections": concurrent_calls,
+                **configuration.get("config_kwargs", {}),
+            },
+        }
     flavor = _get_artifact_store_flavor(backend_type)
     now = utc_now()
     artifact_store = flavor.implementation_class(

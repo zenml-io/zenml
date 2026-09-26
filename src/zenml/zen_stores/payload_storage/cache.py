@@ -27,7 +27,8 @@ class PayloadCache:
     Blobs never change, so entries never need to be invalidated. Concurrent
     misses of the same blob wait for a single load, so that, for example,
     the step pods of a run starting together read their snapshot's
-    configuration from storage once.
+    configuration from storage once. A caller waiting for another caller's
+    load waits for that whole load, but gets the outcome of its own blobs.
     """
 
     def __init__(self, max_size: int) -> None:
@@ -100,14 +101,13 @@ class PayloadCache:
 
         Args:
             blob_ids: The blobs to get.
-            load: Loads the given blobs, which no other caller is loading.
+            load: Loads the given blobs.
 
         Returns:
             The payload values by blob ID.
 
         Raises:
-            BaseException: Any error of the load, which the callers waiting for
-                the same blobs receive as well.
+            BaseException: Any error of this caller's load.
         """
         values: Dict[UUID, str] = {}
         waiting: Dict[UUID, "Future[str]"] = {}
@@ -140,6 +140,18 @@ class PayloadCache:
                     future.set_result(value)
                     values[blob_id] = value
 
+        retry = []
         for blob_id, future in waiting.items():
-            values[blob_id] = future.result()
+            try:
+                values[blob_id] = future.result()
+            except Exception:
+                # The other caller's load failed, maybe for another blob of
+                # its batch, so this blob gets a load of its own.
+                retry.append(blob_id)
+        if retry:
+            loaded = load(retry)
+            with self._lock:
+                for blob_id in retry:
+                    self._put(blob_id, loaded[blob_id])
+            values.update(loaded)
         return values

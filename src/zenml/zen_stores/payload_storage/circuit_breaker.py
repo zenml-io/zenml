@@ -35,9 +35,10 @@ class CircuitBreaker:
     still fail at once: its success lets every call through again, and its
     failure pauses the calls again.
 
-    Only failures that retrying may fix count. A missing object or denied
-    access means that the backend answered, so it resets the count like a
-    success.
+    It guards single backend calls. Only failures that retrying may fix
+    count: a missing object (`FileNotFoundError`) or denied access
+    (`PermissionError`) means that the backend answered, so it resets the
+    count like a success.
     """
 
     def __init__(
@@ -69,6 +70,12 @@ class CircuitBreaker:
         Raises:
             PayloadStorageUnavailableError: If calls to the backend are
                 paused.
+            FileNotFoundError: If the object of the call is missing, which
+                resets the count like a success.
+            PermissionError: If access was denied, which resets the count
+                like a success.
+            Exception: Any other error of the call, which counts as a
+                failure.
         """
         with self._lock:
             trial = self._failures >= self._failures_to_pause
@@ -90,7 +97,9 @@ class CircuitBreaker:
         failed = False
         try:
             yield
-        except PayloadStorageUnavailableError:
+        except (FileNotFoundError, PermissionError):
+            raise
+        except Exception:
             failed = True
             raise
         finally:

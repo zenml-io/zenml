@@ -172,7 +172,10 @@ class PayloadStore:
         self._breaker: Optional[CircuitBreaker] = None
         if config.backend:
             self._backend = create_payload_backend(
-                config.backend, config.backend_config, timeout=config.timeout
+                config.backend,
+                config.backend_config,
+                timeout=config.timeout,
+                concurrent_calls=MAX_CONCURRENT_BACKEND_CALLS,
             )
             # Paused for as long as a call may take.
             self._breaker = CircuitBreaker(
@@ -266,10 +269,13 @@ class PayloadStore:
                     new_values,
                 )
                 with Session(self._engine) as session:
-                    blob_ids.update(self._register(new_values, session))
+                    registered = self._register(new_values, session)
+                blob_ids.update(registered)
+                # Only the values stored here: a blob found in the registry
+                # may lack its object, which reads have to find out.
+                for sha256, blob_id in registered.items():
+                    self._cache.put(blob_id, values_by_sha256[sha256].text)
 
-        for sha256, blob_id in blob_ids.items():
-            self._cache.put(blob_id, values_by_sha256[sha256].text)
         return OffloadedPayloads(
             blob_ids={
                 values_by_sha256[sha256].text: blob_id
@@ -496,43 +502,61 @@ class PayloadStore:
                 retrying does not fix, such as a missing object or denied
                 access.
         """
+        futures, stalled = self._run_calls(function, items)
+        # The first in item order, so that the same failures always give
+        # the same error.
+        error = next(
+            (
+                error
+                for future in futures
+                if future.done()
+                and not future.cancelled()
+                and (error := future.exception())
+            ),
+            None,
+        )
+        if error is None and not stalled:
+            return [future.result() for future in futures]
+        if isinstance(error, PayloadStorageUnavailableError):
+            # Calls to the backend are paused; the breaker logged why.
+            raise PayloadStorageUnavailableError(str(error)) from error
+
+        logger.warning(
+            "Execution payload storage failed in a batch of %d calls: %s",
+            len(items),
+            error or f"no call returned within {self._timeout} seconds",
+        )
+        if isinstance(error, (FileNotFoundError, PermissionError)):
+            # Retrying brings back neither a missing object nor access, so
+            # these fail at once instead of as a retried 503.
+            raise PayloadStorageError(
+                f"Execution payload storage refused the request: {error}"
+            ) from error
+        if error:
+            raise PayloadStorageUnavailableError(
+                f"Execution payload storage failed: {error}"
+            ) from error
+        raise PayloadStorageUnavailableError(
+            "Execution payload storage did not respond within "
+            f"{self._timeout} seconds."
+        )
+
+    def _call_guarded(self, function: Callable[[T], R], item: T) -> R:
+        """Make one backend call through the circuit breaker.
+
+        The breaker counts single calls, so that one slow or missing object
+        among healthy calls never pauses the backend.
+
+        Args:
+            function: The backend call.
+            item: The item to call it for.
+
+        Returns:
+            The result of the call.
+        """
         assert self._breaker
         with self._breaker.guard():
-            futures, stalled = self._run_calls(function, items)
-            # The first in item order, so that the same failures always give
-            # the same error.
-            error = next(
-                (
-                    error
-                    for future in futures
-                    if future.done()
-                    and not future.cancelled()
-                    and (error := future.exception())
-                ),
-                None,
-            )
-            if error is None and not stalled:
-                return [future.result() for future in futures]
-
-            logger.warning(
-                "Execution payload storage failed in a batch of %d calls: %s",
-                len(items),
-                error or f"no call returned within {self._timeout} seconds",
-            )
-            if isinstance(error, (FileNotFoundError, PermissionError)):
-                # Retrying brings back neither a missing object nor access, so
-                # these fail at once instead of as a retried 503.
-                raise PayloadStorageError(
-                    f"Execution payload storage refused the request: {error}"
-                ) from error
-            if error:
-                raise PayloadStorageUnavailableError(
-                    f"Execution payload storage failed: {error}"
-                ) from error
-            raise PayloadStorageUnavailableError(
-                "Execution payload storage did not respond within "
-                f"{self._timeout} seconds."
-            )
+            return function(item)
 
     def _run_calls(
         self, function: Callable[[T], R], items: Sequence[T]
@@ -565,7 +589,9 @@ class PayloadStore:
                 len(futures) < len(items)
                 and len(pending) < MAX_CONCURRENT_BACKEND_CALLS
             ):
-                future = self._executor.submit(function, items[len(futures)])
+                future = self._executor.submit(
+                    self._call_guarded, function, items[len(futures)]
+                )
                 futures.append(future)
                 pending.add(future)
             done, pending = wait(
