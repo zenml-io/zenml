@@ -535,6 +535,8 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 _WEBHOOK_SECRET_VALUE_KEY = "secret"
+# Session info key: set while a session holds flushed, uncommitted changes.
+_FLUSHED_CHANGES = "zenml_flushed_changes"
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
@@ -561,6 +563,23 @@ def exponential_backoff_with_jitter(
 
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
+
+    @property
+    def has_uncommitted_changes(self) -> bool:
+        """Whether the session holds changes that are not committed yet.
+
+        This includes flushed changes, which `new`, `dirty` and `deleted` no
+        longer show, for example after a query autoflushed them.
+
+        Returns:
+            Whether the session holds uncommitted changes.
+        """
+        return bool(
+            self.info.get(_FLUSHED_CHANGES)
+            or self.new
+            or self.deleted
+            or any(self.is_modified(row) for row in self.dirty)
+        )
 
     def _get_metrics(self) -> Dict[str, Any]:
         """Get the metrics for the session.
@@ -654,6 +673,35 @@ class Session(SqlModelSession):
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)
+
+
+@event.listens_for(Session, "after_flush")
+def _remember_flushed_changes(session: Session, flush_context: Any) -> None:
+    """Remember that a session flushed changes it has not committed yet.
+
+    Args:
+        session: The session.
+        flush_context: The context of the flush.
+    """
+    # The pending changes are still listed until the flush completes.
+    if (
+        session.new
+        or session.deleted
+        or any(session.is_modified(row) for row in session.dirty)
+    ):
+        session.info[_FLUSHED_CHANGES] = True
+
+
+@event.listens_for(Session, "after_transaction_end")
+def _forget_flushed_changes(session: Session, transaction: Any) -> None:
+    """Forget the flushed changes of a session once its transaction ends.
+
+    Args:
+        session: The session.
+        transaction: The transaction that ended.
+    """
+    if transaction.parent is None:
+        session.info.pop(_FLUSHED_CHANGES, None)
 
 
 class SQLDatabaseDriver(StrEnum):
@@ -1363,6 +1411,28 @@ class SqlZenStore(BaseZenStore):
         return self._alembic
 
     @staticmethod
+    def _check_no_uncommitted_changes(session: Session) -> None:
+        """Check that a session has not written anything yet.
+
+        Payload storage is only used before a request writes anything, since
+        using it may end the read transaction and so commit the session. The
+        helpers that use it check this on every call, whether or not they end
+        the transaction, so that a caller that writes first fails in every
+        configuration, with or without payload storage.
+
+        Args:
+            session: The session.
+
+        Raises:
+            RuntimeError: If the session holds uncommitted changes.
+        """
+        if session.has_uncommitted_changes:
+            raise RuntimeError(
+                "Payload storage is only used before a request writes "
+                "anything, but the session holds uncommitted changes."
+            )
+
+    @staticmethod
     def _end_read_transaction(session: Session) -> None:
         """End the read transaction of a session and release its connection.
 
@@ -1371,22 +1441,9 @@ class SqlZenStore(BaseZenStore):
         check, so that no connection or transaction is held meanwhile.
 
         Args:
-            session: The session, which must not hold pending changes.
-
-        Raises:
-            RuntimeError: If the session holds pending changes.
+            session: The session, which must not hold uncommitted changes.
         """
-        # Changes already flushed are not visible here; no caller flushes
-        # before ending a read transaction.
-        if (
-            session.new
-            or session.deleted
-            or any(session.is_modified(row) for row in session.dirty)
-        ):
-            raise RuntimeError(
-                "A read transaction can only end once all changes are "
-                "committed."
-            )
+        SqlZenStore._check_no_uncommitted_changes(session)
         expire_on_commit = session.expire_on_commit
         session.expire_on_commit = False
         try:
@@ -1444,6 +1501,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The resolved payloads.
         """
+        self._check_no_uncommitted_changes(session)
         if not hydrate:
             return UNRESOLVED
         # Blob IDs are not even collected without any backend, where nothing
@@ -1480,6 +1538,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The offloaded payloads, which the new rows reference.
         """
+        self._check_no_uncommitted_changes(session)
         if values and self.payload_store.offload_enabled:
             self._end_read_transaction(session)
         return self.payload_store.offload(values)
