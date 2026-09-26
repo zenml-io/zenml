@@ -108,17 +108,15 @@ def local_s3_payload_storage(server: "ThreadedMotoServer", path: str) -> str:
 
     return PayloadStorageConfiguration(
         offload_enabled=True,
-        write_backend=PayloadBackendType.S3,
-        backends={
-            PayloadBackendType.S3: {
-                "path": path,
-                "key": "test",
-                "secret": "test",
-                "client_kwargs": {
-                    "endpoint_url": _local_s3_endpoint(server),
-                    "region_name": "us-east-1",
-                },
-            }
+        backend=PayloadBackendType.S3,
+        backend_config={
+            "path": path,
+            "key": "test",
+            "secret": "test",
+            "client_kwargs": {
+                "endpoint_url": _local_s3_endpoint(server),
+                "region_name": "us-east-1",
+            },
         },
     ).model_dump_json()
 

@@ -35,17 +35,16 @@ class PayloadStorageConfiguration(BaseModel):
 
     Attributes:
         offload_enabled: Whether new snapshots, step runs and runs move their
-            payloads to the write backend. Reads resolve offloaded payloads
-            whatever this is set to, so it can be switched off again. Only
-            switch it on once every process that opens the database runs a
-            version that can read offloaded payloads.
-        write_backend: The object store that receives new payloads. Required
-            when offloading is enabled.
-        backends: The object stores holding payload blobs and their
-            configuration. Every backend that ever received payloads must stay
-            configured, since blobs are read from the backend they were
-            written to. `s3`, `gcs` and `azure` take the configuration of the
-            artifact store flavor of the same name, such as a `path` like
+            payloads to the backend. Reads resolve offloaded payloads whatever
+            this is set to, so it can be switched off again. Only switch it on
+            once every process that opens the database runs a version that
+            can read offloaded payloads, with the same backend configured.
+        backend: The object store holding payload blobs: `s3`, `gcs` or
+            `azure`. Required when offloading is enabled. It cannot change
+            once it holds payloads, since blobs are read from where they were
+            written.
+        backend_config: The configuration of the backend, as for the artifact
+            store flavor of the same name, such as a `path` like
             `s3://bucket/prefix` and optional credentials; without
             credentials, the implicit credentials of the environment are used.
         cache_size: The maximum memory in bytes taken by the resolved
@@ -61,10 +60,8 @@ class PayloadStorageConfiguration(BaseModel):
     """
 
     offload_enabled: bool = False
-    write_backend: Optional[PayloadBackendType] = None
-    backends: Dict[PayloadBackendType, Dict[str, Any]] = Field(
-        default_factory=dict
-    )
+    backend: Optional[PayloadBackendType] = None
+    backend_config: Dict[str, Any] = Field(default_factory=dict)
     cache_size: int = Field(default=128 * 1024 * 1024, ge=0)
     timeout: float = Field(default=10, gt=0)
 
@@ -73,24 +70,18 @@ class PayloadStorageConfiguration(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     @model_validator(mode="after")
-    def _validate_write_backend(self) -> "PayloadStorageConfiguration":
-        """Validate that offloading has a configured write backend.
+    def _validate_backend(self) -> "PayloadStorageConfiguration":
+        """Validate that offloading has a backend.
 
         Returns:
             The validated configuration.
 
         Raises:
-            ValueError: If offloading is enabled without a write backend, or
-                the write backend has no configuration.
+            ValueError: If offloading is enabled without a backend.
         """
-        if self.offload_enabled and self.write_backend is None:
+        if self.offload_enabled and self.backend is None:
             raise ValueError(
-                "Offloading payloads needs a `write_backend`: `s3`, `gcs` or "
+                "Offloading payloads needs a `backend`: `s3`, `gcs` or "
                 "`azure`."
-            )
-        if self.write_backend and self.write_backend not in self.backends:
-            raise ValueError(
-                f"Payloads are written to the `{self.write_backend}` backend, "
-                "which has no configuration in `backends`."
             )
         return self

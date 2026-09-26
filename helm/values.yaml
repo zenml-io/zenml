@@ -446,8 +446,9 @@ server:
       # Disabling it again keeps the store configured, so that payloads moved
       # earlier stay readable.
       enabled: false
-      # The object store: `s3`, `gcs` or `azure`. Payloads stay readable only
-      # while their store stays configured, so do not change it once enabled.
+      # The object store: `s3`, `gcs` or `azure`. Blobs are read from where
+      # they were written, so neither the store nor `path` can change once
+      # payloads were offloaded, even after disabling it again.
       backend: s3
       # Where blobs are written, for example `s3://my-bucket/zenml-payloads`,
       # `gs://my-bucket/zenml-payloads` or `az://my-container/zenml-payloads`.

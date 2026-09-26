@@ -27,7 +27,7 @@ from sqlmodel import Field, SQLModel
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.schema_utils import build_index
 
-BLOB_SHA256_MEDIA_TYPE_CONSTRAINT = "unique_blob_sha256_media_type"
+BLOB_SHA256_CONSTRAINT = "unique_blob_sha256"
 
 
 class BlobSchema(SQLModel, table=True):
@@ -40,15 +40,12 @@ class BlobSchema(SQLModel, table=True):
 
     __tablename__ = "blob"
     __table_args__ = (
-        UniqueConstraint(
-            "sha256", "media_type", name=BLOB_SHA256_MEDIA_TYPE_CONSTRAINT
-        ),
+        UniqueConstraint("sha256", name=BLOB_SHA256_CONSTRAINT),
         build_index(table_name=__tablename__, column_names=["stored_in"]),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     sha256: str = Field(sa_column=Column(String(64), nullable=False))
-    media_type: str = Field(sa_column=Column(String(255), nullable=False))
     # How the stored bytes are encoded. Always `identity` for now: the bytes
     # are the UTF-8 encoded payload.
     codec: str = Field(sa_column=Column(String(16), nullable=False))

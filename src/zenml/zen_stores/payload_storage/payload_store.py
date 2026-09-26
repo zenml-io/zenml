@@ -14,7 +14,6 @@
 """Offloading of execution payloads to blobs and their resolution."""
 
 import hashlib
-from collections import defaultdict
 from concurrent.futures import (
     FIRST_COMPLETED,
     Future,
@@ -27,6 +26,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     Sequence,
     Set,
     Tuple,
@@ -67,25 +67,10 @@ FAILURES_TO_PAUSE = 3
 # Bounds the size of the `IN` lists of registry queries.
 QUERY_BATCH_SIZE = 500
 
-# A blob is registered once per content and media type.
-BlobKey = Tuple[str, str]
-
 T = TypeVar("T")
 R = TypeVar("R")
 
 logger = get_logger(__name__)
-
-
-def _get_blob_key(value: PayloadValue) -> BlobKey:
-    """Get the registry key of a payload value.
-
-    Args:
-        value: The payload value.
-
-    Returns:
-        The key.
-    """
-    return value.sha256, value.media_type.value
 
 
 def _batched(items: Collection[T]) -> Iterable[List[T]]:
@@ -106,13 +91,12 @@ class OffloadedPayloads:
     """Payload values offloaded ahead of the transaction referencing them."""
 
     def __init__(
-        self, blob_ids: Dict[Tuple[str, str], UUID], enabled: bool = True
+        self, blob_ids: Dict[str, UUID], enabled: bool = True
     ) -> None:
         """Initializes the offloaded payloads.
 
         Args:
-            blob_ids: The blobs holding the offloaded values, by value and
-                media type.
+            blob_ids: The blobs holding the offloaded values, by value.
             enabled: Whether offloading is enabled. If not, schemas keep
                 their payloads inline.
         """
@@ -135,7 +119,7 @@ class OffloadedPayloads:
         Returns:
             The offloaded values.
         """
-        return {blob_id: text for (text, _), blob_id in self._blob_ids.items()}
+        return {blob_id: text for text, blob_id in self._blob_ids.items()}
 
     def reference(self, *schemas: PayloadSchema) -> None:
         """Replace the inline payload values of schemas by their blobs.
@@ -153,7 +137,7 @@ class OffloadedPayloads:
                 text = field.get_inline_text(schema)
                 if text is None:
                     continue
-                blob_id = self._blob_ids.get((text, field.media_type.value))
+                blob_id = self._blob_ids.get(text)
                 if blob_id is None:
                     raise RuntimeError(
                         f"The `{field.name}` payload of a "
@@ -165,11 +149,10 @@ class OffloadedPayloads:
 class PayloadStore:
     """Offloads the payloads of execution schemas and resolves them.
 
-    Payloads are stored as content-addressed blobs in object storage: each
-    distinct value is stored once, in the backend that was the write backend
-    when the value was first offloaded. The `blob` table registers every blob, and a blob is only
-    registered once its bytes are durable, so that a reference never points to
-    missing bytes.
+    Payloads are stored as content-addressed blobs in an object store: each
+    distinct value is stored once. The `blob` table registers every blob, and
+    a blob is only registered once its bytes are durable, so that a reference
+    never points to missing bytes.
     """
 
     def __init__(
@@ -182,24 +165,21 @@ class PayloadStore:
             config: The payload storage configuration.
         """
         self._engine = engine
-        # The backend receiving new payloads; None keeps them inline.
-        self._write_backend = (
-            config.write_backend if config.offload_enabled else None
-        )
-        # Keyed by the name stored in `blob.stored_in`.
-        self._backends: Dict[str, PayloadBackend] = {
-            backend_type.value: create_payload_backend(
-                backend_type, configuration, timeout=config.timeout
+        self._offload_enabled = config.offload_enabled
+        # The name stored in `blob.stored_in`; None keeps payloads inline.
+        self._backend_name = config.backend.value if config.backend else None
+        self._backend: Optional[PayloadBackend] = None
+        self._breaker: Optional[CircuitBreaker] = None
+        if config.backend:
+            self._backend = create_payload_backend(
+                config.backend, config.backend_config, timeout=config.timeout
             )
-            for backend_type, configuration in config.backends.items()
-        }
-        # Paused for as long as a call may take.
-        self._breakers = {
-            name: CircuitBreaker(
-                name, failures_to_pause=FAILURES_TO_PAUSE, pause=config.timeout
+            # Paused for as long as a call may take.
+            self._breaker = CircuitBreaker(
+                config.backend.value,
+                failures_to_pause=FAILURES_TO_PAUSE,
+                pause=config.timeout,
             )
-            for name in self._backends
-        }
         self._cache = PayloadCache(max_size=config.cache_size)
         self._timeout = config.timeout
         self._executor = ThreadPoolExecutor(
@@ -209,54 +189,50 @@ class PayloadStore:
 
     @property
     def offload_enabled(self) -> bool:
-        """Whether new payloads are offloaded to a backend.
+        """Whether new payloads are offloaded to the backend.
 
         Returns:
             Whether new payloads are offloaded.
         """
-        return self._write_backend is not None
+        return self._offload_enabled
 
     @property
-    def has_backends(self) -> bool:
-        """Whether any backend is configured, so that blobs can exist.
+    def has_backend(self) -> bool:
+        """Whether a backend is configured, so that blobs can be read.
 
         Returns:
-            Whether any backend is configured.
+            Whether a backend is configured.
         """
-        return bool(self._backends)
+        return self._backend is not None
 
-    def verify_backends(self) -> None:
-        """Verify that every backend holding blobs is configured.
+    def verify_backend(self) -> None:
+        """Verify that every blob is held by the configured backend.
 
         Raises:
-            RuntimeError: If blobs are held by a backend that is not
-                configured.
+            RuntimeError: If blobs are held by another backend, or no backend
+                is configured while blobs exist.
         """
         if not inspect(self._engine).has_table(BlobSchema.__tablename__):
             return
 
-        # Compared with the stored names rather than the known ones, so that
-        # blobs of a backend added by a newer release are found as well.
-        configured = list(self._backends)
+        query = select(BlobSchema.stored_in)
+        if self._backend_name:
+            query = query.where(BlobSchema.stored_in != self._backend_name)
         with Session(self._engine) as session:
-            stored_in = session.exec(
-                select(BlobSchema.stored_in)
-                .where(col(BlobSchema.stored_in).not_in(configured))
-                .limit(1)
-            ).first()
+            stored_in = session.exec(query.limit(1)).first()
         if stored_in:
             raise RuntimeError(
                 f"Execution payloads are stored in the `{stored_in}` payload "
-                "backend, which is not configured. Configure it in the "
-                "`backends` of the payload storage configuration of the "
-                "store."
+                "backend, which is not the configured one. Configure it as the "
+                "`backend` of the payload storage configuration of the store: "
+                "the backend cannot change once it holds payloads."
             )
 
     def offload(self, values: Iterable[PayloadValue]) -> OffloadedPayloads:
         """Store payload values ahead of the transaction referencing them.
 
-        The bytes of new values are stored in the write backend first. Their
-        blobs are then registered in a short transaction of their own. If the
+        The bytes of new values are stored in the backend first. Their blobs
+        are then registered in a short transaction of their own. If the
         transaction referencing them fails afterwards, the unreferenced blobs
         are reused by the next write of the same content. No transaction may
         be open while this runs, since it waits for the backend.
@@ -267,38 +243,37 @@ class PayloadStore:
         Returns:
             The offloaded payloads, which reference the blobs from schemas.
         """
-        if self._write_backend is None:
+        if not self._offload_enabled:
             return OffloadedPayloads.disabled()
+        backend = self._backend
+        assert backend
 
-        values_by_key = {_get_blob_key(value): value for value in values}
-        blob_ids: Dict[BlobKey, UUID] = {}
-        if values_by_key:
-            backend = self._backends[self._write_backend.value]
+        values_by_sha256 = {value.sha256: value for value in values}
+        blob_ids: Dict[str, UUID] = {}
+        if values_by_sha256:
             with Session(self._engine) as session:
                 blob_ids = self._get_registered_blobs(
-                    values_by_key, session=session
+                    values_by_sha256, session=session
                 )
             new_values = [
                 value
-                for key, value in values_by_key.items()
-                if key not in blob_ids
+                for sha256, value in values_by_sha256.items()
+                if sha256 not in blob_ids
             ]
             if new_values:
-                unique_values = {v.sha256: v for v in new_values}.values()
                 self._call_backend(
-                    self._write_backend.value,
                     lambda value: backend.put(value.sha256, value.data),
-                    list(unique_values),
+                    new_values,
                 )
                 with Session(self._engine) as session:
                     blob_ids.update(self._register(new_values, session))
 
-        for key, blob_id in blob_ids.items():
-            self._cache.put(blob_id, values_by_key[key].text)
+        for sha256, blob_id in blob_ids.items():
+            self._cache.put(blob_id, values_by_sha256[sha256].text)
         return OffloadedPayloads(
             blob_ids={
-                (values_by_key[key].text, key[1]): blob_id
-                for key, blob_id in blob_ids.items()
+                values_by_sha256[sha256].text: blob_id
+                for sha256, blob_id in blob_ids.items()
             }
         )
 
@@ -316,7 +291,7 @@ class PayloadStore:
     def load(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
         """Load the values held by blobs.
 
-        Reads the registry in a short session of its own and the backends
+        Reads the registry in a short session of its own and the backend
         outside of it, so the caller must not hold a transaction either.
 
         Args:
@@ -328,26 +303,25 @@ class PayloadStore:
         return self._cache.get_many(blob_ids, self._read)
 
     def _get_registered_blobs(
-        self, values_by_key: Dict[BlobKey, PayloadValue], session: Session
-    ) -> Dict[BlobKey, UUID]:
-        """Get the registered blobs of payload values.
+        self, sha256s: Collection[str], session: Session
+    ) -> Dict[str, UUID]:
+        """Get the registered blobs of contents.
 
         Args:
-            values_by_key: The payload values by registry key.
+            sha256s: The SHA-256 of the contents.
             session: The session to use.
 
         Returns:
-            The IDs of the blobs registered for the values.
+            The IDs of the registered blobs by SHA-256.
         """
-        blob_ids: Dict[BlobKey, UUID] = {}
-        for sha256s in _batched({sha256 for sha256, _ in values_by_key}):
-            for blob_id, sha256, media_type in session.exec(
-                select(
-                    BlobSchema.id, BlobSchema.sha256, BlobSchema.media_type
-                ).where(col(BlobSchema.sha256).in_(sha256s))
+        blob_ids: Dict[str, UUID] = {}
+        for batch in _batched(sha256s):
+            for blob_id, sha256 in session.exec(
+                select(BlobSchema.id, BlobSchema.sha256).where(
+                    col(BlobSchema.sha256).in_(batch)
+                )
             ):
-                if (sha256, media_type) in values_by_key:
-                    blob_ids[(sha256, media_type)] = blob_id
+                blob_ids[sha256] = blob_id
         return blob_ids
 
     def _create_blob(self, value: PayloadValue) -> BlobSchema:
@@ -359,18 +333,17 @@ class PayloadStore:
         Returns:
             The registry row.
         """
-        assert self._write_backend
+        assert self._backend_name
         return BlobSchema(
             sha256=value.sha256,
-            media_type=value.media_type.value,
             codec=IDENTITY_CODEC,
             size=len(value.data),
-            stored_in=self._write_backend.value,
+            stored_in=self._backend_name,
         )
 
     def _register(
         self, values: List[PayloadValue], session: Session
-    ) -> Dict[BlobKey, UUID]:
+    ) -> Dict[str, UUID]:
         """Register the blobs of payload values whose bytes are durable.
 
         Args:
@@ -378,16 +351,14 @@ class PayloadStore:
             session: The session to register them with.
 
         Returns:
-            The IDs of the registered blobs.
+            The IDs of the registered blobs by SHA-256.
         """
         # Sorted, so that concurrent writers lock the same keys in the same
         # order and never deadlock each other.
-        values = sorted(values, key=_get_blob_key)
+        values = sorted(values, key=lambda value: value.sha256)
         blobs = [self._create_blob(value) for value in values]
         # Read before the commit expires the rows, which would reload each.
-        blob_ids = {
-            _get_blob_key(value): blob.id for value, blob in zip(values, blobs)
-        }
+        blob_ids = {blob.sha256: blob.id for blob in blobs}
         session.add_all(blobs)
         try:
             session.commit()
@@ -395,8 +366,7 @@ class PayloadStore:
             session.rollback()
             # A concurrent writer registered some of the same content first.
             return {
-                _get_blob_key(value): self._get_or_register(value)
-                for value in values
+                value.sha256: self._get_or_register(value) for value in values
             }
         return blob_ids
 
@@ -427,8 +397,7 @@ class PayloadStore:
                 # blob registered by the concurrent writer.
                 existing = session.exec(
                     select(BlobSchema.id).where(
-                        BlobSchema.sha256 == value.sha256,
-                        BlobSchema.media_type == value.media_type.value,
+                        BlobSchema.sha256 == value.sha256
                     )
                 ).first()
                 if existing is None:
@@ -436,7 +405,7 @@ class PayloadStore:
                 return existing
 
     def _read(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
-        """Read blobs from their backends.
+        """Read blobs from the backend.
 
         Args:
             blob_ids: The blobs to read.
@@ -447,7 +416,7 @@ class PayloadStore:
         Raises:
             RuntimeError: If a blob is not registered.
             PayloadStorageError: If a blob is held by a backend that is not
-                configured.
+                the configured one.
         """
         blobs: List[BlobSchema] = []
         with Session(self._engine) as session:
@@ -462,29 +431,19 @@ class PayloadStore:
                 f"Payload blobs {sorted(str(blob_id) for blob_id in missing)} "
                 "are referenced but not registered."
             )
-
-        # The same bytes can be stored in several backends, for example under
-        # two media types after a backend switch, so each object is checked
-        # against the bytes of its own backend.
-        data: Dict[Tuple[str, str], bytes] = {}
-        sha256s_by_backend: Dict[str, Set[str]] = defaultdict(set)
         for blob in blobs:
-            sha256s_by_backend[blob.stored_in].add(blob.sha256)
-        for stored_in, sha256s in sha256s_by_backend.items():
-            backend = self._backends.get(stored_in)
-            if backend is None:
+            if blob.stored_in != self._backend_name:
                 raise PayloadStorageError(
-                    f"Execution payloads are stored in the `{stored_in}` "
-                    "payload backend, which is not configured."
+                    f"Execution payloads are stored in the `{blob.stored_in}` "
+                    "payload backend, which is not the configured one."
                 )
-            ordered = sorted(sha256s)
-            for sha256, content in zip(
-                ordered, self._call_backend(stored_in, backend.get, ordered)
-            ):
-                data[(stored_in, sha256)] = content
+        backend = self._backend
+        assert backend
+
+        sha256s = sorted({blob.sha256 for blob in blobs})
+        data = dict(zip(sha256s, self._call_backend(backend.get, sha256s)))
         return {
-            blob.id: self._decode(blob, data[(blob.stored_in, blob.sha256)])
-            for blob in blobs
+            blob.id: self._decode(blob, data[blob.sha256]) for blob in blobs
         }
 
     @staticmethod
@@ -518,12 +477,11 @@ class PayloadStore:
         return data.decode("utf-8")
 
     def _call_backend(
-        self, backend_name: str, function: Callable[[T], R], items: Sequence[T]
+        self, function: Callable[[T], R], items: Sequence[T]
     ) -> List[R]:
-        """Call a backend for several items concurrently.
+        """Call the backend for several items concurrently.
 
         Args:
-            backend_name: The backend, as named in `blob.stored_in`.
             function: The backend call.
             items: The items to call it for.
 
@@ -538,7 +496,8 @@ class PayloadStore:
                 retrying does not fix, such as a missing object or denied
                 access.
         """
-        with self._breakers[backend_name].guard():
+        assert self._breaker
+        with self._breaker.guard():
             futures, stalled = self._run_calls(function, items)
             # The first in item order, so that the same failures always give
             # the same error.

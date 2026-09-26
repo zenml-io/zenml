@@ -38,14 +38,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 from zenml.exceptions import PayloadStorageError
-from zenml.utils.enum_utils import StrEnum
-
-
-class PayloadMediaType(StrEnum):
-    """Media type of a payload value."""
-
-    JSON = "application/json"
-    TEXT = "text/plain"
 
 
 class UnresolvedPayloadError(RuntimeError):
@@ -75,11 +67,9 @@ class PayloadValue(BaseModel):
         text: The value exactly as its inline column would hold it. Blobs are
             addressed by the SHA-256 of these UTF-8 bytes, so a value hashes
             to the same blob whether it is offloaded on write or later.
-        media_type: The media type of the value.
     """
 
     text: str
-    media_type: PayloadMediaType
 
     model_config = ConfigDict(frozen=True)
 
@@ -107,14 +97,12 @@ class PayloadField(BaseModel):
 
     Attributes:
         name: The name of the inline column.
-        media_type: The media type of the column's values.
         nullable: Whether the inline column accepts NULL. An offloaded value
             leaves NULL there, or an empty string in a NOT NULL column, which
             no JSON parser accepts.
     """
 
     name: str
-    media_type: PayloadMediaType
     nullable: bool
 
     model_config = ConfigDict(frozen=True)
@@ -192,7 +180,7 @@ def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:
         The inline payload values.
     """
     return [
-        PayloadValue(text=text, media_type=field.media_type)
+        PayloadValue(text=text)
         for schema in schemas
         for field in schema.PAYLOAD_FIELDS
         if (text := field.get_inline_text(schema)) is not None

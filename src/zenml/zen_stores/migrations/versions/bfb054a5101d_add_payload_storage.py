@@ -62,15 +62,12 @@ def upgrade() -> None:
         "blob",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("sha256", sa.String(length=64), nullable=False),
-        sa.Column("media_type", sa.String(length=255), nullable=False),
         sa.Column("codec", sa.String(length=16), nullable=False),
         sa.Column("size", sa.BigInteger(), nullable=False),
         sa.Column("stored_in", sa.String(length=16), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "sha256", "media_type", name="unique_blob_sha256_media_type"
-        ),
+        sa.UniqueConstraint("sha256", name="unique_blob_sha256"),
     )
     op.create_index("ix_blob_stored_in", "blob", ["stored_in"])
 

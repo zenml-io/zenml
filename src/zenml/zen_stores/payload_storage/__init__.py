@@ -27,7 +27,6 @@ from zenml.zen_stores.payload_storage.config import (
 from zenml.zen_stores.payload_storage.payloads import (
     UNRESOLVED,
     PayloadField,
-    PayloadMediaType,
     PayloadSchema,
     PayloadValue,
     ReadsPayloads,
@@ -43,7 +42,6 @@ __all__ = [
     "UNRESOLVED",
     "PayloadBackendType",
     "PayloadField",
-    "PayloadMediaType",
     "PayloadSchema",
     "PayloadStorageConfiguration",
     "PayloadValue",

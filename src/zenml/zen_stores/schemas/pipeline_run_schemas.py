@@ -74,7 +74,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadField,
-    PayloadMediaType,
     PayloadValue,
     ResolvedPayloads,
     get_blob_ids,
@@ -172,13 +171,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     orchestrator_environment_blob_id: Optional[UUID] = None
 
-    ORCHESTRATOR_ENVIRONMENT: ClassVar[PayloadField] = PayloadField(
-        name="orchestrator_environment",
-        media_type=PayloadMediaType.JSON,
-        nullable=True,
-    )
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        ORCHESTRATOR_ENVIRONMENT,
+        PayloadField(name="orchestrator_environment", nullable=True),
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
@@ -617,10 +611,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "database. Skipping."
             )
             orchestrator_environment = "{}"
-        return PayloadValue(
-            text=orchestrator_environment,
-            media_type=PipelineRunSchema.ORCHESTRATOR_ENVIRONMENT.media_type,
-        )
+        return PayloadValue(text=orchestrator_environment)
 
     def get_trigger_execution_info(self) -> Optional[TriggerExecutionInfo]:
         """Get the information of the trigger execution that started the run.

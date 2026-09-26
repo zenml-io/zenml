@@ -61,7 +61,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadField,
-    PayloadMediaType,
     PayloadValue,
     ResolvedPayloads,
     get_blob_ids,
@@ -165,15 +164,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         default=None,
     )
 
-    SOURCE_CODE: ClassVar[PayloadField] = PayloadField(
-        name="source_code", media_type=PayloadMediaType.TEXT, nullable=True
-    )
-    DOCSTRING: ClassVar[PayloadField] = PayloadField(
-        name="docstring", media_type=PayloadMediaType.TEXT, nullable=True
-    )
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        SOURCE_CODE,
-        DOCSTRING,
+        PayloadField(name="source_code", nullable=True),
+        PayloadField(name="docstring", nullable=True),
     )
 
     # Foreign keys
@@ -442,11 +435,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The payload values, as `from_request` stores them.
         """
         return [
-            PayloadValue(text=text, media_type=field.media_type)
-            for field, text in (
-                (StepRunSchema.SOURCE_CODE, request.source_code),
-                (StepRunSchema.DOCSTRING, request.docstring),
-            )
+            PayloadValue(text=text)
+            for text in (request.source_code, request.docstring)
             if text is not None
         ]
 

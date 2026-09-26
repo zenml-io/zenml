@@ -1485,7 +1485,7 @@ class SqlZenStore(BaseZenStore):
             return UNRESOLVED
         # Blob IDs are not even collected without any backend, where nothing
         # is offloaded; see `UnconfiguredPayloads`.
-        if not self.payload_store.has_backends:
+        if not self.payload_store.has_backend:
             return UnconfiguredPayloads()
         values = offloaded_payloads.values if offloaded_payloads else {}
         missing = {
@@ -1882,7 +1882,7 @@ class SqlZenStore(BaseZenStore):
         # Stores opened only to run migrations, such as by Alembic, can
         # predate the payload tables.
         if not self.skip_migrations:
-            self._payload_store.verify_backends()
+            self._payload_store.verify_backend()
 
         secrets_store_config = self.config.secrets_store
 
@@ -7786,7 +7786,7 @@ class SqlZenStore(BaseZenStore):
             # setup did not finish. The orchestrator environment is only
             # offloaded once no existing run was found for it.
             snapshot_blob_ids: List[Optional[UUID]] = []
-            if self.payload_store.has_backends:
+            if self.payload_store.has_backend:
                 snapshot_blob_ids = self._get_run_snapshot_blob_ids(
                     pipeline_run, session=session
                 )

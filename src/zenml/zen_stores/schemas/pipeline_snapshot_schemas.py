@@ -54,7 +54,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadField,
-    PayloadMediaType,
     ResolvedPayloads,
     get_blob_ids,
     read_payload,
@@ -164,22 +163,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
         PayloadField(
             name="pipeline_configuration",
-            media_type=PayloadMediaType.JSON,
             nullable=False,
         ),
         PayloadField(
             name="client_environment",
-            media_type=PayloadMediaType.JSON,
             nullable=False,
         ),
         PayloadField(
             name="pipeline_spec",
-            media_type=PayloadMediaType.JSON,
             nullable=True,
         ),
-        PayloadField(
-            name="source_code", media_type=PayloadMediaType.TEXT, nullable=True
-        ),
+        PayloadField(name="source_code", nullable=True),
     )
 
     # Foreign keys
@@ -1001,9 +995,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
     config_blob_id: Optional[UUID] = None
 
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        PayloadField(
-            name="config", media_type=PayloadMediaType.JSON, nullable=False
-        ),
+        PayloadField(name="config", nullable=False),
     )
 
     snapshot_id: UUID = build_foreign_key_field(

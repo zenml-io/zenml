@@ -161,19 +161,18 @@ Returns:
 {{- fail (printf "zenml.database.payloadStorage.cacheSize must be a whole number of bytes, 0 or more, not `%v`." .cacheSize) }}
 {{- end }}
 offload_enabled: {{ .enabled }}
-write_backend: {{ .backend }}
-backends:
-  {{ .backend }}:
-    path: {{ .path | quote }}
-    {{- if or .region .endpointUrl }}
-    client_kwargs:
-      {{- if .region }}
-      region_name: {{ .region | quote }}
-      {{- end }}
-      {{- if .endpointUrl }}
-      endpoint_url: {{ .endpointUrl | quote }}
-      {{- end }}
+backend: {{ .backend }}
+backend_config:
+  path: {{ .path | quote }}
+  {{- if or .region .endpointUrl }}
+  client_kwargs:
+    {{- if .region }}
+    region_name: {{ .region | quote }}
     {{- end }}
+    {{- if .endpointUrl }}
+    endpoint_url: {{ .endpointUrl | quote }}
+    {{- end }}
+  {{- end }}
 cache_size: {{ int64 .cacheSize }}
 timeout: {{ .timeout }}
 {{- end }}
