@@ -55,6 +55,8 @@ from zenml.exceptions import (
     IllegalOperationError,
     MaxConcurrentTasksError,
     OAuthError,
+    PayloadStorageError,
+    PayloadStorageUnavailableError,
 )
 from zenml.logger import get_logger, get_logging_context, logging_context
 from zenml.models.v2.base.scoped import ProjectScopedFilter
@@ -577,6 +579,32 @@ def initialize_zen_store() -> None:
 
 
 _server_config: Optional[ServerConfiguration] = None
+
+
+def get_with_metadata_if_available(
+    get_method: Callable[..., R], entity_id: UUID
+) -> R:
+    """Get an entity whose change is already committed, for a response.
+
+    Its metadata can carry payloads that live in external storage. If that
+    storage fails, the entity is returned without its metadata: failing the
+    response would make clients retry a change that already happened.
+
+    Args:
+        get_method: The store method that gets the entity; it must accept
+            `hydrate`.
+        entity_id: The ID of the entity.
+
+    Returns:
+        The entity, with its metadata unless payload storage failed.
+    """
+    try:
+        return get_method(entity_id, hydrate=True)
+    except (PayloadStorageError, PayloadStorageUnavailableError):
+        logger.exception(
+            "Failed to load the metadata of %s for the response.", entity_id
+        )
+        return get_method(entity_id, hydrate=False)
 
 
 def server_config() -> ServerConfiguration:

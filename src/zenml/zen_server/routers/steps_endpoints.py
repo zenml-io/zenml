@@ -51,6 +51,7 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    get_permission_hook,
     verify_permissions_and_create_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
@@ -59,12 +60,11 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permission,
-    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    get_with_metadata_if_available,
     make_dependable,
-    server_config,
     set_filter_project_scope,
     zen_store,
 )
@@ -159,19 +159,21 @@ def _get_step_with_permission(
     Returns:
         The fetched step.
     """
-
-    def _verify(step: StepRunResponse) -> None:
-        pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
-        verify_permission_for_model(pipeline_run, action=action)
-
-    if hydrate and server_config().rbac_enabled:
+    verify = get_permission_hook(
+        action,
+        get_permission_model=lambda step: zen_store().get_run(
+            step.pipeline_run_id, hydrate=False
+        ),
+    )
+    if hydrate:
         # The metadata of a step carries payloads that can live in external
         # storage, so the caller is authorized before it is loaded.
         return zen_store().get_run_step(
-            step_id, hydrate=True, pre_read_hook=_verify
+            step_id, hydrate=True, pre_read_hook=verify
         )
-    step = zen_store().get_run_step(step_id, hydrate=hydrate)
-    _verify(step)
+    step = zen_store().get_run_step(step_id, hydrate=False)
+    if verify:
+        verify(step)
     return step
 
 
@@ -207,7 +209,7 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
-    hydrate: bool = True,
+    hydrate: Optional[bool] = None,
     _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Updates a step.
@@ -216,9 +218,10 @@ def update_step(
         step_id: ID of the step.
         step_model: Step model to use for the update.
         hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response. Defaults to true,
-            as before the flag existed; ZenML clients always set it, and
-            status updates skip the metadata.
+            by including metadata fields in the response. ZenML clients
+            always set it, and status updates skip the metadata. Clients
+            from before the flag omit it: they get the metadata when payload
+            storage allows, but their update never depends on it.
 
     Returns:
         The updated step model.
@@ -226,8 +229,14 @@ def update_step(
     _get_step_with_permission(step_id, Action.UPDATE)
 
     updated_step = zen_store().update_run_step(
-        step_run_id=step_id, step_run_update=step_model, hydrate=hydrate
+        step_run_id=step_id,
+        step_run_update=step_model,
+        hydrate=bool(hydrate),
     )
+    if hydrate is None:
+        updated_step = get_with_metadata_if_available(
+            zen_store().get_run_step, step_id
+        )
     return dehydrate_response_model(updated_step)
 
 

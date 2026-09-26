@@ -199,7 +199,7 @@ def verify_permissions_and_get_or_create_entity(
             check_entitlement(feature=resource_type)
 
     model, created = get_or_create_method(
-        request_model, _pre_creation_hook, get_read_permission_hook()
+        request_model, _pre_creation_hook, get_permission_hook(Action.READ)
     )
 
     if created and resource_type and needs_usage_increment:
@@ -208,17 +208,19 @@ def verify_permissions_and_get_or_create_entity(
     return dehydrate_response_model(model), created
 
 
-def _verify_read_permission(model: AnyResponse) -> None:
-    """Verify that the caller may read an entity.
+def get_permission_hook(
+    *actions: Action,
+    get_permission_model: Optional[Callable[[Any], Any]] = None,
+) -> Optional[Callable[[Any], None]]:
+    """Get a `pre_read_hook` that verifies the caller may act on an entity.
+
+    Store getters call it with the entity without its metadata, before they
+    resolve the payloads the metadata carries.
 
     Args:
-        model: The entity.
-    """
-    verify_permission_for_model(model, action=Action.READ)
-
-
-def get_read_permission_hook() -> Optional[Callable[[Any], None]]:
-    """Get the `pre_read_hook` that verifies the caller may read an entity.
+        *actions: The actions the caller must be allowed.
+        get_permission_model: Gets the model whose permissions apply, such as
+            the pipeline run of a step run. Defaults to the entity itself.
 
     Returns:
         The hook, or None without RBAC: nothing is verified then, and store
@@ -226,7 +228,15 @@ def get_read_permission_hook() -> Optional[Callable[[Any], None]]:
     """
     if not server_config().rbac_enabled:
         return None
-    return _verify_read_permission
+
+    def _verify(model: Any) -> None:
+        permission_model = (
+            get_permission_model(model) if get_permission_model else model
+        )
+        for action in actions:
+            verify_permission_for_model(permission_model, action=action)
+
+    return _verify
 
 
 def verify_permissions_and_get_entity(
@@ -272,11 +282,16 @@ def verify_permissions_and_get_entity_with_payloads(
     Returns:
         A model of the fetched entity.
     """
+    if not hydrate:
+        # Nothing is resolved without metadata, so one plain fetch is enough.
+        return verify_permissions_and_get_entity(
+            id, get_method, hydrate=False, **get_method_kwargs
+        )
     return dehydrate_response_model(
         get_method(
             id,
-            hydrate=hydrate,
-            pre_read_hook=get_read_permission_hook(),
+            hydrate=True,
+            pre_read_hook=get_permission_hook(Action.READ),
             **get_method_kwargs,
         )
     )

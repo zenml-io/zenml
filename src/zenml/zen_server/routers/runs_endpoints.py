@@ -88,6 +88,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
 )
 from zenml.zen_server.logs import fetch_runner_logs
 from zenml.zen_server.rbac.endpoint_utils import (
+    get_permission_hook,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_get_entity_with_payloads,
@@ -124,6 +125,7 @@ from zenml.zen_server.streaming.types import RESERVED_STREAM_EVENT_KINDS
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
+    get_with_metadata_if_available,
     make_dependable,
     server_config,
     set_filter_project_scope,
@@ -344,7 +346,7 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdate,
-    hydrate: bool = True,
+    hydrate: Optional[bool] = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Updates a run.
@@ -353,20 +355,26 @@ def update_run(
         run_id: ID of the run.
         run_model: Run model to use for the update.
         hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response. Defaults to true,
-            as before the flag existed; ZenML clients always set it, and
-            status updates skip the metadata.
+            by including metadata fields in the response. ZenML clients
+            always set it, and status updates skip the metadata. Clients
+            from before the flag omit it: they get the metadata when payload
+            storage allows, but their update never depends on it.
 
     Returns:
         The updated run model.
     """
-    return verify_permissions_and_update_entity(
+    run = verify_permissions_and_update_entity(
         id=run_id,
         update_model=run_model,
         get_method=zen_store().get_run,
         update_method=zen_store().update_run,
-        hydrate=hydrate,
+        hydrate=bool(hydrate),
     )
+    if hydrate is None:
+        run = dehydrate_response_model(
+            get_with_metadata_if_available(zen_store().get_run, run_id)
+        )
+    return run
 
 
 @router.delete(
@@ -541,14 +549,13 @@ def stop_run(
         graceful: If True, allows for graceful shutdown where possible.
             If False, forces immediate termination. Default is False.
     """
-
     # The metadata of the run carries payloads that can live in external
     # storage, so the caller is authorized before it is loaded.
-    def _verify(run: PipelineRunResponse) -> None:
-        verify_permission_for_model(run, action=Action.READ)
-        verify_permission_for_model(run, action=Action.UPDATE)
-
-    run = zen_store().get_run(run_id, hydrate=True, pre_read_hook=_verify)
+    run = zen_store().get_run(
+        run_id,
+        hydrate=True,
+        pre_read_hook=get_permission_hook(Action.READ, Action.UPDATE),
+    )
     dehydrate_response_model(run)
     run_utils.stop_run(run=run, graceful=graceful)
 

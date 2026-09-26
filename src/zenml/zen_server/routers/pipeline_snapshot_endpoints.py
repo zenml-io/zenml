@@ -62,7 +62,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
-    get_read_permission_hook,
+    get_permission_hook,
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity_with_payloads,
@@ -372,7 +372,7 @@ def get_snapshot_code_download_token(
         hydrate=True,
         step_configuration_filter=[],
         include_config_schema=False,
-        pre_read_hook=get_read_permission_hook(),
+        pre_read_hook=get_permission_hook(Action.READ),
     )
     if not snapshot.stack:
         raise ValueError(f"Snapshot {snapshot_id} has no stack.")
