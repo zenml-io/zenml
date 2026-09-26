@@ -71,6 +71,26 @@ class PayloadCache:
         self._entries[blob_id] = value
         self._size += size
 
+    def get_cached(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
+        """Get the cached payload values, without loading any.
+
+        Values that another caller is loading are left out, so that nothing
+        waits for storage.
+
+        Args:
+            blob_ids: The blobs to get.
+
+        Returns:
+            The cached values by blob ID.
+        """
+        values: Dict[UUID, str] = {}
+        with self._lock:
+            for blob_id in blob_ids:
+                if (value := self._entries.get(blob_id)) is not None:
+                    self._entries.move_to_end(blob_id)
+                    values[blob_id] = value
+        return values
+
     def get_many(
         self,
         blob_ids: Collection[UUID],

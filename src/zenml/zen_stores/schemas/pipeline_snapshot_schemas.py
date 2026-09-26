@@ -360,8 +360,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """Get step configurations for the snapshot.
 
         Args:
-            include: List of step names to include. If not given, all step
-                configurations will be included.
+            include: The names of the steps to include, or None for all of
+                them.
 
         Raises:
             RuntimeError: If no session for the schema exists.
@@ -369,6 +369,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             List of step configurations.
         """
+        if include == []:
+            return []
         if session := object_session(self):
             query = (
                 select(StepConfigurationSchema)
@@ -376,7 +378,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 .order_by(asc(StepConfigurationSchema.index))
             )
 
-            if include:
+            if include is not None:
                 query = query.where(
                     col(StepConfigurationSchema.name).in_(include)
                 )
@@ -427,6 +429,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             include_config_schema and self.build and self.build.stack_id
         )
 
+    def get_run_payload_blob_ids(self) -> List[Optional[UUID]]:
+        """Get the blobs of this snapshot that conversions of its runs read.
+
+        Returns:
+            The blob IDs.
+        """
+        return [
+            self.pipeline_configuration_blob_id,
+            self.client_environment_blob_id,
+        ]
+
     def get_payload_blob_ids(
         self,
         step_configuration_filter: Optional[List[str]] = None,
@@ -440,40 +453,31 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             include_config_schema: Whether to include the config schema, as
                 passed to `to_model`.
 
-        Raises:
-            RuntimeError: If no session for the schema exists.
-
         Returns:
             The blob IDs.
         """
-        if self._builds_config_template(include_config_schema):
-            step_configuration_filter = None
-
-        if session := object_session(self):
-            query = select(StepConfigurationSchema.config_blob_id).where(
-                StepConfigurationSchema.snapshot_id == self.id
-            )
-            if step_configuration_filter:
-                query = query.where(
-                    col(StepConfigurationSchema.name).in_(
-                        step_configuration_filter
-                    )
-                )
-            return [*get_blob_ids(self), *session.execute(query).scalars()]
-
-        raise RuntimeError("Missing DB session to fetch step configurations.")
+        return self.get_page_payload_blob_ids(
+            [self],
+            include=None
+            if self._builds_config_template(include_config_schema)
+            else step_configuration_filter,
+        )
 
     @staticmethod
     def get_page_payload_blob_ids(
         snapshots: Sequence["PipelineSnapshotSchema"],
+        include: Optional[List[str]] = None,
     ) -> List[Optional[UUID]]:
         """Get the blobs that converting a page of snapshots with metadata reads.
 
-        Like `get_payload_blob_ids` for each snapshot of a page with all its
-        step configurations, but with one query for the whole page.
+        Like `get_payload_blob_ids` for each snapshot of a page, but with one
+        query for the whole page.
 
         Args:
             snapshots: The snapshots of the page.
+            include: The names of the steps whose configurations are
+                converted, or None for all of them, as in
+                `get_step_configurations`.
 
         Raises:
             RuntimeError: If no session for the schemas exists.
@@ -483,15 +487,20 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """
         if not snapshots:
             return []
+        blob_ids = get_blob_ids(*snapshots)
+        if include == []:
+            return blob_ids
         if session := object_session(snapshots[0]):
-            step_configuration_blob_ids = session.execute(
-                select(StepConfigurationSchema.config_blob_id).where(
-                    col(StepConfigurationSchema.snapshot_id).in_(
-                        [snapshot.id for snapshot in snapshots]
-                    )
+            query = select(StepConfigurationSchema.config_blob_id).where(
+                col(StepConfigurationSchema.snapshot_id).in_(
+                    [snapshot.id for snapshot in snapshots]
                 )
-            ).scalars()
-            return [*get_blob_ids(*snapshots), *step_configuration_blob_ids]
+            )
+            if include is not None:
+                query = query.where(
+                    col(StepConfigurationSchema.name).in_(include)
+                )
+            return [*blob_ids, *session.execute(query).scalars()]
 
         raise RuntimeError("Missing DB session to fetch step configurations.")
 
@@ -812,12 +821,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
         metadata = None
         if include_metadata:
-            step_configuration_schemas = self.get_step_configurations(
-                include=step_configuration_filter
-            )
             pipeline_configuration = self.get_pipeline_configuration(payloads)
             step_configurations = {}
-            for step_configuration in step_configuration_schemas:
+            for step_configuration in self.get_step_configurations(
+                include=step_configuration_filter
+            ):
                 step_configurations[step_configuration.name] = (
                     step_configuration.to_step(
                         pipeline_configuration,
@@ -842,20 +850,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             if self._builds_config_template(include_config_schema):
                 from zenml.zen_stores import template_utils
 
-                if step_configuration_filter:
+                if step_configuration_filter is not None:
                     # If only a subset of step configurations is requested,
                     # we still need to get all of them to generate the config
                     # template and schema
-                    all_step_configuration_schemas = (
-                        self.get_step_configurations()
-                    )
                     all_step_configurations = {
                         step_configuration.name: step_configuration.to_step(
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
                             payloads=payloads,
                         )
-                        for step_configuration in all_step_configuration_schemas
+                        for step_configuration in self.get_step_configurations()
                     }
                 else:
                     all_step_configurations = step_configurations
@@ -1018,6 +1023,22 @@ class StepConfigurationSchema(BaseSchema, table=True):
         nullable=True,
     )
 
+    def get_config(
+        self, payloads: ResolvedPayloads = UNRESOLVED
+    ) -> Dict[str, Any]:
+        """Get the stored step configuration, not merged with any other.
+
+        Args:
+            payloads: The resolver of offloaded payloads.
+
+        Returns:
+            The stored configuration.
+        """
+        config: Dict[str, Any] = json.loads(
+            read_payload(self.config, self.config_blob_id, payloads)
+        )
+        return config
+
     def to_step(
         self,
         pipeline_configuration: PipelineConfiguration,
@@ -1040,9 +1061,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
             The resolved step.
         """
         return Step.from_dict(
-            json.loads(
-                read_payload(self.config, self.config_blob_id, payloads)
-            ),
+            self.get_config(payloads),
             pipeline_configuration=pipeline_configuration,
             exclude_hook_sources=exclude_hook_sources,
         )

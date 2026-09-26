@@ -165,13 +165,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         default=None,
     )
 
+    SOURCE_CODE: ClassVar[PayloadField] = PayloadField(
+        name="source_code", media_type=PayloadMediaType.TEXT, nullable=True
+    )
+    DOCSTRING: ClassVar[PayloadField] = PayloadField(
+        name="docstring", media_type=PayloadMediaType.TEXT, nullable=True
+    )
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        PayloadField(
-            name="source_code", media_type=PayloadMediaType.TEXT, nullable=True
-        ),
-        PayloadField(
-            name="docstring", media_type=PayloadMediaType.TEXT, nullable=True
-        ),
+        SOURCE_CODE,
+        DOCSTRING,
     )
 
     # Foreign keys
@@ -440,8 +442,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The payload values, as `from_request` stores them.
         """
         return [
-            PayloadValue(text=text, media_type=PayloadMediaType.TEXT)
-            for text in (request.source_code, request.docstring)
+            PayloadValue(text=text, media_type=field.media_type)
+            for field, text in (
+                (StepRunSchema.SOURCE_CODE, request.source_code),
+                (StepRunSchema.DOCSTRING, request.docstring),
+            )
             if text is not None
         ]
 
@@ -451,13 +456,31 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The blob IDs.
         """
-        config_schema = self.dynamic_config or self.static_config
         return [
             *get_blob_ids(self),
+            *self.get_configuration_blob_ids(
+                self.dynamic_config or self.static_config, self.snapshot
+            ),
+        ]
+
+    @staticmethod
+    def get_configuration_blob_ids(
+        config_schema: Optional["StepConfigurationSchema"],
+        snapshot: Optional["PipelineSnapshotSchema"],
+    ) -> List[Optional[UUID]]:
+        """Get the blobs that resolving a step's configuration reads.
+
+        Args:
+            config_schema: The step's static or dynamic configuration.
+            snapshot: The snapshot of the step's run, whose pipeline
+                configuration the step configuration is merged with.
+
+        Returns:
+            The blob IDs.
+        """
+        return [
             config_schema.config_blob_id if config_schema else None,
-            self.snapshot.pipeline_configuration_blob_id
-            if self.snapshot
-            else None,
+            snapshot.pipeline_configuration_blob_id if snapshot else None,
         ]
 
     def get_step_configuration(

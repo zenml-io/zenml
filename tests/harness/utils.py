@@ -19,7 +19,6 @@ ZenML test framework. Most of these functions can be used to create fixtures
 that are used in the tests.
 """
 
-import json
 import logging
 import os
 import shutil
@@ -102,23 +101,26 @@ def local_s3_payload_storage(server: "ThreadedMotoServer", path: str) -> str:
     Returns:
         The settings, as the JSON value of `ZENML_STORE_PAYLOAD_STORAGE`.
     """
-    return json.dumps(
-        {
-            "offload_enabled": True,
-            "write_backend": "s3",
-            "backends": {
-                "s3": {
-                    "path": path,
-                    "key": "test",
-                    "secret": "test",
-                    "client_kwargs": {
-                        "endpoint_url": _local_s3_endpoint(server),
-                        "region_name": "us-east-1",
-                    },
-                }
-            },
-        }
+    from zenml.zen_stores.payload_storage import (
+        PayloadBackendType,
+        PayloadStorageConfiguration,
     )
+
+    return PayloadStorageConfiguration(
+        offload_enabled=True,
+        write_backend=PayloadBackendType.S3,
+        backends={
+            PayloadBackendType.S3: {
+                "path": path,
+                "key": "test",
+                "secret": "test",
+                "client_kwargs": {
+                    "endpoint_url": _local_s3_endpoint(server),
+                    "region_name": "us-east-1",
+                },
+            }
+        },
+    ).model_dump_json()
 
 
 def cleanup_folder(path: str) -> None:

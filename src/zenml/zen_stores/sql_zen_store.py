@@ -429,12 +429,12 @@ from zenml.zen_stores.migrations.alembic import (
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
     PayloadStorageConfiguration,
+    PayloadValue,
     ReadsPayloads,
     ResolvedPayloads,
     UnconfiguredPayloads,
     get_blob_ids,
     get_inline_payloads,
-    read_payload,
 )
 from zenml.zen_stores.payload_storage.payload_store import (
     OffloadedPayloads,
@@ -1418,15 +1418,15 @@ class SqlZenStore(BaseZenStore):
     def _resolve_payloads(
         self,
         session: Session,
-        get_blob_ids: Callable[[], Iterable[Optional[UUID]]],
+        collect_blob_ids: Callable[[], Iterable[Optional[UUID]]],
         offloaded_payloads: Optional[OffloadedPayloads] = None,
         hydrate: bool = True,
     ) -> ResolvedPayloads:
         """Resolve the offloaded payloads that the conversions of a session read.
 
         Payload storage is only read outside of a transaction: if blobs remain
-        to be read after the offloaded values, the read transaction of the
-        session ends first, and the objects it loaded stay usable. Methods
+        to be read after the offloaded and cached values, the read transaction
+        of the session ends first, and the objects it loaded stay usable. Methods
         that write call this before any write, so that a storage failure never
         fails a request whose change is already committed; an update changes
         no payload.
@@ -1434,8 +1434,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             session: The session of the conversions, which must not hold any
                 pending change.
-            get_blob_ids: Returns the blobs the conversions read. None entries
-                are ignored.
+            collect_blob_ids: Returns the blobs the conversions read. None
+                entries are ignored.
             offloaded_payloads: Payloads just offloaded, which are resolved
                 from memory.
             hydrate: Whether the conversions include metadata. Conversions
@@ -1446,20 +1446,43 @@ class SqlZenStore(BaseZenStore):
         """
         if not hydrate:
             return UNRESOLVED
-        values = offloaded_payloads.values if offloaded_payloads else {}
-        # Blob IDs are not even collected without any backend; see
-        # `UnconfiguredPayloads`.
+        # Blob IDs are not even collected without any backend, where nothing
+        # is offloaded; see `UnconfiguredPayloads`.
         if not self.payload_store.has_backends:
-            return UnconfiguredPayloads(values)
+            return UnconfiguredPayloads()
+        values = offloaded_payloads.values if offloaded_payloads else {}
         missing = {
             blob_id
-            for blob_id in get_blob_ids()
+            for blob_id in collect_blob_ids()
             if blob_id is not None and blob_id not in values
         }
+        values.update(self.payload_store.get_cached(missing))
+        missing.difference_update(values)
         if missing:
             self._end_read_transaction(session)
             values.update(self.payload_store.load(missing))
         return ResolvedPayloads(values)
+
+    def _offload_payloads(
+        self, session: Session, values: List[PayloadValue]
+    ) -> OffloadedPayloads:
+        """Offload the payload values of new rows before they are written.
+
+        Payload storage is only written outside of a transaction, so the read
+        transaction of the session ends first when anything is offloaded, and
+        the objects it loaded stay usable.
+
+        Args:
+            session: The session that will write the rows, which must not hold
+                any pending change.
+            values: The payload values of the new rows.
+
+        Returns:
+            The offloaded payloads, which the new rows reference.
+        """
+        if values and self.payload_store.offload_enabled:
+            self._end_read_transaction(session)
+        return self.payload_store.offload(values)
 
     def _resolve_page_payloads(
         self,
@@ -5650,10 +5673,6 @@ class SqlZenStore(BaseZenStore):
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
 
-            # Ends the read transaction: the rows are serialized and their
-            # payloads offloaded while no transaction is open, before the
-            # first write.
-            session.commit()
             new_snapshot = PipelineSnapshotSchema.from_request(
                 snapshot, code_reference_id=None
             )
@@ -5676,8 +5695,11 @@ class SqlZenStore(BaseZenStore):
                     snapshot.step_configurations.items()
                 )
             ]
-            offloaded_payloads = self.payload_store.offload(
-                get_inline_payloads(new_snapshot, *step_configurations)
+            # Before the first write, so that a storage failure leaves nothing
+            # behind.
+            offloaded_payloads = self._offload_payloads(
+                session,
+                get_inline_payloads(new_snapshot, *step_configurations),
             )
 
             if isinstance(snapshot.name, str) and snapshot.replace:
@@ -5729,11 +5751,8 @@ class SqlZenStore(BaseZenStore):
             return new_snapshot.to_model(
                 include_metadata=True,
                 include_resources=True,
-                payloads=self._resolve_payloads(
-                    session,
-                    lambda: get_blob_ids(new_snapshot, *step_configurations),
-                    offloaded_payloads=offloaded_payloads,
-                ),
+                # Every blob the new rows reference was just offloaded.
+                payloads=ResolvedPayloads(offloaded_payloads.values),
             )
 
     def get_snapshot(
@@ -6806,10 +6825,11 @@ class SqlZenStore(BaseZenStore):
             }
 
             # Ignore static config templates for dynamic pipeline DAGs
-            step_configurations = (
+            step_configurations: Dict[str, StepConfigurationSchema] = (
                 {
                     name: step_run.dynamic_config
                     for name, step_run in step_runs.items()
+                    if step_run.dynamic_config
                 }
                 if snapshot.is_dynamic
                 else {
@@ -6821,7 +6841,7 @@ class SqlZenStore(BaseZenStore):
                 session,
                 lambda: [
                     snapshot.pipeline_configuration_blob_id,
-                    *get_blob_ids(*step_configurations.values()),  # type: ignore[arg-type]
+                    *get_blob_ids(*step_configurations.values()),
                 ],
             )
             pipeline_configuration = snapshot.get_pipeline_configuration(
@@ -6832,13 +6852,7 @@ class SqlZenStore(BaseZenStore):
             )
             steps = {
                 name: DAGStepView.from_dict(
-                    json.loads(
-                        read_payload(
-                            config_table.config,  # type: ignore[union-attr]
-                            config_table.config_blob_id,  # type: ignore[union-attr]
-                            payloads,
-                        )
-                    ),
+                    config_table.get_config(payloads),
                     substitutions=pipeline_configuration.substitutions,
                 )
                 for name, config_table in step_configurations.items()
@@ -7673,6 +7687,37 @@ class SqlZenStore(BaseZenStore):
             ),
         )
 
+    def _get_run_snapshot_blob_ids(
+        self, pipeline_run: PipelineRunRequest, session: Session
+    ) -> List[Optional[UUID]]:
+        """Get the blobs of a new run's snapshot that its response reads.
+
+        The snapshot is looked up in the run's project, so that a snapshot of
+        another project is rejected before any storage work.
+
+        Args:
+            pipeline_run: The run request.
+            session: The session to use.
+
+        Returns:
+            The blob IDs.
+        """
+        snapshot = session.exec(
+            select(PipelineSnapshotSchema)
+            .options(*PipelineSnapshotSchema.defer_large_columns())
+            .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
+            .where(PipelineSnapshotSchema.project_id == pipeline_run.project)
+        ).first()
+        if snapshot is None:
+            # Raises for an unknown snapshot or one of another project.
+            snapshot = self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineSnapshotSchema,
+                reference_id=pipeline_run.snapshot,
+                session=session,
+            )
+        return snapshot.get_run_payload_blob_ids() if snapshot else []
+
     def get_or_create_run(
         self,
         pipeline_run: PipelineRunRequest,
@@ -7724,34 +7769,18 @@ class SqlZenStore(BaseZenStore):
             # locked: a storage failure then never leaves behind a run whose
             # setup did not finish. The orchestrator environment is only
             # offloaded once no existing run was found for it.
-            snapshot_blob_ids = session.exec(
-                select(
-                    PipelineSnapshotSchema.pipeline_configuration_blob_id,
-                    PipelineSnapshotSchema.client_environment_blob_id,
-                )
-                .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
-                .where(
-                    PipelineSnapshotSchema.project_id == pipeline_run.project
-                )
-            ).first()
-            if snapshot_blob_ids is None:
-                # The snapshot is unknown or belongs to another project: the
-                # scoped reference check raises before any storage work. Only
-                # this path loads the whole snapshot row.
-                self._get_reference_schema_by_id(
-                    resource=pipeline_run,
-                    reference_schema=PipelineSnapshotSchema,
-                    reference_id=pipeline_run.snapshot,
-                    session=session,
-                )
+            snapshot_blob_ids: List[Optional[UUID]] = []
             if self.payload_store.has_backends:
-                self._end_read_transaction(session)
-            offloaded_payloads = self.payload_store.offload(
-                [PipelineRunSchema.get_orchestrator_environment(pipeline_run)]
+                snapshot_blob_ids = self._get_run_snapshot_blob_ids(
+                    pipeline_run, session=session
+                )
+            offloaded_payloads = self._offload_payloads(
+                session,
+                [PipelineRunSchema.get_orchestrator_environment(pipeline_run)],
             )
             payloads = self._resolve_payloads(
                 session,
-                lambda: snapshot_blob_ids or [],
+                lambda: snapshot_blob_ids,
                 offloaded_payloads=offloaded_payloads,
             )
 
@@ -12650,29 +12679,11 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            static_configuration = None
-            if not step_run.dynamic_config:
-                if not run.snapshot:
-                    raise RuntimeError("Pipeline run has no snapshot.")
-                static_configuration = run.snapshot.get_step_configuration(
-                    step_run.name
-                )
-            payload_blob_ids = [
-                run.snapshot.pipeline_configuration_blob_id
-                if run.snapshot
-                else None,
-                static_configuration.config_blob_id
-                if static_configuration
-                else None,
-            ]
-
-            # Release the read locks of the previous queries before we try to
-            # acquire more exclusive locks. Payload storage is used in
-            # between, while no transaction is open.
-            session.commit()
-
-            dynamic_configuration = (
-                StepConfigurationSchema(
+            # A dynamic step brings its own configuration, which is created
+            # with the step run; a static one uses its snapshot's.
+            dynamic_configuration: Optional[StepConfigurationSchema] = None
+            if step_run.dynamic_config:
+                dynamic_configuration = StepConfigurationSchema(
                     index=0,
                     name=step_run.name,
                     # Don't include the merged config in the step
@@ -12682,9 +12693,19 @@ class SqlZenStore(BaseZenStore):
                         exclude={"config"}
                     ),
                 )
-                if step_run.dynamic_config
-                else None
-            )
+                config_schema = dynamic_configuration
+            elif run.snapshot:
+                config_schema = run.snapshot.get_step_configuration(
+                    step_run.name
+                )
+            else:
+                raise RuntimeError("Pipeline run has no snapshot.")
+
+            # Release the read locks of the previous queries before we try to
+            # acquire more exclusive locks. Payload storage is used in
+            # between, while no transaction is open.
+            self._end_read_transaction(session)
+
             offloaded_payloads = self.payload_store.offload(
                 StepRunSchema.get_request_payloads(step_run)
                 + (
@@ -12695,23 +12716,22 @@ class SqlZenStore(BaseZenStore):
             )
             payloads = self._resolve_payloads(
                 session,
-                lambda: payload_blob_ids,
+                lambda: StepRunSchema.get_configuration_blob_ids(
+                    config_schema, run.snapshot
+                ),
                 offloaded_payloads=offloaded_payloads,
             )
 
             # Parsing the pipeline configuration is expensive, so it is parsed
             # once and reused for everything this step creation needs.
             pipeline_configuration = run.get_pipeline_configuration(payloads)
-            if static_configuration:
-                assert run.snapshot
-                step_config = static_configuration.to_step(
-                    pipeline_configuration,
-                    exclude_hook_sources=run.snapshot.is_dynamic,
-                    payloads=payloads,
-                )
-            else:
-                assert step_run.dynamic_config
-                step_config = step_run.dynamic_config
+            step_config = step_run.dynamic_config or config_schema.to_step(
+                pipeline_configuration,
+                exclude_hook_sources=bool(
+                    run.snapshot and run.snapshot.is_dynamic
+                ),
+                payloads=payloads,
+            )
             resource_runtime: Optional[StepRuntime] = None
             resource_request_heartbeat_enabled: Optional[bool] = None
             if (
@@ -13961,7 +13981,6 @@ class SqlZenStore(BaseZenStore):
             if pipeline_run.snapshot_id
             else None
         )
-        trigger_execution = pipeline_run.trigger_execution
         return PipelineRunStatusUpdate(
             run=pipeline_run.to_model(
                 include_metadata=False, include_resources=False
@@ -13969,13 +13988,7 @@ class SqlZenStore(BaseZenStore):
             previous_status=previous_status,
             snapshot_id=pipeline_run.snapshot_id,
             source_snapshot_id=source_snapshot_id,
-            trigger_execution_info=(
-                TriggerExecutionInfo.model_validate_json(
-                    trigger_execution.info
-                )
-                if trigger_execution and trigger_execution.info
-                else None
-            ),
+            trigger_execution_info=pipeline_run.get_trigger_execution_info(),
         )
 
     def _update_pipeline_run_status(

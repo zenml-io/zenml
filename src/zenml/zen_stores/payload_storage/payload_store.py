@@ -195,6 +195,15 @@ class PayloadStore:
         )
 
     @property
+    def offload_enabled(self) -> bool:
+        """Whether new payloads are offloaded to a backend.
+
+        Returns:
+            Whether new payloads are offloaded.
+        """
+        return self._write_backend is not None
+
+    @property
     def has_backends(self) -> bool:
         """Whether any backend is configured, so that blobs can exist.
 
@@ -278,6 +287,17 @@ class PayloadStore:
                 for key, blob_id in blob_ids.items()
             }
         )
+
+    def get_cached(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
+        """Get the values of blobs that this process has cached.
+
+        Args:
+            blob_ids: The blobs to get.
+
+        Returns:
+            The cached values by blob ID, which never needed storage.
+        """
+        return self._cache.get_cached(blob_ids)
 
     def load(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
         """Load the values held by blobs.

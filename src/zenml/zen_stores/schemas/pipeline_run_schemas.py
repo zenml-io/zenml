@@ -63,6 +63,7 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineRunUpdate,
     RunMetadataEntry,
+    TriggerExecutionInfo,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
 from zenml.utils.run_utils import (
@@ -171,12 +172,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     orchestrator_environment_blob_id: Optional[UUID] = None
 
+    ORCHESTRATOR_ENVIRONMENT: ClassVar[PayloadField] = PayloadField(
+        name="orchestrator_environment",
+        media_type=PayloadMediaType.JSON,
+        nullable=True,
+    )
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        PayloadField(
-            name="orchestrator_environment",
-            media_type=PayloadMediaType.JSON,
-            nullable=True,
-        ),
+        ORCHESTRATOR_ENVIRONMENT,
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
@@ -616,8 +618,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
             orchestrator_environment = "{}"
         return PayloadValue(
-            text=orchestrator_environment, media_type=PayloadMediaType.JSON
+            text=orchestrator_environment,
+            media_type=PipelineRunSchema.ORCHESTRATOR_ENVIRONMENT.media_type,
         )
+
+    def get_trigger_execution_info(self) -> Optional[TriggerExecutionInfo]:
+        """Get the information of the trigger execution that started the run.
+
+        Returns:
+            The trigger execution information, if a trigger started the run.
+        """
+        if self.trigger_execution and self.trigger_execution.info:
+            return TriggerExecutionInfo.model_validate_json(
+                self.trigger_execution.info
+            )
+        return None
 
     def get_payload_blob_ids(self) -> List[Optional[UUID]]:
         """Get the blobs that the conversion of this run with metadata reads.
@@ -627,10 +642,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         blob_ids = get_blob_ids(self)
         if self.snapshot:
-            blob_ids += [
-                self.snapshot.pipeline_configuration_blob_id,
-                self.snapshot.client_environment_blob_id,
-            ]
+            blob_ids += self.snapshot.get_run_payload_blob_ids()
         return blob_ids
 
     def get_pipeline_configuration(
@@ -851,9 +863,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 exception_info=json.loads(self.exception_info)
                 if self.exception_info
                 else None,
-                trigger_execution_info=json.loads(self.trigger_execution.info)
-                if self.trigger_execution and self.trigger_execution.info
-                else None,
+                trigger_execution_info=self.get_trigger_execution_info(),
             )
 
         resources = None
