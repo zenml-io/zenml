@@ -484,6 +484,30 @@ def test_denied_read_fails_before_any_payload_is_read(
         reads[entity]()
 
 
+@pytest.mark.parametrize(
+    "schema_class",
+    [PipelineRunSchema, PipelineSnapshotSchema],
+    ids=["run", "snapshot"],
+)
+def test_shared_entity_is_read_without_its_payloads(
+    store: SqlZenStore, s3_server: ThreadedMotoServer, schema_class: Any
+) -> None:
+    """Sharing an entity reads it without the payloads of its metadata.
+
+    Storage is down, so the entity must be read without any payload.
+    """
+    cold = _open_store(store, cache_size=0, timeout=5)
+    run = _start_run(cold)
+    entity_id = (
+        run.id if schema_class is PipelineRunSchema else run.snapshot.id
+    )
+    s3_server.stop()
+
+    entity = cold.get_entity_by_id(entity_id, schema_class)
+
+    assert entity is not None and entity.id == entity_id
+
+
 def test_prepared_run_that_cannot_start_is_failed(
     store: SqlZenStore,
     s3_server: ThreadedMotoServer,

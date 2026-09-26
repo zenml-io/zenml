@@ -15018,9 +15018,12 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
+                # Without metadata, which for some entities carries payloads
+                # that nothing resolves here; callers need the body and
+                # resources.
                 return cast(
                     AnyIdentifiedResponse,
-                    to_model(include_metadata=True, include_resources=True),
+                    to_model(include_metadata=False, include_resources=True),
                 )
             else:
                 raise RuntimeError("Unable to convert schema to model.")
