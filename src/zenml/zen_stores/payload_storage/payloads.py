@@ -202,6 +202,65 @@ def get_blob_ids(*schemas: PayloadSchema) -> List[Optional[UUID]]:
     ]
 
 
+class OffloadedPayloads:
+    """Payload values offloaded ahead of the transaction referencing them."""
+
+    def __init__(
+        self, blob_ids: Dict[str, UUID], enabled: bool = True
+    ) -> None:
+        """Initializes the offloaded payloads.
+
+        Args:
+            blob_ids: The blobs holding the offloaded values, by value.
+            enabled: Whether offloading is enabled. If not, schemas keep
+                their payloads inline.
+        """
+        self._blob_ids = blob_ids
+        self._enabled = enabled
+
+    @classmethod
+    def disabled(cls) -> "OffloadedPayloads":
+        """Payloads of a store that keeps payloads inline.
+
+        Returns:
+            Offloaded payloads that leave schemas unchanged.
+        """
+        return cls(blob_ids={}, enabled=False)
+
+    @property
+    def values(self) -> Dict[UUID, str]:
+        """The offloaded values by the blob that holds them.
+
+        Returns:
+            The offloaded values.
+        """
+        return {blob_id: text for text, blob_id in self._blob_ids.items()}
+
+    def reference(self, *schemas: PayloadSchema) -> None:
+        """Replace the inline payload values of schemas by their blobs.
+
+        Args:
+            *schemas: The schemas to update.
+
+        Raises:
+            RuntimeError: If a schema holds a value that was not offloaded.
+        """
+        if not self._enabled:
+            return
+        for schema in schemas:
+            for field in schema.PAYLOAD_FIELDS:
+                text = field.get_inline_text(schema)
+                if text is None:
+                    continue
+                blob_id = self._blob_ids.get(text)
+                if blob_id is None:
+                    raise RuntimeError(
+                        f"The `{field.name}` payload of a "
+                        f"`{type(schema).__name__}` was not offloaded."
+                    )
+                field.set_blob_id(schema, blob_id)
+
+
 class ResolvedPayloads:
     """The values of the offloaded payloads that a schema conversion reads.
 
@@ -221,18 +280,32 @@ class ResolvedPayloads:
         """
         self._values: Dict[UUID, str] = dict(values or {})
 
-    def get(self, blob_id: UUID) -> str:
-        """Get the value held by a blob.
+    @overload
+    def read(self, inline: str, blob_id: Optional[UUID]) -> str: ...
+
+    @overload
+    def read(
+        self, inline: Optional[str], blob_id: Optional[UUID]
+    ) -> Optional[str]: ...
+
+    def read(
+        self, inline: Optional[str], blob_id: Optional[UUID]
+    ) -> Optional[str]:
+        """Read the value of a payload column.
 
         Args:
-            blob_id: The blob to read.
+            inline: The value of the inline column.
+            blob_id: The value of the column referencing the blob.
 
         Returns:
             The payload value.
 
         Raises:
-            UnresolvedPayloadError: If the blob was not resolved.
+            UnresolvedPayloadError: If the value is offloaded and its blob was
+                not resolved.
         """
+        if blob_id is None:
+            return inline
         try:
             return self._values[blob_id]
         except KeyError:
@@ -240,39 +313,3 @@ class ResolvedPayloads:
 
 
 UNRESOLVED = ResolvedPayloads()
-
-
-@overload
-def read_payload(
-    inline: str,
-    blob_id: Optional[UUID],
-    payloads: ResolvedPayloads = ...,
-) -> str: ...
-
-
-@overload
-def read_payload(
-    inline: Optional[str],
-    blob_id: Optional[UUID],
-    payloads: ResolvedPayloads = ...,
-) -> Optional[str]: ...
-
-
-def read_payload(
-    inline: Optional[str],
-    blob_id: Optional[UUID],
-    payloads: ResolvedPayloads = UNRESOLVED,
-) -> Optional[str]:
-    """Read the value of a payload column.
-
-    Args:
-        inline: The value of the inline column.
-        blob_id: The value of the column referencing the blob.
-        payloads: The resolved offloaded values.
-
-    Returns:
-        The payload value.
-    """
-    if blob_id is None:
-        return inline
-    return payloads.get(blob_id)

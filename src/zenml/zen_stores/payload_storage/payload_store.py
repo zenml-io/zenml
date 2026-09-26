@@ -55,7 +55,7 @@ from zenml.zen_stores.payload_storage.config import (
     PayloadStorageConfiguration,
 )
 from zenml.zen_stores.payload_storage.payloads import (
-    PayloadSchema,
+    OffloadedPayloads,
     PayloadValue,
 )
 from zenml.zen_stores.schemas.blob_schemas import BlobSchema
@@ -89,65 +89,6 @@ def _batched(items: Collection[T]) -> Iterable[List[T]]:
     batch = list(items)
     for start in range(0, len(batch), QUERY_BATCH_SIZE):
         yield batch[start : start + QUERY_BATCH_SIZE]
-
-
-class OffloadedPayloads:
-    """Payload values offloaded ahead of the transaction referencing them."""
-
-    def __init__(
-        self, blob_ids: Dict[str, UUID], enabled: bool = True
-    ) -> None:
-        """Initializes the offloaded payloads.
-
-        Args:
-            blob_ids: The blobs holding the offloaded values, by value.
-            enabled: Whether offloading is enabled. If not, schemas keep
-                their payloads inline.
-        """
-        self._blob_ids = blob_ids
-        self._enabled = enabled
-
-    @classmethod
-    def disabled(cls) -> "OffloadedPayloads":
-        """Payloads of a store that keeps payloads inline.
-
-        Returns:
-            Offloaded payloads that leave schemas unchanged.
-        """
-        return cls(blob_ids={}, enabled=False)
-
-    @property
-    def values(self) -> Dict[UUID, str]:
-        """The offloaded values by the blob that holds them.
-
-        Returns:
-            The offloaded values.
-        """
-        return {blob_id: text for text, blob_id in self._blob_ids.items()}
-
-    def reference(self, *schemas: PayloadSchema) -> None:
-        """Replace the inline payload values of schemas by their blobs.
-
-        Args:
-            *schemas: The schemas to update.
-
-        Raises:
-            RuntimeError: If a schema holds a value that was not offloaded.
-        """
-        if not self._enabled:
-            return
-        for schema in schemas:
-            for field in schema.PAYLOAD_FIELDS:
-                text = field.get_inline_text(schema)
-                if text is None:
-                    continue
-                blob_id = self._blob_ids.get(text)
-                if blob_id is None:
-                    raise RuntimeError(
-                        f"The `{field.name}` payload of a "
-                        f"`{type(schema).__name__}` was not offloaded."
-                    )
-                field.set_blob_id(schema, blob_id)
 
 
 class PayloadStore:

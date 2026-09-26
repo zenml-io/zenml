@@ -87,70 +87,6 @@ class ObjectStoreArtifactStore(Protocol):
         """The filesystem holding the files of the artifact store."""
 
 
-def _is_denied(backend_type: PayloadBackendType, error: Exception) -> bool:
-    """Whether a provider error means that access was denied.
-
-    Missing credentials count as denied access: they are a configuration
-    error that no retry fixes.
-
-    Args:
-        backend_type: The backend that raised the error.
-        error: The error.
-
-    Returns:
-        Whether access was denied.
-    """
-    if backend_type == PayloadBackendType.S3:
-        from botocore.exceptions import (
-            NoCredentialsError,
-            PartialCredentialsError,
-        )
-
-        return isinstance(error, (NoCredentialsError, PartialCredentialsError))
-    if backend_type == PayloadBackendType.GCS:
-        from gcsfs.retry import HttpError
-        from google.auth.exceptions import DefaultCredentialsError
-
-        return (
-            isinstance(error, DefaultCredentialsError)
-            or (isinstance(error, HttpError) and error.code in (401, 403))
-            or (type(error) is OSError and str(error).startswith("Forbidden"))
-        )
-    if backend_type == PayloadBackendType.AZURE:
-        from azure.core.exceptions import (
-            ClientAuthenticationError,
-            HttpResponseError,
-        )
-
-        return (
-            isinstance(error, ClientAuthenticationError)
-            or (
-                isinstance(error, HttpResponseError)
-                and error.status_code == 403
-            )
-            # adlfs, when neither an account nor a connection string is set.
-            or (type(error) is ValueError and "account_name" in str(error))
-        )
-    return False
-
-
-def _is_missing(backend_type: PayloadBackendType, error: Exception) -> bool:
-    """Whether a provider error means that the object or bucket is missing.
-
-    Args:
-        backend_type: The backend that raised the error.
-        error: The error.
-
-    Returns:
-        Whether the object or bucket is missing.
-    """
-    if backend_type == PayloadBackendType.AZURE:
-        from azure.core.exceptions import ResourceNotFoundError
-
-        return isinstance(error, ResourceNotFoundError)
-    return False
-
-
 class ArtifactStorePayloadBackend(PayloadBackend):
     """Holds payload blobs in object storage through a ZenML artifact store.
 
@@ -210,11 +146,76 @@ class ArtifactStorePayloadBackend(PayloadBackend):
                 raise TimeoutError(
                     f"The call did not return within {self._timeout} seconds."
                 ) from e
-            if _is_denied(self._backend_type, e):
+            if self._is_denied(e):
                 raise PermissionError(str(e)) from e
-            if _is_missing(self._backend_type, e):
+            if self._is_missing(e):
                 raise FileNotFoundError(str(e)) from e
             raise
+
+    def _is_denied(self, error: Exception) -> bool:
+        """Whether a provider error means that access was denied.
+
+        Missing credentials count as denied access: they are a configuration
+        error that no retry fixes.
+
+        Args:
+            error: The error.
+
+        Returns:
+            Whether access was denied.
+        """
+        if self._backend_type == PayloadBackendType.S3:
+            from botocore.exceptions import (
+                NoCredentialsError,
+                PartialCredentialsError,
+            )
+
+            return isinstance(
+                error, (NoCredentialsError, PartialCredentialsError)
+            )
+        if self._backend_type == PayloadBackendType.GCS:
+            from gcsfs.retry import HttpError
+            from google.auth.exceptions import DefaultCredentialsError
+
+            return (
+                isinstance(error, DefaultCredentialsError)
+                or (isinstance(error, HttpError) and error.code in (401, 403))
+                or (
+                    type(error) is OSError
+                    and str(error).startswith("Forbidden")
+                )
+            )
+        if self._backend_type == PayloadBackendType.AZURE:
+            from azure.core.exceptions import (
+                ClientAuthenticationError,
+                HttpResponseError,
+            )
+
+            return (
+                isinstance(error, ClientAuthenticationError)
+                or (
+                    isinstance(error, HttpResponseError)
+                    and error.status_code == 403
+                )
+                # adlfs, when neither an account nor a connection string is set.
+                or (type(error) is ValueError and "account_name" in str(error))
+            )
+        return False
+
+    def _is_missing(self, error: Exception) -> bool:
+        """Whether a provider error means that the object or bucket is missing.
+
+        Args:
+            error: The error.
+
+        Returns:
+            Whether the object or bucket is missing.
+        """
+        if self._backend_type == PayloadBackendType.AZURE:
+            from azure.core.exceptions import ResourceNotFoundError
+
+            return isinstance(error, ResourceNotFoundError)
+        return False
 
     def put(self, sha256: str, data: bytes) -> None:
         """Durably store bytes under their SHA-256.

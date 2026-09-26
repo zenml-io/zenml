@@ -77,7 +77,6 @@ from zenml.zen_stores.payload_storage import (
     PayloadValue,
     ResolvedPayloads,
     get_blob_ids,
-    read_payload,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -779,10 +778,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_metadata:
             config = self.get_pipeline_configuration(payloads)
             raw_client_environment = (
-                read_payload(
+                payloads.read(
                     self.snapshot.client_environment,
                     self.snapshot.client_environment_blob_id,
-                    payloads,
                 )
                 if self.snapshot
                 else self.client_environment
@@ -802,10 +800,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
-            raw_orchestrator_environment = read_payload(
+            raw_orchestrator_environment = payloads.read(
                 self.orchestrator_environment,
                 self.orchestrator_environment_blob_id,
-                payloads,
             )
             orchestrator_environment = (
                 json.loads(raw_orchestrator_environment)

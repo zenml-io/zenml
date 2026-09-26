@@ -26,6 +26,7 @@ from zenml.zen_stores.payload_storage.config import (
 )
 from zenml.zen_stores.payload_storage.payloads import (
     UNRESOLVED,
+    OffloadedPayloads,
     PayloadField,
     PayloadSchema,
     PayloadValue,
@@ -34,11 +35,11 @@ from zenml.zen_stores.payload_storage.payloads import (
     UnresolvedPayloadError,
     get_blob_ids,
     get_inline_payloads,
-    read_payload,
 )
 
 __all__ = [
     "UNRESOLVED",
+    "OffloadedPayloads",
     "PayloadBackendType",
     "PayloadField",
     "PayloadSchema",
@@ -49,5 +50,4 @@ __all__ = [
     "UnresolvedPayloadError",
     "get_blob_ids",
     "get_inline_payloads",
-    "read_payload",
 ]

@@ -64,7 +64,6 @@ from zenml.zen_stores.payload_storage import (
     PayloadValue,
     ResolvedPayloads,
     get_blob_ids,
-    read_payload,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -614,11 +613,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 cache_key=self.cache_key,
                 cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
-                docstring=read_payload(
-                    self.docstring, self.docstring_blob_id, payloads
+                docstring=payloads.read(
+                    self.docstring, self.docstring_blob_id
                 ),
-                source_code=read_payload(
-                    self.source_code, self.source_code_blob_id, payloads
+                source_code=payloads.read(
+                    self.source_code, self.source_code_blob_id
                 ),
                 exception_info=ExceptionInfo.model_validate_json(
                     self.exception_info

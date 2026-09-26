@@ -56,7 +56,6 @@ from zenml.zen_stores.payload_storage import (
     PayloadField,
     ResolvedPayloads,
     get_blob_ids,
-    read_payload,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
@@ -511,7 +510,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         # Snapshots created before the control columns existed have no
         # execution mode and only store the step graph in the pipeline spec.
         if self.execution_mode is None:
-            pipeline_spec_json = read_payload(
+            pipeline_spec_json = UNRESOLVED.read(
                 self.pipeline_spec, self.pipeline_spec_blob_id
             )
             if not pipeline_spec_json:
@@ -722,7 +721,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         # columns, so this never needs to resolve a payload.
         return self._resolve_enable_heartbeat(
             json.loads(
-                read_payload(
+                UNRESOLVED.read(
                     self.pipeline_configuration,
                     self.pipeline_configuration_blob_id,
                 )
@@ -752,10 +751,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             The pipeline configuration.
         """
         return PipelineConfiguration.model_validate_json(
-            read_payload(
+            payloads.read(
                 self.pipeline_configuration,
                 self.pipeline_configuration_blob_id,
-                payloads,
             )
         )
 
@@ -829,10 +827,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 )
 
             client_environment = json.loads(
-                read_payload(
+                payloads.read(
                     self.client_environment,
                     self.client_environment_blob_id,
-                    payloads,
                 )
             )
             if not include_python_packages:
@@ -870,13 +867,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     step_configurations=all_step_configurations,
                 )
 
-            pipeline_spec_json = read_payload(
-                self.pipeline_spec, self.pipeline_spec_blob_id, payloads
+            pipeline_spec_json = payloads.read(
+                self.pipeline_spec, self.pipeline_spec_blob_id
             )
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
-                source_code=read_payload(
-                    self.source_code, self.source_code_blob_id, payloads
+                source_code=payloads.read(
+                    self.source_code, self.source_code_blob_id
                 ),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
@@ -1027,7 +1024,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
             The stored configuration.
         """
         config: Dict[str, Any] = json.loads(
-            read_payload(self.config, self.config_blob_id, payloads)
+            payloads.read(self.config, self.config_blob_id)
         )
         return config
 

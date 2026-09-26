@@ -428,6 +428,7 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.payload_storage import (
     UNRESOLVED,
+    OffloadedPayloads,
     PayloadStorageConfiguration,
     PayloadValue,
     ReadsPayloads,
@@ -435,10 +436,7 @@ from zenml.zen_stores.payload_storage import (
     get_blob_ids,
     get_inline_payloads,
 )
-from zenml.zen_stores.payload_storage.payload_store import (
-    OffloadedPayloads,
-    PayloadStore,
-)
+from zenml.zen_stores.payload_storage.payload_store import PayloadStore
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ApiTransactionResultSchema,
