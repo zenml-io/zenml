@@ -12742,6 +12742,12 @@ class SqlZenStore(BaseZenStore):
             # with the step run; a static one uses its snapshot's.
             dynamic_configuration: Optional[StepConfigurationSchema] = None
             if step_run.dynamic_config:
+                # Checked before its configuration is offloaded.
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
                 dynamic_configuration = StepConfigurationSchema(
                     index=0,
                     name=step_run.name,
@@ -12917,12 +12923,6 @@ class SqlZenStore(BaseZenStore):
 
             resolved_step_config = step_config
             if dynamic_configuration:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
                 dynamic_configuration.step_run_id = step_schema.id
                 offloaded_payloads.reference(dynamic_configuration)
                 session.add(dynamic_configuration)

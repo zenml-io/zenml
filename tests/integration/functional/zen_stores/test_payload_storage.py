@@ -40,6 +40,7 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
+    IllegalOperationError,
     PayloadIntegrityError,
     PayloadStorageError,
     PayloadStorageUnavailableError,
@@ -432,6 +433,39 @@ def test_run_with_a_snapshot_of_another_project_stores_nothing(
         )
 
     # Its new orchestrator environment was not offloaded either.
+    assert s3.list_objects_v2(Bucket=BUCKET)["KeyCount"] == objects
+
+
+def test_dynamic_step_of_a_static_pipeline_stores_nothing(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
+) -> None:
+    """A dynamic step configuration of a static pipeline is rejected up front."""
+    run = _start_run(store)
+    s3 = local_s3_client(s3_server)
+    objects = s3.list_objects_v2(Bucket=BUCKET)["KeyCount"]
+
+    with pytest.raises(IllegalOperationError):
+        store.create_run_step(
+            StepRunRequest(
+                project=Client().active_project.id,
+                name="dynamic",
+                status=ExecutionStatus.RUNNING,
+                start_time=utc_now(),
+                pipeline_run_id=run.id,
+                dynamic_config=Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="payloads.steps", type=SourceType.INTERNAL
+                        ),
+                        upstream_steps=[],
+                        invocation_id="dynamic",
+                    ),
+                    config=StepConfiguration(name=f"dynamic-{uuid4().hex}"),
+                ),
+            )
+        )
+
+    # Its configuration was not offloaded either.
     assert s3.list_objects_v2(Bucket=BUCKET)["KeyCount"] == objects
 
 
