@@ -432,7 +432,6 @@ from zenml.zen_stores.payload_storage import (
     PayloadValue,
     ReadsPayloads,
     ResolvedPayloads,
-    UnconfiguredPayloads,
     get_blob_ids,
     get_inline_payloads,
 )
@@ -1483,10 +1482,10 @@ class SqlZenStore(BaseZenStore):
         self._check_no_uncommitted_changes(session)
         if not hydrate:
             return UNRESOLVED
-        # Blob IDs are not even collected without any backend, where nothing
-        # is offloaded; see `UnconfiguredPayloads`.
+        # Blob IDs are not even collected without a backend, where nothing is
+        # offloaded; reading an offloaded payload then says what is missing.
         if not self.payload_store.has_backend:
-            return UnconfiguredPayloads()
+            return UNRESOLVED
         values = offloaded_payloads.values if offloaded_payloads else {}
         missing = {
             blob_id

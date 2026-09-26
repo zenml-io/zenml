@@ -428,7 +428,13 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
     )
 
     store = zen_store()
-    snapshot = store.get_snapshot(snapshot_id)
+    # Only the code path and stack are used, not the step configurations.
+    snapshot = store.get_snapshot(
+        snapshot_id,
+        hydrate=True,
+        step_configuration_filter=[],
+        include_config_schema=False,
+    )
     if not snapshot.code_path:
         raise ValueError(f"Snapshot {snapshot_id} has no code path.")
 
