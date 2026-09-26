@@ -64,6 +64,10 @@ IDENTITY_CODEC = "identity"
 MAX_CONCURRENT_BACKEND_CALLS = 32
 # Failed backend calls in a row after which calls to the backend are paused.
 FAILURES_TO_PAUSE = 3
+# How much longer than a call's own timeout a batch waits for any call to
+# return: calls that time out are then always seen, and counted by the
+# circuit breaker, before the batch gives up.
+STALL_MARGIN = 1.0
 # Bounds the size of the `IN` lists of registry queries.
 QUERY_BATCH_SIZE = 500
 
@@ -568,10 +572,10 @@ class PayloadStore:
         call returns, so that the calls of other requests queue behind at most
         one round of its calls instead of all of them.
 
-        The calls stall once none of them returns for a whole timeout, which
-        stalled storage causes within one timeout. A deadline for the whole
-        batch would instead fail healthy storage that is busy. The first
-        failure or a stall cancels the calls still queued.
+        The calls stall once none of them returns for a whole timeout plus a
+        margin, which stalled storage causes within about one timeout. A
+        deadline for the whole batch would instead fail healthy storage that
+        is busy. The first failure or a stall cancels the calls still queued.
 
         Args:
             function: The backend call.
@@ -595,7 +599,9 @@ class PayloadStore:
                 futures.append(future)
                 pending.add(future)
             done, pending = wait(
-                pending, timeout=self._timeout, return_when=FIRST_COMPLETED
+                pending,
+                timeout=self._timeout + STALL_MARGIN,
+                return_when=FIRST_COMPLETED,
             )
             stalled = not done
             if stalled or any(future.exception() for future in done):
