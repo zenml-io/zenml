@@ -1458,11 +1458,11 @@ class SqlZenStore(BaseZenStore):
         """Load the offloaded payloads that the conversions of a session read.
 
         Payload storage is only read outside of a transaction: if blobs remain
-        to be read after the offloaded and cached values, the read transaction
-        of the session ends first, and the objects it loaded stay usable. Methods
-        that write call this before any write, so that a storage failure never
-        fails a request whose change is already committed; an update changes
-        no payload.
+        to be loaded after the offloaded and cached values, the read
+        transaction of the session ends first, and the objects it loaded stay
+        usable. Methods that write call this before any write, so that a
+        storage failure never fails a request whose change is already
+        committed; an update changes no payload.
 
         Args:
             session: The session of the conversions, which must not hold any

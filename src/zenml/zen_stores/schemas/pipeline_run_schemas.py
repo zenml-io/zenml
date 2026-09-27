@@ -625,7 +625,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         return None
 
     def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
-        """Get the blobs that the conversion of this run with metadata reads.
+        """Get the blobs that converting this run with metadata reads.
 
         Returns:
             The blob IDs.

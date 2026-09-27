@@ -31,9 +31,9 @@ class CircuitBreaker:
     the whole timeout, and server threads also serve the requests that need
     no payload storage, such as status updates and heartbeats. After
     `failure_threshold` failed calls in a row, calls fail at once for
-    `recovery_timeout_seconds`. Then a single call goes through as a trial while the others
-    still fail at once: its success lets every call through again, and its
-    failure pauses the calls again.
+    `recovery_timeout_seconds`. Then a single trial call goes through while
+    the others still fail at once: its success lets every call through
+    again, and its failure pauses the calls again.
 
     It guards single backend calls. Only failures that retrying may fix
     count: a missing object (`FileNotFoundError`) or denied access
@@ -93,8 +93,8 @@ class CircuitBreaker:
                     )
                     raise PayloadStorageUnavailableError(
                         f"Execution payload storage (`{self._name}`) failed "
-                        f"{self._consecutive_failures} times in a row, so its calls are "
-                        f"paused {until}."
+                        f"{self._consecutive_failures} times in a row, so its "
+                        f"calls are paused {until}."
                     )
                 self._trial_in_progress = True
 

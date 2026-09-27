@@ -264,7 +264,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         return self
 
     def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
-        """Get the blobs that the conversion of this template with metadata reads.
+        """Get the blobs that converting this template with metadata reads.
 
         Returns:
             The blob IDs.

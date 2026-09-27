@@ -57,7 +57,7 @@ class PayloadStorageUnavailableError(ZenMLBaseException):
 
 
 class NonRetryablePayloadStorageError(ZenMLBaseException, RuntimeError):
-    """Raised when payload storage fails in a way that retrying does not fix."""
+    """Raised when payload storage fails in a way that no retry fixes."""
 
 
 class PayloadIntegrityError(NonRetryablePayloadStorageError):

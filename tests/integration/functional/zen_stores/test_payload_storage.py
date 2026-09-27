@@ -14,10 +14,10 @@
 """End-to-end checks of execution payload storage.
 
 Each test starts a local S3 server, and the clean client's SQLite store
-offloads every payload to it. The tests run real pipelines and store calls, and
-stop the server or remove or alter stored blobs to cover what offloading can
-break: responses that differ from inline ones, execution paths that stop working
-while storage is down, half-created runs and corrupted blobs.
+offloads every payload to it. The tests run real pipelines and store calls,
+and stop the server or remove or alter stored blobs to cover what offloading
+can break: responses that differ from inline ones, execution paths that stop
+working while storage is down, half-created runs and corrupted blobs.
 """
 
 from typing import Any, Dict, Generator, List, Optional
@@ -131,7 +131,7 @@ def store(
     monkeypatch: pytest.MonkeyPatch,
     request: pytest.FixtureRequest,
 ) -> SqlZenStore:
-    """The store of a clean client, which offloads payloads to the S3 server."""
+    """The store of a clean client, offloading payloads to the S3 server."""
     monkeypatch.setenv(
         f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE",
         local_s3_payload_storage_env_value(
@@ -395,7 +395,7 @@ def test_run_creation_writes_nothing_when_storage_fails(
 def test_update_with_metadata_writes_nothing_when_storage_fails(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
-    """A storage failure while updating a run with its metadata changes nothing."""
+    """A storage failure while updating a run with metadata changes nothing."""
     cold = _open_store(store, cache_max_bytes=0)
     run = _start_run(cold)
     s3 = local_s3_client(s3_server)

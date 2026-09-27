@@ -42,7 +42,9 @@ class PayloadCache:
         self._size_bytes = 0
         self._entries: "OrderedDict[UUID, str]" = OrderedDict()
         self._in_flight_loads: Dict[UUID, "Future[str]"] = {}
-        self._lock = threading.Lock()
+        # Reentrant, so that loads can cache their values with `put` while
+        # they hold it.
+        self._lock = threading.RLock()
 
     def put(self, blob_id: UUID, value: str) -> None:
         """Cache a payload value.
@@ -51,26 +53,17 @@ class PayloadCache:
             blob_id: The blob holding the value.
             value: The payload value.
         """
-        with self._lock:
-            self._put_locked(blob_id, value)
-
-    def _put_locked(self, blob_id: UUID, value: str) -> None:
-        """Cache a payload value while holding the lock.
-
-        Args:
-            blob_id: The blob holding the value.
-            value: The payload value.
-        """
         # The memory the string takes, which can be several times its UTF-8
         # size.
         size = sys.getsizeof(value)
-        if size > self._max_bytes or blob_id in self._entries:
-            return
-        while self._size_bytes + size > self._max_bytes:
-            _, evicted = self._entries.popitem(last=False)
-            self._size_bytes -= sys.getsizeof(evicted)
-        self._entries[blob_id] = value
-        self._size_bytes += size
+        with self._lock:
+            if size > self._max_bytes or blob_id in self._entries:
+                return
+            while self._size_bytes + size > self._max_bytes:
+                _, evicted = self._entries.popitem(last=False)
+                self._size_bytes -= sys.getsizeof(evicted)
+            self._entries[blob_id] = value
+            self._size_bytes += size
 
     def get_cached(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
         """Get the cached payload values, without loading any.
@@ -137,7 +130,7 @@ class PayloadCache:
             with self._lock:
                 for blob_id, future in loading.items():
                     value = loaded[blob_id]
-                    self._put_locked(blob_id, value)
+                    self.put(blob_id, value)
                     del self._in_flight_loads[blob_id]
                     future.set_result(value)
                     values[blob_id] = value
@@ -152,8 +145,7 @@ class PayloadCache:
                 retry.append(blob_id)
         if retry:
             loaded = loader(retry)
-            with self._lock:
-                for blob_id in retry:
-                    self._put_locked(blob_id, loaded[blob_id])
+            for blob_id in retry:
+                self.put(blob_id, loaded[blob_id])
             values.update(loaded)
         return values

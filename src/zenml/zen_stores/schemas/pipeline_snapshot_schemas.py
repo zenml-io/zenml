@@ -438,7 +438,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         step_configuration_filter: Optional[List[str]] = None,
         include_config_schema: Optional[bool] = None,
     ) -> List[Optional[UUID]]:
-        """Get the blobs that the conversion of this snapshot with metadata reads.
+        """Get the blobs that converting this snapshot with metadata reads.
 
         Args:
             step_configuration_filter: The step configurations to include, as
@@ -461,10 +461,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         snapshots: Sequence["PipelineSnapshotSchema"],
         include: Optional[List[str]] = None,
     ) -> List[Optional[UUID]]:
-        """Get the blobs that converting a page of snapshots with metadata reads.
+        """Get the blobs that converting a page of snapshots reads.
 
-        Like `get_required_payload_blob_ids` for each snapshot of a page, but with one
-        query for the whole page.
+        Like `get_required_payload_blob_ids` for each snapshot of a page, with
+        metadata, but with one query for the whole page.
 
         Args:
             snapshots: The snapshots of the page.

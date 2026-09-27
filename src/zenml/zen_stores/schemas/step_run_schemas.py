@@ -442,7 +442,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ]
 
     def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
-        """Get the blobs that the conversion of this step run with metadata reads.
+        """Get the blobs that converting this step run with metadata reads.
 
         Returns:
             The blob IDs.

@@ -223,7 +223,7 @@ class FsspecBlobBackend(BlobBackend):
                     isinstance(error, HttpResponseError)
                     and error.status_code == 403
                 )
-                # adlfs, when neither an account nor a connection string is set.
+                # adlfs without an account or a connection string.
                 or (type(error) is ValueError and "account_name" in str(error))
             )
         return False

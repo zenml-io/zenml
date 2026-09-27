@@ -270,8 +270,8 @@ class LoadedPayloads:
     convert, outside of any transaction, so that conversions never wait for
     payload storage. Resolving a payload that was not loaded fails: paths that
     only need SQL columns, such as status updates, lists and permission
-    checks, convert with `INLINE_ONLY_PAYLOADS`, and a conversion that reads a payload
-    its store method did not load is a bug.
+    checks, convert with `INLINE_ONLY_PAYLOADS`, and a conversion that reads
+    a payload its store method did not load is a bug.
     """
 
     def __init__(
@@ -283,9 +283,10 @@ class LoadedPayloads:
 
         Args:
             values_by_blob_id: The payload values by the blob that holds them.
-            backend_configured: Whether the process has a payload storage backend.
-                Without one, nothing is loaded, and reading a payload that
-                another process offloaded is a configuration error, not a bug.
+            backend_configured: Whether the process has a payload storage
+                backend. Without one, nothing is loaded, and reading a payload
+                that another process offloaded is a configuration error, not a
+                bug.
         """
         self._values: Dict[UUID, str] = dict(values_by_blob_id or {})
         self._backend_configured = backend_configured
@@ -313,8 +314,8 @@ class LoadedPayloads:
             The payload value.
 
         Raises:
-            NonRetryablePayloadStorageError: If the value is offloaded and the process has
-                no payload storage backend to read it from.
+            NonRetryablePayloadStorageError: If the value is offloaded and the
+                process has no payload storage backend to read it from.
             PayloadNotLoadedError: If the value is offloaded and its blob was
                 not loaded.
         """

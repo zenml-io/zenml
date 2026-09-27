@@ -59,8 +59,8 @@ from zenml.utils import source_utils
 DEFAULT_ENVIRONMENT_NAME = "default"
 
 # Offloading payloads is off by default, so the suites only cover payloads kept
-# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE_BACKEND=s3`, every store of the
-# session offloads its payloads to a local S3 server instead.
+# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE_BACKEND=s3`, every store of
+# the session offloads its payloads to a local S3 server instead.
 TEST_PAYLOAD_STORAGE_BACKEND_ENV = "ZENML_TEST_PAYLOAD_STORAGE_BACKEND"
 
 
