@@ -101,7 +101,6 @@ class PayloadStore:
         """
         self._engine = engine
         self._offload_enabled = config.offload_enabled
-        self._timeout = config.backend_timeout_seconds
         self._cache = PayloadCache(max_bytes=config.cache_max_bytes)
         # All None while no backend is configured and payloads stay inline.
         self._backend: Optional[BlobBackend] = None

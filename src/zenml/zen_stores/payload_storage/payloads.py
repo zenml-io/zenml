@@ -29,7 +29,6 @@ from typing import (
     Any,
     ClassVar,
     Dict,
-    Iterable,
     List,
     Mapping,
     Optional,
@@ -234,17 +233,6 @@ class OffloadResult:
 # ------------------ Reading payloads ------------------
 
 
-class RequiresPayloads(Protocol):
-    """A schema whose conversion reads its offloaded payloads."""
-
-    def get_required_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
-        """Get the blobs that converting the schema reads.
-
-        Returns:
-            The blob IDs, with None for values that are not offloaded.
-        """
-
-
 def collect_payload_blob_ids(
     *schemas: HasPayloadColumns,
 ) -> List[Optional[UUID]]:
@@ -333,7 +321,10 @@ class LoadedPayloads:
                     "Configure the same `backend` and `path` as the processes "
                     "that offload payloads."
                 ) from None
-            raise PayloadNotLoadedError(blob_id) from None
+            raise PayloadNotLoadedError(
+                f"The payload stored in blob `{blob_id}` was read without "
+                "being loaded."
+            ) from None
 
 
 INLINE_ONLY_PAYLOADS = LoadedPayloads()

@@ -26,12 +26,10 @@ from zenml.zen_stores.payload_storage.config import (
 )
 from zenml.zen_stores.payload_storage.payloads import (
     INLINE_ONLY_PAYLOADS,
-    HasPayloadColumns,
     LoadedPayloads,
     OffloadResult,
     PayloadColumn,
     PayloadValue,
-    RequiresPayloads,
     collect_payload_blob_ids,
     get_inline_payload_values,
 )
@@ -41,10 +39,8 @@ __all__ = [
     "OffloadResult",
     "BlobBackendType",
     "PayloadColumn",
-    "HasPayloadColumns",
     "PayloadStorageConfiguration",
     "PayloadValue",
-    "RequiresPayloads",
     "LoadedPayloads",
     "collect_payload_blob_ids",
     "get_inline_payload_values",

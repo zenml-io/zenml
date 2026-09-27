@@ -432,7 +432,6 @@ from zenml.zen_stores.payload_storage import (
     OffloadResult,
     PayloadStorageConfiguration,
     PayloadValue,
-    RequiresPayloads,
     collect_payload_blob_ids,
     get_inline_payload_values,
 )
@@ -681,11 +680,7 @@ def _remember_flushed_changes(session: Session, flush_context: Any) -> None:
         flush_context: The context of the flush.
     """
     # The pending changes are still listed until the flush completes.
-    if (
-        session.new
-        or session.deleted
-        or any(session.is_modified(row) for row in session.dirty)
-    ):
+    if session.has_uncommitted_changes:
         session.info[_FLUSHED_CHANGES] = True
 
 
@@ -1411,11 +1406,9 @@ class SqlZenStore(BaseZenStore):
     def _check_no_uncommitted_changes(session: Session) -> None:
         """Check that a session has not written anything yet.
 
-        Payload storage is only used before a request writes anything, since
-        using it may end the read transaction and so commit the session. The
-        helpers that use it check this on every call, whether or not they end
-        the transaction, so that a caller that writes first fails in every
-        configuration, with or without payload storage.
+        Checked on every use of payload storage, even when no transaction is
+        ended, so that a caller that writes first fails in every
+        configuration.
 
         Args:
             session: The session.
@@ -1433,9 +1426,11 @@ class SqlZenStore(BaseZenStore):
     def _end_read_transaction(session: Session) -> None:
         """End the read transaction of a session and release its connection.
 
-        The objects the session loaded stay usable. Callers do this before
-        waiting on payload storage, so that no connection or transaction is
-        held meanwhile.
+        Payload storage is only used outside of a transaction, and before a
+        request writes anything, since ending the transaction commits the
+        session. So no connection or transaction is held while storage is
+        waited on, and a storage failure never fails a request whose change
+        is already committed. The objects the session loaded stay usable.
 
         Args:
             session: The session, which must not hold uncommitted changes.
@@ -1457,12 +1452,8 @@ class SqlZenStore(BaseZenStore):
     ) -> LoadedPayloads:
         """Load the offloaded payloads that the conversions of a session read.
 
-        Payload storage is only read outside of a transaction: if blobs remain
-        to be loaded after the offloaded and cached values, the read
-        transaction of the session ends first, and the objects it loaded stay
-        usable. Methods that write call this before any write, so that a
-        storage failure never fails a request whose change is already
-        committed; an update changes no payload.
+        If blobs remain to be loaded after the offloaded and cached values,
+        the read transaction ends first (see `_end_read_transaction`).
 
         Args:
             session: The session of the conversions, which must not hold any
@@ -1503,9 +1494,8 @@ class SqlZenStore(BaseZenStore):
     ) -> OffloadResult:
         """Offload the payload values of new rows before they are written.
 
-        Payload storage is only written outside of a transaction, so the read
-        transaction of the session ends first when anything is offloaded, and
-        the objects it loaded stay usable.
+        The read transaction ends first when anything is offloaded (see
+        `_end_read_transaction`).
 
         Args:
             session: The session that will write the rows, which must not hold
@@ -1523,7 +1513,7 @@ class SqlZenStore(BaseZenStore):
     def _load_page_payloads(
         self,
         session: Session,
-        schemas: Sequence[RequiresPayloads],
+        schemas: Sequence[Union[PipelineRunSchema, StepRunSchema]],
         hydrate: bool,
     ) -> LoadedPayloads:
         """Load the offloaded payloads that converting a page reads.
@@ -5654,6 +5644,17 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created snapshot.
         """
+        # Serialize before opening the session so that a serialization failure
+        # never reaches the database and the transaction only holds DB work.
+        serialized_step_configurations = [
+            (
+                step_name,
+                step_configuration.model_dump_json(exclude={"config"}),
+                json.dumps(step_configuration.spec.upstream_steps),
+            )
+            for step_name, step_configuration in snapshot.step_configurations.items()
+        ]
+
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
             self._get_reference_schema_by_id(
@@ -5719,17 +5720,15 @@ class SqlZenStore(BaseZenStore):
                     # Don't include the merged config in the step
                     # configurations, we reconstruct it in the `to_model`
                     # method using the pipeline configuration.
-                    config=step_configuration.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    upstream_steps=json.dumps(
-                        step_configuration.spec.upstream_steps
-                    ),
+                    config=serialized_configuration,
+                    upstream_steps=upstream_steps,
                     snapshot_id=new_snapshot.id,
                 )
-                for index, (step_name, step_configuration) in enumerate(
-                    snapshot.step_configurations.items()
-                )
+                for index, (
+                    step_name,
+                    serialized_configuration,
+                    upstream_steps,
+                ) in enumerate(serialized_step_configurations)
             ]
             # Before the first write, so that a storage failure leaves nothing
             # behind.
@@ -7736,7 +7735,7 @@ class SqlZenStore(BaseZenStore):
                 reference_id=pipeline_run.snapshot,
                 session=session,
             )
-        return snapshot.get_required_run_payload_blob_ids() if snapshot else []
+        return snapshot.get_required_run_payload_blob_ids()
 
     def get_or_create_run(
         self,
@@ -7796,7 +7795,9 @@ class SqlZenStore(BaseZenStore):
                     PipelineRunSchema.get_orchestrator_environment_payload(
                         pipeline_run
                     )
-                ],
+                ]
+                if self.payload_store.offload_enabled
+                else [],
             )
             payloads = self._load_required_payloads(
                 session,

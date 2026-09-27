@@ -14,7 +14,6 @@
 """ZenML specific exception definitions."""
 
 from typing import Dict, Optional
-from uuid import UUID
 
 
 class ZenMLBaseException(Exception):
@@ -67,21 +66,10 @@ class PayloadIntegrityError(NonRetryablePayloadStorageError):
 class PayloadNotLoadedError(RuntimeError):
     """Raised when an offloaded payload is read without being loaded.
 
-    Paths that only need SQL columns, such as status updates, lists and
-    permission checks, convert schemas with `INLINE_ONLY_PAYLOADS`, so reading
-    an offloaded payload there is a bug rather than a storage failure.
+    Paths that only need SQL columns convert schemas with
+    `INLINE_ONLY_PAYLOADS`, so reading an offloaded payload there is a bug
+    rather than a storage failure.
     """
-
-    def __init__(self, blob_id: UUID) -> None:
-        """Initializes the error.
-
-        Args:
-            blob_id: The blob that holds the payload that was not loaded.
-        """
-        super().__init__(
-            f"The payload stored in blob `{blob_id}` was read without being "
-            "loaded."
-        )
 
 
 class LogStoreRateLimitError(LogStoreError):

@@ -313,7 +313,7 @@ def attach_trigger_to_snapshot(
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 
-    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=False)
+    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     if trigger.project_id != snapshot.project_id:
         raise KeyError(f"Snapshot {snapshot_id} not found.")
@@ -359,10 +359,6 @@ def attach_trigger_to_snapshot(
         action=Action.CREATE,
         project_id=snapshot.project_id,
     )
-
-    # The metadata of the snapshot carries payloads that can live in external
-    # storage, so it is only fetched once the caller is authorized.
-    snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     # Validates and creates a runnable snapshot from the source snapshot + run configuration
     build, stack, model_version = validate_snapshot_for_server_execution(
