@@ -20,7 +20,7 @@ offloaded to payload storage and the reference column points to its blob.
 
 Writing collects the inline values of new rows, which the store offloads,
 and then replaces them by references to their blobs. Reading collects the
-blobs that a conversion reads, which the store resolves before converting.
+blobs that a conversion reads, which the store loads before converting.
 """
 
 import hashlib
@@ -41,12 +41,15 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from zenml.exceptions import PayloadStorageError, UnresolvedPayloadError
+from zenml.exceptions import (
+    NonRetryablePayloadStorageError,
+    PayloadNotLoadedError,
+)
 
 # ------------------ Payload columns ------------------
 
 
-class PayloadField(BaseModel):
+class PayloadColumn(BaseModel):
     """A payload column of a schema and the column referencing its blob.
 
     Attributes:
@@ -62,7 +65,7 @@ class PayloadField(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     @property
-    def blob_id_name(self) -> str:
+    def blob_id_column_name(self) -> str:
         """The name of the column referencing the blob of an offloaded value.
 
         Returns:
@@ -79,7 +82,7 @@ class PayloadField(BaseModel):
         Returns:
             The blob ID, or None if the value is not offloaded.
         """
-        blob_id: Optional[UUID] = getattr(schema, self.blob_id_name)
+        blob_id: Optional[UUID] = getattr(schema, self.blob_id_column_name)
         return blob_id
 
     def get_inline_text(self, schema: Any) -> Optional[str]:
@@ -96,21 +99,21 @@ class PayloadField(BaseModel):
         text: Optional[str] = getattr(schema, self.name)
         return text
 
-    def set_blob_id(self, schema: Any, blob_id: UUID) -> None:
+    def replace_inline_with_blob(self, schema: Any, blob_id: UUID) -> None:
         """Reference an offloaded value and clear the inline column.
 
         Args:
             schema: The schema instance to update.
             blob_id: The blob holding the value.
         """
-        setattr(schema, self.blob_id_name, blob_id)
+        setattr(schema, self.blob_id_column_name, blob_id)
         setattr(schema, self.name, None if self.nullable else "")
 
 
-class PayloadSchema(Protocol):
+class HasPayloadColumns(Protocol):
     """A schema with payload columns."""
 
-    PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]]
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]]
 
 
 # ------------------ Writing payloads ------------------
@@ -130,7 +133,7 @@ class PayloadValue(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     @cached_property
-    def data(self) -> bytes:
+    def utf8_bytes(self) -> bytes:
         """The bytes stored for this value.
 
         Returns:
@@ -145,10 +148,12 @@ class PayloadValue(BaseModel):
         Returns:
             The hex SHA-256 of the stored bytes.
         """
-        return hashlib.sha256(self.data).hexdigest()
+        return hashlib.sha256(self.utf8_bytes).hexdigest()
 
 
-def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:
+def get_inline_payload_values(
+    *schemas: HasPayloadColumns,
+) -> List[PayloadValue]:
     """Get the inline payload values of schemas.
 
     Args:
@@ -160,46 +165,48 @@ def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:
     return [
         PayloadValue(text=text)
         for schema in schemas
-        for field in schema.PAYLOAD_FIELDS
-        if (text := field.get_inline_text(schema)) is not None
+        for column in schema.PAYLOAD_COLUMNS
+        if (text := column.get_inline_text(schema)) is not None
     ]
 
 
-class OffloadedPayloads:
+class OffloadResult:
     """Payload values offloaded ahead of the transaction referencing them."""
 
     def __init__(
-        self, blob_ids: Dict[str, UUID], enabled: bool = True
+        self, blob_ids_by_text: Dict[str, UUID], enabled: bool = True
     ) -> None:
         """Initializes the offloaded payloads.
 
         Args:
-            blob_ids: The blobs holding the offloaded values, by value.
+            blob_ids_by_text: The blobs holding the offloaded values, by value.
             enabled: Whether offloading is enabled. If not, schemas keep
                 their payloads inline.
         """
-        self._blob_ids = blob_ids
+        self._blob_ids_by_text = blob_ids_by_text
         self._enabled = enabled
 
     @classmethod
-    def disabled(cls) -> "OffloadedPayloads":
+    def inline_only(cls) -> "OffloadResult":
         """Payloads of a store that keeps payloads inline.
 
         Returns:
             Offloaded payloads that leave schemas unchanged.
         """
-        return cls(blob_ids={}, enabled=False)
+        return cls(blob_ids_by_text={}, enabled=False)
 
     @property
-    def values(self) -> Dict[UUID, str]:
+    def values_by_blob_id(self) -> Dict[UUID, str]:
         """The offloaded values by the blob that holds them.
 
         Returns:
             The offloaded values.
         """
-        return {blob_id: text for text, blob_id in self._blob_ids.items()}
+        return {
+            blob_id: text for text, blob_id in self._blob_ids_by_text.items()
+        }
 
-    def reference(self, *schemas: PayloadSchema) -> None:
+    def apply_references(self, *schemas: HasPayloadColumns) -> None:
         """Replace the inline payload values of schemas by their blobs.
 
         Args:
@@ -211,26 +218,26 @@ class OffloadedPayloads:
         if not self._enabled:
             return
         for schema in schemas:
-            for field in schema.PAYLOAD_FIELDS:
-                text = field.get_inline_text(schema)
+            for column in schema.PAYLOAD_COLUMNS:
+                text = column.get_inline_text(schema)
                 if text is None:
                     continue
-                blob_id = self._blob_ids.get(text)
+                blob_id = self._blob_ids_by_text.get(text)
                 if blob_id is None:
                     raise RuntimeError(
-                        f"The `{field.name}` payload of a "
+                        f"The `{column.name}` payload of a "
                         f"`{type(schema).__name__}` was not offloaded."
                     )
-                field.set_blob_id(schema, blob_id)
+                column.replace_inline_with_blob(schema, blob_id)
 
 
 # ------------------ Reading payloads ------------------
 
 
-class ReadsPayloads(Protocol):
+class RequiresPayloads(Protocol):
     """A schema whose conversion reads its offloaded payloads."""
 
-    def get_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
+    def get_required_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
         """Get the blobs that converting the schema reads.
 
         Returns:
@@ -238,7 +245,9 @@ class ReadsPayloads(Protocol):
         """
 
 
-def get_blob_ids(*schemas: PayloadSchema) -> List[Optional[UUID]]:
+def collect_payload_blob_ids(
+    *schemas: HasPayloadColumns,
+) -> List[Optional[UUID]]:
     """Get the blobs referenced by the payload columns of schemas.
 
     Args:
@@ -248,80 +257,82 @@ def get_blob_ids(*schemas: PayloadSchema) -> List[Optional[UUID]]:
         The blob IDs, with None for values that are not offloaded.
     """
     return [
-        field.get_blob_id(schema)
+        column.get_blob_id(schema)
         for schema in schemas
-        for field in schema.PAYLOAD_FIELDS
+        for column in schema.PAYLOAD_COLUMNS
     ]
 
 
-class ResolvedPayloads:
+class LoadedPayloads:
     """The values of the offloaded payloads that a schema conversion reads.
 
-    Store methods resolve every payload their conversions read before they
+    Store methods load every payload their conversions read before they
     convert, outside of any transaction, so that conversions never wait for
-    payload storage. Reading a payload that was not resolved fails: paths that
+    payload storage. Resolving a payload that was not loaded fails: paths that
     only need SQL columns, such as status updates, lists and permission
-    checks, convert with `UNRESOLVED`, and a conversion that reads a payload
-    its store method did not resolve is a bug.
+    checks, convert with `INLINE_ONLY_PAYLOADS`, and a conversion that reads a payload
+    its store method did not load is a bug.
     """
 
     def __init__(
         self,
-        values: Optional[Mapping[UUID, str]] = None,
-        has_backend: bool = True,
+        values_by_blob_id: Optional[Mapping[UUID, str]] = None,
+        backend_configured: bool = True,
     ) -> None:
-        """Initializes the resolved payloads.
+        """Initializes the loaded payloads.
 
         Args:
-            values: The payload values by the blob that holds them.
-            has_backend: Whether the process has a payload storage backend.
-                Without one, it resolves nothing, and reading a payload that
+            values_by_blob_id: The payload values by the blob that holds them.
+            backend_configured: Whether the process has a payload storage backend.
+                Without one, nothing is loaded, and reading a payload that
                 another process offloaded is a configuration error, not a bug.
         """
-        self._values: Dict[UUID, str] = dict(values or {})
-        self._has_backend = has_backend
+        self._values: Dict[UUID, str] = dict(values_by_blob_id or {})
+        self._backend_configured = backend_configured
 
     @overload
-    def read(self, inline: str, blob_id: Optional[UUID]) -> str: ...
+    def resolve(self, inline_value: str, blob_id: Optional[UUID]) -> str: ...
 
     @overload
-    def read(
-        self, inline: Optional[str], blob_id: Optional[UUID]
+    def resolve(
+        self, inline_value: Optional[str], blob_id: Optional[UUID]
     ) -> Optional[str]: ...
 
-    def read(
-        self, inline: Optional[str], blob_id: Optional[UUID]
+    def resolve(
+        self, inline_value: Optional[str], blob_id: Optional[UUID]
     ) -> Optional[str]:
-        """Read the value of a payload column.
+        """Resolve the value of a payload column, without any storage I/O.
+
+        The value is the inline one, or the loaded value of its blob.
 
         Args:
-            inline: The value of the inline column.
+            inline_value: The value of the inline column.
             blob_id: The value of the column referencing the blob.
 
         Returns:
             The payload value.
 
         Raises:
-            PayloadStorageError: If the value is offloaded and the process has
+            NonRetryablePayloadStorageError: If the value is offloaded and the process has
                 no payload storage backend to read it from.
-            UnresolvedPayloadError: If the value is offloaded and its blob was
-                not resolved.
+            PayloadNotLoadedError: If the value is offloaded and its blob was
+                not loaded.
         """
         if blob_id is None:
-            return inline
+            return inline_value
         try:
             return self._values[blob_id]
         except KeyError:
-            if not self._has_backend:
+            if not self._backend_configured:
                 # A storage error, so that responses to committed changes
                 # fall back to leaving the payloads out.
-                raise PayloadStorageError(
+                raise NonRetryablePayloadStorageError(
                     "Execution payloads were offloaded to payload storage, "
                     "but this process has no payload storage backend. "
                     "Configure the same `backend` and `path` as the processes "
                     "that offload payloads."
                 ) from None
-            raise UnresolvedPayloadError(blob_id) from None
+            raise PayloadNotLoadedError(blob_id) from None
 
 
-UNRESOLVED = ResolvedPayloads()
+INLINE_ONLY_PAYLOADS = LoadedPayloads()

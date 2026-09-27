@@ -87,7 +87,7 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 )
 from zenml.zen_server.utils import (
     get_auth_context,
-    get_with_metadata_if_available,
+    get_with_best_effort_metadata,
     server_config,
     set_auth_context,
     snapshot_executor,
@@ -345,7 +345,7 @@ def run_snapshot(
             auth_context=auth_context,
             wait_for_completion=wait_runner_pod,
         )
-        response_run = get_with_metadata_if_available(
+        response_run = get_with_best_effort_metadata(
             zen_store().get_run, execution_request.run_id
         )
     else:
@@ -390,7 +390,7 @@ def run_snapshot(
                 "Failed to queue snapshot execution request."
             ) from exc
         # A failed response would make clients start the run a second time.
-        response_run = get_with_metadata_if_available(
+        response_run = get_with_best_effort_metadata(
             zen_store().get_run, execution_request.run_id
         )
 

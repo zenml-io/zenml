@@ -427,14 +427,14 @@ from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
 from zenml.zen_stores.payload_storage import (
-    UNRESOLVED,
-    OffloadedPayloads,
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    OffloadResult,
     PayloadStorageConfiguration,
     PayloadValue,
-    ReadsPayloads,
-    ResolvedPayloads,
-    get_blob_ids,
-    get_inline_payloads,
+    RequiresPayloads,
+    collect_payload_blob_ids,
+    get_inline_payload_values,
 )
 from zenml.zen_stores.payload_storage.payload_store import PayloadStore
 from zenml.zen_stores.schemas import (
@@ -1448,14 +1448,14 @@ class SqlZenStore(BaseZenStore):
         finally:
             session.expire_on_commit = expire_on_commit
 
-    def _resolve_payloads(
+    def _load_required_payloads(
         self,
         session: Session,
         collect_blob_ids: Callable[[], Iterable[Optional[UUID]]],
-        offloaded_payloads: Optional[OffloadedPayloads] = None,
+        offload_result: Optional[OffloadResult] = None,
         hydrate: bool = True,
-    ) -> ResolvedPayloads:
-        """Resolve the offloaded payloads that the conversions of a session read.
+    ) -> LoadedPayloads:
+        """Load the offloaded payloads that the conversions of a session read.
 
         Payload storage is only read outside of a transaction: if blobs remain
         to be read after the offloaded and cached values, the read transaction
@@ -1469,23 +1469,23 @@ class SqlZenStore(BaseZenStore):
                 pending change.
             collect_blob_ids: Returns the blobs the conversions read. None
                 entries are ignored.
-            offloaded_payloads: Payloads just offloaded, which are resolved
+            offload_result: Payloads just offloaded, which are taken
                 from memory.
             hydrate: Whether the conversions include metadata. Conversions
                 without metadata read no payloads.
 
         Returns:
-            The resolved payloads.
+            The loaded payloads.
         """
         self._check_no_uncommitted_changes(session)
         if not hydrate:
-            return UNRESOLVED
+            return INLINE_ONLY_PAYLOADS
         # Without a backend, this process offloads nothing, so blob IDs are
         # not even collected. A payload that another process offloaded then
         # fails as a storage error when it is read.
-        if not self.payload_store.has_backend:
-            return ResolvedPayloads(has_backend=False)
-        values = offloaded_payloads.values if offloaded_payloads else {}
+        if not self.payload_store.backend_configured:
+            return LoadedPayloads(backend_configured=False)
+        values = offload_result.values_by_blob_id if offload_result else {}
         missing = {
             blob_id
             for blob_id in collect_blob_ids()
@@ -1496,11 +1496,11 @@ class SqlZenStore(BaseZenStore):
         if missing:
             self._end_read_transaction(session)
             values.update(self.payload_store.load(missing))
-        return ResolvedPayloads(values)
+        return LoadedPayloads(values)
 
     def _offload_payloads(
         self, session: Session, values: List[PayloadValue]
-    ) -> OffloadedPayloads:
+    ) -> OffloadResult:
         """Offload the payload values of new rows before they are written.
 
         Payload storage is only written outside of a transaction, so the read
@@ -1520,13 +1520,13 @@ class SqlZenStore(BaseZenStore):
             self._end_read_transaction(session)
         return self.payload_store.offload(values)
 
-    def _resolve_page_payloads(
+    def _load_page_payloads(
         self,
         session: Session,
-        schemas: Sequence[ReadsPayloads],
+        schemas: Sequence[RequiresPayloads],
         hydrate: bool,
-    ) -> ResolvedPayloads:
-        """Resolve the offloaded payloads that converting a page reads.
+    ) -> LoadedPayloads:
+        """Load the offloaded payloads that converting a page reads.
 
         Args:
             session: The session of the page.
@@ -1535,14 +1535,14 @@ class SqlZenStore(BaseZenStore):
                 without metadata read no payloads.
 
         Returns:
-            The resolved payloads.
+            The loaded payloads.
         """
-        return self._resolve_payloads(
+        return self._load_required_payloads(
             session,
             lambda: (
                 blob_id
                 for schema in schemas
-                for blob_id in schema.get_payload_blob_ids()
+                for blob_id in schema.get_required_payload_blob_ids()
             ),
             hydrate=hydrate,
         )
@@ -1880,7 +1880,7 @@ class SqlZenStore(BaseZenStore):
         # Stores opened only to run migrations, such as by Alembic, can
         # predate the payload tables.
         if not self.skip_migrations:
-            self._payload_store.verify_backend()
+            self._payload_store.validate_storage_location()
 
         secrets_store_config = self.config.secrets_store
 
@@ -5733,9 +5733,9 @@ class SqlZenStore(BaseZenStore):
             ]
             # Before the first write, so that a storage failure leaves nothing
             # behind.
-            offloaded_payloads = self._offload_payloads(
+            offload_result = self._offload_payloads(
                 session,
-                get_inline_payloads(new_snapshot, *step_configurations),
+                get_inline_payload_values(new_snapshot, *step_configurations),
             )
 
             if isinstance(snapshot.name, str) and snapshot.replace:
@@ -5753,7 +5753,7 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
-            offloaded_payloads.reference(new_snapshot, *step_configurations)
+            offload_result.apply_references(new_snapshot, *step_configurations)
             session.add(new_snapshot)
             session.add_all(step_configurations)
 
@@ -5788,7 +5788,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
                 # Every blob the new rows reference was just offloaded.
-                payloads=ResolvedPayloads(offloaded_payloads.values),
+                payloads=LoadedPayloads(offload_result.values_by_blob_id),
             )
 
     def get_snapshot(
@@ -5823,9 +5823,9 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
-            payloads = self._resolve_payloads(
+            payloads = self._load_required_payloads(
                 session,
-                lambda: snapshot.get_payload_blob_ids(
+                lambda: snapshot.get_required_payload_blob_ids(
                     step_configuration_filter=step_configuration_filter,
                     include_config_schema=include_config_schema,
                 ),
@@ -5869,10 +5869,10 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
                 get_to_model_kwargs=lambda snapshots: {
-                    "payloads": self._resolve_payloads(
+                    "payloads": self._load_required_payloads(
                         session,
                         lambda: (
-                            PipelineSnapshotSchema.get_page_payload_blob_ids(
+                            PipelineSnapshotSchema.get_required_page_payload_blob_ids(
                                 snapshots
                             )
                         ),
@@ -5906,9 +5906,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineSnapshotSchema,
                 session=session,
             )
-            # Before any write; see `_resolve_payloads`.
-            payloads = self._resolve_payloads(
-                session, snapshot.get_payload_blob_ids
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, snapshot.get_required_payload_blob_ids
             )
 
             if isinstance(snapshot_update.name, str):
@@ -6547,9 +6547,9 @@ class SqlZenStore(BaseZenStore):
             )
 
             template_utils.validate_snapshot_is_templatable(snapshot)
-            # Before any write; see `_resolve_payloads`.
-            payloads = self._resolve_payloads(
-                session, snapshot.get_payload_blob_ids
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, snapshot.get_required_payload_blob_ids
             )
 
             template_schema = RunTemplateSchema.from_request(request=template)
@@ -6603,8 +6603,10 @@ class SqlZenStore(BaseZenStore):
             return template.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
-                payloads=self._resolve_payloads(
-                    session, template.get_payload_blob_ids, hydrate=hydrate
+                payloads=self._load_required_payloads(
+                    session,
+                    template.get_required_payload_blob_ids,
+                    hydrate=hydrate,
                 ),
             )
 
@@ -6637,10 +6639,10 @@ class SqlZenStore(BaseZenStore):
                 filter_model=template_filter_model,
                 hydrate=hydrate,
                 get_to_model_kwargs=lambda templates: {
-                    "payloads": self._resolve_payloads(
+                    "payloads": self._load_required_payloads(
                         session,
                         lambda: (
-                            PipelineSnapshotSchema.get_page_payload_blob_ids(
+                            PipelineSnapshotSchema.get_required_page_payload_blob_ids(
                                 [
                                     template.source_snapshot
                                     for template in templates
@@ -6673,9 +6675,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
-            # Before any write; see `_resolve_payloads`.
-            payloads = self._resolve_payloads(
-                session, template.get_payload_blob_ids
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, template.get_required_payload_blob_ids
             )
 
             template.update(template_update)
@@ -6863,11 +6865,11 @@ class SqlZenStore(BaseZenStore):
                     for config_table in snapshot.step_configurations
                 }
             )
-            payloads = self._resolve_payloads(
+            payloads = self._load_required_payloads(
                 session,
                 lambda: [
                     snapshot.pipeline_configuration_blob_id,
-                    *get_blob_ids(*step_configurations.values()),
+                    *collect_payload_blob_ids(*step_configurations.values()),
                 ],
             )
             pipeline_configuration = snapshot.get_pipeline_configuration(
@@ -7337,16 +7339,16 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         session: Session,
-        offloaded_payloads: OffloadedPayloads,
-        payloads: ResolvedPayloads,
+        offload_result: OffloadResult,
+        payloads: LoadedPayloads,
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
             session: SQLAlchemy session.
-            offloaded_payloads: The offloaded payloads of the run.
-            payloads: The resolved payloads of the run and its snapshot.
+            offload_result: The offloaded payloads of the run.
+            payloads: The loaded payloads of the run and its snapshot.
 
         Returns:
             The created pipeline run.
@@ -7398,7 +7400,7 @@ class SqlZenStore(BaseZenStore):
             enable_heartbeat=snapshot.get_enable_heartbeat(),
             root_run_id=root_run_id,
         )
-        offloaded_payloads.reference(new_run)
+        offload_result.apply_references(new_run)
 
         session.add(new_run)
 
@@ -7530,8 +7532,8 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
-                payloads=self._resolve_payloads(
-                    session, run.get_payload_blob_ids, hydrate=hydrate
+                payloads=self._load_required_payloads(
+                    session, run.get_required_payload_blob_ids, hydrate=hydrate
                 ),
             )
 
@@ -7576,16 +7578,16 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         session: Session,
-        offloaded_payloads: OffloadedPayloads,
-        payloads: ResolvedPayloads,
+        offload_result: OffloadResult,
+        payloads: LoadedPayloads,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
             session: SQLAlchemy session.
-            offloaded_payloads: The offloaded payloads of the run.
-            payloads: The resolved payloads of the run and its snapshot.
+            offload_result: The offloaded payloads of the run.
+            payloads: The loaded payloads of the run and its snapshot.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -7638,7 +7640,7 @@ class SqlZenStore(BaseZenStore):
             raise KeyError("No placeholder run found.")
 
         run_schema.update_placeholder(pipeline_run)
-        offloaded_payloads.reference(run_schema)
+        offload_result.apply_references(run_schema)
 
         session.add(run_schema)
         session.commit()
@@ -7700,8 +7702,8 @@ class SqlZenStore(BaseZenStore):
         return run_schema.to_model(
             include_metadata=True,
             include_resources=True,
-            payloads=self._resolve_payloads(
-                session, run_schema.get_payload_blob_ids
+            payloads=self._load_required_payloads(
+                session, run_schema.get_required_payload_blob_ids
             ),
         )
 
@@ -7734,7 +7736,7 @@ class SqlZenStore(BaseZenStore):
                 reference_id=pipeline_run.snapshot,
                 session=session,
             )
-        return snapshot.get_run_payload_blob_ids() if snapshot else []
+        return snapshot.get_required_run_payload_blob_ids() if snapshot else []
 
     def get_or_create_run(
         self,
@@ -7784,18 +7786,22 @@ class SqlZenStore(BaseZenStore):
             # setup did not finish. The orchestrator environment is only
             # offloaded once no existing run was found for it.
             snapshot_blob_ids: List[Optional[UUID]] = []
-            if self.payload_store.has_backend:
+            if self.payload_store.backend_configured:
                 snapshot_blob_ids = self._get_run_snapshot_blob_ids(
                     pipeline_run, session=session
                 )
-            offloaded_payloads = self._offload_payloads(
+            offload_result = self._offload_payloads(
                 session,
-                [PipelineRunSchema.get_orchestrator_environment(pipeline_run)],
+                [
+                    PipelineRunSchema.get_orchestrator_environment_payload(
+                        pipeline_run
+                    )
+                ],
             )
-            payloads = self._resolve_payloads(
+            payloads = self._load_required_payloads(
                 session,
                 lambda: snapshot_blob_ids,
-                offloaded_payloads=offloaded_payloads,
+                offload_result=offload_result,
             )
 
             # Acquire exclusive lock on the snapshot to prevent deadlocks
@@ -7815,7 +7821,7 @@ class SqlZenStore(BaseZenStore):
                         self._replace_placeholder_run(
                             pipeline_run=pipeline_run,
                             session=session,
-                            offloaded_payloads=offloaded_payloads,
+                            offload_result=offload_result,
                             payloads=payloads,
                         ),
                         True,
@@ -7853,7 +7859,7 @@ class SqlZenStore(BaseZenStore):
                     self._create_run(
                         pipeline_run,
                         session=session,
-                        offloaded_payloads=offloaded_payloads,
+                        offload_result=offload_result,
                         payloads=payloads,
                     ),
                     True,
@@ -7933,7 +7939,7 @@ class SqlZenStore(BaseZenStore):
                 },
                 get_to_model_kwargs=lambda runs: {
                     "include_full_metadata": include_full_metadata,
-                    "payloads": self._resolve_page_payloads(
+                    "payloads": self._load_page_payloads(
                         session, runs, hydrate
                     ),
                 },
@@ -7968,9 +7974,11 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-            # Before any write; see `_resolve_payloads`.
-            payloads = self._resolve_payloads(
-                session, existing_run.get_payload_blob_ids, hydrate=hydrate
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session,
+                existing_run.get_required_payload_blob_ids,
+                hydrate=hydrate,
             )
 
             if run_update.status is not None:
@@ -12725,20 +12733,20 @@ class SqlZenStore(BaseZenStore):
             # between, while no transaction is open.
             self._end_read_transaction(session)
 
-            offloaded_payloads = self.payload_store.offload(
-                StepRunSchema.get_request_payloads(step_run)
+            offload_result = self.payload_store.offload(
+                StepRunSchema.get_request_payload_values(step_run)
                 + (
-                    get_inline_payloads(dynamic_configuration)
+                    get_inline_payload_values(dynamic_configuration)
                     if dynamic_configuration
                     else []
                 )
             )
-            payloads = self._resolve_payloads(
+            payloads = self._load_required_payloads(
                 session,
-                lambda: StepRunSchema.get_configuration_blob_ids(
+                lambda: StepRunSchema.get_step_configuration_blob_ids(
                     config_schema, run.snapshot
                 ),
-                offloaded_payloads=offloaded_payloads,
+                offload_result=offload_result,
             )
 
             # Parsing the pipeline configuration is expensive, so it is parsed
@@ -12872,13 +12880,13 @@ class SqlZenStore(BaseZenStore):
                 else None
             )
 
-            offloaded_payloads.reference(step_schema)
+            offload_result.apply_references(step_schema)
             session.add(step_schema)
 
             resolved_step_config = step_config
             if dynamic_configuration:
                 dynamic_configuration.step_run_id = step_schema.id
-                offloaded_payloads.reference(dynamic_configuration)
+                offload_result.apply_references(dynamic_configuration)
                 session.add(dynamic_configuration)
                 # Resolved like reads resolve it, so that the values copied
                 # below match what reads would compute.
@@ -13230,8 +13238,10 @@ class SqlZenStore(BaseZenStore):
             return step_run.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
-                payloads=self._resolve_payloads(
-                    session, step_run.get_payload_blob_ids, hydrate=hydrate
+                payloads=self._load_required_payloads(
+                    session,
+                    step_run.get_required_payload_blob_ids,
+                    hydrate=hydrate,
                 ),
             )
 
@@ -13265,7 +13275,7 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
                 get_to_model_kwargs=lambda step_runs: {
-                    "payloads": self._resolve_page_payloads(
+                    "payloads": self._load_page_payloads(
                         session, step_runs, hydrate
                     )
                 },
@@ -13596,10 +13606,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
-            # Before any write; see `_resolve_payloads`.
-            payloads = self._resolve_payloads(
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
                 session,
-                existing_step_run.get_payload_blob_ids,
+                existing_step_run.get_required_payload_blob_ids,
                 hydrate=hydrate,
             )
 
@@ -15028,7 +15038,7 @@ class SqlZenStore(BaseZenStore):
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
                 # Without metadata, which for some entities carries payloads
-                # that nothing resolves here; callers need the body and
+                # that nothing loads here; callers need the body and
                 # resources.
                 return cast(
                     AnyIdentifiedResponse,

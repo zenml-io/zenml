@@ -63,7 +63,7 @@ from zenml.zen_server.rbac.utils import (
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
-    get_with_metadata_if_available,
+    get_with_best_effort_metadata,
     make_dependable,
     set_filter_project_scope,
     zen_store,
@@ -222,7 +222,7 @@ def update_step(
         hydrate=bool(hydrate),
     )
     if hydrate is None:
-        updated_step = get_with_metadata_if_available(
+        updated_step = get_with_best_effort_metadata(
             zen_store().get_run_step, step_id
         )
     return dehydrate_response_model(updated_step)

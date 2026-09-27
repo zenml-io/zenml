@@ -54,8 +54,8 @@ from zenml.constants import (
 from zenml.exceptions import (
     IllegalOperationError,
     MaxConcurrentTasksError,
+    NonRetryablePayloadStorageError,
     OAuthError,
-    PayloadStorageError,
     PayloadStorageUnavailableError,
 )
 from zenml.logger import get_logger, get_logging_context, logging_context
@@ -581,7 +581,7 @@ def initialize_zen_store() -> None:
 _server_config: Optional[ServerConfiguration] = None
 
 
-def get_with_metadata_if_available(
+def get_with_best_effort_metadata(
     get_method: Callable[..., R], entity_id: UUID
 ) -> R:
     """Get an entity whose change is already committed, for a response.
@@ -600,7 +600,7 @@ def get_with_metadata_if_available(
     """
     try:
         return get_method(entity_id, hydrate=True)
-    except (PayloadStorageError, PayloadStorageUnavailableError):
+    except (NonRetryablePayloadStorageError, PayloadStorageUnavailableError):
         logger.exception(
             "Failed to load the metadata of %s for the response.", entity_id
         )

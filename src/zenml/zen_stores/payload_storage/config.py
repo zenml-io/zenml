@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from zenml.utils.enum_utils import StrEnum
 
 
-class PayloadBackendType(StrEnum):
+class BlobBackendType(StrEnum):
     """Object stores that can hold payload blobs."""
 
     S3 = "s3"
@@ -29,10 +29,10 @@ class PayloadBackendType(StrEnum):
 
 
 # The schemes of the paths of each backend, as the Helm chart accepts them.
-PATH_SCHEMES: Dict[PayloadBackendType, Tuple[str, ...]] = {
-    PayloadBackendType.S3: ("s3://",),
-    PayloadBackendType.GCS: ("gs://",),
-    PayloadBackendType.AZURE: ("az://", "abfs://"),
+BACKEND_URI_SCHEMES: Dict[BlobBackendType, Tuple[str, ...]] = {
+    BlobBackendType.S3: ("s3://",),
+    BlobBackendType.GCS: ("gs://",),
+    BlobBackendType.AZURE: ("az://", "abfs://"),
 }
 
 
@@ -43,7 +43,7 @@ class PayloadStorageConfiguration(BaseModel):
 
     Attributes:
         offload_enabled: Whether new snapshots, step runs and runs move their
-            payloads to the backend. Reads resolve offloaded payloads whatever
+            payloads to the backend. Reads load offloaded payloads whatever
             this is set to, so it can be switched off again. Only switch it on
             once every process that opens the database runs a version that
             can read offloaded payloads, with the same backend configured.
@@ -59,10 +59,11 @@ class PayloadStorageConfiguration(BaseModel):
             `account_name`, `connection_string`). Without credentials, the
             implicit credentials of the environment are used. Credentials can
             change.
-        cache_size: The maximum memory in bytes taken by the resolved
+        cache_max_bytes: The maximum memory in bytes taken by the loaded
             payloads that each process keeps. 0 disables the cache.
-        timeout: The number of seconds after which a call to the payload
-            backend is cancelled, retries included, and the request fails.
+        backend_timeout_seconds: The number of seconds after which a call to
+            the payload backend is cancelled, retries included, and the
+            request fails.
             Payload storage that hangs then fails requests quickly instead of
             holding them and their threads. The default stays below the
             server's request timeout (20 seconds), so that the storage error
@@ -72,10 +73,10 @@ class PayloadStorageConfiguration(BaseModel):
     """
 
     offload_enabled: bool = False
-    backend: Optional[PayloadBackendType] = None
+    backend: Optional[BlobBackendType] = None
     backend_config: Dict[str, Any] = Field(default_factory=dict)
-    cache_size: int = Field(default=128 * 1024 * 1024, ge=0)
-    timeout: float = Field(default=10, gt=0)
+    cache_max_bytes: int = Field(default=128 * 1024 * 1024, ge=0)
+    backend_timeout_seconds: float = Field(default=10, gt=0)
 
     # Like the store configuration that holds it, so that a configuration
     # written by a newer release still loads.
@@ -98,7 +99,7 @@ class PayloadStorageConfiguration(BaseModel):
                 "`azure`."
             )
         if self.backend is not None:
-            schemes = PATH_SCHEMES[self.backend]
+            schemes = BACKEND_URI_SCHEMES[self.backend]
             path = self.backend_config.get("path")
             if not isinstance(path, str) or not path.startswith(schemes):
                 raise ValueError(

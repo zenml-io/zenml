@@ -33,7 +33,10 @@ from zenml.models import (
     RunTemplateUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.payload_storage import UNRESOLVED, ResolvedPayloads
+from zenml.zen_stores.payload_storage import (
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -260,7 +263,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         self.updated = utc_now()
         return self
 
-    def get_payload_blob_ids(self) -> List[Optional[UUID]]:
+    def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
         """Get the blobs that the conversion of this template with metadata reads.
 
         Returns:
@@ -268,13 +271,13 @@ class RunTemplateSchema(NamedSchema, table=True):
         """
         if not self.source_snapshot:
             return []
-        return self.source_snapshot.get_payload_blob_ids()
+        return self.source_snapshot.get_required_payload_blob_ids()
 
     def to_model(
         self,
         include_metadata: bool = False,
         include_resources: bool = False,
-        payloads: ResolvedPayloads = UNRESOLVED,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
         **kwargs: Any,
     ) -> RunTemplateResponse:
         """Convert the schema to a response model.
@@ -282,7 +285,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         Args:
             include_metadata: Whether the metadata will be filled.
             include_resources: Whether the resources will be filled.
-            payloads: The resolver of offloaded payloads, required to include
+            payloads: The loaded payloads, required to include
                 the metadata of a template whose source snapshot has
                 offloaded payloads.
             **kwargs: Keyword arguments to allow schema specific logic

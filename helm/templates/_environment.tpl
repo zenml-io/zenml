@@ -106,7 +106,7 @@ Returns:
 */}}
 {{- define "zenml.storeSecretConfigurationAttrs" -}}
 {{- with .ZenML.database.payloadStorage }}
-{{- if or .enabled .path }}
+{{- if or .offloadEnabled .path }}
 payload_storage: {{ include "zenml.payloadStorageConfiguration" . | fromYaml | toJson | quote }}
 {{- end }}
 {{- end }}
@@ -152,15 +152,15 @@ Returns:
 {{- if and (ne .backend "s3") (or .region .endpointUrl) }}
 {{- fail "zenml.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
 {{- end }}
-{{- if le (float64 .timeout) 0.0 }}
-{{- fail (printf "zenml.database.payloadStorage.timeout must be a number of seconds above 0, not `%v`." .timeout) }}
+{{- if le (float64 .backendTimeoutSeconds) 0.0 }}
+{{- fail (printf "zenml.database.payloadStorage.backendTimeoutSeconds must be a number of seconds above 0, not `%v`." .backendTimeoutSeconds) }}
 {{- end }}
 {{- /* Checked before converting it, which turns any text into 0 and cuts decimals. */ -}}
-{{- $isNumber := or (kindIs "float64" .cacheSize) (kindIs "int64" .cacheSize) (kindIs "int" .cacheSize) }}
-{{- if not (and $isNumber (ge (float64 .cacheSize) 0.0) (eq (float64 .cacheSize) (floor .cacheSize))) }}
-{{- fail (printf "zenml.database.payloadStorage.cacheSize must be a whole number of bytes, 0 or more, not `%v`." .cacheSize) }}
+{{- $isNumber := or (kindIs "float64" .cacheMaxBytes) (kindIs "int64" .cacheMaxBytes) (kindIs "int" .cacheMaxBytes) }}
+{{- if not (and $isNumber (ge (float64 .cacheMaxBytes) 0.0) (eq (float64 .cacheMaxBytes) (floor .cacheMaxBytes))) }}
+{{- fail (printf "zenml.database.payloadStorage.cacheMaxBytes must be a whole number of bytes, 0 or more, not `%v`." .cacheMaxBytes) }}
 {{- end }}
-offload_enabled: {{ .enabled }}
+offload_enabled: {{ .offloadEnabled }}
 backend: {{ .backend }}
 backend_config:
   path: {{ .path | quote }}
@@ -173,8 +173,8 @@ backend_config:
     endpoint_url: {{ .endpointUrl | quote }}
     {{- end }}
   {{- end }}
-cache_size: {{ int64 .cacheSize }}
-timeout: {{ .timeout }}
+cache_max_bytes: {{ int64 .cacheMaxBytes }}
+backend_timeout_seconds: {{ .backendTimeoutSeconds }}
 {{- end }}
 
 

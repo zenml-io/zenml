@@ -72,11 +72,11 @@ from zenml.utils.run_utils import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import (
-    UNRESOLVED,
-    PayloadField,
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    PayloadColumn,
     PayloadValue,
-    ResolvedPayloads,
-    get_blob_ids,
+    collect_payload_blob_ids,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -170,8 +170,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     orchestrator_environment_blob_id: Optional[UUID] = None
 
-    PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        PayloadField(name="orchestrator_environment", nullable=True),
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="orchestrator_environment", nullable=True),
     )
     index: int = Field(nullable=False)
     enable_heartbeat: bool = Field(nullable=False)
@@ -566,7 +566,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=request.user,
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
-            orchestrator_environment=cls.get_orchestrator_environment(
+            orchestrator_environment=cls.get_orchestrator_environment_payload(
                 request
             ).text,
             start_time=request.start_time,
@@ -590,7 +590,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
 
     @staticmethod
-    def get_orchestrator_environment(
+    def get_orchestrator_environment_payload(
         request: "PipelineRunRequest",
     ) -> PayloadValue:
         """Get the orchestrator environment payload of a run request.
@@ -624,24 +624,24 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
         return None
 
-    def get_payload_blob_ids(self) -> List[Optional[UUID]]:
+    def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
         """Get the blobs that the conversion of this run with metadata reads.
 
         Returns:
             The blob IDs.
         """
-        blob_ids = get_blob_ids(self)
+        blob_ids = collect_payload_blob_ids(self)
         if self.snapshot:
-            blob_ids += self.snapshot.get_run_payload_blob_ids()
+            blob_ids += self.snapshot.get_required_run_payload_blob_ids()
         return blob_ids
 
     def get_pipeline_configuration(
-        self, payloads: ResolvedPayloads = UNRESOLVED
+        self, payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS
     ) -> PipelineConfiguration:
         """Get the pipeline configuration for the pipeline run.
 
         Args:
-            payloads: The resolver of offloaded payloads.
+            payloads: The loaded payloads.
 
         Raises:
             RuntimeError: if the pipeline run has no snapshot and no pipeline
@@ -743,7 +743,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_resources: bool = False,
         include_python_packages: bool = False,
         include_full_metadata: bool = False,
-        payloads: ResolvedPayloads = UNRESOLVED,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
         **kwargs: Any,
     ) -> "PipelineRunResponse":
         """Convert a `PipelineRunSchema` to a `PipelineRunResponse`.
@@ -753,7 +753,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             include_resources: Whether the resources will be filled.
             include_python_packages: Whether the python packages will be filled.
             include_full_metadata: Whether the full metadata will be included.
-            payloads: The resolver of offloaded payloads, required to include
+            payloads: The loaded payloads, required to include
                 the metadata of a run whose payloads are offloaded.
             **kwargs: Keyword arguments to allow schema specific logic
 
@@ -778,7 +778,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_metadata:
             config = self.get_pipeline_configuration(payloads)
             raw_client_environment = (
-                payloads.read(
+                payloads.resolve(
                     self.snapshot.client_environment,
                     self.snapshot.client_environment_blob_id,
                 )
@@ -800,7 +800,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ):
                 is_templatable = True
 
-            raw_orchestrator_environment = payloads.read(
+            raw_orchestrator_environment = payloads.resolve(
                 self.orchestrator_environment,
                 self.orchestrator_environment_blob_id,
             )
@@ -1160,9 +1160,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         self.orchestrator_run_id = request.orchestrator_run_id
-        self.orchestrator_environment = self.get_orchestrator_environment(
-            request
-        ).text
+        self.orchestrator_environment = (
+            self.get_orchestrator_environment_payload(request).text
+        )
         # The environment of the placeholder may have been offloaded.
         self.orchestrator_environment_blob_id = None
         self.status = request.status.value

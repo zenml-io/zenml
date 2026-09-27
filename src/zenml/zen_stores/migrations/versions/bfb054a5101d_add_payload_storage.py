@@ -59,17 +59,23 @@ def _add_columns(table: str, columns: List[sa.Column]) -> None:  # type: ignore[
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     op.create_table(
-        "blob",
+        "payload_blob",
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("sha256", sa.String(length=64), nullable=False),
         sa.Column("codec", sa.String(length=16), nullable=False),
-        sa.Column("size", sa.BigInteger(), nullable=False),
-        sa.Column("stored_in", sa.String(length=16), nullable=False),
+        sa.Column("size_bytes", sa.BigInteger(), nullable=False),
+        sa.Column(
+            "location_fingerprint", sa.String(length=16), nullable=False
+        ),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("sha256", name="unique_blob_sha256"),
+        sa.UniqueConstraint("sha256", name="unique_payload_blob_sha256"),
     )
-    op.create_index("ix_blob_stored_in", "blob", ["stored_in"])
+    op.create_index(
+        "ix_payload_blob_location_fingerprint",
+        "payload_blob",
+        ["location_fingerprint"],
+    )
 
     # Nullable columns without foreign keys or indexes, so that MySQL can
     # append them without rebuilding or copying these large tables.
@@ -90,7 +96,11 @@ def downgrade() -> None:
         RuntimeError: If payloads were offloaded, since dropping the reference
             columns would lose which blob each row points to.
     """
-    if op.get_bind().execute(sa.text("SELECT 1 FROM blob LIMIT 1")).first():
+    if (
+        op.get_bind()
+        .execute(sa.text("SELECT 1 FROM payload_blob LIMIT 1"))
+        .first()
+    ):
         raise RuntimeError(
             "Execution payloads were offloaded to object storage, and this "
             "downgrade would lose which blob each row references. Only "
@@ -102,5 +112,7 @@ def downgrade() -> None:
             for column in reversed(columns):
                 batch_op.drop_column(column)
 
-    op.drop_index("ix_blob_stored_in", table_name="blob")
-    op.drop_table("blob")
+    op.drop_index(
+        "ix_payload_blob_location_fingerprint", table_name="payload_blob"
+    )
+    op.drop_table("payload_blob")

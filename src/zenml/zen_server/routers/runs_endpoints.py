@@ -123,7 +123,7 @@ from zenml.zen_server.streaming.types import RESERVED_STREAM_EVENT_KINDS
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
-    get_with_metadata_if_available,
+    get_with_best_effort_metadata,
     make_dependable,
     server_config,
     set_filter_project_scope,
@@ -370,7 +370,7 @@ def update_run(
     )
     if hydrate is None:
         run = dehydrate_response_model(
-            get_with_metadata_if_available(zen_store().get_run, run_id)
+            get_with_best_effort_metadata(zen_store().get_run, run_id)
         )
     return run
 

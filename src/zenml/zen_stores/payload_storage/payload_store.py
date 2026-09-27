@@ -40,40 +40,40 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from zenml.exceptions import (
+    NonRetryablePayloadStorageError,
     PayloadIntegrityError,
-    PayloadStorageError,
     PayloadStorageUnavailableError,
 )
 from zenml.logger import get_logger
-from zenml.zen_stores.payload_storage.backends import (
-    PayloadBackend,
-    create_payload_backend,
+from zenml.zen_stores.payload_storage.blob_backends import (
+    BlobBackend,
+    create_blob_backend,
 )
 from zenml.zen_stores.payload_storage.cache import PayloadCache
 from zenml.zen_stores.payload_storage.circuit_breaker import CircuitBreaker
 from zenml.zen_stores.payload_storage.config import (
-    PayloadBackendType,
+    BlobBackendType,
     PayloadStorageConfiguration,
 )
 from zenml.zen_stores.payload_storage.payloads import (
-    OffloadedPayloads,
+    OffloadResult,
     PayloadValue,
 )
-from zenml.zen_stores.schemas.blob_schemas import (
-    BLOB_STORED_IN_LENGTH,
-    BlobSchema,
+from zenml.zen_stores.schemas.payload_blob_schemas import (
+    LOCATION_FINGERPRINT_LENGTH,
+    PayloadBlobSchema,
 )
 
 IDENTITY_CODEC = "identity"
 MAX_CONCURRENT_BACKEND_CALLS = 32
 # Failed backend calls in a row after which calls to the backend are paused.
-FAILURES_TO_PAUSE = 3
+CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
 # How much longer than a call's own timeout a batch waits for any call to
 # return: calls that time out are then always seen, and counted by the
 # circuit breaker, before the batch gives up.
-STALL_MARGIN = 1.0
+BACKEND_STALL_MARGIN_SECONDS = 1.0
 # Bounds the size of the `IN` lists of registry queries.
-QUERY_BATCH_SIZE = 500
+BLOB_QUERY_BATCH_SIZE = 500
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -91,12 +91,12 @@ def _batched(items: Collection[T]) -> Iterable[List[T]]:
         The batches.
     """
     batch = list(items)
-    for start in range(0, len(batch), QUERY_BATCH_SIZE):
-        yield batch[start : start + QUERY_BATCH_SIZE]
+    for start in range(0, len(batch), BLOB_QUERY_BATCH_SIZE):
+        yield batch[start : start + BLOB_QUERY_BATCH_SIZE]
 
 
 class PayloadStore:
-    """Offloads the payloads of execution schemas and resolves them.
+    """Offloads the payloads of execution schemas and loads them back.
 
     Payloads are stored as content-addressed blobs in an object store: each
     distinct value is stored once. The `blob` table registers every blob, and
@@ -115,29 +115,29 @@ class PayloadStore:
         """
         self._engine = engine
         self._offload_enabled = config.offload_enabled
-        self._backend: Optional[PayloadBackend] = None
-        # The location of the blobs as `blob.stored_in` records it; None
+        self._backend: Optional[BlobBackend] = None
+        # The location of the blobs as `blob.location_fingerprint` records it; None
         # keeps payloads inline.
-        self._stored_in: Optional[str] = None
+        self._location_fingerprint: Optional[str] = None
         self._breaker: Optional[CircuitBreaker] = None
         if config.backend:
-            self._backend = create_payload_backend(
+            self._backend = create_blob_backend(
                 config.backend,
                 config.backend_config,
-                timeout=config.timeout,
-                concurrent_calls=MAX_CONCURRENT_BACKEND_CALLS,
+                timeout=config.backend_timeout_seconds,
+                max_concurrent_calls=MAX_CONCURRENT_BACKEND_CALLS,
             )
-            self._stored_in = self._identify_location(
+            self._location_fingerprint = self._compute_location_fingerprint(
                 config.backend, self._backend.location
             )
             # Paused for as long as a call may take.
             self._breaker = CircuitBreaker(
                 config.backend.value,
-                failures_to_pause=FAILURES_TO_PAUSE,
-                pause=config.timeout,
+                failure_threshold=CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+                recovery_timeout_seconds=config.backend_timeout_seconds,
             )
-        self._cache = PayloadCache(max_size=config.cache_size)
-        self._timeout = config.timeout
+        self._cache = PayloadCache(max_bytes=config.cache_max_bytes)
+        self._timeout = config.backend_timeout_seconds
         self._executor = ThreadPoolExecutor(
             max_workers=MAX_CONCURRENT_BACKEND_CALLS,
             thread_name_prefix="zenml-payload-storage",
@@ -153,7 +153,7 @@ class PayloadStore:
         return self._offload_enabled
 
     @property
-    def has_backend(self) -> bool:
+    def backend_configured(self) -> bool:
         """Whether a backend is configured, so that blobs can be read.
 
         Returns:
@@ -161,29 +161,36 @@ class PayloadStore:
         """
         return self._backend is not None
 
-    def verify_backend(self) -> None:
+    def validate_storage_location(self) -> None:
         """Verify that every blob is stored at the configured location.
 
         Raises:
             RuntimeError: If blobs are stored at another location, or no
                 backend is configured while blobs exist.
         """
-        if not inspect(self._engine).has_table(BlobSchema.__tablename__):
+        if not inspect(self._engine).has_table(
+            PayloadBlobSchema.__tablename__
+        ):
             return
 
-        query = select(BlobSchema.stored_in)
-        if self._stored_in:
-            query = query.where(BlobSchema.stored_in != self._stored_in)
+        query = select(PayloadBlobSchema.location_fingerprint)
+        if self._location_fingerprint:
+            query = query.where(
+                PayloadBlobSchema.location_fingerprint
+                != self._location_fingerprint
+            )
         with Session(self._engine) as session:
-            stored_in = session.exec(query.limit(1)).first()
-        if stored_in:
-            raise RuntimeError(self._describe_other_location(stored_in))
+            location_fingerprint = session.exec(query.limit(1)).first()
+        if location_fingerprint:
+            raise RuntimeError(
+                self._describe_location_mismatch(location_fingerprint)
+            )
 
     @staticmethod
-    def _identify_location(
-        backend_type: PayloadBackendType, location: str
+    def _compute_location_fingerprint(
+        backend_type: BlobBackendType, location: str
     ) -> str:
-        """Identify a location of blobs as the `stored_in` of their rows.
+        """Identify a location of blobs as the `location_fingerprint` of their rows.
 
         The backend and a digest of the location, cut to the length of the
         column: however long the location is, at least 10 hex digits of the
@@ -197,13 +204,13 @@ class PayloadStore:
             The identity of the location.
         """
         digest = hashlib.sha256(location.encode("utf-8")).hexdigest()
-        return f"{backend_type.value}:{digest}"[:BLOB_STORED_IN_LENGTH]
+        return f"{backend_type.value}:{digest}"[:LOCATION_FINGERPRINT_LENGTH]
 
-    def _describe_other_location(self, stored_in: str) -> str:
+    def _describe_location_mismatch(self, location_fingerprint: str) -> str:
         """Describe blobs stored at another location than the configured one.
 
         Args:
-            stored_in: The location of the blobs, as their rows record it.
+            location_fingerprint: The location of the blobs, as their rows record it.
 
         Returns:
             The error message.
@@ -211,18 +218,18 @@ class PayloadStore:
         if self._backend:
             configured = (
                 f"not at the configured `{self._backend.location}` "
-                f"(`{self._stored_in}`)"
+                f"(`{self._location_fingerprint}`)"
             )
         else:
             configured = "but no payload storage backend is configured"
         return (
             "Execution payloads are stored at the payload storage location "
-            f"`{stored_in}`, {configured}. Configure the `backend` and `path` "
+            f"`{location_fingerprint}`, {configured}. Configure the `backend` and `path` "
             "that they were written to: payload storage cannot move once it "
             "holds payloads."
         )
 
-    def offload(self, values: Iterable[PayloadValue]) -> OffloadedPayloads:
+    def offload(self, values: Iterable[PayloadValue]) -> OffloadResult:
         """Store payload values ahead of the transaction referencing them.
 
         The bytes of new values are stored in the backend first. Their blobs
@@ -238,7 +245,7 @@ class PayloadStore:
             The offloaded payloads, which reference the blobs from schemas.
         """
         if not self._offload_enabled:
-            return OffloadedPayloads.disabled()
+            return OffloadResult.inline_only()
         backend = self._backend
         assert backend
 
@@ -246,7 +253,7 @@ class PayloadStore:
         blob_ids: Dict[str, UUID] = {}
         if values_by_sha256:
             with Session(self._engine) as session:
-                blob_ids = self._get_registered_blobs(
+                blob_ids = self._get_registered_blob_ids(
                     values_by_sha256, session=session
                 )
             new_values = [
@@ -255,20 +262,20 @@ class PayloadStore:
                 if sha256 not in blob_ids
             ]
             if new_values:
-                self._call_backend(
-                    lambda value: backend.put(value.sha256, value.data),
+                self._call_backend_batch(
+                    lambda value: backend.put(value.sha256, value.utf8_bytes),
                     new_values,
                 )
                 with Session(self._engine) as session:
-                    registered = self._register(new_values, session)
+                    registered = self._register_blobs(new_values, session)
                 blob_ids.update(registered)
                 # Only the values stored here: a blob found in the registry
                 # may lack its object, which reads have to find out.
                 for sha256, blob_id in registered.items():
                     self._cache.put(blob_id, values_by_sha256[sha256].text)
 
-        return OffloadedPayloads(
-            blob_ids={
+        return OffloadResult(
+            blob_ids_by_text={
                 values_by_sha256[sha256].text: blob_id
                 for sha256, blob_id in blob_ids.items()
             }
@@ -297,9 +304,9 @@ class PayloadStore:
         Returns:
             The values by blob ID.
         """
-        return self._cache.get_many(blob_ids, self._read)
+        return self._cache.get_or_load(blob_ids, self._load_uncached_payloads)
 
-    def _get_registered_blobs(
+    def _get_registered_blob_ids(
         self, sha256s: Collection[str], session: Session
     ) -> Dict[str, UUID]:
         """Get the registered blobs of contents.
@@ -314,14 +321,14 @@ class PayloadStore:
         blob_ids: Dict[str, UUID] = {}
         for batch in _batched(sha256s):
             for blob_id, sha256 in session.exec(
-                select(BlobSchema.id, BlobSchema.sha256).where(
-                    col(BlobSchema.sha256).in_(batch)
+                select(PayloadBlobSchema.id, PayloadBlobSchema.sha256).where(
+                    col(PayloadBlobSchema.sha256).in_(batch)
                 )
             ):
                 blob_ids[sha256] = blob_id
         return blob_ids
 
-    def _create_blob(self, value: PayloadValue) -> BlobSchema:
+    def _build_blob_record(self, value: PayloadValue) -> PayloadBlobSchema:
         """Create the registry row of a payload value.
 
         Args:
@@ -330,15 +337,15 @@ class PayloadStore:
         Returns:
             The registry row.
         """
-        assert self._stored_in
-        return BlobSchema(
+        assert self._location_fingerprint
+        return PayloadBlobSchema(
             sha256=value.sha256,
             codec=IDENTITY_CODEC,
-            size=len(value.data),
-            stored_in=self._stored_in,
+            size_bytes=len(value.utf8_bytes),
+            location_fingerprint=self._location_fingerprint,
         )
 
-    def _register(
+    def _register_blobs(
         self, values: List[PayloadValue], session: Session
     ) -> Dict[str, UUID]:
         """Register the blobs of payload values whose bytes are durable.
@@ -353,7 +360,7 @@ class PayloadStore:
         # Sorted, so that concurrent writers lock the same keys in the same
         # order and never deadlock each other.
         values = sorted(values, key=lambda value: value.sha256)
-        blobs = [self._create_blob(value) for value in values]
+        blobs = [self._build_blob_record(value) for value in values]
         # Read before the commit expires the rows, which would reload each.
         blob_ids = {blob.sha256: blob.id for blob in blobs}
         session.add_all(blobs)
@@ -363,11 +370,12 @@ class PayloadStore:
             session.rollback()
             # A concurrent writer registered some of the same content first.
             return {
-                value.sha256: self._get_or_register(value) for value in values
+                value.sha256: self._get_or_register_blob_id(value)
+                for value in values
             }
         return blob_ids
 
-    def _get_or_register(self, value: PayloadValue) -> UUID:
+    def _get_or_register_blob_id(self, value: PayloadValue) -> UUID:
         """Register the blob of a payload value unless it already exists.
 
         Args:
@@ -381,7 +389,7 @@ class PayloadStore:
                 concurrent registration.
         """
         with Session(self._engine) as session:
-            blob = self._create_blob(value)
+            blob = self._build_blob_record(value)
             # Read before the commit expires the row, which would reload it.
             blob_id = blob.id
             session.add(blob)
@@ -393,15 +401,17 @@ class PayloadStore:
                 # The rollback ended the transaction, so this read sees the
                 # blob registered by the concurrent writer.
                 existing = session.exec(
-                    select(BlobSchema.id).where(
-                        BlobSchema.sha256 == value.sha256
+                    select(PayloadBlobSchema.id).where(
+                        PayloadBlobSchema.sha256 == value.sha256
                     )
                 ).first()
                 if existing is None:
                     raise
                 return existing
 
-    def _read(self, blob_ids: Collection[UUID]) -> Dict[UUID, str]:
+    def _load_uncached_payloads(
+        self, blob_ids: Collection[UUID]
+    ) -> Dict[UUID, str]:
         """Read blobs from the backend.
 
         Args:
@@ -412,15 +422,17 @@ class PayloadStore:
 
         Raises:
             RuntimeError: If a blob is not registered.
-            PayloadStorageError: If a blob is stored at another location than
+            NonRetryablePayloadStorageError: If a blob is stored at another location than
                 the configured one.
         """
-        blobs: List[BlobSchema] = []
+        blobs: List[PayloadBlobSchema] = []
         with Session(self._engine) as session:
             for batch in _batched(blob_ids):
                 blobs.extend(
                     session.exec(
-                        select(BlobSchema).where(col(BlobSchema.id).in_(batch))
+                        select(PayloadBlobSchema).where(
+                            col(PayloadBlobSchema.id).in_(batch)
+                        )
                     )
                 )
         if missing := set(blob_ids) - {blob.id for blob in blobs}:
@@ -429,21 +441,24 @@ class PayloadStore:
                 "are referenced but not registered."
             )
         for blob in blobs:
-            if blob.stored_in != self._stored_in:
-                raise PayloadStorageError(
-                    self._describe_other_location(blob.stored_in)
+            if blob.location_fingerprint != self._location_fingerprint:
+                raise NonRetryablePayloadStorageError(
+                    self._describe_location_mismatch(blob.location_fingerprint)
                 )
         backend = self._backend
         assert backend
 
         sha256s = sorted({blob.sha256 for blob in blobs})
-        data = dict(zip(sha256s, self._call_backend(backend.get, sha256s)))
+        data = dict(
+            zip(sha256s, self._call_backend_batch(backend.get, sha256s))
+        )
         return {
-            blob.id: self._decode(blob, data[blob.sha256]) for blob in blobs
+            blob.id: self._verify_and_decode(blob, data[blob.sha256])
+            for blob in blobs
         }
 
     @staticmethod
-    def _decode(blob: BlobSchema, data: bytes) -> str:
+    def _verify_and_decode(blob: PayloadBlobSchema, data: bytes) -> str:
         """Verify the bytes of a blob against its registry row and decode them.
 
         Args:
@@ -462,17 +477,17 @@ class PayloadStore:
                 f"codec `{blob.codec}`."
             )
         if (
-            len(data) != blob.size
+            len(data) != blob.size_bytes
             or hashlib.sha256(data).hexdigest() != blob.sha256
         ):
             raise PayloadIntegrityError(
                 f"The bytes of payload blob `{blob.id}` at payload storage "
-                f"location `{blob.stored_in}` do not match its registered "
+                f"location `{blob.location_fingerprint}` do not match its registered "
                 "size and SHA-256."
             )
         return data.decode("utf-8")
 
-    def _call_backend(
+    def _call_backend_batch(
         self, function: Callable[[T], R], items: Sequence[T]
     ) -> List[R]:
         """Call the backend for several items concurrently.
@@ -488,11 +503,11 @@ class PayloadStore:
             PayloadStorageUnavailableError: If a call fails or does not
                 return in time, or calls to the backend are paused after it
                 failed repeatedly.
-            PayloadStorageError: If the storage refuses a call in a way that
+            NonRetryablePayloadStorageError: If the storage refuses a call in a way that
                 retrying does not fix, such as a missing object or denied
                 access.
         """
-        futures, stalled = self._run_calls(function, items)
+        futures, stalled = self._run_backend_calls(function, items)
         # The first in item order, so that the same failures always give
         # the same error.
         error = next(
@@ -519,7 +534,7 @@ class PayloadStore:
         if isinstance(error, (FileNotFoundError, PermissionError)):
             # Retrying brings back neither a missing object nor access, so
             # these fail at once instead of as a retried 503.
-            raise PayloadStorageError(
+            raise NonRetryablePayloadStorageError(
                 f"Execution payload storage refused the request: {error}"
             ) from error
         if error:
@@ -548,7 +563,7 @@ class PayloadStore:
         with self._breaker.guard():
             return function(item)
 
-    def _run_calls(
+    def _run_backend_calls(
         self, function: Callable[[T], R], items: Sequence[T]
     ) -> Tuple[List["Future[R]"], bool]:
         """Run backend calls on the shared threads until they end or stall.
@@ -586,7 +601,7 @@ class PayloadStore:
                 pending.add(future)
             done, pending = wait(
                 pending,
-                timeout=self._timeout + STALL_MARGIN,
+                timeout=self._timeout + BACKEND_STALL_MARGIN_SECONDS,
                 return_when=FIRST_COMPLETED,
             )
             stalled = not done

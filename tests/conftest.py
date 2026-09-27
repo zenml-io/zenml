@@ -30,7 +30,7 @@ from tests.harness.utils import (
     clean_default_client_session,
     clean_project_session,
     environment_session,
-    local_s3_payload_storage,
+    local_s3_payload_storage_env_value,
     start_local_s3,
 )
 from tests.venv_clone_utils import clone_virtualenv
@@ -59,9 +59,9 @@ from zenml.utils import source_utils
 DEFAULT_ENVIRONMENT_NAME = "default"
 
 # Offloading payloads is off by default, so the suites only cover payloads kept
-# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE=s3`, every store of the
+# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE_BACKEND=s3`, every store of the
 # session offloads its payloads to a local S3 server instead.
-TEST_PAYLOAD_STORAGE_ENV = "ZENML_TEST_PAYLOAD_STORAGE"
+TEST_PAYLOAD_STORAGE_BACKEND_ENV = "ZENML_TEST_PAYLOAD_STORAGE_BACKEND"
 
 
 def _offload_payloads_to_local_s3(config: pytest.Config) -> None:
@@ -75,7 +75,7 @@ def _offload_payloads_to_local_s3(config: pytest.Config) -> None:
     # Set before any store exists, so every store of the session, and the
     # processes it starts, offloads.
     os.environ[f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE"] = (
-        local_s3_payload_storage(server, "s3://payloads/tests")
+        local_s3_payload_storage_env_value(server, "s3://payloads/tests")
     )
 
 
@@ -93,12 +93,12 @@ def pytest_configure(config: pytest.Config) -> None:
     if os.environ.get("PYTEST_DYLD_INSERT_LIBRARIES"):
         os.environ.pop("DYLD_INSERT_LIBRARIES", None)
 
-    payload_storage = os.environ.get(TEST_PAYLOAD_STORAGE_ENV)
+    payload_storage = os.environ.get(TEST_PAYLOAD_STORAGE_BACKEND_ENV)
     if payload_storage == "s3":
         _offload_payloads_to_local_s3(config)
     elif payload_storage:
         raise pytest.UsageError(
-            f"{TEST_PAYLOAD_STORAGE_ENV} only supports `s3`, not "
+            f"{TEST_PAYLOAD_STORAGE_BACKEND_ENV} only supports `s3`, not "
             f"`{payload_storage}`."
         )
 

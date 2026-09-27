@@ -91,7 +91,9 @@ def local_s3_client(server: "ThreadedMotoServer") -> Any:
     )
 
 
-def local_s3_payload_storage(server: "ThreadedMotoServer", path: str) -> str:
+def local_s3_payload_storage_env_value(
+    server: "ThreadedMotoServer", path: str
+) -> str:
     """Get payload storage settings that offload every payload to local S3.
 
     Args:
@@ -102,13 +104,13 @@ def local_s3_payload_storage(server: "ThreadedMotoServer", path: str) -> str:
         The settings, as the JSON value of `ZENML_STORE_PAYLOAD_STORAGE`.
     """
     from zenml.zen_stores.payload_storage import (
-        PayloadBackendType,
+        BlobBackendType,
         PayloadStorageConfiguration,
     )
 
     return PayloadStorageConfiguration(
         offload_enabled=True,
-        backend=PayloadBackendType.S3,
+        backend=BlobBackendType.S3,
         backend_config={
             "path": path,
             "key": "test",

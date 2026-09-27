@@ -29,7 +29,7 @@ from sqlmodel import Session, select
 
 from tests.harness.utils import (
     local_s3_client,
-    local_s3_payload_storage,
+    local_s3_payload_storage_env_value,
     start_local_s3,
 )
 from zenml import pipeline, step
@@ -40,8 +40,8 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
+    NonRetryablePayloadStorageError,
     PayloadIntegrityError,
-    PayloadStorageError,
     PayloadStorageUnavailableError,
 )
 from zenml.models import (
@@ -63,10 +63,10 @@ from zenml.zen_server.pipeline_execution import utils as execution_utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunExecutionRequest,
 )
-from zenml.zen_server.utils import get_with_metadata_if_available
+from zenml.zen_server.utils import get_with_best_effort_metadata
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.schemas import (
-    BlobSchema,
+    PayloadBlobSchema,
     PipelineRunSchema,
     PipelineSnapshotSchema,
     StepConfigurationSchema,
@@ -134,7 +134,9 @@ def store(
     """The store of a clean client, which offloads payloads to the S3 server."""
     monkeypatch.setenv(
         f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE",
-        local_s3_payload_storage(s3_server, f"s3://{BUCKET}/{PREFIX}"),
+        local_s3_payload_storage_env_value(
+            s3_server, f"s3://{BUCKET}/{PREFIX}"
+        ),
     )
     # Created only now, so that its store reads the settings above.
     client = request.getfixturevalue("clean_client")
@@ -188,7 +190,7 @@ def _count_payload_columns(store: SqlZenStore) -> Dict[str, int]:
     with Session(store.engine) as session:
         for schema in PAYLOAD_SCHEMAS:
             for row in session.exec(select(schema)).all():
-                for field in schema.PAYLOAD_FIELDS:
+                for field in schema.PAYLOAD_COLUMNS:
                     if field.get_blob_id(row) is not None:
                         counts["offloaded"] += 1
                     elif field.get_inline_text(row) is not None:
@@ -205,15 +207,15 @@ def _move_payloads_inline(store: SqlZenStore) -> None:
                 [
                     blob_id
                     for row in rows
-                    for field in schema.PAYLOAD_FIELDS
+                    for field in schema.PAYLOAD_COLUMNS
                     if (blob_id := field.get_blob_id(row))
                 ]
             )
             for row in rows:
-                for field in schema.PAYLOAD_FIELDS:
+                for field in schema.PAYLOAD_COLUMNS:
                     if blob_id := field.get_blob_id(row):
                         setattr(row, field.name, values[blob_id])
-                        setattr(row, field.blob_id_name, None)
+                        setattr(row, field.blob_id_column_name, None)
             session.add_all(rows)
             session.commit()
 
@@ -301,7 +303,9 @@ def _get_config_blob_key(store: SqlZenStore, snapshot_id: UUID) -> str:
     with Session(store.engine) as session:
         snapshot = session.get(PipelineSnapshotSchema, snapshot_id)
         assert snapshot and snapshot.pipeline_configuration_blob_id
-        blob = session.get(BlobSchema, snapshot.pipeline_configuration_blob_id)
+        blob = session.get(
+            PayloadBlobSchema, snapshot.pipeline_configuration_blob_id
+        )
         assert blob
         return f"{PREFIX}/{blob.sha256}"
 
@@ -316,7 +320,7 @@ def test_offloaded_and_inline_payloads_read_the_same(
     assert columns["offloaded"] > 0
     assert columns["inline"] == 0
 
-    offloaded = _hydrated_responses(_open_store(store, cache_size=0))
+    offloaded = _hydrated_responses(_open_store(store, cache_max_bytes=0))
     _move_payloads_inline(store)
     assert _count_payload_columns(store)["offloaded"] == 0
     inline = _hydrated_responses(store)
@@ -328,7 +332,7 @@ def test_storage_outage_fails_only_what_needs_payloads(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
     """While storage is down, only creations and reads with metadata fail."""
-    cold = _open_store(store, cache_size=0, timeout=5)
+    cold = _open_store(store, cache_max_bytes=0, backend_timeout_seconds=5)
     run = _start_run(cold)
     step_run = _start_step(cold, run.id)
     s3_server.stop()
@@ -364,7 +368,7 @@ def test_run_creation_writes_nothing_when_storage_fails(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
     """A missing blob while creating a run leaves no half-created run."""
-    cold = _open_store(store, cache_size=0)
+    cold = _open_store(store, cache_max_bytes=0)
     snapshot = _create_snapshot(cold)
     request = _run_request(snapshot.id, tags=["payloads"])
     s3 = local_s3_client(s3_server)
@@ -372,7 +376,7 @@ def test_run_creation_writes_nothing_when_storage_fails(
     data = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
     s3.delete_object(Bucket=BUCKET, Key=key)
 
-    with pytest.raises(PayloadStorageError):
+    with pytest.raises(NonRetryablePayloadStorageError):
         cold.get_or_create_run(request)
 
     with Session(cold.engine) as session:
@@ -392,14 +396,14 @@ def test_update_with_metadata_writes_nothing_when_storage_fails(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
     """A storage failure while updating a run with its metadata changes nothing."""
-    cold = _open_store(store, cache_size=0)
+    cold = _open_store(store, cache_max_bytes=0)
     run = _start_run(cold)
     s3 = local_s3_client(s3_server)
     s3.delete_object(
         Bucket=BUCKET, Key=_get_config_blob_key(cold, run.snapshot.id)
     )
 
-    with pytest.raises(PayloadStorageError):
+    with pytest.raises(NonRetryablePayloadStorageError):
         cold.update_run(
             run.id, PipelineRunUpdate(add_tags=["updated"]), hydrate=True
         )
@@ -412,7 +416,7 @@ def test_corrupted_blob_is_rejected_and_not_cached(
 ) -> None:
     """Bytes that are not the registered ones never reach a response."""
     snapshot = _create_snapshot(store, config_name="original-configuration")
-    cached = _open_store(store, cache_size=64 * 1024 * 1024)
+    cached = _open_store(store, cache_max_bytes=64 * 1024 * 1024)
     s3 = local_s3_client(s3_server)
     key = _get_config_blob_key(store, snapshot.id)
     original = s3.get_object(Bucket=BUCKET, Key=key)["Body"].read()
@@ -442,17 +446,21 @@ def test_storage_location_cannot_move_once_it_holds_payloads(
     backend_config = store.config.payload_storage.backend_config
     moved = {**backend_config, "path": f"s3://{BUCKET}/moved"}
     # Started while nothing was offloaded, so it had no reason to refuse.
-    started_before = _open_store(store, cache_size=0, backend_config=moved)
+    started_before = _open_store(
+        store, cache_max_bytes=0, backend_config=moved
+    )
     run = _start_run(store)
 
-    with pytest.raises(PayloadStorageError, match="payload storage location"):
+    with pytest.raises(
+        NonRetryablePayloadStorageError, match="payload storage location"
+    ):
         started_before.get_run(run.id, hydrate=True)
     with pytest.raises(RuntimeError, match="cannot move once it holds"):
         _open_store(store, backend_config=moved)
 
     same_location = _open_store(
         store,
-        cache_size=0,
+        cache_max_bytes=0,
         backend_config={
             **backend_config,
             "path": f"s3://{BUCKET}/{PREFIX}/",
@@ -478,12 +486,12 @@ def test_process_without_backend_answers_committed_updates(
     run = _start_run(store)
 
     with pytest.raises(
-        PayloadStorageError, match="no payload storage backend"
+        NonRetryablePayloadStorageError, match="no payload storage backend"
     ):
         unconfigured.get_run(run.id, hydrate=True)
 
     unconfigured.update_run(run.id, PipelineRunUpdate(add_tags=["updated"]))
-    response = get_with_metadata_if_available(unconfigured.get_run, run.id)
+    response = get_with_best_effort_metadata(unconfigured.get_run, run.id)
     assert [tag.name for tag in response.tags] == ["updated"]
     assert response.metadata is None
 
@@ -500,7 +508,7 @@ def test_shared_entity_is_read_without_its_payloads(
 
     Storage is down, so the entity must be read without any payload.
     """
-    cold = _open_store(store, cache_size=0, timeout=5)
+    cold = _open_store(store, cache_max_bytes=0, backend_timeout_seconds=5)
     run = _start_run(cold)
     entity_id = (
         run.id if schema_class is PipelineRunSchema else run.snapshot.id
@@ -522,7 +530,7 @@ def test_prepared_run_that_cannot_start_is_failed(
     Otherwise the run stays initializing forever, and a synchronous start
     returns a retryable error, on which clients start another run.
     """
-    cold = _open_store(store, cache_size=0, timeout=5)
+    cold = _open_store(store, cache_max_bytes=0, backend_timeout_seconds=5)
     snapshot = _create_snapshot(cold)
     run, _ = cold.get_or_create_run(
         _run_request(snapshot.id).model_copy(

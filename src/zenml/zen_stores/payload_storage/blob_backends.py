@@ -18,7 +18,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, TypeVar
 
-from zenml.zen_stores.payload_storage.config import PayloadBackendType
+from zenml.zen_stores.payload_storage.config import BlobBackendType
 
 T = TypeVar("T")
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
 
 
-class PayloadBackend(ABC):
+class BlobBackend(ABC):
     """Holds payload bytes outside the database, addressed by their SHA-256.
 
     Blobs are never overwritten with different bytes or deleted, so a backend
@@ -74,7 +74,7 @@ class PayloadBackend(ABC):
         """
 
 
-class ObjectStorePayloadBackend(PayloadBackend):
+class FsspecBlobBackend(BlobBackend):
     """Holds payload blobs in object storage through its fsspec filesystem.
 
     Blobs are stored as `<path>/<sha256>`, such as
@@ -89,7 +89,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
 
     def __init__(
         self,
-        backend_type: PayloadBackendType,
+        backend_type: BlobBackendType,
         path: str,
         filesystem_class: Type["AbstractFileSystem"],
         filesystem_options: Dict[str, Any],
@@ -105,7 +105,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
             timeout: The number of seconds after which a call is cancelled.
         """
         self._backend_type = backend_type
-        self._root = path.rstrip("/")
+        self._location = path.rstrip("/")
         self._filesystem_class = filesystem_class
         self._filesystem_options = filesystem_options
         self._filesystem: Optional["AbstractFileSystem"] = None
@@ -119,7 +119,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
         Returns:
             The location of the blobs.
         """
-        return self._root
+        return self._location
 
     def _get_filesystem(self) -> "AbstractFileSystem":
         """Get the filesystem, which the first call creates.
@@ -144,7 +144,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
                 filesystem = self._filesystem
         return filesystem
 
-    def _call(self, function: Callable[[], T]) -> T:
+    def _call_filesystem(self, function: Callable[[], T]) -> T:
         """Call the filesystem, with denied and missing errors translated.
 
         s3fs raises `PermissionError` and `FileNotFoundError` itself. gcsfs
@@ -172,13 +172,13 @@ class ObjectStorePayloadBackend(PayloadBackend):
                 raise TimeoutError(
                     f"The call did not return within {self._timeout} seconds."
                 ) from e
-            if self._is_denied(e):
+            if self._is_permission_error(e):
                 raise PermissionError(str(e)) from e
-            if self._is_missing(e):
+            if self._is_not_found_error(e):
                 raise FileNotFoundError(str(e)) from e
             raise
 
-    def _is_denied(self, error: Exception) -> bool:
+    def _is_permission_error(self, error: Exception) -> bool:
         """Whether a provider error means that access was denied.
 
         Missing credentials count as denied access: they are a configuration
@@ -190,7 +190,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
         Returns:
             Whether access was denied.
         """
-        if self._backend_type == PayloadBackendType.S3:
+        if self._backend_type == BlobBackendType.S3:
             from botocore.exceptions import (
                 NoCredentialsError,
                 PartialCredentialsError,
@@ -199,7 +199,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
             return isinstance(
                 error, (NoCredentialsError, PartialCredentialsError)
             )
-        if self._backend_type == PayloadBackendType.GCS:
+        if self._backend_type == BlobBackendType.GCS:
             from gcsfs.retry import HttpError
             from google.auth.exceptions import DefaultCredentialsError
 
@@ -211,7 +211,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
                     and str(error).startswith("Forbidden")
                 )
             )
-        if self._backend_type == PayloadBackendType.AZURE:
+        if self._backend_type == BlobBackendType.AZURE:
             from azure.core.exceptions import (
                 ClientAuthenticationError,
                 HttpResponseError,
@@ -228,7 +228,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
             )
         return False
 
-    def _is_missing(self, error: Exception) -> bool:
+    def _is_not_found_error(self, error: Exception) -> bool:
         """Whether a provider error means that the object or bucket is missing.
 
         Args:
@@ -237,7 +237,7 @@ class ObjectStorePayloadBackend(PayloadBackend):
         Returns:
             Whether the object or bucket is missing.
         """
-        if self._backend_type == PayloadBackendType.AZURE:
+        if self._backend_type == BlobBackendType.AZURE:
             from azure.core.exceptions import ResourceNotFoundError
 
             return isinstance(error, ResourceNotFoundError)
@@ -252,9 +252,9 @@ class ObjectStorePayloadBackend(PayloadBackend):
         """
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
-        self._call(
+        self._call_filesystem(
             lambda: self._get_filesystem().pipe_file(
-                f"{self._root}/{sha256}", data, timeout=self._timeout
+                f"{self._location}/{sha256}", data, timeout=self._timeout
             )
         )
 
@@ -267,20 +267,20 @@ class ObjectStorePayloadBackend(PayloadBackend):
         Returns:
             The stored bytes.
         """
-        data: bytes = self._call(
+        data: bytes = self._call_filesystem(
             lambda: self._get_filesystem().cat_file(
-                f"{self._root}/{sha256}", timeout=self._timeout
+                f"{self._location}/{sha256}", timeout=self._timeout
             )
         )
         return data
 
 
-def create_payload_backend(
-    backend_type: PayloadBackendType,
+def create_blob_backend(
+    backend_type: BlobBackendType,
     configuration: Dict[str, Any],
     timeout: float,
-    concurrent_calls: int,
-) -> PayloadBackend:
+    max_concurrent_calls: int,
+) -> BlobBackend:
     """Create a payload backend from its configuration.
 
     Creating a backend never connects to its storage, so a store starts even
@@ -292,7 +292,7 @@ def create_payload_backend(
         configuration: The `path` of the blobs and the options of the fsspec
             filesystem of the backend.
         timeout: The number of seconds after which a call is cancelled.
-        concurrent_calls: The number of calls the backend receives at once.
+        max_concurrent_calls: The number of calls the backend receives at once.
 
     Returns:
         The payload backend.
@@ -301,19 +301,19 @@ def create_payload_backend(
 
     options = dict(configuration)
     path = options.pop("path")
-    if backend_type == PayloadBackendType.S3:
+    if backend_type == BlobBackendType.S3:
         # The S3 client keeps 10 connections by default, and the timeout of a
         # call also runs while it waits for one, so calls beyond 10 would
         # time out on healthy storage.
         options["config_kwargs"] = {
-            "max_pool_connections": concurrent_calls,
+            "max_pool_connections": max_concurrent_calls,
             **(options.get("config_kwargs") or {}),
         }
-    elif backend_type == PayloadBackendType.AZURE:
+    elif backend_type == BlobBackendType.AZURE:
         # Older adlfs versions access containers anonymously by default.
         options.setdefault("anon", False)
     protocol, _ = fsspec.core.split_protocol(path)
-    return ObjectStorePayloadBackend(
+    return FsspecBlobBackend(
         backend_type,
         path,
         filesystem_class=fsspec.get_filesystem_class(protocol),

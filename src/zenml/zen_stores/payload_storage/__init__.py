@@ -16,36 +16,36 @@
 Snapshots, step runs and runs keep configurations, environments and source
 code in payload columns. With offloading enabled, these values are stored as
 content-addressed blobs in a payload backend, and the rows only reference
-them. The store resolves the references when it builds responses that carry
+them. The store loads the referenced payloads when it builds responses that carry
 payloads.
 """
 
 from zenml.zen_stores.payload_storage.config import (
-    PayloadBackendType,
+    BlobBackendType,
     PayloadStorageConfiguration,
 )
 from zenml.zen_stores.payload_storage.payloads import (
-    UNRESOLVED,
-    OffloadedPayloads,
-    PayloadField,
-    PayloadSchema,
+    INLINE_ONLY_PAYLOADS,
+    HasPayloadColumns,
+    LoadedPayloads,
+    OffloadResult,
+    PayloadColumn,
     PayloadValue,
-    ReadsPayloads,
-    ResolvedPayloads,
-    get_blob_ids,
-    get_inline_payloads,
+    RequiresPayloads,
+    collect_payload_blob_ids,
+    get_inline_payload_values,
 )
 
 __all__ = [
-    "UNRESOLVED",
-    "OffloadedPayloads",
-    "PayloadBackendType",
-    "PayloadField",
-    "PayloadSchema",
+    "INLINE_ONLY_PAYLOADS",
+    "OffloadResult",
+    "BlobBackendType",
+    "PayloadColumn",
+    "HasPayloadColumns",
     "PayloadStorageConfiguration",
     "PayloadValue",
-    "ReadsPayloads",
-    "ResolvedPayloads",
-    "get_blob_ids",
-    "get_inline_payloads",
+    "RequiresPayloads",
+    "LoadedPayloads",
+    "collect_payload_blob_ids",
+    "get_inline_payload_values",
 ]

@@ -8,7 +8,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 | Category | Workflows | Purpose |
 |----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml, payload-storage-test.yml | Primary PR testing and reusable test jobs. payload-storage-test.yml reruns the store, pipeline and step tests with payloads offloaded to a local S3 server (`ZENML_TEST_PAYLOAD_STORAGE=s3`) |
+| **CI/Testing** | ci-fast.yml, ci-slow.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml, payload-storage-test.yml | Primary PR testing and reusable test jobs. payload-storage-test.yml reruns the store, pipeline and step tests with payloads offloaded to a local S3 server (`ZENML_TEST_PAYLOAD_STORAGE_BACKEND=s3`) |
 | **Linting/Quality** | linting.yml, spellcheck.yml, zizmor.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml | Code quality, docs links, changelog, and workflow security checks |
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |

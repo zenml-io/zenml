@@ -59,11 +59,11 @@ from zenml.models.v2.core.step_run import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage import (
-    UNRESOLVED,
-    PayloadField,
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    PayloadColumn,
     PayloadValue,
-    ResolvedPayloads,
-    get_blob_ids,
+    collect_payload_blob_ids,
 )
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -163,9 +163,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         default=None,
     )
 
-    PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]] = (
-        PayloadField(name="source_code", nullable=True),
-        PayloadField(name="docstring", nullable=True),
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="source_code", nullable=True),
+        PayloadColumn(name="docstring", nullable=True),
     )
 
     # Foreign keys
@@ -424,7 +424,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
 
     @staticmethod
-    def get_request_payloads(request: StepRunRequest) -> List[PayloadValue]:
+    def get_request_payload_values(
+        request: StepRunRequest,
+    ) -> List[PayloadValue]:
         """Get the payload values of a step run request.
 
         Args:
@@ -439,21 +441,21 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if text is not None
         ]
 
-    def get_payload_blob_ids(self) -> List[Optional[UUID]]:
+    def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
         """Get the blobs that the conversion of this step run with metadata reads.
 
         Returns:
             The blob IDs.
         """
         return [
-            *get_blob_ids(self),
-            *self.get_configuration_blob_ids(
+            *collect_payload_blob_ids(self),
+            *self.get_step_configuration_blob_ids(
                 self.dynamic_config or self.static_config, self.snapshot
             ),
         ]
 
     @staticmethod
-    def get_configuration_blob_ids(
+    def get_step_configuration_blob_ids(
         config_schema: Optional["StepConfigurationSchema"],
         snapshot: Optional["PipelineSnapshotSchema"],
     ) -> List[Optional[UUID]]:
@@ -475,7 +477,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     def get_step_configuration(
         self,
         pipeline_configuration: Optional[PipelineConfiguration] = None,
-        payloads: ResolvedPayloads = UNRESOLVED,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
     ) -> Step:
         """Get the step configuration for the step run.
 
@@ -483,7 +485,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
                 if the caller already parsed it.
-            payloads: The resolver of offloaded payloads.
+            payloads: The loaded payloads.
 
         Raises:
             ValueError: If the step run has no step configuration.
@@ -552,7 +554,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         pipeline_configuration: Optional[PipelineConfiguration] = None,
-        payloads: ResolvedPayloads = UNRESOLVED,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -563,7 +565,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
                 if the caller already parsed it.
-            payloads: The resolver of offloaded payloads, required to include
+            payloads: The loaded payloads, required to include
                 the metadata of a step run whose payloads are offloaded.
             **kwargs: Keyword arguments to allow schema specific logic
 
@@ -613,10 +615,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 cache_key=self.cache_key,
                 cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
-                docstring=payloads.read(
+                docstring=payloads.resolve(
                     self.docstring, self.docstring_blob_id
                 ),
-                source_code=payloads.read(
+                source_code=payloads.resolve(
                     self.source_code, self.source_code_blob_id
                 ),
                 exception_info=ExceptionInfo.model_validate_json(

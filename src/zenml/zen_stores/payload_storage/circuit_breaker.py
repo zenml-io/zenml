@@ -30,8 +30,8 @@ class CircuitBreaker:
     A backend that hangs holds the thread of each request that calls it for
     the whole timeout, and server threads also serve the requests that need
     no payload storage, such as status updates and heartbeats. After
-    `failures_to_pause` failed calls in a row, calls fail at once for `pause`
-    seconds. Then a single call goes through as a trial while the others
+    `failure_threshold` failed calls in a row, calls fail at once for
+    `recovery_timeout_seconds`. Then a single call goes through as a trial while the others
     still fail at once: its success lets every call through again, and its
     failure pauses the calls again.
 
@@ -42,22 +42,26 @@ class CircuitBreaker:
     """
 
     def __init__(
-        self, name: str, failures_to_pause: int, pause: float
+        self,
+        name: str,
+        failure_threshold: int,
+        recovery_timeout_seconds: float,
     ) -> None:
         """Initializes the circuit breaker.
 
         Args:
             name: The name of the backend, for errors and logs.
-            failures_to_pause: The number of failed calls in a row after
+            failure_threshold: The number of failed calls in a row after
                 which calls are paused.
-            pause: The number of seconds the calls are paused for.
+            recovery_timeout_seconds: The number of seconds calls fail at once
+                before one trial call.
         """
         self._name = name
-        self._failures_to_pause = failures_to_pause
-        self._pause = pause
-        self._failures = 0
+        self._failure_threshold = failure_threshold
+        self._recovery_timeout_seconds = recovery_timeout_seconds
+        self._consecutive_failures = 0
         self._paused_until = 0.0
-        self._trial_running = False
+        self._trial_in_progress = False
         self._lock = threading.Lock()
 
     @contextmanager
@@ -78,10 +82,10 @@ class CircuitBreaker:
                 failure.
         """
         with self._lock:
-            trial = self._failures >= self._failures_to_pause
+            trial = self._consecutive_failures >= self._failure_threshold
             if trial:
                 remaining = self._paused_until - time.monotonic()
-                if remaining > 0 or self._trial_running:
+                if remaining > 0 or self._trial_in_progress:
                     until = (
                         f"for {remaining:.1f} more seconds"
                         if remaining > 0
@@ -89,10 +93,10 @@ class CircuitBreaker:
                     )
                     raise PayloadStorageUnavailableError(
                         f"Execution payload storage (`{self._name}`) failed "
-                        f"{self._failures} times in a row, so its calls are "
+                        f"{self._consecutive_failures} times in a row, so its calls are "
                         f"paused {until}."
                     )
-                self._trial_running = True
+                self._trial_in_progress = True
 
         failed = False
         try:
@@ -114,25 +118,27 @@ class CircuitBreaker:
         """
         with self._lock:
             if trial:
-                self._trial_running = False
+                self._trial_in_progress = False
             if not failed:
-                if self._failures >= self._failures_to_pause:
+                if self._consecutive_failures >= self._failure_threshold:
                     logger.info(
                         "Execution payload storage (`%s`) recovered, so its "
                         "calls are no longer paused.",
                         self._name,
                     )
-                self._failures = 0
+                self._consecutive_failures = 0
                 return
-            self._failures += 1
-            if self._failures >= self._failures_to_pause:
-                self._paused_until = time.monotonic() + self._pause
-                if self._failures == self._failures_to_pause:
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self._failure_threshold:
+                self._paused_until = (
+                    time.monotonic() + self._recovery_timeout_seconds
+                )
+                if self._consecutive_failures == self._failure_threshold:
                     logger.warning(
                         "Execution payload storage (`%s`) failed %d times in "
                         "a row, so its calls are paused for %g seconds at a "
                         "time until it recovers.",
                         self._name,
-                        self._failures,
-                        self._pause,
+                        self._consecutive_failures,
+                        self._recovery_timeout_seconds,
                     )

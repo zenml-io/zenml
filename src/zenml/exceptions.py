@@ -56,19 +56,19 @@ class PayloadStorageUnavailableError(ZenMLBaseException):
     """Raised when execution payload storage cannot be read or written."""
 
 
-class PayloadStorageError(ZenMLBaseException, RuntimeError):
+class NonRetryablePayloadStorageError(ZenMLBaseException, RuntimeError):
     """Raised when payload storage fails in a way that retrying does not fix."""
 
 
-class PayloadIntegrityError(PayloadStorageError):
+class PayloadIntegrityError(NonRetryablePayloadStorageError):
     """Raised when stored payload bytes do not match their registered blob."""
 
 
-class UnresolvedPayloadError(RuntimeError):
-    """Raised when an offloaded payload is read without being resolved.
+class PayloadNotLoadedError(RuntimeError):
+    """Raised when an offloaded payload is read without being loaded.
 
     Paths that only need SQL columns, such as status updates, lists and
-    permission checks, convert schemas without a payload resolver, so reading
+    permission checks, convert schemas with `INLINE_ONLY_PAYLOADS`, so reading
     an offloaded payload there is a bug rather than a storage failure.
     """
 
@@ -76,11 +76,11 @@ class UnresolvedPayloadError(RuntimeError):
         """Initializes the error.
 
         Args:
-            blob_id: The blob that holds the unresolved payload.
+            blob_id: The blob that holds the payload that was not loaded.
         """
         super().__init__(
             f"The payload stored in blob `{blob_id}` was read without being "
-            "resolved."
+            "loaded."
         )
 
 

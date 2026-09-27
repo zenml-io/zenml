@@ -26,9 +26,6 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.blob_schemas import (
-    BlobSchema,
-)
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
     CodeRepositorySchema,
@@ -50,6 +47,9 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
     ModelVersionSchema,
+)
+from zenml.zen_stores.schemas.payload_blob_schemas import (
+    PayloadBlobSchema,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import (
@@ -111,7 +111,7 @@ __all__ = [
     "ArtifactVersionSchema",
     "ArtifactVisualizationSchema",
     "BaseSchema",
-    "BlobSchema",
+    "PayloadBlobSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
     "DeploymentSchema",
