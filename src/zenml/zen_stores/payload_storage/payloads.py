@@ -11,12 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Payload columns of execution schemas and the resolution of their values.
+"""Payload columns of execution schemas, and writing and reading their values.
 
 A payload column holds a large, write-once value such as a configuration or
 source code. Each payload column comes with a `<column>_blob_id` column, and
 exactly one of the two is set: either the value is inline, or it was
 offloaded to payload storage and the reference column points to its blob.
+
+Writing collects the inline values of new rows, which the store offloads,
+and then replaces them by references to their blobs. Reading collects the
+blobs that a conversion reads, which the store resolves before converting.
 """
 
 import hashlib
@@ -39,37 +43,7 @@ from pydantic import BaseModel, ConfigDict
 
 from zenml.exceptions import PayloadStorageError, UnresolvedPayloadError
 
-
-class PayloadValue(BaseModel):
-    """A payload value to offload.
-
-    Attributes:
-        text: The value exactly as its inline column would hold it. Blobs are
-            addressed by the SHA-256 of these UTF-8 bytes, so a value hashes
-            to the same blob whether it is offloaded on write or later.
-    """
-
-    text: str
-
-    model_config = ConfigDict(frozen=True)
-
-    @cached_property
-    def data(self) -> bytes:
-        """The bytes stored for this value.
-
-        Returns:
-            The UTF-8 encoded value.
-        """
-        return self.text.encode("utf-8")
-
-    @cached_property
-    def sha256(self) -> str:
-        """The content address of this value.
-
-        Returns:
-            The hex SHA-256 of the stored bytes.
-        """
-        return hashlib.sha256(self.data).hexdigest()
+# ------------------ Payload columns ------------------
 
 
 class PayloadField(BaseModel):
@@ -139,15 +113,39 @@ class PayloadSchema(Protocol):
     PAYLOAD_FIELDS: ClassVar[Tuple[PayloadField, ...]]
 
 
-class ReadsPayloads(Protocol):
-    """A schema whose conversion reads its offloaded payloads."""
+# ------------------ Writing payloads ------------------
 
-    def get_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
-        """Get the blobs that converting the schema reads.
+
+class PayloadValue(BaseModel):
+    """A payload value to offload.
+
+    Attributes:
+        text: The value exactly as its inline column would hold it. Blobs are
+            addressed by the SHA-256 of these UTF-8 bytes, so a value hashes
+            to the same blob whether it is offloaded on write or later.
+    """
+
+    text: str
+
+    model_config = ConfigDict(frozen=True)
+
+    @cached_property
+    def data(self) -> bytes:
+        """The bytes stored for this value.
 
         Returns:
-            The blob IDs, with None for values that are not offloaded.
+            The UTF-8 encoded value.
         """
+        return self.text.encode("utf-8")
+
+    @cached_property
+    def sha256(self) -> str:
+        """The content address of this value.
+
+        Returns:
+            The hex SHA-256 of the stored bytes.
+        """
+        return hashlib.sha256(self.data).hexdigest()
 
 
 def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:
@@ -164,22 +162,6 @@ def get_inline_payloads(*schemas: PayloadSchema) -> List[PayloadValue]:
         for schema in schemas
         for field in schema.PAYLOAD_FIELDS
         if (text := field.get_inline_text(schema)) is not None
-    ]
-
-
-def get_blob_ids(*schemas: PayloadSchema) -> List[Optional[UUID]]:
-    """Get the blobs referenced by the payload columns of schemas.
-
-    Args:
-        *schemas: The schemas.
-
-    Returns:
-        The blob IDs, with None for values that are not offloaded.
-    """
-    return [
-        field.get_blob_id(schema)
-        for schema in schemas
-        for field in schema.PAYLOAD_FIELDS
     ]
 
 
@@ -240,6 +222,36 @@ class OffloadedPayloads:
                         f"`{type(schema).__name__}` was not offloaded."
                     )
                 field.set_blob_id(schema, blob_id)
+
+
+# ------------------ Reading payloads ------------------
+
+
+class ReadsPayloads(Protocol):
+    """A schema whose conversion reads its offloaded payloads."""
+
+    def get_payload_blob_ids(self) -> Iterable[Optional[UUID]]:
+        """Get the blobs that converting the schema reads.
+
+        Returns:
+            The blob IDs, with None for values that are not offloaded.
+        """
+
+
+def get_blob_ids(*schemas: PayloadSchema) -> List[Optional[UUID]]:
+    """Get the blobs referenced by the payload columns of schemas.
+
+    Args:
+        *schemas: The schemas.
+
+    Returns:
+        The blob IDs, with None for values that are not offloaded.
+    """
+    return [
+        field.get_blob_id(schema)
+        for schema in schemas
+        for field in schema.PAYLOAD_FIELDS
+    ]
 
 
 class ResolvedPayloads:
