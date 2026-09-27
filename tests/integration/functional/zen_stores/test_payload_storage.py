@@ -440,8 +440,9 @@ def test_storage_location_cannot_move_once_it_holds_payloads(
 ) -> None:
     """Blobs are only read from where they were written.
 
-    Another path is another location, even in the same bucket; another
-    spelling of the same path or other credentials are not.
+    Another path is another location, even in the same bucket, and so is the
+    same path on another S3-compatible endpoint; another spelling of the same
+    path or other credentials are not.
     """
     backend_config = store.config.payload_storage.backend_config
     moved = {**backend_config, "path": f"s3://{BUCKET}/moved"}
@@ -457,6 +458,15 @@ def test_storage_location_cannot_move_once_it_holds_payloads(
         started_before.get_run(run.id, hydrate=True)
     with pytest.raises(RuntimeError, match="cannot move once it holds"):
         _open_store(store, backend_config=moved)
+    other_endpoint = {
+        **backend_config,
+        "client_kwargs": {
+            **backend_config["client_kwargs"],
+            "endpoint_url": "http://127.0.0.1:1",
+        },
+    }
+    with pytest.raises(RuntimeError, match="cannot move once it holds"):
+        _open_store(store, backend_config=other_endpoint)
 
     same_location = _open_store(
         store,

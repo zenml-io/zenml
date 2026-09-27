@@ -74,7 +74,8 @@ class PayloadStorageConfiguration(BaseModel):
 
     offload_enabled: bool = False
     backend: Optional[BlobBackendType] = None
-    backend_config: Dict[str, Any] = Field(default_factory=dict)
+    # May hold credentials, so it stays out of reprs and logs.
+    backend_config: Dict[str, Any] = Field(default_factory=dict, repr=False)
     cache_max_bytes: int = Field(default=128 * 1024 * 1024, ge=0)
     backend_timeout_seconds: float = Field(default=10, gt=0)
 

@@ -260,8 +260,9 @@ class StepLauncher:
                     except RunStoppedException as e:
                         raise e
                     except BaseException as e:  # noqa: E722
+                        # Only its status is needed.
                         step_run = Client().get_run_step(
-                            step_run_id=step_run.id
+                            step_run_id=step_run.id, hydrate=False
                         )
 
                         if step_run.status == ExecutionStatus.CANCELLING:

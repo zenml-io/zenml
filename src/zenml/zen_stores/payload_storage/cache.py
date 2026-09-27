@@ -20,6 +20,8 @@ from concurrent.futures import Future
 from typing import Callable, Collection, Dict, List
 from uuid import UUID
 
+from zenml.exceptions import PayloadStorageUnavailableError
+
 
 class PayloadCache:
     """Least recently used cache of payload values, keyed by blob ID.
@@ -98,9 +100,32 @@ class PayloadCache:
 
         Returns:
             The payload values by blob ID.
+        """
+        return self._get_or_load(blob_ids, loader, retry_failed_waits=True)
+
+    def _get_or_load(
+        self,
+        blob_ids: Collection[UUID],
+        loader: Callable[[List[UUID]], Dict[UUID, str]],
+        retry_failed_waits: bool,
+    ) -> Dict[UUID, str]:
+        """Get payload values, loading the missing ones in one batch.
+
+        Args:
+            blob_ids: The blobs to get.
+            loader: Loads the given blobs.
+            retry_failed_waits: Whether blobs of another caller's load that
+                failed for good are loaded again.
+
+        Returns:
+            The payload values by blob ID.
 
         Raises:
             BaseException: Any error of this caller's load.
+            PayloadStorageUnavailableError: If storage failed the load of
+                another caller that this one waited for.
+            Exception: Any other error of another caller's load that this one
+                waited for, once it is not loaded again.
         """
         values: Dict[UUID, str] = {}
         waiting: Dict[UUID, "Future[str]"] = {}
@@ -139,13 +164,18 @@ class PayloadCache:
         for blob_id, future in waiting.items():
             try:
                 values[blob_id] = future.result()
+            except PayloadStorageUnavailableError as e:
+                # Loading again would hold this request for another timeout.
+                raise PayloadStorageUnavailableError(str(e)) from e
             except Exception:
-                # The other caller's load failed, maybe for another blob of
-                # its batch, so this blob gets a load of its own.
+                if not retry_failed_waits:
+                    raise
+                # The other caller's load failed for good, maybe because of
+                # another blob of its batch, so these blobs are loaded again,
+                # merged with any other caller that needs them.
                 retry.append(blob_id)
         if retry:
-            loaded = loader(retry)
-            for blob_id in retry:
-                self.put(blob_id, loaded[blob_id])
-            values.update(loaded)
+            values.update(
+                self._get_or_load(retry, loader, retry_failed_waits=False)
+            )
         return values

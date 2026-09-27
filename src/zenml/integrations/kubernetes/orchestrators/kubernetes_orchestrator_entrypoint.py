@@ -929,8 +929,10 @@ def main() -> None:
             # If any steps failed and the pipeline run is still in a transient
             # state, we need to mark it as failed.
             if pipeline_failed:
-                # refresh the run
-                pipeline_run = client.get_pipeline_run(pipeline_run.id)
+                # Refresh the run; only its status is needed.
+                pipeline_run = client.get_pipeline_run(
+                    pipeline_run.id, hydrate=False
+                )
 
                 if pipeline_run.status in {
                     ExecutionStatus.INITIALIZING,

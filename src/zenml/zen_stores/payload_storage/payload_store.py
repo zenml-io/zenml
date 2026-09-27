@@ -14,6 +14,7 @@
 """Offloading execution payloads to blob storage and loading them back."""
 
 import hashlib
+from functools import partial
 from typing import (
     Callable,
     Collection,
@@ -59,6 +60,10 @@ IDENTITY_CODEC = "identity"
 # Requests that one backend call sends to the object store at once.
 MAX_CONCURRENT_BACKEND_CALLS = 32
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
+# Blobs per backend call: four rounds of concurrent requests, which finish
+# well within the timeout even on slow storage. Each chunk that finishes is
+# kept, so a retry after a timeout continues where the last attempt stopped.
+BLOB_CHUNK_SIZE = 4 * MAX_CONCURRENT_BACKEND_CALLS
 # The longest `IN` list of a registry query.
 BLOB_QUERY_BATCH_SIZE = 500
 
@@ -68,18 +73,21 @@ R = TypeVar("R")
 logger = get_logger(__name__)
 
 
-def _batched(items: Collection[T]) -> Iterable[List[T]]:
-    """Split items into batches for `IN` lists.
+def _batched(
+    items: Collection[T], size: int = BLOB_QUERY_BATCH_SIZE
+) -> Iterable[List[T]]:
+    """Split items into batches.
 
     Args:
         items: The items to split.
+        size: The largest batch.
 
     Yields:
         The batches.
     """
     batch = list(items)
-    for start in range(0, len(batch), BLOB_QUERY_BATCH_SIZE):
-        yield batch[start : start + BLOB_QUERY_BATCH_SIZE]
+    for start in range(0, len(batch), size):
+        yield batch[start : start + size]
 
 
 class PayloadStore:
@@ -197,17 +205,15 @@ class PayloadStore:
                 for sha256, value in values_by_sha256.items()
                 if sha256 not in blob_ids
             ]
-            if new_values:
+            for chunk in _batched(new_values, BLOB_CHUNK_SIZE):
                 self._call_backend(
-                    lambda: backend.put_many(
-                        {
-                            value.sha256: value.utf8_bytes
-                            for value in new_values
-                        }
+                    partial(
+                        backend.put_many,
+                        {value.sha256: value.utf8_bytes for value in chunk},
                     )
                 )
                 with Session(self._engine) as session:
-                    registered = self._register_blobs(new_values, session)
+                    registered = self._register_blobs(chunk, session)
                 blob_ids.update(registered)
                 # Only values written here: a blob that is merely registered
                 # may miss its object, which a read has to detect.
@@ -389,12 +395,17 @@ class PayloadStore:
         backend = self._backend
         assert backend
 
-        sha256s = sorted({blob.sha256 for blob in blobs})
-        data = self._call_backend(lambda: backend.get_many(sha256s))
-        return {
-            blob.id: self._verify_and_decode(blob, data[blob.sha256])
-            for blob in blobs
-        }
+        blobs_by_sha256 = {blob.sha256: blob for blob in blobs}
+        values: Dict[UUID, str] = {}
+        for chunk in _batched(sorted(blobs_by_sha256), BLOB_CHUNK_SIZE):
+            data = self._call_backend(partial(backend.get_many, chunk))
+            for sha256 in chunk:
+                blob = blobs_by_sha256[sha256]
+                values[blob.id] = self._verify_and_decode(blob, data[sha256])
+                # Cached at once, so that a retry after a later chunk failed
+                # does not load this one again.
+                self._cache.put(blob.id, values[blob.id])
+        return values
 
     @staticmethod
     def _verify_and_decode(blob: PayloadBlobSchema, data: bytes) -> str:

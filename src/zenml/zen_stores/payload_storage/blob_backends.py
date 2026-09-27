@@ -14,13 +14,18 @@
 """Backends that hold payload blobs outside the database."""
 
 import asyncio
+import os
+import re
 import threading
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -33,7 +38,9 @@ from zenml.zen_stores.payload_storage.config import BlobBackendType
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from fsspec import AbstractFileSystem
+    from fsspec.asyn import AsyncFileSystem
+
+    Calls = List[Callable[[], Awaitable[T]]]
 
 
 class BlobBackend(ABC):
@@ -53,7 +60,9 @@ class BlobBackend(ABC):
     def location(self) -> str:
         """Where the blobs are stored, such as `s3://bucket/prefix`.
 
-        It never includes credentials, so that they can change.
+        It includes the endpoint or account that selects the physical store
+        when one is configured, and never credentials, so that they can
+        change.
 
         Returns:
             The location of the blobs.
@@ -87,19 +96,20 @@ class FsspecBlobBackend(BlobBackend):
 
     Blobs are stored as `<path>/<sha256>`, such as
     `s3://bucket/prefix/<sha256>`. Each blob takes a single request to write
-    or read, and a call sends the requests for many blobs concurrently.
-
-    Every call is cancelled after the timeout, retries included. s3fs, gcsfs
-    and adlfs are fsspec async filesystems, whose calls take a `timeout`; on
-    their own, a call against a stalled endpoint keeps its thread for minutes
-    (s3fs retries five times, gcsfs six).
+    or read. A call runs the requests for its blobs concurrently on the event
+    loop of fsspec, whose s3fs, gcsfs and adlfs filesystems are all async,
+    rather than through their own batch methods: those differ per provider
+    (adlfs reads one file at a time) and leave requests running when they
+    time out. On their own, requests against a stalled endpoint keep going
+    for minutes (s3fs retries five times, gcsfs six).
     """
 
     def __init__(
         self,
         backend_type: BlobBackendType,
         path: str,
-        filesystem_class: Type["AbstractFileSystem"],
+        location: str,
+        filesystem_class: Type["AsyncFileSystem"],
         filesystem_options: Dict[str, Any],
         timeout: float,
         max_concurrent_calls: int,
@@ -109,6 +119,8 @@ class FsspecBlobBackend(BlobBackend):
         Args:
             backend_type: The backend.
             path: Where the blobs are stored, such as `s3://bucket/prefix`.
+            location: The path, with the endpoint or account that selects the
+                physical store when one is configured.
             filesystem_class: The fsspec filesystem of the object store.
             filesystem_options: The options the filesystem is created with.
             timeout: The number of seconds after which a call is cancelled.
@@ -116,24 +128,25 @@ class FsspecBlobBackend(BlobBackend):
                 the object store at once.
         """
         self._backend_type = backend_type
-        self._location = path.rstrip("/")
+        self._path = path.rstrip("/")
+        self._location = location
         self._filesystem_class = filesystem_class
         self._filesystem_options = filesystem_options
-        self._filesystem: Optional["AbstractFileSystem"] = None
+        self._filesystem: Optional["AsyncFileSystem"] = None
         self._filesystem_lock = threading.Lock()
         self._timeout = timeout
         self._max_concurrent_calls = max_concurrent_calls
 
     @property
     def location(self) -> str:
-        """Where the blobs are stored: the path of the backend.
+        """Where the blobs are stored.
 
         Returns:
             The location of the blobs.
         """
         return self._location
 
-    def _get_filesystem(self) -> "AbstractFileSystem":
+    def _get_filesystem(self) -> "AsyncFileSystem":
         """Get the filesystem, which the first call creates.
 
         gcsfs and adlfs look up credentials when they are created, so the
@@ -156,30 +169,38 @@ class FsspecBlobBackend(BlobBackend):
                 filesystem = self._filesystem
         return filesystem
 
-    def _call_filesystem(self, function: Callable[[], T]) -> T:
-        """Call the filesystem, with denied and missing errors translated.
+    def _call_filesystem(
+        self, make_calls: Callable[["AsyncFileSystem"], "Calls[T]"]
+    ) -> List[T]:
+        """Run filesystem calls, with denied and missing errors translated.
 
         s3fs raises `PermissionError` and `FileNotFoundError` itself. gcsfs
         reports a 403 as a plain `OSError` and a 401 as its own `HttpError`,
         and adlfs lets Azure's exceptions through.
 
         Args:
-            function: The filesystem call.
+            make_calls: Returns the calls to run on the filesystem.
 
         Returns:
-            The result of the call.
+            The results of the calls, in their order.
 
         Raises:
-            TimeoutError: If the call did not return in time.
+            TimeoutError: If the calls did not return in time.
             PermissionError: If access was denied.
             FileNotFoundError: If an object or its bucket is missing.
-            Exception: Any other error of the call.
+            Exception: Any other error of a call.
         """
+        from fsspec.asyn import sync
+
         try:
-            return function()
+            filesystem = self._get_filesystem()
+            results: List[T] = sync(
+                filesystem.loop,
+                self._run_concurrently,
+                make_calls(filesystem),
+            )
+            return results
         except Exception as e:
-            # fsspec's timeout error subclasses `asyncio.TimeoutError` and
-            # has no message.
             if isinstance(e, asyncio.TimeoutError):
                 raise TimeoutError(
                     f"The call did not return within {self._timeout} seconds."
@@ -189,6 +210,34 @@ class FsspecBlobBackend(BlobBackend):
             if self._is_not_found_error(e):
                 raise FileNotFoundError(str(e)) from e
             raise
+
+    async def _run_concurrently(self, calls: "Calls[T]") -> List[T]:
+        """Run calls concurrently, all of them within the timeout.
+
+        When the timeout passes or a call fails, the calls still running are
+        cancelled, so that nothing keeps using the object store after the
+        request failed.
+
+        Args:
+            calls: The calls to run.
+
+        Returns:
+            The results of the calls, in their order.
+        """
+        semaphore = asyncio.Semaphore(self._max_concurrent_calls)
+
+        async def run(call: Callable[[], Awaitable[T]]) -> T:
+            async with semaphore:
+                return await call()
+
+        tasks = [asyncio.ensure_future(run(call)) for call in calls]
+        try:
+            return await asyncio.wait_for(
+                asyncio.gather(*tasks), self._timeout
+            )
+        finally:
+            for task in tasks:
+                task.cancel()
 
     def _is_permission_error(self, error: Exception) -> bool:
         """Whether a provider error means that access was denied.
@@ -264,14 +313,10 @@ class FsspecBlobBackend(BlobBackend):
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
         self._call_filesystem(
-            lambda: self._get_filesystem().pipe(
-                {
-                    f"{self._location}/{sha256}": data
-                    for sha256, data in data_by_sha256.items()
-                },
-                batch_size=self._max_concurrent_calls,
-                timeout=self._timeout,
-            )
+            lambda filesystem: [
+                partial(filesystem._pipe_file, f"{self._path}/{sha256}", data)
+                for sha256, data in data_by_sha256.items()
+            ]
         )
 
     def get_many(self, sha256s: Sequence[str]) -> Dict[str, bytes]:
@@ -283,17 +328,35 @@ class FsspecBlobBackend(BlobBackend):
         Returns:
             The stored bytes by SHA-256.
         """
-        # The first failure in path order is raised, so the same failures
-        # always raise the same error.
-        data: Dict[str, bytes] = self._call_filesystem(
-            lambda: self._get_filesystem().cat(
-                [f"{self._location}/{sha256}" for sha256 in sorted(sha256s)],
-                batch_size=self._max_concurrent_calls,
-                timeout=self._timeout,
-            )
+        data: List[bytes] = self._call_filesystem(
+            lambda filesystem: [
+                partial(filesystem._cat_file, f"{self._path}/{sha256}")
+                for sha256 in sha256s
+            ]
         )
-        # Keyed by the paths without their scheme.
-        return {path.rsplit("/", 1)[-1]: value for path, value in data.items()}
+        return dict(zip(sha256s, data))
+
+
+def _get_azure_account(options: Dict[str, Any]) -> Optional[str]:
+    """Get the Azure storage account that adlfs connects to.
+
+    Args:
+        options: The options of the adlfs filesystem.
+
+    Returns:
+        The account, from the options or, as adlfs does, the environment.
+    """
+    connection_string = options.get("connection_string") or os.environ.get(
+        "AZURE_STORAGE_CONNECTION_STRING"
+    )
+    if connection_string and (
+        match := re.search(r"AccountName=([^;]+)", connection_string)
+    ):
+        return match.group(1)
+    account: Optional[str] = options.get("account_name") or os.environ.get(
+        "AZURE_STORAGE_ACCOUNT_NAME"
+    )
+    return account
 
 
 def create_blob_backend(
@@ -323,7 +386,15 @@ def create_blob_backend(
 
     options = dict(configuration)
     path = options.pop("path")
+    # Bucket names only select the physical store together with the endpoint
+    # of an S3-compatible store or the Azure account.
+    location = path.rstrip("/")
     if backend_type == BlobBackendType.S3:
+        endpoint_url = options.get("endpoint_url") or (
+            options.get("client_kwargs") or {}
+        ).get("endpoint_url")
+        if endpoint_url:
+            location = f"{location} at {endpoint_url.rstrip('/')}"
         # The S3 client keeps 10 connections by default, and a call's timeout
         # also runs while its requests wait for one.
         options["config_kwargs"] = {
@@ -333,10 +404,13 @@ def create_blob_backend(
     elif backend_type == BlobBackendType.AZURE:
         # Older adlfs versions access containers anonymously by default.
         options.setdefault("anon", False)
+        if account := _get_azure_account(options):
+            location = f"{location} in account {account}"
     protocol, _ = fsspec.core.split_protocol(path)
     return FsspecBlobBackend(
         backend_type,
         path,
+        location=location,
         filesystem_class=fsspec.get_filesystem_class(protocol),
         filesystem_options=options,
         timeout=timeout,
