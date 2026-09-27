@@ -52,9 +52,9 @@ class PayloadCache:
             value: The payload value.
         """
         with self._lock:
-            self._put(blob_id, value)
+            self._put_locked(blob_id, value)
 
-    def _put(self, blob_id: UUID, value: str) -> None:
+    def _put_locked(self, blob_id: UUID, value: str) -> None:
         """Cache a payload value while holding the lock.
 
         Args:
@@ -135,7 +135,7 @@ class PayloadCache:
             with self._lock:
                 for blob_id, future in loading.items():
                     value = loaded[blob_id]
-                    self._put(blob_id, value)
+                    self._put_locked(blob_id, value)
                     del self._loading[blob_id]
                     future.set_result(value)
                     values[blob_id] = value
@@ -152,6 +152,6 @@ class PayloadCache:
             loaded = load(retry)
             with self._lock:
                 for blob_id in retry:
-                    self._put(blob_id, loaded[blob_id])
+                    self._put_locked(blob_id, loaded[blob_id])
             values.update(loaded)
         return values

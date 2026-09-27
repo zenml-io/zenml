@@ -37,27 +37,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from zenml.exceptions import PayloadStorageError
-
-
-class UnresolvedPayloadError(RuntimeError):
-    """Raised when an offloaded payload is read without being resolved.
-
-    Paths that only need SQL columns, such as status updates, lists and
-    permission checks, convert schemas without a payload resolver, so reading
-    an offloaded payload there is a bug rather than a storage failure.
-    """
-
-    def __init__(self, blob_id: UUID) -> None:
-        """Initializes the error.
-
-        Args:
-            blob_id: The blob that holds the unresolved payload.
-        """
-        super().__init__(
-            f"The payload stored in blob `{blob_id}` was read without being "
-            "resolved."
-        )
+from zenml.exceptions import PayloadStorageError, UnresolvedPayloadError
 
 
 class PayloadValue(BaseModel):

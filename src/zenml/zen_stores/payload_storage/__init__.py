@@ -32,7 +32,6 @@ from zenml.zen_stores.payload_storage.payloads import (
     PayloadValue,
     ReadsPayloads,
     ResolvedPayloads,
-    UnresolvedPayloadError,
     get_blob_ids,
     get_inline_payloads,
 )
@@ -47,7 +46,6 @@ __all__ = [
     "PayloadValue",
     "ReadsPayloads",
     "ResolvedPayloads",
-    "UnresolvedPayloadError",
     "get_blob_ids",
     "get_inline_payloads",
 ]
