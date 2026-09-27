@@ -52,13 +52,17 @@ from zenml.zen_stores.payload_storage.backends import (
 from zenml.zen_stores.payload_storage.cache import PayloadCache
 from zenml.zen_stores.payload_storage.circuit_breaker import CircuitBreaker
 from zenml.zen_stores.payload_storage.config import (
+    PayloadBackendType,
     PayloadStorageConfiguration,
 )
 from zenml.zen_stores.payload_storage.payloads import (
     OffloadedPayloads,
     PayloadValue,
 )
-from zenml.zen_stores.schemas.blob_schemas import BlobSchema
+from zenml.zen_stores.schemas.blob_schemas import (
+    BLOB_STORED_IN_LENGTH,
+    BlobSchema,
+)
 
 IDENTITY_CODEC = "identity"
 MAX_CONCURRENT_BACKEND_CALLS = 32
@@ -111,9 +115,10 @@ class PayloadStore:
         """
         self._engine = engine
         self._offload_enabled = config.offload_enabled
-        # The name stored in `blob.stored_in`; None keeps payloads inline.
-        self._backend_name = config.backend.value if config.backend else None
         self._backend: Optional[PayloadBackend] = None
+        # The location of the blobs as `blob.stored_in` records it; None
+        # keeps payloads inline.
+        self._stored_in: Optional[str] = None
         self._breaker: Optional[CircuitBreaker] = None
         if config.backend:
             self._backend = create_payload_backend(
@@ -121,6 +126,9 @@ class PayloadStore:
                 config.backend_config,
                 timeout=config.timeout,
                 concurrent_calls=MAX_CONCURRENT_BACKEND_CALLS,
+            )
+            self._stored_in = self._identify_location(
+                config.backend, self._backend.location
             )
             # Paused for as long as a call may take.
             self._breaker = CircuitBreaker(
@@ -154,27 +162,65 @@ class PayloadStore:
         return self._backend is not None
 
     def verify_backend(self) -> None:
-        """Verify that every blob is held by the configured backend.
+        """Verify that every blob is stored at the configured location.
 
         Raises:
-            RuntimeError: If blobs are held by another backend, or no backend
-                is configured while blobs exist.
+            RuntimeError: If blobs are stored at another location, or no
+                backend is configured while blobs exist.
         """
         if not inspect(self._engine).has_table(BlobSchema.__tablename__):
             return
 
         query = select(BlobSchema.stored_in)
-        if self._backend_name:
-            query = query.where(BlobSchema.stored_in != self._backend_name)
+        if self._stored_in:
+            query = query.where(BlobSchema.stored_in != self._stored_in)
         with Session(self._engine) as session:
             stored_in = session.exec(query.limit(1)).first()
         if stored_in:
-            raise RuntimeError(
-                f"Execution payloads are stored in the `{stored_in}` payload "
-                "backend, which is not the configured one. Configure it as the "
-                "`backend` of the payload storage configuration of the store: "
-                "the backend cannot change once it holds payloads."
+            raise RuntimeError(self._describe_other_location(stored_in))
+
+    @staticmethod
+    def _identify_location(
+        backend_type: PayloadBackendType, location: str
+    ) -> str:
+        """Identify a location of blobs as the `stored_in` of their rows.
+
+        The backend and a digest of the location, cut to the length of the
+        column: however long the location is, at least 10 hex digits of the
+        digest remain.
+
+        Args:
+            backend_type: The backend holding the blobs.
+            location: The location of the blobs.
+
+        Returns:
+            The identity of the location.
+        """
+        digest = hashlib.sha256(location.encode("utf-8")).hexdigest()
+        return f"{backend_type.value}:{digest}"[:BLOB_STORED_IN_LENGTH]
+
+    def _describe_other_location(self, stored_in: str) -> str:
+        """Describe blobs stored at another location than the configured one.
+
+        Args:
+            stored_in: The location of the blobs, as their rows record it.
+
+        Returns:
+            The error message.
+        """
+        if self._backend:
+            configured = (
+                f"not at the configured `{self._backend.location}` "
+                f"(`{self._stored_in}`)"
             )
+        else:
+            configured = "but no payload storage backend is configured"
+        return (
+            "Execution payloads are stored at the payload storage location "
+            f"`{stored_in}`, {configured}. Configure the `backend` and `path` "
+            "that they were written to: payload storage cannot move once it "
+            "holds payloads."
+        )
 
     def offload(self, values: Iterable[PayloadValue]) -> OffloadedPayloads:
         """Store payload values ahead of the transaction referencing them.
@@ -284,12 +330,12 @@ class PayloadStore:
         Returns:
             The registry row.
         """
-        assert self._backend_name
+        assert self._stored_in
         return BlobSchema(
             sha256=value.sha256,
             codec=IDENTITY_CODEC,
             size=len(value.data),
-            stored_in=self._backend_name,
+            stored_in=self._stored_in,
         )
 
     def _register(
@@ -366,7 +412,7 @@ class PayloadStore:
 
         Raises:
             RuntimeError: If a blob is not registered.
-            PayloadStorageError: If a blob is held by a backend that is not
+            PayloadStorageError: If a blob is stored at another location than
                 the configured one.
         """
         blobs: List[BlobSchema] = []
@@ -383,10 +429,9 @@ class PayloadStore:
                 "are referenced but not registered."
             )
         for blob in blobs:
-            if blob.stored_in != self._backend_name:
+            if blob.stored_in != self._stored_in:
                 raise PayloadStorageError(
-                    f"Execution payloads are stored in the `{blob.stored_in}` "
-                    "payload backend, which is not the configured one."
+                    self._describe_other_location(blob.stored_in)
                 )
         backend = self._backend
         assert backend
@@ -421,9 +466,9 @@ class PayloadStore:
             or hashlib.sha256(data).hexdigest() != blob.sha256
         ):
             raise PayloadIntegrityError(
-                f"The bytes of payload blob `{blob.id}` in the "
-                f"`{blob.stored_in}` payload backend do not match its "
-                "registered size and SHA-256."
+                f"The bytes of payload blob `{blob.id}` at payload storage "
+                f"location `{blob.stored_in}` do not match its registered "
+                "size and SHA-256."
             )
         return data.decode("utf-8")
 

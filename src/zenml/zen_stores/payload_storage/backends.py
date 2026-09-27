@@ -51,6 +51,17 @@ class PayloadBackend(ABC):
     requests.
     """
 
+    @property
+    @abstractmethod
+    def location(self) -> str:
+        """Where the blobs are stored, such as `s3://bucket/prefix`.
+
+        It never includes credentials, so that they can change.
+
+        Returns:
+            The location of the blobs.
+        """
+
     @abstractmethod
     def put(self, sha256: str, data: bytes) -> None:
         """Durably store bytes under their SHA-256.
@@ -117,6 +128,15 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         self._artifact_store = artifact_store
         self._root = artifact_store.path.rstrip("/")
         self._timeout = timeout
+
+    @property
+    def location(self) -> str:
+        """Where the blobs are stored: the path of the artifact store.
+
+        Returns:
+            The location of the blobs.
+        """
+        return self._root
 
     def _call(self, function: Callable[[], T]) -> T:
         """Call the filesystem, with denied and missing errors translated.

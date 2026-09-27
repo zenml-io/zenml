@@ -40,13 +40,15 @@ class PayloadStorageConfiguration(BaseModel):
             once every process that opens the database runs a version that
             can read offloaded payloads, with the same backend configured.
         backend: The object store holding payload blobs: `s3`, `gcs` or
-            `azure`. Required when offloading is enabled. It cannot change
-            once it holds payloads, since blobs are read from where they were
-            written.
+            `azure`. Required when offloading is enabled. Neither the backend
+            nor the `path` of its configuration can change once it holds
+            payloads, since blobs are read from where they were written: a
+            store refuses to start then.
         backend_config: The configuration of the backend, as for the artifact
             store flavor of the same name, such as a `path` like
             `s3://bucket/prefix` and optional credentials; without
             credentials, the implicit credentials of the environment are used.
+            Credentials can change.
         cache_size: The maximum memory in bytes taken by the resolved
             payloads that each process keeps. 0 disables the cache.
         timeout: The number of seconds after which a call to the payload

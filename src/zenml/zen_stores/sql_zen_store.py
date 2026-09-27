@@ -1480,10 +1480,11 @@ class SqlZenStore(BaseZenStore):
         self._check_no_uncommitted_changes(session)
         if not hydrate:
             return UNRESOLVED
-        # Blob IDs are not even collected without a backend, where nothing is
-        # offloaded; reading an offloaded payload then says what is missing.
+        # Without a backend, this process offloads nothing, so blob IDs are
+        # not even collected. A payload that another process offloaded then
+        # fails as a storage error when it is read.
         if not self.payload_store.has_backend:
-            return UNRESOLVED
+            return ResolvedPayloads(has_backend=False)
         values = offloaded_payloads.values if offloaded_payloads else {}
         missing = {
             blob_id

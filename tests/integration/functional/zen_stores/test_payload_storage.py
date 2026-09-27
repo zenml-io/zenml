@@ -63,6 +63,7 @@ from zenml.zen_server.pipeline_execution import utils as execution_utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunExecutionRequest,
 )
+from zenml.zen_server.utils import get_with_metadata_if_available
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.schemas import (
     BlobSchema,
@@ -428,6 +429,63 @@ def test_corrupted_blob_is_rejected_and_not_cached(
     s3.put_object(Bucket=BUCKET, Key=key, Body=original)
     restored = cached.get_snapshot(snapshot.id, hydrate=True)
     assert restored.pipeline_configuration.name == "original-configuration"
+
+
+def test_storage_location_cannot_move_once_it_holds_payloads(
+    store: SqlZenStore,
+) -> None:
+    """Blobs are only read from where they were written.
+
+    Another path is another location, even in the same bucket; another
+    spelling of the same path or other credentials are not.
+    """
+    backend_config = store.config.payload_storage.backend_config
+    moved = {**backend_config, "path": f"s3://{BUCKET}/moved"}
+    # Started while nothing was offloaded, so it had no reason to refuse.
+    started_before = _open_store(store, cache_size=0, backend_config=moved)
+    run = _start_run(store)
+
+    with pytest.raises(PayloadStorageError, match="payload storage location"):
+        started_before.get_run(run.id, hydrate=True)
+    with pytest.raises(RuntimeError, match="cannot move once it holds"):
+        _open_store(store, backend_config=moved)
+
+    same_location = _open_store(
+        store,
+        cache_size=0,
+        backend_config={
+            **backend_config,
+            "path": f"s3://{BUCKET}/{PREFIX}/",
+            "key": "rotated",
+            "secret": "rotated",
+        },
+    )
+    assert same_location.get_run(run.id, hydrate=True).config == run.config
+
+
+def test_process_without_backend_answers_committed_updates(
+    store: SqlZenStore,
+) -> None:
+    """A process without a backend fails payload reads as a storage error.
+
+    It was started before anything was offloaded. A committed update is then
+    answered without the payloads instead of failing, which would make
+    clients retry an update that already happened.
+    """
+    unconfigured = _open_store(
+        store, offload_enabled=False, backend=None, backend_config={}
+    )
+    run = _start_run(store)
+
+    with pytest.raises(
+        PayloadStorageError, match="no payload storage backend"
+    ):
+        unconfigured.get_run(run.id, hydrate=True)
+
+    unconfigured.update_run(run.id, PipelineRunUpdate(add_tags=["updated"]))
+    response = get_with_metadata_if_available(unconfigured.get_run, run.id)
+    assert [tag.name for tag in response.tags] == ["updated"]
+    assert response.metadata is None
 
 
 @pytest.mark.parametrize(

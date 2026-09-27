@@ -37,6 +37,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml.exceptions import PayloadStorageError
+
 
 class UnresolvedPayloadError(RuntimeError):
     """Raised when an offloaded payload is read without being resolved.
@@ -54,8 +56,7 @@ class UnresolvedPayloadError(RuntimeError):
         """
         super().__init__(
             f"The payload stored in blob `{blob_id}` was read without being "
-            "resolved. If this process has no payload storage backend, "
-            "configure the backend of the processes that offload payloads."
+            "resolved."
         )
 
 
@@ -272,13 +273,21 @@ class ResolvedPayloads:
     its store method did not resolve is a bug.
     """
 
-    def __init__(self, values: Optional[Mapping[UUID, str]] = None) -> None:
+    def __init__(
+        self,
+        values: Optional[Mapping[UUID, str]] = None,
+        has_backend: bool = True,
+    ) -> None:
         """Initializes the resolved payloads.
 
         Args:
             values: The payload values by the blob that holds them.
+            has_backend: Whether the process has a payload storage backend.
+                Without one, it resolves nothing, and reading a payload that
+                another process offloaded is a configuration error, not a bug.
         """
         self._values: Dict[UUID, str] = dict(values or {})
+        self._has_backend = has_backend
 
     @overload
     def read(self, inline: str, blob_id: Optional[UUID]) -> str: ...
@@ -301,6 +310,8 @@ class ResolvedPayloads:
             The payload value.
 
         Raises:
+            PayloadStorageError: If the value is offloaded and the process has
+                no payload storage backend to read it from.
             UnresolvedPayloadError: If the value is offloaded and its blob was
                 not resolved.
         """
@@ -309,6 +320,15 @@ class ResolvedPayloads:
         try:
             return self._values[blob_id]
         except KeyError:
+            if not self._has_backend:
+                # A storage error, so that responses to committed changes
+                # fall back to leaving the payloads out.
+                raise PayloadStorageError(
+                    "Execution payloads were offloaded to payload storage, "
+                    "but this process has no payload storage backend. "
+                    "Configure the same `backend` and `path` as the processes "
+                    "that offload payloads."
+                ) from None
             raise UnresolvedPayloadError(blob_id) from None
 
 

@@ -28,6 +28,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.schema_utils import build_index
 
 BLOB_SHA256_CONSTRAINT = "unique_blob_sha256"
+BLOB_STORED_IN_LENGTH = 16
 
 
 class BlobSchema(SQLModel, table=True):
@@ -35,7 +36,8 @@ class BlobSchema(SQLModel, table=True):
 
     Blobs are shared by every entity whose payload has the same content, and
     are never updated or deleted. A row only exists once its bytes are
-    durable in the backend named by `stored_in`.
+    durable at the location that `stored_in` identifies: the backend and a
+    digest of its path, such as `s3:6de5d6037f732`.
     """
 
     __tablename__ = "blob"
@@ -50,5 +52,7 @@ class BlobSchema(SQLModel, table=True):
     # are the UTF-8 encoded payload.
     codec: str = Field(sa_column=Column(String(16), nullable=False))
     size: int = Field(sa_column=Column(BigInteger, nullable=False))
-    stored_in: str = Field(sa_column=Column(String(16), nullable=False))
+    stored_in: str = Field(
+        sa_column=Column(String(BLOB_STORED_IN_LENGTH), nullable=False)
+    )
     created: datetime = Field(default_factory=utc_now, nullable=False)
