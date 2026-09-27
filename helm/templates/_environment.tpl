@@ -105,11 +105,6 @@ Returns:
   A dictionary with the secret values configured for the ZenML store.
 */}}
 {{- define "zenml.storeSecretConfigurationAttrs" -}}
-{{- with .ZenML.database.payloadStorage }}
-{{- if or .offloadEnabled .path }}
-payload_storage: {{ include "zenml.payloadStorageConfiguration" . | fromYaml | toJson | quote }}
-{{- end }}
-{{- end }}
 {{- if .ZenML.database.url }}
 url: {{ .ZenML.database.url | quote }}
 {{- if and .ZenML.database.sslCa .ZenML.database.sslCa.value }}
@@ -122,59 +117,6 @@ ssl_cert: {{ .ZenML.database.sslCert.value | quote }}
 ssl_key: {{ .ZenML.database.sslKey.value | quote }}
 {{- end }}
 {{- end }}
-{{- end }}
-
-
-{{/*
-Execution payload storage configuration.
-
-Builds the `payload_storage` setting of the SQL store from the typed
-`zenml.database.payloadStorage` values, and fails the release for values the
-server would reject.
-
-Args:
-  .: The `zenml.database.payloadStorage` values.
-Returns:
-  The payload storage configuration, as YAML.
-*/}}
-{{- define "zenml.payloadStorageConfiguration" -}}
-{{- $schemes := dict "s3" (list "s3://") "gcs" (list "gs://") "azure" (list "az://" "abfs://") -}}
-{{- if not (hasKey $schemes .backend) }}
-{{- fail (printf "zenml.database.payloadStorage.backend must be `s3`, `gcs` or `azure`, not `%s`." .backend) }}
-{{- end }}
-{{- $validPath := false -}}
-{{- range (get $schemes .backend) }}
-{{- if hasPrefix . $.path }}{{ $validPath = true }}{{ end }}
-{{- end }}
-{{- if not $validPath }}
-{{- fail (printf "zenml.database.payloadStorage.path must be a `%s` location, such as `%sbucket/prefix`, not `%s`." .backend (first (get $schemes .backend)) .path) }}
-{{- end }}
-{{- if and (ne .backend "s3") (or .region .endpointUrl) }}
-{{- fail "zenml.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
-{{- end }}
-{{- if le (float64 .backendTimeoutSeconds) 0.0 }}
-{{- fail (printf "zenml.database.payloadStorage.backendTimeoutSeconds must be a number of seconds above 0, not `%v`." .backendTimeoutSeconds) }}
-{{- end }}
-{{- /* Checked before converting it, which turns any text into 0 and cuts decimals. */ -}}
-{{- $isNumber := or (kindIs "float64" .cacheMaxBytes) (kindIs "int64" .cacheMaxBytes) (kindIs "int" .cacheMaxBytes) }}
-{{- if not (and $isNumber (ge (float64 .cacheMaxBytes) 0.0) (eq (float64 .cacheMaxBytes) (floor .cacheMaxBytes))) }}
-{{- fail (printf "zenml.database.payloadStorage.cacheMaxBytes must be a whole number of bytes, 0 or more, not `%v`." .cacheMaxBytes) }}
-{{- end }}
-offload_enabled: {{ .offloadEnabled }}
-backend: {{ .backend }}
-backend_config:
-  path: {{ .path | quote }}
-  {{- if or .region .endpointUrl }}
-  client_kwargs:
-    {{- if .region }}
-    region_name: {{ .region | quote }}
-    {{- end }}
-    {{- if .endpointUrl }}
-    endpoint_url: {{ .endpointUrl | quote }}
-    {{- end }}
-  {{- end }}
-cache_max_bytes: {{ int64 .cacheMaxBytes }}
-backend_timeout_seconds: {{ .backendTimeoutSeconds }}
 {{- end }}
 
 
