@@ -19,7 +19,7 @@ do
     elif [ "$arg" = "--no-upgrade" ]; then
         SKIP_UPGRADE=true
     else
-        # If it's not the flag, treat the argument as a source directory
+        # If it's not the flag, treat it as a source directory
         # Append the argument to SRC, separated by space
         if [ -z "$SRC" ]; then
             SRC="$arg"
