@@ -14,28 +14,16 @@
 """Backends that hold payload blobs outside the database."""
 
 import asyncio
+import threading
 from abc import ABC, abstractmethod
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Protocol,
-    TypeVar,
-    cast,
-)
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, TypeVar
 
-from zenml.enums import StackComponentType
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.payload_storage.config import PayloadBackendType
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
-
-    from zenml.artifact_stores import BaseArtifactStoreFlavor
 
 
 class PayloadBackend(ABC):
@@ -86,24 +74,12 @@ class PayloadBackend(ABC):
         """
 
 
-class ObjectStoreArtifactStore(Protocol):
-    """An artifact store whose files live in an fsspec filesystem."""
+class ObjectStorePayloadBackend(PayloadBackend):
+    """Holds payload blobs in object storage through its fsspec filesystem.
 
-    @property
-    def path(self) -> str:
-        """The root path of the artifact store."""
-
-    @property
-    def filesystem(self) -> "AbstractFileSystem":
-        """The filesystem holding the files of the artifact store."""
-
-
-class ArtifactStorePayloadBackend(PayloadBackend):
-    """Holds payload blobs in object storage through a ZenML artifact store.
-
-    Blobs are stored as `<path>/<sha256>`, where `path` is the path of the
-    artifact store, such as `s3://bucket/prefix`. Each blob takes a single
-    request to write or read, with the credentials of the artifact store.
+    Blobs are stored as `<path>/<sha256>`, such as
+    `s3://bucket/prefix/<sha256>`. Each blob takes a single request to write
+    or read.
 
     Every call is cancelled after the timeout, retries included. s3fs, gcsfs
     and adlfs are fsspec async filesystems, whose calls take a `timeout`; on
@@ -114,29 +90,59 @@ class ArtifactStorePayloadBackend(PayloadBackend):
     def __init__(
         self,
         backend_type: PayloadBackendType,
-        artifact_store: ObjectStoreArtifactStore,
+        path: str,
+        filesystem_class: Type["AbstractFileSystem"],
+        filesystem_options: Dict[str, Any],
         timeout: float,
     ) -> None:
         """Initializes the backend.
 
         Args:
             backend_type: The backend.
-            artifact_store: The artifact store holding the blobs.
+            path: Where the blobs are stored, such as `s3://bucket/prefix`.
+            filesystem_class: The fsspec filesystem of the object store.
+            filesystem_options: The options the filesystem is created with.
             timeout: The number of seconds after which a call is cancelled.
         """
         self._backend_type = backend_type
-        self._artifact_store = artifact_store
-        self._root = artifact_store.path.rstrip("/")
+        self._root = path.rstrip("/")
+        self._filesystem_class = filesystem_class
+        self._filesystem_options = filesystem_options
+        self._filesystem: Optional["AbstractFileSystem"] = None
+        self._filesystem_lock = threading.Lock()
         self._timeout = timeout
 
     @property
     def location(self) -> str:
-        """Where the blobs are stored: the path of the artifact store.
+        """Where the blobs are stored: the path of the backend.
 
         Returns:
             The location of the blobs.
         """
         return self._root
+
+    def _get_filesystem(self) -> "AbstractFileSystem":
+        """Get the filesystem, which the first call creates.
+
+        gcsfs and adlfs look up credentials when they are created, so the
+        store starts even while those are unavailable, and the first call
+        fails like any other. Concurrent first calls share one filesystem,
+        and with it the connection pool.
+
+        Returns:
+            The filesystem.
+        """
+        filesystem = self._filesystem
+        if filesystem is None:
+            with self._filesystem_lock:
+                if self._filesystem is None:
+                    # The instance cache of fsspec would keep it alive for as
+                    # long as the process.
+                    self._filesystem = self._filesystem_class(
+                        skip_instance_cache=True, **self._filesystem_options
+                    )
+                filesystem = self._filesystem
+        return filesystem
 
     def _call(self, function: Callable[[], T]) -> T:
         """Call the filesystem, with denied and missing errors translated.
@@ -247,7 +253,7 @@ class ArtifactStorePayloadBackend(PayloadBackend):
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
         self._call(
-            lambda: self._artifact_store.filesystem.pipe_file(
+            lambda: self._get_filesystem().pipe_file(
                 f"{self._root}/{sha256}", data, timeout=self._timeout
             )
         )
@@ -262,42 +268,11 @@ class ArtifactStorePayloadBackend(PayloadBackend):
             The stored bytes.
         """
         data: bytes = self._call(
-            lambda: self._artifact_store.filesystem.cat_file(
+            lambda: self._get_filesystem().cat_file(
                 f"{self._root}/{sha256}", timeout=self._timeout
             )
         )
         return data
-
-
-def _get_artifact_store_flavor(
-    backend_type: PayloadBackendType,
-) -> "BaseArtifactStoreFlavor":
-    """Get the artifact store flavor that implements a payload backend.
-
-    Args:
-        backend_type: The payload backend.
-
-    Returns:
-        The artifact store flavor.
-
-    Raises:
-        ValueError: If no artifact store flavor implements the backend.
-    """
-    if backend_type == PayloadBackendType.S3:
-        from zenml.integrations.s3.flavors import S3ArtifactStoreFlavor
-
-        return S3ArtifactStoreFlavor()
-    if backend_type == PayloadBackendType.GCS:
-        from zenml.integrations.gcp.flavors import GCPArtifactStoreFlavor
-
-        return GCPArtifactStoreFlavor()
-    if backend_type == PayloadBackendType.AZURE:
-        from zenml.integrations.azure.flavors import AzureArtifactStoreFlavor
-
-        return AzureArtifactStoreFlavor()
-    raise ValueError(
-        f"No artifact store implements the `{backend_type}` payload backend."
-    )
 
 
 def create_payload_backend(
@@ -309,45 +284,39 @@ def create_payload_backend(
     """Create a payload backend from its configuration.
 
     Creating a backend never connects to its storage, so a store starts even
-    while its storage is unavailable.
+    while its storage is unavailable. A missing filesystem library fails
+    here, when the store starts.
 
     Args:
         backend_type: The backend to create.
-        configuration: The configuration of the backend.
+        configuration: The `path` of the blobs and the options of the fsspec
+            filesystem of the backend.
         timeout: The number of seconds after which a call is cancelled.
         concurrent_calls: The number of calls the backend receives at once.
 
     Returns:
         The payload backend.
     """
+    import fsspec
+
+    options = dict(configuration)
+    path = options.pop("path")
     if backend_type == PayloadBackendType.S3:
         # The S3 client keeps 10 connections by default, and the timeout of a
         # call also runs while it waits for one, so calls beyond 10 would
         # time out on healthy storage.
-        configuration = {
-            **configuration,
-            "config_kwargs": {
-                "max_pool_connections": concurrent_calls,
-                **configuration.get("config_kwargs", {}),
-            },
+        options["config_kwargs"] = {
+            "max_pool_connections": concurrent_calls,
+            **(options.get("config_kwargs") or {}),
         }
-    flavor = _get_artifact_store_flavor(backend_type)
-    now = utc_now()
-    artifact_store = flavor.implementation_class(
-        name=f"payload-storage-{backend_type.value}",
-        id=uuid4(),
-        config=flavor.config_class(**configuration),
-        flavor=flavor.name,
-        type=StackComponentType.ARTIFACT_STORE,
-        user=None,
-        created=now,
-        updated=now,
-        register_filesystem=False,
-    )
-    # Every object store flavor above exposes its filesystem. It is created
-    # on first use, so that a store starts while its storage is unavailable.
-    return ArtifactStorePayloadBackend(
+    elif backend_type == PayloadBackendType.AZURE:
+        # Older adlfs versions access containers anonymously by default.
+        options.setdefault("anon", False)
+    protocol, _ = fsspec.core.split_protocol(path)
+    return ObjectStorePayloadBackend(
         backend_type,
-        cast(ObjectStoreArtifactStore, artifact_store),
+        path,
+        filesystem_class=fsspec.get_filesystem_class(protocol),
+        filesystem_options=options,
         timeout=timeout,
     )

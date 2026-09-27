@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Configuration of execution payload storage."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -26,6 +26,14 @@ class PayloadBackendType(StrEnum):
     S3 = "s3"
     GCS = "gcs"
     AZURE = "azure"
+
+
+# The schemes of the paths of each backend, as the Helm chart accepts them.
+PATH_SCHEMES: Dict[PayloadBackendType, Tuple[str, ...]] = {
+    PayloadBackendType.S3: ("s3://",),
+    PayloadBackendType.GCS: ("gs://",),
+    PayloadBackendType.AZURE: ("az://", "abfs://"),
+}
 
 
 class PayloadStorageConfiguration(BaseModel):
@@ -44,11 +52,13 @@ class PayloadStorageConfiguration(BaseModel):
             nor the `path` of its configuration can change once it holds
             payloads, since blobs are read from where they were written: a
             store refuses to start then.
-        backend_config: The configuration of the backend, as for the artifact
-            store flavor of the same name, such as a `path` like
-            `s3://bucket/prefix` and optional credentials; without
-            credentials, the implicit credentials of the environment are used.
-            Credentials can change.
+        backend_config: The `path` where blobs are written, such as
+            `s3://bucket/prefix`, and the options of the fsspec filesystem of
+            the backend: s3fs (such as `key`, `secret`, `client_kwargs`),
+            gcsfs (such as `project`, `token`) or adlfs (such as
+            `account_name`, `connection_string`). Without credentials, the
+            implicit credentials of the environment are used. Credentials can
+            change.
         cache_size: The maximum memory in bytes taken by the resolved
             payloads that each process keeps. 0 disables the cache.
         timeout: The number of seconds after which a call to the payload
@@ -73,17 +83,28 @@ class PayloadStorageConfiguration(BaseModel):
 
     @model_validator(mode="after")
     def _validate_backend(self) -> "PayloadStorageConfiguration":
-        """Validate that offloading has a backend.
+        """Validate that offloading has a backend, and a backend its path.
 
         Returns:
             The validated configuration.
 
         Raises:
-            ValueError: If offloading is enabled without a backend.
+            ValueError: If offloading is enabled without a backend, or the
+                backend has no path of its own.
         """
         if self.offload_enabled and self.backend is None:
             raise ValueError(
                 "Offloading payloads needs a `backend`: `s3`, `gcs` or "
                 "`azure`."
             )
+        if self.backend is not None:
+            schemes = PATH_SCHEMES[self.backend]
+            path = self.backend_config.get("path")
+            if not isinstance(path, str) or not path.startswith(schemes):
+                raise ValueError(
+                    f"The `{self.backend.value}` payload backend needs a "
+                    "`path` in its `backend_config` that starts with "
+                    f"`{'` or `'.join(schemes)}`, such as "
+                    f"`{schemes[0]}bucket/prefix`."
+                )
         return self
