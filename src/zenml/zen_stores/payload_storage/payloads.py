@@ -98,6 +98,15 @@ class PayloadColumn(BaseModel):
         text: Optional[str] = getattr(schema, self.name)
         return text
 
+    @property
+    def offloaded_inline_value(self) -> Optional[str]:
+        """The value the inline column holds once its value is offloaded.
+
+        Returns:
+            NULL, or an empty string for a NOT NULL column.
+        """
+        return None if self.nullable else ""
+
     def replace_inline_with_blob(self, schema: Any, blob_id: UUID) -> None:
         """Reference an offloaded value and clear the inline column.
 
@@ -106,7 +115,7 @@ class PayloadColumn(BaseModel):
             blob_id: The blob holding the value.
         """
         setattr(schema, self.blob_id_column_name, blob_id)
-        setattr(schema, self.name, None if self.nullable else "")
+        setattr(schema, self.name, self.offloaded_inline_value)
 
 
 class HasPayloadColumns(Protocol):
@@ -204,6 +213,17 @@ class OffloadResult:
         return {
             blob_id: text for text, blob_id in self._blob_ids_by_text.items()
         }
+
+    def get_blob_id(self, text: str) -> UUID:
+        """Get the blob of an offloaded value.
+
+        Args:
+            text: The value.
+
+        Returns:
+            The ID of the blob holding the value.
+        """
+        return self._blob_ids_by_text[text]
 
     def apply_references(self, *schemas: HasPayloadColumns) -> None:
         """Replace the inline payload values of schemas by their blobs.

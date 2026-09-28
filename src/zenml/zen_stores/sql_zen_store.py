@@ -435,6 +435,18 @@ from zenml.zen_stores.payload_storage import (
     collect_payload_blob_ids,
     get_inline_payload_values,
 )
+from zenml.zen_stores.payload_storage.backfill import (
+    BACKFILL_BATCH_SIZE,
+    BACKFILL_ORDER,
+    BACKFILL_PAUSE_SECONDS,
+    BackfillTableReport,
+    BackfillTableResult,
+    PayloadRowSchema,
+    build_backfill_update,
+    get_missing_control_values,
+    select_backfill_batch,
+    select_backfill_report,
+)
 from zenml.zen_stores.payload_storage.payload_store import PayloadStore
 from zenml.zen_stores.schemas import (
     APIKeySchema,
@@ -1536,6 +1548,186 @@ class SqlZenStore(BaseZenStore):
             ),
             hydrate=hydrate,
         )
+
+    def get_payload_backfill_report(self) -> List[BackfillTableReport]:
+        """Report what the payload backfill still has to update, without writing.
+
+        Each table is read in full, in a transaction of its own.
+
+        Returns:
+            The report of each table, in backfill order.
+        """
+        reports = []
+        for schema in BACKFILL_ORDER:
+            with Session(self.engine) as session:
+                pending_rows, *inline_bytes = session.execute(
+                    select_backfill_report(schema)
+                ).one()
+            reports.append(
+                BackfillTableReport(
+                    table=schema.__tablename__,
+                    pending_rows=pending_rows,
+                    inline_bytes={
+                        column.name: int(size or 0)
+                        for column, size in zip(
+                            schema.PAYLOAD_COLUMNS, inline_bytes
+                        )
+                    },
+                )
+            )
+        return reports
+
+    def backfill_payloads(
+        self,
+        batch_size: int = BACKFILL_BATCH_SIZE,
+        pause_seconds: float = BACKFILL_PAUSE_SECONDS,
+    ) -> List[BackfillTableResult]:
+        """Offload the inline payloads of existing rows and fill their control columns.
+
+        See `zenml.zen_stores.payload_storage.backfill`. Stops before the next
+        table if a row of a table failed.
+
+        Args:
+            batch_size: The rows each batch reads, whether they need an update
+                or not, so that a batch never scans a whole table.
+            pause_seconds: How long to wait after each batch that updated
+                rows, to spare the database.
+
+        Returns:
+            The result of each table visited, in backfill order.
+
+        Raises:
+            IllegalOperationError: If offloading is disabled.
+        """
+        if not self.payload_store.offload_enabled:
+            raise IllegalOperationError(
+                "The backfill offloads payloads, so it needs payload storage "
+                "with offloading enabled. Enable offloading once every server "
+                "and every other process that opens the database runs this "
+                "release, then run the backfill."
+            )
+        results = []
+        for schema in BACKFILL_ORDER:
+            result = BackfillTableResult(table=schema.__tablename__)
+            results.append(result)
+            started = time.monotonic()
+            after_id: Optional[UUID] = None
+            while True:
+                with Session(self.engine) as session:
+                    batch = session.execute(
+                        select_backfill_batch(schema, after_id, batch_size)
+                    ).all()
+                if not batch:
+                    break
+                after_id = batch[-1][0]
+                if pending_ids := [
+                    row_id for row_id, pending in batch if pending
+                ]:
+                    self._backfill_rows(schema, pending_ids, result)
+                    logger.info(
+                        "Backfill of `%s`: %d rows updated, %d skipped, %d "
+                        "bytes offloaded, %.0f rows/s.",
+                        result.table,
+                        result.rows_updated,
+                        result.rows_skipped,
+                        result.bytes_offloaded,
+                        result.rows_updated
+                        / max(time.monotonic() - started, 1e-3),
+                    )
+                    time.sleep(pause_seconds)
+            if result.failed_rows:
+                logger.error(
+                    "Backfill stopped: %d rows of `%s` failed, so no payload "
+                    "they read is offloaded yet. Fix or delete them, then "
+                    "run the backfill again:\n%s",
+                    len(result.failed_rows),
+                    result.table,
+                    "\n".join(
+                        f"  {row_id}: {reason}"
+                        for row_id, reason in result.failed_rows.items()
+                    ),
+                )
+                break
+        return results
+
+    def _backfill_rows(
+        self,
+        schema: Type[PayloadRowSchema],
+        row_ids: List[UUID],
+        result: BackfillTableResult,
+    ) -> None:
+        """Offload the inline payloads of rows and fill their control columns.
+
+        Args:
+            schema: The table of the rows.
+            row_ids: The rows to update.
+            result: The result of the table, updated in place.
+        """
+        with Session(self.engine) as session:
+            rows = session.exec(
+                select(schema)
+                .where(col(schema.id).in_(row_ids))
+                .options(
+                    *(
+                        StepRunSchema.get_step_configuration_query_options(
+                            many=True
+                        )
+                        if schema is StepRunSchema
+                        else []
+                    )
+                )
+            ).all()
+            # Their parents keep their payloads inline until they are done,
+            # but a rerun must not depend on it.
+            payloads = self._load_required_payloads(
+                session,
+                lambda: (
+                    blob_id
+                    for row in rows
+                    if isinstance(row, StepRunSchema)
+                    and row.substitutions is None
+                    for blob_id in row.get_required_payload_blob_ids()
+                ),
+            )
+            updates = []
+            for row in rows:
+                try:
+                    control_values = get_missing_control_values(row, payloads)
+                except (ValueError, KeyError) as e:
+                    result.failed_rows[row.id] = f"{type(e).__name__}: {e}"
+                    continue
+                inline_values = {
+                    column: PayloadValue(text=text)
+                    for column in schema.PAYLOAD_COLUMNS
+                    if (text := column.get_inline_text(row)) is not None
+                }
+                updates.append((row.id, control_values, inline_values))
+
+            offload_result = self._offload_payloads(
+                session,
+                [
+                    value
+                    for _, _, inline_values in updates
+                    for value in inline_values.values()
+                ],
+            )
+            for row_id, control_values, inline_values in updates:
+                statement = build_backfill_update(
+                    schema,
+                    row_id,
+                    control_values,
+                    inline_values,
+                    offload_result,
+                )
+                if session.execute(statement).rowcount:  # type: ignore[attr-defined]
+                    result.rows_updated += 1
+                    result.bytes_offloaded += sum(
+                        len(value.utf8_bytes)
+                        for value in inline_values.values()
+                    )
+                else:
+                    result.rows_skipped += 1
+            session.commit()
 
     def get_session(self) -> Session:
         """Get a new session for the SQL ZenML store.
@@ -12897,10 +13089,8 @@ class SqlZenStore(BaseZenStore):
                     payloads=payloads,
                 )
 
-            step_type = resolved_step_config.config.step_type
-            step_schema.step_type = step_type.value if step_type else None
-            step_schema.substitutions = json.dumps(
-                resolved_step_config.config.substitutions
+            step_schema.sqlmodel_update(
+                StepRunSchema.get_control_values(resolved_step_config)
             )
 
             try:

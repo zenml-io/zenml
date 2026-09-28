@@ -20,12 +20,12 @@ can break: responses that differ from inline ones, execution paths that stop
 working while storage is down, half-created runs and corrupted blobs.
 """
 
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional, Tuple
 from uuid import UUID, uuid4
 
 import pytest
 from moto.server import ThreadedMotoServer
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select, update
 
 from tests.harness.utils import (
     local_s3_client,
@@ -40,6 +40,7 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
+    IllegalOperationError,
     NonRetryablePayloadStorageError,
     PayloadIntegrityError,
     PayloadStorageUnavailableError,
@@ -82,6 +83,11 @@ PAYLOAD_SCHEMAS = [
     StepRunSchema,
     PipelineRunSchema,
 ]
+CONTROL_COLUMNS = {
+    StepRunSchema: ["step_type", "substitutions"],
+    StepConfigurationSchema: ["upstream_steps"],
+    PipelineSnapshotSchema: ["execution_mode", "enable_heartbeat"],
+}
 
 
 @step
@@ -218,6 +224,29 @@ def _move_payloads_inline(store: SqlZenStore) -> None:
                         setattr(row, field.blob_id_column_name, None)
             session.add_all(rows)
             session.commit()
+
+
+def _read_control_columns(store: SqlZenStore) -> Dict[Tuple[UUID, str], Any]:
+    """Read the control columns of every row."""
+    with Session(store.engine) as session:
+        return {
+            (row.id, name): getattr(row, name)
+            for schema, names in CONTROL_COLUMNS.items()
+            for row in session.exec(select(schema)).all()
+            for name in names
+        }
+
+
+def _make_rows_predate_payload_storage(store: SqlZenStore) -> None:
+    """Hold rows as releases before payload storage and control columns did."""
+    _move_payloads_inline(store)
+    with Session(store.engine) as session:
+        session.execute(delete(PayloadBlobSchema))
+        for schema, names in CONTROL_COLUMNS.items():
+            session.execute(
+                update(schema).values({name: None for name in names})
+            )
+        session.commit()
 
 
 def _create_snapshot(
@@ -556,3 +585,127 @@ def test_prepared_run_that_cannot_start_is_failed(
         )
 
     assert cold.get_run_status(run.id) == ExecutionStatus.FAILED
+
+
+def test_backfill_offloads_existing_rows_as_new_writes_would(
+    store: SqlZenStore,
+) -> None:
+    """The backfill offloads inline payloads and fills the control columns.
+
+    Reads return the same before and after, and the control columns get the
+    values that writers set. Small batches cover the scan across batches.
+    """
+    static_pipeline()
+    dynamic_pipeline()
+    control_values = _read_control_columns(store)
+    _make_rows_predate_payload_storage(store)
+    inline_responses = _hydrated_responses(store)
+    inline_store = _open_store(store, offload_enabled=False)
+    with pytest.raises(IllegalOperationError, match="offloading enabled"):
+        inline_store.backfill_payloads()
+
+    results = store.backfill_payloads(batch_size=3, pause_seconds=0)
+
+    assert not any(result.failed_rows for result in results)
+    assert _count_payload_columns(store)["inline"] == 0
+    assert _read_control_columns(store) == control_values
+    cold = _open_store(store, cache_max_bytes=0)
+    assert _hydrated_responses(cold) == inline_responses
+    reports = store.get_payload_backfill_report()
+    assert [report.pending_rows for report in reports] == [0] * 4
+    rerun = store.backfill_payloads(pause_seconds=0)
+    assert sum(result.rows_updated for result in rerun) == 0
+
+
+def test_backfill_keeps_a_value_rewritten_while_it_runs(
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A value rewritten during the backfill is not replaced by the old one.
+
+    A server with offloading disabled rewrites the orchestrator environment
+    inline when it replaces a placeholder run. The new value only differs in
+    case, which MySQL collations ignore when comparing text.
+    """
+    run = _start_run(store)
+    _make_rows_predate_payload_storage(store)
+    with Session(store.engine) as session:
+        schema = session.get(PipelineRunSchema, run.id)
+        assert schema and schema.orchestrator_environment
+        original = schema.orchestrator_environment
+    rewritten = original.upper()
+    offload = store.payload_store.offload
+
+    def offload_while_rewritten(values: Any) -> Any:
+        values = list(values)
+        if any(value.text == original for value in values):
+            with Session(store.engine) as session:
+                session.execute(
+                    update(PipelineRunSchema)
+                    .where(PipelineRunSchema.id == run.id)
+                    .values(orchestrator_environment=rewritten)
+                )
+                session.commit()
+        return offload(values)
+
+    monkeypatch.setattr(
+        store.payload_store, "offload", offload_while_rewritten
+    )
+    results = store.backfill_payloads(pause_seconds=0)
+
+    assert results[-1].rows_skipped == 1
+    with Session(store.engine) as session:
+        schema = session.get(PipelineRunSchema, run.id)
+        assert schema and schema.orchestrator_environment == rewritten
+    monkeypatch.undo()
+    store.backfill_payloads(pause_seconds=0)
+    cold = _open_store(store, cache_max_bytes=0)
+    assert cold.get_run(run.id).orchestrator_environment == {
+        key.upper(): value.upper()
+        for key, value in run.orchestrator_environment.items()
+    }
+
+
+def test_backfill_stops_before_the_payloads_a_failed_row_reads(
+    store: SqlZenStore,
+) -> None:
+    """A step run whose configuration cannot be read stops the backfill.
+
+    Its step configuration and snapshot stay inline, which is where reads of
+    the step run look for them, until the step run is fixed or deleted.
+    """
+    run = _start_run(store)
+    step_run = _start_step(store, run.id)
+    _make_rows_predate_payload_storage(store)
+    with Session(store.engine) as session:
+        session.execute(
+            update(StepRunSchema)
+            .where(StepRunSchema.id == step_run.id)
+            .values(name="renamed")
+        )
+        session.commit()
+    results = store.backfill_payloads(pause_seconds=0)
+
+    assert [result.table for result in results] == ["step_run"]
+    assert list(results[0].failed_rows) == [step_run.id]
+    assert _count_payload_columns(store)["offloaded"] == 0
+
+    store.delete_run(run.id)
+    rerun = store.backfill_payloads(pause_seconds=0)
+    assert not any(result.failed_rows for result in rerun)
+    assert _count_payload_columns(store)["inline"] == 0
+
+
+def test_backfill_writes_nothing_while_storage_is_down(
+    store: SqlZenStore, s3_server: ThreadedMotoServer
+) -> None:
+    """A storage failure stops the backfill without changing or failing rows."""
+    _start_run(store)
+    _make_rows_predate_payload_storage(store)
+    cold = _open_store(store, backend_timeout_seconds=5)
+    pending = cold.get_payload_backfill_report()
+    s3_server.stop()
+
+    with pytest.raises(PayloadStorageUnavailableError):
+        cold.backfill_payloads(pause_seconds=0)
+
+    assert cold.get_payload_backfill_report() == pending
