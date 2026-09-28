@@ -35,10 +35,10 @@ class CircuitBreaker:
     the others still fail at once: its success lets every call through
     again, and its failure pauses the calls again.
 
-    It guards single backend calls. Only failures that retrying may fix
-    count: a missing object (`FileNotFoundError`) or denied access
-    (`PermissionError`) means that the backend answered, so it resets the
-    count like a success.
+    It guards each backend call, which may load or store many blobs. Only
+    failures that retrying may fix count: a missing object
+    (`FileNotFoundError`) or denied access (`PermissionError`) means that the
+    backend answered, so it resets the count like a success.
     """
 
     def __init__(

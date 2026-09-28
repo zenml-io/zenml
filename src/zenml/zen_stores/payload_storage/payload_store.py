@@ -14,12 +14,6 @@
 """Offloading execution payloads to blob storage and loading them back."""
 
 import hashlib
-from concurrent.futures import (
-    FIRST_COMPLETED,
-    Future,
-    ThreadPoolExecutor,
-    wait,
-)
 from typing import (
     Callable,
     Collection,
@@ -27,9 +21,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
     TypeVar,
 )
 from uuid import UUID
@@ -65,11 +56,9 @@ from zenml.zen_stores.schemas.payload_blob_schemas import (
 )
 
 IDENTITY_CODEC = "identity"
+# Requests that one backend call sends to the object store at once.
 MAX_CONCURRENT_BACKEND_CALLS = 32
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
-# A batch waits this much longer than a call's own timeout, so that a call
-# that times out is counted by the circuit breaker before the batch fails.
-BACKEND_STALL_MARGIN_SECONDS = 1.0
 # The longest `IN` list of a registry query.
 BLOB_QUERY_BATCH_SIZE = 500
 
@@ -114,10 +103,6 @@ class PayloadStore:
         self._offload_enabled = config.offload_enabled
         self._timeout = config.backend_timeout_seconds
         self._cache = PayloadCache(max_bytes=config.cache_max_bytes)
-        self._executor = ThreadPoolExecutor(
-            max_workers=MAX_CONCURRENT_BACKEND_CALLS,
-            thread_name_prefix="zenml-payload-storage",
-        )
         # All None while no backend is configured and payloads stay inline.
         self._backend: Optional[BlobBackend] = None
         self._breaker: Optional[CircuitBreaker] = None
@@ -214,9 +199,13 @@ class PayloadStore:
                 if sha256 not in blob_ids
             ]
             if new_values:
-                self._call_backend_batch(
-                    lambda value: backend.put(value.sha256, value.utf8_bytes),
-                    new_values,
+                self._call_backend(
+                    lambda: backend.put_many(
+                        {
+                            value.sha256: value.utf8_bytes
+                            for value in new_values
+                        }
+                    )
                 )
                 with Session(self._engine) as session:
                     registered = self._register_blobs(new_values, session)
@@ -402,9 +391,7 @@ class PayloadStore:
         assert backend
 
         sha256s = sorted({blob.sha256 for blob in blobs})
-        data = dict(
-            zip(sha256s, self._call_backend_batch(backend.get, sha256s))
-        )
+        data = self._call_backend(lambda: backend.get_many(sha256s))
         return {
             blob.id: self._verify_and_decode(blob, data[blob.sha256])
             for blob in blobs
@@ -440,127 +427,40 @@ class PayloadStore:
             )
         return data.decode("utf-8")
 
-    def _call_backend_batch(
-        self, function: Callable[[T], R], items: Sequence[T]
-    ) -> List[R]:
-        """Call the backend for several items concurrently.
+    def _call_backend(self, function: Callable[[], R]) -> R:
+        """Call the backend through the circuit breaker.
 
         Args:
             function: The backend call.
-            items: The items to call it for.
-
-        Returns:
-            The results, in the order of the items.
-
-        Raises:
-            PayloadStorageUnavailableError: If a call fails or does not
-                return in time, or the circuit breaker paused the backend.
-            NonRetryablePayloadStorageError: If the storage refuses a call
-                for good, such as for a missing object or denied access.
-        """
-        futures, stalled = self._run_backend_calls(function, items)
-        # The first in item order, so that the same failures always raise
-        # the same error.
-        error = next(
-            (
-                error
-                for future in futures
-                if future.done()
-                and not future.cancelled()
-                and (error := future.exception())
-            ),
-            None,
-        )
-        if error is None and not stalled:
-            return [future.result() for future in futures]
-        if isinstance(error, PayloadStorageUnavailableError):
-            # The circuit breaker paused the backend and already logged why.
-            raise PayloadStorageUnavailableError(str(error)) from error
-
-        logger.warning(
-            "Execution payload storage failed in a batch of %d calls: %s",
-            len(items),
-            error or f"no call returned within {self._timeout} seconds",
-        )
-        if isinstance(error, (FileNotFoundError, PermissionError)):
-            # A 500 rather than a 503: retrying brings back neither a missing
-            # object nor access.
-            raise NonRetryablePayloadStorageError(
-                f"Execution payload storage refused the request: {error}"
-            ) from error
-        if error:
-            raise PayloadStorageUnavailableError(
-                f"Execution payload storage failed: {error}"
-            ) from error
-        raise PayloadStorageUnavailableError(
-            "Execution payload storage did not respond within "
-            f"{self._timeout} seconds."
-        )
-
-    def _run_backend_calls(
-        self, function: Callable[[T], R], items: Sequence[T]
-    ) -> Tuple[List["Future[R]"], bool]:
-        """Run backend calls on the shared threads until they end or stall.
-
-        Every request of the process shares the threads. A batch submits at
-        most one call per thread and the next one as a call returns, so the
-        calls of other requests wait behind one round of its calls, not all
-        of them.
-
-        The batch stalls once none of its calls returns for a timeout plus a
-        margin. A deadline for the whole batch would instead fail large
-        batches on healthy storage. The first failure or a stall cancels the
-        calls still queued.
-
-        Args:
-            function: The backend call.
-            items: The items to call it for.
-
-        Returns:
-            The submitted calls in item order, which are all done unless one
-            failed or they stalled, and whether they stalled.
-        """
-        futures: List["Future[R]"] = []
-        pending: Set["Future[R]"] = set()
-        stalled = False
-        while pending or len(futures) < len(items):
-            while (
-                len(futures) < len(items)
-                and len(pending) < MAX_CONCURRENT_BACKEND_CALLS
-            ):
-                future = self._executor.submit(
-                    self._call_guarded, function, items[len(futures)]
-                )
-                futures.append(future)
-                pending.add(future)
-            done, pending = wait(
-                pending,
-                timeout=self._timeout + BACKEND_STALL_MARGIN_SECONDS,
-                return_when=FIRST_COMPLETED,
-            )
-            stalled = not done
-            if stalled or any(future.exception() for future in done):
-                break
-        for future in pending:
-            future.cancel()
-        return futures, stalled
-
-    def _call_guarded(self, function: Callable[[T], R], item: T) -> R:
-        """Make one backend call through the circuit breaker.
-
-        The breaker counts single calls, not batches, so one slow object
-        among healthy calls never pauses the backend.
-
-        Args:
-            function: The backend call.
-            item: The item to call it for.
 
         Returns:
             The result of the call.
+
+        Raises:
+            PayloadStorageUnavailableError: If the call fails or does not
+                return in time, or the circuit breaker paused the backend.
+            NonRetryablePayloadStorageError: If the storage refuses the call
+                for good, such as for a missing object or denied access.
         """
         assert self._breaker
-        with self._breaker.guard():
-            return function(item)
+        try:
+            with self._breaker.guard():
+                return function()
+        except PayloadStorageUnavailableError:
+            # The circuit breaker paused the backend and already logged why.
+            raise
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning("Execution payload storage refused a call: %s", e)
+            # A 500 rather than a 503: retrying brings back neither a missing
+            # object nor access.
+            raise NonRetryablePayloadStorageError(
+                f"Execution payload storage refused the request: {e}"
+            ) from e
+        except Exception as e:
+            logger.warning("Execution payload storage failed a call: %s", e)
+            raise PayloadStorageUnavailableError(
+                f"Execution payload storage failed: {e}"
+            ) from e
 
     @staticmethod
     def _compute_location_fingerprint(

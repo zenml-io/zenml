@@ -28,7 +28,7 @@ class BlobBackendType(StrEnum):
     AZURE = "azure"
 
 
-# The schemes of the paths of each backend, as the Helm chart accepts them.
+# The schemes of the paths that each backend accepts.
 BACKEND_URI_SCHEMES: Dict[BlobBackendType, Tuple[str, ...]] = {
     BlobBackendType.S3: ("s3://",),
     BlobBackendType.GCS: ("gs://",),

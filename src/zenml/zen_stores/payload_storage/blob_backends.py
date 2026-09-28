@@ -16,7 +16,17 @@
 import asyncio
 import threading
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Mapping,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+)
 
 from zenml.zen_stores.payload_storage.config import BlobBackendType
 
@@ -30,13 +40,12 @@ class BlobBackend(ABC):
     """Holds payload bytes outside the database, addressed by their SHA-256.
 
     Blobs are never overwritten with different bytes or deleted, so a backend
-    only needs to store and load them. A denied access raises
+    only needs to store and load them, many at once. A denied access raises
     `PermissionError` and a missing object or bucket `FileNotFoundError`: the
     payload store fails those at once, and treats any other error as an
     unavailable backend that a retry may find again. Every call returns or
-    raises within the timeout the backend was created with, since a stuck
-    call keeps one of the threads that the payload store shares between
-    requests.
+    raises within the timeout the backend was created with, since it holds a
+    server thread while it runs.
     """
 
     @property
@@ -51,26 +60,25 @@ class BlobBackend(ABC):
         """
 
     @abstractmethod
-    def put(self, sha256: str, data: bytes) -> None:
+    def put_many(self, data_by_sha256: Mapping[str, bytes]) -> None:
         """Durably store bytes under their SHA-256.
 
         Concurrent writers of the same content store identical bytes, so
         storing bytes that are already stored must succeed.
 
         Args:
-            sha256: The hex SHA-256 of the bytes.
-            data: The bytes to store.
+            data_by_sha256: The bytes to store by their hex SHA-256.
         """
 
     @abstractmethod
-    def get(self, sha256: str) -> bytes:
-        """Load the bytes stored under a SHA-256.
+    def get_many(self, sha256s: Sequence[str]) -> Dict[str, bytes]:
+        """Load the bytes stored under SHA-256s.
 
         Args:
-            sha256: The hex SHA-256 of the bytes.
+            sha256s: The hex SHA-256s of the bytes.
 
         Returns:
-            The stored bytes.
+            The stored bytes by SHA-256.
         """
 
 
@@ -79,7 +87,7 @@ class FsspecBlobBackend(BlobBackend):
 
     Blobs are stored as `<path>/<sha256>`, such as
     `s3://bucket/prefix/<sha256>`. Each blob takes a single request to write
-    or read.
+    or read, and a call sends the requests for many blobs concurrently.
 
     Every call is cancelled after the timeout, retries included. s3fs, gcsfs
     and adlfs are fsspec async filesystems, whose calls take a `timeout`; on
@@ -94,6 +102,7 @@ class FsspecBlobBackend(BlobBackend):
         filesystem_class: Type["AbstractFileSystem"],
         filesystem_options: Dict[str, Any],
         timeout: float,
+        max_concurrent_calls: int,
     ) -> None:
         """Initializes the backend.
 
@@ -103,6 +112,8 @@ class FsspecBlobBackend(BlobBackend):
             filesystem_class: The fsspec filesystem of the object store.
             filesystem_options: The options the filesystem is created with.
             timeout: The number of seconds after which a call is cancelled.
+            max_concurrent_calls: The number of requests one call sends to
+                the object store at once.
         """
         self._backend_type = backend_type
         self._location = path.rstrip("/")
@@ -111,6 +122,7 @@ class FsspecBlobBackend(BlobBackend):
         self._filesystem: Optional["AbstractFileSystem"] = None
         self._filesystem_lock = threading.Lock()
         self._timeout = timeout
+        self._max_concurrent_calls = max_concurrent_calls
 
     @property
     def location(self) -> str:
@@ -158,9 +170,9 @@ class FsspecBlobBackend(BlobBackend):
             The result of the call.
 
         Raises:
-            PermissionError: If access to the object was denied.
-            FileNotFoundError: If the object or its bucket is missing.
             TimeoutError: If the call did not return in time.
+            PermissionError: If access was denied.
+            FileNotFoundError: If an object or its bucket is missing.
             Exception: Any other error of the call.
         """
         try:
@@ -243,36 +255,45 @@ class FsspecBlobBackend(BlobBackend):
             return isinstance(error, ResourceNotFoundError)
         return False
 
-    def put(self, sha256: str, data: bytes) -> None:
+    def put_many(self, data_by_sha256: Mapping[str, bytes]) -> None:
         """Durably store bytes under their SHA-256.
 
         Args:
-            sha256: The hex SHA-256 of the bytes.
-            data: The bytes to store.
+            data_by_sha256: The bytes to store by their hex SHA-256.
         """
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
         self._call_filesystem(
-            lambda: self._get_filesystem().pipe_file(
-                f"{self._location}/{sha256}", data, timeout=self._timeout
+            lambda: self._get_filesystem().pipe(
+                {
+                    f"{self._location}/{sha256}": data
+                    for sha256, data in data_by_sha256.items()
+                },
+                batch_size=self._max_concurrent_calls,
+                timeout=self._timeout,
             )
         )
 
-    def get(self, sha256: str) -> bytes:
-        """Load the bytes stored under a SHA-256.
+    def get_many(self, sha256s: Sequence[str]) -> Dict[str, bytes]:
+        """Load the bytes stored under SHA-256s.
 
         Args:
-            sha256: The hex SHA-256 of the bytes.
+            sha256s: The hex SHA-256s of the bytes.
 
         Returns:
-            The stored bytes.
+            The stored bytes by SHA-256.
         """
-        data: bytes = self._call_filesystem(
-            lambda: self._get_filesystem().cat_file(
-                f"{self._location}/{sha256}", timeout=self._timeout
+        # The first failure in path order is raised, so the same failures
+        # always raise the same error.
+        data: Dict[str, bytes] = self._call_filesystem(
+            lambda: self._get_filesystem().cat(
+                [f"{self._location}/{sha256}" for sha256 in sorted(sha256s)],
+                batch_size=self._max_concurrent_calls,
+                timeout=self._timeout,
             )
         )
-        return data
+        # Keyed by the paths without their scheme.
+        return {path.rsplit("/", 1)[-1]: value for path, value in data.items()}
 
 
 def create_blob_backend(
@@ -292,7 +313,8 @@ def create_blob_backend(
         configuration: The `path` of the blobs and the options of the fsspec
             filesystem of the backend.
         timeout: The number of seconds after which a call is cancelled.
-        max_concurrent_calls: The number of calls the backend receives at once.
+        max_concurrent_calls: The number of requests one call sends to the
+            object store at once.
 
     Returns:
         The payload backend.
@@ -302,9 +324,8 @@ def create_blob_backend(
     options = dict(configuration)
     path = options.pop("path")
     if backend_type == BlobBackendType.S3:
-        # The S3 client keeps 10 connections by default, and the timeout of a
-        # call also runs while it waits for one, so calls beyond 10 would
-        # time out on healthy storage.
+        # The S3 client keeps 10 connections by default, and a call's timeout
+        # also runs while its requests wait for one.
         options["config_kwargs"] = {
             "max_pool_connections": max_concurrent_calls,
             **(options.get("config_kwargs") or {}),
@@ -319,4 +340,5 @@ def create_blob_backend(
         filesystem_class=fsspec.get_filesystem_class(protocol),
         filesystem_options=options,
         timeout=timeout,
+        max_concurrent_calls=max_concurrent_calls,
     )
