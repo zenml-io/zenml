@@ -96,7 +96,7 @@ zenml log-store register datadog_logs \
 zenml stack register my_stack \
     -a my_artifact_store \
     -o default \
-    -ls datadog_logs \
+    --log_store datadog_logs \
     --set
 ```
 
@@ -153,6 +153,20 @@ Datadog has a maximum batch size limit of 1000 logs per request. The `max_export
 
 Logs are automatically fetched from Datadog when viewing step details in the ZenML dashboard. The dashboard uses Datadog's Logs Search API to retrieve logs filtered by the step's log ID.
 
+#### Pagination and search
+
+Each fetch makes one Datadog search request for up to 1000 entries. By default, it starts with the newest entries and returns a `before` cursor for older entries. Set `start="oldest"` to begin with the oldest entries and receive an `after` cursor for newer entries. These cursors use Datadog's native next token. Entries within each page are ordered from oldest to newest. Follow the cursor until it is absent, even if a page contains fewer entries than requested.
+
+Continue by passing only the returned cursor. It retains the query, page size, and fixed time bounds. If omitted initially, `until` defaults to the current UTC time. Datadog may still index late-arriving events within the window.
+
+Cursors that fail ZenML validation or conflict with request parameters return `400`. To change the filters, direction, or page size, start a new request without a cursor.
+
+`search` matches text in Datadog's message field. Single terms use wildcard matching, while multiple words use phrase matching. Searches are limited to the configured service and log stream.
+
+Datadog's tokenization, case sensitivity, and punctuation rules apply, so matching can differ from a literal substring search. Exception details appended by ZenML to the displayed message are outside this search. See [Datadog's search syntax](https://docs.datadoghq.com/logs/explorer/search_syntax/) for details.
+
+Entry UUIDs are derived from Datadog's event IDs and remain stable across reads and log store instances. Use them to deduplicate overlapping pages.
+
 #### In Datadog
 
 Navigate to **Logs** in your Datadog dashboard and use these filters:
@@ -179,15 +193,19 @@ service:zenml @zenml.pipeline.run.name:<YOUR_RUN_NAME> @zenml.step.run.name:my_t
 #### Logs not appearing in ZenML Dashboard
 
 1. Verify your Application key is correct
-2. Ensure the Application key has the `logs_read` scope
+2. Ensure the Application key has the `logs_read_data` permission
 3. Check that the Datadog site configuration matches
 
 #### Rate limiting
 
-If you're hitting Datadog's rate limits:
+If you're hitting Datadog's rate limits while writing logs:
 - Increase `schedule_delay_millis` to reduce export frequency
 - Decrease `max_export_batch_size` for more frequent, smaller batches
 - Consider log sampling for high-volume pipelines
+
+The Logs Search API has a separate rate limit for reads. HTTP `429` responses include `Retry-After` when Datadog provides a retry delay. Retry the original request and cursor after that delay.
+
+Connection failures and outages return `503`; other backend errors return `502`. Timeout or warning metadata indicating incomplete results also produces an error. Direct SDK fetches raise the corresponding log store exception.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.datadog.datadog_log_store).
 

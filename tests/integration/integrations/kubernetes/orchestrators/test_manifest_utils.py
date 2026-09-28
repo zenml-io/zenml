@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Unit tests for manifest_utils.py."""
 
+from typing import Any
+
 import pytest
 from kubernetes.client import (
     V1CronJob,
@@ -115,6 +117,126 @@ def test_build_pod_manifest_pod_settings(
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
     assert manifest.spec.containers[0].security_context.privileged is False
+
+
+def test_build_pod_manifest_applies_linux_identity_after_pod_settings():
+    """Authenticated UID/GID override conflicts and preserve other settings."""
+    manifest = build_pod_manifest(
+        pod_name="test-name",
+        image_name="test-image",
+        command=["test"],
+        args=[],
+        privileged=False,
+        pod_settings=KubernetesPodSettings(
+            container_security_context={
+                "allowPrivilegeEscalation": False,
+                "runAsUser": 42,
+                "runAsGroup": 43,
+            },
+            additional_pod_spec_args={
+                "init_containers": [
+                    {
+                        "image": "test-image",
+                        "name": "init",
+                        "securityContext": {"runAsUser": 42},
+                    }
+                ],
+                "security_context": {
+                    "fsGroup": 43,
+                    "runAsGroup": 43,
+                    "runAsUser": 42,
+                    "supplementalGroups": [2000],
+                },
+            },
+        ),
+        run_as_user=1001,
+        run_as_group=1002,
+    )
+
+    assert manifest.spec.security_context == {
+        "fsGroup": 43,
+        "runAsGroup": 1002,
+        "runAsUser": 1001,
+        "supplementalGroups": [2000],
+    }
+    assert (
+        manifest.spec.containers[0].security_context[
+            "allowPrivilegeEscalation"
+        ]
+        is False
+    )
+    assert manifest.spec.containers[0].security_context["runAsUser"] == 1001
+    assert manifest.spec.containers[0].security_context["runAsGroup"] == 1002
+    assert manifest.spec.init_containers[0]["securityContext"] == {
+        "runAsUser": 1001,
+        "runAsGroup": 1002,
+    }
+
+
+@pytest.mark.parametrize(
+    (
+        "run_as_user",
+        "run_as_group",
+        "expected_user",
+        "expected_group",
+        "warning",
+    ),
+    [
+        (None, None, None, None, None),
+        (1001, None, 1001, None, None),
+        (None, 1002, None, 1002, None),
+        ("1001", 1002, None, 1002, "Linux UID"),
+        (1001, "1002", 1001, None, "Linux GID"),
+        (0, None, None, None, "Linux UID"),
+        (None, -1, None, None, "Linux GID"),
+        (True, None, None, None, "Linux UID"),
+    ],
+)
+def test_build_pod_manifest_applies_valid_linux_identity_values(
+    run_as_user: Any,
+    run_as_group: Any,
+    expected_user: int | None,
+    expected_group: int | None,
+    warning: str | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Validate and apply UID/GID values independently.
+
+    Args:
+        run_as_user: UID value passed to the manifest builder.
+        run_as_group: GID value passed to the manifest builder.
+        expected_user: UID expected in generated security contexts.
+        expected_group: GID expected in generated security contexts.
+        warning: Warning fragment expected for invalid values.
+        caplog: Pytest log capture fixture.
+    """
+    manifest = build_pod_manifest(
+        pod_name="test-name",
+        image_name="test-image",
+        command=["test"],
+        args=[],
+        privileged=True,
+        run_as_user=run_as_user,
+        run_as_group=run_as_group,
+    )
+
+    if expected_user is not None or expected_group is not None:
+        assert manifest.spec.security_context is not None
+        assert manifest.spec.security_context.run_as_user == expected_user
+        assert manifest.spec.security_context.run_as_group == expected_group
+        assert manifest.spec.security_context.fs_group is None
+    else:
+        assert manifest.spec.security_context is None
+
+    container_context = manifest.spec.containers[0].security_context
+    assert container_context.privileged is True
+    assert container_context.run_as_user == expected_user
+    assert container_context.run_as_group == expected_group
+
+    if warning:
+        assert warning in caplog.text
+    else:
+        assert "Ignoring invalid OIDC Linux" not in caplog.text
 
 
 @pytest.fixture

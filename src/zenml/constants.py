@@ -490,6 +490,7 @@ DEVICE_VERIFY = "/verify"
 DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
+ENTRIES = "/entries"
 EVENT_FLAVORS = "/event-flavors"
 FLAVORS = "/flavors"
 HEALTH = "/health"
@@ -594,6 +595,8 @@ METADATA_ORCHESTRATOR_LOGS_URL = "orchestrator_logs_url"
 METADATA_ORCHESTRATOR_RUN_ID = "orchestrator_run_id"
 METADATA_EXPERIMENT_TRACKER_URL = "experiment_tracker_url"
 METADATA_DEPLOYED_MODEL_URL = "deployed_model_url"
+LINUX_UID_CLAIM_KEY = "linux_uid"
+LINUX_GID_CLAIM_KEY = "linux_gid"
 
 # Model registries constants
 MLFLOW_MODEL_FORMAT = "MLflow"
@@ -610,6 +613,7 @@ STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 TEXT_FIELD_MAX_LENGTH = 65535
 STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
+MEDIUMBLOB_MAX_LENGTH = 2**24 - 1
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
@@ -642,6 +646,7 @@ LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
 
+# Maximum number of log entries returned per request.
 LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
     ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
 )

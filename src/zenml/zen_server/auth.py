@@ -915,6 +915,7 @@ def authenticate_external_user(
                     is_admin=external_user.is_superuser,
                     avatar_url=external_user.avatar_url,
                     external_user_id=external_user.id,
+                    oidc_claims=external_user.oidc_claims,
                 ),
             )
         else:
@@ -956,6 +957,7 @@ def authenticate_external_user(
                     email=external_user.email,
                     is_admin=external_user.is_superuser,
                     avatar_url=external_user.avatar_url,
+                    oidc_claims=external_user.oidc_claims,
                 )
             )
 

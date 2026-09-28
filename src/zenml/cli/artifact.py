@@ -387,19 +387,18 @@ def prune_artifacts(
         )
 
     client = Client()
-    unused = client.prune_artifacts(dry_run=True).artifact_version_count
-    if not unused:
-        cli_utils.declare("No unused artifact versions found.")
-        return
-    found = f"Found {unused} unused artifact version(s)"
-    if dry_run:
-        cli_utils.declare(f"{found} that can be deleted.")
-        return
-    if not yes and not cli_utils.confirmation(
-        f"{found}. Do you want to delete them?"
-    ):
-        cli_utils.declare("Artifact pruning canceled.")
-        return
+    if dry_run or not yes:
+        unused = client.prune_artifacts(dry_run=True).artifact_version_count
+        if not unused:
+            cli_utils.declare("No unused artifact versions found.")
+            return
+        found = f"Found {unused} unused artifact version(s)"
+        if dry_run:
+            cli_utils.declare(f"{found} that can be deleted.")
+            return
+        if not cli_utils.confirmation(f"{found}. Do you want to delete them?"):
+            cli_utils.declare("Artifact pruning canceled.")
+            return
 
     result = client.prune_artifacts(
         only_versions=False,
@@ -408,9 +407,8 @@ def prune_artifacts(
     )
     if result.task_id:
         cli_utils.declare(
-            f"The server is pruning the {unused} artifact version(s) in the "
-            "background, deleting artifact data through its own access to "
-            "the artifact store(s). Search the server logs for task ID "
+            "The server is pruning unused artifact versions in the "
+            "background. Search the server logs for task ID "
             f"`{result.task_id}` to follow the progress."
         )
     else:

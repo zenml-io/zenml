@@ -1,14 +1,16 @@
 # ZenML ORM Schema Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/zen_stores/schemas/` or
+This file applies to changes in `src/zenml/zen_stores/schemas/` and
 below. For detailed SQLModel examples, relationship patterns, and eager-loading
-notes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
+notes, use the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Storage Rules
 
 - ZenML uses SQLModel and SQLAlchemy for database operations.
 - No raw SQL unless absolutely necessary.
-- General string column limit is about 250 characters because of MySQL.
+- Use `STR_FIELD_MAX_LENGTH` from `zenml.constants` (currently 255) for fields
+  following the standard string convention. Match existing column types and
+  account for MySQL index/charset constraints; this is not a universal limit.
 - Code outside `zen_stores/` should not import SQL-related code directly from
   this directory.
 - External code should use `Client`; lower-level access should go through
