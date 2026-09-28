@@ -14,7 +14,8 @@
 """Execution payload backfill entry point for ZenML server deployments.
 
 Runs where the server runs, with its configuration and cloud identity: in a
-server container or pod, or in a job built like one. For example:
+server container or pod, or in a job built like one, as the Helm chart does
+once offloading is enabled. For example:
 
     python -m zenml.zen_server.payload_backfill --report
     python -m zenml.zen_server.payload_backfill
@@ -23,6 +24,7 @@ server container or pod, or in a job built like one. For example:
 import argparse
 import os
 import sys
+import time
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_DISABLE_DATABASE_MIGRATION
@@ -67,6 +69,19 @@ def main() -> None:
         default=BACKFILL_PAUSE_SECONDS,
         help="Seconds to wait after each batch that updated rows.",
     )
+    parser.add_argument(
+        "--start-delay-seconds",
+        type=float,
+        default=0,
+        help="Seconds to wait before starting, such as for the rolling "
+        "restart that enabled offloading to replace every server.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Run even if a previous run left nothing to update, such as "
+        "after offloading was disabled and enabled again.",
+    )
     args = parser.parse_args()
 
     store_config = GlobalConfiguration().store_configuration
@@ -89,7 +104,9 @@ def main() -> None:
         )
         sys.exit(1)
 
+    completed = store.get_payload_backfill_completion()
     if args.report:
+        logger.info("Last completed: %s.", completed or "never")
         for report in store.get_payload_backfill_report():
             logger.info(
                 "`%s`: %d rows to update, inline payload bytes: %s",
@@ -98,6 +115,18 @@ def main() -> None:
                 report.inline_bytes,
             )
         return
+    if completed and not args.force:
+        logger.info(
+            "The backfill completed on %s, so there is nothing to do. "
+            "`--force` runs it again.",
+            completed,
+        )
+        return
+    if args.start_delay_seconds:
+        logger.info(
+            "Starting the backfill in %.0f seconds.", args.start_delay_seconds
+        )
+        time.sleep(args.start_delay_seconds)
 
     try:
         results = store.backfill_payloads(

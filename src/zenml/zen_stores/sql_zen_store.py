@@ -1648,7 +1648,38 @@ class SqlZenStore(BaseZenStore):
                     ),
                 )
                 break
+        if not any(
+            result.failed_rows or result.rows_skipped for result in results
+        ):
+            self._record_payload_backfill_completion()
         return results
+
+    def get_payload_backfill_completion(self) -> Optional[datetime]:
+        """Get when the payload backfill last found nothing left to update.
+
+        Returns:
+            The completion time, or None if the backfill has not completed.
+        """
+        with Session(self.engine) as session:
+            return session.exec(
+                select(ServerSettingsSchema.payload_backfill_completed)
+            ).first()
+
+    def _record_payload_backfill_completion(self) -> None:
+        """Record that the payload backfill found nothing left to update."""
+        with Session(self.engine) as session:
+            settings = session.exec(select(ServerSettingsSchema)).first()
+            if settings is None:
+                # A database no server has initialized yet: the next run
+                # records it.
+                logger.warning(
+                    "The payload backfill completed, but the server settings "
+                    "do not exist yet to record it."
+                )
+                return
+            settings.payload_backfill_completed = utc_now()
+            session.add(settings)
+            session.commit()
 
     def _backfill_rows(
         self,

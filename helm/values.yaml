@@ -466,6 +466,16 @@ server:
       # clients get the storage error. After three failed calls in a row,
       # calls also fail at once for this long, until the store answers again.
       backendTimeoutSeconds: 10
+      # Once offloading is enabled, a Job moves the payloads of existing runs
+      # to the object store. It runs in its own pod, starts after
+      # `startDelaySeconds` so that the rolling restart that enabled
+      # offloading has replaced every server, and can take hours on a large
+      # database. Once it completed, the Job of every later upgrade exits at
+      # once. Disable it to run `python -m zenml.zen_server.payload_backfill`
+      # yourself, for example to review its `--report` first.
+      backfill:
+        enabled: true
+        startDelaySeconds: 600
 
     # Connection pool settings (only relevant for MySQL databases).
     #

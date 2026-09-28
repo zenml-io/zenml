@@ -607,6 +607,7 @@ def test_backfill_offloads_existing_rows_as_new_writes_would(
     results = store.backfill_payloads(batch_size=3, pause_seconds=0)
 
     assert not any(result.failed_rows for result in results)
+    assert store.get_payload_backfill_completion()
     assert _count_payload_columns(store)["inline"] == 0
     assert _read_control_columns(store) == control_values
     cold = _open_store(store, cache_max_bytes=0)
@@ -653,6 +654,7 @@ def test_backfill_keeps_a_value_rewritten_while_it_runs(
     results = store.backfill_payloads(pause_seconds=0)
 
     assert results[-1].rows_skipped == 1
+    assert store.get_payload_backfill_completion() is None
     with Session(store.engine) as session:
         schema = session.get(PipelineRunSchema, run.id)
         assert schema and schema.orchestrator_environment == rewritten
@@ -687,6 +689,7 @@ def test_backfill_stops_before_the_payloads_a_failed_row_reads(
 
     assert [result.table for result in results] == ["step_run"]
     assert list(results[0].failed_rows) == [step_run.id]
+    assert store.get_payload_backfill_completion() is None
     assert _count_payload_columns(store)["offloaded"] == 0
 
     store.delete_run(run.id)

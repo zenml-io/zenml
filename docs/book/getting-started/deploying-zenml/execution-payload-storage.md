@@ -50,6 +50,11 @@ zenml:
       cacheMaxBytes: 134217728
       # Seconds before a call to the object store fails the request.
       backendTimeoutSeconds: 10
+      # Moves the values of existing runs once offloading is enabled (see
+      # "Moving existing runs" below).
+      backfill:
+        enabled: true
+        startDelaySeconds: 600
 ```
 
 The chart validates these values and passes them to the server through its Kubernetes secret. Keep `backendTimeoutSeconds` below the server's request timeout (20 seconds by default), so that clients get the storage error instead of a timeout.
@@ -69,33 +74,54 @@ docker run -it -d -p 8080:8080 --name zenml \
 
 ## Enabling offloading
 
-A server release that predates payload storage cannot read stored values. So offloading is enabled in two steps:
+A server release that predates payload storage cannot read stored values. So offloading is enabled in two steps, before existing runs are moved:
 
 1. Upgrade the server with `backend` and `path` configured and offloading disabled. Wait until every server replica, and every other process that opens the database, runs the new release with this configuration.
 2. Enable offloading (`offloadEnabled: true`) and roll out again.
+3. Move the values of existing runs (see [Moving existing runs](#moving-existing-runs)). With Helm, the upgrade of step 2 starts it.
 
-A single server that is restarted without overlap, such as a Docker container, can do both at once.
+A single server that is restarted without overlap, such as a Docker container, can do the first two steps at once.
 
 Once the server holds stored values, `backend` and `path` cannot change: the server refuses to start with a different location (see [Moving the payloads](#moving-the-payloads)). Disabling offloading again is possible: new rows then keep their values in the database, and stored values remain readable, as long as `backend` and `path` stay configured.
 
 ## Moving existing runs
 
-Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs as a command with the server's configuration and cloud identity, for example inside a server pod or container:
+Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs with the server's configuration and cloud identity, in its own process: it never runs inside the server. It moves the values in small batches, updates each row once and only if the row did not change in the meantime, and can be stopped and started again at any time: it continues with the rows that remain. Once it finds nothing left to move, it records that in the database, and later runs stop at once.
+
+### Helm
+
+The chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), so that the rolling restart has replaced every server, then runs next to the server. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed.
 
 ```shell
-# Kubernetes, with the name of the ZenML server deployment
-kubectl -n zenml exec -it deploy/zenml-server -- python -m zenml.zen_server.payload_backfill --report
-# Docker, with the name of the ZenML server container
-docker exec -it zenml python -m zenml.zen_server.payload_backfill --report
+# Follow the backfill
+kubectl -n zenml get jobs -l app.kubernetes.io/component=payload-backfill
+kubectl -n zenml logs -f job/<job name>
 ```
 
-`--report` only reads: it prints, for each table, the rows left to update and the bytes of values they still hold. It reads the tables in full, so run it outside of peak hours on large databases.
+The Job succeeds once the backfill has completed. If it fails, its logs name the rows that could not be moved (see below). Argo CD shows the application as progressing until the Job finishes.
 
-Without `--report`, the command moves the values of existing rows in small batches, and it can be stopped and run again at any time: it continues with the rows that remain. Each row is updated once, and only if it did not change in the meantime. The backfill needs offloading to be enabled, and it refuses to run otherwise.
+To run the backfill yourself instead, for example to review its report first, set `backfill.enabled: false` and use the command below from a server pod.
+
+### Docker, ECS and other deployments
+
+Run the backfill once, from the server's container or a container started like it, after the restart that enabled offloading has replaced every server:
 
 ```shell
+docker exec -it zenml python -m zenml.zen_server.payload_backfill
+```
+
+On ECS, run a task from the server's task definition with the command overridden to `python -m zenml.zen_server.payload_backfill`.
+
+### The backfill command
+
+```shell
+# Rows left to update and the bytes they still hold; writes nothing
+python -m zenml.zen_server.payload_backfill --report
+# Move them
 python -m zenml.zen_server.payload_backfill --batch-size 200 --pause-seconds 0.2
 ```
+
+`--report` reads the tables in full, so run it outside of peak hours on large databases. The backfill needs offloading to be enabled, and refuses to run otherwise. If offloading was disabled for a while and enabled again, the rows written in between stay in the database until you run the backfill with `--force`.
 
 On a large MySQL database, keep in mind:
 
