@@ -603,6 +603,9 @@ def test_backfill_offloads_existing_rows_as_new_writes_would(
     inline_store = _open_store(store, offload_enabled=False)
     with pytest.raises(IllegalOperationError, match="offloading enabled"):
         inline_store.backfill_payloads()
+    # A pass that reads no rows must not record completion.
+    with pytest.raises(ValueError):
+        store.backfill_payloads(batch_size=0)
 
     results = store.backfill_payloads(batch_size=3, pause_seconds=0)
 
@@ -621,7 +624,7 @@ def test_backfill_offloads_existing_rows_as_new_writes_would(
 def test_backfill_keeps_a_value_rewritten_while_it_runs(
     store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A value rewritten during the backfill is not replaced by the old one.
+    """A value rewritten during a pass is kept, and the next pass moves it.
 
     A server with offloading disabled rewrites the orchestrator environment
     inline when it replaces a placeholder run. The new value only differs in
@@ -654,12 +657,8 @@ def test_backfill_keeps_a_value_rewritten_while_it_runs(
     results = store.backfill_payloads(pause_seconds=0)
 
     assert results[-1].rows_skipped == 1
-    assert store.get_payload_backfill_completion() is None
-    with Session(store.engine) as session:
-        schema = session.get(PipelineRunSchema, run.id)
-        assert schema and schema.orchestrator_environment == rewritten
-    monkeypatch.undo()
-    store.backfill_payloads(pause_seconds=0)
+    assert _count_payload_columns(store)["inline"] == 0
+    assert store.get_payload_backfill_completion()
     cold = _open_store(store, cache_max_bytes=0)
     assert cold.get_run(run.id).orchestrator_environment == {
         key.upper(): value.upper()
@@ -687,8 +686,8 @@ def test_backfill_stops_before_the_payloads_a_failed_row_reads(
         session.commit()
     results = store.backfill_payloads(pause_seconds=0)
 
-    assert [result.table for result in results] == ["step_run"]
     assert list(results[0].failed_rows) == [step_run.id]
+    assert not any(result.rows_updated for result in results[1:])
     assert store.get_payload_backfill_completion() is None
     assert _count_payload_columns(store)["offloaded"] == 0
 

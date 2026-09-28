@@ -28,16 +28,18 @@ payload is offloaded while a row that computes its control columns from it
 still lacks them.
 
 An update only applies if the row still holds the values it was computed
-from. Rows that changed in between are left for a later run, and running the
-backfill again continues where it stopped.
+from. Rows that changed in between, or that were written inline behind a
+pass, are left for the next pass, and passes repeat until one finds nothing
+to update. Running the backfill again continues where it stopped.
 """
 
 import json
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 from sqlalchemy import LargeBinary, and_, case, cast, false, func, or_
+from sqlalchemy.orm import defer
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import col, select, update
 
@@ -55,6 +57,7 @@ from zenml.zen_stores.schemas import (
     StepRunSchema,
 )
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 PayloadRowSchema = Union[
     StepRunSchema,
@@ -76,6 +79,19 @@ BACKFILL_ORDER: Tuple[Type[PayloadRowSchema], ...] = (
 BACKFILL_BATCH_SIZE = 200
 # Seconds to wait after each batch that updated rows, to spare the database.
 BACKFILL_PAUSE_SECONDS = 0.2
+# Passes over every table, until one finds nothing to update. Bounded, in
+# case a misconfigured process keeps writing payloads inline.
+BACKFILL_MAX_PASSES = 3
+# Large columns that the backfill neither offloads nor reads.
+_UNREAD_COLUMNS: Dict[Type[PayloadRowSchema], List[str]] = {
+    StepRunSchema: ["exception_info"],
+    PipelineSnapshotSchema: ["description"],
+    PipelineRunSchema: [
+        "exception_info",
+        "pipeline_configuration",
+        "client_environment",
+    ],
+}
 
 
 class BackfillTableResult(BaseModel):
@@ -174,7 +190,7 @@ def _is_pending(schema: Type[PayloadRowSchema]) -> ColumnElement[bool]:
 def select_backfill_batch(
     schema: Type[PayloadRowSchema], after_id: Optional[UUID], size: int
 ) -> Any:
-    """Select the next rows of a table, and whether each one is pending.
+    """Select the next rows of a table, and which ones the backfill updates.
 
     Args:
         schema: The table.
@@ -182,10 +198,11 @@ def select_backfill_batch(
         size: The number of rows to read.
 
     Returns:
-        The query for (row ID, pending) tuples in ID order.
+        The query for (row ID, pending, lacks control columns) tuples in ID
+        order.
     """
     query = (
-        select(schema.id, _is_pending(schema))
+        select(schema.id, _is_pending(schema), _lacks_control_columns(schema))
         .order_by(col(schema.id))
         .limit(size)
     )
@@ -219,6 +236,54 @@ def select_backfill_report(schema: Type[PayloadRowSchema]) -> Any:
             for column in schema.PAYLOAD_COLUMNS
         ),
     ).where(_is_pending(schema))
+
+
+def select_backfill_rows(
+    schema: Type[PayloadRowSchema], row_ids: List[UUID], load_parents: bool
+) -> Any:
+    """Select rows to update, without the large columns the backfill ignores.
+
+    Args:
+        schema: The table.
+        row_ids: The rows.
+        load_parents: Whether to load the parents that computing missing
+            control columns reads, for rows that lack them.
+
+    Returns:
+        The query.
+    """
+    query = (
+        select(schema)
+        .where(col(schema.id).in_(row_ids))
+        .options(
+            *(
+                defer(jl_arg(getattr(schema, name)))
+                for name in _UNREAD_COLUMNS.get(schema, [])
+            )
+        )
+    )
+    if load_parents and schema is StepRunSchema:
+        query = query.options(
+            *StepRunSchema.get_step_configuration_query_options(many=True)
+        )
+    return query
+
+
+def get_parent_blob_ids(row: BaseSchema) -> List[Optional[UUID]]:
+    """Get the blobs of parents that computing a row's control columns reads.
+
+    Parents keep their payloads inline until their children are done, but a
+    rerun must not depend on it.
+
+    Args:
+        row: The row.
+
+    Returns:
+        The blob IDs.
+    """
+    if isinstance(row, StepRunSchema) and row.substitutions is None:
+        return row.get_required_payload_blob_ids()
+    return []
 
 
 def get_missing_control_values(

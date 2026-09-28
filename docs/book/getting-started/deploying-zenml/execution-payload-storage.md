@@ -30,10 +30,10 @@ The server authenticates with the cloud identity of its environment: an IAM role
 
 ### Helm
 
-Configure the `zenml.database.payloadStorage` values:
+Configure the `server.database.payloadStorage` values:
 
 ```yaml
-zenml:
+server:
   database:
     url: mysql://...
     payloadStorage:
@@ -55,6 +55,8 @@ zenml:
       backfill:
         enabled: true
         startDelaySeconds: 600
+        batchSize: 200
+        pauseSeconds: 0.2
 ```
 
 The chart validates these values and passes them to the server through its Kubernetes secret. Keep `backendTimeoutSeconds` below the server's request timeout (20 seconds by default), so that clients get the storage error instead of a timeout.
@@ -74,23 +76,22 @@ docker run -it -d -p 8080:8080 --name zenml \
 
 ## Enabling offloading
 
-A server release that predates payload storage cannot read stored values. So offloading is enabled in two steps, before existing runs are moved:
+A server release that predates payload storage cannot read stored values. So offloading is enabled in two steps:
 
 1. Upgrade the server with `backend` and `path` configured and offloading disabled. Wait until every server replica, and every other process that opens the database, runs the new release with this configuration.
 2. Enable offloading (`offloadEnabled: true`) and roll out again.
-3. Move the values of existing runs (see [Moving existing runs](#moving-existing-runs)). With Helm, the upgrade of step 2 starts it.
 
-A single server that is restarted without overlap, such as a Docker container, can do the first two steps at once.
+A single server that is restarted without overlap, such as a Docker container, can do both at once. Then [move the existing runs](#moving-existing-runs): with Helm, the upgrade of step 2 starts that.
 
 Once the server holds stored values, `backend` and `path` cannot change: the server refuses to start with a different location (see [Moving the payloads](#moving-the-payloads)). Disabling offloading again is possible: new rows then keep their values in the database, and stored values remain readable, as long as `backend` and `path` stay configured.
 
 ## Moving existing runs
 
-Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs with the server's configuration and cloud identity, in its own process: it never runs inside the server. It moves the values in small batches, updates each row once and only if the row did not change in the meantime, and can be stopped and started again at any time: it continues with the rows that remain. Once it finds nothing left to move, it records that in the database, and later runs stop at once.
+Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs in its own process, with the server's configuration and cloud identity. It moves the values in small batches, updates each row once and only if the row did not change in the meantime, and can be stopped and started again at any time: it continues with the rows that remain. Once it finds nothing left to move, it records that in the database, and later runs stop at once.
 
 ### Helm
 
-The chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), so that the rolling restart has replaced every server, then runs next to the server. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed.
+With an external database (`database.url`), the chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), so that the rolling restart has replaced every server, then runs next to the server. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed. `backfill.batchSize` and `backfill.pauseSeconds` set its pace; changing them replaces the running Job with one that continues where it stopped.
 
 ```shell
 # Follow the backfill
@@ -98,7 +99,9 @@ kubectl -n zenml get jobs -l app.kubernetes.io/component=payload-backfill
 kubectl -n zenml logs -f job/<job name>
 ```
 
-The Job succeeds once the backfill has completed. If it fails, its logs name the rows that could not be moved (see below). Argo CD shows the application as progressing until the Job finishes.
+The Job succeeds once the backfill has completed. If it fails, its logs say why, such as rows that could not be moved (see below). Once the cause is fixed, delete the Job and run `helm upgrade` again, which creates it again, or run the command below from a server pod.
+
+Argo CD shows the application as progressing until the Job finishes. Tools that wait for Jobs to complete fail the upgrade that enables offloading, since the Job takes longer than their timeout: don't pass `--wait-for-jobs` to Helm for that upgrade, and set `disableWaitForJobs: true` in a Flux `HelmRelease`.
 
 To run the backfill yourself instead, for example to review its report first, set `backfill.enabled: false` and use the command below from a server pod.
 
@@ -128,7 +131,7 @@ On a large MySQL database, keep in mind:
 * Every updated row is written to the binary log, which grows by about the size of the moved data. Watch the binary log size, the replication lag and the write latency, and increase `--pause-seconds` or lower `--batch-size` if they climb.
 * MySQL does not return freed disk space to the operating system on its own. Tables shrink only after they are rebuilt, for example with `OPTIMIZE TABLE`, which is best done in a maintenance window.
 
-The backfill visits step runs first, then step configurations, snapshots and runs. If a row cannot be read, for example a step run whose configuration is missing, the backfill lists it and does not continue with the next table, since that table's values are needed to read the row. Delete or fix the listed rows, then run the backfill again.
+The backfill visits step runs first, then step configurations, snapshots and runs. If a row cannot be read, for example a step run whose configuration is missing, the backfill lists it and does not continue with the next table, since that table's values are needed to read the row. ZenML cannot display these rows either: delete what they belong to, such as the pipeline run of a listed step run (`zenml pipeline runs delete <run ID>`), then run the backfill again.
 
 ## Backups and restore
 

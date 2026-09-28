@@ -129,36 +129,36 @@ ssl_key: {{ .ZenML.database.sslKey.value | quote }}
 Execution payload storage configuration.
 
 Builds the `payload_storage` setting of the SQL store from the typed
-`zenml.database.payloadStorage` values, and fails the release for values the
+`server.database.payloadStorage` values, and fails the release for values the
 server would reject.
 
 Args:
-  .: The `zenml.database.payloadStorage` values.
+  .: The `server.database.payloadStorage` values.
 Returns:
   The payload storage configuration, as YAML.
 */}}
 {{- define "zenml.payloadStorageConfiguration" -}}
 {{- $schemes := dict "s3" (list "s3://") "gcs" (list "gs://") "azure" (list "az://" "abfs://") -}}
 {{- if not (hasKey $schemes .backend) }}
-{{- fail (printf "zenml.database.payloadStorage.backend must be `s3`, `gcs` or `azure`, not `%s`." .backend) }}
+{{- fail (printf "server.database.payloadStorage.backend must be `s3`, `gcs` or `azure`, not `%s`." .backend) }}
 {{- end }}
 {{- $validPath := false -}}
 {{- range (get $schemes .backend) }}
 {{- if hasPrefix . $.path }}{{ $validPath = true }}{{ end }}
 {{- end }}
 {{- if not $validPath }}
-{{- fail (printf "zenml.database.payloadStorage.path must be a `%s` location, such as `%sbucket/prefix`, not `%s`." .backend (first (get $schemes .backend)) .path) }}
+{{- fail (printf "server.database.payloadStorage.path must be a `%s` location, such as `%sbucket/prefix`, not `%s`." .backend (first (get $schemes .backend)) .path) }}
 {{- end }}
 {{- if and (ne .backend "s3") (or .region .endpointUrl) }}
-{{- fail "zenml.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
+{{- fail "server.database.payloadStorage.region and endpointUrl only apply to the `s3` backend." }}
 {{- end }}
 {{- if le (float64 .backendTimeoutSeconds) 0.0 }}
-{{- fail (printf "zenml.database.payloadStorage.backendTimeoutSeconds must be a number of seconds above 0, not `%v`." .backendTimeoutSeconds) }}
+{{- fail (printf "server.database.payloadStorage.backendTimeoutSeconds must be a number of seconds above 0, not `%v`." .backendTimeoutSeconds) }}
 {{- end }}
 {{- /* Checked before converting it, which turns any text into 0 and cuts decimals. */ -}}
 {{- $isNumber := or (kindIs "float64" .cacheMaxBytes) (kindIs "int64" .cacheMaxBytes) (kindIs "int" .cacheMaxBytes) }}
 {{- if not (and $isNumber (ge (float64 .cacheMaxBytes) 0.0) (eq (float64 .cacheMaxBytes) (floor .cacheMaxBytes))) }}
-{{- fail (printf "zenml.database.payloadStorage.cacheMaxBytes must be a whole number of bytes, 0 or more, not `%v`." .cacheMaxBytes) }}
+{{- fail (printf "server.database.payloadStorage.cacheMaxBytes must be a whole number of bytes, 0 or more, not `%v`." .cacheMaxBytes) }}
 {{- end }}
 offload_enabled: {{ .offloadEnabled }}
 backend: {{ .backend }}

@@ -16,8 +16,11 @@ metadata:
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  # Not the server's selector labels, so that neither the server Deployment
+  # (kubectl, autoscaling) nor its Service ever counts this pod.
   labels:
-    {{- include "zenml.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "zenml.name" . }}-payload-backfill
+    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: payload-backfill
 spec:
   {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
@@ -107,10 +110,16 @@ spec:
         {{- toYaml .Values.securityContext | nindent 8 }}
       image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
       imagePullPolicy: {{ $server.image.pullPolicy }}
+      {{- with $server.database.payloadStorage.backfill }}
       command: ["python", "-m", "zenml.zen_server.payload_backfill"]
       args:
         - "--start-delay-seconds"
-        - {{ $server.database.payloadStorage.backfill.startDelaySeconds | quote }}
+        - {{ .startDelaySeconds | quote }}
+        - "--batch-size"
+        - {{ .batchSize | quote }}
+        - "--pause-seconds"
+        - {{ .pauseSeconds | quote }}
+      {{- end }}
       volumeMounts:
         - name: zenml-config
           mountPath: /zenml/.zenconfig
@@ -147,7 +156,7 @@ spec:
         - secretRef:
             name: {{ include "zenml.fullname" . }}
       resources:
-        {{- toYaml .Values.resources | nindent 8 }}
+        {{- toYaml ($server.database.payloadStorage.backfill.resources | default .Values.resources) | nindent 8 }}
   {{- with .Values.nodeSelector }}
   nodeSelector:
     {{- toYaml . | nindent 4 }}

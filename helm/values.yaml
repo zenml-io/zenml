@@ -435,8 +435,8 @@ server:
     # pods. On EKS, annotate the service account with an IAM role (IRSA, see
     # `serviceAccount.annotations`); on GKE, use workload identity; on AKS, a
     # managed identity. Environment variables such as AWS_* set through
-    # `zenml.secretEnvironment` are picked up as well. Azure also needs the
-    # storage account, as AZURE_STORAGE_ACCOUNT_NAME in `zenml.environment`.
+    # `server.secretEnvironment` are picked up as well. Azure also needs the
+    # storage account, as AZURE_STORAGE_ACCOUNT_NAME in `server.environment`.
     payloadStorage:
       # Move new payloads to the object store. Enable it in two steps: first
       # roll out `backend` and `path` with `offloadEnabled: false`, until every
@@ -467,15 +467,19 @@ server:
       # calls also fail at once for this long, until the store answers again.
       backendTimeoutSeconds: 10
       # Once offloading is enabled, a Job moves the payloads of existing runs
-      # to the object store. It runs in its own pod, starts after
-      # `startDelaySeconds` so that the rolling restart that enabled
-      # offloading has replaced every server, and can take hours on a large
-      # database. Once it completed, the Job of every later upgrade exits at
-      # once. Disable it to run `python -m zenml.zen_server.payload_backfill`
+      # to the object store, in its own pod (external databases only). It
+      # starts after `startDelaySeconds`, so that the rolling restart that
+      # enabled offloading has replaced every server, and can take hours.
+      # Lower `batchSize` or raise `pauseSeconds` if the database struggles.
+      # Disable it to run `python -m zenml.zen_server.payload_backfill`
       # yourself, for example to review its `--report` first.
       backfill:
         enabled: true
         startDelaySeconds: 600
+        batchSize: 200
+        pauseSeconds: 0.2
+        # The server's `resources` when empty.
+        resources: {}
 
     # Connection pool settings (only relevant for MySQL databases).
     #
