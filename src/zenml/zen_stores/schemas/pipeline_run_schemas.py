@@ -1265,6 +1265,7 @@ class PipelineRunOutputSchema(BaseSchema, table=True):
             "output_index",
             name="unique_pipeline_run_output_index",
         ),
+        build_index(table_name=__tablename__, column_names=["artifact_id"]),
     )
 
     name: str = Field(nullable=False)
