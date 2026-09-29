@@ -299,6 +299,15 @@ class LoadedPayloads:
         self._values: Dict[UUID, str] = dict(values_by_blob_id or {})
         self._backend_configured = backend_configured
 
+    @property
+    def values_by_blob_id(self) -> Mapping[UUID, str]:
+        """The loaded payload values by the blob that holds them.
+
+        Returns:
+            The loaded values.
+        """
+        return self._values
+
     @overload
     def resolve(self, inline_value: str, blob_id: Optional[UUID]) -> str: ...
 

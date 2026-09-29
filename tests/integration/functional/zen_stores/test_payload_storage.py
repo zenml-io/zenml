@@ -773,3 +773,59 @@ def test_backfill_skips_rows_another_backfill_finished(
 
     assert store.backfill_payloads(pause_seconds=0).completed
     assert _count_payload_columns(store)["inline"] == 0
+
+
+@pytest.mark.parametrize(
+    "write, schema_left",
+    [
+        ("update_run", PipelineRunSchema),
+        ("create_run_step", StepConfigurationSchema),
+    ],
+)
+def test_write_answers_whole_while_backfill_offloads_its_rows(
+    store: SqlZenStore,
+    monkeypatch: pytest.MonkeyPatch,
+    write: str,
+    schema_left: Any,
+) -> None:
+    """A write whose rows the backfill offloads after it loaded their payloads answers in full."""
+    run = _start_run(store)
+    _make_rows_predate_payload_storage(store)
+    # Every table but one offloaded, so the write loads some payloads from
+    # storage; the backfill finishes the rest while it does.
+    with monkeypatch.context() as m:
+        m.setattr(
+            sql_zen_store,
+            "BACKFILL_ORDER",
+            tuple(
+                s for s in sql_zen_store.BACKFILL_ORDER if s is not schema_left
+            ),
+        )
+        store.backfill_payloads(pause_seconds=0)
+    writer = _open_store(store)
+    backfiller = _open_store(store)
+    load = writer.payload_store.load
+    backfills = []
+
+    def load_while_backfill_finishes(blob_ids: Any) -> Any:
+        if not backfills:
+            backfills.append(backfiller.backfill_payloads(pause_seconds=0))
+        return load(blob_ids)
+
+    monkeypatch.setattr(
+        writer.payload_store, "load", load_while_backfill_finishes
+    )
+
+    response: Any
+    if write == "update_run":
+        response = writer.update_run(
+            run.id, PipelineRunUpdate(add_tags=["race"]), hydrate=True
+        )
+        fresh: Any = store.get_run(run.id)
+    else:
+        response = _start_step(writer, run.id)
+        fresh = store.get_run_step(response.id)
+
+    assert backfills and backfills[0].completed
+    assert _count_payload_columns(store)["inline"] == 0
+    assert response.get_metadata() == fresh.get_metadata()

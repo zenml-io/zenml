@@ -1468,11 +1468,18 @@ class SqlZenStore(BaseZenStore):
         collect_blob_ids: Callable[[], Iterable[Optional[UUID]]],
         offload_result: Optional[OffloadResult] = None,
         hydrate: bool = True,
+        preloaded: Optional[LoadedPayloads] = None,
     ) -> LoadedPayloads:
         """Load the offloaded payloads that the conversions of a session read.
 
         If blobs remain to be loaded after the offloaded and cached values,
         the read transaction ends first (see `_end_read_transaction`).
+
+        Write paths load before writing, so that a storage failure never fails
+        a committed change. They call this again after their last commit or
+        refresh, with `preloaded`: the backfill may have offloaded one of
+        their rows in between, which then references a blob the first load
+        did not cover. Only such blobs are loaded, usually none.
 
         Args:
             session: The session of the conversions, which must not hold any
@@ -1483,6 +1490,8 @@ class SqlZenStore(BaseZenStore):
                 from memory.
             hydrate: Whether the conversions include metadata. Conversions
                 without metadata read no payloads.
+            preloaded: Payloads loaded earlier for the same conversions,
+                which are not loaded again.
 
         Returns:
             The loaded payloads.
@@ -1495,7 +1504,9 @@ class SqlZenStore(BaseZenStore):
         # fails as a storage error when it is read.
         if not self.payload_store.backend_configured:
             return LoadedPayloads(backend_configured=False)
-        values = offload_result.values_by_blob_id if offload_result else {}
+        values = dict(preloaded.values_by_blob_id) if preloaded else {}
+        if offload_result:
+            values.update(offload_result.values_by_blob_id)
         missing = {
             blob_id
             for blob_id in collect_blob_ids()
@@ -6301,6 +6312,11 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
 
             session.refresh(snapshot)
+            payloads = self._load_required_payloads(
+                session,
+                snapshot.get_required_payload_blob_ids,
+                preloaded=payloads,
+            )
             return snapshot.to_model(
                 include_metadata=True,
                 include_resources=True,
@@ -6912,6 +6928,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(template_schema)
+            payloads = self._load_required_payloads(
+                session,
+                template_schema.get_required_payload_blob_ids,
+                preloaded=payloads,
+            )
 
             return template_schema.to_model(
                 include_metadata=True,
@@ -7037,6 +7058,11 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(template)
+            payloads = self._load_required_payloads(
+                session,
+                template.get_required_payload_blob_ids,
+                preloaded=payloads,
+            )
 
             return template.to_model(
                 include_metadata=True,
@@ -7830,6 +7856,9 @@ class SqlZenStore(BaseZenStore):
         )
 
         session.refresh(new_run)
+        payloads = self._load_required_payloads(
+            session, new_run.get_required_payload_blob_ids, preloaded=payloads
+        )
 
         return new_run.to_model(
             include_metadata=True, include_resources=True, payloads=payloads
@@ -7992,6 +8021,11 @@ class SqlZenStore(BaseZenStore):
         )
 
         session.refresh(run_schema)
+        payloads = self._load_required_payloads(
+            session,
+            run_schema.get_required_payload_blob_ids,
+            preloaded=payloads,
+        )
 
         return run_schema.to_model(
             include_metadata=True, include_resources=True, payloads=payloads
@@ -8420,6 +8454,12 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.refresh(existing_run)
+            payloads = self._load_required_payloads(
+                session,
+                existing_run.get_required_payload_blob_ids,
+                hydrate=hydrate,
+                preloaded=payloads,
+            )
 
             # Metadata is opt-in so that status updates never depend on
             # loading the run's configuration.
@@ -13536,6 +13576,11 @@ class SqlZenStore(BaseZenStore):
 
                 session.refresh(step_schema)
 
+            payloads = self._load_required_payloads(
+                session,
+                step_schema.get_required_payload_blob_ids,
+                preloaded=payloads,
+            )
             step_run_response = step_schema.to_model(
                 include_metadata=True,
                 include_resources=True,
@@ -14058,6 +14103,12 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
+            payloads = self._load_required_payloads(
+                session,
+                existing_step_run.get_required_payload_blob_ids,
+                hydrate=hydrate,
+                preloaded=payloads,
+            )
             # Metadata is opt-in so that status updates never depend on
             # loading the step's configuration.
             return existing_step_run.to_model(
