@@ -62,9 +62,9 @@ server:
         optimizeTables: false
 ```
 
-The chart validates these values and passes them to the server through its Kubernetes secret. Keep `backendTimeoutSeconds` below the server's request timeout (20 seconds by default), so that clients get the storage error instead of a timeout.
+The chart validates these values and passes them to the server through its Kubernetes secret. Each time a request stores or reads values, it fails within `backendTimeoutSeconds` however many values that covers, or about a second later if the storage client itself hangs. A request can store values and then read some, so keep `backendTimeoutSeconds` at half the server's request timeout (20 seconds by default) or less, so that clients get the storage error instead of a timeout.
 
-Every server process, and every worker or Job that opens the database, keeps up to `cacheMaxBytes` (128 MiB by default) of loaded values in memory. Raise the memory limits of the server and of the workers by that much, or lower `cacheMaxBytes` where memory is tight: a smaller cache only means more reads from the object store.
+Every server process, and every worker or Job that opens the database, keeps up to `cacheMaxBytes` (128 MiB by default) of loaded values in memory. Raise the memory limits of the server and of the workers by that much, or lower `cacheMaxBytes` where memory is tight: a smaller cache only means more reads from the object store. The cache bounds the values it keeps, not those that requests in flight hold until they answer.
 
 ### Docker
 
@@ -92,11 +92,11 @@ Once the server holds stored values, `backend` and `path` cannot change: the ser
 
 ## Moving existing runs
 
-Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs in its own process, with the server's configuration and cloud identity. It moves the values in small batches, updates each row once and only if the row did not change in the meantime, and can be stopped and started again at any time: it continues with the rows that remain. Once it finds nothing left to move, it records that in the database, and later runs stop at once.
+Offloading applies to new rows. Rows written earlier keep their values in the database until the backfill moves them. The backfill runs in its own process, with the server's configuration and cloud identity. It moves the values in small batches, updates each row once and only if the row did not change in the meantime, and can be stopped and started again at any time: a new run scans the tables again and moves what remains. Once it finds nothing left to move, it records that in the database, and later runs stop at once.
 
 ### Helm
 
-With an external database (`database.url`), the chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), a buffer for the rolling restart to replace every server, then runs in its own pod: it doesn't use the server's CPU or memory, but it shares the database and the object store with it. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed. `backfill.batchSize` and `backfill.pauseSeconds` set its pace; changing them replaces the running Job with one that waits its start delay again, then continues where the first one stopped.
+With an external database (`database.url`), the chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), a buffer for the rolling restart to replace every server, then runs in its own pod: it doesn't use the server's CPU or memory, but it shares the database and the object store with it. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed. `backfill.batchSize` and `backfill.pauseSeconds` set its pace; changing them replaces the running Job with one that waits its start delay again, then moves what the first one left.
 
 ```shell
 # Follow the backfill
@@ -162,7 +162,16 @@ If the database is restored in another region from a replicated bucket, keep in 
 To move the payloads to another bucket or prefix, for example after a restore in another region, stop every process that writes them first: otherwise a server could store a new value at the old location after the copy, and it would be missing at the new one.
 
 1. Stop every server, worker and backfill that uses the database, for example by scaling them to zero and disabling the backfill Job (`backfill.enabled: false`).
-2. Copy every object of the old prefix to the new one, keeping the object names, and check that the new prefix holds as many objects as the `payload_blob` table has rows.
+2. Copy every object of the old prefix to the new one, keeping the object names. Then check that every value the database registers is there, with its size: each `sha256` of the `payload_blob` table must be an object of `size_bytes` bytes at the new prefix. Counting objects is not enough, since the old prefix can also hold objects that were stored but never registered. For S3, for example:
+
+```shell
+# Registered values: `<sha256> <size>`
+mysql -N -e "SELECT CONCAT(sha256, ' ', size_bytes) FROM payload_blob" zenml | sort > registered.txt
+# Copied objects: `<name> <size>`
+aws s3 ls s3://new-bucket/zenml-payloads/ | awk '{print $4, $3}' | sort > copied.txt
+# Registered values missing from the copy, or copied with another size: must print nothing
+comm -23 registered.txt copied.txt
+```
 3. Configure the new `path` and start one server. It refuses to start and names both locations, as fingerprints stored in the database, for example: ``Execution payloads are stored at the payload storage location `s3:3f1a9c2b7e04d`, not at the configured `s3://new-bucket/zenml-payloads` (`s3:9b2e71c40ad85`).``
 4. Point the stored values to the new location, using both fingerprints from the message:
 
