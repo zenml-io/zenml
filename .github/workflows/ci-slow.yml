@@ -190,6 +190,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      lanes: '3'
     secrets: inherit
   # ruff, pydoclint and mypy do not depend on the OS, so the Windows and macOS
   # tests wait for the Ubuntu lint instead of their own. The OS-specific lint
@@ -219,7 +220,8 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
-      shards: '[1, 2, 3]'
+      shards: '[1, 2]'
+      lanes: '2'
     secrets: inherit
   macos-linting:
     needs: run-slow-ci-label-is-set
@@ -248,6 +250,7 @@ jobs:
       os: ${{ matrix.os }}
       install_integrations: 'yes'
       reruns: 1
+      lanes: '2'
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
@@ -264,6 +267,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
       shards: '[1, 2, 3, 4, 5]'
+      lanes: '2'
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
@@ -279,7 +283,8 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      shards: '[1, 2, 3]'
+      shards: '[1, 2]'
+      lanes: '2'
     secrets: inherit
   ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
@@ -316,7 +321,8 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
-      shards: '[1, 2, 3]'
+      shards: '[1, 2]'
+      lanes: '2'
     secrets: inherit
   vscode-tutorial-pipelines-test:
     if: github.event.pull_request.draft == false

@@ -36,6 +36,12 @@ on:
         type: string
         required: false
         default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
   workflow_dispatch:
     inputs:
       os:
@@ -93,6 +99,12 @@ on:
         type: string
         required: false
         default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -260,6 +272,7 @@ jobs:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
           SHARD_COUNT: ${{ strategy.job-total }}
           SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
           # PyTorch bundles a libomp that crashes XGBoost if it is loaded first.
           # Preload Homebrew's libomp so all native integrations use it instead.
           PYTEST_DYLD_INSERT_LIBRARIES: ${{ steps.install_libomp.outputs.library_path }}

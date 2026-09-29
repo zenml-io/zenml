@@ -63,6 +63,11 @@ on:
         options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
+      install_integrations:
+        description: Install ZenML integrations
+        type: string
+        required: false
+        default: 'yes'
       git-ref:
         description: Git branch or ref
         type: string
