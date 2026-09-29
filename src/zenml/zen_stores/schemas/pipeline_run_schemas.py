@@ -977,6 +977,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # before the client environment can update the status to provisioning.
             return False
 
+        if (
+            current_status == ExecutionStatus.STOPPING
+            and requested_status is not None
+            and not requested_status.is_finished
+        ):
+            # Stopping is a state that only the server knows about: the user
+            # asked for the run to stop and the orchestrator has not finished
+            # doing it yet. Most orchestrators keep reporting the underlying
+            # job as running until it is gone, so a status refresh would
+            # otherwise move the run back out of stopping and lose the fact
+            # that a stop was requested. Drop the reported status rather than
+            # the whole update, so that a refresh which arrives once every
+            # step has finished can still settle the run at stopped.
+            requested_status = None
+
         # Snapshot always exists for pipeline runs of newer versions
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
