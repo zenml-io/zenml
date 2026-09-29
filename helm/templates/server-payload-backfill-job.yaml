@@ -1,8 +1,9 @@
 {{- /*
 Moves the execution payloads that existing rows hold inline to payload
-storage, once offloading is enabled. It runs next to the server, which it
-never slows down, as the server does: same image, service account (the cloud
-identity that reaches the object store) and secret (the store settings).
+storage, once offloading is enabled. It runs in its own pod, with the server's
+image, service account (the cloud identity that reaches the object store) and
+secret (the store settings), and shares the database and object store with
+the server.
 
 It is not a hook, since Helm would wait for it and a large database takes
 hours. A Job cannot change once created, so its name carries a hash of its
@@ -16,11 +17,11 @@ metadata:
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  # Not the server's selector labels, so that neither the server Deployment
-  # (kubectl, autoscaling) nor its Service ever counts this pod.
+  # Not the server Deployment's selector labels, so that neither kubectl nor
+  # autoscaling ever counts this pod as a server.
   labels:
     app.kubernetes.io/name: {{ include "zenml.name" . }}-payload-backfill
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ $server.instanceLabel | default .Release.Name | quote }}
     app.kubernetes.io/component: payload-backfill
 spec:
   {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
@@ -116,7 +117,7 @@ spec:
         - "--start-delay-seconds"
         - {{ .startDelaySeconds | quote }}
         - "--batch-size"
-        - {{ .batchSize | quote }}
+        - {{ .batchSize | int | quote }}
         - "--pause-seconds"
         - {{ .pauseSeconds | quote }}
       {{- end }}

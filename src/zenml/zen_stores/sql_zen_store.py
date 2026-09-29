@@ -440,6 +440,7 @@ from zenml.zen_stores.payload_storage.backfill import (
     BACKFILL_MAX_PASSES,
     BACKFILL_ORDER,
     BACKFILL_PAUSE_SECONDS,
+    BackfillResult,
     BackfillTableReport,
     BackfillTableResult,
     PayloadRowSchema,
@@ -1584,12 +1585,14 @@ class SqlZenStore(BaseZenStore):
         self,
         batch_size: int = BACKFILL_BATCH_SIZE,
         pause_seconds: float = BACKFILL_PAUSE_SECONDS,
-    ) -> List[BackfillTableResult]:
+    ) -> BackfillResult:
         """Offload the inline payloads of existing rows and fill their control columns.
 
         See `zenml.zen_stores.payload_storage.backfill`. Passes over every
         table repeat until one finds nothing to update, which is then
-        recorded. A row that fails stops the backfill before the next table.
+        recorded. A pass moves to the next table only once every row of the
+        current one has its control columns, and a row that fails stops the
+        backfill.
 
         Args:
             batch_size: The rows each batch reads, whether they need an update
@@ -1598,7 +1601,7 @@ class SqlZenStore(BaseZenStore):
                 rows, to spare the database.
 
         Returns:
-            The result of each table, over all passes, in backfill order.
+            What the run did, and whether it completed.
 
         Raises:
             ValueError: If the batch size is not positive.
@@ -1613,29 +1616,48 @@ class SqlZenStore(BaseZenStore):
                 "and every other process that opens the database runs this "
                 "release, then run the backfill."
             )
-        results = [
-            BackfillTableResult(table=schema.__tablename__)
-            for schema in BACKFILL_ORDER
-        ]
-        for _ in range(BACKFILL_MAX_PASSES):
+        result = BackfillResult(
+            tables=[
+                BackfillTableResult(table=schema.__tablename__)
+                for schema in BACKFILL_ORDER
+            ]
+        )
+        results = result.tables
+        for number in range(1, BACKFILL_MAX_PASSES + 1):
+            logger.info(
+                "Backfill pass %d of at most %d.", number, BACKFILL_MAX_PASSES
+            )
             changed_rows = sum(
                 r.rows_updated + r.rows_skipped for r in results
             )
-            for schema, result in zip(BACKFILL_ORDER, results):
-                self._backfill_table(schema, batch_size, pause_seconds, result)
-                if result.failed_rows:
+            for schema, table in zip(BACKFILL_ORDER, results):
+                lacking = self._backfill_table(
+                    schema, batch_size, pause_seconds, table
+                )
+                if table.failed_rows:
                     logger.error(
                         "Backfill stopped: %d rows of `%s` failed, so no "
                         "payload they read is offloaded yet. Fix or delete "
                         "them, then run the backfill again:\n%s",
-                        len(result.failed_rows),
-                        result.table,
+                        len(table.failed_rows),
+                        table.table,
                         "\n".join(
                             f"  {row_id}: {reason}"
-                            for row_id, reason in result.failed_rows.items()
+                            for row_id, reason in table.failed_rows.items()
                         ),
                     )
-                    return results
+                    return result
+                if lacking:
+                    # Their control columns are computed from payloads that
+                    # the next tables would offload.
+                    logger.warning(
+                        "%d rows of `%s` could not be updated and still lack "
+                        "control columns: the next pass retries them before "
+                        "moving on.",
+                        lacking,
+                        table.table,
+                    )
+                    break
             if sum(r.rows_updated + r.rows_skipped for r in results) == (
                 changed_rows
             ):
@@ -1644,8 +1666,16 @@ class SqlZenStore(BaseZenStore):
                         session
                     ).payload_backfill_completed = utc_now()
                     session.commit()
-                break
-        return results
+                result.completed = True
+                return result
+        logger.warning(
+            "The backfill made %d passes and each one still updated or "
+            "skipped rows, so its completion is not recorded. `--report` shows "
+            "what remains; a process with offloading disabled may still write "
+            "payloads inline.",
+            BACKFILL_MAX_PASSES,
+        )
+        return result
 
     def get_payload_backfill_completion(self) -> Optional[datetime]:
         """Get when the payload backfill last found nothing left to update.
@@ -1664,7 +1694,7 @@ class SqlZenStore(BaseZenStore):
         batch_size: int,
         pause_seconds: float,
         result: BackfillTableResult,
-    ) -> None:
+    ) -> int:
         """Pass over a table in batches and update the rows that need it.
 
         Args:
@@ -1672,8 +1702,13 @@ class SqlZenStore(BaseZenStore):
             batch_size: The rows each batch reads.
             pause_seconds: How long to wait after each batch that updated rows.
             result: The result of the table, updated in place.
+
+        Returns:
+            The rows that still lack control columns because their update was
+            skipped.
         """
         started, updated_before = time.monotonic(), result.rows_updated
+        lacking = 0
         after_id: Optional[UUID] = None
         while True:
             with Session(self.engine) as session:
@@ -1681,7 +1716,7 @@ class SqlZenStore(BaseZenStore):
                     select_backfill_batch(schema, after_id, batch_size)
                 ).all()
             if not batch:
-                return
+                return lacking
             after_id = batch[-1][0]
             pending = [
                 (row_id, lacks_control_columns)
@@ -1689,7 +1724,7 @@ class SqlZenStore(BaseZenStore):
                 if is_pending
             ]
             if pending:
-                self._backfill_rows(schema, pending, result)
+                lacking += self._backfill_rows(schema, pending, result)
                 logger.info(
                     "Backfill of `%s`: %d rows updated, %d skipped, %d bytes "
                     "offloaded, %.0f rows/s.",
@@ -1707,7 +1742,7 @@ class SqlZenStore(BaseZenStore):
         schema: Type[PayloadRowSchema],
         pending: List[Tuple[UUID, bool]],
         result: BackfillTableResult,
-    ) -> None:
+    ) -> int:
         """Offload the inline payloads of rows and fill their control columns.
 
         Args:
@@ -1715,6 +1750,10 @@ class SqlZenStore(BaseZenStore):
             pending: The rows to update, and whether each lacks control
                 columns.
             result: The result of the table, updated in place.
+
+        Returns:
+            The rows that still lack control columns because their update was
+            skipped.
         """
         with Session(self.engine) as session:
             rows: List[BaseSchema] = []
@@ -1722,7 +1761,7 @@ class SqlZenStore(BaseZenStore):
                 if row_ids := [
                     row_id
                     for row_id, lacks_control_columns in pending
-                    if lacks_control_columns is load_parents
+                    if bool(lacks_control_columns) == load_parents
                 ]:
                     rows.extend(
                         session.exec(
@@ -1749,7 +1788,9 @@ class SqlZenStore(BaseZenStore):
                     for column in schema.PAYLOAD_COLUMNS
                     if (text := column.get_inline_text(row)) is not None
                 }
-                updates.append((row.id, control_values, inline_values))
+                # Updated since the scan, such as by another backfill.
+                if control_values or inline_values:
+                    updates.append((row.id, control_values, inline_values))
 
             offload_result = self._offload_payloads(
                 session,
@@ -1759,6 +1800,7 @@ class SqlZenStore(BaseZenStore):
                     for value in inline_values.values()
                 ],
             )
+            lacking = 0
             for row_id, control_values, inline_values in updates:
                 statement = build_backfill_update(
                     schema,
@@ -1775,7 +1817,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 else:
                     result.rows_skipped += 1
+                    lacking += bool(control_values)
             session.commit()
+        return lacking
 
     def get_session(self) -> Session:
         """Get a new session for the SQL ZenML store.

@@ -65,7 +65,9 @@ from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunExecutionRequest,
 )
 from zenml.zen_server.utils import get_with_best_effort_metadata
+from zenml.zen_stores import sql_zen_store
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
+from zenml.zen_stores.payload_storage.backfill import BACKFILL_MAX_PASSES
 from zenml.zen_stores.schemas import (
     PayloadBlobSchema,
     PipelineRunSchema,
@@ -98,7 +100,7 @@ def load(value: int = 3) -> int:
 
 @step
 def train(value: int) -> int:
-    """Double a value."""
+    """Double a value (× 2)."""
     return value * 2
 
 
@@ -607,9 +609,10 @@ def test_backfill_offloads_existing_rows_as_new_writes_would(
     with pytest.raises(ValueError):
         store.backfill_payloads(batch_size=0)
 
-    results = store.backfill_payloads(batch_size=3, pause_seconds=0)
+    result = store.backfill_payloads(batch_size=3, pause_seconds=0)
 
-    assert not any(result.failed_rows for result in results)
+    assert result.completed
+    assert not any(table.failed_rows for table in result.tables)
     assert store.get_payload_backfill_completion()
     assert _count_payload_columns(store)["inline"] == 0
     assert _read_control_columns(store) == control_values
@@ -618,7 +621,7 @@ def test_backfill_offloads_existing_rows_as_new_writes_would(
     reports = store.get_payload_backfill_report()
     assert [report.pending_rows for report in reports] == [0] * 4
     rerun = store.backfill_payloads(pause_seconds=0)
-    assert sum(result.rows_updated for result in rerun) == 0
+    assert sum(table.rows_updated for table in rerun.tables) == 0
 
 
 def test_backfill_keeps_a_value_rewritten_while_it_runs(
@@ -654,9 +657,9 @@ def test_backfill_keeps_a_value_rewritten_while_it_runs(
     monkeypatch.setattr(
         store.payload_store, "offload", offload_while_rewritten
     )
-    results = store.backfill_payloads(pause_seconds=0)
+    result = store.backfill_payloads(pause_seconds=0)
 
-    assert results[-1].rows_skipped == 1
+    assert result.tables[-1].rows_skipped == 1
     assert _count_payload_columns(store)["inline"] == 0
     assert store.get_payload_backfill_completion()
     cold = _open_store(store, cache_max_bytes=0)
@@ -684,17 +687,51 @@ def test_backfill_stops_before_the_payloads_a_failed_row_reads(
             .values(name="renamed")
         )
         session.commit()
-    results = store.backfill_payloads(pause_seconds=0)
+    result = store.backfill_payloads(pause_seconds=0)
 
-    assert list(results[0].failed_rows) == [step_run.id]
-    assert not any(result.rows_updated for result in results[1:])
+    assert not result.completed
+    assert list(result.tables[0].failed_rows) == [step_run.id]
+    assert not any(table.rows_updated for table in result.tables[1:])
     assert store.get_payload_backfill_completion() is None
     assert _count_payload_columns(store)["offloaded"] == 0
 
     store.delete_run(run.id)
-    rerun = store.backfill_payloads(pause_seconds=0)
-    assert not any(result.failed_rows for result in rerun)
+    assert store.backfill_payloads(pause_seconds=0).completed
     assert _count_payload_columns(store)["inline"] == 0
+
+
+def test_backfill_keeps_parents_inline_while_a_step_run_is_skipped(
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A step run skipped in every pass keeps its parents' payloads inline.
+
+    It computes its control columns from them, so its step configuration and
+    snapshot must stay inline, and the backfill must not record completion.
+    """
+    run = _start_run(store)
+    step_run = _start_step(store, run.id)
+    _make_rows_predate_payload_storage(store)
+    offload = store.payload_store.offload
+
+    def offload_while_rewritten(values: Any) -> Any:
+        with Session(store.engine) as session:
+            session.execute(
+                update(StepRunSchema)
+                .where(StepRunSchema.id == step_run.id)
+                .values(docstring=uuid4().hex)
+            )
+            session.commit()
+        return offload(values)
+
+    monkeypatch.setattr(
+        store.payload_store, "offload", offload_while_rewritten
+    )
+    result = store.backfill_payloads(pause_seconds=0)
+
+    assert not result.completed
+    assert result.tables[0].rows_skipped == BACKFILL_MAX_PASSES
+    assert not any(table.rows_updated for table in result.tables[1:])
+    assert store.get_payload_backfill_completion() is None
 
 
 def test_backfill_writes_nothing_while_storage_is_down(
@@ -703,11 +740,36 @@ def test_backfill_writes_nothing_while_storage_is_down(
     """A storage failure stops the backfill without changing or failing rows."""
     _start_run(store)
     _make_rows_predate_payload_storage(store)
+    control_values = _read_control_columns(store)
     cold = _open_store(store, backend_timeout_seconds=5)
-    pending = cold.get_payload_backfill_report()
     s3_server.stop()
 
     with pytest.raises(PayloadStorageUnavailableError):
         cold.backfill_payloads(pause_seconds=0)
 
-    assert cold.get_payload_backfill_report() == pending
+    assert _read_control_columns(store) == control_values
+    assert _count_payload_columns(store)["offloaded"] == 0
+    with Session(store.engine) as session:
+        assert not session.exec(select(PayloadBlobSchema.id)).first()
+
+
+def test_backfill_skips_rows_another_backfill_finished(
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rows finished by a concurrent backfill after the scan are left alone."""
+    _start_step(store, _start_run(store).id)
+    _make_rows_predate_payload_storage(store)
+    other = _open_store(store)
+    select_rows = sql_zen_store.select_backfill_rows
+
+    def select_rows_finished_meanwhile(*args: Any) -> Any:
+        monkeypatch.undo()
+        other.backfill_payloads(pause_seconds=0)
+        return select_rows(*args)
+
+    monkeypatch.setattr(
+        sql_zen_store, "select_backfill_rows", select_rows_finished_meanwhile
+    )
+
+    assert store.backfill_payloads(pause_seconds=0).completed
+    assert _count_payload_columns(store)["inline"] == 0

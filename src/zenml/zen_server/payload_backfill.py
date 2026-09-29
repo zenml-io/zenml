@@ -85,6 +85,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.batch_size < 1:
         parser.error("--batch-size must be 1 or more.")
+    if args.pause_seconds < 0 or args.start_delay_seconds < 0:
+        parser.error(
+            "--pause-seconds and --start-delay-seconds cannot be negative."
+        )
 
     store_config = GlobalConfiguration().store_configuration
     if store_config.type != StoreType.SQL:
@@ -133,7 +137,7 @@ def main() -> None:
         time.sleep(args.start_delay_seconds)
 
     try:
-        results = store.backfill_payloads(
+        result = store.backfill_payloads(
             batch_size=args.batch_size, pause_seconds=args.pause_seconds
         )
     except (
@@ -147,21 +151,22 @@ def main() -> None:
             e,
         )
         sys.exit(1)
-    for result in results:
+    for table in result.tables:
         logger.info(
-            "`%s`: %d rows updated, %d bytes offloaded, %d rows changed or "
-            "deleted while being updated.",
-            result.table,
-            result.rows_updated,
-            result.bytes_offloaded,
-            result.rows_skipped,
+            "`%s`: %d rows updated, %d bytes offloaded, %d updates skipped "
+            "because the row changed.",
+            table.table,
+            table.rows_updated,
+            table.bytes_offloaded,
+            table.rows_skipped,
         )
-    if any(result.failed_rows for result in results):
+    if not result.completed:
+        logger.error(
+            "The backfill did not complete: run it again. `--report` shows "
+            "what remains."
+        )
         sys.exit(1)
-    logger.info(
-        "The backfill finished. Rows that changed while being updated are "
-        "left for another run: `--report` shows what remains."
-    )
+    logger.info("The backfill completed.")
 
 
 if __name__ == "__main__":

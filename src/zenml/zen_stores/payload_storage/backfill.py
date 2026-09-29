@@ -38,9 +38,12 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-from sqlalchemy import LargeBinary, and_, case, cast, false, func, or_
+from sqlalchemy import LargeBinary, and_, case, false, func, or_
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import defer
+from sqlalchemy.sql.compiler import SQLCompiler
 from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.functions import FunctionElement
 from sqlmodel import col, select, update
 
 from zenml.config.step_configurations import StepSpec
@@ -114,6 +117,19 @@ class BackfillTableResult(BaseModel):
     failed_rows: Dict[UUID, str] = Field(default_factory=dict)
 
 
+class BackfillResult(BaseModel):
+    """What a backfill run did.
+
+    Attributes:
+        tables: The result of each table, over all passes, in backfill order.
+        completed: Whether a pass of this run found nothing left to update,
+            which is then recorded.
+    """
+
+    tables: List[BackfillTableResult]
+    completed: bool = False
+
+
 class BackfillTableReport(BaseModel):
     """The rows of a table that the backfill still has to update.
 
@@ -127,6 +143,55 @@ class BackfillTableReport(BaseModel):
     table: str
     pending_rows: int
     inline_bytes: Dict[str, int]
+
+
+class _Utf8Bytes(FunctionElement[bytes]):
+    """The UTF-8 bytes of a text column, whatever its character set.
+
+    Guards compare these with the bytes of the value read: comparing text
+    would ignore case, accents and trailing spaces under MySQL's collations,
+    and casting a column that is not UTF-8 to binary gives other bytes.
+    """
+
+    type = LargeBinary()
+    inherit_cache = True
+    name = "utf8_bytes"
+
+
+@compiles(_Utf8Bytes)
+def _compile_utf8_bytes(
+    element: _Utf8Bytes, compiler: SQLCompiler, **kwargs: Any
+) -> str:
+    """Compile the UTF-8 bytes of a column for SQLite, which stores UTF-8.
+
+    Args:
+        element: The expression.
+        compiler: The SQL compiler.
+        **kwargs: The compiler options.
+
+    Returns:
+        The SQL.
+    """
+    return f"CAST({compiler.process(element.clauses, **kwargs)} AS BLOB)"
+
+
+@compiles(_Utf8Bytes, "mysql")
+@compiles(_Utf8Bytes, "mariadb")
+def _compile_mysql_utf8_bytes(
+    element: _Utf8Bytes, compiler: SQLCompiler, **kwargs: Any
+) -> str:
+    """Compile the UTF-8 bytes of a column for MySQL and MariaDB.
+
+    Args:
+        element: The expression.
+        compiler: The SQL compiler.
+        **kwargs: The compiler options.
+
+    Returns:
+        The SQL.
+    """
+    column = compiler.process(element.clauses, **kwargs)
+    return f"CAST(CONVERT({column} USING utf8mb4) AS BINARY)"
 
 
 def _holds_inline(
@@ -349,11 +414,10 @@ def build_backfill_update(
         conditions.append(
             getattr(schema, column.blob_id_column_name).is_(None)
         )
-        # Compared as bytes: MySQL collations ignore case, accents and
-        # trailing spaces, and the value can change while it is offloaded
-        # when a placeholder run is replaced.
+        # The value can change while it is offloaded, such as when a
+        # placeholder run is replaced.
         conditions.append(
-            cast(getattr(schema, column.name), LargeBinary) == value.utf8_bytes
+            _Utf8Bytes(getattr(schema, column.name)) == value.utf8_bytes
         )
     return (
         update(schema)

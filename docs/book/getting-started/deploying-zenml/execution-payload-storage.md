@@ -91,7 +91,7 @@ Offloading applies to new rows. Rows written earlier keep their values in the da
 
 ### Helm
 
-With an external database (`database.url`), the chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), so that the rolling restart has replaced every server, then runs next to the server. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed. `backfill.batchSize` and `backfill.pauseSeconds` set its pace; changing them replaces the running Job with one that continues where it stopped.
+With an external database (`database.url`), the chart starts the backfill by itself: the upgrade that sets `offloadEnabled: true` also creates a Kubernetes Job, named `<release>-payload-backfill-<hash>`. The Job waits `backfill.startDelaySeconds` (10 minutes by default), a buffer for the rolling restart to replace every server, then runs in its own pod: it doesn't use the server's CPU or memory, but it shares the database and the object store with it. On a large database it can take hours. Helm does not wait for it, and the Job of every later upgrade exits at once when the backfill has completed. `backfill.batchSize` and `backfill.pauseSeconds` set its pace; changing them replaces the running Job with one that waits its start delay again, then continues where the first one stopped.
 
 ```shell
 # Follow the backfill
@@ -99,9 +99,9 @@ kubectl -n zenml get jobs -l app.kubernetes.io/component=payload-backfill
 kubectl -n zenml logs -f job/<job name>
 ```
 
-The Job succeeds once the backfill has completed. If it fails, its logs say why, such as rows that could not be moved (see below). Once the cause is fixed, delete the Job and run `helm upgrade` again, which creates it again, or run the command below from a server pod.
+The Job succeeds once the backfill has completed, and fails otherwise: its logs say why, such as rows that could not be moved (see below), or rows that still changed after several passes because a process with offloading disabled keeps writing values into the database. Once the cause is fixed, delete the Job and run `helm upgrade` again, which creates it again, or run the command below from a server pod.
 
-Argo CD shows the application as progressing until the Job finishes. Tools that wait for Jobs to complete fail the upgrade that enables offloading, since the Job takes longer than their timeout: don't pass `--wait-for-jobs` to Helm for that upgrade, and set `disableWaitForJobs: true` in a Flux `HelmRelease`.
+Argo CD shows the application as progressing until the Job finishes. Tools that wait for Jobs to complete fail the upgrade that enables offloading, since the Job takes longer than their timeout: don't pass `--wait-for-jobs` to Helm for that upgrade, and set `disableWaitForJobs: true` under `spec.install` and `spec.upgrade` of a Flux `HelmRelease`.
 
 To run the backfill yourself instead, for example to review its report first, set `backfill.enabled: false` and use the command below from a server pod.
 
@@ -143,11 +143,12 @@ If the database is restored in another region from a replicated bucket, keep in 
 
 ## Moving the payloads
 
-To move the payloads to another bucket or prefix, for example after a restore in another region:
+To move the payloads to another bucket or prefix, for example after a restore in another region, stop every process that writes them first: otherwise a server could store a new value at the old location after the copy, and it would be missing at the new one.
 
-1. Copy every object of the old prefix to the new one, keeping the object names.
-2. Configure the new `path` and start the server. It refuses to start and names both locations, as fingerprints stored in the database, for example: ``Execution payloads are stored at the payload storage location `s3:3f1a9c2b7e04d`, not at the configured `s3://new-bucket/zenml-payloads` (`s3:9b2e71c40ad85`).``
-3. Point the stored values to the new location, using both fingerprints from the message:
+1. Stop every server, worker and backfill that uses the database, for example by scaling them to zero and disabling the backfill Job (`backfill.enabled: false`).
+2. Copy every object of the old prefix to the new one, keeping the object names, and check that the new prefix holds as many objects as the `payload_blob` table has rows.
+3. Configure the new `path` and start one server. It refuses to start and names both locations, as fingerprints stored in the database, for example: ``Execution payloads are stored at the payload storage location `s3:3f1a9c2b7e04d`, not at the configured `s3://new-bucket/zenml-payloads` (`s3:9b2e71c40ad85`).``
+4. Point the stored values to the new location, using both fingerprints from the message:
 
 ```sql
 UPDATE payload_blob
@@ -155,7 +156,8 @@ SET location_fingerprint = 's3:9b2e71c40ad85'
 WHERE location_fingerprint = 's3:3f1a9c2b7e04d';
 ```
 
-4. Start the server again.
+5. Start the servers and other processes again, with the new `path`, and open a few runs in the dashboard, which reads their values from the new location.
+6. Keep the old location until you are sure nothing reads from it anymore.
 
 ## Limitations
 
