@@ -17,7 +17,10 @@ import asyncio
 import os
 import re
 import threading
+import time
 from abc import ABC, abstractmethod
+from concurrent.futures import Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from functools import partial
 from typing import (
     TYPE_CHECKING,
@@ -51,8 +54,8 @@ class BlobBackend(ABC):
     `PermissionError` and a missing object or bucket `FileNotFoundError`: the
     payload store fails those at once, and treats any other error as an
     unavailable backend that a retry may find again. Every call returns or
-    raises within the timeout the backend was created with, since it holds a
-    server thread while it runs.
+    raises within the timeout it is given, since it holds a server thread
+    while it runs.
     """
 
     @property
@@ -69,7 +72,9 @@ class BlobBackend(ABC):
         """
 
     @abstractmethod
-    def put_many(self, data_by_sha256: Mapping[str, bytes]) -> None:
+    def put_many(
+        self, data_by_sha256: Mapping[str, bytes], timeout: float
+    ) -> None:
         """Durably store bytes under their SHA-256.
 
         Concurrent writers of the same content store identical bytes, so
@@ -77,14 +82,18 @@ class BlobBackend(ABC):
 
         Args:
             data_by_sha256: The bytes to store by their hex SHA-256.
+            timeout: The seconds after which the call raises `TimeoutError`.
         """
 
     @abstractmethod
-    def get_many(self, sha256s: Sequence[str]) -> Dict[str, bytes]:
+    def get_many(
+        self, sha256s: Sequence[str], timeout: float
+    ) -> Dict[str, bytes]:
         """Load the bytes stored under SHA-256s.
 
         Args:
             sha256s: The hex SHA-256s of the bytes.
+            timeout: The seconds after which the call raises `TimeoutError`.
 
         Returns:
             The stored bytes by SHA-256.
@@ -111,7 +120,6 @@ class FsspecBlobBackend(BlobBackend):
         location: str,
         filesystem_class: Type["AsyncFileSystem"],
         filesystem_options: Dict[str, Any],
-        timeout: float,
         max_concurrent_calls: int,
     ) -> None:
         """Initializes the backend.
@@ -123,7 +131,6 @@ class FsspecBlobBackend(BlobBackend):
                 physical store when one is configured.
             filesystem_class: The fsspec filesystem of the object store.
             filesystem_options: The options the filesystem is created with.
-            timeout: The number of seconds after which a call is cancelled.
             max_concurrent_calls: The number of requests one call sends to
                 the object store at once.
         """
@@ -133,8 +140,8 @@ class FsspecBlobBackend(BlobBackend):
         self._filesystem_class = filesystem_class
         self._filesystem_options = filesystem_options
         self._filesystem: Optional["AsyncFileSystem"] = None
+        self._filesystem_creation: Optional[Future["AsyncFileSystem"]] = None
         self._filesystem_lock = threading.Lock()
-        self._timeout = timeout
         self._max_concurrent_calls = max_concurrent_calls
 
     @property
@@ -146,31 +153,71 @@ class FsspecBlobBackend(BlobBackend):
         """
         return self._location
 
-    def _get_filesystem(self) -> "AsyncFileSystem":
+    def _get_filesystem(self, timeout: float) -> "AsyncFileSystem":
         """Get the filesystem, which the first call creates.
 
-        gcsfs and adlfs look up credentials when they are created, so the
-        store starts even while those are unavailable, and the first call
-        fails like any other. Concurrent first calls share one filesystem,
-        and with it the connection pool.
+        gcsfs and adlfs look up credentials when they are created, which can
+        hang on an unreachable metadata server. So the filesystem is created
+        in a thread of its own, which calls wait for only as long as their
+        timeout allows. Concurrent first calls share that creation, and with
+        it the connection pool, and a call after a failed creation retries.
+
+        Args:
+            timeout: The seconds to wait for the creation.
 
         Returns:
             The filesystem.
+
+        Raises:
+            TimeoutError: If the creation did not finish in time.
         """
-        filesystem = self._filesystem
-        if filesystem is None:
+        if self._filesystem is not None:
+            return self._filesystem
+        with self._filesystem_lock:
+            creation = self._filesystem_creation
+            if creation is None:
+                creation = self._filesystem_creation = Future()
+                threading.Thread(
+                    target=self._create_filesystem,
+                    args=(creation,),
+                    name="payload-storage-filesystem",
+                    daemon=True,
+                ).start()
+        try:
+            self._filesystem = creation.result(timeout=timeout)
+        except FutureTimeoutError:
+            raise TimeoutError(
+                "The storage client was not created within "
+                f"{max(timeout, 0):.1f} seconds."
+            ) from None
+        except Exception:
             with self._filesystem_lock:
-                if self._filesystem is None:
-                    # The instance cache of fsspec would keep it alive for as
-                    # long as the process.
-                    self._filesystem = self._filesystem_class(
-                        skip_instance_cache=True, **self._filesystem_options
-                    )
-                filesystem = self._filesystem
-        return filesystem
+                if self._filesystem_creation is creation:
+                    self._filesystem_creation = None
+            raise
+        return self._filesystem
+
+    def _create_filesystem(self, creation: "Future[AsyncFileSystem]") -> None:
+        """Create the filesystem and resolve its creation with it.
+
+        Args:
+            creation: The creation to resolve.
+        """
+        try:
+            # The instance cache of fsspec would keep it alive for as long
+            # as the process.
+            creation.set_result(
+                self._filesystem_class(
+                    skip_instance_cache=True, **self._filesystem_options
+                )
+            )
+        except BaseException as e:
+            creation.set_exception(e)
 
     def _call_filesystem(
-        self, make_calls: Callable[["AsyncFileSystem"], "Calls[T]"]
+        self,
+        make_calls: Callable[["AsyncFileSystem"], "Calls[T]"],
+        timeout: float,
     ) -> List[T]:
         """Run filesystem calls, with denied and missing errors translated.
 
@@ -180,6 +227,8 @@ class FsspecBlobBackend(BlobBackend):
 
         Args:
             make_calls: Returns the calls to run on the filesystem.
+            timeout: The seconds for creating the filesystem when needed and
+                running the calls.
 
         Returns:
             The results of the calls, in their order.
@@ -192,18 +241,29 @@ class FsspecBlobBackend(BlobBackend):
         """
         from fsspec.asyn import sync
 
+        deadline = time.monotonic() + timeout
         try:
-            filesystem = self._get_filesystem()
+            filesystem = self._get_filesystem(timeout)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise asyncio.TimeoutError
+            # The calls cancel themselves at the deadline. The timeout of
+            # `sync` (checked once a second) returns even if a filesystem
+            # blocks the event loop, as gcsfs does while it refreshes its
+            # credentials.
             results: List[T] = sync(
                 filesystem.loop,
                 self._run_concurrently,
                 make_calls(filesystem),
+                remaining,
+                timeout=remaining,
             )
             return results
         except Exception as e:
             if isinstance(e, asyncio.TimeoutError):
                 raise TimeoutError(
-                    f"The call did not return within {self._timeout} seconds."
+                    "The call did not return within its remaining "
+                    f"{max(timeout, 0):.1f} seconds."
                 ) from e
             if self._is_permission_error(e):
                 raise PermissionError(str(e)) from e
@@ -211,7 +271,9 @@ class FsspecBlobBackend(BlobBackend):
                 raise FileNotFoundError(str(e)) from e
             raise
 
-    async def _run_concurrently(self, calls: "Calls[T]") -> List[T]:
+    async def _run_concurrently(
+        self, calls: "Calls[T]", timeout: float
+    ) -> List[T]:
         """Run calls concurrently, all of them within the timeout.
 
         When the timeout passes or a call fails, the calls still running are
@@ -220,6 +282,7 @@ class FsspecBlobBackend(BlobBackend):
 
         Args:
             calls: The calls to run.
+            timeout: The seconds after which the calls are cancelled.
 
         Returns:
             The results of the calls, in their order.
@@ -232,9 +295,7 @@ class FsspecBlobBackend(BlobBackend):
 
         tasks = [asyncio.ensure_future(run(call)) for call in calls]
         try:
-            return await asyncio.wait_for(
-                asyncio.gather(*tasks), self._timeout
-            )
+            return await asyncio.wait_for(asyncio.gather(*tasks), timeout)
         finally:
             for task in tasks:
                 task.cancel()
@@ -304,11 +365,14 @@ class FsspecBlobBackend(BlobBackend):
             return isinstance(error, ResourceNotFoundError)
         return False
 
-    def put_many(self, data_by_sha256: Mapping[str, bytes]) -> None:
+    def put_many(
+        self, data_by_sha256: Mapping[str, bytes], timeout: float
+    ) -> None:
         """Durably store bytes under their SHA-256.
 
         Args:
             data_by_sha256: The bytes to store by their hex SHA-256.
+            timeout: The seconds after which the call raises `TimeoutError`.
         """
         # Object stores only make an object visible once its upload has
         # completed, so the bytes are written straight to their final key.
@@ -316,14 +380,18 @@ class FsspecBlobBackend(BlobBackend):
             lambda filesystem: [
                 partial(filesystem._pipe_file, f"{self._path}/{sha256}", data)
                 for sha256, data in data_by_sha256.items()
-            ]
+            ],
+            timeout,
         )
 
-    def get_many(self, sha256s: Sequence[str]) -> Dict[str, bytes]:
+    def get_many(
+        self, sha256s: Sequence[str], timeout: float
+    ) -> Dict[str, bytes]:
         """Load the bytes stored under SHA-256s.
 
         Args:
             sha256s: The hex SHA-256s of the bytes.
+            timeout: The seconds after which the call raises `TimeoutError`.
 
         Returns:
             The stored bytes by SHA-256.
@@ -332,7 +400,8 @@ class FsspecBlobBackend(BlobBackend):
             lambda filesystem: [
                 partial(filesystem._cat_file, f"{self._path}/{sha256}")
                 for sha256 in sha256s
-            ]
+            ],
+            timeout,
         )
         return dict(zip(sha256s, data))
 
@@ -362,7 +431,6 @@ def _get_azure_account(options: Dict[str, Any]) -> Optional[str]:
 def create_blob_backend(
     backend_type: BlobBackendType,
     configuration: Dict[str, Any],
-    timeout: float,
     max_concurrent_calls: int,
 ) -> BlobBackend:
     """Create a payload backend from its configuration.
@@ -375,7 +443,6 @@ def create_blob_backend(
         backend_type: The backend to create.
         configuration: The `path` of the blobs and the options of the fsspec
             filesystem of the backend.
-        timeout: The number of seconds after which a call is cancelled.
         max_concurrent_calls: The number of requests one call sends to the
             object store at once.
 
@@ -387,9 +454,16 @@ def create_blob_backend(
     options = dict(configuration)
     path = options.pop("path")
     # Bucket names only select the physical store together with the endpoint
-    # of an S3-compatible store or the Azure account.
+    # of an S3-compatible store or GCS emulator, or the Azure account.
     location = path.rstrip("/")
-    if backend_type == BlobBackendType.S3:
+    if backend_type == BlobBackendType.GCS:
+        # Where gcsfs sends requests: its option, else the emulator variable.
+        endpoint_url = options.get("endpoint_url") or os.environ.get(
+            "STORAGE_EMULATOR_HOST"
+        )
+        if endpoint_url and endpoint_url != "default":
+            location = f"{location} at {endpoint_url.rstrip('/')}"
+    elif backend_type == BlobBackendType.S3:
         endpoint_url = options.get("endpoint_url") or (
             options.get("client_kwargs") or {}
         ).get("endpoint_url")
@@ -413,6 +487,5 @@ def create_blob_backend(
         location=location,
         filesystem_class=fsspec.get_filesystem_class(protocol),
         filesystem_options=options,
-        timeout=timeout,
         max_concurrent_calls=max_concurrent_calls,
     )
