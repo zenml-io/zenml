@@ -546,7 +546,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             ):
                 step_configurations[step_configuration.name] = Step.from_dict(
                     json.loads(step_configuration.config),
-                    pipeline_configuration,
+                    pipeline_configuration.model_copy(deep=True),
                     exclude_hook_sources=self.is_dynamic,
                 )
 
@@ -567,7 +567,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     all_step_configurations = {
                         step_configuration.name: Step.from_dict(
                             json.loads(step_configuration.config),
-                            pipeline_configuration,
+                            pipeline_configuration.model_copy(deep=True),
                             exclude_hook_sources=self.is_dynamic,
                         )
                         for step_configuration in self.get_step_configurations()
