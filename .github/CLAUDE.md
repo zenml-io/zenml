@@ -31,8 +31,8 @@ Runs automatically on all PRs and pushes to main:
 - Spellcheck
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11, 2 shards)
-- Integration tests (2 environments, 6 shards each). The docker/MySQL environment
+- Unit tests (ubuntu, Python 3.11, one job with 3 test lanes)
+- Integration tests (2 environments, 6 shards each, 2 test lanes per shard). The docker/MySQL environment
   only runs the example-project tests when the `changes` job finds a PR touching
   integrations, orchestrators, image building, examples, docker files, the test
   harness, `pyproject.toml` or the workflow files that define that run; otherwise it
@@ -45,9 +45,9 @@ Runs automatically on all PRs and pushes to main:
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
 - Multi-Python: Ubuntu 3.10, 3.12, 3.13, 3.14; macOS 3.10 and 3.14; Windows 3.10
-- Windows unit tests and all integration tests run sharded. Unit and integration tests
-  wait only for the Ubuntu lint (not for each other), and Windows/macOS lint runs once,
-  on the oldest Python, without gating the tests.
+- Tests run in shards and, inside each shard, in several test lanes (see below). Unit
+  and integration tests wait only for the Ubuntu lint (not for each other), and
+  Windows/macOS lint runs once, on the oldest Python, without gating the tests.
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -171,6 +171,23 @@ weekly by opening a pull request (a direct push to `develop` is rejected). The r
 `unit-test.yml`, `integration-test-fast.yml` and `integration-test-slow.yml` take a
 `shards` input, a JSON list such as `'[1, 2, 3]'`; the shard count is the length of that
 list.
+
+### Test lanes
+
+The org can run only 20 Linux/Windows jobs (and 5 macOS jobs) at once, and a hosted runner
+has 4 CPU cores while one pytest process keeps about 1.4 of them busy. So a shard runs
+several pytest processes ("lanes") side by side: `scripts/test-coverage-xml.sh` reads
+`TEST_LANES`, which the reusable workflows pass from their `lanes` input, and splits the
+shard's tests between the lanes with pytest-split. Each lane has a private deployment root,
+and lanes of a local deployment provision their own database, so lanes never share state.
+
+Against a shared server (the docker/MySQL environments) only tests that work in their own
+project are safe to run side by side. `tests/integration/examples` and
+`tests/integration/integrations` create pipelines in the shared default project and prune
+docker resources for the whole daemon, so the `serial_paths` input (`TEST_SERIAL_PATHS`)
+puts them in one lane of their own. `--cleanup-docker` is not passed when lanes are used.
+Raise the lane count only after checking that a slower, contended runner still finishes
+each shard sooner.
 
 ### Caching
 
