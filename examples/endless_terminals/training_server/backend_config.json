@@ -1,0 +1,16 @@
+{
+  "trainer.placement.colocate_all": true,
+  "trainer.placement.policy_num_nodes": 1,
+  "trainer.placement.policy_num_gpus_per_node": 1,
+  "trainer.micro_forward_batch_size_per_gpu": 1,
+  "trainer.micro_train_batch_size_per_gpu": 1,
+  "trainer.gradient_checkpointing": true,
+  "trainer.logger": "console",
+  "generator.inference_engine.num_engines": 1,
+  "generator.inference_engine.tensor_parallel_size": 1,
+  "generator.inference_engine.run_engines_locally": true,
+  "generator.inference_engine.gpu_memory_utilization": 0.35,
+  "generator.inference_engine.max_num_seqs": 1,
+  "generator.inference_engine.engine_init_kwargs.max_model_len": 8192,
+  "generator.inference_engine.engine_init_kwargs.enforce_eager": true
+}

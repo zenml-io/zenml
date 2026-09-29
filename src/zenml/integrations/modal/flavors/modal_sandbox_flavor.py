@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Modal sandbox flavor."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from zenml.integrations.modal import MODAL_SANDBOX_FLAVOR
 from zenml.integrations.modal.flavors.modal_base_flavor import (
@@ -33,8 +33,24 @@ if TYPE_CHECKING:
     from zenml.integrations.modal.sandboxes import ModalSandbox
 
 
+class ModalSandboxVolumeMount(BaseModel):
+    """An existing named Modal Volume and its per-container mount options."""
+
+    name: str = Field(min_length=1)
+    sub_path: Optional[str] = None
+    read_only: bool = False
+
+
 class ModalSandboxSettings(ContainerizedSandboxSettings, ModalSettingsMixin):
     """Per-step settings for the Modal sandbox."""
+
+    block_network: bool = Field(
+        default=False, description="Block all outbound sandbox network access."
+    )
+    volumes: Dict[str, ModalSandboxVolumeMount] = Field(
+        default_factory=dict,
+        description="Existing named Modal Volumes keyed by container mount path.",
+    )
 
     cpu: Optional[int] = Field(
         default=None,
