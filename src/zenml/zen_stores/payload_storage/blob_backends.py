@@ -170,6 +170,7 @@ class FsspecBlobBackend(BlobBackend):
 
         Raises:
             TimeoutError: If the creation did not finish in time.
+            Exception: The error of a failed creation.
         """
         if self._filesystem is not None:
             return self._filesystem
@@ -246,7 +247,7 @@ class FsspecBlobBackend(BlobBackend):
             filesystem = self._get_filesystem(timeout)
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise asyncio.TimeoutError
+                raise TimeoutError("No time was left for the call.")
             # The calls cancel themselves at the deadline. The timeout of
             # `sync` (checked once a second) returns even if a filesystem
             # blocks the event loop, as gcsfs does while it refreshes its
