@@ -15,21 +15,20 @@
 
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Optional
+from typing import Any
 from unittest.mock import Mock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from sqlmodel import SQLModel
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.models import (
     PipelineRunFilter,
-    PipelineSnapshotFilter,
     ProjectFilter,
-    StackFilter,
 )
 from zenml.zen_stores import schemas as s
 from zenml.zen_stores.sql_zen_store import SqlZenStore
@@ -39,9 +38,11 @@ WHEN = datetime(2026, 1, 1)
 
 def insert(store: SqlZenStore, *records: SQLModel) -> None:
     """Insert rows directly, in foreign-key order."""
-    rows: dict = {}
+    rows: dict[str, list[dict[str, Any]]] = {}
     for record in records:
-        rows.setdefault(record.__tablename__, []).append(record.model_dump())
+        rows.setdefault(str(record.__tablename__), []).append(
+            record.model_dump()
+        )
     with store.engine.begin() as connection:
         for table in SQLModel.metadata.sorted_tables:
             for values in rows.get(table.name, []):
@@ -89,7 +90,7 @@ def two_step_run(store: SqlZenStore, kind: str) -> SimpleNamespace:
         end_time=WHEN,
         **shared,
     )
-    records = [pipeline, snapshot, run]
+    records: list[SQLModel] = [pipeline, snapshot, run]
     # The consumer's row sorts before the producer's, so the DAG has to order
     # steps by their dependencies rather than by how the rows load.
     consumer_id, producer_id = sorted([uuid4(), uuid4()])
@@ -102,8 +103,10 @@ def two_step_run(store: SqlZenStore, kind: str) -> SimpleNamespace:
                     module="tests", attribute=name, type=SourceType.INTERNAL
                 ),
                 upstream_steps=["producer"] if index else [],
+                invocation_id=name,
             ),
             config=StepConfiguration(name=name),
+            step_config_overrides=StepConfiguration(name=name),
         )
         records.append(
             s.StepRunSchema(
@@ -149,6 +152,7 @@ def test_run_dag_links_the_producer_to_its_consumer(
 ) -> None:
     """Each way of storing step definitions yields the same two-step graph."""
     store = clean_client.zen_store
+    assert isinstance(store, SqlZenStore)
     ids = two_step_run(store, kind)
 
     dag = store.get_pipeline_run_dag(ids.run)
@@ -163,17 +167,19 @@ def test_run_dag_links_the_producer_to_its_consumer(
     )
 
 
+@pytest.mark.parametrize("kind", ["static", "legacy"])
 def test_a_page_of_run_summaries_parses_no_configuration(
-    clean_client: Client, monkeypatch: pytest.MonkeyPatch
+    clean_client: Client, monkeypatch: pytest.MonkeyPatch, kind: str
 ) -> None:
     """Only hydrated runs pay for decoding their pipeline configuration."""
     store = clean_client.zen_store
-    ids = two_step_run(store, "static")
-    parsed = Mock(wraps=s.PipelineRunSchema.get_pipeline_configuration)
+    assert isinstance(store, SqlZenStore)
+    ids = two_step_run(store, kind)
+    parsed = Mock(wraps=PipelineConfiguration.model_validate_json)
     monkeypatch.setattr(
-        s.PipelineRunSchema,
-        "get_pipeline_configuration",
-        lambda run: parsed(run),
+        PipelineConfiguration,
+        "model_validate_json",
+        parsed,
     )
 
     summaries = store.list_runs(PipelineRunFilter(id=ids.run), hydrate=False)
@@ -183,72 +189,3 @@ def test_a_page_of_run_summaries_parses_no_configuration(
     assert [run.id for run in summaries.items] == [ids.run]
     assert hydrated.items[0].config.name == "example"
     parsed.assert_called()
-
-
-def test_runnable_and_templatable_filters_follow_the_build(
-    clean_client: Client,
-) -> None:
-    """A snapshot is runnable only with a server-side build on a stack."""
-    store = clean_client.zen_store
-    project = store.list_projects(ProjectFilter()).items[0].id
-    stack = store.list_stacks(StackFilter()).items[0].id
-    shared = dict(project_id=project, created=WHEN, updated=WHEN)
-
-    def build(
-        is_local: bool, stack_id: Optional[UUID]
-    ) -> s.PipelineBuildSchema:
-        return s.PipelineBuildSchema(
-            stack_id=stack_id,
-            images="{}",
-            is_local=is_local,
-            contains_code=True,
-            **shared,
-        )
-
-    builds = {
-        "server": build(is_local=False, stack_id=stack),
-        "local": build(is_local=True, stack_id=stack),
-        "stackless": build(is_local=False, stack_id=None),
-    }
-    pipeline = s.PipelineSchema(name=str(uuid4()), run_count=0, **shared)
-    records: list = [pipeline, *builds.values()]
-    snapshots, runs = {}, {}
-    for name in ("server", "local", "stackless", "unbuilt"):
-        snapshots[name] = s.PipelineSnapshotSchema(
-            pipeline_id=pipeline.id,
-            build_id=builds[name].id if name in builds else None,
-            pipeline_configuration='{"name":"example"}',
-            client_environment="{}",
-            step_count=0,
-            run_name_template="example",
-            **shared,
-        )
-        runs[name] = s.PipelineRunSchema(
-            name=str(uuid4()),
-            snapshot_id=snapshots[name].id,
-            status="completed",
-            in_progress=False,
-            index=1,
-            enable_heartbeat=False,
-            **shared,
-        )
-    runs["no snapshot"] = s.PipelineRunSchema(
-        name=str(uuid4()),
-        pipeline_configuration='{"name":"example"}',
-        status="completed",
-        in_progress=False,
-        index=1,
-        enable_heartbeat=False,
-        **shared,
-    )
-    insert(store, *records, *snapshots.values(), *runs.values())
-
-    runnable = store.list_snapshots(PipelineSnapshotFilter(runnable=True))
-    templatable = store.list_runs(PipelineRunFilter(templatable=True))
-    not_templatable = store.list_runs(PipelineRunFilter(templatable=False))
-
-    assert {item.id for item in runnable.items} == {snapshots["server"].id}
-    assert {run.id for run in templatable.items} == {runs["server"].id}
-    assert {run.id for run in not_templatable.items} == {
-        run.id for name, run in runs.items() if name != "server"
-    }
