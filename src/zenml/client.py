@@ -5723,8 +5723,10 @@ class Client(metaclass=ClientMetaClass):
             The updated step run.
         """
         update = StepRunUpdate(cache_expires_at=cache_expires_at)
+        # The store returns the step run without metadata by default, which
+        # status updates rely on; callers of the client get all of it.
         return self.zen_store.update_run_step(
-            step_run_id=step_run_id, step_run_update=update
+            step_run_id=step_run_id, step_run_update=update, hydrate=True
         )
 
     # ------------------------------- Artifacts -------------------------------
