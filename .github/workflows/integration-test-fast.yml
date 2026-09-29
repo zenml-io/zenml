@@ -42,8 +42,8 @@ on:
         required: false
         default: '[1, 2, 3, 4, 5, 6]'
       lanes:
-        description: Number of test processes to run side by side in each shard,
-          to use CPU cores a single process leaves idle. Example 2
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
         type: string
         required: false
         default: '1'
@@ -117,8 +117,8 @@ on:
         required: false
         default: '[1, 2, 3, 4, 5, 6]'
       lanes:
-        description: Number of test processes to run side by side in each shard,
-          to use CPU cores a single process leaves idle. Example 2
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
         type: string
         required: false
         default: '1'
