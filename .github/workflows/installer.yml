@@ -1,0 +1,138 @@
+---
+name: Installer smoke
+# Runs install.sh on real GitHub-hosted runners the way a user would
+# (`curl ... | bash`), then checks the CLI, skills, and PATH.
+# Triggers: PRs that touch the script (path-filtered, so this does not run on
+# ordinary PRs), manual dispatch, and workflow_call so the release workflow can
+# prove the one-liner installs a freshly published version. `source: file`
+# runs the checked-out script (PRs); `source: url` fetches the script from
+# the main branch on GitHub, the bytes users run (release).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: ZenML version the installer must produce (empty = latest)
+        required: false
+        type: string
+      source:
+        description: 'Where to get install.sh from: "file" (checkout) or "url" (main
+          branch on GitHub)'
+        required: false
+        type: string
+        default: file
+  workflow_call:
+    inputs:
+      version:
+        description: ZenML version the installer must produce (empty = latest)
+        required: false
+        type: string
+      source:
+        description: 'Where to get install.sh from: "file" (checkout) or "url" (main
+          branch on GitHub)'
+        required: false
+        type: string
+        default: file
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: [install.sh, .github/workflows/installer.yml]
+permissions: {}
+concurrency:
+  group: installer-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  # Until zenml.io/install serves the script, the raw file on main is the URL
+  # form of "the bytes users run".
+  INSTALL_URL: https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh
+  SKILLS_TARBALL: https://github.com/zenml-io/skills/archive/refs/heads/main.tar.gz
+  ZENML_ANALYTICS_OPT_IN: false
+jobs:
+  install:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - macos-15-intel
+          - windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+          # Only the script is needed, not the whole tree.
+          sparse-checkout: install.sh
+          sparse-checkout-cone-mode: false
+      - name: Run the installer as a user would
+        shell: bash
+        env:
+          ZENML_VERSION: ${{ inputs.version }}
+          SOURCE: ${{ inputs.source || 'file' }}
+        # The default (non-verbose) path is the one users run, so that is the
+        # path that has to pass. On failure, rerun once with --verbose purely to
+        # print diagnostics; the step still fails. Retries only make sense when
+        # a version is pinned: that is the release case where PyPI can lag the
+        # publish by a few seconds.
+        run: |
+          get_script() {
+            if [ "$SOURCE" = "url" ]; then curl -fsSL "$INSTALL_URL"; else cat "$GITHUB_WORKSPACE/install.sh"; fi
+          }
+          attempts=1; [ -n "$ZENML_VERSION" ] && attempts=5
+          # Run from an empty directory: the checkout is itself a Python project,
+          # which would put the installer into project mode.
+          cd "$(mktemp -d)"
+          for attempt in $(seq "$attempts"); do
+            get_script | bash -s -- && { echo "$HOME/.local/bin" >> "$GITHUB_PATH"; exit 0; }
+            echo "installer attempt $attempt of $attempts failed; retrying in 30s" >&2
+            sleep 30
+          done
+          echo "::group::verbose rerun for diagnostics"
+          get_script | bash -s -- --verbose || true
+          echo "::endgroup::"
+          exit 1
+      - name: Verify
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euxo pipefail
+          uname -a
+          zenml --version
+          if [ -n "$EXPECTED_VERSION" ]; then
+            uv tool list | grep -qx "zenml v$EXPECTED_VERSION"
+          fi
+          zenml status
+          # Every SKILL.md in the skills repo must have landed, whatever they are called.
+          expected="$(curl -fsSL "$SKILLS_TARBALL" | tar -tzf - | grep -c '/SKILL.md$')"
+          installed="$(find "$HOME/.agents/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l)"
+          test "$expected" -gt 0 && test "$installed" -eq "$expected"
+          # `set -o pipefail` above would fail the pipe on a missing rc file, so
+          # swallow cat's status and let grep decide.
+          { cat "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" 2>/dev/null || true; } \
+            | grep -q ".local/bin" || { echo "PATH not persisted"; exit 1; }
+      - name: Re-run is an upgrade, not an error
+        shell: bash
+        run: cd "$(mktemp -d)" && bash "$GITHUB_WORKSPACE/install.sh" --no-skills
+          --quiet
+      - name: Inside a project, install into that project's environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd "$(mktemp -d)"
+          uv init --quiet -p 3.12 --name demo-pipelines .
+          bash "$GITHUB_WORKSPACE/install.sh" --no-skills
+          grep -q 'zenml\[server\]' pyproject.toml
+          uv run zenml --version
+      - name: A failed install must exit nonzero (quiet path)
+        shell: bash
+        # Regression for the status-swallowing bug in `quiet`: an impossible
+        # version pin makes `uv tool install` fail, and that must surface.
+        run: |-
+          cd "$(mktemp -d)"
+          if bash "$GITHUB_WORKSPACE/install.sh" --no-skills --version=99.99.99; then
+            echo "installer exited 0 on a failed install" >&2; exit 1
+          fi
+          echo "failed install correctly exited nonzero"
