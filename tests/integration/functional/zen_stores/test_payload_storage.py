@@ -21,10 +21,12 @@ working while storage is down, half-created runs and corrupted blobs.
 """
 
 import os
-from typing import Any, Dict, Generator, List, Optional, Tuple
+import time
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 
 import pytest
+from fsspec.asyn import AsyncFileSystem
 from moto.server import ThreadedMotoServer
 from sqlmodel import Session, delete, select, update
 
@@ -69,6 +71,13 @@ from zenml.zen_server.utils import get_with_best_effort_metadata
 from zenml.zen_stores import sql_zen_store
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.payload_storage.backfill import BACKFILL_MAX_PASSES
+from zenml.zen_stores.payload_storage.blob_backends import (
+    FsspecBlobBackend,
+    create_blob_backend,
+)
+from zenml.zen_stores.payload_storage.config import BlobBackendType
+from zenml.zen_stores.payload_storage.payload_store import BLOB_CHUNK_SIZE
+from zenml.zen_stores.payload_storage.payloads import PayloadValue
 from zenml.zen_stores.schemas import (
     PayloadBlobSchema,
     PipelineRunSchema,
@@ -844,3 +853,92 @@ def test_write_answers_whole_while_backfill_offloads_its_rows(
     assert backfills and backfills[0].completed
     assert _count_payload_columns(store)["inline"] == 0
     assert response.get_metadata() == fresh.get_metadata()
+
+
+class _SlowToCreateFilesystem(AsyncFileSystem):
+    """Looks up credentials for seconds when created, as gcsfs can."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        time.sleep(2)
+        super().__init__(**kwargs)
+
+    async def _cat_file(self, path: str, **kwargs: Any) -> bytes:
+        return b""
+
+
+class _LoopBlockingFilesystem(AsyncFileSystem):
+    """Blocks the event loop for seconds, as gcsfs refreshing a token does."""
+
+    async def _cat_file(self, path: str, **kwargs: Any) -> bytes:
+        time.sleep(2)
+        return b""
+
+
+@pytest.mark.parametrize(
+    "filesystem_class", [_SlowToCreateFilesystem, _LoopBlockingFilesystem]
+)
+def test_backend_call_fails_in_time_while_the_client_hangs(
+    filesystem_class: Any,
+) -> None:
+    """A call raises within its timeout, plus the second `sync` polls at."""
+    backend = FsspecBlobBackend(
+        BlobBackendType.GCS,
+        "gs://bucket/blobs",
+        location="gs://bucket/blobs",
+        filesystem_class=filesystem_class,
+        filesystem_options={},
+        max_concurrent_calls=4,
+    )
+    started = time.monotonic()
+    with pytest.raises(TimeoutError):
+        backend.get_many(["0" * 64], timeout=0.2)
+    assert time.monotonic() - started < 1.5
+
+
+def test_load_shares_one_timeout_across_chunks(
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A load of many chunks fails once their total time passes the timeout."""
+    payload_store = _open_store(
+        store, cache_max_bytes=0, backend_timeout_seconds=1
+    ).payload_store
+    offloaded = payload_store.offload(
+        PayloadValue(text=f"value {index}")
+        for index in range(2 * BLOB_CHUNK_SIZE + 1)
+    )
+    get_many = payload_store._backend.get_many
+
+    def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
+        # Each chunk takes 0.4 s: three fit in 1.2 s, not in the 1 s timeout.
+        if timeout < 0.4:
+            time.sleep(max(timeout, 0))
+            raise TimeoutError
+        time.sleep(0.4)
+        return get_many(sha256s, timeout=timeout - 0.4)
+
+    monkeypatch.setattr(payload_store._backend, "get_many", slow_get_many)
+
+    started = time.monotonic()
+    with pytest.raises(PayloadStorageUnavailableError):
+        payload_store.load(offloaded.values_by_blob_id)
+    assert time.monotonic() - started < 1.3
+
+
+@pytest.mark.parametrize("from_environment", [False, True])
+def test_gcs_endpoint_is_part_of_the_location(
+    monkeypatch: pytest.MonkeyPatch, from_environment: bool
+) -> None:
+    """The same bucket behind another GCS endpoint is another location."""
+    pytest.importorskip("gcsfs")
+
+    def location(endpoint: str) -> str:
+        options = {"path": "gs://bucket/blobs"}
+        if from_environment:
+            monkeypatch.setenv("STORAGE_EMULATOR_HOST", endpoint)
+        else:
+            options["endpoint_url"] = endpoint
+        return create_blob_backend(
+            BlobBackendType.GCS, options, max_concurrent_calls=4
+        ).location
+
+    assert location("http://a:9023") != location("http://b:9023")

@@ -14,6 +14,7 @@
 """Offloading execution payloads to blob storage and loading them back."""
 
 import hashlib
+import time
 from functools import partial
 from typing import (
     Callable,
@@ -60,8 +61,8 @@ IDENTITY_CODEC = "identity"
 # Requests that one backend call sends to the object store at once.
 MAX_CONCURRENT_BACKEND_CALLS = 32
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
-# Blobs per backend call: four rounds of concurrent requests, which finish
-# well within the timeout even on slow storage. Each chunk that finishes is
+# Blobs per backend call: four rounds of concurrent requests. All chunks of
+# an offload or a load share one timeout, and each chunk that finishes is
 # kept, so a retry after a timeout continues where the last attempt stopped.
 BLOB_CHUNK_SIZE = 4 * MAX_CONCURRENT_BACKEND_CALLS
 # The longest `IN` list of a registry query.
@@ -110,6 +111,7 @@ class PayloadStore:
         self._engine = engine
         self._offload_enabled = config.offload_enabled
         self._cache = PayloadCache(max_bytes=config.cache_max_bytes)
+        self._timeout = config.backend_timeout_seconds
         # All None while no backend is configured and payloads stay inline.
         self._backend: Optional[BlobBackend] = None
         self._breaker: Optional[CircuitBreaker] = None
@@ -118,7 +120,6 @@ class PayloadStore:
             self._backend = create_blob_backend(
                 config.backend,
                 config.backend_config,
-                timeout=config.backend_timeout_seconds,
                 max_concurrent_calls=MAX_CONCURRENT_BACKEND_CALLS,
             )
             self._location_fingerprint = self._compute_location_fingerprint(
@@ -205,11 +206,13 @@ class PayloadStore:
                 for sha256, value in values_by_sha256.items()
                 if sha256 not in blob_ids
             ]
+            deadline = time.monotonic() + self._timeout
             for chunk in _batched(new_values, BLOB_CHUNK_SIZE):
                 self._call_backend(
                     partial(
                         backend.put_many,
                         {value.sha256: value.utf8_bytes for value in chunk},
+                        timeout=deadline - time.monotonic(),
                     )
                 )
                 with Session(self._engine) as session:
@@ -397,8 +400,15 @@ class PayloadStore:
 
         blobs_by_sha256 = {blob.sha256: blob for blob in blobs}
         values: Dict[UUID, str] = {}
+        deadline = time.monotonic() + self._timeout
         for chunk in _batched(sorted(blobs_by_sha256), BLOB_CHUNK_SIZE):
-            data = self._call_backend(partial(backend.get_many, chunk))
+            data = self._call_backend(
+                partial(
+                    backend.get_many,
+                    chunk,
+                    timeout=deadline - time.monotonic(),
+                )
+            )
             for sha256 in chunk:
                 blob = blobs_by_sha256[sha256]
                 values[blob.id] = self._verify_and_decode(blob, data[sha256])
