@@ -31,8 +31,12 @@ Runs automatically on all PRs and pushes to main:
 - Spellcheck
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
+- Unit tests (ubuntu, Python 3.11, 2 shards)
+- Integration tests (2 environments, 6 shards each). The docker/MySQL environment
+  only runs the example-project tests when the `changes` job finds a PR touching
+  integrations, orchestrators, image building, examples, docker files, the test
+  harness, `pyproject.toml` or the workflow files that define that run; otherwise it
+  runs `tests/integration/functional` only. Pushes and manual runs always run everything.
 - API docs buildability test
 - Template example updates (PRs only, same-repo only)
 
@@ -40,7 +44,10 @@ Runs automatically on all PRs and pushes to main:
 
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
+- Multi-Python: Ubuntu 3.10, 3.12, 3.13, 3.14; macOS 3.10 and 3.14; Windows 3.10
+- Windows unit tests and all integration tests run sharded. Unit and integration tests
+  wait only for the Ubuntu lint (not for each other), and Windows/macOS lint runs once,
+  on the oldest Python, without gating the tests.
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -155,20 +162,34 @@ ci-fast and ci-slow ignore:
 
 But explicitly include `pyproject.toml` changes.
 
+### Test sharding
+
+Sharded jobs pass `--splits`/`--group` to pytest-split, which balances the shards by
+per-test time from `.test_durations` at the repo root. Without that file the shards are
+split by test count and finish minutes apart. `generate-test-duration.yml` refreshes it
+weekly by opening a pull request (a direct push to `develop` is rejected). The reusable
+`unit-test.yml`, `integration-test-fast.yml` and `integration-test-slow.yml` take a
+`shards` input, a JSON list such as `'[1, 2, 3]'`; the shard count is the length of that
+list.
+
 ### Caching
 
-uv cache key pattern:
-```yaml
-key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-```
+There is deliberately no uv cache. The cache was branch-scoped, so almost every run
+missed, and a hit (a ~5 GB restore of ~85 s) was no faster than installing from PyPI
+(~65 s) while saving it cost another ~70 s at the end of every job. Measure before
+adding one back.
 
-Cache invalidates when integrations change.
+### Disk space
+
+`actions/free_disk_space` only deletes preinstalled toolchains when a Linux runner has
+less than 40 GB free. Current Ubuntu images have ~85 GB, so the two-minute cleanup is skipped.
 
 ## Key Supporting Files
 
 | File | Purpose |
 |------|---------|
 | `actions/setup_environment/action.yml` | Composite action for Python + ZenML dev setup |
+| `actions/free_disk_space/action.yml` | Composite action that frees Ubuntu disk space only when it is short |
 | `zizmor.yml` | Security linter configuration used by `scripts/lint.sh` and `.github/workflows/zizmor.yml` |
 | `codecov.yml` | Coverage reporting (lenient thresholds) |
 | `dependabot.yml` | Weekly GitHub Actions updates on Tuesdays 07:00 Europe/Amsterdam, grouped by minor/patch updates with cooldowns |

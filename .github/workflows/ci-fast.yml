@@ -37,8 +37,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
@@ -78,6 +76,34 @@ jobs:
       python-version: '3.11'
       os: ubuntu-latest
     secrets: inherit
+  changes:
+    # The docker run repeats the plain run's example-project tests (about half
+    # of its time). They only exercise pipeline execution, integrations and
+    # image building, so PRs that touch none of those skip them there.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      docker_test_path: ${{ steps.filter.outputs.docker_test_path }}
+    steps:
+      - name: Check whether the docker run needs the example tests
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          relevant='^(src/zenml/(integrations|orchestrators|entrypoints|container_engines|container_registries|image_builders|step_operators|steps|pipelines|materializers|artifacts|utils/(docker|source|pipeline|code_repository))|examples/|docker/|tests/(harness|integration/(examples|integrations))/|pyproject\.toml$|\.github/(workflows/(ci-fast|integration-test-fast)\.yml|actions/))'
+          # Anything other than a readable PR file list runs the full suite.
+          docker_test_path=integration
+          if [ "$EVENT_NAME" = "pull_request" ] \
+            && files=$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename') \
+            && ! grep -Eq "$relevant" <<< "$files"; then
+            docker_test_path=integration/functional
+          fi
+          echo "docker_test_path=${docker_test_path}" >> "$GITHUB_OUTPUT"
   linting:
     if: github.event.pull_request.draft == false
     strategy:
@@ -106,9 +132,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      shards: '[1, 2]'
     secrets: inherit
   ubuntu-latest-integration-test:
-    needs: [linting]
+    needs: [linting, changes]
     if: github.event.pull_request.draft == false
     strategy:
       matrix:
@@ -128,4 +155,5 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      test_path: ${{ matrix.test_environment == 'default' && 'integration' || needs.changes.outputs.docker_test_path }}
     secrets: inherit
