@@ -145,6 +145,20 @@ class BackfillTableReport(BaseModel):
     inline_bytes: Dict[str, int]
 
 
+class OptimizedTable(BaseModel):
+    """A payload table rebuilt to release the space of offloaded payloads.
+
+    Attributes:
+        table: The table.
+        bytes_before: The size of its data and indexes before the rebuild.
+        bytes_after: The size of its data and indexes after the rebuild.
+    """
+
+    table: str
+    bytes_before: int
+    bytes_after: int
+
+
 class _Utf8Bytes(FunctionElement[bytes]):
     """The UTF-8 bytes of a text column, whatever its character set.
 

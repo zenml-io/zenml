@@ -46,7 +46,7 @@ server:
       # Only for `s3`: the region, and the endpoint of an S3-compatible store.
       region: eu-central-1
       endpointUrl: ""
-      # Bytes of values each server process keeps in memory.
+      # Bytes of values each server process keeps in memory (see below).
       cacheMaxBytes: 134217728
       # Seconds before a call to the object store fails the request.
       backendTimeoutSeconds: 10
@@ -57,9 +57,14 @@ server:
         startDelaySeconds: 600
         batchSize: 200
         pauseSeconds: 0.2
+        # Rebuild the tables afterwards to release disk space (see
+        # "Reclaiming disk space" below).
+        optimizeTables: false
 ```
 
 The chart validates these values and passes them to the server through its Kubernetes secret. Keep `backendTimeoutSeconds` below the server's request timeout (20 seconds by default), so that clients get the storage error instead of a timeout.
+
+Every server process, and every worker or Job that opens the database, keeps up to `cacheMaxBytes` (128 MiB by default) of loaded values in memory. Raise the memory limits of the server and of the workers by that much, or lower `cacheMaxBytes` where memory is tight: a smaller cache only means more reads from the object store.
 
 ### Docker
 
@@ -128,10 +133,21 @@ python -m zenml.zen_server.payload_backfill --batch-size 200 --pause-seconds 0.2
 
 On a large MySQL database, keep in mind:
 
-* Every updated row is written to the binary log, which grows by about the size of the moved data. Watch the binary log size, the replication lag and the write latency, and increase `--pause-seconds` or lower `--batch-size` if they climb.
-* MySQL does not return freed disk space to the operating system on its own. Tables shrink only after they are rebuilt, for example with `OPTIMIZE TABLE`, which is best done in a maintenance window.
+Every updated row is written to the binary log, which grows by about the size of the moved data. On a large MySQL database, watch the binary log size, the replication lag and the write latency, and increase `--pause-seconds` or lower `--batch-size` if they climb.
 
 The backfill visits step runs first, then step configurations, snapshots and runs. If a row cannot be read, for example a step run whose configuration is missing, the backfill lists it and does not continue with the next table, since that table's values are needed to read the row. ZenML cannot display these rows either: delete what they belong to, such as the pipeline run of a listed step run (`zenml pipeline runs delete <run ID>`), then run the backfill again.
+
+### Reclaiming disk space
+
+MySQL and MariaDB keep the space that the moved values freed inside each table, and reuse it for new rows, so the database files do not shrink on their own. To release the space, rebuild the tables once the backfill has completed:
+
+```shell
+python -m zenml.zen_server.payload_backfill --optimize-tables
+```
+
+This runs `OPTIMIZE TABLE` on the four tables the backfill updated and logs the size of each before and after. With Helm, set `backfill.optimizeTables: true`: the Job then rebuilds them right after the backfill completes, or at once if it completed earlier. On a test database, the four tables went from 10.95 GiB to 2.05 GiB.
+
+The rebuild runs online: reads and writes continue, apart from a short lock at the start and end of each table. It needs free disk space about the size of the table it rebuilds and takes a while on large tables, so run it outside of peak hours. On Amazon RDS, the released space returns to the instance's free storage, but its allocated storage does not shrink.
 
 ## Backups and restore
 

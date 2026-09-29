@@ -89,8 +89,10 @@ from sqlalchemy import (
     Table,
     event,
     func,
+    text,
     update,
 )
+from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, IntegrityError
 from sqlalchemy.orm import (
@@ -443,6 +445,7 @@ from zenml.zen_stores.payload_storage.backfill import (
     BackfillResult,
     BackfillTableReport,
     BackfillTableResult,
+    OptimizedTable,
     PayloadRowSchema,
     build_backfill_update,
     get_missing_control_values,
@@ -1676,6 +1679,60 @@ class SqlZenStore(BaseZenStore):
             BACKFILL_MAX_PASSES,
         )
         return result
+
+    def optimize_payload_tables(self) -> List[OptimizedTable]:
+        """Rebuild the payload tables to release the space of offloaded payloads.
+
+        MySQL and MariaDB keep the pages that offloaded payloads freed inside
+        each table, for new rows; only a rebuild returns them to the file
+        system. `OPTIMIZE TABLE` rebuilds an InnoDB table online, blocking
+        writes only briefly at its start and end, and needs free disk space
+        about the size of the table. SQLite databases are left as they are.
+
+        Returns:
+            The size of each table before and after, in backfill order; empty
+            on SQLite.
+
+        Raises:
+            RuntimeError: If the database reports an error for a table.
+        """
+        dialect = self.engine.dialect
+        if not isinstance(dialect, MySQLDialect):
+            return []
+        size_query = text(
+            "SELECT DATA_LENGTH + INDEX_LENGTH FROM information_schema.TABLES "
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table"
+        )
+        tables = []
+        with self.engine.connect().execution_options(
+            isolation_level="AUTOCOMMIT"
+        ) as connection:
+            if not dialect.is_mariadb:
+                # MySQL 8 otherwise reports sizes cached for up to a day.
+                connection.execute(
+                    text("SET SESSION information_schema_stats_expiry = 0")
+                )
+            for schema in BACKFILL_ORDER:
+                table = schema.__tablename__
+                before = connection.execute(size_query, {"table": table})
+                bytes_before = int(before.scalar_one())
+                messages = connection.execute(
+                    text(f"OPTIMIZE TABLE `{table}`")
+                ).all()
+                errors = [row[3] for row in messages if row[2] == "error"]
+                if errors:
+                    raise RuntimeError(
+                        f"Optimizing `{table}` failed: {'; '.join(errors)}"
+                    )
+                after = connection.execute(size_query, {"table": table})
+                tables.append(
+                    OptimizedTable(
+                        table=table,
+                        bytes_before=bytes_before,
+                        bytes_after=int(after.scalar_one()),
+                    )
+                )
+        return tables
 
     def get_payload_backfill_completion(self) -> Optional[datetime]:
         """Get when the payload backfill last found nothing left to update.

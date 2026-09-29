@@ -82,6 +82,14 @@ def main() -> None:
         help="Run even if a previous run left nothing to update, such as "
         "after offloading was disabled and enabled again.",
     )
+    parser.add_argument(
+        "--optimize-tables",
+        action="store_true",
+        help="Once the backfill has completed, rebuild the tables it "
+        "updated so that the database releases the disk space of the "
+        "offloaded payloads (MySQL and MariaDB). Needs free disk space "
+        "about the size of the largest table.",
+    )
     args = parser.parse_args()
     if args.batch_size < 1:
         parser.error("--batch-size must be 1 or more.")
@@ -129,6 +137,8 @@ def main() -> None:
             "`--force` runs it again.",
             completed,
         )
+        if args.optimize_tables:
+            _optimize_tables(store)
         return
     if args.start_delay_seconds:
         logger.info(
@@ -167,6 +177,27 @@ def main() -> None:
         )
         sys.exit(1)
     logger.info("The backfill completed.")
+    if args.optimize_tables:
+        _optimize_tables(store)
+
+
+def _optimize_tables(store: SqlZenStore) -> None:
+    """Rebuild the payload tables and log the space each one released.
+
+    Args:
+        store: The store whose tables to rebuild.
+    """
+    logger.info("Rebuilding the payload tables to release disk space.")
+    tables = store.optimize_payload_tables()
+    if not tables:
+        logger.info("Only MySQL and MariaDB tables need rebuilding.")
+    for table in tables:
+        logger.info(
+            "`%s`: %.1f MiB before, %.1f MiB after.",
+            table.table,
+            table.bytes_before / 2**20,
+            table.bytes_after / 2**20,
+        )
 
 
 if __name__ == "__main__":

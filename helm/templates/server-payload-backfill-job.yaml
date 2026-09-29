@@ -120,6 +120,9 @@ spec:
         - {{ .batchSize | int | quote }}
         - "--pause-seconds"
         - {{ .pauseSeconds | quote }}
+        {{- if .optimizeTables }}
+        - "--optimize-tables"
+        {{- end }}
       {{- end }}
       volumeMounts:
         - name: zenml-config
