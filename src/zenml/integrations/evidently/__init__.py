@@ -25,7 +25,7 @@ file.
 import logging
 import os
 import warnings
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
 from zenml.integrations.constants import EVIDENTLY
 from zenml.integrations.integration import Integration
@@ -61,7 +61,9 @@ class EvidentlyIntegration(Integration):
 
     @classmethod
     def get_requirements(
-        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+        cls,
+        target_os: Optional[str] = None,
+        python_version: Optional[str] = None,
     ) -> List[str]:
         """Method to get the requirements for the integration.
 
@@ -90,4 +92,3 @@ class EvidentlyIntegration(Integration):
         )
 
         return [EvidentlyDataValidatorFlavor]
-

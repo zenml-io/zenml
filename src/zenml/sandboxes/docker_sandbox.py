@@ -58,6 +58,7 @@ from zenml.sandboxes.base import (
 from zenml.sandboxes.process import SandboxExecError, SandboxProcess
 from zenml.sandboxes.session import SandboxSession
 from zenml.sandboxes.snapshot import SandboxSnapshot
+from zenml.steps.step_context import StepContext
 from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
@@ -68,7 +69,8 @@ logger = get_logger(__name__)
 DOCKER_SANDBOX_FLAVOR = "docker"
 
 
-_SESSION_ID_LABEL = "zenml-sandbox-session"
+_SESSION_ID_LABEL = "zenml-sandbox-id"
+_COMPONENT_ID_LABEL = "zenml-sandbox-component-id"
 _SNAPSHOT_REPOSITORY = "zenml-sandbox-snapshot"
 
 # Docker has no API to terminate an exec instance and `exec_inspect`
@@ -607,6 +609,10 @@ class DockerSandbox(BaseSandbox):
         run_args = copy.deepcopy(settings.run_args)
         labels = run_args.pop("labels", {})
         labels[_SESSION_ID_LABEL] = session_id
+        labels[_COMPONENT_ID_LABEL] = str(self.id)
+        if step_context := StepContext.get():
+            labels["run_id"] = str(step_context.pipeline_run.id)
+            labels["step_run_id"] = str(step_context.step_run.id)
         if settings.cpu_limit is not None:
             run_args["nano_cpus"] = int(settings.cpu_limit * 1e9)
         if settings.memory_limit is not None:

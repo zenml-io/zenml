@@ -240,6 +240,8 @@ from zenml.models.v2.core.pipeline_run import (
 from zenml.models.v2.core.pipeline_snapshot import (
     PipelineSnapshotBase,
     PipelineSnapshotFilter,
+    PipelineSnapshotPruneRequest,
+    PipelineSnapshotPruneResponse,
     PipelineSnapshotRequest,
     PipelineSnapshotResponse,
     PipelineSnapshotResponseBody,
@@ -457,6 +459,11 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
 )
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.log_models import (
+    LogEntry,
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+)
 from zenml.models.v2.misc.param_groups import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
@@ -827,6 +834,8 @@ __all__ = [
     "PipelineSnapshotResponseMetadata",
     "PipelineSnapshotResponseResources",
     "PipelineSnapshotRunRequest",
+    "PipelineSnapshotPruneRequest",
+    "PipelineSnapshotPruneResponse",
     "PipelineRunRequest",
     "PipelineRunUpdate",
     "PipelineRunFilter",
@@ -965,6 +974,9 @@ __all__ = [
     "ExternalUserModel",
     "BuildItem",
     "LoadedVisualization",
+    "LogEntry",
+    "LogsEntriesFilter",
+    "LogsEntriesResponse",
     "ServerLoadInfo",
     "ServerModel",
     "ServerDatabaseType",

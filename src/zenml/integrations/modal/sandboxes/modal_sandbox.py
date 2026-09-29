@@ -50,6 +50,7 @@ from zenml.sandboxes import (
     SandboxSession,
     SandboxSnapshot,
 )
+from zenml.steps.step_context import StepContext
 
 if TYPE_CHECKING:
     from modal.container_process import ContainerProcess
@@ -432,6 +433,21 @@ class ModalSandbox(BaseSandbox):
             modal_client=modal_client,
         )
 
+    def _set_sandbox_tags(self, sandbox: "modal.Sandbox") -> None:
+        """Tag the sandbox with the session, component and run ids.
+
+        Args:
+            sandbox: The Modal sandbox to tag.
+        """
+        tags = {
+            "zenml-sandbox-id": sandbox.object_id,
+            "zenml-sandbox-component-id": str(self.id),
+        }
+        if step_context := StepContext.get():
+            tags["run_id"] = str(step_context.pipeline_run.id)
+            tags["step_run_id"] = str(step_context.step_run.id)
+        sandbox.set_tags(tags)
+
     def create_session(
         self,
         settings: Optional[BaseSandboxSettings] = None,
@@ -461,6 +477,7 @@ class ModalSandbox(BaseSandbox):
                 environment=self._resolve_session_environment(settings),
             )
         )
+        self._set_sandbox_tags(sandbox)
         return ModalSandboxSession(
             sandbox, parent=self, destroy_on_exit=destroy_on_exit
         )
@@ -527,6 +544,7 @@ class ModalSandbox(BaseSandbox):
                     environment=self._resolve_session_environment(settings),
                 )
             )
+            self._set_sandbox_tags(sandbox)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to restore Modal sandbox from image "

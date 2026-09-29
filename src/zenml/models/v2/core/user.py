@@ -87,6 +87,10 @@ class UserBase(BaseModel):
         default=None,
         title="The metadata associated with the user.",
     )
+    oidc_claims: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Claims synchronized from the external OIDC provider.",
+    )
     avatar_url: Optional[str] = Field(
         default=None,
         title="The avatar URL for the account.",
@@ -322,6 +326,10 @@ class UserResponseMetadata(BaseResponseMetadata):
         default={},
         title="The metadata associated with the user.",
     )
+    oidc_claims: Dict[str, Any] = Field(
+        default={},
+        title="Claims synchronized from the external OIDC provider.",
+    )
 
 
 class UserResponseResources(BaseResponseResources):
@@ -464,6 +472,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().user_metadata
+
+    @property
+    def oidc_claims(self) -> Dict[str, Any]:
+        """The `oidc_claims` property.
+
+        Returns:
+            Claims synchronized from the external OIDC provider.
+        """
+        return self.get_metadata().oidc_claims
 
     @property
     def default_project_id(self) -> Optional[UUID]:

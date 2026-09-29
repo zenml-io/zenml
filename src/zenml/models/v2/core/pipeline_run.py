@@ -27,11 +27,21 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus, PipelineRunTriggeredByType
+from zenml.enums import (
+    ExecutionStatus,
+    PipelineRunTriggeredByType,
+    TriggerType,
+)
+from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
@@ -86,6 +96,8 @@ if TYPE_CHECKING:
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 AnyQuery = TypeVar("AnyQuery", bound=Any)
+
+logger = get_logger(__name__)
 
 
 # ------------------ Request Model ------------------
@@ -417,6 +429,35 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
         default=None,
         title="The trigger that generated this pipeline run.",
     )
+
+    @field_validator("trigger", mode="before")
+    @classmethod
+    def _omit_unknown_trigger_type(cls, value: Any) -> Any:
+        """Omit trigger resources with an unknown trigger type.
+
+        Args:
+            value: The raw trigger response payload.
+
+        Returns:
+            `None` for unknown trigger types, otherwise the unchanged value.
+        """
+        if isinstance(value, dict):
+            body = value.get("body")
+            if isinstance(body, dict):
+                trigger_type = body.get("type")
+                if (
+                    isinstance(trigger_type, str)
+                    and trigger_type not in TriggerType.values()
+                ):
+                    logger.warning(
+                        "Pipeline run references unsupported trigger type "
+                        "`%s`; the trigger resource will be omitted.",
+                        trigger_type,
+                    )
+                    return None
+
+        return value
+
     original_run: Optional["PipelineRunResponse"] = Field(
         default=None,
         title="The original run that was replayed to create this run.",

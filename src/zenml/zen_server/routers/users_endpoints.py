@@ -259,6 +259,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         #
         # - activation_token
         # - external_user_id
+        # - oidc_claims
         # - is_admin
         # - active
         # - old_password
@@ -267,6 +268,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             exclude={
                 "activation_token",
                 "external_user_id",
+                "oidc_claims",
                 "is_admin",
                 "active",
                 "old_password",
@@ -478,6 +480,7 @@ def update_user(
     #
     # - activation_token
     # - external_user_id
+    # - oidc_claims
     # - old_password
     #
     # Exclude things that are not always safe to update and need to be
@@ -492,6 +495,7 @@ def update_user(
         exclude={
             "activation_token",
             "external_user_id",
+            "oidc_claims",
             "is_admin",
             "active",
             "password",
@@ -652,6 +656,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
         #
         # - activation_token
         # - external_user_id
+        # - oidc_claims
         # - admin
         # - is_active
         # - old_password
@@ -660,6 +665,7 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             exclude={
                 "activation_token",
                 "external_user_id",
+                "oidc_claims",
                 "is_admin",
                 "active",
                 "old_password",
