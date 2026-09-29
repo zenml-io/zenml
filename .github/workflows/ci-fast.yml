@@ -86,6 +86,8 @@ jobs:
       pull-requests: read
     outputs:
       docker_test_path: ${{ steps.filter.outputs.docker_test_path }}
+      docker_lanes: ${{ steps.filter.outputs.docker_lanes }}
+      docker_serial_paths: ${{ steps.filter.outputs.docker_serial_paths }}
     steps:
       - name: Check whether the docker run needs the example tests
         id: filter
@@ -96,14 +98,26 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           relevant='^(src/zenml/(integrations|orchestrators|entrypoints|container_engines|container_registries|image_builders|step_operators|steps|pipelines|materializers|artifacts|utils/(docker|source|pipeline|code_repository))|examples/|docker/|tests/(harness|integration/(examples|integrations))/|pyproject\.toml$|\.github/(workflows/(ci-fast|integration-test-fast)\.yml|actions/))'
-          # Anything other than a readable PR file list runs the full suite.
+          # Anything other than a readable PR file list runs the full suite. The
+          # example and integration tests create pipelines in the shared default
+          # project and prune docker resources, so they get a lane of their own.
+          # The functional tests each work in their own project, so they can be
+          # split over two lanes when nothing else shares the server.
           docker_test_path=integration
+          docker_lanes=1
+          docker_serial_paths='tests/integration/examples tests/integration/integrations'
           if [ "$EVENT_NAME" = "pull_request" ] \
             && files=$(gh api --paginate "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename') \
             && ! grep -Eq "$relevant" <<< "$files"; then
             docker_test_path=integration/functional
+            docker_lanes=2
+            docker_serial_paths=''
           fi
-          echo "docker_test_path=${docker_test_path}" >> "$GITHUB_OUTPUT"
+          {
+            echo "docker_test_path=${docker_test_path}"
+            echo "docker_lanes=${docker_lanes}"
+            echo "docker_serial_paths=${docker_serial_paths}"
+          } >> "$GITHUB_OUTPUT"
   linting:
     if: github.event.pull_request.draft == false
     strategy:
@@ -132,7 +146,7 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
-      shards: '[1, 2]'
+      lanes: '3'
     secrets: inherit
   ubuntu-latest-integration-test:
     needs: [linting, changes]
@@ -156,4 +170,6 @@ jobs:
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
       test_path: ${{ matrix.test_environment == 'default' && 'integration' || needs.changes.outputs.docker_test_path }}
+      lanes: ${{ matrix.test_environment == 'default' && '2' || needs.changes.outputs.docker_lanes }}
+      serial_paths: ${{ matrix.test_environment != 'default' && needs.changes.outputs.docker_serial_paths || '' }}
     secrets: inherit

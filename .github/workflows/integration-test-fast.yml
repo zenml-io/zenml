@@ -41,6 +41,18 @@ on:
         type: string
         required: false
         default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard,
+          to use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
+      serial_paths:
+        description: Space separated test paths that share state through the test
+          server and so must not run next to other lanes. Example tests/integration/examples
+        type: string
+        required: false
+        default: ''
   workflow_dispatch:
     inputs:
       os:
@@ -104,6 +116,18 @@ on:
         type: string
         required: false
         default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard,
+          to use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
+      serial_paths:
+        description: Space separated test paths that share state through the test
+          server and so must not run next to other lanes. Example tests/integration/examples
+        type: string
+        required: false
+        default: ''
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -300,6 +324,8 @@ jobs:
           INPUTS_TEST_PATH: ${{ inputs.test_path }}
           SHARD_COUNT: ${{ strategy.job-total }}
           SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
+          TEST_SERIAL_PATHS: ${{ inputs.serial_paths }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
