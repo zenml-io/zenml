@@ -20,6 +20,7 @@ can break: responses that differ from inline ones, execution paths that stop
 working while storage is down, half-created runs and corrupted blobs.
 """
 
+import os
 from typing import Any, Dict, Generator, List, Optional, Tuple
 from uuid import UUID, uuid4
 
@@ -139,18 +140,32 @@ def store(
     monkeypatch: pytest.MonkeyPatch,
     request: pytest.FixtureRequest,
 ) -> SqlZenStore:
-    """The store of a clean client, offloading payloads to the S3 server."""
+    """The store of a clean client, offloading payloads to the S3 server.
+
+    With `ZENML_TEST_PAYLOAD_MYSQL_URL` set to a MySQL or MariaDB server
+    (`mysql://user:password@host:port`), each test gets a new database there
+    instead of the clean client's SQLite one: the backfill compares values in
+    SQL, which MySQL collations and character sets affect.
+    """
     monkeypatch.setenv(
         f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE",
         local_s3_payload_storage_env_value(
             s3_server, f"s3://{BUCKET}/{PREFIX}"
         ),
     )
+    mysql_url = os.environ.get("ZENML_TEST_PAYLOAD_MYSQL_URL")
+    if mysql_url:
+        monkeypatch.setenv(
+            f"{ENV_ZENML_STORE_PREFIX}URL",
+            f"{mysql_url.rstrip('/')}/payloads_{uuid4().hex[:12]}",
+        )
     # Created only now, so that its store reads the settings above.
     client = request.getfixturevalue("clean_client")
     zen_store = client.zen_store
     assert isinstance(zen_store, SqlZenStore)
     assert zen_store.config.payload_storage.offload_enabled
+    # The clean client falls back to SQLite silently.
+    assert (zen_store.engine.dialect.name == "mysql") == bool(mysql_url)
     return zen_store
 
 
