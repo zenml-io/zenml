@@ -1,0 +1,7 @@
+# Local ZenML submission, public dataset loading, and TF-IDF student training.
+zenml[local]>=0.96.4
+datasets>=4.0,<6.0
+scikit-learn>=1.7,<2.0
+
+# The remote runner installs the pinned Open-Jev code and model dependencies
+# into its Modal image. They are intentionally absent from this local file.
