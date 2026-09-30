@@ -699,8 +699,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        if (pipeline_run := self.get_resources().pipeline_run) is not None:
-            return pipeline_run.id
+        if self.resources is not None and self.resources.pipeline_run:
+            return self.resources.pipeline_run.id
         return self.get_metadata().pipeline_run_id
 
     @property
