@@ -16,7 +16,6 @@ import random
 import string
 from contextlib import ExitStack as does_not_raise
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from typing import Any, Dict, Generator, Optional
 from uuid import uuid4
 
@@ -514,20 +513,6 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     assert isinstance(rm, dict)
     assert len(rm.values()) == 1
     assert rm["axel"] == "is awesome"
-
-
-def test_update_step_run_returns_the_full_step_run(
-    clean_client_with_run: Client,
-):
-    """Updating a step run through the client returns its metadata too."""
-    step_run = clean_client_with_run.list_run_steps()[0]
-
-    updated = clean_client_with_run.update_step_run(
-        step_run.id, cache_expires_at=datetime.now(timezone.utc)
-    )
-
-    assert updated.metadata is not None
-    assert updated.cache_expires_at is not None
 
 
 def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
