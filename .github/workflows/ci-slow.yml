@@ -193,21 +193,7 @@ jobs:
       lanes: '3'
     secrets: inherit
   # ruff, pydoclint and mypy do not depend on the OS, so the Windows and macOS
-  # tests wait for the Ubuntu lint instead of their own. The OS-specific lint
-  # runs once, on the oldest Python, and does not hold the tests back.
-  windows-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [windows-latest]
-        python-version: ['3.10']
-      fail-fast: false
-    uses: $/.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
+  # tests wait for the Ubuntu lint and there is no lint job of their own.
   windows-unit-test:
     if: github.event.pull_request.draft == false
     needs: [run-slow-ci-label-is-set, ubuntu-linting]
@@ -222,19 +208,6 @@ jobs:
       os: ${{ matrix.os }}
       shards: '[1, 2]'
       lanes: '2'
-    secrets: inherit
-  macos-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [macos-latest]
-        python-version: ['3.10']
-      fail-fast: false
-    uses: $/.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
     secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false

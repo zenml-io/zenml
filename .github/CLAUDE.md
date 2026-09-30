@@ -31,12 +31,11 @@ Runs automatically on all PRs and pushes to main:
 - Spellcheck
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11, one job with 3 test lanes)
-- Integration tests (2 environments, 6 shards each, 2 test lanes per shard). The docker/MySQL environment
-  only runs the example-project tests when the `changes` job finds a PR touching
-  integrations, orchestrators, image building, examples, docker files, the test
-  harness, `pyproject.toml` or the workflow files that define that run; otherwise it
-  runs `tests/integration/functional` only. Pushes and manual runs always run everything.
+- Unit tests (ubuntu, Python 3.11)
+- Integration tests (default and docker/MySQL environments, sharded, with test lanes).
+  The `changes` job decides whether the docker/MySQL environment also runs the
+  example-project tests: only PRs that touch code they exercise do (its path list is
+  the source of truth). Pushes and manual runs always run everything.
 - API docs buildability test
 - Template example updates (PRs only, same-repo only)
 
@@ -44,10 +43,11 @@ Runs automatically on all PRs and pushes to main:
 
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: Ubuntu 3.10, 3.12, 3.13, 3.14; macOS 3.10 and 3.14; Windows 3.10
-- Tests run in shards and, inside each shard, in several test lanes (see below). Unit
-  and integration tests wait only for the Ubuntu lint (not for each other), and
-  Windows/macOS lint runs once, on the oldest Python, without gating the tests.
+- Multi-Python: Ubuntu runs the most versions, macOS and Windows only the oldest and
+  newest they support (see the matrices)
+- Tests run in shards and test lanes (see below). Unit and integration tests wait only
+  for the Ubuntu lint, not for each other, and there is no Windows or macOS lint job
+  because ruff, pydoclint and mypy do not depend on the OS.
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -174,32 +174,31 @@ list.
 
 ### Test lanes
 
-The org can run only 20 Linux/Windows jobs (and 5 macOS jobs) at once, and a hosted runner
-has 4 CPU cores while one pytest process keeps about 1.4 of them busy. So a shard runs
+The org can run only a limited number of jobs at once (20 Linux/Windows, 5 macOS), and a
+hosted runner has more CPU cores than one pytest process keeps busy. So a shard runs
 several pytest processes ("lanes") side by side: `scripts/test-coverage-xml.sh` reads
 `TEST_LANES`, which the reusable workflows pass from their `lanes` input, and splits the
-shard's tests between the lanes with pytest-split. Each lane has a private deployment root,
-and lanes of a local deployment provision their own database, so lanes never share state.
+shard's tests between the lanes with pytest-split. Each lane has a private deployment
+root, and lanes without a server provision their own database, so they never share state.
 
-Against a shared server (the docker/MySQL environments) only tests that work in their own
-project are safe to run side by side. `tests/integration/examples` and
-`tests/integration/integrations` create pipelines in the shared default project and prune
-docker resources for the whole daemon, so the `serial_paths` input (`TEST_SERIAL_PATHS`)
-puts them in one lane of their own. `--cleanup-docker` is not passed when lanes are used.
-Raise the lane count only after checking that a slower, contended runner still finishes
-each shard sooner.
+Against a docker server only tests that work in their own project are safe side by side.
+The script puts the paths in `SHARED_STATE_PATHS` (the example and integration tests,
+which use the default project and prune docker resources daemon-wide) in one lane of
+their own whenever a run includes them; nothing has to be passed for that.
+`--cleanup-docker` is not passed when lanes are used, and other server types run one
+lane. Raise the lane count only after checking that a contended runner still finishes each
+shard sooner.
 
 ### Caching
 
-There is deliberately no uv cache. The cache was branch-scoped, so almost every run
-missed, and a hit (a ~5 GB restore of ~85 s) was no faster than installing from PyPI
-(~65 s) while saving it cost another ~70 s at the end of every job. Measure before
-adding one back.
+There is deliberately no uv cache. It was branch-scoped, so almost every run missed, and
+restoring a multi-GB cache was no faster than installing from PyPI while saving it added a
+minute to every job. Measure before adding one back.
 
 ### Disk space
 
-`actions/free_disk_space` only deletes preinstalled toolchains when a Linux runner has
-less than 40 GB free. Current Ubuntu images have ~85 GB, so the two-minute cleanup is skipped.
+`actions/free_disk_space` only deletes preinstalled toolchains when a Linux runner is short
+of space, so it costs nothing on the current large images.
 
 ## Key Supporting Files
 
