@@ -16,7 +16,7 @@ With offloading enabled, the server stores the values of each new snapshot, step
 
 Values are addressed by the SHA-256 of their content. The server never overwrites or deletes them, and it verifies their size and hash on every read.
 
-If the object store is unavailable, requests that need a stored value fail with a `503 Service Unavailable` error, which ZenML clients retry. Status updates, failure reporting, heartbeats and lists keep working. After three failed calls in a row, the server stops calling the object store for the length of `backendTimeoutSeconds` before it tries again, so an outage does not tie up request threads.
+If the object store is unavailable, requests that need a stored value fail with a `503 Service Unavailable` error, which ZenML clients retry. Status updates, failure reporting, heartbeats and lists keep working: an update is saved, and answered without the stored values. After three failed calls in a row, the server stops calling the object store for the length of `backendTimeoutSeconds` before it tries again, so an outage does not tie up request threads.
 
 ## Prerequisites
 
