@@ -93,6 +93,9 @@ start_test_lane() {
         if [ "$SHARED_SERVER" == "no" ]; then
             ./zen-test environment provision $TEST_ENVIRONMENT
         fi
+        if [ -n "$LANE_DYLD_INSERT_LIBRARIES" ]; then
+            export DYLD_INSERT_LIBRARIES="$LANE_DYLD_INSERT_LIBRARIES"
+        fi
         # --cleanup-docker is left out on purpose: it prunes containers and
         # images across the whole docker daemon, which would hit other lanes.
         coverage run -m pytest $paths --color=yes -vv --durations-path=.test_durations --splits=$splits --group=$group --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision "${ignore[@]}" "${PYTEST_RERUN_ARGS[@]}" --instafail
@@ -101,6 +104,10 @@ start_test_lane() {
 }
 
 run_test_lanes() {
+    # On macOS an inserted arm64 dylib aborts the arm64e system tools used below
+    # (mktemp, sed), so only the pytest processes get it.
+    LANE_DYLD_INSERT_LIBRARIES=${DYLD_INSERT_LIBRARIES:-}
+    unset DYLD_INSERT_LIBRARIES
     LANE_STATUS_DIR=$(mktemp -d)
     LANE_ROOT=$(python -c "from tests.harness.deployment.base import BaseTestDeployment; print(BaseTestDeployment.get_root_path())")
     # Server environments are named after their server deployment.
