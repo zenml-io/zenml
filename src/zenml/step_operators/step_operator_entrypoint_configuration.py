@@ -94,7 +94,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
                     step_run_update=StepRunUpdate(
                         status=ExecutionStatus.RUNNING
                     ),
-                    hydrate=True,
                 )
             else:
                 self._step_run = Client().zen_store.get_run_step(step_run_id)

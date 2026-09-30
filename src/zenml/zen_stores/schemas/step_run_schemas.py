@@ -327,8 +327,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 jl_arg(PipelineSnapshotSchema.pipeline_configuration_blob_id),
                 jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
-            single_loader(jl_arg(StepRunSchema.pipeline_run)).load_only(
-                jl_arg(PipelineRunSchema.start_time)
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
+                *PipelineRunSchema.defer_detail_columns()
             ),
             single_loader(jl_arg(StepRunSchema.static_config)),
             single_loader(jl_arg(StepRunSchema.dynamic_config)),
@@ -589,7 +589,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         body = StepRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
-            pipeline_run_id=self.pipeline_run_id,
             type=step_type,
             status=ExecutionStatus(self.status),
             version=self.version,
@@ -665,6 +664,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
             resources = StepRunResponseResources(
                 user=self.user.to_model() if self.user else None,
+                pipeline_run=self.pipeline_run.to_model(),
                 model_version=model_version,
                 log_collection=[
                     log.to_model()

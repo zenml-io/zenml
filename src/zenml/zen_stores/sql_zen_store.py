@@ -194,6 +194,8 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    NonRetryablePayloadStorageError,
+    PayloadStorageUnavailableError,
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
@@ -7947,18 +7949,13 @@ class SqlZenStore(BaseZenStore):
             )
 
     def update_run(
-        self,
-        run_id: UUID,
-        run_update: PipelineRunUpdate,
-        hydrate: bool = False,
+        self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
         """Updates a pipeline run.
 
         Args:
             run_id: The ID of the pipeline run to update.
             run_update: The update to be applied to the pipeline run.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
 
         Returns:
             The updated pipeline run.
@@ -7974,12 +7971,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
-            )
-            # Before any write; see `_load_required_payloads`.
-            payloads = self._load_required_payloads(
-                session,
-                existing_run.get_required_payload_blob_ids,
-                hydrate=hydrate,
             )
 
             if run_update.status is not None:
@@ -8080,13 +8071,29 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(existing_run)
 
-            # Metadata is opt-in so that status updates never depend on
-            # loading the run's configuration.
-            return existing_run.to_model(
-                include_metadata=hydrate,
-                include_resources=True,
-                payloads=payloads,
-            )
+            try:
+                payloads = self._load_required_payloads(
+                    session, existing_run.get_required_payload_blob_ids
+                )
+                return existing_run.to_model(
+                    include_metadata=True,
+                    include_resources=True,
+                    payloads=payloads,
+                )
+            except (
+                NonRetryablePayloadStorageError,
+                PayloadStorageUnavailableError,
+            ):
+                # The update is committed, and failing its response would
+                # make clients retry it.
+                logger.exception(
+                    "Failed to load the payloads of run %s for the "
+                    "update response.",
+                    existing_run.id,
+                )
+                return existing_run.to_model(
+                    include_metadata=False, include_resources=True
+                )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -13587,15 +13594,12 @@ class SqlZenStore(BaseZenStore):
         self,
         step_run_id: UUID,
         step_run_update: StepRunUpdate,
-        hydrate: bool = False,
     ) -> StepRunResponse:
         """Updates a step run.
 
         Args:
             step_run_id: The ID of the step to update.
             step_run_update: The update to be applied to the step.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
 
         Returns:
             The updated step run.
@@ -13606,12 +13610,6 @@ class SqlZenStore(BaseZenStore):
                 resource_id=step_run_id,
                 schema_class=StepRunSchema,
                 session=session,
-            )
-            # Before any write; see `_load_required_payloads`.
-            payloads = self._load_required_payloads(
-                session,
-                existing_step_run.get_required_payload_blob_ids,
-                hydrate=hydrate,
             )
 
             if step_run_update.status:
@@ -13719,13 +13717,29 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
-            # Metadata is opt-in so that status updates never depend on
-            # loading the step's configuration.
-            return existing_step_run.to_model(
-                include_metadata=hydrate,
-                include_resources=True,
-                payloads=payloads,
-            )
+            try:
+                payloads = self._load_required_payloads(
+                    session, existing_step_run.get_required_payload_blob_ids
+                )
+                return existing_step_run.to_model(
+                    include_metadata=True,
+                    include_resources=True,
+                    payloads=payloads,
+                )
+            except (
+                NonRetryablePayloadStorageError,
+                PayloadStorageUnavailableError,
+            ):
+                # The update is committed, and failing its response would
+                # make clients retry it.
+                logger.exception(
+                    "Failed to load the payloads of step run %s for the "
+                    "update response.",
+                    existing_step_run.id,
+                )
+                return existing_step_run.to_model(
+                    include_metadata=False, include_resources=True
+                )
 
     def _get_step_run_input_artifact_from_cached_step_run(
         self,

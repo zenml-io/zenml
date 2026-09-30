@@ -123,7 +123,6 @@ from zenml.zen_server.streaming.types import RESERVED_STREAM_EVENT_KINDS
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
-    get_with_best_effort_metadata,
     make_dependable,
     server_config,
     set_filter_project_scope,
@@ -344,7 +343,6 @@ def get_run(
 def update_run(
     run_id: UUID,
     run_model: PipelineRunUpdate,
-    hydrate: Optional[bool] = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineRunResponse:
     """Updates a run.
@@ -352,27 +350,16 @@ def update_run(
     Args:
         run_id: ID of the run.
         run_model: Run model to use for the update.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response. ZenML clients
-            always set it, and status updates skip the metadata. Clients
-            from before the flag omit it: they get the metadata when payload
-            storage allows, but their update never depends on it.
 
     Returns:
         The updated run model.
     """
-    run = verify_permissions_and_update_entity(
+    return verify_permissions_and_update_entity(
         id=run_id,
         update_model=run_model,
         get_method=zen_store().get_run,
         update_method=zen_store().update_run,
-        hydrate=bool(hydrate),
     )
-    if hydrate is None:
-        run = dehydrate_response_model(
-            get_with_best_effort_metadata(zen_store().get_run, run_id)
-        )
-    return run
 
 
 @router.delete(

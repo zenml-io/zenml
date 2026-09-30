@@ -65,7 +65,6 @@ from zenml.zen_server.pipeline_execution import utils as execution_utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
     SnapshotRunExecutionRequest,
 )
-from zenml.zen_server.utils import get_with_best_effort_metadata
 from zenml.zen_stores.payload_storage import PayloadStorageConfiguration
 from zenml.zen_stores.payload_storage.blob_backends import (
     FsspecBlobBackend,
@@ -340,7 +339,10 @@ def test_offloaded_and_inline_payloads_read_the_same(
 def test_storage_outage_fails_only_what_needs_payloads(
     store: SqlZenStore, s3_server: ThreadedMotoServer
 ) -> None:
-    """While storage is down, only creations and reads with metadata fail."""
+    """While storage is down, only creations and reads with metadata fail.
+
+    Updates are committed and answered without their metadata.
+    """
     cold = _open_store(store, cache_max_bytes=0, backend_timeout_seconds=5)
     run = _start_run(cold)
     step_run = _start_step(cold, run.id)
@@ -359,7 +361,7 @@ def test_storage_outage_fails_only_what_needs_payloads(
     cold.get_run_step(step_run.id, hydrate=False)
     cold.list_run_steps(StepRunFilter(project=project))
     cold.update_step_heartbeat(step_run.id)
-    cold.update_run_step(
+    updated_step = cold.update_run_step(
         step_run.id,
         StepRunUpdate(
             status=ExecutionStatus.FAILED,
@@ -370,7 +372,8 @@ def test_storage_outage_fails_only_what_needs_payloads(
     updated = cold.update_run(
         run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
     )
-    assert updated.status == ExecutionStatus.FAILED
+    assert updated_step.metadata is None
+    assert (updated.status, updated.metadata) == (ExecutionStatus.FAILED, None)
 
 
 def test_run_creation_writes_nothing_when_storage_fails(
@@ -399,25 +402,6 @@ def test_run_creation_writes_nothing_when_storage_fails(
     run, created = cold.get_or_create_run(request)
     assert created
     assert [tag.name for tag in run.tags] == ["payloads"]
-
-
-def test_update_with_metadata_writes_nothing_when_storage_fails(
-    store: SqlZenStore, s3_server: ThreadedMotoServer
-) -> None:
-    """A storage failure while updating a run with metadata changes nothing."""
-    cold = _open_store(store, cache_max_bytes=0)
-    run = _start_run(cold)
-    s3 = local_s3_client(s3_server)
-    s3.delete_object(
-        Bucket=BUCKET, Key=_get_config_blob_key(cold, run.snapshot.id)
-    )
-
-    with pytest.raises(NonRetryablePayloadStorageError):
-        cold.update_run(
-            run.id, PipelineRunUpdate(add_tags=["updated"]), hydrate=True
-        )
-
-    assert cold.get_run(run.id, hydrate=False).tags == []
 
 
 def test_corrupted_blob_is_rejected_and_not_cached(
@@ -509,8 +493,9 @@ def test_process_without_backend_answers_committed_updates(
     ):
         unconfigured.get_run(run.id, hydrate=True)
 
-    unconfigured.update_run(run.id, PipelineRunUpdate(add_tags=["updated"]))
-    response = get_with_best_effort_metadata(unconfigured.get_run, run.id)
+    response = unconfigured.update_run(
+        run.id, PipelineRunUpdate(add_tags=["updated"])
+    )
     assert [tag.name for tag in response.tags] == ["updated"]
     assert response.metadata is None
 

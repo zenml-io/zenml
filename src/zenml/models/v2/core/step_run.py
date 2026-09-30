@@ -66,6 +66,7 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
@@ -232,11 +233,6 @@ class StepRunUpdate(BaseUpdate):
 class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
-    pipeline_run_id: Optional[UUID] = Field(
-        title="The ID of the pipeline run that this step run belongs to.",
-        # Servers before this field existed only return it in the metadata.
-        default=None,
-    )
     type: Optional[StepType] = Field(
         title="The type of the step.",
         default=None,
@@ -349,6 +345,10 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
 class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
+    pipeline_run: Optional["PipelineRunResponse"] = Field(
+        title="The pipeline run that this step run belongs to.",
+        default=None,
+    )
     log_collection: Optional[List["LogsResponse"]] = Field(
         title="Logs associated with this step run.",
         default=None,
@@ -699,8 +699,8 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        if (pipeline_run_id := self.get_body().pipeline_run_id) is not None:
-            return pipeline_run_id
+        if (pipeline_run := self.get_resources().pipeline_run) is not None:
+            return pipeline_run.id
         return self.get_metadata().pipeline_run_id
 
     @property
