@@ -55,15 +55,25 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 
 ./zen-test environment provision $TEST_ENVIRONMENT
 
+# Every shard and lane is a separate pytest process that collects the same tests
+# and keeps its own group. pytest-randomly shuffles each process with a seed of its
+# own first, and pytest-split breaks ties between equally long tests by that order,
+# so unseeded processes disagree about which group a test belongs to: some tests
+# then run twice and others never run. One seed per workflow run fixes that.
+SEED_ARGS=()
+if [ "$TEST_SPLITS" -gt 1 ] || [ "$TEST_LANES" -gt 1 ]; then
+    SEED_ARGS=(--randomly-seed="$(( ${GITHUB_RUN_ID:-1} % 4294967296 ))")
+fi
+
 # Some macOS ML libraries bundle incompatible OpenMP runtimes. Apply the
 # requested runtime override to pytest only: tests/conftest.py removes it from
 # the process environment before tests can launch child processes, and it makes
 # the arm64e system tools used elsewhere in this script (mktemp, sed) abort.
 run_pytest() {
     if [[ -n "${PYTEST_DYLD_INSERT_LIBRARIES:-}" ]]; then
-        DYLD_INSERT_LIBRARIES="$PYTEST_DYLD_INSERT_LIBRARIES" coverage run -m pytest "$@"
+        DYLD_INSERT_LIBRARIES="$PYTEST_DYLD_INSERT_LIBRARIES" coverage run -m pytest "${SEED_ARGS[@]}" "$@"
     else
-        coverage run -m pytest "$@"
+        coverage run -m pytest "${SEED_ARGS[@]}" "$@"
     fi
 }
 
@@ -90,7 +100,12 @@ start_test_lane() {
         # state in the running containers, which are already provisioned.
         export ZENML_TEST_DEPLOYMENT_ROOT_PATH="${LANE_ROOT}-lane${lane}"
         if [ "$LANE_SERVER" == "none" ]; then
-            ./zen-test environment provision $TEST_ENVIRONMENT
+            ./zen-test environment provision $TEST_ENVIRONMENT || {
+                provision_status=$?
+                echo "Provisioning failed for test lane ${lane}, not running its tests"
+                echo $provision_status > "$LANE_STATUS_DIR/$lane"
+                exit
+            }
         fi
         # --cleanup-docker is left out on purpose: it prunes containers and
         # images across the whole docker daemon, which would hit other lanes.

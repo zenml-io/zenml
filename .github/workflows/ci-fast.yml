@@ -95,7 +95,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
         run: |
-          relevant='^(src/zenml/(integrations|orchestrators|entrypoints|container_engines|container_registries|image_builders|step_operators|steps|pipelines|materializers|artifacts|utils/(docker|source|pipeline|code_repository))|examples/|docker/|tests/(harness|integration/(examples|integrations))/|pyproject\.toml$|\.github/(workflows/(ci-fast|integration-test-fast)\.yml|actions/))'
+          relevant='^(src/zenml/(integrations|orchestrators|entrypoints|config|execution|container_engines|container_registries|image_builders|step_operators|steps|pipelines|materializers|artifacts|utils/(docker|source|pipeline|code_repository))|examples/|docker/|tests/(harness|integration/(examples|integrations))/|tests/conftest\.py|scripts/test-|zen-test$|pyproject\.toml$|\.github/(workflows/(ci-fast|integration-test-fast)\.yml|actions/))'
           # Anything other than a readable PR file list runs the full suite.
           docker_test_path=integration
           if [ "$EVENT_NAME" = "pull_request" ] \

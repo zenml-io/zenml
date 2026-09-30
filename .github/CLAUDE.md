@@ -46,8 +46,9 @@ Gated by `run-slow-ci` label (checked dynamically):
 - Multi-Python: Ubuntu runs the most versions, macOS and Windows only the oldest and
   newest they support (see the matrices)
 - Tests run in shards and test lanes (see below). Unit and integration tests wait only
-  for the Ubuntu lint, not for each other, and there is no Windows or macOS lint job
-  because ruff, pydoclint and mypy do not depend on the OS.
+  for the Ubuntu lint, not for each other. There is no Windows or macOS lint job: ruff and
+  pydoclint do not depend on the OS, and `mypy-platforms` type-checks the Windows and macOS
+  `sys.platform` branches from Ubuntu with `mypy --platform`.
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -166,7 +167,10 @@ But explicitly include `pyproject.toml` changes.
 
 Sharded jobs pass `--splits`/`--group` to pytest-split, which balances the shards by
 per-test time from `.test_durations` at the repo root. Without that file the shards are
-split by test count and finish minutes apart. `generate-test-duration.yml` refreshes it
+split by test count and finish minutes apart. Every shard and lane is its own pytest
+process, so the script gives them all one `--randomly-seed` per workflow run: with
+pytest-randomly's per-process seeds, pytest-split breaks ties between equally long tests
+differently in each process and some tests run twice while others never run. `generate-test-duration.yml` refreshes it
 weekly by opening a pull request (a direct push to `develop` is rejected). The reusable
 `unit-test.yml`, `integration-test-fast.yml` and `integration-test-slow.yml` take a
 `shards` input, a JSON list such as `'[1, 2, 3]'`; the shard count is the length of that

@@ -165,6 +165,27 @@ jobs:
           source .venv/bin/activate
           uv pip install alembic
           bash scripts/check-alembic-branches.sh
+  mypy-platforms:
+    needs: run-slow-ci-label-is-set
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Setup environment
+        uses: $/.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.10'
+          os: ubuntu-latest
+      - name: Type-check the Windows branches
+        run: mypy --platform win32 src/zenml tests/harness
+      - name: Type-check the macOS branches
+        if: ${{ !cancelled() }}
+        run: mypy --platform darwin src/zenml tests/harness
   ubuntu-linting:
     needs: run-slow-ci-label-is-set
     if: github.event.pull_request.draft == false
@@ -192,8 +213,10 @@ jobs:
       os: ${{ matrix.os }}
       lanes: '3'
     secrets: inherit
-  # ruff, pydoclint and mypy do not depend on the OS, so the Windows and macOS
-  # tests wait for the Ubuntu lint and there is no lint job of their own.
+  # ruff and pydoclint do not depend on the OS, so the Windows and macOS tests
+  # wait for the Ubuntu lint and have no lint job of their own. mypy does depend
+  # on it: it only evaluates the `sys.platform` branch of its target platform,
+  # which the job below covers.
   windows-unit-test:
     if: github.event.pull_request.draft == false
     needs: [run-slow-ci-label-is-set, ubuntu-linting]

@@ -62,7 +62,7 @@ jobs:
           if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
             gh pr create --base develop --head "$branch" \
               --title "Update test duration file" \
-              --body "Refreshes .test_durations so the CI test shards stay balanced. Pull requests opened with the default workflow token do not start checks: close and reopen this one to run them." \
+              --body "Refreshes .test_durations so the CI test shards stay balanced. Pull requests opened with the default workflow token do not start checks. Remove and re-add the no-release-notes label to run the required label check; the test suites ignore a change to this file alone." \
               --label no-release-notes
           fi
       - name: Verify Python Env unaffected
