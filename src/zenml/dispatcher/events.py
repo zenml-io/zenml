@@ -31,11 +31,8 @@ class Event(BaseModel):
 class PipelineRunStatusUpdate(Event):
     """A pipeline run status transition.
 
-    Handlers run inline in the status update that dispatches the event, so
-    `run` only carries its body. The event carries the run's snapshots and
-    trigger lineage as well, so that handlers never need to hydrate the run:
-    that fetches the full run again, including its offloaded payloads, and
-    fails the handler whenever payload storage is unavailable.
+    `run` only carries its body, so the event also carries the snapshot and
+    trigger fields that handlers would otherwise read from its metadata.
     """
 
     run: PipelineRunResponse

@@ -45,10 +45,7 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
-from zenml.exceptions import (
-    IllegalOperationError,
-    MaxConcurrentTasksError,
-)
+from zenml.exceptions import IllegalOperationError, MaxConcurrentTasksError
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -349,10 +346,7 @@ def run_snapshot(
             zen_store().get_run, execution_request.run_id
         )
     else:
-        # Without metadata, so that nothing but the database stands between
-        # the prepared run and its submission. The response is read once the
-        # run is queued.
-        zen_store().update_run(
+        response_run = zen_store().update_run(
             run_id=execution_request.run_id,
             run_update=PipelineRunUpdate(
                 status_reason=SNAPSHOT_RUN_QUEUED_STATUS_REASON
@@ -389,10 +383,6 @@ def run_snapshot(
             raise SnapshotRunDispatchError(
                 "Failed to queue snapshot execution request."
             ) from exc
-        # A failed response would make clients start the run a second time.
-        response_run = get_with_best_effort_metadata(
-            zen_store().get_run, execution_request.run_id
-        )
 
     return response_run
 
