@@ -159,7 +159,8 @@ def _get_step_with_permission(
         The fetched step.
     """
     step = zen_store().get_run_step(step_id, hydrate=hydrate)
-    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
+    pipeline_run = step.get_resources().pipeline_run
+    assert pipeline_run is not None
     verify_permission_for_model(pipeline_run, action=action)
     return step
 
@@ -196,7 +197,6 @@ def get_step(
 def update_step(
     step_id: UUID,
     step_model: StepRunUpdate,
-    hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Updates a step.
@@ -204,10 +204,6 @@ def update_step(
     Args:
         step_id: ID of the step.
         step_model: Step model to use for the update.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response. Defaults to true,
-            as before the flag existed; ZenML clients always set it, and
-            status updates skip the metadata.
 
     Returns:
         The updated step model.
@@ -215,7 +211,7 @@ def update_step(
     _get_step_with_permission(step_id, Action.UPDATE)
 
     updated_step = zen_store().update_run_step(
-        step_run_id=step_id, step_run_update=step_model, hydrate=hydrate
+        step_run_id=step_id, step_run_update=step_model
     )
     return dehydrate_response_model(updated_step)
 
