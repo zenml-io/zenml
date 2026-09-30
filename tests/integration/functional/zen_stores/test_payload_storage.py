@@ -596,13 +596,13 @@ def test_load_shares_one_timeout_across_chunks(
     store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A load of many chunks fails once their total time passes the timeout."""
-    payload_store = _open_store(
-        store, cache_max_bytes=0, backend_timeout_seconds=1
-    ).payload_store
-    offloaded = payload_store.offload(
+    offloaded = _open_store(store).payload_store.offload(
         PayloadValue(text=f"value {index}")
         for index in range(2 * BLOB_CHUNK_SIZE + 1)
     )
+    payload_store = _open_store(
+        store, cache_max_bytes=0, backend_timeout_seconds=1
+    ).payload_store
     get_many = payload_store._backend.get_many
 
     def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
