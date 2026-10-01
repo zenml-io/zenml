@@ -131,9 +131,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
     )
     heartbeat_threshold: Optional[int] = Field(nullable=True)
-    # Copied from the resolved step configuration at creation so that step
-    # responses don't need to parse the configuration JSON. `substitutions`
-    # is NULL only for rows created before these columns existed.
     step_type: Optional[str] = Field(nullable=True, default=None)
     substitutions: Optional[str] = Field(
         sa_column=Column(
@@ -493,15 +490,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created StepRunResponse.
         """
         step: Optional[Step] = None
-        if self.substitutions is not None:
-            step_type = StepType(self.step_type) if self.step_type else None
-            substitutions: Dict[str, str] = json.loads(self.substitutions)
-        else:
-            # Rows created before the columns existed only store these values
-            # in the step configuration.
+        if include_metadata or self.substitutions is None:
+            # Matches the metadata, whose `{date}` and `{time}` a run without
+            # a start time resolves anew on every read.
             step = self.get_step_configuration(pipeline_configuration)
             step_type = step.config.step_type
-            substitutions = step.config.substitutions
+            substitutions: Dict[str, str] = step.config.substitutions
+        else:
+            step_type = StepType(self.step_type) if self.step_type else None
+            substitutions = json.loads(self.substitutions)
 
         body = StepRunResponseBody(
             user_id=self.user_id,
