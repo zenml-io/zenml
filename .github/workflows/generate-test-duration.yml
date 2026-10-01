@@ -2,6 +2,7 @@
 name: Generate test duration file
 on:
   workflow_call:
+  workflow_dispatch:
   schedule:
     - cron: 0 8 * * 1  # Run every Monday at 8 am
 env:
@@ -12,6 +13,9 @@ jobs:
   generate-test-duration-file:
     name: Generate test duration file
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
     env:
@@ -38,16 +42,28 @@ jobs:
             # Ubuntu integration tests run as 6 shards
         run: |
           bash scripts/test-coverage-xml.sh "" default "" "" store-durations
-      - name: Check difference in .test_durations
+      - name: Open a pull request with the new durations
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git diff --quiet || echo "Changes found"
-          if [ -n "$(git status --porcelain)" ]; then
-            # Commit changes directly to the specified branch
-            git add .test_durations
-            git commit -m "Update with new changes for test duration file at $(date +'%Y%m%d-%H%M%S')"
-            git push origin develop
-          else
+          if [ -z "$(git status --porcelain -- .test_durations)" ]; then
             echo "No changes in .test_durations"
+            exit 0
+          fi
+          # develop only accepts changes through pull requests, so a direct push
+          # is rejected. Without this file the CI shards are split by test
+          # count instead of duration and finish minutes apart.
+          # A fixed branch keeps unmerged weekly refreshes on one pull request.
+          branch=ci/update-test-durations
+          git checkout -b "$branch"
+          git add .test_durations
+          git commit -m "Update test duration file"
+          git push --force origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base develop --head "$branch" \
+              --title "Update test duration file" \
+              --body "Refreshes .test_durations so the CI test shards stay balanced. Pull requests opened with the default workflow token do not start checks. Remove and re-add the no-release-notes label to run the required label check; the test suites ignore a change to this file alone." \
+              --label no-release-notes
           fi
       - name: Verify Python Env unaffected
         run: |-
