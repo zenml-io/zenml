@@ -48,8 +48,6 @@ class ServerSettingsSchema(SQLModel, table=True):
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
-    # When the payload backfill last found nothing left to update, so that
-    # the backfill job of every later upgrade can stop at once.
     payload_backfill_completed: Optional[datetime] = Field(
         nullable=True, default=None
     )

@@ -102,10 +102,8 @@ def main() -> None:
     if store_config.type != StoreType.SQL:
         logger.error("The payload backfill requires a SQL store.")
         sys.exit(1)
-    # Migrating is the job of the database migration, not of a backfill that
-    # may run next to servers of the previous release. Disabled through the
-    # environment: the store's `skip_migrations` also skips checking the
-    # payload storage location, which protects against the wrong bucket.
+    # Never migrates. Not through `skip_migrations`, which also skips the
+    # payload storage location check.
     os.environ[ENV_ZENML_DISABLE_DATABASE_MIGRATION] = "true"
     store = BaseZenStore.create_store(
         store_config, skip_default_registrations=True
