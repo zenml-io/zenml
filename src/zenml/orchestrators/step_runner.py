@@ -234,10 +234,6 @@ class StepRunner:
                         heartbeat_worker.start()
                     # TODO: do we need to disable this for dynamic pipelines?
                     if self._stack.orchestrator.run_init_cleanup_at_step_level:
-                        # The step run info carries the snapshot the
-                        # entrypoint already loaded. The run's snapshot is
-                        # unhydrated and reading its configuration would fetch
-                        # the full snapshot again.
                         self._stack.orchestrator.run_init_hook(
                             snapshot=step_run_info.snapshot
                         )

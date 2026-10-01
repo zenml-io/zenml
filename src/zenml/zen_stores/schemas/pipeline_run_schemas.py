@@ -473,10 +473,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             options.extend(cls.defer_detail_columns())
 
         if include_resources:
-            # Related runs and the source snapshot are converted without
-            # metadata, so none of their large columns are ever read. Hydrated
-            # run responses read the configuration of their own snapshot, but
-            # never its detail columns.
             options.extend(
                 [
                     selectinload(jl_arg(PipelineRunSchema.outputs)),

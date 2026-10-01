@@ -54,9 +54,6 @@ def _add_columns(table: str, columns: List[sa.Column]) -> None:  # type: ignore[
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    # All columns are nullable and appended, so MySQL can add them without
-    # rebuilding these large tables. Existing rows keep NULL values and are
-    # read through the previous JSON-parsing code path.
     _add_columns(
         "pipeline_snapshot",
         [
