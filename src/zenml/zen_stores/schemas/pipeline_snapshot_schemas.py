@@ -131,9 +131,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
-    # Copied from the pipeline configuration at creation so that run status
-    # and heartbeat decisions don't need to parse the configuration JSON.
-    # Snapshots created before these columns existed store NULL.
     execution_mode: Optional[str] = Field(nullable=True, default=None)
     enable_heartbeat: Optional[bool] = Field(nullable=True, default=None)
 
@@ -297,8 +294,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     )
                     .order_by(desc(PipelineRunSchema.created))
                     .limit(1)
-                    # Snapshot responses only read the ID, status and user
-                    # of the latest run.
                     .options(*PipelineRunSchema.defer_detail_columns())
                 )
                 .scalars()
@@ -802,10 +797,6 @@ class StepConfigurationSchema(BaseSchema, table=True):
             nullable=False,
         )
     )
-    # JSON list of the invocation IDs this step depends on, copied from the
-    # step spec at creation so that run status checks don't need to parse
-    # the full pipeline spec. NULL for rows created before this column
-    # existed.
     upstream_steps: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(

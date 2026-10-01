@@ -12279,8 +12279,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            # Parsing the pipeline configuration is expensive, so it is parsed
-            # once and reused for everything this step creation needs.
             pipeline_configuration = run.get_pipeline_configuration()
             step_config = (
                 step_run.dynamic_config
