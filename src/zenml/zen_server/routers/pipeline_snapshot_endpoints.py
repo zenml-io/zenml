@@ -428,7 +428,6 @@ def download_snapshot_code(snapshot_id: UUID, token: str) -> FileResponse:
     )
 
     store = zen_store()
-    # Only the code path and stack are used, not the step configurations.
     snapshot = store.get_snapshot(
         snapshot_id,
         hydrate=True,

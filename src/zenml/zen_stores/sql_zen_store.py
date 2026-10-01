@@ -8158,10 +8158,8 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
 
-            # Payload storage is only used before anything is written or
-            # locked: a storage failure then never leaves behind a run whose
-            # setup did not finish. The orchestrator environment is only
-            # offloaded once no existing run was found for it.
+            # Before anything is written or locked, so that a storage failure
+            # never leaves a half-created run behind.
             snapshot_blob_ids: List[Optional[UUID]] = []
             if self.payload_store.backend_configured:
                 snapshot_blob_ids = self._get_run_snapshot_blob_ids(
@@ -13084,8 +13082,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            # A dynamic step brings its own configuration, which is created
-            # with the step run; a static one uses its snapshot's.
             dynamic_configuration: Optional[StepConfigurationSchema] = None
             if step_run.dynamic_config:
                 # Checked before its configuration is offloaded.
@@ -13113,8 +13109,7 @@ class SqlZenStore(BaseZenStore):
                 raise RuntimeError("Pipeline run has no snapshot.")
 
             # Release the read locks of the previous queries before we try to
-            # acquire more exclusive locks. Payload storage is used in
-            # between, while no transaction is open.
+            # acquire more exclusive locks.
             self._end_read_transaction(session)
 
             offload_result = self.payload_store.offload(
@@ -15429,9 +15424,7 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                # Without metadata, which for some entities carries payloads
-                # that nothing loads here; callers need the body and
-                # resources.
+                # Without metadata, whose payloads nothing loads here.
                 return cast(
                     AnyIdentifiedResponse,
                     to_model(include_metadata=False, include_resources=True),

@@ -77,8 +77,6 @@ def upgrade() -> None:
         ["location_fingerprint"],
     )
 
-    # Nullable columns without foreign keys or indexes, so that MySQL can
-    # append them without rebuilding or copying these large tables.
     for table, columns in BLOB_REFERENCE_COLUMNS.items():
         _add_columns(
             table,
