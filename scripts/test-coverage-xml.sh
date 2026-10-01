@@ -78,9 +78,10 @@ run_pytest() {
 }
 
 # Against a shared test server these tests create pipelines in the default
-# project and prune docker resources for the whole daemon, so they never run
-# next to other lanes. Tests in their own project (the functional ones) can.
-SHARED_STATE_PATHS=(tests/integration/examples tests/integration/integrations)
+# project, prune docker resources for the whole daemon, or work on the server's
+# own store (the zen_stores tests), so they never run next to other lanes. Tests
+# that isolate themselves in a project of their own can.
+SHARED_STATE_PATHS=(tests/integration/examples tests/integration/integrations tests/integration/functional/zen_stores)
 
 LANE_COUNT=0
 

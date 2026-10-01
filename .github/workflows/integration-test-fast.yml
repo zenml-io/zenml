@@ -15,11 +15,6 @@ on:
         description: The test environment
         type: string
         required: true
-      test_path:
-        description: Folder below tests/ to run. Examples integration, integration/functional
-        type: string
-        required: false
-        default: integration
       enable_tmate:
         description: Enable tmate session for debugging
         type: string
@@ -83,11 +78,6 @@ on:
           - github-actions-server-docker-orchestrator
         required: false
         default: default
-      test_path:
-        description: Folder below tests/ to run. Examples integration, integration/functional
-        type: string
-        required: false
-        default: integration
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -306,10 +296,9 @@ jobs:
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh "${INPUTS_TEST_PATH}" ${INPUTS_TEST_ENVIRONMENT} "${SHARD_COUNT}" "${SHARD}"
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} "${SHARD_COUNT}" "${SHARD}"
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
-          INPUTS_TEST_PATH: ${{ inputs.test_path }}
           SHARD_COUNT: ${{ strategy.job-total }}
           SHARD: ${{ matrix.shard }}
           TEST_LANES: ${{ inputs.lanes }}

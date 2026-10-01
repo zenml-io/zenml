@@ -33,9 +33,8 @@ Runs automatically on all PRs and pushes to main:
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
 - Unit tests (ubuntu, Python 3.11)
 - Integration tests (default and docker/MySQL environments, sharded, with test lanes).
-  The `changes` job decides whether the docker/MySQL environment also runs the
-  example-project tests: only PRs that touch code they exercise do (its path list is
-  the source of truth). Pushes and manual runs always run everything.
+  The docker/MySQL environment is the only place the example projects run against a
+  real MySQL-backed server, so every PR runs all of it.
 - API docs buildability test
 - Template example updates (PRs only, same-repo only)
 
@@ -187,8 +186,10 @@ root, and lanes without a server provision their own database, so they never sha
 
 Against a docker server only tests that work in their own project are safe side by side.
 The script puts the paths in `SHARED_STATE_PATHS` (the example and integration tests,
-which use the default project and prune docker resources daemon-wide) in one lane of
-their own whenever a run includes them; nothing has to be passed for that.
+which use the default project and prune docker resources daemon-wide, and the `zen_stores`
+tests, which work on the server's own store) in one lane of their own whenever a run
+includes them; nothing has to be passed for that. New functional tests must isolate
+themselves (see `tests/integration/functional/conftest.py`).
 `--cleanup-docker` is not passed when lanes are used, and other server types run one
 lane. Raise the lane count only after checking that a contended runner still finishes each
 shard sooner.
