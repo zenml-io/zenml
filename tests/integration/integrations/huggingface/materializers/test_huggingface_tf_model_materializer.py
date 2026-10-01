@@ -16,6 +16,8 @@
 import sys
 
 import pytest
+from packaging.version import Version
+from transformers import __version__ as transformers_version
 
 from tests.unit.test_general import _test_materializer
 
@@ -23,6 +25,10 @@ from tests.unit.test_general import _test_materializer
 @pytest.mark.skipif(
     sys.version_info.minor in (12, 13, 14),
     reason="The tensorflow integrations is not yet supported on 3.12, 3.13 or 3.14.",
+)
+@pytest.mark.skipif(
+    Version(transformers_version).major >= 5,
+    reason="Transformers v5 no longer supports TensorFlow.",
 )
 def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
