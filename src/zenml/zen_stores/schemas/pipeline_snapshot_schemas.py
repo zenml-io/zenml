@@ -711,9 +711,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.enable_heartbeat is not None:
             return self.enable_heartbeat
 
-        # Snapshots created before the control columns existed keep their
-        # payloads inline until they are offloaded together with the control
-        # columns, so this never needs to load a payload.
+        # Snapshots without the control columns still hold their payloads
+        # inline, so this never loads a payload.
         return self._resolve_enable_heartbeat(
             json.loads(
                 INLINE_ONLY_PAYLOADS.resolve(

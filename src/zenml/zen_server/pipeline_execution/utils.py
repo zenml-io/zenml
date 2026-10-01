@@ -490,9 +490,8 @@ def execute_snapshot_run(
     Returns:
         Whether the prepared run was submitted for execution.
     """
-    # Without metadata, which reads payloads that can live in external
-    # storage: a storage failure must reach the failure handling below
-    # instead of leaving the run initializing.
+    # Without metadata, so that a payload storage failure reaches the
+    # failure handling below.
     try:
         run = zen_store().get_run(run_id=request.run_id, hydrate=False)
     except KeyError:

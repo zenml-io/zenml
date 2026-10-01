@@ -248,10 +248,8 @@ class FsspecBlobBackend(BlobBackend):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError("No time was left for the call.")
-            # The calls cancel themselves at the deadline. The timeout of
-            # `sync` (checked once a second) returns even if a filesystem
-            # blocks the event loop, as gcsfs does while it refreshes its
-            # credentials.
+            # `sync` gets the timeout too: gcsfs blocks the event loop while it
+            # refreshes its credentials.
             results: List[T] = sync(
                 filesystem.loop,
                 self._run_concurrently,
@@ -458,7 +456,6 @@ def create_blob_backend(
     # of an S3-compatible store or GCS emulator, or the Azure account.
     location = path.rstrip("/")
     if backend_type == BlobBackendType.GCS:
-        # Where gcsfs sends requests: its option, else the emulator variable.
         endpoint_url = options.get("endpoint_url") or os.environ.get(
             "STORAGE_EMULATOR_HOST"
         )

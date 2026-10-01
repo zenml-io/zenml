@@ -45,8 +45,6 @@ from zenml.exceptions import (
     PayloadNotLoadedError,
 )
 
-# ------------------ Payload columns ------------------
-
 
 class PayloadColumn(BaseModel):
     """A payload column of a schema and the column referencing its blob.
@@ -113,9 +111,6 @@ class HasPayloadColumns(Protocol):
     """A schema with payload columns."""
 
     PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]]
-
-
-# ------------------ Writing payloads ------------------
 
 
 class PayloadValue(BaseModel):
@@ -228,9 +223,6 @@ class OffloadResult:
                         f"`{type(schema).__name__}` was not offloaded."
                     )
                 column.replace_inline_with_blob(schema, blob_id)
-
-
-# ------------------ Reading payloads ------------------
 
 
 def collect_payload_blob_ids(

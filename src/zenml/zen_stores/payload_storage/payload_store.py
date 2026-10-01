@@ -58,14 +58,11 @@ from zenml.zen_stores.schemas.payload_blob_schemas import (
 )
 
 IDENTITY_CODEC = "identity"
-# Requests that one backend call sends to the object store at once.
 MAX_CONCURRENT_BACKEND_CALLS = 32
 CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3
-# Blobs per backend call: four rounds of concurrent requests. All chunks of
-# an offload or a load share one timeout, and each chunk that finishes is
-# kept, so a retry after a timeout continues where the last attempt stopped.
+# Finished chunks are kept, so a retry after a timeout continues where
+# the last attempt stopped.
 BLOB_CHUNK_SIZE = 4 * MAX_CONCURRENT_BACKEND_CALLS
-# The longest `IN` list of a registry query.
 BLOB_QUERY_BATCH_SIZE = 500
 
 T = TypeVar("T")
@@ -128,7 +125,6 @@ class PayloadStore:
             self._breaker = CircuitBreaker(
                 config.backend.value,
                 failure_threshold=CIRCUIT_BREAKER_FAILURE_THRESHOLD,
-                # As long as one call may take.
                 recovery_timeout_seconds=config.backend_timeout_seconds,
             )
 

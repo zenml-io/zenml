@@ -309,8 +309,7 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    # Permission checks only need the body, and the metadata of some
-    # entities carries payloads that deleting must not depend on.
+    # Without metadata, so that deleting never needs payload storage.
     model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id, **delete_method_kwargs)
