@@ -52,6 +52,7 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_get_step_run,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
@@ -59,7 +60,6 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permission,
-    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -145,26 +145,6 @@ def create_run_step(
     )
 
 
-def _get_step_with_permission(
-    step_id: UUID, action: Action, hydrate: bool = False
-) -> StepRunResponse:
-    """Fetch a step and verify the caller is permitted to `action` its run.
-
-    Args:
-        step_id: The step run to fetch.
-        action: The RBAC action to check against the step's pipeline run.
-        hydrate: Whether to hydrate the returned step.
-
-    Returns:
-        The fetched step.
-    """
-    step = zen_store().get_run_step(step_id, hydrate=hydrate)
-    pipeline_run = step.get_resources().pipeline_run
-    assert pipeline_run is not None
-    verify_permission_for_model(pipeline_run, action=action)
-    return step
-
-
 @router.get(
     "/{step_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -185,7 +165,9 @@ def get_step(
     Returns:
         The step.
     """
-    step = _get_step_with_permission(step_id, Action.READ, hydrate=hydrate)
+    step = verify_permissions_and_get_step_run(
+        step_id, Action.READ, hydrate=hydrate
+    )
     return dehydrate_response_model(step)
 
 
@@ -208,7 +190,7 @@ def update_step(
     Returns:
         The updated step model.
     """
-    _get_step_with_permission(step_id, Action.UPDATE)
+    verify_permissions_and_get_step_run(step_id, Action.UPDATE)
 
     updated_step = zen_store().update_run_step(
         step_run_id=step_id, step_run_update=step_model
@@ -269,7 +251,9 @@ def get_step_configuration(
     Returns:
         The step configuration.
     """
-    step = _get_step_with_permission(step_id, Action.READ, hydrate=True)
+    step = verify_permissions_and_get_step_run(
+        step_id, Action.READ, hydrate=True
+    )
     return step.config.model_dump()
 
 
@@ -290,7 +274,7 @@ def get_step_status(
     Returns:
         The status of the step.
     """
-    return _get_step_with_permission(step_id, Action.READ).status
+    return verify_permissions_and_get_step_run(step_id, Action.READ).status
 
 
 @router.get(
