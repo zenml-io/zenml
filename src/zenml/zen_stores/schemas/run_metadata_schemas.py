@@ -39,6 +39,12 @@ class RunMetadataSchema(BaseSchema, table=True):
             table_name=__tablename__,
             column_names=["key"],
         ),
+        # Set to NULL when the publishing step run is deleted, which requires
+        # finding the rows first.
+        build_index(
+            table_name=__tablename__,
+            column_names=["publisher_step_id"],
+        ),
     )
 
     stack_component_id: Optional[UUID] = build_foreign_key_field(
@@ -99,6 +105,12 @@ class RunMetadataResourceSchema(SQLModel, table=True):
                 "resource_type",
                 "run_metadata_id",
             ],
+        ),
+        # `run_metadata_id` is only a trailing column of the index above, so
+        # the cascade from `run_metadata` could not use it.
+        build_index(
+            table_name=__tablename__,
+            column_names=["run_metadata_id"],
         ),
     )
 

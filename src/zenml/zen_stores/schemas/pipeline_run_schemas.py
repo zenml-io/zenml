@@ -139,6 +139,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=["triggered_by", "triggered_by_type"],
         ),
+        # Self-referencing foreign keys: deleting a run has to find the runs
+        # pointing back at it, which without these scans pipeline_run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["root_run_id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["original_run_id"],
+        ),
     )
 
     # Fields
@@ -221,11 +231,20 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     logs: List["LogsSchema"] = Relationship(
         back_populates="pipeline_run",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={
+            "cascade": "delete",
+            "passive_deletes": True,
+        },
     )
+    # `passive_deletes` leaves the cascade to the database instead of loading
+    # every step run and its children into the session first. Note that
+    # `delete_run` has to remove the step runs' `run_metadata_resource` links
+    # explicitly, since those hang off a polymorphic column with no foreign
+    # key for the database to cascade along.
     step_runs: List["StepRunSchema"] = Relationship(
         sa_relationship_kwargs={
             "cascade": "delete",
+            "passive_deletes": True,
             "order_by": "asc(StepRunSchema.start_time)",
         },
     )
