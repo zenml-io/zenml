@@ -19,7 +19,12 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.constants import ZENML_API_KEY_PREFIX, ZENML_PRO_API_KEY_PREFIX
+from zenml.constants import (
+    LINUX_GID_CLAIM_KEY,
+    LINUX_UID_CLAIM_KEY,
+    ZENML_API_KEY_PREFIX,
+    ZENML_PRO_API_KEY_PREFIX,
+)
 from zenml.enums import AuthScheme
 from zenml.exceptions import CredentialsNotValid
 from zenml.models import APIKeyInternalResponse, UserResponse
@@ -87,6 +92,7 @@ def _user_model(
     password_changed_at=None,
     is_service_account: bool = False,
     external_user_id=None,
+    user_metadata=None,
 ) -> UserResponse:
     return UserResponse.model_construct(
         id=uuid4(),
@@ -98,7 +104,7 @@ def _user_model(
             password_changed_at=password_changed_at,
             email=None,
             external_user_id=external_user_id,
-            user_metadata={},
+            user_metadata=user_metadata or {},
         ),
     )
 
@@ -208,6 +214,86 @@ def test_authenticate_api_key_allows_local_keys_for_external_auth(
     assert fetch_calls == [
         {"api_key_id": api_key.id, "key_to_verify": "valid"}
     ]
+
+
+@pytest.mark.parametrize(
+    ("external_claims", "expected_claims"),
+    [
+        (
+            {
+                LINUX_UID_CLAIM_KEY: 1001,
+                LINUX_GID_CLAIM_KEY: "1002",
+                "department": "engineering",
+            },
+            {
+                LINUX_UID_CLAIM_KEY: 1001,
+                LINUX_GID_CLAIM_KEY: "1002",
+                "department": "engineering",
+            },
+        ),
+        ({}, {}),
+        (None, None),
+    ],
+)
+def test_external_authentication_synchronizes_oidc_claims(
+    monkeypatch,
+    external_claims,
+    expected_claims,
+):
+    """External auth synchronizes claims separately from user metadata."""
+    external_user_id = uuid4()
+    existing_user = _user_model(
+        external_user_id=external_user_id,
+        user_metadata={
+            "local": "value",
+            LINUX_UID_CLAIM_KEY: 42,
+            LINUX_GID_CLAIM_KEY: 43,
+        },
+    )
+    updates = []
+
+    class Store:
+        def list_users(self, _):
+            return SimpleNamespace(items=[existing_user])
+
+        def update_user(self, user_id, user_update):
+            assert user_id == existing_user.id
+            updates.append(user_update)
+            return existing_user
+
+    class Response:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            payload = {
+                "id": str(external_user_id),
+                "username": "test-user",
+                "email": "test@example.com",
+            }
+            if external_claims is not None:
+                payload["oidc_claims"] = external_claims
+            return payload
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(
+            external_user_info_url="https://example.com/authorize",
+            get_external_server_id=lambda: uuid4(),
+        ),
+    )
+    monkeypatch.setattr(
+        auth.requests, "get", lambda *args, **kwargs: Response()
+    )
+
+    auth.authenticate_external_user("external-token")
+
+    assert len(updates) == 1
+    assert updates[0].oidc_claims == expected_claims
+    assert "oidc_claims" in updates[0].model_fields_set
+    assert updates[0].user_metadata is None
 
 
 def test_authenticate_credentials_allows_local_service_account_token_for_external_auth(

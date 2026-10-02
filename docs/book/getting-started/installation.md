@@ -28,7 +28,7 @@ pip install 'zenml[local]'
 {% endtab %}
 
 {% tab title="Local Dashboard" %}
-If you want to use the [ZenML dashboard](https://github.com/zenml-io/zenml-dashboard) locally, you need to install ZenML with the `server` extra: 
+If you want to use the ZenML dashboard locally, install ZenML with the `server` extra:
 
 ```shell
 pip install 'zenml[server]'

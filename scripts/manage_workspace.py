@@ -23,9 +23,8 @@ Usage:
         --zenml-version 0.81.0 --docker-image my/custom:image
 
 Environment Variables:
-    Authentication (one of the following sets is required):
-        CLOUD_STAGING_CLIENT_ID, CLOUD_STAGING_CLIENT_SECRET - Client credentials
-        CLOUD_STAGING_CLIENT_TOKEN - Client token
+    Authentication:
+        ZENML_PRO_API_KEY - ZenML Pro service account API key
 
     Workspace Configuration (can be overridden by function parameters):
         WORKSPACE_NAME_OR_ID - Name or ID of the workspace
@@ -37,7 +36,7 @@ Environment Variables:
 
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import requests
 
@@ -61,7 +60,7 @@ def _disect_docker_image_parts(docker_image: str) -> tuple[str, str]:
     return image_repository, image_tag
 
 
-def _get_headers(token: str) -> dict:
+def _get_headers(token: str) -> Dict[str, str]:
     """Get the headers for the staging API.
 
     Args:
@@ -70,25 +69,29 @@ def _get_headers(token: str) -> dict:
     Returns:
         The headers as a dictionary.
     """
-    return {"Authorization": f"Bearer {token}", "accept": "application/json"}
+    return {
+        "Authorization": f"Bearer {token}",
+        "accept": "application/json",
+    }
 
 
 def _build_configuration(
     zenml_version: str,
     docker_image: Optional[str] = None,
     helm_chart_version: Optional[str] = None,
-) -> dict:
+) -> Dict[str, Any]:
     """Build the configuration for the workspace.
 
     Args:
         zenml_version: The version of ZenML to use for the workspace.
         docker_image: The Docker image to use for the workspace.
-        helm_version: The version of the Helm chart to use for the workspace.
+        helm_chart_version: The version of the Helm chart to use for the
+            workspace.
 
     Returns:
         The configuration as a dictionary.
     """
-    configuration: dict = {"version": zenml_version}
+    configuration: Dict[str, Any] = {"version": zenml_version}
 
     if any([docker_image, helm_chart_version]):
         configuration["admin"] = {}
@@ -104,26 +107,24 @@ def _build_configuration(
     return configuration
 
 
-def get_token(client_id: str, client_secret: str) -> str:
-    """Get an access token for the staging API.
+def get_token(api_key: str) -> str:
+    """Exchange a ZenML Pro API key for an access token.
 
     Args:
-        client_id: The client ID for authentication.
-        client_secret: The client secret for authentication.
+        api_key: The ZenML Pro service account API key.
 
     Returns:
-        The access token as a string.
+        The short-lived access token.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails or returns no access token.
     """
     url = "https://staging.cloudapi.zenml.io/auth/login"
-    data = {
-        "grant_type": "",
-        "client_id": client_id,
-        "client_secret": client_secret,
-    }
-    response = requests.post(url, data=data)
+    response = requests.post(
+        url,
+        data={"password": api_key},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError:
@@ -131,10 +132,13 @@ def get_token(client_id: str, client_secret: str) -> str:
             f"Request failed with response content: {response.text}"
         )
 
-    return response.json()["access_token"]
+    access_token = response.json().get("access_token")
+    if not isinstance(access_token, str) or not access_token:
+        raise RuntimeError("Login response did not contain an access token.")
+    return access_token
 
 
-def get_workspace(token: str, workspace_name_or_id: str) -> dict:
+def get_workspace(token: str, workspace_name_or_id: str) -> Dict[str, Any]:
     """Get a workspace by name or ID.
 
     Args:
@@ -145,7 +149,7 @@ def get_workspace(token: str, workspace_name_or_id: str) -> dict:
         The workspace as a dictionary.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails.
     """
     url = (
         f"https://staging.cloudapi.zenml.io/workspaces/{workspace_name_or_id}"
@@ -159,7 +163,7 @@ def get_workspace(token: str, workspace_name_or_id: str) -> dict:
             f"Request failed with response content: {response.text}"
         )
 
-    return response.json()
+    return cast(Dict[str, Any], response.json())
 
 
 def create_workspace(
@@ -167,7 +171,7 @@ def create_workspace(
     workspace_name: str,
     organization_id: str,
     configuration: Dict[str, Any],
-) -> dict:
+) -> Dict[str, Any]:
     """Creating a workspace.
 
     Args:
@@ -180,7 +184,7 @@ def create_workspace(
         The created workspace as a dictionary.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails.
     """
     url = "https://staging.cloudapi.zenml.io/workspaces"
 
@@ -201,7 +205,7 @@ def create_workspace(
             f"Request failed with response content: {response.text}"
         )
 
-    return response.json()
+    return cast(Dict[str, Any], response.json())
 
 
 def update_workspace(
@@ -217,7 +221,7 @@ def update_workspace(
         configuration: The configuration for the workspace.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails.
     """
     url = (
         f"https://staging.cloudapi.zenml.io/workspaces/{workspace_name_or_id}"
@@ -279,24 +283,10 @@ def main(
     timeout = 600
     sleep_period = 20
 
-    # Get credentials from environment variables
-    client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
-    client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
-    client_token = os.environ.get("CLOUD_STAGING_CLIENT_TOKEN")
-
-    # Fetch token
-    if client_token:
-        if client_id or client_secret:
-            raise ValueError(
-                "client_id and client_secret must not be provided if client_token is provided"
-            )
-
-        token = client_token
-    else:
-        assert client_id is not None, "Client ID must be provided"
-        assert client_secret is not None, "Client secret must be provided"
-
-        token = get_token(client_id, client_secret)
+    api_key = os.environ.get("ZENML_PRO_API_KEY")
+    if not api_key:
+        raise ValueError("ZENML_PRO_API_KEY must be provided")
+    token = get_token(api_key)
 
     # Get organization and workspace from environment variables if not provided
     organization_id = organization_id or os.environ.get(

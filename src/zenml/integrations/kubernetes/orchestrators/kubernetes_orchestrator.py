@@ -56,6 +56,8 @@ from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE,
+    LINUX_GID_CLAIM_KEY,
+    LINUX_UID_CLAIM_KEY,
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
@@ -593,6 +595,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             pod_settings=pod_settings,
         )
 
+        oidc_claims = Client().active_user.oidc_claims
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image,
@@ -605,6 +609,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             labels=labels,
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
 
         pod_failure_policy = (
