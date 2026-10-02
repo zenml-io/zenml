@@ -167,7 +167,7 @@ dev = [
     # A local S3 server for the payload storage tests.
     "moto[server]>=5.0.0,<6.0.0",
     "typing-extensions>=3.7.4",
-    "pydoclint>=0.8.3",
+    "pydoclint>=0.10.1",
     "pytest-randomly>=3.10.1,<4.0.0",
     "pytest-mock>=3.6.1,<4.0.0",
     "pytest-clarity>=1.0.1,<2.0.0",
