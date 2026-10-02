@@ -1,0 +1,194 @@
+{{- /*
+Moves the execution payloads that existing rows hold inline to payload
+storage, once offloading is enabled. It runs in its own pod, with the server's
+image, service account (the cloud identity that reaches the object store) and
+secret (the store settings), and shares the database and object store with
+the server.
+
+It is not a hook, since Helm would wait for it and a large database takes
+hours. A Job cannot change once created, so its name carries a hash of its
+pod: an upgrade that changes the pod replaces the Job, and the new one exits
+in seconds once the backfill has completed.
+*/ -}}
+{{- define "zenml.payloadBackfillPodTemplate" -}}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+metadata:
+  {{- with .Values.podAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  # Not the server Deployment's selector labels, so that neither kubectl nor
+  # autoscaling ever counts this pod as a server.
+  labels:
+    app.kubernetes.io/name: {{ include "zenml.name" . }}-payload-backfill
+    app.kubernetes.io/instance: {{ $server.instanceLabel | default .Release.Name | quote }}
+    app.kubernetes.io/component: payload-backfill
+spec:
+  {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
+  initContainers:
+    - name: update-ca-certificates
+      image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
+      imagePullPolicy: {{ $server.image.pullPolicy }}
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          # Copy the system CA bundle
+          cp /etc/ssl/certs/ca-certificates.crt /updated-certs/ca-certificates.crt
+          # Append all custom certificates
+          for cert in /custom-certs/*.crt; do
+            if [ -f "$cert" ]; then
+              cat "$cert" >> /updated-certs/ca-certificates.crt
+            fi
+          done
+      volumeMounts:
+        - name: custom-certs
+          mountPath: /custom-certs
+          readOnly: true
+        - name: ca-certificates
+          mountPath: /updated-certs
+  {{- end }}
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
+  restartPolicy: Never
+  volumes:
+    - name: zenml-config
+      emptyDir: {}
+  {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
+    - name: custom-certs
+      projected:
+        sources:
+        {{- range $server.certificates.customCAs }}
+        - secret:
+            name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}
+            items:
+              - key: certificate
+                path: {{ .name }}.crt
+        {{- end }}
+        {{- range $server.certificates.secretRefs }}
+        - secret:
+            name: {{ .name }}
+            items:
+              - key: {{ .key }}
+                path: {{ .name }}.crt
+        {{- end }}
+    - name: ca-certificates
+      emptyDir: {}
+  {{- end }}
+  {{- if or (and $server.database.sslCa $server.database.sslCa.secretRef) (and $server.database.sslCert $server.database.sslCert.secretRef) (and $server.database.sslKey $server.database.sslKey.secretRef) }}
+    - name: db-certs
+      projected:
+        sources:
+          {{- if and $server.database.sslCa $server.database.sslCa.secretRef }}
+          - secret:
+              name: {{ $server.database.sslCa.secretRef.name }}
+              items:
+                - key: {{ $server.database.sslCa.secretRef.key }}
+                  path: {{ $server.database.sslCa.secretRef.key }}
+          {{- end }}
+          {{- if and $server.database.sslCert $server.database.sslCert.secretRef }}
+          - secret:
+              name: {{ $server.database.sslCert.secretRef.name }}
+              items:
+                - key: {{ $server.database.sslCert.secretRef.key }}
+                  path: {{ $server.database.sslCert.secretRef.key }}
+          {{- end }}
+          {{- if and $server.database.sslKey $server.database.sslKey.secretRef }}
+          - secret:
+              name: {{ $server.database.sslKey.secretRef.name }}
+              items:
+                - key: {{ $server.database.sslKey.secretRef.key }}
+                  path: {{ $server.database.sslKey.secretRef.key }}
+          {{- end }}
+  {{- end }}
+  containers:
+    - name: {{ .Chart.Name }}-payload-backfill
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      image: "{{ $server.image.repository }}:{{ $server.image.tag | default .Chart.Version }}"
+      imagePullPolicy: {{ $server.image.pullPolicy }}
+      {{- with $server.database.payloadStorage.backfill }}
+      command: ["python", "-m", "zenml.zen_server.payload_backfill"]
+      args:
+        - "--start-delay-seconds"
+        - {{ .startDelaySeconds | quote }}
+        - "--batch-size"
+        - {{ .batchSize | int | quote }}
+        - "--pause-seconds"
+        - {{ .pauseSeconds | quote }}
+        {{- if .optimizeTables }}
+        - "--optimize-tables"
+        {{- end }}
+      {{- end }}
+      volumeMounts:
+        - name: zenml-config
+          mountPath: /zenml/.zenconfig
+      {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
+        - name: ca-certificates
+          mountPath: /updated-certs
+          readOnly: true
+      {{- end }}
+      {{- if or (and $server.database.sslCa $server.database.sslCa.secretRef) (and $server.database.sslCert $server.database.sslCert.secretRef) (and $server.database.sslKey $server.database.sslKey.secretRef) }}
+        - name: db-certs
+          mountPath: /dbcerts
+          readOnly: true
+      {{- end }}
+      env:
+        {{- range $k, $v := include "zenml.envVariables" . | fromYaml }}
+        - name: {{ $k }}
+          value: {{ $v | quote }}
+        {{- end }}
+        {{- if $server.database.passwordSecretRef }}
+        - name: ZENML_STORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $server.database.passwordSecretRef.name }}
+              key: {{ $server.database.passwordSecretRef.key }}
+        {{- end }}
+        {{- range $server.environmentSecretKeyRefs }}
+        - name: {{ .name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .secretName }}
+              key: {{ .secretKey }}
+        {{- end }}
+      envFrom:
+        - secretRef:
+            name: {{ include "zenml.fullname" . }}
+      resources:
+        {{- toYaml ($server.database.payloadStorage.backfill.resources | default .Values.resources) | nindent 8 }}
+  {{- with .Values.nodeSelector }}
+  nodeSelector:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- $payloadStorage := $server.database.payloadStorage -}}
+{{- if and $server.database.url $payloadStorage.offloadEnabled $payloadStorage.backfill.enabled }}
+{{- $podTemplate := include "zenml.payloadBackfillPodTemplate" . }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "zenml.fullname" . | trunc 37 | trimSuffix "-" }}-payload-backfill-{{ $podTemplate | sha256sum | trunc 8 }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+    app.kubernetes.io/component: payload-backfill
+spec:
+  # Failed rows fail every retry the same way; a few retries cover a pod that
+  # was evicted or lost its connection.
+  backoffLimit: 2
+  template:
+    {{- $podTemplate | nindent 4 }}
+{{- end }}

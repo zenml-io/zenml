@@ -61,3 +61,66 @@ jobs:
             tests/integration/functional/pipelines \
             tests/integration/functional/steps \
             --durations=20
+  # The backfill compares stored values in SQL, where MySQL collations and
+  # character sets matter, so its tests also run on MySQL and MariaDB, each
+  # test in a new database of the server.
+  backfill-mysql:
+    name: Backfill tests on ${{ matrix.database.name }}
+    runs-on: ${{ inputs.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MySQL 8.4
+            image: mysql:8.4
+            args: ''
+          - name: MySQL 8.4 (latin1)
+            image: mysql:8.4
+            args: --character-set-server=latin1 --collation-server=latin1_swedish_ci
+          - name: MariaDB 10.6
+            image: mariadb:10.6
+            args: ''
+    env:
+      ZENML_DEBUG: true
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_LOGGING_VERBOSITY: INFO
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      ZENML_TEST_PAYLOAD_MYSQL_URL: mysql://root:zenml@127.0.0.1:3306
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      AUTO_OPEN_DASHBOARD: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Start the database
+        env:
+          IMAGE: ${{ matrix.database.image }}
+          ARGS: ${{ matrix.database.args }}
+        run: |-
+          # shellcheck disable=SC2086
+          docker run -d --name database -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD=zenml -e MARIADB_ROOT_PASSWORD=zenml \
+            "$IMAGE" $ARGS
+          for _ in $(seq 60); do
+            if docker exec database sh -c \
+              'mysqladmin ping -uroot -pzenml || mariadb-admin ping -uroot -pzenml' \
+              >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs database
+          exit 1
+      - name: Setup environment
+        uses: $/.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: ${{ inputs.python-version }}
+          os: ${{ inputs.os }}
+          install_integrations: 'no'
+      - name: Run the backfill tests
+        run: |-
+          pytest tests/integration/functional/zen_stores/test_payload_storage.py \
+            -k "backfill or write_answers"
