@@ -63,6 +63,14 @@ Please see [our full page](global-settings.md#usage-analytics) on what analytics
 export ZENML_ANALYTICS_OPT_IN=false
 ```
 
+## Workspace account in execution containers
+
+ZenML sets `ZENML_WORKSPACE_USER_ID` in generated container environments to the UUID of the account authenticated to the workspace when the environment is created. Retrieve that account through the workspace endpoint `/api/v1/users/{id}?hydrate=true`. For ZenML Pro users, `metadata.external_user_id` links to the corresponding Pro account.
+
+The value can identify a service account. It differs from `ZENML_USER_ID`, which identifies the client configuration for analytics.
+
+This is informational metadata: custom environment variables or pod settings can override it. Do not use it alone as proof of identity when granting permissions.
+
 ## Debug mode
 
 Setting to `true` switches to developer mode. This redirects all ZenML analytics events to the development ZenML analytics server instead of the official ZenML analytics server. Should not be used in production environments.
