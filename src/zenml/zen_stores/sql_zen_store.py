@@ -59,6 +59,7 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
+    Iterable,
     List,
     Literal,
     NoReturn,
@@ -193,6 +194,8 @@ from zenml.exceptions import (
     EntityCreationError,
     EntityExistsError,
     IllegalOperationError,
+    NonRetryablePayloadStorageError,
+    PayloadStorageUnavailableError,
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
@@ -364,6 +367,7 @@ from zenml.models import (
     TagResponse,
     TagUpdate,
     TriggerDispatchStatusCode,
+    TriggerExecutionInfo,
     TriggerFilter,
     TriggerRequest,
     TriggerSnapshotDispatchState,
@@ -424,6 +428,16 @@ from zenml.zen_stores.dag.utils import (
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
+from zenml.zen_stores.payload_storage import (
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    OffloadResult,
+    PayloadStorageConfiguration,
+    PayloadValue,
+    collect_payload_blob_ids,
+    get_inline_payload_values,
+)
+from zenml.zen_stores.payload_storage.payload_store import PayloadStore
 from zenml.zen_stores.schemas import (
     APIKeySchema,
     ApiTransactionResultSchema,
@@ -519,6 +533,8 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 _WEBHOOK_SECRET_VALUE_KEY = "secret"
+# Session info key: set while a session holds flushed, uncommitted changes.
+_FLUSHED_CHANGES = "zenml_flushed_changes"
 
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
@@ -545,6 +561,23 @@ def exponential_backoff_with_jitter(
 
 class Session(SqlModelSession):
     """Session subclass that automatically tracks duration and calling context."""
+
+    @property
+    def has_uncommitted_changes(self) -> bool:
+        """Whether the session holds changes that are not committed yet.
+
+        This includes flushed changes, which `new`, `dirty` and `deleted` no
+        longer show, for example after a query autoflushed them.
+
+        Returns:
+            Whether the session holds uncommitted changes.
+        """
+        return bool(
+            self.info.get(_FLUSHED_CHANGES)
+            or self.new
+            or self.deleted
+            or any(self.is_modified(row) for row in self.dirty)
+        )
 
     def _get_metrics(self) -> Dict[str, Any]:
         """Get the metrics for the session.
@@ -640,6 +673,31 @@ class Session(SqlModelSession):
         super().__exit__(exc_type, exc_val, exc_tb)
 
 
+@event.listens_for(Session, "after_flush")
+def _remember_flushed_changes(session: Session, flush_context: Any) -> None:
+    """Remember that a session flushed changes it has not committed yet.
+
+    Args:
+        session: The session.
+        flush_context: The context of the flush.
+    """
+    # The pending changes are still listed until the flush completes.
+    if session.has_uncommitted_changes:
+        session.info[_FLUSHED_CHANGES] = True
+
+
+@event.listens_for(Session, "after_transaction_end")
+def _forget_flushed_changes(session: Session, transaction: Any) -> None:
+    """Forget the flushed changes of a session once its transaction ends.
+
+    Args:
+        session: The session.
+        transaction: The transaction that ended.
+    """
+    if transaction.parent is None:
+        session.info.pop(_FLUSHED_CHANGES, None)
+
+
 class SQLDatabaseDriver(StrEnum):
     """SQL database drivers supported by the SQL ZenML store."""
 
@@ -686,6 +744,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         pool_pre_ping: Enable emitting a test statement on the SQL connection
             at the start of each connection pool checkout, to test that the
             database connection is still viable.
+        payload_storage: The storage of large execution payloads, such as
+            the configurations, environments and source code of snapshots,
+            step runs and runs.
     """
 
     type: StoreType = StoreType.SQL
@@ -711,6 +772,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+    payload_storage: PayloadStorageConfiguration = Field(
+        default_factory=PayloadStorageConfiguration
+    )
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -798,6 +862,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             "custom_backup_engine_config",
             "mydumper_extra_args",
             "myloader_extra_args",
+            "payload_storage",
         ]:
             value = data.get(attr)
             if isinstance(value, str):
@@ -1217,6 +1282,7 @@ class SqlZenStore(BaseZenStore):
     _cached_onboarding_state: Optional[Set[str]] = None
     _default_user: Optional[UserResponse] = None
     _resource_pools: Optional[ResourcePoolsSQLStoreInterface] = None
+    _payload_store: Optional[PayloadStore] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1311,6 +1377,20 @@ class SqlZenStore(BaseZenStore):
         return self._db_backup_engine
 
     @property
+    def payload_store(self) -> PayloadStore:
+        """The store of execution payloads.
+
+        Returns:
+            The payload store.
+
+        Raises:
+            ValueError: If the store is not initialized.
+        """
+        if not self._payload_store:
+            raise ValueError("Store not initialized")
+        return self._payload_store
+
+    @property
     def alembic(self) -> Alembic:
         """The Alembic wrapper.
 
@@ -1323,6 +1403,141 @@ class SqlZenStore(BaseZenStore):
         if not self._alembic:
             raise ValueError("Store not initialized")
         return self._alembic
+
+    @staticmethod
+    def _check_no_uncommitted_changes(session: Session) -> None:
+        """Check that a session has not written anything yet.
+
+        Checked on every use of payload storage, even when no transaction is
+        ended, so that a caller that writes first fails in every
+        configuration.
+
+        Args:
+            session: The session.
+
+        Raises:
+            RuntimeError: If the session holds uncommitted changes.
+        """
+        if session.has_uncommitted_changes:
+            raise RuntimeError(
+                "Payload storage is only used before a request writes "
+                "anything, but the session holds uncommitted changes."
+            )
+
+    @staticmethod
+    def _end_read_transaction(session: Session) -> None:
+        """End the read transaction of a session and release its connection.
+
+        Payload storage is only used outside of a transaction, and before a
+        request writes anything, since ending the transaction commits the
+        session. So no connection or transaction is held while storage is
+        waited on, and a storage failure never fails a request whose change
+        is already committed. The objects the session loaded stay usable.
+
+        Args:
+            session: The session, which must not hold uncommitted changes.
+        """
+        SqlZenStore._check_no_uncommitted_changes(session)
+        expire_on_commit = session.expire_on_commit
+        session.expire_on_commit = False
+        try:
+            session.commit()
+        finally:
+            session.expire_on_commit = expire_on_commit
+
+    def _load_required_payloads(
+        self,
+        session: Session,
+        collect_blob_ids: Callable[[], Iterable[Optional[UUID]]],
+        offload_result: Optional[OffloadResult] = None,
+        hydrate: bool = True,
+    ) -> LoadedPayloads:
+        """Load the offloaded payloads that the conversions of a session read.
+
+        If blobs remain to be loaded after the offloaded and cached values,
+        the read transaction ends first (see `_end_read_transaction`).
+
+        Args:
+            session: The session of the conversions, which must not hold any
+                pending change.
+            collect_blob_ids: Returns the blobs the conversions read. None
+                entries are ignored.
+            offload_result: Payloads just offloaded, which are taken
+                from memory.
+            hydrate: Whether the conversions include metadata. Conversions
+                without metadata read no payloads.
+
+        Returns:
+            The loaded payloads.
+        """
+        self._check_no_uncommitted_changes(session)
+        if not hydrate:
+            return INLINE_ONLY_PAYLOADS
+        # Without a backend, this process offloads nothing, so blob IDs are
+        # not even collected. A payload that another process offloaded then
+        # fails as a storage error when it is read.
+        if not self.payload_store.backend_configured:
+            return LoadedPayloads(backend_configured=False)
+        values = offload_result.values_by_blob_id if offload_result else {}
+        missing = {
+            blob_id
+            for blob_id in collect_blob_ids()
+            if blob_id is not None and blob_id not in values
+        }
+        values.update(self.payload_store.get_cached(missing))
+        missing.difference_update(values)
+        if missing:
+            self._end_read_transaction(session)
+            values.update(self.payload_store.load(missing))
+        return LoadedPayloads(values)
+
+    def _offload_payloads(
+        self, session: Session, values: List[PayloadValue]
+    ) -> OffloadResult:
+        """Offload the payload values of new rows before they are written.
+
+        The read transaction ends first when anything is offloaded (see
+        `_end_read_transaction`).
+
+        Args:
+            session: The session that will write the rows, which must not hold
+                any pending change.
+            values: The payload values of the new rows.
+
+        Returns:
+            The offloaded payloads, which the new rows reference.
+        """
+        self._check_no_uncommitted_changes(session)
+        if values and self.payload_store.offload_enabled:
+            self._end_read_transaction(session)
+        return self.payload_store.offload(values)
+
+    def _load_page_payloads(
+        self,
+        session: Session,
+        schemas: Sequence[Union[PipelineRunSchema, StepRunSchema]],
+        hydrate: bool,
+    ) -> LoadedPayloads:
+        """Load the offloaded payloads that converting a page reads.
+
+        Args:
+            session: The session of the page.
+            schemas: The schemas of the page.
+            hydrate: Whether the conversions include metadata. Conversions
+                without metadata read no payloads.
+
+        Returns:
+            The loaded payloads.
+        """
+        return self._load_required_payloads(
+            session,
+            lambda: (
+                blob_id
+                for schema in schemas
+                for blob_id in schema.get_required_payload_blob_ids()
+            ),
+            hydrate=hydrate,
+        )
 
     def get_session(self) -> Session:
         """Get a new session for the SQL ZenML store.
@@ -1426,6 +1641,9 @@ class SqlZenStore(BaseZenStore):
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
         query_options_kwargs: Optional[Dict[str, Any]] = None,
+        get_to_model_kwargs: Optional[
+            Callable[[Sequence[Any]], Dict[str, Any]]
+        ] = None,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1450,6 +1668,9 @@ class SqlZenStore(BaseZenStore):
                 query options defined on the schema.
             query_options_kwargs: Extra keyword arguments forwarded to the
                 schema's `get_query_options`.
+            get_to_model_kwargs: Computes extra keyword arguments for the
+                schema's `to_model` from the schemas of the page, such as the
+                payloads their conversions read.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1537,6 +1758,9 @@ class SqlZenStore(BaseZenStore):
             )
             item_schemas = query_result.all()
 
+        to_model_kwargs = (
+            get_to_model_kwargs(item_schemas) if get_to_model_kwargs else {}
+        )
         # Convert this page of items from schemas to models.
         items: List[AnyResponse] = []
         for schema in item_schemas:
@@ -1548,7 +1772,11 @@ class SqlZenStore(BaseZenStore):
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
                 items.append(
-                    to_model(include_metadata=hydrate, include_resources=True)
+                    to_model(
+                        include_metadata=hydrate,
+                        include_resources=True,
+                        **to_model_kwargs,
+                    )
                 )
                 continue
             # If neither of the above work, raise an error.
@@ -1637,6 +1865,14 @@ class SqlZenStore(BaseZenStore):
             # Discard existing connections created without the foreign key
             # checks enabled
             self._engine.dispose()
+
+        self._payload_store = PayloadStore(
+            engine=self._engine, config=self.config.payload_storage
+        )
+        # Stores opened only to run migrations, such as by Alembic, can
+        # predate the payload tables.
+        if not self.skip_migrations:
+            self._payload_store.validate_storage_location()
 
         secrets_store_config = self.config.secrets_store
 
@@ -5476,41 +5712,51 @@ class SqlZenStore(BaseZenStore):
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
 
-                if snapshot.replace:
-                    self._release_snapshot_name(
-                        session=session,
-                        pipeline_id=snapshot.pipeline,
-                        name=snapshot.name,
-                    )
-
-            code_reference_id = self._create_or_reuse_code_reference(
-                session=session,
-                project_id=snapshot.project,
-                code_reference=snapshot.code_reference,
-            )
-
             new_snapshot = PipelineSnapshotSchema.from_request(
-                snapshot, code_reference_id=code_reference_id
+                snapshot, code_reference_id=None
+            )
+            step_configurations = [
+                StepConfigurationSchema(
+                    index=index,
+                    name=step_name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model`
+                    # method using the pipeline configuration.
+                    config=serialized_configuration,
+                    upstream_steps=upstream_steps,
+                    snapshot_id=new_snapshot.id,
+                )
+                for index, (
+                    step_name,
+                    serialized_configuration,
+                    upstream_steps,
+                ) in enumerate(serialized_step_configurations)
+            ]
+            # Before the first write, so that a storage failure leaves nothing
+            # behind.
+            offload_result = self._offload_payloads(
+                session,
+                get_inline_payload_values(new_snapshot, *step_configurations),
             )
 
-            session.add(new_snapshot)
-            for index, (
-                step_name,
-                serialized_configuration,
-                upstream_steps,
-            ) in enumerate(serialized_step_configurations):
-                session.add(
-                    StepConfigurationSchema(
-                        index=index,
-                        name=step_name,
-                        # Don't include the merged config in the step
-                        # configurations, we reconstruct it in the `to_model`
-                        # method using the pipeline configuration.
-                        config=serialized_configuration,
-                        upstream_steps=upstream_steps,
-                        snapshot_id=new_snapshot.id,
-                    )
+            if isinstance(snapshot.name, str) and snapshot.replace:
+                self._release_snapshot_name(
+                    session=session,
+                    pipeline_id=snapshot.pipeline,
+                    name=snapshot.name,
                 )
+
+            new_snapshot.code_reference_id = (
+                self._create_or_reuse_code_reference(
+                    session=session,
+                    project_id=snapshot.project,
+                    code_reference=snapshot.code_reference,
+                )
+            )
+
+            offload_result.apply_references(new_snapshot, *step_configurations)
+            session.add(new_snapshot)
+            session.add_all(step_configurations)
 
             try:
                 session.commit()
@@ -5540,7 +5786,10 @@ class SqlZenStore(BaseZenStore):
             session.refresh(new_snapshot)
 
             return new_snapshot.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                # Every blob the new rows reference was just offloaded.
+                payloads=LoadedPayloads(offload_result.values_by_blob_id),
             )
 
     def get_snapshot(
@@ -5575,11 +5824,20 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
+            payloads = self._load_required_payloads(
+                session,
+                lambda: snapshot.get_required_payload_blob_ids(
+                    step_configuration_filter=step_configuration_filter,
+                    include_config_schema=include_config_schema,
+                ),
+                hydrate=hydrate,
+            )
             return snapshot.to_model(
                 include_metadata=hydrate,
                 include_resources=True,
                 step_configuration_filter=step_configuration_filter,
                 include_config_schema=include_config_schema,
+                payloads=payloads,
             )
 
     def list_snapshots(
@@ -5611,6 +5869,17 @@ class SqlZenStore(BaseZenStore):
                 filter_model=snapshot_filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
+                get_to_model_kwargs=lambda snapshots: {
+                    "payloads": self._load_required_payloads(
+                        session,
+                        lambda: (
+                            PipelineSnapshotSchema.get_required_page_payload_blob_ids(
+                                snapshots
+                            )
+                        ),
+                        hydrate=hydrate,
+                    )
+                },
             )
 
     def update_snapshot(
@@ -5637,6 +5906,10 @@ class SqlZenStore(BaseZenStore):
                 resource_id=snapshot_id,
                 schema_class=PipelineSnapshotSchema,
                 session=session,
+            )
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, snapshot.get_required_payload_blob_ids
             )
 
             if isinstance(snapshot_update.name, str):
@@ -5690,7 +5963,9 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(snapshot)
             return snapshot.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                payloads=payloads,
             )
 
     def delete_snapshot(self, snapshot_id: UUID) -> None:
@@ -6273,6 +6548,10 @@ class SqlZenStore(BaseZenStore):
             )
 
             template_utils.validate_snapshot_is_templatable(snapshot)
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, snapshot.get_required_payload_blob_ids
+            )
 
             template_schema = RunTemplateSchema.from_request(request=template)
 
@@ -6296,11 +6575,15 @@ class SqlZenStore(BaseZenStore):
             session.refresh(template_schema)
 
             return template_schema.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                payloads=payloads,
             )
 
     def get_run_template(
-        self, template_id: UUID, hydrate: bool = True
+        self,
+        template_id: UUID,
+        hydrate: bool = True,
     ) -> RunTemplateResponse:
         """Get a run template with a given ID.
 
@@ -6319,7 +6602,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             return template.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                payloads=self._load_required_payloads(
+                    session,
+                    template.get_required_payload_blob_ids,
+                    hydrate=hydrate,
+                ),
             )
 
     def list_run_templates(
@@ -6350,6 +6639,21 @@ class SqlZenStore(BaseZenStore):
                 table=RunTemplateSchema,
                 filter_model=template_filter_model,
                 hydrate=hydrate,
+                get_to_model_kwargs=lambda templates: {
+                    "payloads": self._load_required_payloads(
+                        session,
+                        lambda: (
+                            PipelineSnapshotSchema.get_required_page_payload_blob_ids(
+                                [
+                                    template.source_snapshot
+                                    for template in templates
+                                    if template.source_snapshot
+                                ]
+                            )
+                        ),
+                        hydrate=hydrate,
+                    )
+                },
             )
 
     def update_run_template(
@@ -6372,6 +6676,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=RunTemplateSchema,
                 session=session,
             )
+            # Before any write; see `_load_required_payloads`.
+            payloads = self._load_required_payloads(
+                session, template.get_required_payload_blob_ids
+            )
 
             template.update(template_update)
             session.add(template)
@@ -6392,7 +6700,9 @@ class SqlZenStore(BaseZenStore):
             session.refresh(template)
 
             return template.to_model(
-                include_metadata=True, include_resources=True
+                include_metadata=True,
+                include_resources=True,
+                payloads=payloads,
             )
 
     def delete_run_template(self, template_id: UUID) -> None:
@@ -6470,6 +6780,9 @@ class SqlZenStore(BaseZenStore):
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                        jl_arg(
+                            PipelineSnapshotSchema.pipeline_configuration_blob_id
+                        ),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
                     ),
                     selectinload(
@@ -6540,30 +6853,39 @@ class SqlZenStore(BaseZenStore):
                 if step.status != ExecutionStatus.RETRIED.value
             }
 
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                snapshot.pipeline_configuration
+            # Ignore static config templates for dynamic pipeline DAGs
+            step_configurations: Dict[str, StepConfigurationSchema] = (
+                {
+                    name: step_run.dynamic_config
+                    for name, step_run in step_runs.items()
+                    if step_run.dynamic_config
+                }
+                if snapshot.is_dynamic
+                else {
+                    config_table.name: config_table
+                    for config_table in snapshot.step_configurations
+                }
+            )
+            payloads = self._load_required_payloads(
+                session,
+                lambda: [
+                    snapshot.pipeline_configuration_blob_id,
+                    *collect_payload_blob_ids(*step_configurations.values()),
+                ],
+            )
+            pipeline_configuration = snapshot.get_pipeline_configuration(
+                payloads
             )
             pipeline_configuration.finalize_substitutions(
                 start_time=run.start_time, inplace=True
             )
-
-            if snapshot.is_dynamic:
-                # Ignore static config templates for dynamic pipeline DAGs
-                steps = {
-                    name: DAGStepView.from_dict(
-                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
-                        substitutions=pipeline_configuration.substitutions,
-                    )
-                    for name, step_run in step_runs.items()
-                }
-            else:
-                steps = {
-                    config_table.name: DAGStepView.from_dict(
-                        json.loads(config_table.config),
-                        substitutions=pipeline_configuration.substitutions,
-                    )
-                    for config_table in snapshot.step_configurations
-                }
+            steps = {
+                name: DAGStepView.from_dict(
+                    config_table.get_config(payloads),
+                    substitutions=pipeline_configuration.substitutions,
+                )
+                for name, config_table in step_configurations.items()
+            }
 
             input_artifact_rows = {}
             output_artifact_rows = {}
@@ -7015,13 +7337,19 @@ class SqlZenStore(BaseZenStore):
         return index
 
     def _create_run(
-        self, pipeline_run: PipelineRunRequest, session: Session
+        self,
+        pipeline_run: PipelineRunRequest,
+        session: Session,
+        offload_result: OffloadResult,
+        payloads: LoadedPayloads,
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
             session: SQLAlchemy session.
+            offload_result: The offloaded payloads of the run.
+            payloads: The loaded payloads of the run and its snapshot.
 
         Returns:
             The created pipeline run.
@@ -7073,6 +7401,7 @@ class SqlZenStore(BaseZenStore):
             enable_heartbeat=snapshot.get_enable_heartbeat(),
             root_run_id=root_run_id,
         )
+        offload_result.apply_references(new_run)
 
         session.add(new_run)
 
@@ -7136,7 +7465,7 @@ class SqlZenStore(BaseZenStore):
 
         try:
             model_version_id = self._get_or_create_model_version_for_run(
-                new_run, config=new_run.get_pipeline_configuration()
+                new_run, config=new_run.get_pipeline_configuration(payloads)
             )
         except KeyError as e:
             session.delete(new_run)
@@ -7163,7 +7492,9 @@ class SqlZenStore(BaseZenStore):
 
         session.refresh(new_run)
 
-        return new_run.to_model(include_metadata=True, include_resources=True)
+        return new_run.to_model(
+            include_metadata=True, include_resources=True, payloads=payloads
+        )
 
     def get_run(
         self,
@@ -7202,6 +7533,9 @@ class SqlZenStore(BaseZenStore):
                 include_resources=True,
                 include_python_packages=include_python_packages,
                 include_full_metadata=include_full_metadata,
+                payloads=self._load_required_payloads(
+                    session, run.get_required_payload_blob_ids, hydrate=hydrate
+                ),
             )
 
     def get_run_status(self, run_id: UUID) -> ExecutionStatus:
@@ -7245,15 +7579,16 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline_run: PipelineRunRequest,
         session: Session,
-        pre_replacement_hook: Optional[Callable[[], None]] = None,
+        offload_result: OffloadResult,
+        payloads: LoadedPayloads,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
             session: SQLAlchemy session.
-            pre_replacement_hook: Optional function to run before replacing the
-                pipeline run.
+            offload_result: The offloaded payloads of the run.
+            payloads: The loaded payloads of the run and its snapshot.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -7305,9 +7640,8 @@ class SqlZenStore(BaseZenStore):
         if not run_schema:
             raise KeyError("No placeholder run found.")
 
-        if pre_replacement_hook:
-            pre_replacement_hook()
         run_schema.update_placeholder(pipeline_run)
+        offload_result.apply_references(run_schema)
 
         session.add(run_schema)
         session.commit()
@@ -7321,11 +7655,14 @@ class SqlZenStore(BaseZenStore):
         session.refresh(run_schema)
 
         return run_schema.to_model(
-            include_metadata=True, include_resources=True
+            include_metadata=True, include_resources=True, payloads=payloads
         )
 
     def _get_run_by_orchestrator_run_id(
-        self, orchestrator_run_id: str, snapshot_id: UUID, session: Session
+        self,
+        orchestrator_run_id: str,
+        snapshot_id: UUID,
+        session: Session,
     ) -> PipelineRunResponse:
         """Get a pipeline run based on snapshot and orchestrator run ID.
 
@@ -7364,8 +7701,43 @@ class SqlZenStore(BaseZenStore):
             )
 
         return run_schema.to_model(
-            include_metadata=True, include_resources=True
+            include_metadata=True,
+            include_resources=True,
+            payloads=self._load_required_payloads(
+                session, run_schema.get_required_payload_blob_ids
+            ),
         )
+
+    def _get_run_snapshot_blob_ids(
+        self, pipeline_run: PipelineRunRequest, session: Session
+    ) -> List[Optional[UUID]]:
+        """Get the blobs of a new run's snapshot that its response reads.
+
+        The snapshot is looked up in the run's project, so that a snapshot of
+        another project is rejected before any storage work.
+
+        Args:
+            pipeline_run: The run request.
+            session: The session to use.
+
+        Returns:
+            The blob IDs.
+        """
+        snapshot = session.exec(
+            select(PipelineSnapshotSchema)
+            .options(*PipelineSnapshotSchema.defer_large_columns())
+            .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
+            .where(PipelineSnapshotSchema.project_id == pipeline_run.project)
+        ).first()
+        if snapshot is None:
+            # Raises for an unknown snapshot or one of another project.
+            snapshot = self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineSnapshotSchema,
+                reference_id=pipeline_run.snapshot,
+                session=session,
+            )
+        return snapshot.get_required_run_payload_blob_ids()
 
     def get_or_create_run(
         self,
@@ -7380,7 +7752,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             pipeline_run: The pipeline run to get or create.
             pre_creation_hook: Optional function to run before creating the
-                pipeline run.
+                pipeline run or replacing its placeholder run.
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
@@ -7405,6 +7777,34 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            # Before anything is written, so that a caller who may not create
+            # the run neither stores payloads nor takes the lock below.
+            if pre_creation_hook:
+                pre_creation_hook()
+
+            # Before anything is written or locked, so that a storage failure
+            # never leaves a half-created run behind.
+            snapshot_blob_ids: List[Optional[UUID]] = []
+            if self.payload_store.backend_configured:
+                snapshot_blob_ids = self._get_run_snapshot_blob_ids(
+                    pipeline_run, session=session
+                )
+            offload_result = self._offload_payloads(
+                session,
+                [
+                    PipelineRunSchema.get_orchestrator_environment_payload(
+                        pipeline_run
+                    )
+                ]
+                if self.payload_store.offload_enabled
+                else [],
+            )
+            payloads = self._load_required_payloads(
+                session,
+                lambda: snapshot_blob_ids,
+                offload_result=offload_result,
+            )
+
             # Acquire exclusive lock on the snapshot to prevent deadlocks
             # during insertion
             session.exec(
@@ -7421,8 +7821,9 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._replace_placeholder_run(
                             pipeline_run=pipeline_run,
-                            pre_replacement_hook=pre_creation_hook,
                             session=session,
+                            offload_result=offload_result,
+                            payloads=payloads,
                         ),
                         True,
                     )
@@ -7455,9 +7856,15 @@ class SqlZenStore(BaseZenStore):
                 #     create.
                 #     -> The `self._create_run(...)` call will fail due to the
                 #     unique constraint on those columns.
-                if pre_creation_hook:
-                    pre_creation_hook()
-                return self._create_run(pipeline_run, session=session), True
+                return (
+                    self._create_run(
+                        pipeline_run,
+                        session=session,
+                        offload_result=offload_result,
+                        payloads=payloads,
+                    ),
+                    True,
+                )
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
                     # No orchestrator_run_id means this is likely a name conflict.
@@ -7527,16 +7934,15 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineRunSchema,
                 filter_model=runs_filter_model,
                 hydrate=hydrate,
-                custom_schema_to_model_conversion=lambda schema: (
-                    schema.to_model(
-                        include_metadata=hydrate,
-                        include_resources=True,
-                        include_full_metadata=include_full_metadata,
-                    )
-                ),
                 apply_query_options_from_schema=True,
                 query_options_kwargs={
                     "include_full_metadata": include_full_metadata
+                },
+                get_to_model_kwargs=lambda runs: {
+                    "include_full_metadata": include_full_metadata,
+                    "payloads": self._load_page_payloads(
+                        session, runs, hydrate
+                    ),
                 },
             )
 
@@ -7663,9 +8069,29 @@ class SqlZenStore(BaseZenStore):
 
             session.refresh(existing_run)
 
-            return existing_run.to_model(
-                include_metadata=True, include_resources=True
-            )
+            try:
+                payloads = self._load_required_payloads(
+                    session, existing_run.get_required_payload_blob_ids
+                )
+                return existing_run.to_model(
+                    include_metadata=True,
+                    include_resources=True,
+                    payloads=payloads,
+                )
+            except (
+                NonRetryablePayloadStorageError,
+                PayloadStorageUnavailableError,
+            ):
+                # The update is committed, and failing its response would
+                # make clients retry it.
+                logger.exception(
+                    "Failed to load the payloads of run %s for the "
+                    "update response.",
+                    existing_run.id,
+                )
+                return existing_run.to_model(
+                    include_metadata=False, include_resources=True
+                )
 
     def delete_run(self, run_id: UUID) -> None:
         """Deletes a pipeline run.
@@ -12236,6 +12662,7 @@ class SqlZenStore(BaseZenStore):
                 with the same source already exists within the scope of the
                 same step.
             IllegalOperationError: If the pipeline run is stopped or stopping.
+            RuntimeError: If a static step's pipeline run has no snapshot.
         """
         self._verify_step_status_transition(
             current_status=None, new_status=step_run.status
@@ -12279,13 +12706,59 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
-            pipeline_configuration = run.get_pipeline_configuration()
-            step_config = (
-                step_run.dynamic_config
-                or run.get_step_configuration(
-                    step_name=step_run.name,
-                    pipeline_configuration=pipeline_configuration,
+            dynamic_configuration: Optional[StepConfigurationSchema] = None
+            if step_run.dynamic_config:
+                # Checked before its configuration is offloaded.
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+                dynamic_configuration = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model`
+                    # method using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
                 )
+                config_schema = dynamic_configuration
+            elif run.snapshot:
+                config_schema = run.snapshot.get_step_configuration(
+                    step_run.name
+                )
+            else:
+                raise RuntimeError("Pipeline run has no snapshot.")
+
+            # Release the read locks of the previous queries before we try to
+            # acquire more exclusive locks.
+            self._end_read_transaction(session)
+
+            offload_result = self.payload_store.offload(
+                StepRunSchema.get_request_payload_values(step_run)
+                + (
+                    get_inline_payload_values(dynamic_configuration)
+                    if dynamic_configuration
+                    else []
+                )
+            )
+            payloads = self._load_required_payloads(
+                session,
+                lambda: StepRunSchema.get_step_configuration_blob_ids(
+                    config_schema, run.snapshot
+                ),
+                offload_result=offload_result,
+            )
+
+            pipeline_configuration = run.get_pipeline_configuration(payloads)
+            step_config = step_run.dynamic_config or config_schema.to_step(
+                pipeline_configuration,
+                exclude_hook_sources=bool(
+                    run.snapshot and run.snapshot.is_dynamic
+                ),
+                payloads=payloads,
             )
             resource_runtime: Optional[StepRuntime] = None
             resource_request_heartbeat_enabled: Optional[bool] = None
@@ -12312,10 +12785,6 @@ class SqlZenStore(BaseZenStore):
                     heartbeat_enabled=resource_request_heartbeat_enabled,
                     step_name=step_run.name,
                 )
-
-            # Release the read locks of the previous two queries before we
-            # try to acquire more exclusive locks
-            session.commit()
 
             # Acquire exclusive lock on the snapshot and run to prevent
             # deadlocks during insertion
@@ -12412,33 +12881,20 @@ class SqlZenStore(BaseZenStore):
                 else None
             )
 
+            offload_result.apply_references(step_schema)
             session.add(step_schema)
 
             resolved_step_config = step_config
-            if step_run.dynamic_config:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
-                step_configuration_schema = StepConfigurationSchema(
-                    index=0,
-                    name=step_run.name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_run.dynamic_config.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    step_run_id=step_schema.id,
-                )
-                session.add(step_configuration_schema)
+            if dynamic_configuration:
+                dynamic_configuration.step_run_id = step_schema.id
+                offload_result.apply_references(dynamic_configuration)
+                session.add(dynamic_configuration)
                 # Resolved like reads resolve it, so that the values copied
                 # below match what reads would compute.
-                resolved_step_config = step_configuration_schema.to_step(
+                resolved_step_config = dynamic_configuration.to_step(
                     pipeline_configuration,
                     exclude_hook_sources=run.snapshot.is_dynamic,
+                    payloads=payloads,
                 )
 
             step_type = resolved_step_config.config.step_type
@@ -12745,6 +13201,7 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
                 pipeline_configuration=pipeline_configuration,
+                payloads=payloads,
             )
             if (
                 created_resource_request is not None
@@ -12756,7 +13213,9 @@ class SqlZenStore(BaseZenStore):
             return step_run_response
 
     def get_run_step(
-        self, step_run_id: UUID, hydrate: bool = True
+        self,
+        step_run_id: UUID,
+        hydrate: bool = True,
     ) -> StepRunResponse:
         """Get a step run by ID.
 
@@ -12778,7 +13237,13 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
             return step_run.to_model(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                payloads=self._load_required_payloads(
+                    session,
+                    step_run.get_required_payload_blob_ids,
+                    hydrate=hydrate,
+                ),
             )
 
     def list_run_steps(
@@ -12810,6 +13275,11 @@ class SqlZenStore(BaseZenStore):
                 filter_model=step_run_filter_model,
                 hydrate=hydrate,
                 apply_query_options_from_schema=True,
+                get_to_model_kwargs=lambda step_runs: {
+                    "payloads": self._load_page_payloads(
+                        session, step_runs, hydrate
+                    )
+                },
             )
 
     # -------------------- Hook invocations --------------------
@@ -13240,9 +13710,29 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
-            return existing_step_run.to_model(
-                include_metadata=True, include_resources=True
-            )
+            try:
+                payloads = self._load_required_payloads(
+                    session, existing_step_run.get_required_payload_blob_ids
+                )
+                return existing_step_run.to_model(
+                    include_metadata=True,
+                    include_resources=True,
+                    payloads=payloads,
+                )
+            except (
+                NonRetryablePayloadStorageError,
+                PayloadStorageUnavailableError,
+            ):
+                # The update is committed, and failing its response would
+                # make clients retry it.
+                logger.exception(
+                    "Failed to load the payloads of step run %s for the "
+                    "update response.",
+                    existing_step_run.id,
+                )
+                return existing_step_run.to_model(
+                    include_metadata=False, include_resources=True
+                )
 
     def _get_step_run_input_artifact_from_cached_step_run(
         self,
@@ -13493,6 +13983,41 @@ class SqlZenStore(BaseZenStore):
         session.add(pipeline_run)
         return did_update, pipeline_run, previous_status
 
+    @staticmethod
+    def _get_run_status_update_event(
+        pipeline_run: PipelineRunSchema,
+        previous_status: ExecutionStatus,
+        session: Session,
+    ) -> PipelineRunStatusUpdate:
+        """Build the status event of a run from its SQL columns only.
+
+        Args:
+            pipeline_run: The run whose status changed.
+            previous_status: The status of the run before the change.
+            session: The database session to use.
+
+        Returns:
+            The status event.
+        """
+        source_snapshot_id = (
+            session.exec(
+                select(PipelineSnapshotSchema.source_snapshot_id).where(
+                    PipelineSnapshotSchema.id == pipeline_run.snapshot_id
+                )
+            ).first()
+            if pipeline_run.snapshot_id
+            else None
+        )
+        return PipelineRunStatusUpdate(
+            run=pipeline_run.to_model(
+                include_metadata=False, include_resources=False
+            ),
+            previous_status=previous_status,
+            snapshot_id=pipeline_run.snapshot_id,
+            source_snapshot_id=source_snapshot_id,
+            trigger_execution_info=pipeline_run.get_trigger_execution_info(),
+        )
+
     def _update_pipeline_run_status(
         self,
         pipeline_run_id: UUID,
@@ -13532,11 +14057,10 @@ class SqlZenStore(BaseZenStore):
             if dispatcher.has_handlers():
                 # Only convert to model if there are handlers to notify
                 dispatcher.dispatch_event(
-                    PipelineRunStatusUpdate(
-                        run=pipeline_run.to_model(
-                            include_metadata=False, include_resources=False
-                        ),
+                    self._get_run_status_update_event(
+                        pipeline_run=pipeline_run,
                         previous_status=previous_status,
+                        session=session,
                     )
                 )
 
@@ -14521,9 +15045,10 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
+                # Without metadata, whose payloads nothing loads here.
                 return cast(
                     AnyIdentifiedResponse,
-                    to_model(include_metadata=True, include_resources=True),
+                    to_model(include_metadata=False, include_resources=True),
                 )
             else:
                 raise RuntimeError("Unable to convert schema to model.")
