@@ -18,6 +18,7 @@ import shlex
 import threading
 import time
 from abc import ABC, abstractmethod
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,6 +26,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Type,
     Union,
 )
 
@@ -470,11 +472,18 @@ class SandboxSession(ABC):
         """
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Destroy or close the session, depending on `destroy_on_exit`.
 
         Args:
-            *_: Unused context manager exception details.
+            exc_type: The class of the exception.
+            exc_value: The instance of the exception.
+            traceback: The traceback of the exception.
         """
         if self._destroy_on_exit:
             self.destroy()
