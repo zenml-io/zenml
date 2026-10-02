@@ -32,6 +32,7 @@ from zenml.constants import (
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
+    ENV_ZENML_WORKSPACE_USER_ID,
     ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
@@ -137,6 +138,10 @@ def get_config_environment_vars(
 
     global_config = GlobalConfiguration()
     environment_vars = global_config.get_config_environment_vars()
+    # The workspace account ID is separate from the analytics client ID.
+    environment_vars[ENV_ZENML_WORKSPACE_USER_ID] = str(
+        global_config.zen_store.get_user(hydrate=False).id
+    )
     secrets: Dict[str, str] = {}
 
     if (
