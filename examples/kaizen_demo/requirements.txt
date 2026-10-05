@@ -1,0 +1,3 @@
+zenml[server]>=0.97.0,<0.98.0
+pandas==2.3.3
+scikit-learn==1.7.2
