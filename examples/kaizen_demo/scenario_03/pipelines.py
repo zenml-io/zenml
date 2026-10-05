@@ -139,7 +139,10 @@ def score_customer(
     ):
         raise RuntimeError("The customer risk model has not been initialized.")
     model = state["model"]
-    frame = pd.DataFrame([customer_features])
+    frame = pd.DataFrame(
+        [customer_features],
+        columns=["monthly_charges", "account_length", "support_calls"],
+    )
     probability = float(model.predict_proba(frame)[0, 1])
     result = {
         "risk_probability": round(probability, 6),

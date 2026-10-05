@@ -1,3 +1,7 @@
 zenml[server]>=0.97.0,<0.98.0
+kubernetes>=21.7,<26
+boto3
+s3fs>2022.3.0,!=2025.3.1
+aws-profile-manager
 pandas==2.3.3
 scikit-learn==1.7.2
