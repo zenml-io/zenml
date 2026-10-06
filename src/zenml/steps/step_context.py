@@ -472,14 +472,14 @@ class StepContext(context_utils.BaseContext):
             )
         return super().__enter__()
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *exc_details: Any) -> None:
         """Exit the step context.
 
         Args:
-            *_: Unused keyword arguments.
+            *exc_details: Context manager exception details.
         """
         self._cleanup_registry.execute_callbacks(raise_on_exception=False)
-        super().__exit__(*_)
+        super().__exit__(*exc_details)
 
 
 class StepContextOutput:

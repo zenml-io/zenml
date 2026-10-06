@@ -70,11 +70,11 @@ class BaseContext:
         self._token = self.__context_var__.set(self)
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *exc_details: Any) -> None:
         """Exit the context.
 
         Args:
-            *_: Unused keyword arguments.
+            *exc_details: Unused context manager exception details.
 
         Raises:
             RuntimeError: If the context has not been entered.
