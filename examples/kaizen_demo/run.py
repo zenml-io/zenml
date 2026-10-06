@@ -42,9 +42,14 @@ def main() -> None:
     inventory = commands.add_parser(
         "inventory", help="Create an inventory report."
     )
-    inventory.add_argument("--batch-size", type=int, default=12)
+    inventory.add_argument("--batch-size", type=int, default=60)
     inventory.add_argument("--source-seed", type=int, default=42)
     inventory.add_argument("--reorder-level", type=int, default=15)
+    inventory.add_argument(
+        "--business-date",
+        help="Inventory reporting date in YYYY-MM-DD format.",
+    )
+    inventory.add_argument("--simulation-start-date", default="2026-01-01")
     customers = commands.add_parser(
         "customers", help="Score a customer export."
     )
@@ -120,6 +125,8 @@ def main() -> None:
             batch_size=args.batch_size,
             source_seed=args.source_seed,
             reorder_level=args.reorder_level,
+            business_date=args.business_date,
+            simulation_start_date=args.simulation_start_date,
         )
     elif args.command == "customers":
         run = customer_scoring.with_options(**options)(

@@ -1,5 +1,10 @@
 zenml[server]==0.96.4
+# Keep the OpenTelemetry API, SDK, and instrumentation on one release line.
 opentelemetry-api==1.43.0
+opentelemetry-sdk==1.43.0
+opentelemetry-semantic-conventions==0.64b0
+opentelemetry-instrumentation==0.64b0
+opentelemetry-instrumentation-logging==0.64b0
 pandas==2.3.3
 scikit-learn==1.7.2
 boto3

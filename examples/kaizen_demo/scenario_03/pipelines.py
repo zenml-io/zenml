@@ -18,6 +18,7 @@ from typing import Annotated, Any
 
 import numpy as np
 import pandas as pd
+from build_settings import create_docker_settings
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -30,7 +31,7 @@ from zenml import (
     step,
 )
 from zenml.client import Client
-from zenml.config import DeploymentSettings, DockerSettings
+from zenml.config import DeploymentSettings
 from zenml.logger import get_logger
 
 MODEL_ARTIFACT = "customer_risk_model"
@@ -86,7 +87,7 @@ def fit_risk_model(
     return model
 
 
-@pipeline(settings={"docker": DockerSettings(requirements="requirements.txt")})
+@pipeline(settings={"docker": create_docker_settings()})
 def customer_risk_training(
     sample_count: int = 320, random_seed: int = 41
 ) -> None:
@@ -154,7 +155,7 @@ def score_customer(
     enable_cache=False,
     on_init=initialize_risk_service,
     settings={
-        "docker": DockerSettings(requirements="requirements.txt"),
+        "docker": create_docker_settings(),
         "deployment": DeploymentSettings(
             app_title="Customer Risk Service",
             app_description="Estimate customer risk from account information.",

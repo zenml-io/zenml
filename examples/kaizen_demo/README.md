@@ -4,9 +4,21 @@ This example contains inventory reporting, customer conversion scoring, warehous
 
 ## Setup
 
-From this directory, install the requirements into a Python 3.11 environment with `uv pip install -r requirements.txt`. The example pins ZenML 0.96.4; use a matching server version. Connect your ZenML client to the intended workspace and select the appropriate project and stack before running pipelines. The service requires a Deployer component and an endpoint reachable from the caller.
+From this directory, create a dedicated Python 3.11 environment for the demo, including when launching it from an agent sandbox:
 
-The customer retention, customer segment, and bike demand pipelines use `build_settings.py` to build Python 3.11 images with ZenML 0.96.4 for Linux AMD64 workers. Their images install the explicit dependencies in `requirements.txt`, including the S3 and Kubernetes clients, without adding integration dependencies from the selected stack. Use a remote image builder that supports this architecture.
+```bash
+uv venv --python 3.11 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+uv pip check --python .venv/bin/python
+.venv/bin/python -c "from opentelemetry.sdk._logs import LoggerProvider"
+source .venv/bin/activate
+```
+
+Use this environment for every `python` and `zenml` command below. In separate sandbox shell calls, use `.venv/bin/python` and `.venv/bin/zenml` explicitly because activation may not persist. Docker settings install dependencies in remote images; they do not install dependencies into the sandbox that submits the pipeline.
+
+The example pins ZenML 0.96.4; use a matching server version. Connect your ZenML client to the intended workspace and select the appropriate project and stack before running pipelines. The service requires a Deployer component and an endpoint reachable from the caller.
+
+All demo pipelines use `build_settings.py` to build Python 3.11 images with ZenML 0.96.4 for Linux AMD64 workers. Their images install the explicit dependencies in `requirements.txt`, including matching OpenTelemetry API and SDK versions and the S3 and Kubernetes clients. The image build reinstalls the pinned OpenTelemetry API package and does not copy the launcher's installed packages or add integration dependencies from the selected stack. Use a remote image builder that supports this architecture. These settings apply when building an image; an explicitly reused image or `skip_build=True` bypasses dependency installation.
 
 ## Batch operations
 
@@ -20,6 +32,17 @@ python run.py replenishment
 The customer export contains `customer_id`, `account_length`, `basket_value`, and `converted` columns. The target `converted` is 0 or 1. The source can be a local file, a plain HTTP(S) URL, or an object URI accessible through the active stack's artifact store. For remote workers, use an HTTP(S) or object URI they can access; local paths refer to the worker's filesystem. Use stack credentials for private object storage; do not put credentials or signed query strings in source URLs, because pipeline parameters are retained in run configuration.
 
 The command-line runner also accepts `--run-name` and `--no-cache` for normal execution control. Inspect recorded artifacts and metrics through the ZenML dashboard or SDK.
+
+## Daily inventory reporting
+
+The inventory pipeline loads a reproducible product catalog and calculates a dated inventory report from simulated daily demand and replenishment. The catalog step is cached for fixed source parameters. The reporting step executes on every run and records both itemized daily inventory and summary metrics.
+
+```bash
+python run.py inventory --business-date 2026-09-10 --simulation-start-date 2026-09-10
+python run.py inventory --business-date 2026-09-11 --simulation-start-date 2026-09-10
+```
+
+Keep the source parameters and simulation start date fixed across a reporting series. Each report replays stock movements from that start date, so consecutive days reconcile without requiring the previous report as an input. The same date and inputs reproduce the same inventory, while each execution writes fresh report artifacts. Business dates describe synthetic inventory observations; ZenML execution timestamps record when the pipeline actually ran.
 
 ## Warehouse replenishment
 

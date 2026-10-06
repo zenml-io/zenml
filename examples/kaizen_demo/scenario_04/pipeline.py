@@ -17,8 +17,9 @@
 from random import Random
 from typing import Annotated
 
+from build_settings import create_docker_settings
+
 from zenml import log_metadata, pipeline, step
-from zenml.config import DockerSettings
 
 
 @step
@@ -89,7 +90,7 @@ def plan_replenishment(
     return orders, summary
 
 
-@pipeline(settings={"docker": DockerSettings(requirements="requirements.txt")})
+@pipeline(settings={"docker": create_docker_settings()})
 def replenishment_planning(
     batch_size: int = 12, source_seed: int = 73, minimum_stock: int = 20
 ) -> dict[str, int]:

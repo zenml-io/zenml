@@ -15,7 +15,11 @@
 """Container build settings for remote demonstration pipelines."""
 
 from zenml.config import DockerSettings
-from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
+from zenml.config.docker_settings import (
+    DockerBuildConfig,
+    DockerBuildOptions,
+    PythonPackageInstaller,
+)
 
 
 def create_docker_settings() -> DockerSettings:
@@ -27,6 +31,12 @@ def create_docker_settings() -> DockerSettings:
     return DockerSettings(
         parent_image="zenmldocker/zenml:0.96.4-py3.11",
         requirements="requirements.txt",
+        python_package_installer=PythonPackageInstaller.UV,
+        # Replace inherited API files even when package metadata claims a match.
+        python_package_installer_args={
+            "reinstall-package": "opentelemetry-api",
+        },
+        replicate_local_python_environment=False,
         install_stack_requirements=False,
         disable_automatic_requirements_detection=True,
         build_config=DockerBuildConfig(

@@ -14,8 +14,9 @@
 
 """Score customer activity and evaluate observed conversions."""
 
+from build_settings import create_docker_settings
+
 from zenml import pipeline
-from zenml.config import DockerSettings
 
 from .steps import (
     evaluate_scores,
@@ -26,7 +27,7 @@ from .steps import (
 )
 
 
-@pipeline(settings={"docker": DockerSettings(requirements="requirements.txt")})
+@pipeline(settings={"docker": create_docker_settings()})
 def customer_scoring(source_uri: str) -> dict[str, float]:
     """Read customer activity, score conversion, and calculate quality metrics.
 

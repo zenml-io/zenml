@@ -15,96 +15,97 @@
 # limitations under the License.
 #
 
-"""Summarize stock levels and replenishment requirements."""
+"""Summarize synthetic daily stock movements and replenishment requirements."""
 
-from random import Random
+from datetime import date
 from typing import Annotated
 
+from build_settings import create_docker_settings
+
 from zenml import log_metadata, pipeline, step
+
+from .data import generate_inventory, simulate_daily_inventory
 
 
 @step
 def load_inventory(
     batch_size: int, source_seed: int
-) -> Annotated[list[dict[str, int]], "inventory_records"]:
-    """Build a reproducible inventory dataset.
+) -> Annotated[list[dict[str, int | str]], "inventory_records"]:
+    """Build a fixed catalog with synthetic inventory and demand parameters.
 
     Args:
         batch_size: Number of products to include.
-        source_seed: Seed used to generate stock levels and unit costs.
+        source_seed: Seed used to generate the catalog and demand parameters.
 
     Returns:
-        Product identifiers, quantities, and unit costs in cents.
+        Stable product identifiers, categories, starting stock, and unit costs.
 
     Raises:
         ValueError: If the batch size is not positive.
     """
-    if batch_size < 1:
-        raise ValueError("batch_size must be positive.")
-
-    random = Random(source_seed)
-    records = [
+    records = generate_inventory(batch_size, source_seed)
+    log_metadata(
         {
-            "product_id": index + 1,
-            "quantity": random.randint(0, 40),
-            "unit_cost_cents": random.randint(100, 2500),
+            "record_count": len(records),
+            "source_seed": source_seed,
+            "data_origin": "synthetic",
         }
-        for index in range(batch_size)
-    ]
-    log_metadata({"record_count": len(records), "source_seed": source_seed})
+    )
     return records
 
 
 @step(enable_cache=False)
 def summarize_inventory(
-    records: list[dict[str, int]], reorder_level: int
-) -> Annotated[dict[str, int], "report"]:
-    """Calculate inventory value and replenishment quantities.
+    records: list[dict[str, int | str]],
+    reorder_level: int,
+    business_date: str,
+    simulation_start_date: str,
+) -> tuple[
+    Annotated[dict[str, int | str], "report"],
+    Annotated[list[dict[str, int | str]], "daily_inventory_records"],
+]:
+    """Calculate stock movements for a synthetic business date.
 
     Args:
-        records: Products with quantities and unit costs in cents.
+        records: Fixed product catalog with initial quantities and costs.
         reorder_level: Minimum target quantity for each product.
+        business_date: ISO calendar date represented by the report.
+        simulation_start_date: Date of the catalog's initial stock snapshot.
 
     Returns:
-        Product counts, available stock, inventory value, and reorder totals.
+        Reconciled daily summary and itemized product-level stock movements.
 
     Raises:
-        ValueError: If the reorder level is negative.
+        ValueError: If dates, catalog, or reorder level are invalid.
     """
-    if reorder_level < 0:
-        raise ValueError("reorder_level must not be negative.")
-
-    report = {
-        "product_count": len(records),
-        "total_units": sum(record["quantity"] for record in records),
-        "inventory_value_cents": sum(
-            record["quantity"] * record["unit_cost_cents"]
-            for record in records
-        ),
-        "out_of_stock_count": sum(
-            record["quantity"] == 0 for record in records
-        ),
-        "reorder_count": sum(
-            record["quantity"] < reorder_level for record in records
-        ),
-        "reorder_units": sum(
-            max(0, reorder_level - record["quantity"]) for record in records
-        ),
-    }
+    daily_records, report = simulate_daily_inventory(
+        records, business_date, simulation_start_date, reorder_level
+    )
     log_metadata(report)
-    return report
+    return report, daily_records
 
 
-@pipeline(enable_cache=True)
+@pipeline(enable_cache=True, settings={"docker": create_docker_settings()})
 def inventory_report(
-    batch_size: int = 12, source_seed: int = 42, reorder_level: int = 15
+    batch_size: int = 60,
+    source_seed: int = 42,
+    reorder_level: int = 15,
+    business_date: str | None = None,
+    simulation_start_date: str = "2026-01-01",
 ) -> None:
-    """Create an inventory report for a product batch.
+    """Report a synthetic business day using a cached product catalog.
 
     Args:
         batch_size: Number of products to include.
         source_seed: Seed used to generate stock levels and unit costs.
         reorder_level: Minimum target quantity for each product.
+        business_date: ISO business date, defaulting to the submission date.
+        simulation_start_date: ISO date of the catalog's starting quantities.
     """
     records = load_inventory(batch_size=batch_size, source_seed=source_seed)
-    summarize_inventory(records=records, reorder_level=reorder_level)
+    summarize_inventory(
+        records=records,
+        reorder_level=reorder_level,
+        business_date=business_date or date.today().isoformat(),
+        simulation_start_date=simulation_start_date,
+    )
