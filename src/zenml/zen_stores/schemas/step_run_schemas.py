@@ -422,7 +422,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         )
                     )
                     pipeline_configuration.finalize_substitutions(
-                        start_time=self.pipeline_run.start_time,
+                        start_time=self.pipeline_run.substitution_time,
                         inplace=True,
                     )
                 step = config_schema.to_step(
@@ -491,8 +491,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step: Optional[Step] = None
         if include_metadata or self.substitutions is None:
-            # Matches the metadata, whose `{date}` and `{time}` a run without
-            # a start time resolves anew on every read.
             step = self.get_step_configuration(pipeline_configuration)
             step_type = step.config.step_type
             substitutions: Dict[str, str] = step.config.substitutions

@@ -147,6 +147,7 @@ from zenml.models import (
 )
 from zenml.utils import code_repository_utils, source_utils
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.rest_zen_store import RestZenStore
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -3584,6 +3585,87 @@ def test_get_run_step_inputs_succeeds():
         for step_item in steps.items:
             run_step_inputs = store.get_run_step(step_item.id).inputs
             assert len(run_step_inputs) == 1
+
+
+@pytest.mark.parametrize(
+    "start_time",
+    [utc_now() - timedelta(hours=1), None],
+    ids=["started_run", "run_without_start_time"],
+)
+def test_step_substitutions_agree_with_and_without_metadata(
+    start_time: Optional[datetime], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Responses with and without metadata carry the same substitutions.
+
+    A run without a start time resolves `{date}` and `{time}` with the
+    current time on every read, so the reads run on a later, frozen clock.
+    """
+    client = Client()
+    store = client.zen_store
+    step_name = sample_name("step")
+    pipeline_model = store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("pipeline"), project=client.active_project.id
+        )
+    )
+    snapshot = store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=client.active_project.id,
+            run_name_template=sample_name("run"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("pipeline"), substitutions={"team": "ml"}
+            ),
+            stack=client.active_stack.id,
+            pipeline=pipeline_model.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        invocation_id=step_name,
+                        source=Source(
+                            module="acme.foo", type=SourceType.INTERNAL
+                        ),
+                        upstream_steps=[],
+                    ),
+                    config=StepConfiguration(name=step_name),
+                    step_config_overrides=StepConfiguration(name=step_name),
+                )
+            },
+        )
+    )
+    run, _ = store.get_or_create_run(
+        PipelineRunRequest(
+            project=client.active_project.id,
+            name=sample_name("run"),
+            snapshot=snapshot.id,
+            status=ExecutionStatus.RUNNING,
+            start_time=start_time,
+        )
+    )
+    step_run = store.create_run_step(
+        StepRunRequest(
+            project=client.active_project.id,
+            name=step_name,
+            status=ExecutionStatus.RUNNING,
+            pipeline_run_id=run.id,
+            start_time=utc_now(),
+        )
+    )
+
+    read_time = utc_now() + timedelta(days=1)
+    monkeypatch.setattr(
+        "zenml.config.pipeline_configurations.utc_now", lambda: read_time
+    )
+    without_metadata = store.get_run_step(step_run.id, hydrate=False)
+    with_metadata = store.get_run_step(step_run.id, hydrate=True)
+
+    assert without_metadata.substitutions["team"] == "ml"
+    assert (
+        without_metadata.substitutions
+        == with_metadata.substitutions
+        == with_metadata.config.substitutions
+    )
 
 
 # .-----------.

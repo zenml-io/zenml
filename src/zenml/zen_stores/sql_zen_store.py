@@ -6544,7 +6544,7 @@ class SqlZenStore(BaseZenStore):
                 snapshot.pipeline_configuration
             )
             pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
+                start_time=run.substitution_time, inplace=True
             )
 
             if snapshot.is_dynamic:
