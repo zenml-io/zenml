@@ -6,6 +6,7 @@ opentelemetry-semantic-conventions==0.64b0
 opentelemetry-instrumentation==0.64b0
 opentelemetry-instrumentation-logging==0.64b0
 pandas==2.3.3
+plotly==6.3.1
 scikit-learn==1.7.2
 boto3
 s3fs
