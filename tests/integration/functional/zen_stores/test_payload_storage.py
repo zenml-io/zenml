@@ -20,7 +20,9 @@ can break: responses that differ from inline ones, execution paths that stop
 working while storage is down, half-created runs and corrupted blobs.
 """
 
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Generator, List, Optional, Sequence
 from uuid import UUID, uuid4
 
@@ -71,7 +73,10 @@ from zenml.zen_stores.payload_storage.blob_backends import (
     create_blob_backend,
 )
 from zenml.zen_stores.payload_storage.config import BlobBackendType
-from zenml.zen_stores.payload_storage.payload_store import BLOB_CHUNK_SIZE
+from zenml.zen_stores.payload_storage.payload_store import (
+    BLOB_CHUNK_SIZE,
+    PayloadStore,
+)
 from zenml.zen_stores.payload_storage.payloads import PayloadValue
 from zenml.zen_stores.schemas import (
     PayloadBlobSchema,
@@ -592,6 +597,32 @@ def test_backend_call_fails_in_time_while_the_client_hangs(
     assert time.monotonic() - started < 1.5
 
 
+def _slow_down_reads(
+    payload_store: PayloadStore,
+    monkeypatch: pytest.MonkeyPatch,
+    seconds: float,
+) -> threading.Event:
+    """Make each backend read take `seconds`, or time out if it has less.
+
+    The returned event is set once a read starts.
+    """
+    backend = payload_store._backend
+    assert backend
+    get_many = backend.get_many
+    reading = threading.Event()
+
+    def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
+        reading.set()
+        if timeout < seconds:
+            time.sleep(max(timeout, 0))
+            raise TimeoutError
+        time.sleep(seconds)
+        return get_many(sha256s, timeout=timeout - seconds)
+
+    monkeypatch.setattr(backend, "get_many", slow_get_many)
+    return reading
+
+
 def test_load_shares_one_timeout_across_chunks(
     store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -603,22 +634,54 @@ def test_load_shares_one_timeout_across_chunks(
     payload_store = _open_store(
         store, cache_max_bytes=0, backend_timeout_seconds=1
     ).payload_store
-    get_many = payload_store._backend.get_many
-
-    def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
-        # Each chunk takes 0.4 s: three fit in 1.2 s, not in the 1 s timeout.
-        if timeout < 0.4:
-            time.sleep(max(timeout, 0))
-            raise TimeoutError
-        time.sleep(0.4)
-        return get_many(sha256s, timeout=timeout - 0.4)
-
-    monkeypatch.setattr(payload_store._backend, "get_many", slow_get_many)
+    # Three chunks take 1.2 s, more than the 1 s timeout.
+    _slow_down_reads(payload_store, monkeypatch, seconds=0.4)
 
     started = time.monotonic()
     with pytest.raises(PayloadStorageUnavailableError):
         payload_store.load(offloaded.values_by_blob_id)
     assert time.monotonic() - started < 1.3
+
+
+def test_load_after_waiting_for_a_failed_load_keeps_its_timeout(
+    store: SqlZenStore,
+    s3_server: ThreadedMotoServer,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A load that waits for another one keeps its own timeout.
+
+    The other load fails for good on a blob that only it needs, so the
+    waiting load loads its blob again, in the time it has left.
+    """
+    offloaded = _open_store(store).payload_store.offload(
+        [PayloadValue(text="healthy"), PayloadValue(text="missing")]
+    )
+    blob_ids = {
+        text: blob_id for blob_id, text in offloaded.values_by_blob_id.items()
+    }
+    healthy, missing = blob_ids["healthy"], blob_ids["missing"]
+    local_s3_client(s3_server).delete_object(
+        Bucket=BUCKET, Key=f"{PREFIX}/{PayloadValue(text='missing').sha256}"
+    )
+    payload_store = _open_store(
+        store, cache_max_bytes=0, backend_timeout_seconds=1
+    ).payload_store
+    # Loaded before reads slow down, so that creating the storage client does
+    # not take from the 0.2 s that the owner's slow read leaves for reading.
+    assert payload_store.load([healthy]) == {healthy: "healthy"}
+    reading = _slow_down_reads(payload_store, monkeypatch, seconds=0.8)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        owner = executor.submit(payload_store.load, [healthy, missing])
+        assert reading.wait(timeout=5)
+        waiter = executor.submit(payload_store.load, [healthy])
+        # The owner fails after its 0.8 s read, which leaves the waiter less
+        # than a read to load its blob again. The bound is the 1 s timeout,
+        # plus scheduling tolerance.
+        with pytest.raises(PayloadStorageUnavailableError):
+            waiter.result(timeout=1.3)
+        with pytest.raises(NonRetryablePayloadStorageError):
+            owner.result()
 
 
 @pytest.mark.parametrize("from_environment", [False, True])

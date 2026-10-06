@@ -241,7 +241,10 @@ class PayloadStore:
         """Load the values of blobs, from the cache or from storage.
 
         The registry is read in a short session of its own and the backend
-        outside of it, so the caller must not hold a transaction.
+        outside of it, so the caller must not hold a transaction. One
+        deadline, the backend timeout from now, covers the whole load,
+        including waits for concurrent loads of the same blobs and loads
+        again after they failed.
 
         Args:
             blob_ids: The blobs to load.
@@ -249,7 +252,11 @@ class PayloadStore:
         Returns:
             The values by blob ID.
         """
-        return self._cache.get_or_load(blob_ids, self._load_uncached_payloads)
+        return self._cache.get_or_load(
+            blob_ids,
+            self._load_uncached_payloads,
+            deadline=time.monotonic() + self._timeout,
+        )
 
     def _get_registered_blob_ids(
         self, sha256s: Collection[str], session: Session
@@ -356,12 +363,13 @@ class PayloadStore:
                 return existing
 
     def _load_uncached_payloads(
-        self, blob_ids: Collection[UUID]
+        self, blob_ids: Collection[UUID], deadline: float
     ) -> Dict[UUID, str]:
         """Load blobs that are not cached from the backend.
 
         Args:
             blob_ids: The blobs to load.
+            deadline: The `time.monotonic()` by which the blobs are loaded.
 
         Returns:
             The values by blob ID.
@@ -396,7 +404,6 @@ class PayloadStore:
 
         blobs_by_sha256 = {blob.sha256: blob for blob in blobs}
         values: Dict[UUID, str] = {}
-        deadline = time.monotonic() + self._timeout
         for chunk in _batched(sorted(blobs_by_sha256), BLOB_CHUNK_SIZE):
             data = self._call_backend(
                 partial(
