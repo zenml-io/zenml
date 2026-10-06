@@ -201,7 +201,7 @@ jobs:
     secrets: inherit
   ubuntu-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -219,7 +219,7 @@ jobs:
   # which the job below covers.
   windows-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -234,7 +234,7 @@ jobs:
     secrets: inherit
   macos-unit-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -250,7 +250,7 @@ jobs:
     secrets: inherit
   windows-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [windows-latest]
@@ -267,7 +267,7 @@ jobs:
     secrets: inherit
   macos-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [macos-latest]
@@ -284,7 +284,7 @@ jobs:
     secrets: inherit
   ubuntu-latest-integration-test:
     if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: run-slow-ci-label-is-set
     strategy:
       matrix:
         os: [ubuntu-latest]

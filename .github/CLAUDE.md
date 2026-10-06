@@ -44,8 +44,10 @@ Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
 - Multi-Python: Ubuntu runs the most versions, macOS and Windows only the oldest and
   newest they support (see the matrices)
-- Tests run in shards and test lanes (see below). Unit and integration tests wait only
-  for the Ubuntu lint, not for each other. There is no Windows or macOS lint job: ruff and
+- Tests run in shards and test lanes (see below). Tests start independently of lint in
+  both CI workflows; slow CI still requires the label. Lint failures still fail the
+  workflow, but tests can use runner time even when lint fails. There is no Windows or
+  macOS lint job: ruff and
   pydoclint do not depend on the OS, and `mypy-platforms` type-checks the Windows and macOS
   `sys.platform` branches from Ubuntu with `mypy --platform`.
 - Full database migration tests (MySQL, MariaDB, SQLite)
@@ -170,7 +172,15 @@ split by test count and finish minutes apart. Every shard and lane is its own py
 process, so the script gives them all one `--randomly-seed` per workflow run: with
 pytest-randomly's per-process seeds, pytest-split breaks ties between equally long tests
 differently in each process and some tests run twice while others never run. `generate-test-duration.yml` refreshes it
-weekly by opening a pull request (a direct push to `develop` is rejected). The reusable
+weekly by opening a pull request (a direct push to `develop` is rejected). The generator
+uses the workflow token to publish a pending `check-label` on the exact generated commit
+after verifying that the PR changes only `.test_durations`. It then verifies that the PR
+is still open at that commit with exactly one release label before completing the check.
+If verification or completion fails, the check cannot pass.
+Concurrent refreshes wait for the previous run. The repository must enable
+"Allow GitHub Actions to create and approve pull requests". Scheduled Monday runs use
+the workflow on the default branch, `main`, so this automation must reach `main` before
+the schedule uses it. The reusable
 `unit-test.yml`, `integration-test-fast.yml` and `integration-test-slow.yml` take a
 `shards` input, a JSON list such as `'[1, 2, 3]'`; the shard count is the length of that
 list.
