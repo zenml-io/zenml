@@ -318,18 +318,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         single_loader = selectinload if many else joinedload
 
-        options = [
-            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration_blob_id),
-                jl_arg(PipelineSnapshotSchema.is_dynamic),
-            ),
-            single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
-                *PipelineRunSchema.defer_detail_columns()
-            ),
-            single_loader(jl_arg(StepRunSchema.static_config)),
-            single_loader(jl_arg(StepRunSchema.dynamic_config)),
-        ]
+        options = cls.get_step_configuration_query_options(many=many)
 
         if include_metadata:
             options.extend(
@@ -378,6 +367,36 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         return options
+
+    @classmethod
+    def get_step_configuration_query_options(
+        cls, many: bool = False
+    ) -> List[ExecutableOption]:
+        """Get the query options that loading the step configuration needs.
+
+        Args:
+            many: Whether the options are applied to a query that returns many
+                rows.
+
+        Returns:
+            The query options for the relationships that
+            `get_step_configuration` reads, limited to the columns it reads.
+            The run comes without its large columns, since responses also
+            read its body.
+        """
+        single_loader = selectinload if many else joinedload
+        return [
+            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration_blob_id),
+                jl_arg(PipelineSnapshotSchema.is_dynamic),
+            ),
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
+                *PipelineRunSchema.defer_detail_columns()
+            ),
+            single_loader(jl_arg(StepRunSchema.static_config)),
+            single_loader(jl_arg(StepRunSchema.dynamic_config)),
+        ]
 
     @classmethod
     def from_request(
@@ -437,6 +456,25 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             for text in (request.source_code, request.docstring)
             if text is not None
         ]
+
+    @staticmethod
+    def get_control_values(step: Step) -> Dict[str, Optional[str]]:
+        """Get the values of the control columns of a step run.
+
+        Step responses read these columns instead of parsing the step
+        configuration.
+
+        Args:
+            step: The resolved step configuration of the step run.
+
+        Returns:
+            The values by column name.
+        """
+        step_type = step.config.step_type
+        return {
+            "step_type": step_type.value if step_type else None,
+            "substitutions": json.dumps(step.config.substitutions),
+        }
 
     def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
         """Get the blobs that converting this step run with metadata reads.

@@ -48,6 +48,9 @@ class ServerSettingsSchema(SQLModel, table=True):
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
+    payload_backfill_completed: Optional[datetime] = Field(
+        nullable=True, default=None
+    )
 
     def update(
         self, settings_update: ServerSettingsUpdate
