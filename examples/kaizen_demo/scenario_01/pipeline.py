@@ -23,7 +23,7 @@ from typing import Annotated
 from zenml import log_metadata, pipeline, step
 
 
-@step
+@step(enable_cache=False)
 def load_inventory(
     batch_size: int, source_seed: int
 ) -> Annotated[list[dict[str, int]], "inventory_records"]:
