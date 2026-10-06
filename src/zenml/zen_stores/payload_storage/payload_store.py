@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from sqlalchemy import inspect
+from sqlalchemy import inspect, update
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
@@ -55,6 +55,9 @@ from zenml.zen_stores.payload_storage.payloads import (
 from zenml.zen_stores.schemas.payload_blob_schemas import (
     LOCATION_FINGERPRINT_LENGTH,
     PayloadBlobSchema,
+)
+from zenml.zen_stores.schemas.server_settings_schemas import (
+    ServerSettingsSchema,
 )
 
 IDENTITY_CODEC = "identity"
@@ -113,6 +116,9 @@ class PayloadStore:
         self._backend: Optional[BlobBackend] = None
         self._breaker: Optional[CircuitBreaker] = None
         self._location_fingerprint: Optional[str] = None
+        # The binding never changes once committed, so it is only checked
+        # until this process saw it.
+        self._binding_confirmed = False
         if config.backend:
             self._backend = create_blob_backend(
                 config.backend,
@@ -147,28 +153,22 @@ class PayloadStore:
         return self._backend is not None
 
     def validate_storage_location(self) -> None:
-        """Check that every blob is stored at the configured location.
+        """Check that the deployment's payloads are at the configured location.
 
         Raises:
-            RuntimeError: If blobs are stored elsewhere, or exist while no
-                backend is configured.
+            RuntimeError: If the deployment is bound to another location, or
+                holds payloads while no backend is configured.
         """
         if not inspect(self._engine).has_table(
             PayloadBlobSchema.__tablename__
         ):
             return
 
-        query = select(PayloadBlobSchema.location_fingerprint)
-        if self._location_fingerprint:
-            query = query.where(
-                PayloadBlobSchema.location_fingerprint
-                != self._location_fingerprint
-            )
         with Session(self._engine) as session:
-            location_fingerprint = session.exec(query.limit(1)).first()
-        if location_fingerprint:
+            other_location = self._get_other_bound_location(session)
+        if other_location:
             raise RuntimeError(
-                self._describe_location_mismatch(location_fingerprint)
+                self._describe_location_mismatch(other_location)
             )
 
     def offload(self, values: Iterable[PayloadValue]) -> OffloadResult:
@@ -184,6 +184,10 @@ class PayloadStore:
 
         Returns:
             The blob of each value.
+
+        Raises:
+            NonRetryablePayloadStorageError: If the deployment is bound to
+                another location.
         """
         if not self._offload_enabled:
             return OffloadResult.inline_only()
@@ -196,6 +200,14 @@ class PayloadStore:
             with Session(self._engine) as session:
                 blob_ids = self._get_registered_blob_ids(
                     values_by_sha256, session=session
+                )
+                # Read after the blobs: a binding commits no later than the
+                # blobs it covers, so this sees the binding of every blob
+                # read above.
+                other_location = self._get_other_bound_location(session)
+            if other_location:
+                raise NonRetryablePayloadStorageError(
+                    self._describe_location_mismatch(other_location)
                 )
             new_values = [
                 value
@@ -280,6 +292,69 @@ class PayloadStore:
                 blob_ids[sha256] = blob_id
         return blob_ids
 
+    def _get_other_bound_location(self, session: Session) -> Optional[str]:
+        """Get the location the deployment is bound to, if it is another one.
+
+        Args:
+            session: The session to read the committed binding with.
+
+        Returns:
+            The fingerprint of the bound location, unless the deployment is
+            unbound or bound to the location of this store.
+        """
+        if self._binding_confirmed:
+            return None
+        location = session.exec(
+            select(ServerSettingsSchema.payload_location_fingerprint)
+        ).first()
+        if location is not None and location == self._location_fingerprint:
+            self._binding_confirmed = True
+            return None
+        return location
+
+    def _claim_storage_location(self, session: Session) -> None:
+        """Bind the deployment to this location, unless it is bound already.
+
+        Runs in the transaction that registers blobs, before it adds them, so
+        that the binding only commits together with durable bytes. The
+        caller marks the location as bound once that transaction committed.
+
+        Args:
+            session: The session registering blobs.
+
+        Raises:
+            RuntimeError: If the server settings have not been initialized.
+            NonRetryablePayloadStorageError: If the deployment is bound to
+                another location.
+        """
+        if self._binding_confirmed:
+            return
+        session.exec(
+            update(ServerSettingsSchema)
+            .where(
+                col(ServerSettingsSchema.payload_location_fingerprint).is_(
+                    None
+                )
+            )
+            .values(payload_location_fingerprint=self._location_fingerprint)
+        )
+        # A locking read sees the latest committed binding, whatever this
+        # transaction read before.
+        location = session.exec(
+            select(
+                ServerSettingsSchema.payload_location_fingerprint
+            ).with_for_update()
+        ).first()
+        # The update leaves no row unbound, so nothing read means no row.
+        if location is None:
+            raise RuntimeError(
+                "The server settings have not been initialized."
+            )
+        if location != self._location_fingerprint:
+            raise NonRetryablePayloadStorageError(
+                self._describe_location_mismatch(location)
+            )
+
     def _build_blob_record(self, value: PayloadValue) -> PayloadBlobSchema:
         """Build the registry row of a payload value, without saving it.
 
@@ -316,6 +391,7 @@ class PayloadStore:
         # Read now: the commit expires the rows, and reading them later would
         # query each one again.
         blob_ids = {blob.sha256: blob.id for blob in blobs}
+        self._claim_storage_location(session)
         session.add_all(blobs)
         try:
             session.commit()
@@ -326,6 +402,7 @@ class PayloadStore:
                 value.sha256: self._get_or_register_blob_id(value)
                 for value in values
             }
+        self._binding_confirmed = True
         return blob_ids
 
     def _get_or_register_blob_id(self, value: PayloadValue) -> UUID:
@@ -345,9 +422,11 @@ class PayloadStore:
             blob = self._build_blob_record(value)
             # Read now: the commit expires the row.
             blob_id = blob.id
+            self._claim_storage_location(session)
             session.add(blob)
             try:
                 session.commit()
+                self._binding_confirmed = True
                 return blob_id
             except IntegrityError:
                 session.rollback()
