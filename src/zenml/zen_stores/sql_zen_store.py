@@ -6877,7 +6877,7 @@ class SqlZenStore(BaseZenStore):
                 payloads
             )
             pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
+                start_time=run.substitution_time, inplace=True
             )
             steps = {
                 name: DAGStepView.from_dict(
