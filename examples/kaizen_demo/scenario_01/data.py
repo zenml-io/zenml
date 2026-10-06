@@ -63,22 +63,22 @@ def generate_inventory(
     return records
 
 
-def simulate_daily_inventory(
+def simulate_inventory_history(
     records: list[dict[str, int | str]],
     business_date: str,
     simulation_start_date: str,
     reorder_level: int,
-) -> tuple[list[dict[str, int | str]], dict[str, int | str]]:
-    """Replay deterministic stock movements through one synthetic business day.
+) -> list[dict[str, int | str]]:
+    """Replay inventory movements for every product and historical day.
 
     Args:
         records: Stable product catalog with initial stock and demand rules.
-        business_date: ISO calendar date represented by the output.
-        simulation_start_date: ISO calendar date of the catalog's opening stock.
+        business_date: ISO calendar date ending the history.
+        simulation_start_date: ISO calendar date of the opening stock snapshot.
         reorder_level: Minimum desired closing quantity for each product.
 
     Returns:
-        Itemized movements for the requested day and reconciled summary totals.
+        Itemized product movements for every day in the requested history.
 
     Raises:
         ValueError: If dates, catalog, or reorder level are invalid.
@@ -106,17 +106,45 @@ def simulate_daily_inventory(
     closing = {
         product.product_id: product.initial_quantity for product in products
     }
+    history: list[dict[str, int | str]] = []
     day = start
-    daily_records: list[dict[str, int | str]] = []
     while day <= selected:
-        daily_records = []
         for product in products:
             record = _simulate_product(
                 product, day, closing[product.product_id], reorder_level
             )
             closing[product.product_id] = int(record["closing_units"])
-            daily_records.append(record)
+            history.append(record)
         day += timedelta(days=1)
+    return history
+
+
+def simulate_daily_inventory(
+    records: list[dict[str, int | str]],
+    business_date: str,
+    simulation_start_date: str,
+    reorder_level: int,
+) -> tuple[list[dict[str, int | str]], dict[str, int | str]]:
+    """Replay deterministic stock movements through one synthetic business day.
+
+    Args:
+        records: Stable product catalog with initial stock and demand rules.
+        business_date: ISO calendar date represented by the output.
+        simulation_start_date: ISO calendar date of the catalog's opening stock.
+        reorder_level: Minimum desired closing quantity for each product.
+
+    Returns:
+        Itemized movements for the requested day and reconciled summary totals.
+
+    Raises:
+        ValueError: If dates, catalog, or reorder level are invalid.
+    """
+    history = simulate_inventory_history(
+        records, business_date, simulation_start_date, reorder_level
+    )
+    daily_records = [
+        row for row in history if row["business_date"] == business_date
+    ]
     summary: dict[str, int | str] = {
         "business_date": business_date,
         "simulation_start_date": simulation_start_date,

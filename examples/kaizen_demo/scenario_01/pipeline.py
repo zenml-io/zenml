@@ -20,16 +20,26 @@
 from datetime import date
 from typing import Annotated
 
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 from build_settings import create_docker_settings
 
 from zenml import log_metadata, pipeline, step
+from zenml.types import HTMLString
 
-from .data import generate_inventory, simulate_daily_inventory
+from .data import (
+    generate_inventory,
+    simulate_daily_inventory,
+    simulate_inventory_history,
+)
+
+INVENTORY_SOURCE_VERSION = "inventory-catalog-v2"
 
 
 @step
 def load_inventory(
-    batch_size: int, source_seed: int
+    batch_size: int, source_seed: int, source_version: str = INVENTORY_SOURCE_VERSION
 ) -> Annotated[list[dict[str, int | str]], "inventory_records"]:
     """Build a fixed catalog with synthetic inventory and demand parameters.
 
@@ -43,6 +53,8 @@ def load_inventory(
     Raises:
         ValueError: If the batch size is not positive.
     """
+    if source_version != INVENTORY_SOURCE_VERSION:
+        raise ValueError("Unsupported inventory source version.")
     records = generate_inventory(batch_size, source_seed)
     log_metadata(
         {
@@ -63,6 +75,7 @@ def summarize_inventory(
 ) -> tuple[
     Annotated[dict[str, int | str], "report"],
     Annotated[list[dict[str, int | str]], "daily_inventory_records"],
+    Annotated[HTMLString, "inventory_report_html"],
 ]:
     """Calculate stock movements for a synthetic business date.
 
@@ -78,11 +91,136 @@ def summarize_inventory(
     Raises:
         ValueError: If dates, catalog, or reorder level are invalid.
     """
-    daily_records, report = simulate_daily_inventory(
+    _, report = simulate_daily_inventory(
         records, business_date, simulation_start_date, reorder_level
     )
+    history = simulate_inventory_history(
+        records, business_date, simulation_start_date, reorder_level
+    )
+    report_html = _build_inventory_report(history, report, reorder_level)
     log_metadata(report)
-    return report, daily_records
+    return report, history, HTMLString(report_html)
+
+
+def _build_inventory_report(
+    history: list[dict[str, int | str]],
+    report: dict[str, int | str],
+    reorder_level: int,
+) -> str:
+    """Build a self-contained interactive report from saved daily outputs.
+
+    Args:
+        history: Itemized historical inventory outputs.
+        report: Summary for the final business date.
+        reorder_level: Stock threshold shown on the histogram.
+
+    Returns:
+        A standalone Plotly HTML document.
+    """
+    latest_date = str(report["business_date"])
+    latest = [row for row in history if row["business_date"] == latest_date]
+    categories: dict[str, int] = {}
+    for row in latest:
+        category = str(row["category"])
+        categories[category] = categories.get(category, 0) + int(
+            row["closing_units"]
+        )
+    dates = sorted({str(row["business_date"]) for row in history})
+    stock_by_date = [
+        sum(
+            int(row["closing_units"])
+            for row in history
+            if row["business_date"] == day
+        )
+        for day in dates
+    ]
+    receipts_by_date = [
+        sum(
+            int(row["received_units"])
+            for row in history
+            if row["business_date"] == day
+        )
+        for day in dates
+    ]
+    figure = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=(
+            "Closing stock distribution",
+            "Stock by category",
+            "Daily stock trend",
+            "Daily replenishment",
+        ),
+        specs=[[{}, {}], [{}, {}]],
+        horizontal_spacing=0.1,
+        vertical_spacing=0.16,
+    )
+    figure.add_trace(
+        go.Histogram(
+            x=[int(row["closing_units"]) for row in latest],
+            nbinsx=12,
+            marker_color="#4f46e5",
+            name="Closing stock",
+        ),
+        row=1,
+        col=1,
+    )
+    figure.add_vline(
+        x=reorder_level,
+        line_dash="dash",
+        line_color="#ef4444",
+        annotation_text="Reorder level",
+        row=1,
+        col=1,
+    )
+    figure.add_trace(
+        go.Bar(
+            x=list(categories),
+            y=list(categories.values()),
+            marker_color="#06b6d4",
+            name="Units by category",
+        ),
+        row=1,
+        col=2,
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=dates,
+            y=stock_by_date,
+            mode="lines+markers",
+            line=dict(color="#0f766e", width=3),
+            name="Closing stock",
+        ),
+        row=2,
+        col=1,
+    )
+    figure.add_trace(
+        go.Bar(
+            x=dates,
+            y=receipts_by_date,
+            marker_color="#f59e0b",
+            name="Received units",
+        ),
+        row=2,
+        col=2,
+    )
+    figure.update_layout(
+        title=(
+            f"Inventory health · {latest_date}"
+            f"<br><sup>{report['product_count']} products · "
+            f"{report['total_units']} closing units · "
+            f"{report['reorder_count']} products below target</sup>"
+        ),
+        template="plotly_white",
+        height=850,
+        width=1250,
+        hovermode="x unified",
+        margin=dict(t=110, l=55, r=35, b=55),
+        legend=dict(orientation="h", y=-0.08),
+    )
+    figure.update_xaxes(showgrid=False)
+    figure.update_yaxes(showgrid=True, gridcolor="#e5e7eb")
+    return figure.to_html(full_html=True, include_plotlyjs=True)
 
 
 @pipeline(enable_cache=True, settings={"docker": create_docker_settings()})
@@ -102,7 +240,11 @@ def inventory_report(
         business_date: ISO business date, defaulting to the submission date.
         simulation_start_date: ISO date of the catalog's starting quantities.
     """
-    records = load_inventory(batch_size=batch_size, source_seed=source_seed)
+    records = load_inventory(
+        batch_size=batch_size,
+        source_seed=source_seed,
+        source_version=INVENTORY_SOURCE_VERSION,
+    )
     summarize_inventory(
         records=records,
         reorder_level=reorder_level,
