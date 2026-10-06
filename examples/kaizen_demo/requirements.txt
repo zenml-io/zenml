@@ -1,4 +1,5 @@
 zenml[server]==0.96.4
+opentelemetry-api==1.43.0
 pandas==2.3.3
 scikit-learn==1.7.2
 boto3
