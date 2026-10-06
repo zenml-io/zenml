@@ -84,6 +84,7 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 )
 from zenml.zen_server.utils import (
     get_auth_context,
+    get_with_best_effort_metadata,
     server_config,
     set_auth_context,
     snapshot_executor,
@@ -341,7 +342,9 @@ def run_snapshot(
             auth_context=auth_context,
             wait_for_completion=wait_runner_pod,
         )
-        response_run = zen_store().get_run(run_id=execution_request.run_id)
+        response_run = get_with_best_effort_metadata(
+            zen_store().get_run, execution_request.run_id
+        )
     else:
         response_run = zen_store().update_run(
             run_id=execution_request.run_id,
@@ -482,13 +485,15 @@ def execute_snapshot_run(
 
     Raises:
         ValueError: If the persisted run has no execution owner.
-        RuntimeError: If runner submission fails while the run is initializing.
+        RuntimeError: If the run cannot be started while it is initializing.
 
     Returns:
         Whether the prepared run was submitted for execution.
     """
+    # Without metadata, so that a payload storage failure reaches the
+    # failure handling below.
     try:
-        run = zen_store().get_run(run_id=request.run_id, hydrate=True)
+        run = zen_store().get_run(run_id=request.run_id, hydrate=False)
     except KeyError:
         logger.warning(
             "Prepared snapshot run %s no longer exists.", request.run_id
@@ -504,16 +509,16 @@ def execute_snapshot_run(
         return False
 
     try:
-        snapshot = zen_store().get_snapshot(
-            snapshot_id=request.snapshot_id, hydrate=True
-        )
-    except KeyError:
-        logger.warning(
-            "Prepared snapshot %s no longer exists.", request.snapshot_id
-        )
-        return False
+        try:
+            snapshot = zen_store().get_snapshot(
+                snapshot_id=request.snapshot_id, hydrate=True
+            )
+        except KeyError:
+            logger.warning(
+                "Prepared snapshot %s no longer exists.", request.snapshot_id
+            )
+            return False
 
-    try:
         if run.snapshot is None or run.snapshot.id != snapshot.id:
             raise ValueError(
                 "Prepared run does not reference its target snapshot."
