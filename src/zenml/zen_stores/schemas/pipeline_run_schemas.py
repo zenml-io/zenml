@@ -660,9 +660,21 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         pipeline_config.finalize_substitutions(
-            start_time=self.start_time, inplace=True
+            start_time=self.substitution_time, inplace=True
         )
         return pipeline_config
+
+    @property
+    def substitution_time(self) -> datetime:
+        """The time that the `{date}` and `{time}` substitutions resolve to.
+
+        A run without a start time uses its creation time, so that its
+        substitutions are the same on every read.
+
+        Returns:
+            The substitution time.
+        """
+        return self.start_time or self.created
 
     def get_execution_mode(self) -> ExecutionMode:
         """Get the execution mode of the pipeline run.
