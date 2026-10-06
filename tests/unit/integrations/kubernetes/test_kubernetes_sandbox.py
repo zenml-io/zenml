@@ -23,6 +23,10 @@ import pytest
 from kubernetes import client as k8s_client
 
 from zenml.integrations.kubernetes import kube_utils
+from zenml.integrations.kubernetes.flavors import (
+    KubernetesSandboxOwner,
+    KubernetesSandboxSettings,
+)
 from zenml.integrations.kubernetes.sandboxes import kubernetes_sandbox
 from zenml.integrations.kubernetes.sandboxes.kubernetes_sandbox import (
     KubernetesSandbox,
@@ -308,3 +312,167 @@ def test_collect_exec_output_joins_chunks() -> None:
     )
 
     assert output == "abcdef"
+
+
+_STEP_POD_NAME = "step-pod"
+_STEP_JOB_REFERENCE = k8s_client.V1OwnerReference(
+    api_version="batch/v1",
+    kind="Job",
+    name="step-job",
+    uid="job-uid",
+    controller=True,
+)
+
+
+def _step_pod(
+    owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+) -> k8s_client.V1Pod:
+    return k8s_client.V1Pod(
+        metadata=k8s_client.V1ObjectMeta(
+            name=_STEP_POD_NAME,
+            uid="pod-uid",
+            owner_references=owner_references,
+        )
+    )
+
+
+@pytest.fixture
+def step_pod_hostname(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pretend to run inside the step pod."""
+    monkeypatch.setattr(
+        kubernetes_sandbox.socket, "gethostname", lambda: _STEP_POD_NAME
+    )
+
+
+def _resolve_owner_references(
+    owner: KubernetesSandboxOwner,
+    step_pod: Optional[k8s_client.V1Pod],
+    monkeypatch: pytest.MonkeyPatch,
+) -> Optional[List[k8s_client.V1OwnerReference]]:
+    get_pod = MagicMock(return_value=step_pod)
+    monkeypatch.setattr(kube_utils, "get_pod", get_pod)
+    references = KubernetesSandbox._resolve_owner_references(
+        _make_sandbox([]),
+        KubernetesSandboxSettings(owner=owner),
+    )
+    if owner != KubernetesSandboxOwner.NONE:
+        assert get_pod.call_args.kwargs["pod_name"] == _STEP_POD_NAME
+        assert get_pod.call_args.kwargs["namespace"] == "zenml"
+    return references
+
+
+def test_no_owner_skips_step_pod_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that unowned sessions do not look up the step pod."""
+    get_pod = MagicMock()
+    monkeypatch.setattr(kube_utils, "get_pod", get_pod)
+
+    assert (
+        KubernetesSandbox._resolve_owner_references(
+            _make_sandbox([]), KubernetesSandboxSettings()
+        )
+        is None
+    )
+    get_pod.assert_not_called()
+
+
+@pytest.mark.usefixtures("step_pod_hostname")
+def test_pod_owner_references_step_pod(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the pod owner references the pod running the step."""
+    (reference,) = _resolve_owner_references(
+        KubernetesSandboxOwner.POD,
+        _step_pod([_STEP_JOB_REFERENCE]),
+        monkeypatch,
+    )
+
+    assert (
+        reference.api_version,
+        reference.kind,
+        reference.name,
+        reference.uid,
+    ) == ("v1", "Pod", _STEP_POD_NAME, "pod-uid")
+    assert reference.controller is False
+    assert reference.block_owner_deletion is False
+
+
+@pytest.mark.usefixtures("step_pod_hostname")
+def test_job_owner_references_job_of_step_pod(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the job owner references the Job owning the step pod."""
+    (reference,) = _resolve_owner_references(
+        KubernetesSandboxOwner.JOB,
+        _step_pod([_STEP_JOB_REFERENCE]),
+        monkeypatch,
+    )
+
+    assert (
+        reference.api_version,
+        reference.kind,
+        reference.name,
+        reference.uid,
+    ) == ("batch/v1", "Job", "step-job", "job-uid")
+    # The Job controls the step pod, but must not claim the sandbox pod.
+    assert reference.controller is False
+    assert reference.block_owner_deletion is False
+    assert _STEP_JOB_REFERENCE.controller is True
+
+
+@pytest.mark.usefixtures("step_pod_hostname")
+def test_job_owner_requires_step_pod_owned_by_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the job owner fails for step pods without a Job."""
+    with pytest.raises(RuntimeError, match="not owned by a Job"):
+        _resolve_owner_references(
+            KubernetesSandboxOwner.JOB, _step_pod(), monkeypatch
+        )
+
+
+@pytest.mark.usefixtures("step_pod_hostname")
+def test_owner_requires_step_pod_in_sandbox_namespace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that owners fail if the step pod is not in the namespace."""
+    with pytest.raises(RuntimeError, match="was not found in the sandbox"):
+        _resolve_owner_references(
+            KubernetesSandboxOwner.POD, None, monkeypatch
+        )
+
+
+@pytest.mark.usefixtures("step_pod_hostname")
+def test_create_session_sets_owner_references_on_pod(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the session pod is created with its owner reference."""
+    sandbox = _make_sandbox([])
+    sandbox.resolve_settings.return_value = KubernetesSandboxSettings(
+        owner=KubernetesSandboxOwner.JOB
+    )
+    sandbox._resolve_session_environment.return_value = {}
+    sandbox._resolve_owner_references.side_effect = (
+        lambda settings: KubernetesSandbox._resolve_owner_references(
+            sandbox, settings
+        )
+    )
+    monkeypatch.setattr(
+        kube_utils,
+        "get_pod",
+        MagicMock(return_value=_step_pod([_STEP_JOB_REFERENCE])),
+    )
+    create_pod = MagicMock()
+    monkeypatch.setattr(kube_utils, "create_pod", create_pod)
+    monkeypatch.setattr(kube_utils, "wait_pod", MagicMock())
+
+    session = KubernetesSandbox.create_session(sandbox)
+
+    manifest = create_pod.call_args.kwargs["pod_manifest"]
+    assert [
+        (reference.kind, reference.name)
+        for reference in manifest.metadata.owner_references
+    ] == [("Job", "step-job")]
+    assert isinstance(session, KubernetesSandboxSession)
+    assert session._pod_name == manifest.metadata.name

@@ -20,6 +20,7 @@ import posixpath
 import queue
 import re
 import shlex
+import socket
 import threading
 import time
 import uuid
@@ -32,6 +33,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors import (
     KubernetesSandboxConfig,
+    KubernetesSandboxOwner,
     KubernetesSandboxSettings,
 )
 from zenml.integrations.kubernetes.manifest_utils import build_pod_manifest
@@ -618,6 +620,80 @@ class KubernetesSandbox(BaseSandbox):
         """
         return k8s_client.CoreV1Api(self.get_kube_client())
 
+    def _resolve_owner_references(
+        self, settings: KubernetesSandboxSettings
+    ) -> Optional[List[k8s_client.V1OwnerReference]]:
+        """Build the owner references attaching a session pod to the step.
+
+        Args:
+            settings: The resolved sandbox settings.
+
+        Raises:
+            RuntimeError: If the current pod is not found in the sandbox
+                namespace, or is not owned by a Job when a Job owner is
+                requested.
+
+        Returns:
+            The owner references for the session pod, or `None` if the
+            session pod should not be owned.
+        """
+        if settings.owner == KubernetesSandboxOwner.NONE:
+            return None
+
+        namespace = self.config.kubernetes_namespace
+        # ZenML never sets `spec.hostname` on step pods, so the hostname is
+        # the pod name.
+        pod_name = socket.gethostname()
+        pod = kube_utils.get_pod(
+            core_api=self.core_api,
+            pod_name=pod_name,
+            namespace=namespace,
+            api_request_timeout=settings.api_request_timeout,
+            max_retries=settings.max_api_retries,
+        )
+        if pod is None or pod.metadata is None:
+            raise RuntimeError(
+                f"Cannot make the sandbox session pod owned by "
+                f"`{settings.owner}`: pod `{pod_name}` was not found in the "
+                f"sandbox namespace `{namespace}`. Owners are only supported "
+                "when running on Kubernetes in the namespace of the sandbox, "
+                "because owner references cannot cross namespaces."
+            )
+
+        if settings.owner == KubernetesSandboxOwner.POD:
+            owner_reference = k8s_client.V1OwnerReference(
+                api_version="v1",
+                kind="Pod",
+                name=pod.metadata.name,
+                uid=pod.metadata.uid,
+            )
+        else:
+            job_references = [
+                reference
+                for reference in pod.metadata.owner_references or []
+                if reference.kind == "Job"
+                and reference.api_version == "batch/v1"
+            ]
+            if not job_references:
+                raise RuntimeError(
+                    f"Cannot make the sandbox session pod owned by a Job: "
+                    f"pod `{pod_name}` is not owned by a Job. Use the `pod` "
+                    "owner instead."
+                )
+            owner_reference = k8s_client.V1OwnerReference(
+                api_version=job_references[0].api_version,
+                kind="Job",
+                name=job_references[0].name,
+                uid=job_references[0].uid,
+            )
+
+        # The sandbox pod is not managed by the owner's controller, and
+        # blocking the owner's deletion would require `update` permissions
+        # on the owner's finalizers.
+        owner_reference.controller = False
+        owner_reference.block_owner_deletion = False
+        return [owner_reference]
+
     def create_session(
         self,
         settings: Optional[BaseSandboxSettings] = None,
@@ -639,6 +715,9 @@ class KubernetesSandbox(BaseSandbox):
         resolved_settings = cast(
             KubernetesSandboxSettings, self.resolve_settings(settings)
         )
+        # Resolved before creating the pod so that the session pod is never
+        # left without an owner, not even while it is starting.
+        owner_references = self._resolve_owner_references(resolved_settings)
         session_id = f"k8s-{uuid.uuid4().hex[:12]}"
         pod_name = kube_utils.sanitize_label(f"zenml-sandbox-{session_id}")
         labels = {
@@ -665,6 +744,7 @@ class KubernetesSandbox(BaseSandbox):
             service_account_name=resolved_settings.service_account_name,
             env=env,
             labels=labels,
+            owner_references=owner_references,
         )
         if pod_manifest.spec is not None:
             pod_manifest.spec.automount_service_account_token = (
