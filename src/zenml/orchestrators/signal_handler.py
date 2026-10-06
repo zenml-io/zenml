@@ -106,11 +106,11 @@ class SignalHandler:
         """
         return self.register()
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *exc_details: Any) -> None:
         """Unregister on context exit.
 
         Args:
-            *_: Unused context manager exception details.
+            *exc_details: Unused context manager exception details.
         """
         self.unregister()
 

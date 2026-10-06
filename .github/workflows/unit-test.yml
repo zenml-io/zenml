@@ -31,6 +31,18 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
   workflow_dispatch:
     inputs:
       os:
@@ -51,6 +63,11 @@ on:
         options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
+      install_integrations:
+        description: Install ZenML integrations
+        type: string
+        required: false
+        default: 'yes'
       git-ref:
         description: Git branch or ref
         type: string
@@ -61,6 +78,18 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -69,6 +98,11 @@ jobs:
   unit-test:
     name: unit-test
     runs-on: ${{ inputs.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
@@ -79,19 +113,6 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Free disk space (Ubuntu)
-        if: inputs.os == 'ubuntu-latest'
-        run: |
-          set -euxo pipefail
-          echo "Before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo docker image prune --all --force || true
-          echo "After cleanup:"
-          df -h
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -106,15 +127,8 @@ jobs:
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0  # Fetch all history for all branches and tags
-      - name: Restore uv cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
-          key: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+      - name: Free disk space
+        uses: $/.github/actions/free_disk_space
       - name: Install libomp
         if: ${{ inputs.os == 'macos-latest' || inputs.os == 'macos-13' }}
         run: brew install libomp
@@ -130,7 +144,11 @@ jobs:
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
       - name: Run unit tests
         run: |
-          bash scripts/test-coverage-xml.sh unit
+          bash scripts/test-coverage-xml.sh unit default "${SHARD_COUNT}" "${SHARD}"
+        env:
+          SHARD_COUNT: ${{ strategy.job-total }}
+          SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
