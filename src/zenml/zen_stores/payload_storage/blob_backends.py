@@ -15,7 +15,6 @@
 
 import asyncio
 import os
-import re
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -63,9 +62,10 @@ class BlobBackend(ABC):
     def location(self) -> str:
         """Where the blobs are stored, such as `s3://bucket/prefix`.
 
-        It includes the endpoint or account that selects the physical store
-        when one is configured, and never credentials, so that they can
-        change.
+        It includes the endpoint that the client sends requests to, wherever
+        the provider takes it from, such as the environment or a config file,
+        unless bucket names are global behind it, as on AWS and GCS. It never
+        includes credentials, so that they can change.
 
         Returns:
             The location of the blobs.
@@ -405,26 +405,84 @@ class FsspecBlobBackend(BlobBackend):
         return dict(zip(sha256s, data))
 
 
-def _get_azure_account(options: Dict[str, Any]) -> Optional[str]:
-    """Get the Azure storage account that adlfs connects to.
+def _get_s3_endpoint(options: Dict[str, Any]) -> Optional[str]:
+    """Get the endpoint that the S3 client of s3fs sends requests to.
+
+    Without one in the options, botocore takes the endpoint from the
+    environment or the AWS config file, for the profile s3fs creates its
+    session with.
+
+    Args:
+        options: The options of the s3fs filesystem.
+
+    Returns:
+        The endpoint, or None for the default endpoint of the AWS region.
+    """
+    endpoint_url: Optional[str] = options.get("endpoint_url") or (
+        options.get("client_kwargs") or {}
+    ).get("endpoint_url")
+    if endpoint_url:
+        return endpoint_url
+    try:
+        # botocore calls this provider private, but its clients resolve
+        # configured endpoints with it, while a client's own endpoint does not
+        # tell them apart from the default one of its region. Versions without
+        # it ignore configured endpoints.
+        from botocore.configprovider import ConfiguredEndpointProvider
+    except ImportError:
+        return None
+    import botocore.session
+
+    session = botocore.session.Session(profile=options.get("profile"))
+    ignore_configured_endpoint = (options.get("config_kwargs") or {}).get(
+        "ignore_configured_endpoint_urls"
+    )
+    if ignore_configured_endpoint is None:
+        ignore_configured_endpoint = session.get_config_variable(
+            "ignore_configured_endpoint_urls"
+        )
+    if ignore_configured_endpoint:
+        return None
+    configured_endpoint_url: Optional[str] = ConfiguredEndpointProvider(
+        full_config=session.full_config,
+        scoped_config=session.get_scoped_config(),
+        client_name="s3",
+    ).provide()
+    return configured_endpoint_url
+
+
+def _get_azure_endpoint(options: Dict[str, Any]) -> Optional[str]:
+    """Get the blob endpoint that adlfs connects to.
+
+    As in adlfs, a connection string takes precedence over an account name,
+    each from the options or else the environment, and the endpoint of an
+    account is its `account_host` or else in the public Azure cloud.
 
     Args:
         options: The options of the adlfs filesystem.
 
     Returns:
-        The account, from the options or, as adlfs does, the environment.
+        The endpoint, without the SAS token it may hold, or None without an
+        account to connect to.
     """
     connection_string = options.get("connection_string") or os.environ.get(
         "AZURE_STORAGE_CONNECTION_STRING"
     )
-    if connection_string and (
-        match := re.search(r"AccountName=([^;]+)", connection_string)
-    ):
-        return match.group(1)
-    account: Optional[str] = options.get("account_name") or os.environ.get(
+    if connection_string:
+        from azure.storage.blob import BlobServiceClient
+
+        client = BlobServiceClient.from_connection_string(connection_string)
+        url: str = client.url
+        return url.partition("?")[0]
+    account_name = options.get("account_name") or os.environ.get(
         "AZURE_STORAGE_ACCOUNT_NAME"
     )
-    return account
+    if not account_name:
+        return None
+    account_host = (
+        options.get("account_host") or f"{account_name}.blob.core.windows.net"
+    )
+    return f"https://{account_host}"
 
 
 def create_blob_backend(
@@ -435,7 +493,9 @@ def create_blob_backend(
     """Create a payload backend from its configuration.
 
     Creating a backend never connects to its storage, so a store starts even
-    while its storage is unavailable. A missing filesystem library fails
+    while its storage is unavailable. A missing filesystem library, or a
+    configuration the client would reject when resolving the endpoint, such
+    as an unknown AWS profile or an invalid Azure connection string, fails
     here, when the store starts.
 
     Args:
@@ -449,24 +509,23 @@ def create_blob_backend(
         The payload backend.
     """
     import fsspec
+    from fsspec.config import apply_config
 
-    options = dict(configuration)
+    protocol, _ = fsspec.core.split_protocol(configuration["path"])
+    filesystem_class = fsspec.get_filesystem_class(protocol)
+    # Options missing from the configuration default to those of the fsspec
+    # configuration of the filesystem, an endpoint included.
+    options = apply_config(filesystem_class, configuration)
     path = options.pop("path")
-    # Bucket names only select the physical store together with the endpoint
-    # of an S3-compatible store or GCS emulator, or the Azure account.
-    location = path.rstrip("/")
+    endpoint_url: Optional[str] = None
     if backend_type == BlobBackendType.GCS:
         endpoint_url = options.get("endpoint_url") or os.environ.get(
             "STORAGE_EMULATOR_HOST"
         )
-        if endpoint_url and endpoint_url != "default":
-            location = f"{location} at {endpoint_url.rstrip('/')}"
+        if endpoint_url == "default":
+            endpoint_url = None
     elif backend_type == BlobBackendType.S3:
-        endpoint_url = options.get("endpoint_url") or (
-            options.get("client_kwargs") or {}
-        ).get("endpoint_url")
-        if endpoint_url:
-            location = f"{location} at {endpoint_url.rstrip('/')}"
+        endpoint_url = _get_s3_endpoint(options)
         # The S3 client keeps 10 connections by default, and a call's timeout
         # also runs while its requests wait for one.
         options["config_kwargs"] = {
@@ -476,14 +535,17 @@ def create_blob_backend(
     elif backend_type == BlobBackendType.AZURE:
         # Older adlfs versions access containers anonymously by default.
         options.setdefault("anon", False)
-        if account := _get_azure_account(options):
-            location = f"{location} in account {account}"
-    protocol, _ = fsspec.core.split_protocol(path)
+        endpoint_url = _get_azure_endpoint(options)
+    # Bucket names only select the physical store together with the endpoint
+    # of an S3-compatible store, a GCS emulator or an Azure account.
+    location = path.rstrip("/")
+    if endpoint_url:
+        location = f"{location} at {endpoint_url.rstrip('/')}"
     return FsspecBlobBackend(
         backend_type,
         path,
         location=location,
-        filesystem_class=fsspec.get_filesystem_class(protocol),
+        filesystem_class=filesystem_class,
         filesystem_options=options,
         max_concurrent_calls=max_concurrent_calls,
     )

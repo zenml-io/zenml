@@ -47,10 +47,11 @@ class PayloadStorageConfiguration(BaseModel):
             once every process that opens the database runs a version that
             can read offloaded payloads, with the same backend configured.
         backend: The object store holding payload blobs: `s3`, `gcs` or
-            `azure`. Required when offloading is enabled. Neither the backend
-            nor the `path` of its configuration can change once it holds
-            payloads, since blobs are read from where they were written: a
-            store refuses to start then.
+            `azure`. Required when offloading is enabled. Neither the backend,
+            the `path` of its configuration nor the endpoint that its client
+            resolves, from the configuration or the environment, can change
+            once it holds payloads, since blobs are read from where they were
+            written: a store refuses to start then.
         backend_config: The `path` where blobs are written, such as
             `s3://bucket/prefix`, and the options of the fsspec filesystem of
             the backend: s3fs (such as `key`, `secret`, `client_kwargs`),

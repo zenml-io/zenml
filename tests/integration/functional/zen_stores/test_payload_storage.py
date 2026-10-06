@@ -20,13 +20,16 @@ can break: responses that differ from inline ones, execution paths that stop
 working while storage is down, half-created runs and corrupted blobs.
 """
 
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence
 from uuid import UUID, uuid4
 
 import pytest
+from fsspec import config as fsspec_config
 from fsspec.asyn import AsyncFileSystem
 from moto.server import ThreadedMotoServer
 from sqlmodel import Session, select
@@ -684,21 +687,253 @@ def test_load_after_waiting_for_a_failed_load_keeps_its_timeout(
             owner.result()
 
 
-@pytest.mark.parametrize("from_environment", [False, True])
-def test_gcs_endpoint_is_part_of_the_location(
-    monkeypatch: pytest.MonkeyPatch, from_environment: bool
+AWS_CONFIG = """
+[default]
+endpoint_url = http://127.0.0.1:14004
+
+[profile services]
+services = local
+
+[profile regional]
+region = eu-west-1
+
+[services local]
+s3 =
+  endpoint_url = http://127.0.0.1:14005
+"""
+S3_PATH = {"path": "s3://payloads/blobs"}
+AZURE_PATH = {"path": "az://payloads/blobs"}
+GCS_PATH = {"path": "gs://payloads/blobs"}
+AZURE_DEFAULT_LOCATION = (
+    "az://payloads/blobs at https://sameaccount.blob.core.windows.net"
+)
+
+
+@pytest.mark.parametrize(
+    "backend_type, options, environment, expected_location",
+    [
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "endpoint_url": "http://127.0.0.1:14001/"},
+            {"AWS_ENDPOINT_URL_S3": "http://127.0.0.1:14003"},
+            "s3://payloads/blobs at http://127.0.0.1:14001",
+            id="s3-option-over-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "key": "first", "secret": "first"},
+            {"AWS_ENDPOINT_URL": "http://127.0.0.1:14002"},
+            "s3://payloads/blobs at http://127.0.0.1:14002",
+            id="s3-environment-over-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "key": "rotated", "secret": "rotated"},
+            {"AWS_ENDPOINT_URL": "http://127.0.0.1:14002"},
+            "s3://payloads/blobs at http://127.0.0.1:14002",
+            id="s3-other-credentials",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {
+                "AWS_ENDPOINT_URL": "http://127.0.0.1:14002",
+                "AWS_ENDPOINT_URL_S3": "http://127.0.0.1:14003",
+            },
+            "s3://payloads/blobs at http://127.0.0.1:14003",
+            id="s3-service-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {},
+            "s3://payloads/blobs at http://127.0.0.1:14004",
+            id="s3-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "profile": "services"},
+            {},
+            "s3://payloads/blobs at http://127.0.0.1:14005",
+            id="s3-profile-services-section",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {"AWS_PROFILE": "services"},
+            "s3://payloads/blobs at http://127.0.0.1:14005",
+            id="s3-profile-from-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "profile": "regional"},
+            {},
+            "s3://payloads/blobs",
+            id="s3-aws-region",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {
+                "AWS_ENDPOINT_URL": "http://127.0.0.1:14002",
+                "AWS_IGNORE_CONFIGURED_ENDPOINT_URLS": "true",
+            },
+            "s3://payloads/blobs",
+            id="s3-ignored-environment-and-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {
+                **S3_PATH,
+                "config_kwargs": {"ignore_configured_endpoint_urls": True},
+            },
+            {},
+            "s3://payloads/blobs",
+            id="s3-ignored-by-client-config",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {"FSSPEC_S3_ENDPOINT_URL": "http://127.0.0.1:14006"},
+            "s3://payloads/blobs at http://127.0.0.1:14006",
+            id="s3-fsspec-config",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "account_key": "a2V5",
+            },
+            {},
+            AZURE_DEFAULT_LOCATION,
+            id="azure-account",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "sas_token": "sv=2024&sig=secret",
+            },
+            {},
+            AZURE_DEFAULT_LOCATION,
+            id="azure-sas-token",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            AZURE_PATH,
+            {
+                "AZURE_STORAGE_CONNECTION_STRING": (
+                    "BlobEndpoint=https://sameaccount.blob.core.windows.net/;"
+                    "SharedAccessSignature=sv=2024&sig=secret"
+                )
+            },
+            AZURE_DEFAULT_LOCATION,
+            id="azure-sas-connection-string",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "account_key": "a2V5",
+                "account_host": "sameaccount.blob.core.usgovcloudapi.net",
+            },
+            {},
+            "az://payloads/blobs at "
+            "https://sameaccount.blob.core.usgovcloudapi.net",
+            id="azure-account-host",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "connection_string": (
+                    "AccountName=sameaccount;AccountKey=a2V5;"
+                    "BlobEndpoint=http://127.0.0.1:14001/sameaccount;"
+                ),
+            },
+            {},
+            "az://payloads/blobs at http://127.0.0.1:14001/sameaccount",
+            id="azure-blob-endpoint",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "connection_string": (
+                    "DefaultEndpointsProtocol=https;AccountName=sameaccount;"
+                    "AccountKey=a2V5;EndpointSuffix=core.chinacloudapi.cn"
+                ),
+            },
+            {},
+            "az://payloads/blobs at https://sameaccount.blob.core.chinacloudapi.cn",
+            id="azure-endpoint-suffix",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            {**GCS_PATH, "endpoint_url": "http://a:9023"},
+            {},
+            "gs://payloads/blobs at http://a:9023",
+            id="gcs-option",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            GCS_PATH,
+            {"STORAGE_EMULATOR_HOST": "http://b:9023"},
+            "gs://payloads/blobs at http://b:9023",
+            id="gcs-environment",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            GCS_PATH,
+            {"FSSPEC_GCS_ENDPOINT_URL": "http://c:9023"},
+            "gs://payloads/blobs at http://c:9023",
+            id="gcs-fsspec-config",
+        ),
+    ],
+)
+def test_location_is_the_endpoint_the_client_uses(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    backend_type: BlobBackendType,
+    options: Dict[str, Any],
+    environment: Dict[str, str],
+    expected_location: str,
 ) -> None:
-    """The same bucket behind another GCS endpoint is another location."""
-    pytest.importorskip("gcsfs")
+    """The same path behind another endpoint is another location.
 
-    def location(endpoint: str) -> str:
-        options = {"path": "gs://bucket/blobs"}
-        if from_environment:
-            monkeypatch.setenv("STORAGE_EMULATOR_HOST", endpoint)
-        else:
-            options["endpoint_url"] = endpoint
-        return create_blob_backend(
-            BlobBackendType.GCS, options, max_concurrent_calls=4
-        ).location
+    The endpoint counts wherever the client takes it from, as the provider
+    resolves it, while other credentials or the default endpoint of an AWS
+    region do not.
+    """
+    pytest.importorskip(
+        {
+            BlobBackendType.S3: "s3fs",
+            BlobBackendType.GCS: "gcsfs",
+            BlobBackendType.AZURE: "adlfs",
+        }[backend_type]
+    )
+    for variable in list(os.environ):
+        if variable.startswith(("AWS_", "AZURE_STORAGE_", "FSSPEC_")) or (
+            variable == "STORAGE_EMULATOR_HOST"
+        ):
+            monkeypatch.delenv(variable)
+    aws_config = tmp_path / "aws-config"
+    aws_config.write_text(AWS_CONFIG)
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(aws_config))
+    monkeypatch.setenv(
+        "AWS_SHARED_CREDENTIALS_FILE", str(tmp_path / "aws-credentials")
+    )
+    for variable, value in environment.items():
+        monkeypatch.setenv(variable, value)
+    # fsspec reads its configuration from the environment once, on import.
+    monkeypatch.setattr(fsspec_config, "conf", {})
+    fsspec_config.set_conf_env(fsspec_config.conf)
 
-    assert location("http://a:9023") != location("http://b:9023")
+    backend = create_blob_backend(
+        backend_type, options, max_concurrent_calls=4
+    )
+
+    assert backend.location == expected_location
