@@ -51,6 +51,27 @@ class LogStoreUnavailableError(LogStoreError):
     """Raised when a log backend is temporarily unavailable."""
 
 
+class PayloadStorageUnavailableError(ZenMLBaseException):
+    """Raised when execution payload storage cannot be read or written."""
+
+
+class NonRetryablePayloadStorageError(ZenMLBaseException, RuntimeError):
+    """Raised when payload storage fails in a way that no retry fixes."""
+
+
+class PayloadIntegrityError(NonRetryablePayloadStorageError):
+    """Raised when stored payload bytes do not match their registered blob."""
+
+
+class PayloadNotLoadedError(RuntimeError):
+    """Raised when an offloaded payload is read without being loaded.
+
+    Paths that only need SQL columns convert schemas with
+    `INLINE_ONLY_PAYLOADS`, so reading an offloaded payload there is a bug
+    rather than a storage failure.
+    """
+
+
 class LogStoreRateLimitError(LogStoreError):
     """Raised when a log backend rate limits a request."""
 

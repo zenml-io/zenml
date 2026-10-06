@@ -48,6 +48,9 @@ from zenml.zen_stores.schemas.model_schemas import (
     ModelVersionPipelineRunSchema,
     ModelVersionSchema,
 )
+from zenml.zen_stores.schemas.payload_blob_schemas import (
+    PayloadBlobSchema,
+)
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import (
     PipelineRunOutputSchema,
@@ -108,6 +111,7 @@ __all__ = [
     "ArtifactVersionSchema",
     "ArtifactVisualizationSchema",
     "BaseSchema",
+    "PayloadBlobSchema",
     "CodeReferenceSchema",
     "CodeRepositorySchema",
     "DeploymentSchema",

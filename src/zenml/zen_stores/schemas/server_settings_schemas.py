@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, Optional, Set
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, String
 from sqlmodel import Field, SQLModel
 
 from zenml.models import (
@@ -29,6 +29,9 @@ from zenml.models import (
     ServerSettingsUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.schemas.payload_blob_schemas import (
+    LOCATION_FINGERPRINT_LENGTH,
+)
 
 
 class ServerSettingsSchema(SQLModel, table=True):
@@ -48,6 +51,12 @@ class ServerSettingsSchema(SQLModel, table=True):
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
+    # Where the execution payloads are stored, set together with the first
+    # payload blob and never changed afterwards.
+    payload_location_fingerprint: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(LOCATION_FINGERPRINT_LENGTH), nullable=True),
+    )
 
     def update(
         self, settings_update: ServerSettingsUpdate

@@ -95,12 +95,14 @@ def verify_permissions_for_source_entity(
         )
     elif source_type == SourceType.PIPELINE_RUN:
         verify_permission_for_model(
-            model=zen_store().get_run(run_id=source_id),
+            model=zen_store().get_run(run_id=source_id, hydrate=False),
             action=Action.UPDATE,
         )
     elif source_type == SourceType.PIPELINE_SNAPSHOT:
         verify_permission_for_model(
-            model=zen_store().get_snapshot(snapshot_id=source_id),
+            model=zen_store().get_snapshot(
+                snapshot_id=source_id, hydrate=False
+            ),
             action=Action.UPDATE,
         )
     else:
@@ -404,7 +406,7 @@ def detach_trigger_from_snapshot(
     )
 
     verify_permission_for_model(
-        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True),
+        model=zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=False),
         action=Action.READ,
     )
 
