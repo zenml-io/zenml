@@ -1,10 +1,12 @@
 # Inventory and customer operations
 
-This example contains inventory reporting, customer conversion scoring, warehouse replenishment planning, and a deployed customer risk service. Runs retain their input and output artifacts, execution configuration, and operational metrics in the connected ZenML project.
+This example contains inventory reporting, customer conversion scoring, warehouse replenishment planning, a deployed customer risk service, customer retention model evaluation, customer segment training, and historical bike demand prediction. Runs retain their input and output artifacts, execution configuration, and operational metrics in the connected ZenML project.
 
 ## Setup
 
-From this directory, install the requirements into your environment with `uv pip install -r requirements.txt`. Connect your ZenML client to the intended workspace and select the appropriate project and stack before running pipelines. The service requires a Deployer component and an endpoint reachable from the caller. Use a compatible ZenML client and server version.
+From this directory, install the requirements into a Python 3.11 environment with `uv pip install -r requirements.txt`. The example pins ZenML 0.96.4; use a matching server version. Connect your ZenML client to the intended workspace and select the appropriate project and stack before running pipelines. The service requires a Deployer component and an endpoint reachable from the caller.
+
+The customer retention, customer segment, and bike demand pipelines use `build_settings.py` to build Python 3.11 images with ZenML 0.96.4 for Linux AMD64 workers. Their images install the explicit dependencies in `requirements.txt`, including the S3 and Kubernetes clients, without adding integration dependencies from the selected stack. Use a remote image builder that supports this architecture.
 
 ## Batch operations
 
@@ -49,3 +51,42 @@ zenml pipeline deploy scenario_03.pipelines.customer_risk --name customer-risk -
 ```
 
 The model uses synthetic customer data and is intended for demonstration.
+
+## Customer retention evaluation
+
+The retention training pipeline records a classifier and a separate held-out dataset under the `customer-retention` model. Its evaluation pipeline loads both artifacts from one completed training run and produces classification metrics, a confusion matrix, and an HTML report with source identifiers.
+
+```bash
+python run.py train-retention
+python run.py evaluate-retention --training-run-id <TRAINING_RUN_UUID>
+```
+
+For automatic evaluation, attach a remotely runnable snapshot of `scenario_05.pipelines.customer_model_evaluation` to a platform event trigger for the training pipeline. Leave `training_run_id` unset in that snapshot; evaluation uses the exact upstream run recorded by the trigger. Creating triggers requires ZenML Pro and a remote execution stack.
+
+## Customer segment training
+
+The dynamic segment training pipeline runs an isolated training step with configurable CPU resources. It produces a random forest classifier, structured held-out metrics, and an HTML evaluation report.
+
+```bash
+python run.py train-segments --cpu-count 4
+```
+
+Use `--sample-count` and `--random-seed` to configure the synthetic dataset. Resource pool admission requires a configured ZenML Pro pool and a policy associated with the execution component. The requested CPU and memory must fit that policy. Inspect the step's resource request and status reason in the workspace when diagnosing admission or allocation. Pool APIs differ between ZenML versions; use the API supported by the connected server.
+
+## Bike demand prediction
+
+The bike pipelines use the public [UCI Bike Sharing dataset](https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset), which records hourly rental counts with calendar and observed weather information. Two named versions in the `bike-demand` model compare a calendar baseline and a gradient boosting estimator. Training uses observations before July 2012; evaluation uses July through September 2012. Target-derived rental counts are excluded from the model inputs.
+
+```bash
+python run.py train-bikes --model-version calendar-v1 --model-variant baseline
+python run.py train-bikes --model-version weather-v1 --model-variant gradient_boosting
+python run.py score-bikes --training-run-id <TRAINING_RUN_UUID> --scoring-date 2012-10-15
+```
+
+Choose a fresh model-version name for each training experiment. The runner links scoring to the exact training run's model version. Scoring requires the same source dataset bytes used for training, and its date must follow the evaluation interval. These are historical predictions using observed weather, not a live weather forecast.
+
+The default source is the public UCI archive. Both commands accept `--source-uri` for an hourly CSV or UCI archive and `--source-sha256` to verify the source bytes. For private remote storage, use the active artifact store's URI and connector. The digest describes the supplied file bytes, so a CSV and an archive containing that CSV have different digests.
+
+Training creates a demand explorer with calendar and weather patterns and a model scorecard with held-out error, rush-hour errors, and feature importance. Scoring creates a daily operations report with hourly estimates, observed rentals, peak hours, and model provenance. Each report is a self-contained HTML artifact with embedded SVG charts. Structured metrics and prediction tables remain available alongside the reports.
+
+Dataset attribution: Fanaee-T, H. (2013), *Bike Sharing*, UCI Machine Learning Repository, [DOI: 10.24432/C5W894](https://doi.org/10.24432/C5W894), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Reports and derived data retain this attribution.
