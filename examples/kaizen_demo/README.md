@@ -17,7 +17,7 @@ python run.py train-risk
 python run.py replenishment
 ```
 
-The customer export contains `customer_id`, `account_length`, `basket_value`, and `converted` columns. The target `converted` is 0 or 1. The source can be a local file, a plain HTTP(S) URL, or an object URI accessible through the active stack's artifact store. For remote workers, use an HTTP(S) or object URI they can access; local paths refer to the worker's filesystem. Use stack credentials for private object storage; do not put credentials or signed query strings in source URLs, because pipeline parameters are retained in run configuration.
+The customer export contains `customer_id`, `account_length`, `converted`, and either `basket_value` or the newer `basket_value_eur` column. The target `converted` is 0 or 1. The source can be a local file, a plain HTTP(S) URL, or an object URI accessible through the active stack's artifact store. For remote workers, use an HTTP(S) or object URI they can access; local paths refer to the worker's filesystem. Use stack credentials for private object storage; do not put credentials or signed query strings in source URLs, because pipeline parameters are retained in run configuration.
 
 The command-line runner also accepts `--run-name` and `--no-cache` for normal execution control. Inspect recorded artifacts and metrics through the ZenML dashboard or SDK.
 

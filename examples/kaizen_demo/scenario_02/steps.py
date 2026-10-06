@@ -118,13 +118,19 @@ def prepare_customer_features(
     Returns:
         Numerical basket values and account ages in input row order.
     """
-    features = [
-        {
-            "basket_value": float(row.get("basket_value", 0)),
-            "account_length": float(row["account_length"]),
-        }
-        for row in raw_rows
-    ]
+    features = []
+    for row in raw_rows:
+        basket_value = row.get("basket_value_eur", row.get("basket_value"))
+        if basket_value is None:
+            raise ValueError(
+                "Customer data must contain basket_value or basket_value_eur."
+            )
+        features.append(
+            {
+                "basket_value": float(basket_value),
+                "account_length": float(row["account_length"]),
+            }
+        )
     log_metadata(
         metadata={
             "row_count": len(features),
