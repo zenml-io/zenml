@@ -117,10 +117,17 @@ def prepare_customer_features(
 
     Returns:
         Numerical basket values and account ages in input row order.
+
+        The source feed historically used ``basket_value`` and now uses
+        ``basket_value_eur``; both names represent the same feature.
     """
     features = [
         {
-            "basket_value": float(row.get("basket_value", 0)),
+            "basket_value": float(
+                row["basket_value"]
+                if "basket_value" in row
+                else row["basket_value_eur"]
+            ),
             "account_length": float(row["account_length"]),
         }
         for row in raw_rows
