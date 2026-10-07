@@ -21,7 +21,6 @@ from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     Iterator,
     List,
