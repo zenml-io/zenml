@@ -14,12 +14,22 @@
 """Initialization of the TypeSafe AI hooks module."""
 
 from zenml.integrations.typesafe.hooks.jev_hooks import (
+    FAILURE_TRIAGE_QUESTIONS,
+    RUN_SUMMARY_QUESTIONS,
+    JevConfig,
+    build_failure_state,
+    build_run_summary_state,
     jev_classify_and_log,
     jev_failure_triage_hook,
     jev_run_summary_hook,
 )
 
 __all__ = [
+    "FAILURE_TRIAGE_QUESTIONS",
+    "RUN_SUMMARY_QUESTIONS",
+    "JevConfig",
+    "build_failure_state",
+    "build_run_summary_state",
     "jev_classify_and_log",
     "jev_failure_triage_hook",
     "jev_run_summary_hook",

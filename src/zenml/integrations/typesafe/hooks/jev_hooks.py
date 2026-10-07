@@ -25,8 +25,8 @@ import os
 import traceback
 from datetime import timedelta
 from typing import Any, Dict, List, Mapping, Optional
-from uuid import UUID
 
+from pydantic import BaseModel, Field, SecretStr
 from typesafe_sdk import (
     Answer,
     Choice,
@@ -43,6 +43,8 @@ from typesafe_sdk import (
 )
 
 from zenml.client import Client
+from zenml.constants import FILTERING_DATETIME_FORMAT
+from zenml.enums import ExecutionStatus
 from zenml.execution.pipeline.dynamic.run_context import (
     DynamicPipelineRunContext,
 )
@@ -58,10 +60,93 @@ TYPESAFE_SECRET_NAME = "typesafe"
 TYPESAFE_API_KEY_ENV = "TYPESAFE_API_KEY"
 DEFAULT_METADATA_PREFIX = "jev"
 
-# Jev bills per input token, so tracebacks are cut from the top: the frames
-# nearest the raise site carry most of the signal.
-MAX_TRACEBACK_CHARS = 8000
-RECENT_RUNS_FOR_COMPARISON = 5
+
+def _find_api_key() -> Optional[str]:
+    """Find the TypeSafe API key in the environment or the secret store.
+
+    Returns:
+        The API key, or `None` if it is not configured anywhere.
+    """
+    if api_key := os.environ.get(TYPESAFE_API_KEY_ENV, "").strip():
+        return api_key
+    try:
+        secret = Client().get_secret(
+            TYPESAFE_SECRET_NAME, allow_partial_name_match=False
+        )
+    except (KeyError, NotImplementedError):
+        return None
+    return secret.secret_values.get("api_key") or None
+
+
+class JevConfig(BaseModel):
+    """Settings shared by the Jev hooks.
+
+    Lifecycle hooks take no arguments, so the built-in hooks call
+    `JevConfig.load()`, which finds the API key in the environment or the
+    secret store. Custom hooks pass overrides to `load()` to change the rest.
+    """
+
+    api_key: Optional[SecretStr] = Field(
+        default=None,
+        description="TypeSafe API key. Without one, the hooks log a warning "
+        "and skip. Stored as a `SecretStr` so it never shows up in logs or "
+        "reprs by accident",
+    )
+    model: Optional[str] = Field(
+        default=None,
+        description="Jev model override. Defaults to the SDK default, which "
+        "the `TYPESAFE_DEFAULT_MODEL` environment variable can set",
+    )
+    metadata_prefix: str = Field(
+        default=DEFAULT_METADATA_PREFIX,
+        description="Prefix of every metadata key the hooks write, e.g. "
+        "`jev` gives `jev.failure_category`",
+    )
+    max_traceback_chars: int = Field(
+        default=8000,
+        gt=0,
+        description="Tracebacks are cut from the top to this many "
+        "characters before they are sent to Jev, which bills per input "
+        "token. The frames nearest the raise site carry most of the signal",
+    )
+    recent_runs: int = Field(
+        default=5,
+        gt=0,
+        description="How many earlier runs of the pipeline the run summary "
+        "hook sends to Jev as the baseline for what a normal run looks like",
+    )
+    recent_run_status: Optional[ExecutionStatus] = Field(
+        default=None,
+        description="Only use earlier runs with this status as the "
+        "baseline, e.g. `ExecutionStatus.COMPLETED` to compare against "
+        "successful runs after a string of failures. `None` uses every "
+        "finished run",
+    )
+
+    @classmethod
+    def load(cls, **overrides: Any) -> "JevConfig":
+        """Build a config with the API key found in the environment or secrets.
+
+        Args:
+            **overrides: Field values that replace the defaults. An explicit
+                `api_key` skips the lookup.
+
+        Returns:
+            The config.
+        """
+        if "api_key" not in overrides:
+            overrides["api_key"] = _find_api_key()
+        return cls(**overrides)
+
+
+def _warn_missing_api_key() -> None:
+    logger.warning(
+        "No TypeSafe API key found in the `%s` environment variable or a "
+        "ZenML secret named `%s`. Skipping Jev classification.",
+        TYPESAFE_API_KEY_ENV,
+        TYPESAFE_SECRET_NAME,
+    )
+
 
 FAILURE_TRIAGE_QUESTIONS: Dict[str, Question] = {
     "failure_category": Choice(
@@ -109,23 +194,6 @@ RUN_SUMMARY_QUESTIONS: Dict[str, Question] = {
         ],
     ),
 }
-
-
-def _get_api_key() -> Optional[str]:
-    """Find the TypeSafe API key in the environment or the secret store.
-
-    Returns:
-        The API key, or `None` if it is not configured anywhere.
-    """
-    if api_key := os.environ.get(TYPESAFE_API_KEY_ENV, "").strip():
-        return api_key
-    try:
-        secret = Client().get_secret(
-            TYPESAFE_SECRET_NAME, allow_partial_name_match=False
-        )
-    except (KeyError, NotImplementedError):
-        return None
-    return secret.secret_values.get("api_key") or None
 
 
 def _answer_to_metadata(key: str, answer: Answer) -> Dict[str, MetadataType]:
@@ -205,17 +273,12 @@ def _log_to_current_step_or_run(metadata: Dict[str, MetadataType]) -> bool:
 def jev_classify_and_log(
     state: JSONContent,
     questions: Mapping[str, Question],
-    metadata_prefix: str = DEFAULT_METADATA_PREFIX,
-    model: Optional[str] = None,
+    config: Optional[JevConfig] = None,
 ) -> Optional[SystemOneResponse]:
     """Ask Jev questions about `state` and log the answers as metadata.
 
-    Outside hooks this is best-effort by design: a missing API key or an API
-    error logs a warning and returns `None` instead of failing the step.
-
-    The API key is read from the `TYPESAFE_API_KEY` environment variable, or
-    from the `api_key` key of a ZenML secret named `typesafe`. The model
-    defaults to the SDK default, which `TYPESAFE_DEFAULT_MODEL` can override.
+    This is best-effort by design: a missing API key or an API error logs a
+    warning and returns `None` instead of failing the step or run.
 
     Example, as a custom success hook:
 
@@ -228,32 +291,28 @@ def jev_classify_and_log(
     Args:
         state: Text, a JSON object or a JSON array for Jev to evaluate.
         questions: Jev questions keyed by the name used in metadata keys.
-        metadata_prefix: The prefix for all metadata keys.
-        model: Optional Jev model override.
+        config: Hook configuration. Defaults to `JevConfig.load()`.
 
     Returns:
         The Jev response, or `None` if nothing was classified.
     """
-    api_key = _get_api_key()
-    if not api_key:
-        logger.warning(
-            "No TypeSafe API key found in the `%s` environment variable or a "
-            "ZenML secret named `%s`. Skipping Jev classification.",
-            TYPESAFE_API_KEY_ENV,
-            TYPESAFE_SECRET_NAME,
-        )
+    config = config or JevConfig.load()
+    if config.api_key is None:
+        _warn_missing_api_key()
         return None
 
     try:
-        with TypeSafeClient(api_key=api_key) as client:
+        with TypeSafeClient(
+            api_key=config.api_key.get_secret_value()
+        ) as client:
             response = client.system_one(
-                state=state, questions=questions, model=model
+                state=state, questions=questions, model=config.model
             )
     except TypeSafeError as e:
         logger.warning("Jev classification failed, skipping: %s", e)
         return None
 
-    metadata = response_to_metadata(response, prefix=metadata_prefix)
+    metadata = response_to_metadata(response, prefix=config.metadata_prefix)
     if not _log_to_current_step_or_run(metadata):
         logger.warning(
             "Jev answered but there is no active step or dynamic pipeline "
@@ -263,17 +322,30 @@ def jev_classify_and_log(
     return response
 
 
-def _format_exception(exception: BaseException) -> str:
-    """Format an exception with its traceback, keeping only the tail.
+def build_failure_state(
+    exception: BaseException, config: Optional[JevConfig] = None
+) -> Dict[str, Any]:
+    """Build the state the failure triage hook sends to Jev.
+
+    Custom failure hooks can reuse it to ask extra questions about the same
+    traceback.
 
     Args:
-        exception: The exception to format.
+        exception: The exception that caused the failure.
+        config: Hook configuration, for the traceback length. Defaults to
+            `JevConfig()`.
 
     Returns:
-        The formatted traceback, cut to `MAX_TRACEBACK_CHARS`.
+        The tail of the traceback and, inside a step, the step name.
     """
+    max_chars = (config or JevConfig()).max_traceback_chars
+    # The traceback's last line already carries the exception type and
+    # message, so they are not sent separately.
     formatted = "".join(traceback.format_exception(exception))
-    return formatted[-MAX_TRACEBACK_CHARS:]
+    state: Dict[str, Any] = {"traceback": formatted[-max_chars:]}
+    if step_context := StepContext.get():
+        state["step_name"] = step_context.step_run.name
+    return state
 
 
 def jev_failure_triage_hook(exception: BaseException) -> None:
@@ -287,12 +359,12 @@ def jev_failure_triage_hook(exception: BaseException) -> None:
     Args:
         exception: The exception that caused the failure.
     """
-    # The traceback's last line already carries the exception type and
-    # message, so they are not sent separately.
-    state: Dict[str, Any] = {"traceback": _format_exception(exception)}
-    if step_context := StepContext.get():
-        state["step_name"] = step_context.step_run.name
-    jev_classify_and_log(state=state, questions=FAILURE_TRIAGE_QUESTIONS)
+    config = JevConfig.load()
+    jev_classify_and_log(
+        state=build_failure_state(exception, config),
+        questions=FAILURE_TRIAGE_QUESTIONS,
+        config=config,
+    )
 
 
 def _seconds(duration: Optional[timedelta]) -> Optional[float]:
@@ -322,64 +394,85 @@ def _run_duration(run: PipelineRunResponse) -> Optional[timedelta]:
 
 
 def _summarize_recent_runs(
-    pipeline: PipelineResponse, exclude_run_id: UUID
+    pipeline: PipelineResponse, run: PipelineRunResponse, config: JevConfig
 ) -> List[Dict[str, Any]]:
-    """Summarize the latest previous runs of a pipeline as a baseline.
+    """Summarize the runs of a pipeline that finished before `run` started.
+
+    "Finished before this run started" rather than "newest" keeps the
+    baseline stable under concurrency: runs created and completed while
+    `run` was executing, such as cached reruns, are not compared against.
 
     Args:
         pipeline: The pipeline to look up runs for.
-        exclude_run_id: The run being assessed, which is left out.
+        run: The run being assessed.
+        config: Hook configuration with the baseline size and status filter.
 
     Returns:
-        Status, duration and step count of up to
-        `RECENT_RUNS_FOR_COMPARISON` recent runs.
+        Status, duration and step count of up to `config.recent_runs` runs,
+        newest first.
     """
     client = Client()
+    started = run.start_time or run.created
+    # The datetime filter has second granularity, so round up: a run that
+    # finished within the second `run` started still counts as earlier. That
+    # can let `run` itself through when it finishes within the same second,
+    # so it is dropped by id below.
+    before = started.replace(microsecond=0) + timedelta(seconds=1)
+    filters: Dict[str, Any] = {
+        "end_time": f"lt:{before.strftime(FILTERING_DATETIME_FORMAT)}"
+    }
+    if config.recent_run_status is not None:
+        filters["status"] = config.recent_run_status.value
     # Hydrated because start and end times live in the run metadata, which
     # would otherwise be fetched with one extra request per run.
     runs = pipeline.get_runs(
         sort_by="desc:created",
-        size=RECENT_RUNS_FOR_COMPARISON + 1,
+        size=config.recent_runs + 1,
         hydrate=True,
+        **filters,
     )
     return [
         {
-            "status": run.status.value,
-            "duration_seconds": _seconds(_run_duration(run)),
+            "status": earlier.status.value,
+            "duration_seconds": _seconds(_run_duration(earlier)),
             # Only the count is needed, so ask for a one-item page instead of
             # listing every step.
             "step_count": client.list_run_steps(
-                pipeline_run_id=run.id, exclude_retried=True, size=1
+                pipeline_run_id=earlier.id, exclude_retried=True, size=1
             ).total,
         }
-        for run in runs
-        if run.id != exclude_run_id
-    ][:RECENT_RUNS_FOR_COMPARISON]
+        for earlier in runs
+        if earlier.id != run.id
+    ][: config.recent_runs]
 
 
-def jev_run_summary_hook(exception: Optional[BaseException] = None) -> None:
-    """Run end hook for dynamic pipelines that asks Jev whether a run is odd.
+def build_run_summary_state(
+    exception: Optional[BaseException] = None,
+    config: Optional[JevConfig] = None,
+) -> Optional[Dict[str, Any]]:
+    """Build the state the run summary hook sends to Jev.
 
-    Sends Jev the finished run's status, duration and per-step results next
-    to a summary of the pipeline's recent runs, then logs
-    `jev.needs_attention` (probability that a human should look) and
-    `jev.anomaly` (0 = normal, 2 = very unusual) on the pipeline run.
-
-    Use it as `@pipeline(dynamic=True, on_end=jev_run_summary_hook)`. Static
-    pipelines only copy pipeline hooks onto each step, so there is no finished
-    run to assess and the hook skips with a warning.
+    Only works as a run-level hook of a dynamic pipeline. Static pipelines
+    copy pipeline hooks onto each step, so there is no finished run to assess.
 
     Args:
         exception: The exception that ended the run, if it failed.
+        config: Hook configuration, for the baseline. Defaults to
+            `JevConfig()`.
+
+    Returns:
+        The run's status, duration and steps next to a baseline of earlier
+        runs, or `None` outside a run-level hook of a dynamic pipeline.
     """
     run_context = DynamicPipelineRunContext.get()
     if run_context is None or StepContext.is_active():
         logger.warning(
-            "`jev_run_summary_hook` only works as a run-level hook of a "
-            "dynamic pipeline. Skipping."
+            "Jev run summaries only work as a run-level hook of a dynamic "
+            "pipeline. Skipping."
         )
-        return
+        return None
 
+    config = config or JevConfig()
     # The context holds the run as it was when execution started, so fetch it
     # again for the final status and end time.
     run = Client().get_pipeline_run(run_context.run.id)
@@ -396,10 +489,38 @@ def jev_run_summary_hook(exception: Optional[BaseException] = None) -> None:
             }
             for name, step in run.steps.items()
         ],
-        "recent_runs": _summarize_recent_runs(pipeline, run.id)
+        "recent_runs": _summarize_recent_runs(pipeline, run, config)
         if pipeline
         else [],
     }
     if exception is not None:
         state["exception"] = f"{type(exception).__name__}: {exception}"
-    jev_classify_and_log(state=state, questions=RUN_SUMMARY_QUESTIONS)
+    return state
+
+
+def jev_run_summary_hook(exception: Optional[BaseException] = None) -> None:
+    """Run end hook for dynamic pipelines that asks Jev whether a run is odd.
+
+    Sends Jev the finished run's status, duration and per-step results next
+    to a summary of the pipeline's runs that finished before this one
+    started, then logs `jev.needs_attention` (probability that a human
+    should look) and `jev.anomaly` (0 = normal, 2 = very unusual) on the
+    pipeline run.
+
+    Use it as `@pipeline(dynamic=True, on_end=jev_run_summary_hook)`. Static
+    pipelines only copy pipeline hooks onto each step, so there is no finished
+    run to assess and the hook skips with a warning.
+
+    Args:
+        exception: The exception that ended the run, if it failed.
+    """
+    config = JevConfig.load()
+    if config.api_key is None:
+        # Checked before building the state, which costs server requests.
+        _warn_missing_api_key()
+        return
+    state = build_run_summary_state(exception, config)
+    if state is not None:
+        jev_classify_and_log(
+            state=state, questions=RUN_SUMMARY_QUESTIONS, config=config
+        )

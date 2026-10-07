@@ -14,6 +14,7 @@
 """Tests for the TypeSafe Jev hooks."""
 
 import json
+import time
 from typing import Any, Dict, List, Mapping
 
 import pytest
@@ -29,7 +30,9 @@ from typesafe_sdk import (  # noqa: E402
 
 from zenml import pipeline, step  # noqa: E402
 from zenml.client import Client  # noqa: E402
+from zenml.enums import ExecutionStatus  # noqa: E402
 from zenml.integrations.typesafe.hooks import (  # noqa: E402
+    JevConfig,
     jev_classify_and_log,
     jev_failure_triage_hook,
     jev_hooks,
@@ -122,6 +125,13 @@ def dynamic_failing_pipeline() -> None:
     raise ValueError("bad input data")
 
 
+@pipeline(dynamic=True, enable_cache=False)
+def baseline_pipeline(fail: bool = False) -> None:
+    ok_step()
+    if fail:
+        raise ValueError("boom")
+
+
 def test_response_to_metadata_flattens_every_answer_type() -> None:
     response = SystemOneResponse.model_validate_json(
         json.dumps({"model": "jev-test", "usage": {}, "answers": ANSWERS})
@@ -212,13 +222,59 @@ def test_run_summary_hook_skips_outside_dynamic_run(fake_jev: type) -> None:
     assert fake_jev.calls == []
 
 
+def test_config_load_reads_env_and_hides_key(fake_jev: type) -> None:
+    config = JevConfig.load(recent_runs=2)
+
+    assert config.api_key is not None
+    assert config.api_key.get_secret_value() == "test-key"
+    assert "test-key" not in repr(config)
+    assert config.recent_runs == 2
+
+
 def test_classify_skips_without_api_key(
     fake_jev: type, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(jev_hooks, "_get_api_key", lambda: None)
+    monkeypatch.setattr(jev_hooks, "_find_api_key", lambda: None)
 
     assert jev_classify_and_log("text", questions={}) is None
     assert fake_jev.calls == []
+
+
+def test_recent_runs_baseline_only_has_runs_finished_before_start(
+    clean_client: Client,
+) -> None:
+    # The datetime filter has second granularity, so leave a full second
+    # between runs to make "finished before the next one started" unambiguous.
+    with pytest.raises(ValueError):
+        baseline_pipeline(fail=True)
+    time.sleep(1)
+    baseline_pipeline()
+    time.sleep(1)
+    baseline_pipeline()
+
+    pipeline_model = clean_client.get_pipeline("baseline_pipeline")
+    first, middle, last = sorted(
+        pipeline_model.get_runs(hydrate=True), key=lambda run: run.created
+    )
+
+    before_last = jev_hooks._summarize_recent_runs(
+        pipeline_model, last, JevConfig()
+    )
+    assert [run["status"] for run in before_last] == ["completed", "failed"]
+
+    # `last` finished after `middle` started, so it is not part of the
+    # baseline for `middle`, and neither is `middle` itself.
+    before_middle = jev_hooks._summarize_recent_runs(
+        pipeline_model, middle, JevConfig()
+    )
+    assert [run["status"] for run in before_middle] == ["failed"]
+
+    completed_only = jev_hooks._summarize_recent_runs(
+        pipeline_model,
+        last,
+        JevConfig(recent_run_status=ExecutionStatus.COMPLETED),
+    )
+    assert [run["status"] for run in completed_only] == ["completed"]
 
 
 def test_classify_swallows_api_errors(fake_jev: type) -> None:
