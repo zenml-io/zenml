@@ -77,7 +77,7 @@ This transforms batch-style agent workflows into **real-time APIs** perfect for:
 | Framework | Type | Key Features | Technologies |
 |-----------|------|-------------|-------------|
 | [Autogen](autogen/) | 🤝 Multi-Agent | Multi-agent conversations, Role-based collaboration | autogen, openai |
-| [AWS Strands](aws-strands/) | ⚡ Simple | Direct agent calls, Built-in tools | aws-agents, bedrock |
+| [AWS Strands](aws_strands/) | ⚡ Simple | Direct agent calls, Built-in tools | aws-agents, bedrock |
 | [CrewAI](crewai/) | 👥 Crews | Agent crews, Task delegation | crewai, openai |
 | [Google ADK](google_adk/) | 🔮 Gemini | Gemini-powered agents with tool calling | google-adk, gemini |
 | [Haystack](haystack/) | 🔍 RAG | Retrieval pipelines, Document processing | haystack, openai |
@@ -87,7 +87,7 @@ This transforms batch-style agent workflows into **real-time APIs** perfect for:
 | [OpenAI Agents SDK](openai_agents_sdk/) | 🏗️ Structured | Official OpenAI agents, Structured execution | openai-agents, openai |
 | [PydanticAI](pydanticai/) | ✅ Type-Safe | Type-safe agents, Validation | pydantic-ai, openai |
 | [Qwen-Agent](qwen-agent/) | 🧠 Function Call | Custom tools, MCP integration, Qwen models | qwen-agent, openai |
-| [Semantic Kernel](semantic-kernel/) | 🧩 Plugins | Plugin architecture, Microsoft ecosystem | semantic-kernel, openai |
+| [Semantic Kernel](semantic_kernel/) | 🧩 Plugins | Plugin architecture, Microsoft ecosystem | semantic-kernel, openai |
 
 ## 🎯 Core Patterns
 
