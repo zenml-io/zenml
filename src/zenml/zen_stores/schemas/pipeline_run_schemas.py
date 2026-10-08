@@ -690,31 +690,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created `PipelineRunResponse`.
 
         Raises:
-            RuntimeError: if the model creation fails.
+            RuntimeError: If metadata is requested but the run has no
+                snapshot or pipeline configuration.
         """
-        if self.snapshot is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.snapshot.pipeline_configuration
-            )
-            client_environment = json.loads(self.snapshot.client_environment)
-        elif self.pipeline_configuration is not None:
-            config = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
-            client_environment = (
-                json.loads(self.client_environment)
-                if self.client_environment
-                else {}
-            )
-        else:
-            raise RuntimeError(
-                "Pipeline run model creation has failed. Each pipeline run "
-                "entry should either have a snapshot_id or "
-                "pipeline_configuration."
-            )
-
-        config.finalize_substitutions(start_time=self.start_time, inplace=True)
-
         body = PipelineRunResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
@@ -730,6 +708,33 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
+            if self.snapshot is not None:
+                config = PipelineConfiguration.model_validate_json(
+                    self.snapshot.pipeline_configuration
+                )
+                client_environment = json.loads(
+                    self.snapshot.client_environment
+                )
+            elif self.pipeline_configuration is not None:
+                config = PipelineConfiguration.model_validate_json(
+                    self.pipeline_configuration
+                )
+                client_environment = (
+                    json.loads(self.client_environment)
+                    if self.client_environment
+                    else {}
+                )
+            else:
+                raise RuntimeError(
+                    "Pipeline run model creation has failed. Each pipeline run "
+                    "entry should either have a snapshot_id or "
+                    "pipeline_configuration."
+                )
+
+            config.finalize_substitutions(
+                start_time=self.start_time, inplace=True
+            )
+
             is_templatable = False
             if (
                 self.snapshot

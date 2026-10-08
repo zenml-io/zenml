@@ -130,7 +130,6 @@ from zenml.analytics.utils import (
     track_handler,
 )
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
     ReplayRunConfiguration,
@@ -6471,6 +6470,8 @@ class SqlZenStore(BaseZenStore):
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).load_only(
+                        jl_arg(StepRunSchema.snapshot_id),
+                        jl_arg(StepRunSchema.step_configuration),
                         jl_arg(StepRunSchema.name),
                         jl_arg(StepRunSchema.status),
                         jl_arg(StepRunSchema.start_time),
@@ -6501,7 +6502,6 @@ class SqlZenStore(BaseZenStore):
                     ),
                 ],
             )
-            assert run.snapshot is not None
             snapshot = run.snapshot
             for condition in run.wait_conditions:
                 node_metadata: Dict[str, Any] = {
@@ -6531,14 +6531,20 @@ class SqlZenStore(BaseZenStore):
                 if step.status != ExecutionStatus.RETRIED.value
             }
 
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                snapshot.pipeline_configuration
-            )
-            pipeline_configuration.finalize_substitutions(
-                start_time=run.start_time, inplace=True
-            )
+            pipeline_configuration = run.get_pipeline_configuration()
 
-            if snapshot.is_dynamic:
+            if snapshot is None:
+                # Legacy runs store merged step definitions inline.
+                steps = {
+                    name: DAGStepView.from_dict(
+                        step_run.get_step_configuration().model_dump(
+                            mode="json"
+                        ),
+                        substitutions=pipeline_configuration.substitutions,
+                    )
+                    for name, step_run in step_runs.items()
+                }
+            elif snapshot.is_dynamic:
                 # Ignore static config templates for dynamic pipeline DAGs
                 steps = {
                     name: DAGStepView.from_dict(
