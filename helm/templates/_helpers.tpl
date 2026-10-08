@@ -58,7 +58,7 @@ Common labels
 helm.sh/chart: {{ include "zenml.chart" . }}
 {{ include "zenml.selectorLabels" . }}
 {{- if .Chart.Version }}
-app.kubernetes.io/version: {{ .Chart.Version | quote }}
+app.kubernetes.io/version: {{ .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "." | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}

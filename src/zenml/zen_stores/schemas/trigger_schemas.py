@@ -56,10 +56,13 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     jl_arg,
 )
+from zenml.zen_stores.schemas.webhook_schemas import (
+    WebhookSchema,
+)
 
 
 class TriggerSchema(NamedSchema, table=True):
-    """SQL Model for schedules."""
+    """SQL model for triggers."""
 
     __tablename__ = "trigger"
     __table_args__ = (
@@ -81,6 +84,10 @@ class TriggerSchema(NamedSchema, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["flavor", "source_entity"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["type", "webhook_id"],
         ),
     )
 
@@ -148,6 +155,16 @@ class TriggerSchema(NamedSchema, table=True):
     )
 
     user: UserSchema | None = Relationship(back_populates="triggers")
+
+    webhook_id: UUID | None = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookSchema.__tablename__,
+        source_column="webhook_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    webhook: WebhookSchema | None = Relationship(back_populates="triggers")
 
     # ------------------ FLAT DATA FIELDS FOR FAST FILTERING ----------------------
 
@@ -228,6 +245,7 @@ class TriggerSchema(NamedSchema, table=True):
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
                     ),
                     selectinload(jl_arg(TriggerSchema.snapshot_links)),
+                    selectinload(jl_arg(TriggerSchema.webhook)),
                 ]
             )
 
@@ -366,6 +384,9 @@ class TriggerSchema(NamedSchema, table=True):
                 executable_snapshots=executable_snapshots,
                 latest_run=latest_run.to_model()
                 if latest_run is not None
+                else None,
+                webhook=self.webhook.to_model()
+                if self.webhook is not None
                 else None,
                 snapshot_dispatch_states=snapshot_dispatch_states,
             )

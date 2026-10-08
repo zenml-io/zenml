@@ -117,6 +117,34 @@ By default, this method deletes artifacts physically from the underlying artifac
 
 For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 
+## Pipeline Snapshots
+
+### Pruning unused snapshots
+
+Every pipeline run stores a snapshot of its configuration. Snapshots that you
+never named and that nothing references anymore, for example because the runs
+that used them were deleted, only take up space in the database. You can delete
+those that are older than a given number of days with:
+
+```bash
+zenml pipeline snapshot prune --older-than-days 90
+```
+
+Only snapshots without a name that no pipeline run, deployment, schedule, run
+template, trigger, or derived snapshot references are considered. Named,
+recent, and referenced snapshots are always kept. The command reports how many
+snapshots it found and asks for confirmation before deleting them. Use
+`--dry-run` to only see the count, and `--yes` to skip the confirmation.
+
+When connected to a ZenML server, the deletion runs in the background on the
+server and the command prints a task ID. Search the server logs for that task
+ID to follow the progress. Deleting a snapshot can make the snapshot it was
+derived from unused as well, so the number of deleted snapshots can be higher
+than the count reported by the dry run.
+
+The pruning commands for artifacts and snapshots are also available under a
+common `zenml prune` group, e.g. `zenml prune snapshots --older-than-days 90`.
+
 ## Cleaning your environment
 
 As a more drastic measure, the `zenml clean` command can be used to start from\

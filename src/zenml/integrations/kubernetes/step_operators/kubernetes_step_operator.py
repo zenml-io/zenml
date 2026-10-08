@@ -14,12 +14,22 @@
 """Kubernetes step operator implementation."""
 
 import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
@@ -42,7 +52,11 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -74,6 +88,15 @@ class KubernetesStepOperator(BaseStepOperator):
         return KubernetesStepOperatorSettings
 
     @property
+    def supports_resource_pool_allocation(self) -> bool:
+        """Whether the step operator supports resource pool allocations.
+
+        Returns:
+            Whether the step operator supports resource pool allocations.
+        """
+        return True
+
+    @property
     def validator(self) -> Optional[StackValidator]:
         """Validates the stack.
 
@@ -89,7 +112,7 @@ class KubernetesStepOperator(BaseStepOperator):
                     "needs to write files into the artifact store, but the "
                     f"artifact store `{stack.artifact_store.name}` of the "
                     "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Vertex "
+                    "contains a remote artifact store when using the Kubernetes "
                     "step operator."
                 )
 
@@ -192,11 +215,12 @@ class KubernetesStepOperator(BaseStepOperator):
         """
         return k8s_client.BatchV1Api(self.get_kube_client())
 
-    def submit(
+    def submit_with_allocation(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"],
     ) -> None:
         """Submits a step run to Kubernetes.
 
@@ -205,10 +229,13 @@ class KubernetesStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             RuntimeError: If a regular step requests more than one pod.
             Exception: If the headless service creation fails.
+
         """
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
@@ -220,6 +247,11 @@ class KubernetesStepOperator(BaseStepOperator):
                 "step. Running a regular step on multiple pods would "
                 "duplicate its artifacts, outputs and logs on every pod."
             )
+        settings = kube_utils.apply_resource_request_component_settings(
+            settings=settings,
+            allocated_resource_request=allocated_resource_request,
+            settings_class=KubernetesStepOperatorSettings,
+        )
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
         )
@@ -250,9 +282,15 @@ class KubernetesStepOperator(BaseStepOperator):
         # some memory resources itself and, if not specified, the pod will be
         # scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = (
+            kube_utils.apply_resource_request_allocations_to_pod_settings(
+                allocated_resource_request=allocated_resource_request,
+                pod_settings=settings.pod_settings,
+            )
+        )
         pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
         )
 
         job_name = settings.job_name_prefix or ""
@@ -275,6 +313,8 @@ class KubernetesStepOperator(BaseStepOperator):
                 )
             )
 
+        oidc_claims = Client().active_user.oidc_claims
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image_name,
@@ -285,6 +325,8 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
 
         job_manifest = build_job_manifest(

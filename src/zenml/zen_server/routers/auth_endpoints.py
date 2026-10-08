@@ -546,12 +546,22 @@ def api_token(
                 "seconds."
             )
 
+        if token.schedule_id or token.pipeline_run_id or token.deployment_id:
+            logger.warning(
+                "A generic API token was requested using a workload-scoped "
+                "token. The generated token will retain the workload scope."
+            )
+
         return generate_access_token(
             user_id=token.user_id,
             # Keep the original API key and device token scopes.
             api_key=auth_context.api_key,
             device=auth_context.device,
             expires_in=expires_in,
+            # Workload-scoped tokens must not be exchanged for unscoped tokens.
+            schedule_id=token.schedule_id,
+            pipeline_run_id=token.pipeline_run_id,
+            deployment_id=token.deployment_id,
             # Don't include the access token as a cookie in the response
             response=None,
         ).access_token

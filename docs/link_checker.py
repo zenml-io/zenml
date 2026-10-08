@@ -129,6 +129,8 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "secure.backblaze.com": {403},
     # vllm docs rate-limit CI traffic with 429.
     "docs.vllm.ai": {429},
+    # Legacy BentoML docs domain rate-limits CI traffic with 429.
+    "bentoml.org": {429},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.

@@ -48,36 +48,80 @@ zenml log-store register <LOG_STORE_NAME> \
     --application_key=<DATADOG_APPLICATION_KEY>
 
 # Add it to your stack
-zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> -ls <LOG_STORE_NAME> --set
+zenml stack register <STACK_NAME> -a <ARTIFACT_STORE> -o <ORCHESTRATOR> --log_store <LOG_STORE_NAME> --set
 ```
 
 Once configured, logs are automatically captured during pipeline execution.
 
 ### Viewing Logs
 
-You can view logs through several methods:
+You can view step logs in the ZenML dashboard or in your logging provider's UI. To retrieve them programmatically, use the Python SDK or REST API.
 
-1. **ZenML Dashboard**: Navigate to a pipeline run and view step logs directly in the UI.
+#### Python SDK
 
-2. **Programmatically**: You can fetch logs directly using the log store:
+Use the log store that captured the logs:
 
 ```python
 from zenml.client import Client
+from zenml.utils.logging_utils import search_logs_by_source
 
 client = Client()
 
-# Get the run you want logs for
 run = client.get_pipeline_run("<RUN_NAME_OR_ID>")
+step_run = run.steps["<STEP_NAME>"]
+logs = search_logs_by_source(step_run.log_collection or [], "step")
+if logs is None:
+    raise ValueError("This step has no execution log stream.")
 
-# Note: The log store must match the one that captured the logs
 log_store = client.active_stack.log_store
-log_entries = log_store.fetch(logs_model=run.logs, limit=1000)
+page = log_store.fetch(logs_model=logs, limit=1000)
 
-for entry in log_entries:
+for entry in page.items:
     print(f"[{entry.level}] {entry.message}")
 ```
 
-3. **External platforms**: For log stores like Datadog, you can also view logs directly in the platform's native interface.
+`fetch()` returns a page with entries in `items`, ordered from oldest to newest. Set `start="oldest"` or `start="newest"` to choose the first page, or omit it to use the backend's default: newest for Datadog, oldest for the artifact log store.
+
+For backends with pagination, pass the returned `before` cursor to read older entries or `after` to read newer ones. Only directions supported by the backend's native tokens are available; `None` means there is no continuation in that direction.
+
+For example, with Datadog, filter the first request and use its cursor to continue:
+
+```python
+from zenml.models import LogsEntriesFilter
+
+page = log_store.fetch(
+    logs_model=logs,
+    start="newest",
+    filter_=LogsEntriesFilter(level="ERROR", search="ValueError"),
+)
+while True:
+    for entry in page.items:
+        print(entry.message)
+    if page.before is None:
+        break
+    page = log_store.fetch(logs_model=logs, before=page.before)
+```
+
+Datadog cursors retain the filters, page size, and fixed time bounds. Search follows the backend's matching rules, which may differ from a literal substring match.
+
+The artifact log store returns one batch for client-side filtering and pagination. It does not support these filters or `start="newest"`.
+
+Each entry has a UUID `id`. IDs remain stable for Datadog events and structured artifact logs. Deduplicate entries within a stream by `(id, chunk_index)` to preserve chunks of the same message. Shared log types, including `LogEntry`, are available from `zenml.models`.
+
+#### REST API
+
+`GET /api/v1/logs/{logs_id}/entries` accepts `start`, `limit`, `before`, `after`, `search`, `level`, `since`, and `until` as query parameters. For example:
+
+```http
+GET /api/v1/logs/<LOGS_ID>/entries?start=newest&limit=50
+GET /api/v1/logs/<LOGS_ID>/entries?before=<CURSOR>
+```
+
+Invalid query values return `422`; unsupported parameters and cursors rejected by ZenML return `400`. Backends without log retrieval return `501`. Shared log store errors return `429` for throttling, `503` for unavailability, or `502` for other backend errors. When provided, `Retry-After` specifies the delay in seconds before retrying the original request. Direct SDK calls raise the corresponding `LogStoreError` subclass.
+
+Runner logs return one batch through the workload manager. Apply filtering and pagination in the client; unsupported runner filters or cursors return `400`.
+
+The existing run and step log endpoints continue to return a single list of entries. Use the dedicated entries endpoint for pagination.
 
 ### Log Store Flavors
 
@@ -99,8 +143,5 @@ zenml log-store flavor list
 {% hint style="info" %}
 If you're interested in understanding the base abstraction and how log stores work internally, check out the [Develop a Custom Log Store](custom.md) page for a detailed explanation of the architecture.
 {% endhint %}
-
-
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

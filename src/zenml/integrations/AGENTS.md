@@ -1,8 +1,8 @@
 # ZenML Integrations Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/integrations/` or below. For
+This file applies to changes in `src/zenml/integrations/` and below. For
 detailed examples, dependency update guidance, and step-operator notes, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Critical Flavor Import Rule
 
@@ -52,7 +52,9 @@ cancel, and wait can work reliably.
 ## Dependencies
 
 - Prefer inclusive lower bounds and exclusive upper bounds.
-- Test realistic integration scenarios locally when changing dependencies.
+- Test realistic integration scenarios when changing dependencies. If required
+  credentials or services are unavailable, run applicable local checks and
+  report the unverified scenario and required CI coverage.
 - Dropping support for an older dependency version is a breaking change.
 
 ## Import Boundaries

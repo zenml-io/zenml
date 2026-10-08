@@ -11,21 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Event dispatcher that fans out run lifecycle events to handlers."""
+"""Process-wide event dispatcher."""
 
 import threading
 from typing import List
 
+from zenml.dispatcher.events import Event
 from zenml.dispatcher.handler import EventHandler
 from zenml.logger import get_logger
-from zenml.models import PipelineRunResponse
 from zenml.utils.singleton import SingletonMetaClass
 
 logger = get_logger(__name__)
 
 
 class EventDispatcher(metaclass=SingletonMetaClass):
-    """Process-wide broadcaster of pipeline run lifecycle events."""
+    """Process-wide broadcaster of event envelopes."""
 
     def __init__(self) -> None:
         """Initialize the dispatcher with an empty handler list."""
@@ -64,14 +64,11 @@ class EventDispatcher(metaclass=SingletonMetaClass):
         with self._handlers_lock:
             return bool(self._event_handlers)
 
-    def handle_run_status_update(
-        self,
-        run: PipelineRunResponse,
-    ) -> None:
-        """Handle a status update on a pipeline run.
+    def dispatch_event(self, event: Event) -> None:
+        """Dispatch an event to all registered handlers.
 
         Args:
-            run: The pipeline run whose status has changed.
+            event: The event envelope to dispatch.
         """
         with self._handlers_lock:
             handlers = list(self._event_handlers)
@@ -79,15 +76,15 @@ class EventDispatcher(metaclass=SingletonMetaClass):
         for event_handler in handlers:
             try:
                 logger.debug(
-                    "Event handler: %s picking up %s status change to %s",
+                    "Event handler %s received %s",
                     event_handler.__class__.__name__,
-                    run.id,
-                    run.status,
+                    event.__class__.__name__,
                 )
-                event_handler.handle_run_status_update(run)
+                event_handler.handle_event(event)
             except Exception as exc:
                 logger.exception(
-                    "%s failed to handle update",
+                    "%s failed to handle %s",
                     event_handler.__class__.__name__,
+                    event.__class__.__name__,
                     exc_info=exc,
                 )

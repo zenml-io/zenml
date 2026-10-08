@@ -6,7 +6,7 @@ description: Deploying your models locally with BentoML.
 
 BentoML is an open-source framework for machine learning model serving. it can be used to deploy models locally, in a cloud environment, or in a Kubernetes environment.
 
-The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the BentoML integration it can be used to deploy and [manage BentoML models](https://docs.bentoml.org/en/latest/guides/model-store.html#manage-models) or [Bento](https://docs.bentoml.org/en/latest/reference/stores.html#manage-bentos) on a local running HTTP server.
+The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the BentoML integration it can be used to deploy and [manage BentoML models](https://docs.bentoml.com/en/latest/build-with-bentoml/model-loading-and-management.html#manage-models) or [Bento](https://docs.bentoml.com/en/latest/reference/bentoml/stores.html#manage-bentos) on a local running HTTP server.
 
 {% hint style="warning" %}
 The BentoML Model Deployer can be used to deploy models for local development and production use cases. There are two paths to deploy Bentos with ZenML, one as a local http server and one as a containerized service. Within the BentoML ecosystem, [Yatai](https://github.com/bentoml/Yatai) and [`bentoctl`](https://github.com/bentoml/bentoctl) are the tools responsible for deploying the Bentos into the Kubernetes cluster and Cloud Platforms. `bentoctl` is deprecated now and might not work with the latest BentoML versions.
@@ -136,7 +136,7 @@ bento = bentos.build(
 )
 ```
 
-The `model_name` here should be the name with which your model is saved to BentoML, typically through one of the following commands. More information about the BentoML model store and how to save models there can be found here on the [BentoML docs](https://docs.bentoml.org/en/latest/guides/model-store.html#save-a-model).
+The `model_name` here should be the name with which your model is saved to BentoML, typically through one of the following commands. More information about the BentoML model store and how to save models there can be found here on the [BentoML docs](https://docs.bentoml.com/en/latest/build-with-bentoml/model-loading-and-management.html#save-a-model).
 
 ```python
 bentoml.MODEL_TYPE.save_model(model_name, model, labels=labels)
@@ -228,7 +228,7 @@ def bento_deployer_pipeline():
 
 **Containerized deployment**
 
-The following example shows how to use the `bentoml_model_deployer_step` to deploy the bento bundle to a [containerized service](https://docs.bentoml.org/en/latest/guides/containerization.html) running in your local machine. Make sure you have the `docker` CLI installed on your local machine to be able to build an image and deploy the containerized service.
+The following example shows how to use the `bentoml_model_deployer_step` to deploy the bento bundle to a [containerized service](https://docs.bentoml.com/en/latest/get-started/packaging-for-deployment.html) running in your local machine. Make sure you have the `docker` CLI installed on your local machine to be able to build an image and deploy the containerized service.
 
 You can choose to give a name and a tag to the image that will be built and pushed to your ZenML Stack's container registry. By default, the bento tag is used. If you are providing a custom image name, make sure that you attach the right registry name as prefix to the image name, otherwise the image push will fail.
 

@@ -46,3 +46,7 @@ curl -X POST http://localhost:8000/invoke \
 - **Tool Integration**: Built-in support for function calling
 - **Real-time Deployment**: Deploy as HTTP API for instant responses
 - **ZenML Orchestration**: Full pipeline tracking and artifact management
+
+## 🔁 Recording runs with Kitaru
+
+This pipeline runs the agent for a batch workload. When the same agent runs in production, [Kitaru](https://docs.zenml.io/kitaru) — ZenML's sibling project for agents — can record every run as a replayable session: install `kitaru-pydantic-ai` and wrap the agent in `KitaruAgent`, which is a transparent wrapper (`run_sync`, tools, and output types behave exactly as before). You can then replay a real run against your real code with one thing changed — a cheaper model, a different prompt — and diff the pair. See the [PydanticAI adapter docs](https://docs.zenml.io/kitaru/adapters/pydantic-ai).

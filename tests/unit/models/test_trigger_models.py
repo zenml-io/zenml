@@ -1,4 +1,7 @@
+import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -11,17 +14,31 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.models import (
+    PipelineRunResponse,
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
     ScheduleTriggerRequest,
+    ScheduleTriggerResponse,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
     TriggerDispatchStatusCode,
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerExecutionInfo,
+    WebhookTriggerRequest,
+    WebhookTriggerUpdate,
+)
+from zenml.webhooks.providers.github import (
+    GitHubWebhookConfiguration,
+    GitHubWebhookEvent,
+    IssueOpened,
+    MergedPullRequest,
+    PushEvent,
+    ReleasePublished,
+    WorkflowRunCompleted,
 )
 
 
@@ -36,6 +53,308 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
     assert info.upstream_run_id == upstream_run_id
     assert info.upstream_pipeline_ids == []
     assert "upstream_pipeline_ids" in info.model_dump()
+
+
+def test_trigger_execution_info_parses_webhook_upstream_event() -> None:
+    """Webhook trigger execution metadata keeps a dynamic provider event."""
+    webhook_id = uuid4()
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "github": {
+                    "webhook_id": str(webhook_id),
+                    "delivery_id": "delivery-001",
+                    "event": {
+                        "type": "push",
+                        "repo": "zenml-io/zenml",
+                        "commit": None,
+                    },
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "github": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
+            delivery_id="delivery-001",
+            event={
+                "type": "push",
+                "repo": "zenml-io/zenml",
+                "commit": None,
+            },
+        )
+    }
+
+
+def test_trigger_execution_info_allows_missing_semantic_event() -> None:
+    """Custom webhook runs still carry a complete raw payload locator."""
+    webhook_id = uuid4()
+
+    info = TriggerExecutionInfo.model_validate(
+        {
+            "webhook_upstream_event": {
+                "custom": {
+                    "webhook_id": str(webhook_id),
+                    "delivery_id": "delivery-001",
+                }
+            }
+        }
+    )
+
+    assert info.webhook_upstream_event == {
+        "custom": WebhookTriggerExecutionInfo(
+            webhook_id=webhook_id,
+            delivery_id="delivery-001",
+            event=None,
+        )
+    }
+
+
+def _run_payload_with_trigger(
+    pipeline_run: PipelineRunResponse, trigger: dict[str, Any]
+) -> dict[str, Any]:
+    """Create a pipeline run payload containing a trigger resource.
+
+    Args:
+        pipeline_run: Pipeline run used as the base payload.
+        trigger: Raw trigger response payload.
+
+    Returns:
+        A serialized pipeline run payload containing the trigger.
+    """
+    payload = pipeline_run.model_dump(mode="json")
+    assert payload["resources"] is not None
+    payload["resources"]["trigger"] = trigger
+    return payload
+
+
+def test_pipeline_run_ignores_unknown_trigger_type(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Unknown trigger types should not invalidate pipeline run responses."""
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {"type": "future_trigger_type"},
+        },
+    )
+
+    pipeline_run = PipelineRunResponse.model_validate(payload)
+
+    assert pipeline_run.trigger is None
+
+
+def test_pipeline_run_loads_valid_trigger(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Valid trigger resources should still be loaded normally."""
+    now = datetime.now().isoformat()
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {
+                "name": "hourly",
+                "active": True,
+                "type": "schedule",
+                "concurrency": "skip",
+                "created": now,
+                "updated": now,
+                "project_id": str(uuid4()),
+                "is_archived": False,
+                "flavor": "native schedule",
+                "cron_expression": "0 * * * *",
+            },
+        },
+    )
+
+    pipeline_run = PipelineRunResponse.model_validate(payload)
+
+    assert isinstance(pipeline_run.trigger, ScheduleTriggerResponse)
+
+
+def test_pipeline_run_rejects_corrupted_known_trigger(
+    sample_pipeline_run: PipelineRunResponse,
+) -> None:
+    """Corrupted resources for known trigger types should fail validation."""
+    payload = _run_payload_with_trigger(
+        sample_pipeline_run,
+        trigger={
+            "id": str(uuid4()),
+            "body": {"type": "schedule"},
+        },
+    )
+
+    with pytest.raises(ValidationError):
+        PipelineRunResponse.model_validate(payload)
+
+
+def test_webhook_trigger_update_requires_complete_payload() -> None:
+    """Webhook trigger updates preserve PUT semantics."""
+    with pytest.raises(ValidationError):
+        WebhookTriggerUpdate(name="webhook-trigger")
+
+    update = WebhookTriggerUpdate(
+        name="webhook-trigger",
+        active=False,
+        concurrency=TriggerRunConcurrency.SKIP,
+        configuration={"target_events": []},
+    )
+
+    assert update.get_extra_fields() == {}
+
+
+def test_github_webhook_trigger_serializes_typed_event_configuration() -> None:
+    """Multiple typed GitHub event configurations are stored in config JSON."""
+    events = [
+        MergedPullRequest(
+            repo='oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
+            target_branch="develop",
+            source_branch="startswith:feature/",
+            author="george",
+        ),
+        PushEvent(repo="zenml-io/zenml", branch="main", actor="george"),
+        ReleasePublished(
+            repo="zenml-io/zenml",
+            tag="startswith:v",
+            target_branch="main",
+        ),
+        WorkflowRunCompleted(
+            workflow="CI",
+            conclusion='oneof:["success", "failure"]',
+            actor="george",
+        ),
+        IssueOpened(
+            repo="zenml-io/zenml",
+            labels='oneof:["bug", "priority-high"]',
+            author_association='oneof:["OWNER", "MEMBER"]',
+        ),
+    ]
+    request = WebhookTriggerRequest(
+        project=uuid4(),
+        name="github-webhook-trigger",
+        flavor=TriggerFlavor.WEBHOOK,
+        webhook_id=uuid4(),
+        configuration={
+            "target_events": [
+                event.model_dump(mode="json", exclude_none=True)
+                for event in events
+            ]
+        },
+    )
+
+    assert events[0].type == GitHubWebhookEvent.MERGED_PULL_REQUEST
+    assert json.loads(request.get_config()) == {
+        "configuration": {
+            "target_events": [
+                {
+                    "type": "merged_pull_request",
+                    "repo": 'oneof:["zenml-io/zenml", "zenml-io/zenml-pro"]',
+                    "target_branch": "develop",
+                    "source_branch": "startswith:feature/",
+                    "author": "george",
+                },
+                {
+                    "type": "push",
+                    "repo": "zenml-io/zenml",
+                    "branch": "main",
+                    "actor": "george",
+                },
+                {
+                    "type": "release_published",
+                    "repo": "zenml-io/zenml",
+                    "tag": "startswith:v",
+                    "target_branch": "main",
+                },
+                {
+                    "type": "workflow_run_completed",
+                    "workflow": "CI",
+                    "conclusion": 'oneof:["success", "failure"]',
+                    "actor": "george",
+                },
+                {
+                    "type": "issue_opened",
+                    "repo": "zenml-io/zenml",
+                    "author_association": 'oneof:["OWNER", "MEMBER"]',
+                    "labels": 'oneof:["bug", "priority-high"]',
+                },
+            ]
+        }
+    }
+
+
+def test_webhook_trigger_requires_owner_only_on_create() -> None:
+    """Webhook ownership is required on create and absent from updates."""
+    with pytest.raises(ValidationError):
+        WebhookTriggerRequest(
+            project=uuid4(),
+            name="webhook-trigger",
+            configuration={"target_events": []},
+        )
+
+
+def test_github_webhook_configuration_loads_yaml(tmp_path: Path) -> None:
+    """The CLI configuration wrapper loads heterogeneous event lists."""
+    path = tmp_path / "events.yaml"
+    path.write_text(
+        """
+target_events:
+  - type: merged_pull_request
+    repo: zenml-io/zenml
+    target_branch: develop
+  - type: push
+    repo: zenml-io/zenml
+    branch: main
+""".lstrip()
+    )
+
+    configuration = GitHubWebhookConfiguration.from_yaml(str(path))
+
+    assert configuration.target_events == [
+        MergedPullRequest(repo="zenml-io/zenml", target_branch="develop"),
+        PushEvent(repo="zenml-io/zenml", branch="main"),
+    ]
+
+
+def test_github_webhook_configuration_rejects_empty_event_list() -> None:
+    """GitHub configuration must select at least one event."""
+    with pytest.raises(ValidationError):
+        GitHubWebhookConfiguration(target_events=[])
+
+
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("source_branch", "oneof:not-json"),
+        ("target_branch", 'oneof:["develop", 42]'),
+    ],
+)
+def test_pull_request_merged_rejects_invalid_filters(
+    field: str, value: str
+) -> None:
+    """Semantic event fields reject malformed filter expressions."""
+    with pytest.raises(ValidationError):
+        MergedPullRequest(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "repo",
+        "author",
+        "author_association",
+        "labels",
+        "assignees",
+        "milestone",
+    ],
+)
+def test_issue_opened_accepts_prefix_filters(field: str) -> None:
+    """All opened-issue string filter fields support prefix matching."""
+    event = IssueOpened(**{field: "startswith:prefix"})
+
+    assert getattr(event, field) == "startswith:prefix"
 
 
 def test_schedule_trigger_valid_and_inheritance():
@@ -148,6 +467,28 @@ def test_schedule_trigger_timezone_normalization():
 
     assert req.start_time.tzinfo is None
     assert req.start_time == datetime(2026, 1, 1, 10, 0)
+
+
+def test_schedule_trigger_update_recomputes_next_occurrence():
+    def _update(**scheduling_option) -> ScheduleTriggerUpdate:
+        return ScheduleTriggerUpdate(
+            name="sched",
+            active=True,
+            type=TriggerType.SCHEDULE,
+            flavor=TriggerFlavor.NATIVE_SCHEDULE,
+            **scheduling_option,
+        )
+
+    future = datetime.utcnow().replace(microsecond=0) + timedelta(days=1)
+
+    cron = _update(cron_expression="0 * * * *")
+    assert cron.get_extra_fields()["next_occurrence"] is not None
+
+    interval = _update(interval=3600, start_time=future)
+    assert interval.get_extra_fields()["next_occurrence"] == future
+
+    run_once = _update(run_once_start_time=future)
+    assert run_once.get_extra_fields()["next_occurrence"] == future
 
 
 def test_schedule_trigger_response_next_occurrence_behavior():

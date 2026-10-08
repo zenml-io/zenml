@@ -16,6 +16,7 @@
 import hashlib
 import json
 import os
+from collections import Counter, defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -244,7 +245,7 @@ def _is_serializable(obj: Any) -> bool:
     if isinstance(obj, (list, tuple, set)):
         return _all_serializable(obj)
     if isinstance(obj, dict):
-        return _all_serializable(obj.keys()) and _all_serializable(
+        return all(isinstance(key, str) for key in obj) and _all_serializable(
             obj.values()
         )
     return False
@@ -419,6 +420,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Cast the data to the correct type.
         if issubclass(data_type, dict) and not isinstance(outputs, dict):
             keys, values = outputs
+            if issubclass(data_type, defaultdict):
+                return dict(zip(keys, values))
+            if issubclass(data_type, Counter):
+                return data_type(dict(zip(keys, values)))
             return data_type(zip(keys, values))
         if issubclass(data_type, tuple) and not isinstance(outputs, tuple):
             return data_type(outputs)

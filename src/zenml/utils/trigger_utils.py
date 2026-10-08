@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Utility functions to manage platform event triggers."""
+"""Utility functions to manage triggers."""
 
 import logging
-from typing import overload
+from collections.abc import Mapping
+from typing import Any, overload
 from uuid import UUID
 
 from pydantic import validate_call
@@ -28,7 +29,12 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
 )
-from zenml.models import PipelineRunResponse, PlatformEventTriggerResponse
+from zenml.models import (
+    PipelineRunResponse,
+    PlatformEventTriggerResponse,
+    WebhookTriggerResponse,
+)
+from zenml.webhooks import WebhookConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +265,68 @@ def update_platform_event_trigger(
     )
 
 
+def create_webhook_trigger(
+    *,
+    name: str,
+    webhook: str | UUID,
+    configuration: Mapping[str, Any] | WebhookConfiguration,
+    project_id: str | UUID | None = None,
+    active: bool = True,
+    concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+) -> WebhookTriggerResponse:
+    """Create a webhook trigger owned by a webhook.
+
+    Args:
+        name: The trigger name.
+        webhook: The owning webhook name, ID, or ID prefix.
+        configuration: The complete webhook trigger configuration.
+        project_id: The project ID.
+        active: Whether the trigger should be active.
+        concurrency: The trigger run concurrency behavior.
+
+    Returns:
+        The created webhook trigger.
+    """
+    return Client().create_webhook_trigger(
+        name=name,
+        webhook=webhook,
+        configuration=configuration,
+        project_id=project_id,
+        active=active,
+        concurrency=concurrency,
+    )
+
+
+def update_webhook_trigger(
+    *,
+    trigger_name_id_or_prefix: str | UUID,
+    name: str | None = None,
+    active: bool | None = None,
+    concurrency: TriggerRunConcurrency | None = None,
+    configuration: Mapping[str, Any] | WebhookConfiguration | None = None,
+) -> WebhookTriggerResponse:
+    """Update a webhook trigger and optionally replace its configuration.
+
+    Args:
+        trigger_name_id_or_prefix: The trigger name, ID, or ID prefix.
+        name: The new trigger name.
+        active: The new active state.
+        concurrency: The new trigger run concurrency behavior.
+        configuration: Complete replacement configuration. Omitting this
+            preserves the existing configuration.
+
+    Returns:
+        The updated webhook trigger.
+    """
+    return Client().update_webhook_trigger(
+        trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+        name=name,
+        active=active,
+        concurrency=concurrency,
+        configuration=configuration,
+    )
+
+
 @validate_call()
 def list_supported_events(
     source_type: SourceType,
@@ -303,4 +371,78 @@ def get_upstream_run(
             info.upstream_run_id,
             exc_info=exc,
         )
+        return None
+
+
+def get_webhook_upstream_event(
+    pipeline_run: PipelineRunResponse | None = None,
+) -> dict[str, Any] | None:
+    """Get the upstream webhook event for a pipeline run.
+
+    When no run is provided, the current step's pipeline run is used.
+
+    Args:
+        pipeline_run: Pipeline run to inspect. If omitted, the current run is
+            resolved from the active step context.
+
+    Returns:
+        Plain provider-keyed webhook event metadata, or `None` if unavailable.
+
+    Raises:
+        RuntimeError: If no run is provided outside a running step.
+    """
+    if pipeline_run is None:
+        from zenml.steps.step_context import get_step_context
+
+        try:
+            pipeline_run = get_step_context().pipeline_run
+        except RuntimeError:
+            raise
+
+    info = pipeline_run.trigger_execution_info
+    if info is None or info.webhook_upstream_event is None:
+        return None
+
+    return {
+        provider: provider_info.model_dump(mode="json")
+        for provider, provider_info in info.webhook_upstream_event.items()
+    }
+
+
+def get_raw_webhook_event(
+    pipeline_run: PipelineRunResponse | None = None,
+) -> dict[str, Any] | None:
+    """Get the retained raw webhook event for a pipeline run.
+
+    When no run is provided, the current step's pipeline run is used. Only
+    runs started directly by a webhook trigger carry the lookup information.
+
+    Args:
+        pipeline_run: Pipeline run to inspect. If omitted, the current run is
+            resolved from the active step context.
+
+    Returns:
+        The extensible raw event envelope, or `None` if it is unavailable.
+    """
+    if pipeline_run is None:
+        from zenml.steps.step_context import get_step_context
+
+        pipeline_run = get_step_context().pipeline_run
+
+    info = pipeline_run.trigger_execution_info
+    if info is None or not info.webhook_upstream_event:
+        return None
+    if len(info.webhook_upstream_event) != 1:
+        logger.error(
+            "Expected one webhook provider in trigger execution information."
+        )
+        return None
+
+    _, event = next(iter(info.webhook_upstream_event.items()))
+    try:
+        return Client().get_raw_webhook_event(
+            webhook_id=event.webhook_id,
+            delivery_id=event.delivery_id,
+        )
+    except KeyError:
         return None

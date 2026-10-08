@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     HEARTBEAT,
     LOGS,
-    LOGS_MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
@@ -30,15 +29,18 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.models import (
+    LogEntry,
     Page,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.models.v2.core.step_run import StepHeartbeatResponse
+from zenml.models.v2.core.step_run import (
+    StepHeartbeatRequest,
+    StepHeartbeatResponse,
+)
 from zenml.utils.logging_utils import (
-    LogEntry,
     fetch_logs,
     search_logs_by_id,
     search_logs_by_source,
@@ -212,21 +214,32 @@ def update_step(
 @async_fastapi_endpoint_wrapper(deduplicate=False)
 def update_heartbeat(
     step_run_id: UUID,
+    heartbeat_request: Optional[StepHeartbeatRequest] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> StepHeartbeatResponse:
     """Updates a step.
 
     Args:
         step_run_id: ID of the step.
+        heartbeat_request: Optional heartbeat request body.
         auth_context: Authorization/Authentication context.
 
     Returns:
         The step heartbeat response (id, status, last_heartbeat).
     """
+    heartbeat_liveness_timeout_seconds = None
+    if heartbeat_request:
+        heartbeat_liveness_timeout_seconds = (
+            heartbeat_request.heartbeat_liveness_timeout_seconds
+        )
+
     return zen_store().validate_and_update_heartbeat(
         step_run_id=step_run_id,
         token_run_id=auth_context.access_token.pipeline_run_id,  # type: ignore[union-attr]
         token_schedule_id=auth_context.access_token.schedule_id,  # type: ignore[union-attr]
+        heartbeat_liveness_timeout_seconds=(
+            heartbeat_liveness_timeout_seconds
+        ),
     )
 
 
@@ -294,7 +307,7 @@ def get_step_logs(
     logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
-    """Get log entries for a step.
+    """Get the log entries of a step run.
 
     Args:
         step_id: ID of the step for which to get the logs.
@@ -328,11 +341,7 @@ def get_step_logs(
     if step.log_collection:
         if source:
             if logs := search_logs_by_source(step.log_collection, source):
-                return fetch_logs(
-                    logs=logs,
-                    zen_store=store,
-                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-                )
+                return fetch_logs(logs=logs, zen_store=store).items
             else:
                 raise KeyError(
                     f"No logs found for source '{source}' in step {step_id}"
@@ -340,11 +349,7 @@ def get_step_logs(
 
         elif logs_id:
             if logs := search_logs_by_id(step.log_collection, logs_id):
-                return fetch_logs(
-                    logs=logs,
-                    zen_store=store,
-                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
-                )
+                return fetch_logs(logs=logs, zen_store=store).items
             else:
                 raise KeyError(
                     f"No logs found for ID '{logs_id}' in step {step_id}"

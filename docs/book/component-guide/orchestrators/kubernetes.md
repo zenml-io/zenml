@@ -155,7 +155,7 @@ The following configuration options can be set either through the orchestrator c
 - **`timeout`** (default: 0): How many seconds to wait for synchronous runs. `0` means to wait indefinitely.
 - **`stream_step_logs`** (default: True): If `True`, the orchestrator pod will stream the logs of the step pods.
 - **`service_account_name`**: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
-- **`step_pod_service_account_name`**: Name of the service account to use for the step pods.
+- **`step_pod_service_account_name`**: Name of the service account to use for the step pods. If not set, the step pods fall back to `service_account_name`; if that is not set either, they run with the namespace's `default` service account. Note that `pod_settings` has no service account field, so `pod_settings={"service_account_name": ...}` is accepted but ignored.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
 - **`pod_settings`**: Node selectors, labels, affinity, and tolerations, secrets, environment variables, image pull secrets, the scheduler name and additional arguments to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 - **`orchestrator_pod_settings`**: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
@@ -180,6 +180,26 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`concurrency_policy`**: CronJob concurrency policy for scheduled pipelines. Controls whether concurrent job executions are allowed. Valid values: `Allow` (Kubernetes default), `Forbid`, `Replace`. Only applies when a pipeline has a cron schedule.
 - **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
+
+### Running with an externally synchronized Linux identity
+
+When ZenML Pro is configured to synchronize numeric Linux UID and GID claims
+from an external OIDC provider, the Kubernetes orchestrator automatically runs
+the orchestration pod and all step containers as that user. ZenML sets
+`runAsUser` and `runAsGroup` on the pod and every container. These synchronized
+values take precedence over conflicting pod settings; unrelated security
+settings such as `fsGroup`, seccomp, capabilities, and supplemental groups are
+preserved.
+
+The UID and GID are applied independently. A synchronized UID sets
+`runAsUser`, while a synchronized GID sets `runAsGroup`. Missing values are
+omitted, while unexpected non-positive or non-integer values produce a warning
+and are ignored. ZenML does not derive `fsGroup` from the synchronized GID;
+administrators can configure it explicitly through the existing pod settings.
+On OpenShift, the applicable SCC must permit the requested UID, GID, and any
+configured `fsGroup`. For an existing scheduled pipeline, update or recreate
+its Kubernetes CronJob after the identity has synchronized so the stored pod
+template includes the security context.
 
 #### Kubernetes permissions and service accounts
 
@@ -230,6 +250,12 @@ If `pass_zenml_token_as_secret=True`, also grant:
 Step containers do not need Kubernetes API access for normal execution in this
 orchestrator flow. Unless your step code explicitly calls the Kubernetes API,
 you can keep this account with no additional Kubernetes RBAC grants.
+
+The step pods use `step_pod_service_account_name` if it is set, otherwise
+`service_account_name`, otherwise the namespace's `default` service account.
+Set it through the orchestrator settings, not through `pod_settings`:
+`KubernetesPodSettings` has no `service_account_name` field, and an unknown
+key passed to `pod_settings` is accepted without error and never applied.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -402,6 +428,30 @@ def simple_ml_pipeline(parameter: int):
 ```
 
 This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
+
+To run a single step under its own Kubernetes service account (for example, one bound to a cloud identity with access to a specific bucket), set `step_pod_service_account_name` on that step. This is a top-level orchestrator setting, not part of `pod_settings`:
+
+```python
+@step(
+    settings={
+        "orchestrator": KubernetesOrchestratorSettings(
+            step_pod_service_account_name="train-model-sa",
+        )
+    }
+)
+def train_model(data: dict) -> None:
+    ...
+```
+
+The same override in a YAML config file:
+
+```yaml
+steps:
+  train_model:
+    settings:
+      orchestrator.kubernetes:
+        step_pod_service_account_name: train-model-sa
+```
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.
 

@@ -33,10 +33,6 @@ def upgrade() -> None:
         ["project_id", "created", "id"],
     )
 
-    drop_index_if_exists(
-        "pipeline_snapshot",
-        "ix_pipeline_snapshot_project_id_created_id_name",
-    )
     create_index_if_missing(
         "pipeline_snapshot",
         "ix_pipeline_snapshot_project_id_created_id",
@@ -46,6 +42,12 @@ def upgrade() -> None:
         "pipeline_snapshot",
         "ix_pipeline_snapshot_project_id_name",
         ["project_id", "name"],
+    )
+    # MySQL might use the old index to enforce the project foreign key, so a
+    # replacement that starts with `project_id` must exist before it is dropped.
+    drop_index_if_exists(
+        "pipeline_snapshot",
+        "ix_pipeline_snapshot_project_id_created_id_name",
     )
 
     create_index_if_missing(

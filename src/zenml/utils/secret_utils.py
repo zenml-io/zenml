@@ -16,7 +16,7 @@
 import re
 from typing import TYPE_CHECKING, Any, List, NamedTuple, Union
 
-from pydantic import Field, PlainSerializer, SecretStr
+from pydantic import AfterValidator, Field, PlainSerializer, SecretStr
 from typing_extensions import Annotated
 
 from zenml.logger import get_logger
@@ -33,6 +33,33 @@ PYDANTIC_CLEAR_TEXT_FIELD_MARKER = "prevent_secret_reference"
 
 PlainSerializedSecretStr = Annotated[
     SecretStr,
+    PlainSerializer(
+        lambda v: v.get_secret_value() if v is not None else None,
+        when_used="json",
+    ),
+]
+
+
+def _validate_non_empty_secret(secret: SecretStr) -> SecretStr:
+    """Validate that a secret contains non-whitespace content.
+
+    Args:
+        secret: The secret to validate.
+
+    Returns:
+        The validated secret.
+
+    Raises:
+        ValueError: If the secret is empty or contains only whitespace.
+    """
+    if not secret.get_secret_value().strip():
+        raise ValueError("Secret must not be empty.")
+    return secret
+
+
+NonEmptyPlainSerializedSecretStr = Annotated[
+    SecretStr,
+    AfterValidator(_validate_non_empty_secret),
     PlainSerializer(
         lambda v: v.get_secret_value() if v is not None else None,
         when_used="json",

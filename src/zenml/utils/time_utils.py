@@ -189,8 +189,9 @@ def exponential_backoff_delays(
         raise ValueError("`jitter` must be one of 'none', 'full', or 'equal'.")
 
     attempt = 0
+    capped_delay = min(initial_delay, max_delay)
     while attempts is None or attempt < attempts:
-        delay = min(initial_delay * (factor**attempt), max_delay)
+        delay = capped_delay
         if jitter == "full":
             delay = random.uniform(0, delay)
         elif jitter == "equal":
@@ -198,6 +199,8 @@ def exponential_backoff_delays(
             delay = half_delay + random.uniform(0, half_delay)
         yield delay
         attempt += 1
+        if capped_delay < max_delay:
+            capped_delay = min(capped_delay * factor, max_delay)
 
 
 def iso8601_to_utc_naive(value: str) -> datetime:

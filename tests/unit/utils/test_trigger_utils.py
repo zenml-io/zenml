@@ -11,6 +11,7 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
 )
+from zenml.models import TriggerExecutionInfo, WebhookTriggerExecutionInfo
 from zenml.utils import trigger_utils
 
 
@@ -38,6 +39,97 @@ def test_list_supported_events():
 
     with pytest.raises(ValidationError):
         trigger_utils.list_supported_events(source_type="snapshot")
+
+
+def test_get_webhook_upstream_event_returns_plain_dict() -> None:
+    """Webhook event helper hides the typed trigger execution structure."""
+    webhook_id = uuid4()
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo(
+        webhook_upstream_event={
+            "github": WebhookTriggerExecutionInfo(
+                webhook_id=webhook_id,
+                delivery_id="delivery-001",
+                event={"type": "push", "commit": None},
+            )
+        }
+    )
+
+    result = trigger_utils.get_webhook_upstream_event(pipeline_run=run)
+
+    assert result == {
+        "github": {
+            "webhook_id": str(webhook_id),
+            "delivery_id": "delivery-001",
+            "event": {"type": "push", "commit": None},
+        }
+    }
+
+
+def test_get_raw_webhook_event_resolves_locator() -> None:
+    """Raw event helper resolves the webhook and delivery IDs from the run."""
+    webhook_id = uuid4()
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo(
+        webhook_upstream_event={
+            "custom": WebhookTriggerExecutionInfo(
+                webhook_id=webhook_id,
+                delivery_id="delivery-001",
+            )
+        }
+    )
+    client = Mock()
+    client.get_raw_webhook_event.return_value = {"body": {"message": "hello"}}
+
+    with patch.object(trigger_utils, "Client", return_value=client):
+        result = trigger_utils.get_raw_webhook_event(pipeline_run=run)
+
+    assert result == {"body": {"message": "hello"}}
+    client.get_raw_webhook_event.assert_called_once_with(
+        webhook_id=webhook_id,
+        delivery_id="delivery-001",
+    )
+
+
+def test_get_raw_webhook_event_returns_none_when_payload_is_missing() -> None:
+    """An absent or expired raw event is exposed as no payload."""
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo(
+        webhook_upstream_event={
+            "github": WebhookTriggerExecutionInfo(
+                webhook_id=uuid4(),
+                delivery_id="delivery-001",
+                event={"type": "push"},
+            )
+        }
+    )
+    client = Mock()
+    client.get_raw_webhook_event.side_effect = KeyError("missing")
+
+    with patch.object(trigger_utils, "Client", return_value=client):
+        assert trigger_utils.get_raw_webhook_event(pipeline_run=run) is None
+
+
+def test_get_webhook_upstream_event_uses_current_run() -> None:
+    """The helper resolves the current run when one is not provided."""
+    run = Mock()
+    run.trigger_execution_info = TriggerExecutionInfo()
+
+    with patch(
+        "zenml.steps.step_context.get_step_context",
+        return_value=Mock(pipeline_run=run),
+    ):
+        assert trigger_utils.get_webhook_upstream_event() is None
+
+
+def test_get_webhook_upstream_event_requires_run_context() -> None:
+    """Calling without a run outside a step surfaces the context error."""
+    with patch(
+        "zenml.steps.step_context.get_step_context",
+        side_effect=RuntimeError("no step context"),
+    ):
+        with pytest.raises(RuntimeError, match="no step context"):
+            trigger_utils.get_webhook_upstream_event()
 
 
 def test_create_platform_event_trigger_happy_path():

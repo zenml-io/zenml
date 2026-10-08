@@ -7,7 +7,7 @@ on:
     - cron: 30 0 * * *
 jobs:
   setup-and-test:
-    uses: ./.github/workflows/unit-test.yml
+    uses: $/.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
       python-version: '3.11'
@@ -16,7 +16,7 @@ jobs:
     if: github.repository == 'zenml-io/zenml'
   build-nightly-python-package:
     needs: setup-and-test
-    uses: ./.github/workflows/publish_to_pypi_nightly.yml
+    uses: $/.github/workflows/publish_to_pypi_nightly.yml
     secrets: inherit
     if: github.repository == 'zenml-io/zenml'
   publish-nightly-python-package:
@@ -34,7 +34,7 @@ jobs:
           name: nightly-python-package-distributions
           path: dist
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247  # release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33  # release/v1
   wait-for-package-release:
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
   publish-docker-image:
     if: github.repository == 'zenml-io/zenml'
     needs: wait-for-package-release
-    uses: ./.github/workflows/publish_docker_image.yml
+    uses: $/.github/workflows/publish_docker_image.yml
     with:
       config_file: release-cloudbuild-nightly.yaml
       zenml_nightly: true
