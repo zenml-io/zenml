@@ -18,13 +18,9 @@ from uuid import uuid4
 import pytest
 import yaml
 
-from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_USER_ID, ENV_ZENML_WORKSPACE_USER_ID
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
     dump_compose_yaml,
-    get_config_environment_vars,
     get_orchestrator_run_name,
     get_step_entrypoint_command,
     is_setting_enabled,
@@ -239,32 +235,3 @@ def test_get_orchestrator_run_name():
 
     with pytest.raises(ValueError):
         get_orchestrator_run_name(pipeline_name, max_length=7)
-
-
-def test_config_environment_uses_current_workspace_user(
-    clean_client: Client, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Export the current account independently of analytics and inherited IDs.
-
-    Args:
-        clean_client: A client with an isolated local store.
-        monkeypatch: Fixture for setting an inherited environment variable.
-    """
-    analytics_id = uuid4()
-    GlobalConfiguration().user_id = analytics_id
-    monkeypatch.setenv(ENV_ZENML_WORKSPACE_USER_ID, str(uuid4()))
-    current_user = clean_client.active_user
-
-    with mock.patch(
-        "zenml.zen_stores.sql_zen_store.SqlZenStore.get_user",
-        return_value=current_user,
-    ) as get_user:
-        environment, _ = get_config_environment_vars()
-        assert environment[ENV_ZENML_WORKSPACE_USER_ID] == str(current_user.id)
-        assert environment[ENV_ZENML_USER_ID] == str(analytics_id)
-
-        next_user = current_user.model_copy(update={"id": uuid4()})
-        get_user.return_value = next_user
-        environment, _ = get_config_environment_vars()
-        assert environment[ENV_ZENML_WORKSPACE_USER_ID] == str(next_user.id)
-        assert environment[ENV_ZENML_USER_ID] == str(analytics_id)

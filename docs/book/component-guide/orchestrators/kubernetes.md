@@ -181,6 +181,31 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
+### Workspace account annotations
+
+The Kubernetes orchestrator and Kubernetes step operator annotate execution
+Jobs and Pods with the UUID of the authenticated ZenML workspace account:
+
+```yaml
+metadata:
+  annotations:
+    zenml.io/workspace-user-id: "<workspace-account-uuid>"
+```
+
+The annotation is also stored in scheduled CronJob templates. It identifies the
+account authenticated when ZenML creates the resource or template, which can
+be a ZenML service account. It differs from `ZENML_USER_ID`, the client
+configuration UUID used for analytics.
+
+Retrieve the account through the workspace endpoint
+`/api/v1/users/{id}?hydrate=true`. For ZenML Pro, `metadata.external_user_id`
+links to the corresponding Pro account.
+
+ZenML preserves unrelated custom pod annotations and gives the generated
+workspace account annotation precedence over a conflicting pod setting. This
+metadata is informational. Validate a trusted execution identity before using
+it to grant permissions.
+
 ### Running with an externally synchronized Linux identity
 
 When ZenML Pro is configured to synchronize numeric Linux UID and GID claims

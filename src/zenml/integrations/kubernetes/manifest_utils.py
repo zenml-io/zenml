@@ -111,6 +111,7 @@ def build_pod_manifest(
     termination_grace_period_seconds: Optional[int] = 30,
     run_as_user: Optional[int] = None,
     run_as_group: Optional[int] = None,
+    annotations: Optional[Dict[str, str]] = None,
 ) -> k8s_client.V1Pod:
     """Build a Kubernetes pod manifest for a ZenML run or step.
 
@@ -133,6 +134,7 @@ def build_pod_manifest(
             pod to shutdown gracefully.
         run_as_user: User ID to apply to the pod and all containers.
         run_as_group: Group ID to apply to the pod and all containers.
+        annotations: Annotations to add to the pod, overriding pod settings.
 
     Returns:
         Pod manifest.
@@ -191,8 +193,10 @@ def build_pod_manifest(
         owner_references=owner_references,
     )
 
-    if pod_settings and pod_settings.annotations:
-        pod_metadata.annotations = pod_settings.annotations
+    pod_annotations = pod_settings.annotations.copy() if pod_settings else {}
+    pod_annotations.update(annotations or {})
+    if pod_annotations:
+        pod_metadata.annotations = pod_annotations
 
     pod_manifest = k8s_client.V1Pod(
         kind="Pod",
