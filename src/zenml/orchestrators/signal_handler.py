@@ -15,8 +15,8 @@
 
 import signal
 import threading
-from types import FrameType
-from typing import Any, Dict, Optional
+from types import FrameType, TracebackType
+from typing import Any, Dict, Optional, Type
 
 from typing_extensions import Self
 
@@ -106,11 +106,18 @@ class SignalHandler:
         """
         return self.register()
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Unregister on context exit.
 
         Args:
-            *_: Unused context manager exception details.
+            exc_type: The class of the exception.
+            exc_value: The instance of the exception.
+            traceback: The traceback of the exception.
         """
         self.unregister()
 
