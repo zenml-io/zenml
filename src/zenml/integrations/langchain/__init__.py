@@ -15,7 +15,6 @@
 
 from zenml.integrations.constants import LANGCHAIN
 from zenml.integrations.integration import Integration
-
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,15 +25,18 @@ class LangchainIntegration(Integration):
 
     NAME = LANGCHAIN
     REQUIREMENTS = [
-        "langchain==0.3.0",
+        # 0.3.5 lifted the `tenacity<9` pin, which made the integration
+        # impossible to install next to packages that need tenacity 9. The
+        # `langchain.vectorstores` and `langchain.docstore` import paths the
+        # materializers use were removed in 1.0.
+        "langchain>=0.3.5,<1.0",
         "langchain-community",
         "pyyaml>=6.0.1",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pyyaml","tenacity"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["pyyaml", "tenacity"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.langchain import materializers  # noqa
-
