@@ -922,6 +922,7 @@ class SeldonClient:
                 "label selector '%s' and field selector '%s': %s",
                 label_selector or "",
                 field_selector or "",
+                str(e),
             )
             raise SeldonClientError(
                 f"Unexpected exception when searching SeldonDeployment "

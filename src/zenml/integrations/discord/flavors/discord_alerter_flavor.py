@@ -77,9 +77,9 @@ class DiscordAlerterConfig(BaseAlerterConfig):
 
             client.run(self.discord_token)
         except DiscordException as e:
-            logger.error("Discord API Error:", e)
+            logger.error("Discord API Error: %s", e)
         except ValueError as ve:
-            logger.error("Value Error:", ve)
+            logger.error("Value Error: %s", ve)
         return valid
 
 
