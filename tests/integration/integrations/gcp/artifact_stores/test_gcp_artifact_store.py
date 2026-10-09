@@ -14,6 +14,7 @@
 
 
 from datetime import datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -52,3 +53,17 @@ def test_must_be_gcs_path():
 
     artifact_store = _get_gcp_artifact_store(path="gs://mybucket")
     assert artifact_store.path == "gs://mybucket"
+
+
+def test_gcs_filesystem_does_not_cache_listings():
+    """Checks that the GCS filesystem is built without a directory listing cache.
+
+    The server shares one instance across requests and step logs are written
+    by another process, so a cached listing would never be refreshed.
+    """
+    artifact_store = _get_gcp_artifact_store(path="gs://mybucket")
+
+    with patch("gcsfs.GCSFileSystem") as mock_filesystem:
+        _ = artifact_store.filesystem
+
+    assert mock_filesystem.call_args.kwargs["use_listings_cache"] is False

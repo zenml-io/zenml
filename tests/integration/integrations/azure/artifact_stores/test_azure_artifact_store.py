@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -93,3 +94,26 @@ def test_must_be_azure_path():
         updated=datetime.now(),
     )
     assert artifact_store.path == "abfs://mycontainer"
+
+
+def test_azure_filesystem_does_not_cache_listings():
+    """Checks that the azure filesystem is built without a directory listing cache.
+
+    The server shares one instance across requests and step logs are written
+    by another process, so a cached listing would never be refreshed.
+    """
+    artifact_store = AzureArtifactStore(
+        name="",
+        id=uuid4(),
+        config=AzureArtifactStoreConfig(path="az://mycontainer"),
+        flavor="azure",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    with patch("adlfs.AzureBlobFileSystem") as mock_filesystem:
+        _ = artifact_store.filesystem
+
+    assert mock_filesystem.call_args.kwargs["use_listings_cache"] is False
