@@ -38,7 +38,10 @@ from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
 
@@ -47,6 +50,14 @@ class ServiceSchema(NamedSchema, table=True):
     """SQL Model for service."""
 
     __tablename__ = "service"
+    __table_args__ = (
+        # Set to NULL when the pipeline run that created the service is
+        # deleted, which requires finding the rows first.
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_run_id"],
+        ),
+    )
 
     project_id: UUID = build_foreign_key_field(
         source=__tablename__,
