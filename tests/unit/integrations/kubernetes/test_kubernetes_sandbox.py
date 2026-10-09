@@ -453,10 +453,8 @@ def test_create_session_sets_owner_references_on_pod(
         owner=KubernetesSandboxOwner.JOB
     )
     sandbox._resolve_session_environment.return_value = {}
-    sandbox._resolve_owner_references.side_effect = (
-        lambda settings: KubernetesSandbox._resolve_owner_references(
-            sandbox, settings
-        )
+    sandbox._resolve_owner_references.side_effect = lambda settings: (
+        KubernetesSandbox._resolve_owner_references(sandbox, settings)
     )
     monkeypatch.setattr(
         kube_utils,
