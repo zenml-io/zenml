@@ -26,6 +26,7 @@ Before starting, make sure you go through the [general prerequisites for hybrid 
 
 **Infrastructure:**
 - Kubernetes cluster (1.24+)
+- If applicable: Red Hat OpenShift (4.20+)
 
 **Network:**
 - Load balancer, network gateway or Ingress controllers etc. 
