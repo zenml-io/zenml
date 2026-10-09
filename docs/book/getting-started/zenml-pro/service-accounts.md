@@ -364,7 +364,7 @@ Use ZenML Pro organization service accounts instead. They are managed centrally 
 
 To migrate automation that still uses a workspace-level service account API key, follow these steps:
 
-1. Create a ZenML Pro organization service account in **Organization** > **Settings** > **Service Accounts**. Use the exact same username as the old workspace-level service account. This allows ZenML Pro to adopt resources owned by the old workspace-level service account and preserve lineage/history under the migrated organization-level service account. Be aware that the organization-level service account is shared across all workspaces in the organization.
+1. Create a ZenML Pro organization service account in **Organization** > **Settings** > **Service Accounts**. Use the exact same username as the old workspace-level service account. This allows ZenML Pro to adopt the existing workspace account and preserve its resource ownership and lineage/history. Be aware that the organization-level service account is shared across all workspaces in the organization.
 2. [Assign Organization and Workspace roles](roles.md) to the new service account. To preserve the same unrestricted permissions that the workspace-level service account currently has but limited to the affected workspace, grant the **Organization Member** role at the organization level and the **Workspace Admin** role in the affected workspace. For better security, we strongly recommend making full use of ZenML Pro RBAC and granting only the specific roles and permissions that the service account actually needs.
 3. Create an API key for the new organization-level service account and update your automation, CI/CD jobs, and pipeline workloads to use that key instead of the old workspace-level API key.
 
@@ -382,7 +382,7 @@ For self-hosted ZenML Pro API servers, also set the ZenML Pro API URL:
    ```
 
 4. Run the affected workloads once to verify that they authenticate successfully with the organization-level service account.
-5. If the migration is successful and the correct username is used at step 1, the old workspace-level service account is automatically "adopted" by the new organization-level service account and will no longer be listed in the workspace settings.
+5. The first successful workspace authentication with the new organization-level API key adopts the existing workspace service account with the matching username. Creating the organization account alone does not trigger adoption. ZenML links the existing workspace account to the organization identity while keeping the workspace account's internal ID, so existing resource ownership and history remain intact. The adopted account will no longer be listed as a workspace-level service account. Repeat workspace authentication for each workspace you are migrating.
 
 {% hint style="info" %}
 **Existing API keys continue to work after adoption**
@@ -391,7 +391,9 @@ Adopting a workspace-level service account does not invalidate its existing work
 {% endhint %}
 
 6. Monitor the **Last used** timestamp for each existing workspace-level API key in the UI. If a timestamp continues to update after you believe a workload has migrated, that workload is likely still using the old key. Account for infrequent jobs before concluding that a key is unused.
-7. Once you have confirmed that the workspace-level API keys are no longer used, deactivate the keys or their service account. Deactivation immediately prevents the keys from being used. You can also delete the service account, but deletion can fail if it already owns resources such as pipeline runs; in that case, deactivate it instead.
+7. Once the affected workloads work with the new credentials, deactivate the legacy workspace-level API keys and test again. You can reactivate the keys and switch workloads back to them if you need to roll back. After confirming that migration is complete, delete the legacy keys. Adoption reuses the existing workspace account, so there is no separate old account to delete or detach from resources. Keep the organization account in place during credential rollback; deleting it does not reverse adoption.
+
+Adopted service accounts are managed at the organization level. Activate or deactivate their legacy workspace-level keys individually without changing the organization-level service account. Adoption activates the workspace account but does not reactivate any legacy keys you have already deactivated. Workspace-level accounts that have not been adopted can also be deactivated or reactivated. They can be deleted only if they no longer own resources.
 
 ## Troubleshooting
 
