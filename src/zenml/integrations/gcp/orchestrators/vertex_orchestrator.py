@@ -1114,7 +1114,8 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     "set or set to 0. The accelerator type will be ignored. "
                     "To fix this warning, either remove the specified "
                     "accelerator type or set the `gpu_count` using the "
-                    "ResourceSettings (https://docs.zenml.io/user-guides/tutorial/distributed-training)."
+                    "ResourceSettings (https://docs.zenml.io/user-guides/tutorial/distributed-training).",
+                    value,
                 )
 
         return dynamic_component
