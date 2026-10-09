@@ -582,6 +582,14 @@ def my_pipeline():
         )
 ```
 
+## Deleting Metadata
+
+A metadata value can belong to several resources: a cached step run, for
+example, reuses the metadata of the step run it was cached from. Deleting a
+pipeline run, artifact version, model version or schedule deletes the metadata
+that only this resource (for a run, including its steps and wait conditions)
+referenced. Metadata that other resources still use is kept.
+
 ## Best Practices
 
 To make the most of ZenML's metadata capabilities:
