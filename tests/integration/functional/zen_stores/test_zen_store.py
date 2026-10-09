@@ -117,6 +117,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineRunResponse,
+    PipelineRunUpdate,
     PipelineSnapshotRequest,
     ProjectFilter,
     ProjectRequest,
@@ -6300,6 +6301,89 @@ def test_updating_the_pipeline_run_status(
     )
     run_status = clean_client.get_pipeline_run(pipeline_run.id).status
     assert run_status == expected_run_status
+
+
+def test_updating_step_cache_expiration_does_not_recalculate_run_status(
+    clean_client,
+):
+    """Tests updating cache metadata of a step in a finished pipeline run."""
+    project_id = clean_client.active_project.id
+    pipeline_model = clean_client.zen_store.create_pipeline(
+        PipelineRequest(
+            name=sample_name("pipeline"),
+            project=project_id,
+        )
+    )
+    step_name = sample_name("step")
+    snapshot = clean_client.zen_store.create_snapshot(
+        PipelineSnapshotRequest(
+            project=project_id,
+            run_name_template=sample_name("run"),
+            pipeline_configuration=PipelineConfiguration(
+                name=sample_name("pipeline-config")
+            ),
+            pipeline=pipeline_model.id,
+            stack=clean_client.active_stack.id,
+            client_version="0.1.0",
+            server_version="0.1.0",
+            step_configurations={
+                step_name: Step(
+                    spec=StepSpec(
+                        source=Source(
+                            module="some.step", type=SourceType.INTERNAL
+                        ),
+                        upstream_steps=[],
+                    ),
+                    config=StepConfiguration(name=step_name),
+                )
+            },
+            is_dynamic=False,
+        )
+    )
+
+    pipeline_run, _ = clean_client.zen_store.get_or_create_run(
+        PipelineRunRequest(
+            project=project_id,
+            id=uuid4(),
+            name=sample_name("run"),
+            snapshot=snapshot.id,
+            status=ExecutionStatus.RUNNING,
+        )
+    )
+    step_run = clean_client.zen_store.create_run_step(
+        StepRunRequest(
+            project=project_id,
+            name=step_name,
+            status=ExecutionStatus.RUNNING,
+            pipeline_run_id=pipeline_run.id,
+            start_time=datetime.now(),
+        )
+    )
+
+    clean_client.zen_store.update_run(
+        run_id=pipeline_run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPING),
+    )
+    clean_client.zen_store.update_run_step(
+        step_run_id=step_run.id,
+        step_run_update=StepRunUpdate(status=ExecutionStatus.CANCELLED),
+    )
+    assert (
+        clean_client.get_pipeline_run(pipeline_run.id).status
+        == ExecutionStatus.STOPPED
+    )
+
+    cache_expires_at = datetime.now() - timedelta(days=1)
+    updated_step_run = clean_client.update_step_run(
+        step_run_id=step_run.id,
+        cache_expires_at=cache_expires_at,
+    )
+
+    assert updated_step_run.cache_expires_at == cache_expires_at
+    assert (
+        clean_client.get_pipeline_run(pipeline_run.id).status
+        == ExecutionStatus.STOPPED
+    )
 
 
 @step
