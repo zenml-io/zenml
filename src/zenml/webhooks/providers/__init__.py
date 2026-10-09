@@ -13,6 +13,7 @@ from zenml.webhooks.providers.base import (
     WebhookTargetEvent,
     WebhookTriggerMatch,
 )
+from zenml.webhooks.providers.dynamic import DynamicWebhookTargetEvent
 from zenml.webhooks.providers.registry import (
     WebhookProviderRegistry,
     get_webhook_provider,
@@ -23,6 +24,7 @@ from zenml.webhooks.providers.types import BuiltinWebhookType
 __all__ = [
     "BaseWebhookProvider",
     "BuiltinWebhookType",
+    "DynamicWebhookTargetEvent",
     "ParsedWebhookDelivery",
     "ParsedWebhookEvent",
     "WebhookConfiguration",
