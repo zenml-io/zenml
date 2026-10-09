@@ -51,7 +51,6 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa:
     MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY,
     MODAL_SANDBOX_ID_METADATA_KEY,
     ModalOrchestrator,
-    get_modal_app_name,
     get_static_step_sandbox_metadata_key,
 )
 from zenml.orchestrators.dag_runner import NodeStatus  # noqa: E402
@@ -95,6 +94,10 @@ class SandboxStub:
         self.object_id = object_id
         self.poll_values = list(poll_values or [None])
         self.terminate_calls = 0
+        self.tags = None
+
+    def set_tags(self, tags):
+        self.tags = dict(tags)
 
     def poll(self):
         if len(self.poll_values) > 1:
@@ -271,6 +274,7 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         ModalOrchestratorConfig(
             synchronous=False,
             modal_environment="prod",
+            app_name="team-modal-app",
         )
     )
     orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
@@ -312,9 +316,7 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
     assert result.metadata == {
         METADATA_ORCHESTRATOR_RUN_ID: str(placeholder_run.id),
         MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "sandbox-1",
-        MODAL_APP_NAME_METADATA_KEY: get_modal_app_name(
-            str(placeholder_run.id)
-        ),
+        MODAL_APP_NAME_METADATA_KEY: "team-modal-app",
         MODAL_ENVIRONMENT_METADATA_KEY: "prod",
     }
     assert placeholder_run.run_metadata == {}
@@ -331,10 +333,11 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         "REGISTRY_USERNAME": "user",
         "REGISTRY_PASSWORD": "pass",
     }
-    assert recorded["app_lookup"][0] == (
-        get_modal_app_name(str(placeholder_run.id)),
-    )
+    assert recorded["app_lookup"][0] == ("team-modal-app",)
     assert recorded["app_lookup"][1]["environment_name"] == "prod"
+    assert recorded["created_sandboxes"][0].tags == {
+        sandbox_utils.ORCHESTRATOR_RUN_ID_SANDBOX_TAG: str(placeholder_run.id)
+    }
 
     sandbox_args, sandbox_kwargs = recorded["sandbox_create"]
     assert "ModalOrchestratorEntrypointConfiguration" in " ".join(sandbox_args)
@@ -342,9 +345,7 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
     assert sandbox_kwargs["env"][ENV_ZENML_MODAL_RUN_ID] == str(
         placeholder_run.id
     )
-    assert sandbox_kwargs["env"][
-        ENV_ZENML_MODAL_APP_NAME
-    ] == get_modal_app_name(str(placeholder_run.id))
+    assert sandbox_kwargs["env"][ENV_ZENML_MODAL_APP_NAME] == "team-modal-app"
     assert SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY not in sandbox_kwargs["env"]
     assert sandbox_utils.MODAL_TOKEN_ID_ENV_KEY not in sandbox_kwargs["env"]
     assert (
@@ -593,10 +594,14 @@ def test_dynamic_isolated_step_submission_adds_default_modal_environment(
 
     orchestrator.submit_isolated_step(step_run_info, {})
 
-    assert recorded["app_lookup"][0] == (get_modal_app_name(str(run_id)),)
+    assert recorded["app_lookup"][0] == ("zenml-orchestrator",)
     assert recorded["sandbox_create"][1]["env"] == {
         ENV_ZENML_MODAL_RUN_ID: str(run_id),
-        ENV_ZENML_MODAL_APP_NAME: get_modal_app_name(str(run_id)),
+        ENV_ZENML_MODAL_APP_NAME: "zenml-orchestrator",
+    }
+    assert recorded["created_sandboxes"][0].tags == {
+        sandbox_utils.ORCHESTRATOR_RUN_ID_SANDBOX_TAG: str(run_id),
+        sandbox_utils.STEP_NAME_SANDBOX_TAG: "train",
     }
 
 
