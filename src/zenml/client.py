@@ -101,6 +101,8 @@ from zenml.models import (
     ArtifactResponse,
     ArtifactUpdate,
     ArtifactVersionFilter,
+    ArtifactVersionPruneRequest,
+    ArtifactVersionPruneResponse,
     ArtifactVersionResponse,
     ArtifactVersionUpdate,
     BaseIdentifiedResponse,
@@ -5869,31 +5871,58 @@ class Client(metaclass=ClientMetaClass):
         only_versions: bool = True,
         delete_from_artifact_store: bool = False,
         project: Optional[Union[str, UUID]] = None,
-    ) -> None:
-        """Delete all unused artifacts and artifact versions.
+        delete_metadata: bool = True,
+        dry_run: bool = False,
+    ) -> ArtifactVersionPruneResponse:
+        """Delete all unused artifact versions and, optionally, artifacts.
+
+        An artifact version is unused if no step input or output, pipeline
+        output, hook output, or model version references it. When connected
+        to a ZenML server, pruning runs there as a background task, including
+        the deletion of artifact data; the returned task ID is attached to
+        the server log records it emits.
 
         Args:
-            only_versions: Only delete artifact versions, keeping artifacts
-            delete_from_artifact_store: Delete data from artifact metadata
-            project: The project name/ID to filter by.
+            only_versions: Keep artifacts that are left without versions.
+            delete_from_artifact_store: Also delete the artifact data from
+                the artifact store.
+            project: The project name/ID to prune in. Defaults to the active
+                project.
+            delete_metadata: Delete the artifact versions from the database.
+            dry_run: Only count the unused artifact versions.
+
+        Returns:
+            The number of unused or pruned artifact versions, or the ID of
+            the background task pruning them.
         """
-        if delete_from_artifact_store:
-            unused_artifact_versions = depaginate(
-                self.list_artifact_versions,
-                only_unused=True,
-                project=project,
-            )
-            for unused_artifact_version in unused_artifact_versions:
-                self._delete_artifact_from_artifact_store(
-                    unused_artifact_version
-                )
+        from zenml.zen_stores.rest_zen_store import RestZenStore
 
-        project = project or self.active_project.id
-
-        self.zen_store.prune_artifact_versions(
-            project_name_or_id=project, only_versions=only_versions
+        prune_request = ArtifactVersionPruneRequest(
+            project=self.get_project(project).id
+            if project
+            else self.active_project.id,
+            only_versions=only_versions,
+            delete_metadata=delete_metadata,
+            delete_from_artifact_store=delete_from_artifact_store,
+            apply=not dry_run,
         )
-        logger.info("All unused artifacts and artifact versions deleted.")
+        if isinstance(self.zen_store, RestZenStore):
+            return self.zen_store.prune_artifact_versions(prune_request)
+
+        # No server can prune a local database, so the client prunes it
+        # itself, loading the artifact stores it has access to.
+        from zenml.artifacts.pruning import ArtifactStorePruneHandler
+        from zenml.artifacts.utils import load_artifact_store
+        from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+        assert isinstance(self.zen_store, SqlZenStore)
+        return self.zen_store.prune_artifact_versions(
+            prune_request=prune_request,
+            handler=ArtifactStorePruneHandler(
+                delete_external_data=prune_request.delete_from_artifact_store,
+                artifact_store_loader=load_artifact_store,
+            ),
+        )
 
     # --------------------------- Artifact Versions ---------------------------
 
@@ -6001,8 +6030,8 @@ class Client(metaclass=ClientMetaClass):
             materializer: The materializer of the artifact to filter by.
             project: The project name/ID to filter by.
             model_version_id: Filter by model version ID.
-            only_unused: Only return artifact versions that are not used in
-                any pipeline runs.
+            only_unused: Only return artifact versions that are not
+                referenced by any pipeline run or model version.
             has_custom_name: Filter artifacts with/without custom names.
             tags: Tags to filter by.
             user: Filter by user name or ID.
@@ -6149,7 +6178,8 @@ class Client(metaclass=ClientMetaClass):
                 the artifact data from the artifact store.
 
         Raises:
-            ValueError: If the artifact version is still used in any runs.
+            ValueError: If the artifact version is still referenced by a
+                run or model version.
             TypeError: If server-side artifact data deletion is requested
                 without a REST store.
         """
@@ -6159,9 +6189,10 @@ class Client(metaclass=ClientMetaClass):
             )
             if not unused_versions.items:
                 raise ValueError(
-                    "The metadata of artifact versions that are used in runs "
-                    "cannot be deleted. Please delete all runs that use this "
-                    "artifact first."
+                    "The metadata of artifact versions that are still "
+                    "referenced by runs or model versions cannot be deleted. "
+                    "Please remove all references to this artifact version "
+                    "first."
                 )
         if delete_from_artifact_store:
             from zenml.zen_stores.rest_zen_store import RestZenStore
