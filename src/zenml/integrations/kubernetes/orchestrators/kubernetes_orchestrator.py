@@ -74,6 +74,7 @@ from zenml.integrations.kubernetes.constants import (
     KUBERNETES_SECRET_TOKEN_KEY_NAME,
     ORCHESTRATOR_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
@@ -596,6 +597,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         oidc_claims = Client().active_user.oidc_claims
+        workspace_user_id = str(Client().zen_store.get_user(hydrate=False).id)
+        annotations = {
+            **annotations,
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
+        }
 
         pod_manifest = build_pod_manifest(
             pod_name=None,
@@ -607,6 +613,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             service_account_name=service_account_name,
             env=environment,
             labels=labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
             mount_local_stores=self.config.is_local,
             termination_grace_period_seconds=settings.pod_stop_grace_period,
             run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),

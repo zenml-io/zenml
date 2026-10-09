@@ -35,6 +35,7 @@ from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
     STEP_OPERATOR_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
@@ -272,9 +273,11 @@ class KubernetesStepOperator(BaseStepOperator):
                 info.pipeline_step_name
             ),
         }
+        workspace_user_id = str(Client().zen_store.get_user(hydrate=False).id)
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
         }
 
         # We set some default minimum memory resource requests for the step pod
@@ -325,6 +328,7 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
             run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
             run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )

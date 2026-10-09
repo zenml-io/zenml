@@ -20,9 +20,14 @@ from uuid import uuid4
 import pytest
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_USER_ID
 from zenml.enums import StackComponentType
 from zenml.integrations.kubernetes.constants import MULTI_POD_MAIN_PORT
 from zenml.integrations.kubernetes.flavors import (
+    KubernetesOrchestratorConfig,
+    KubernetesOrchestratorSettings,
     KubernetesStepOperatorConfig,
     KubernetesStepOperatorSettings,
 )
@@ -33,10 +38,16 @@ from zenml.integrations.kubernetes.kube_utils import (
 from zenml.integrations.kubernetes.manifest_utils import (
     build_headless_service_manifest,
     build_job_manifest,
+    build_pod_manifest,
 )
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
+    KubernetesOrchestrator,
+)
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.integrations.kubernetes.step_operators.kubernetes_step_operator import (
     KubernetesStepOperator,
 )
+from zenml.orchestrators.utils import get_config_environment_vars
 
 
 def _job() -> k8s_client.V1Job:
@@ -142,6 +153,7 @@ def _submit(
     pod_count: int = 1,
     batch_api: Optional[MagicMock] = None,
     core_api: Optional[MagicMock] = None,
+    environment: Optional[Dict[str, str]] = None,
 ) -> Tuple[MagicMock, MagicMock]:
     """Run submit with mocked Kubernetes APIs.
 
@@ -150,6 +162,7 @@ def _submit(
         pod_count: The pod count to set in the step settings.
         batch_api: The batch API mock.
         core_api: The core API mock.
+        environment: Environment variables for the step job.
 
     Returns:
         The batch and core API mocks.
@@ -198,7 +211,9 @@ def _submit(
         operator.submit_with_allocation(
             info=info,
             entrypoint_command=["bash", "-lc", "torchrun train.py"],
-            environment={"USER_VAR": "1"},
+            environment=environment
+            if environment is not None
+            else {"USER_VAR": "1"},
             allocated_resource_request=None,
         )
 
@@ -279,3 +294,131 @@ class TestSubmit:
             _submit(info, pod_count=2, batch_api=batch_api, core_api=core_api)
 
         batch_api.delete_namespaced_job.assert_called_once()
+
+
+def test_pod_annotations_preserve_custom_values_and_input_dicts() -> None:
+    """Generated annotations override collisions without mutating pod settings."""
+    key = "zenml.io/workspace-user-id"
+    configured_annotations = {"custom": "value", key: "stale"}
+    settings = KubernetesPodSettings(annotations=configured_annotations)
+    user_id = str(uuid4())
+    annotations = {key: user_id}
+    pod = build_pod_manifest(
+        pod_name=None,
+        image_name="image",
+        command=["python"],
+        args=[],
+        privileged=False,
+        pod_settings=settings,
+        annotations=annotations,
+    )
+    assert pod.metadata.annotations == {"custom": "value", **annotations}
+    pod.metadata.annotations["custom"] = "changed"
+    pod.metadata.annotations[key] = "changed"
+    assert settings.annotations == {"custom": "value", key: "stale"}
+    assert configured_annotations == {"custom": "value", key: "stale"}
+    assert annotations == {key: user_id}
+
+
+def test_step_jobs_record_current_account_without_exporting_env(
+    clean_client: Client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Jobs use the authenticated account instead of inherited or cached IDs.
+
+    Args:
+        clean_client: Client with an isolated local store.
+        monkeypatch: Fixture for setting an inherited environment variable.
+    """
+    key = "zenml.io/workspace-user-id"
+    monkeypatch.setenv("ZENML_WORKSPACE_USER_ID", str(uuid4()))
+    analytics_id = GlobalConfiguration().user_id
+    cached_user = clean_client.active_user
+    current_user = cached_user.model_copy(update={"id": uuid4()})
+    with patch(
+        "zenml.zen_stores.sql_zen_store.SqlZenStore.get_user",
+        return_value=current_user,
+    ) as get_user:
+        environment, _ = get_config_environment_vars()
+        assert "ZENML_WORKSPACE_USER_ID" not in environment
+        assert environment[ENV_ZENML_USER_ID] == str(analytics_id)
+        batch_api, _ = _submit(
+            _make_info(command=["python", "train.py"]),
+            pod_count=2,
+            environment=environment,
+        )
+        job = batch_api.create_namespaced_job.call_args.kwargs["body"]
+        assert job.metadata.annotations[key] == str(current_user.id)
+        assert job.spec.template.metadata.annotations[key] == str(
+            current_user.id
+        )
+        assert "ZENML_WORKSPACE_USER_ID" not in _container_env(job)
+
+        next_user = current_user.model_copy(update={"id": uuid4()})
+        get_user.return_value = next_user
+        batch_api, _ = _submit(_make_info())
+        next_job = batch_api.create_namespaced_job.call_args.kwargs["body"]
+        assert next_job.metadata.annotations[key] == str(next_user.id)
+        assert next_job.spec.template.metadata.annotations[key] == str(
+            next_user.id
+        )
+
+
+def test_scheduled_orchestrator_propagates_workspace_account(
+    clean_client: Client,
+) -> None:
+    """CronJob, Job template and Pod template keep the same workspace account.
+
+    Args:
+        clean_client: Client with an isolated local store.
+    """
+    key = "zenml.io/workspace-user-id"
+    user_id = str(clean_client.active_user.id)
+    pod_settings = KubernetesPodSettings(
+        annotations={"custom": "value", key: "stale"}
+    )
+    settings = KubernetesOrchestratorSettings(
+        orchestrator_pod_settings=pod_settings,
+        service_account_name="test-account",
+    )
+    orchestrator = KubernetesOrchestrator(
+        name="k8s",
+        id=uuid4(),
+        config=KubernetesOrchestratorConfig(pass_zenml_token_as_secret=False),
+        flavor="kubernetes",
+        type=StackComponentType.ORCHESTRATOR,
+        user=uuid4(),
+        created="2026-01-01T00:00:00",
+        updated="2026-01-01T00:00:00",
+    )
+    snapshot = MagicMock()
+    snapshot.id = uuid4()
+    snapshot.project_id = uuid4()
+    snapshot.pipeline_configuration.name = "pipeline"
+    snapshot.schedule.cron_expression = "0 * * * *"
+    batch_api = MagicMock()
+    with (
+        patch.object(
+            KubernetesOrchestrator, "get_settings", return_value=settings
+        ),
+        patch.object(
+            KubernetesOrchestrator, "get_image", return_value="image"
+        ),
+        patch.object(
+            KubernetesOrchestrator,
+            "_k8s_batch_api",
+            new_callable=PropertyMock,
+            return_value=batch_api,
+        ),
+    ):
+        orchestrator.submit_dynamic_pipeline(
+            snapshot=snapshot, stack=MagicMock(), environment={}
+        )
+    cron_job = batch_api.create_namespaced_cron_job.call_args.kwargs["body"]
+    assert cron_job.metadata.annotations[key] == user_id
+    assert cron_job.spec.job_template.metadata.annotations[key] == user_id
+    pod_annotations = (
+        cron_job.spec.job_template.spec.template.metadata.annotations
+    )
+    assert pod_annotations[key] == user_id
+    assert pod_annotations["custom"] == "value"
+    assert pod_settings.annotations == {"custom": "value", key: "stale"}
