@@ -273,7 +273,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 info.pipeline_step_name
             ),
         }
-        workspace_user_id = str(Client().zen_store.get_user(hydrate=False).id)
+        workspace_user_id = str(Client().active_user.id)
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),

@@ -183,28 +183,18 @@ the chance of the server receiving the maximum amount of retry requests.
 
 ### Workspace account annotations
 
-The Kubernetes orchestrator and Kubernetes step operator annotate execution
-Jobs and Pods with the UUID of the authenticated ZenML workspace account:
+The Kubernetes orchestrator and Kubernetes step operator add
+`zenml.io/workspace-user-id: "<workspace-account-uuid>"` to Job and Pod
+annotations, including scheduled templates. The Run:AI step operator adds the
+same annotation through its workload specification.
 
-```yaml
-metadata:
-  annotations:
-    zenml.io/workspace-user-id: "<workspace-account-uuid>"
-```
+The value is the authenticated ZenML workspace account ID, which may identify a
+service account. It differs from the client/analytics UUID in `ZENML_USER_ID`.
+Look it up using `/api/v1/users/{id}?hydrate=true` on the workspace API; in
+ZenML Pro, `metadata.external_user_id` links to the Pro account.
 
-The annotation is also stored in scheduled CronJob templates. It identifies the
-account authenticated when ZenML creates the resource or template, which can
-be a ZenML service account. It differs from `ZENML_USER_ID`, the client
-configuration UUID used for analytics.
-
-Retrieve the account through the workspace endpoint
-`/api/v1/users/{id}?hydrate=true`. For ZenML Pro, `metadata.external_user_id`
-links to the corresponding Pro account.
-
-ZenML preserves unrelated custom pod annotations and gives the generated
-workspace account annotation precedence over a conflicting pod setting. This
-metadata is informational. Validate a trusted execution identity before using
-it to grant permissions.
+Custom annotations are preserved; ZenML overrides a conflicting workspace user
+annotation. This metadata alone is not proof of identity for granting permissions.
 
 ### Running with an externally synchronized Linux identity
 

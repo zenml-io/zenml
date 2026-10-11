@@ -229,6 +229,7 @@ def main() -> None:
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
     oidc_claims = client.active_user.oidc_claims
+    workspace_user_id = str(client.active_user.id)
 
     logs_context: ContextManager[Any] = nullcontext()
     if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
@@ -472,9 +473,6 @@ def main() -> None:
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label_value(
                 step_name
-            )
-            workspace_user_id = str(
-                client.zen_store.get_user(hydrate=False).id
             )
             step_annotations = {
                 STEP_NAME_ANNOTATION_KEY: step_name,

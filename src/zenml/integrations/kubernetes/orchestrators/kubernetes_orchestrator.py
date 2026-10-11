@@ -597,7 +597,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         )
 
         oidc_claims = Client().active_user.oidc_claims
-        workspace_user_id = str(Client().zen_store.get_user(hydrate=False).id)
+        workspace_user_id = str(Client().active_user.id)
         annotations = {
             **annotations,
             WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
