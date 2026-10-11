@@ -15,6 +15,14 @@
 from zenml.utils import yaml_utils
 
 
+def test_read_yaml_empty_file_returns_empty_mapping(tmp_path) -> None:
+    """Test that an empty YAML file loads as an empty mapping."""
+    config_path = tmp_path / "empty.yaml"
+    config_path.write_text("")
+
+    assert yaml_utils.read_yaml(str(config_path)) == {}
+
+
 def test_is_yaml_detects_yaml_extensions() -> None:
     """Test detection of YAML file extensions."""
     assert yaml_utils.is_yaml("config.yaml")

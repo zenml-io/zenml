@@ -84,9 +84,7 @@ def read_yaml(file_path: str) -> Any:
     """
     if fileio.exists(file_path):
         contents = io_utils.read_file_contents_as_string(file_path)
-        # TODO: [LOW] consider adding a default empty dict to be returned
-        #   instead of None
-        return yaml.safe_load(contents)
+        return yaml.safe_load(contents) or {}
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
 
