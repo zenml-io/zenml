@@ -38,6 +38,7 @@ The following configuration options can be set either through the sandbox config
 - **`service_account_name`**: The name of a Kubernetes service account to use for session pods. If not configured, pods use the namespace default service account.
 - **`automount_service_account_token`** (default: False): If `True`, a Kubernetes API token is mounted into session pods, allowing code running in the sandbox to call the Kubernetes API with the service account's RBAC permissions.
 - **`privileged`** (default: False): If the container should be run in privileged mode.
+- **`owner`** (default: `none`): The Kubernetes object that owns session pods, so that they are garbage-collected together with it. See [Owning session pods](#owning-session-pods).
 - **`pod_startup_timeout`** (default: 120): The maximum time (in seconds) to wait for a session pod to become running.
 - **`api_request_timeout`**: Timeout (in seconds) for Kubernetes API requests. If not set, client defaults are used.
 
@@ -85,6 +86,43 @@ Without these controls, sandbox pods may still reach internal services or extern
 {% hint style="warning" %}
 An attached session shares the pod with the original session handle. Calling `destroy()` on either handle deletes the pod, after which `exec()` calls on the other handle fail.
 {% endhint %}
+
+## Owning session pods
+
+A session pod is only deleted by `session.destroy()`. A step that dies abruptly before reaching it (for example because it was `OOMKilled`, evicted or its node was preempted) leaves its session pods running, even with `destroy_on_exit=True`.
+
+To protect against that, set `owner` so that Kubernetes [garbage-collects](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/) the session pod together with the step:
+
+| `owner` | The session pod is deleted together with |
+|---|---|
+| `none` (default) | nothing, it lives until `session.destroy()` is called |
+| `pod` | the pod running the step, so every retry of the step gets session pods of its own |
+| `job` | the Kubernetes Job running the step pod, which also removes the session pods of all its retries |
+
+```python
+from zenml import step
+from zenml.client import Client
+from zenml.integrations.kubernetes.flavors import (
+    KubernetesSandboxOwner,
+    KubernetesSandboxSettings,
+)
+
+
+@step
+def run_owned_sandbox() -> str:
+    sandbox = Client().active_stack.sandbox
+    with sandbox.create_session(
+        settings=KubernetesSandboxSettings(owner=KubernetesSandboxOwner.JOB),
+        destroy_on_exit=True,
+    ) as session:
+        return session.exec(["python", "--version"]).collect().stdout
+```
+
+Keep in mind:
+
+- **The owner is deleted later than it fails.** Kubernetes removes the session pod when its owner object is *deleted* from the cluster, not when the step fails: a crashed step pod stays around in the `Failed` phase until its Job is cleaned up, for example after the `ttl_seconds_after_finished` of the orchestrator. An owner prevents session pods from leaking forever, it does not replace `destroy_on_exit=True`.
+- **Same namespace only.** Owner references cannot cross namespaces, so the step must run on Kubernetes (e.g. with the [Kubernetes orchestrator](../orchestrators/kubernetes.md) or [step operator](../step-operators/kubernetes.md)) in the `kubernetes_namespace` of the sandbox. Otherwise, `create_session()` raises an error instead of creating an unowned pod.
+- **The owner is set on creation.** The owner reference is part of the pod manifest, so the session pod is never left without an owner, not even while it is starting.
 
 ## Lifecycle behavior
 
