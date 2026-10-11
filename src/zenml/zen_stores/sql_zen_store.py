@@ -6466,6 +6466,7 @@ class SqlZenStore(BaseZenStore):
                 query_options=[
                     load_only(
                         jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.created),
                         jl_arg(PipelineRunSchema.start_time),
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
