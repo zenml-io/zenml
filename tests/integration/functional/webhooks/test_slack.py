@@ -430,11 +430,6 @@ def test_slack_configuration_accepts_all_typed_targets() -> None:
                 }
             ]
         },
-        {
-            "target_events": [
-                {"type": "file_shared", "file_id": "matches:F123"}
-            ]
-        },
     ],
 )
 def test_slack_configuration_rejects_invalid_targets(
@@ -618,6 +613,39 @@ def test_slack_matches_app_mention_targets() -> None:
     assert matches.event is not None
     assert matches.event["type"] == SlackWebhookEventType.APP_MENTION
     assert matches.event["text"] == "<@APP123> investigate this"
+
+
+def test_slack_dynamic_target_filters_complete_callback_body() -> None:
+    """Dynamic Slack targets use the inner type and complete outer payload."""
+    event = _slack_webhook_event(
+        event_type="channel_archive",
+        event_payload={
+            "type": "channel_archive",
+            "channel": "C123",
+        },
+    )
+    matching = SimpleNamespace(
+        id=uuid4(),
+        configuration={
+            "target_events": [
+                {
+                    "type": "dynamic",
+                    "event_type": "channel_archive",
+                    "filters": {
+                        "team_id": "T123",
+                        "event.channel": "startswith:C",
+                    },
+                }
+            ]
+        },
+    )
+
+    result = SlackWebhookProvider().match_triggers(
+        event=event, candidates=[matching]
+    )
+
+    assert result.triggers == [matching]
+    assert result.event is None
 
 
 def test_slack_parses_and_matches_regular_messages() -> None:

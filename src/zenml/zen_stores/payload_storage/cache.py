@@ -15,8 +15,10 @@
 
 import sys
 import threading
+import time
 from collections import OrderedDict
 from concurrent.futures import Future
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from typing import Callable, Collection, Dict, List
 from uuid import UUID
 
@@ -30,7 +32,8 @@ class PayloadCache:
     misses of the same blob wait for a single load, so that, for example,
     the step pods of a run starting together read their snapshot's
     configuration from storage once. A caller waiting for another caller's
-    load waits for that whole load, but gets the outcome of its own blobs.
+    load waits for it until its own deadline, and gets the outcome of its own
+    blobs.
     """
 
     def __init__(self, max_bytes: int) -> None:
@@ -90,30 +93,37 @@ class PayloadCache:
     def get_or_load(
         self,
         blob_ids: Collection[UUID],
-        loader: Callable[[List[UUID]], Dict[UUID, str]],
+        loader: Callable[[List[UUID], float], Dict[UUID, str]],
+        deadline: float,
     ) -> Dict[UUID, str]:
         """Get payload values, loading the missing ones in one batch.
 
         Args:
             blob_ids: The blobs to get.
-            loader: Loads the given blobs.
+            loader: Loads the given blobs by the given deadline.
+            deadline: The `time.monotonic()` by which the values are loaded,
+                including waits for other callers' loads and loads again.
 
         Returns:
             The payload values by blob ID.
         """
-        return self._get_or_load(blob_ids, loader, retry_failed_waits=True)
+        return self._get_or_load(
+            blob_ids, loader, deadline, retry_failed_waits=True
+        )
 
     def _get_or_load(
         self,
         blob_ids: Collection[UUID],
-        loader: Callable[[List[UUID]], Dict[UUID, str]],
+        loader: Callable[[List[UUID], float], Dict[UUID, str]],
+        deadline: float,
         retry_failed_waits: bool,
     ) -> Dict[UUID, str]:
         """Get payload values, loading the missing ones in one batch.
 
         Args:
             blob_ids: The blobs to get.
-            loader: Loads the given blobs.
+            loader: Loads the given blobs by the given deadline.
+            deadline: The `time.monotonic()` by which the values are loaded.
             retry_failed_waits: Whether blobs of another caller's load that
                 failed for good are loaded again.
 
@@ -122,8 +132,9 @@ class PayloadCache:
 
         Raises:
             BaseException: Any error of this caller's load.
-            PayloadStorageUnavailableError: If storage failed the load of
-                another caller that this one waited for.
+            PayloadStorageUnavailableError: If the deadline passed while this
+                caller waited for the load of another one, or storage failed
+                that load.
             Exception: Any other error of another caller's load that this one
                 waited for, once it is not loaded again.
         """
@@ -144,7 +155,7 @@ class PayloadCache:
 
         if loading:
             try:
-                loaded = loader(list(loading))
+                loaded = loader(list(loading), deadline)
             except BaseException as e:
                 with self._lock:
                     for blob_id, future in loading.items():
@@ -163,9 +174,17 @@ class PayloadCache:
         retry = []
         for blob_id, future in waiting.items():
             try:
-                values[blob_id] = future.result()
+                values[blob_id] = future.result(
+                    timeout=max(deadline - time.monotonic(), 0)
+                )
+            except FutureTimeoutError:
+                raise PayloadStorageUnavailableError(
+                    "Execution payload storage did not load the payloads in "
+                    "time."
+                ) from None
             except PayloadStorageUnavailableError as e:
-                # Loading again would hold this request for another timeout.
+                # Storage just failed this load, so loading again would most
+                # likely hold this request until its deadline and fail too.
                 raise PayloadStorageUnavailableError(str(e)) from e
             except Exception:
                 if not retry_failed_waits:
@@ -176,6 +195,8 @@ class PayloadCache:
                 retry.append(blob_id)
         if retry:
             values.update(
-                self._get_or_load(retry, loader, retry_failed_waits=False)
+                self._get_or_load(
+                    retry, loader, deadline, retry_failed_waits=False
+                )
             )
         return values

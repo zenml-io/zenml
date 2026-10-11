@@ -20,12 +20,17 @@ can break: responses that differ from inline ones, execution paths that stop
 working while storage is down, half-created runs and corrupted blobs.
 """
 
+import json
 import os
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 
 import pytest
+from fsspec import config as fsspec_config
 from fsspec.asyn import AsyncFileSystem
 from moto.server import ThreadedMotoServer
 from sqlmodel import Session, delete, select, update
@@ -75,7 +80,10 @@ from zenml.zen_stores.payload_storage.blob_backends import (
     create_blob_backend,
 )
 from zenml.zen_stores.payload_storage.config import BlobBackendType
-from zenml.zen_stores.payload_storage.payload_store import BLOB_CHUNK_SIZE
+from zenml.zen_stores.payload_storage.payload_store import (
+    BLOB_CHUNK_SIZE,
+    PayloadStore,
+)
 from zenml.zen_stores.payload_storage.payloads import PayloadValue
 from zenml.zen_stores.schemas import (
     PayloadBlobSchema,
@@ -475,22 +483,64 @@ def test_corrupted_blob_is_rejected_and_not_cached(
 
 
 def test_storage_location_cannot_move_once_it_holds_payloads(
-    store: SqlZenStore,
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Blobs are only read from where they were written.
+    """Payloads are only written to and read from one location.
 
+    The first payloads that are stored bind the deployment to their location,
+    even for a process that started earlier with another location and was
+    uploading while they were stored, but a write that failed does not.
     Another path is another location, even in the same bucket, and so is the
     same path on another S3-compatible endpoint; another spelling of the same
     path or other credentials are not.
     """
     backend_config = store.config.payload_storage.backend_config
     moved = {**backend_config, "path": f"s3://{BUCKET}/moved"}
+    missing_bucket = _open_store(
+        store, backend_config={**backend_config, "path": "s3://missing/blobs"}
+    )
+    with pytest.raises(NonRetryablePayloadStorageError, match="refused"):
+        _create_snapshot(missing_bucket)
     # Started while nothing was offloaded, so it had no reason to refuse.
     started_before = _open_store(
         store, cache_max_bytes=0, backend_config=moved
     )
-    run = _start_run(store)
 
+    runs: List[PipelineRunResponse] = []
+    backend = started_before.payload_store._backend
+    put_many = backend.put_many
+
+    def put_many_while_the_first_payloads_are_stored(
+        data_by_sha256: Dict[str, bytes], timeout: float
+    ) -> None:
+        if not runs:
+            runs.append(_start_run(store))
+        put_many(data_by_sha256, timeout=timeout)
+
+    monkeypatch.setattr(
+        backend, "put_many", put_many_while_the_first_payloads_are_stored
+    )
+    with pytest.raises(
+        NonRetryablePayloadStorageError, match="payload storage location"
+    ):
+        _create_snapshot(started_before)
+    (run,) = runs
+    shared = [PayloadValue(text="stored at the bound location")]
+    store.payload_store.offload(shared)
+    with pytest.raises(
+        NonRetryablePayloadStorageError, match="payload storage location"
+    ):
+        started_before.payload_store.offload(shared)
+
+    snapshots = store.list_snapshots(
+        PipelineSnapshotFilter(project=Client().active_project.id)
+    )
+    assert [snapshot.id for snapshot in snapshots.items] == [run.snapshot.id]
+    with Session(store.engine) as session:
+        locations = set(
+            session.exec(select(PayloadBlobSchema.location_fingerprint))
+        )
+    assert len(locations) == 1
     with pytest.raises(
         NonRetryablePayloadStorageError, match="payload storage location"
     ):
@@ -840,44 +890,145 @@ def test_write_answers_whole_while_backfill_offloads_its_rows(
     assert response.metadata == fresh.get_metadata()
 
 
-class _SlowToCreateFilesystem(AsyncFileSystem):
-    """Looks up credentials for seconds when created, as gcsfs can."""
+class _RecordingFilesystem(AsyncFileSystem):
+    """Records the paths of the requests it starts."""
 
-    def __init__(self, **kwargs: Any) -> None:
-        time.sleep(2)
+    def __init__(self, started: List[str], **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self.started = started
 
     async def _cat_file(self, path: str, **kwargs: Any) -> bytes:
+        self.started.append(path)
         return b""
 
 
-class _LoopBlockingFilesystem(AsyncFileSystem):
-    """Blocks the event loop for seconds, as gcsfs refreshing a token does."""
+class _SlowToCreateFilesystem(_RecordingFilesystem):
+    """Looks up credentials for a second when created, as gcsfs can."""
+
+    def __init__(self, started: List[str], **kwargs: Any) -> None:
+        time.sleep(1)
+        super().__init__(started, **kwargs)
+
+
+class _LoopBlockingFilesystem(_RecordingFilesystem):
+    """Blocks the event loop for a second, as gcsfs refreshing a token does."""
 
     async def _cat_file(self, path: str, **kwargs: Any) -> bytes:
-        time.sleep(2)
-        return b""
+        data = await super()._cat_file(path, **kwargs)
+        time.sleep(1)
+        return data
 
 
 @pytest.mark.parametrize(
-    "filesystem_class", [_SlowToCreateFilesystem, _LoopBlockingFilesystem]
+    ("filesystem_class", "started_requests"),
+    [
+        (_SlowToCreateFilesystem, []),
+        (_LoopBlockingFilesystem, [f"gs://bucket/blobs/{'0' * 64}"]),
+    ],
 )
 def test_backend_call_fails_in_time_while_the_client_hangs(
-    filesystem_class: Any,
+    filesystem_class: Any, started_requests: List[str]
 ) -> None:
-    """A call raises within its timeout, plus the second `sync` polls at."""
+    """A call raises within its timeout, and starts no request afterwards.
+
+    When the first request blocks the event loop past the timeout, the second
+    one, due right after it, must not start once the loop is free.
+    """
+    started: List[str] = []
     backend = FsspecBlobBackend(
         BlobBackendType.GCS,
         "gs://bucket/blobs",
         location="gs://bucket/blobs",
         filesystem_class=filesystem_class,
-        filesystem_options={},
+        filesystem_options={"started": started},
         max_concurrent_calls=4,
     )
-    started = time.monotonic()
+    began = time.monotonic()
     with pytest.raises(TimeoutError):
-        backend.get_many(["0" * 64], timeout=0.2)
-    assert time.monotonic() - started < 1.5
+        backend.get_many(["0" * 64, "1" * 64], timeout=0.2)
+    elapsed = time.monotonic() - began
+
+    assert backend.get_many([], timeout=5) == {}
+    assert started == started_requests
+    assert elapsed < 0.7
+
+
+class _FailingFilesystem(AsyncFileSystem):
+    """Fails every request with the error it is created with."""
+
+    def __init__(self, error: Exception, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.error = error
+
+    async def _cat_file(self, path: str, **kwargs: Any) -> bytes:
+        raise self.error
+
+
+@pytest.mark.parametrize(
+    ("status", "message", "raised"),
+    [
+        (
+            401,
+            "Request had invalid authentication credentials.",
+            "PermissionError",
+        ),
+        (503, "Backend Error", "HttpError"),
+    ],
+)
+def test_gcs_rejecting_the_credentials_is_denied_access(
+    status: int, message: str, raised: str
+) -> None:
+    """Rejected GCS credentials fail as denied access, an outage does not.
+
+    gcsfs reports the rejection as a `ValueError` when the response calls the
+    credentials invalid.
+    """
+    retry = pytest.importorskip("gcsfs.retry")
+    with pytest.raises(Exception) as provider_error:
+        retry.validate_response(
+            status,
+            json.dumps({"error": {"code": status, "message": message}}),
+            "bucket/blobs",
+        )
+    backend = FsspecBlobBackend(
+        BlobBackendType.GCS,
+        "gs://bucket/blobs",
+        location="gs://bucket/blobs",
+        filesystem_class=_FailingFilesystem,
+        filesystem_options={"error": provider_error.value},
+        max_concurrent_calls=4,
+    )
+
+    with pytest.raises(Exception) as error:
+        backend.get_many(["0" * 64], timeout=5)
+
+    assert type(error.value).__name__ == raised
+
+
+def _slow_down_reads(
+    payload_store: PayloadStore,
+    monkeypatch: pytest.MonkeyPatch,
+    seconds: float,
+) -> threading.Event:
+    """Make each backend read take `seconds`, or time out if it has less.
+
+    The returned event is set once a read starts.
+    """
+    backend = payload_store._backend
+    assert backend
+    get_many = backend.get_many
+    reading = threading.Event()
+
+    def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
+        reading.set()
+        if timeout < seconds:
+            time.sleep(max(timeout, 0))
+            raise TimeoutError
+        time.sleep(seconds)
+        return get_many(sha256s, timeout=timeout - seconds)
+
+    monkeypatch.setattr(backend, "get_many", slow_get_many)
+    return reading
 
 
 def test_load_shares_one_timeout_across_chunks(
@@ -891,17 +1042,7 @@ def test_load_shares_one_timeout_across_chunks(
     payload_store = _open_store(
         store, cache_max_bytes=0, backend_timeout_seconds=1
     ).payload_store
-    get_many = payload_store._backend.get_many
-
-    def slow_get_many(sha256s: Sequence[str], timeout: float) -> Any:
-        # Each chunk takes 0.4 s: three fit in 1.2 s, not in the 1 s timeout.
-        if timeout < 0.4:
-            time.sleep(max(timeout, 0))
-            raise TimeoutError
-        time.sleep(0.4)
-        return get_many(sha256s, timeout=timeout - 0.4)
-
-    monkeypatch.setattr(payload_store._backend, "get_many", slow_get_many)
+    _slow_down_reads(payload_store, monkeypatch, seconds=0.4)
 
     started = time.monotonic()
     with pytest.raises(PayloadStorageUnavailableError):
@@ -909,21 +1050,338 @@ def test_load_shares_one_timeout_across_chunks(
     assert time.monotonic() - started < 1.3
 
 
-@pytest.mark.parametrize("from_environment", [False, True])
-def test_gcs_endpoint_is_part_of_the_location(
-    monkeypatch: pytest.MonkeyPatch, from_environment: bool
+def test_load_after_waiting_for_a_failed_load_keeps_its_timeout(
+    store: SqlZenStore,
+    s3_server: ThreadedMotoServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The same bucket behind another GCS endpoint is another location."""
-    pytest.importorskip("gcsfs")
+    """A load that waits for another one keeps its own timeout.
 
-    def location(endpoint: str) -> str:
-        options = {"path": "gs://bucket/blobs"}
-        if from_environment:
-            monkeypatch.setenv("STORAGE_EMULATOR_HOST", endpoint)
-        else:
-            options["endpoint_url"] = endpoint
-        return create_blob_backend(
-            BlobBackendType.GCS, options, max_concurrent_calls=4
-        ).location
+    The other load fails for good on a blob that only it needs, so the
+    waiting load loads its blob again, in the time it has left.
+    """
+    offloaded = _open_store(store).payload_store.offload(
+        [PayloadValue(text="healthy"), PayloadValue(text="missing")]
+    )
+    blob_ids = {
+        text: blob_id for blob_id, text in offloaded.values_by_blob_id.items()
+    }
+    healthy, missing = blob_ids["healthy"], blob_ids["missing"]
+    local_s3_client(s3_server).delete_object(
+        Bucket=BUCKET, Key=f"{PREFIX}/{PayloadValue(text='missing').sha256}"
+    )
+    payload_store = _open_store(
+        store, cache_max_bytes=0, backend_timeout_seconds=1
+    ).payload_store
+    # Loaded before reads slow down, so that creating the storage client does
+    # not take from the 0.2 s that the owner's slow read leaves for reading.
+    assert payload_store.load([healthy]) == {healthy: "healthy"}
+    reading = _slow_down_reads(payload_store, monkeypatch, seconds=0.8)
 
-    assert location("http://a:9023") != location("http://b:9023")
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        owner = executor.submit(payload_store.load, [healthy, missing])
+        assert reading.wait(timeout=5)
+        waiter = executor.submit(payload_store.load, [healthy])
+        with pytest.raises(PayloadStorageUnavailableError):
+            waiter.result(timeout=1.3)
+        with pytest.raises(NonRetryablePayloadStorageError):
+            owner.result()
+
+
+@pytest.fixture
+def aws_config_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """An empty AWS config file that botocore reads instead of the user's.
+
+    Args:
+        monkeypatch: Isolates the AWS environment variables.
+        tmp_path: Holds the config and credentials files.
+
+    Returns:
+        The path of the config file, for the test to write.
+    """
+    for variable in list(os.environ):
+        if variable.startswith("AWS_"):
+            monkeypatch.delenv(variable)
+    config_file = tmp_path / "aws-config"
+    monkeypatch.setenv("AWS_CONFIG_FILE", str(config_file))
+    monkeypatch.setenv(
+        "AWS_SHARED_CREDENTIALS_FILE", str(tmp_path / "aws-credentials")
+    )
+    return config_file
+
+
+AWS_CONFIG = """
+[default]
+endpoint_url = http://127.0.0.1:14004
+
+[profile services]
+services = local
+
+[profile regional]
+region = eu-west-1
+
+[services local]
+s3 =
+  endpoint_url = http://127.0.0.1:14005
+"""
+S3_PATH = {"path": "s3://payloads/blobs"}
+AZURE_PATH = {"path": "az://payloads/blobs"}
+GCS_PATH = {"path": "gs://payloads/blobs"}
+AZURE_DEFAULT_LOCATION = (
+    "az://payloads/blobs at https://sameaccount.blob.core.windows.net"
+)
+
+
+@pytest.mark.parametrize(
+    "backend_type, options, environment, expected_location",
+    [
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "endpoint_url": "http://127.0.0.1:14001/"},
+            {"AWS_ENDPOINT_URL_S3": "http://127.0.0.1:14003"},
+            "s3://payloads/blobs at http://127.0.0.1:14001",
+            id="s3-option-over-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {"AWS_ENDPOINT_URL": "http://127.0.0.1:14002"},
+            "s3://payloads/blobs at http://127.0.0.1:14002",
+            id="s3-environment-over-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "key": "rotated", "secret": "rotated"},
+            {"AWS_ENDPOINT_URL": "http://127.0.0.1:14002"},
+            "s3://payloads/blobs at http://127.0.0.1:14002",
+            id="s3-other-credentials",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {
+                "AWS_ENDPOINT_URL": "http://127.0.0.1:14002",
+                "AWS_ENDPOINT_URL_S3": "http://127.0.0.1:14003",
+            },
+            "s3://payloads/blobs at http://127.0.0.1:14003",
+            id="s3-service-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {},
+            "s3://payloads/blobs at http://127.0.0.1:14004",
+            id="s3-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "profile": "services"},
+            {},
+            "s3://payloads/blobs at http://127.0.0.1:14005",
+            id="s3-profile-services-section",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {"AWS_PROFILE": "services"},
+            "s3://payloads/blobs at http://127.0.0.1:14005",
+            id="s3-profile-from-environment",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {**S3_PATH, "profile": "regional"},
+            {},
+            "s3://payloads/blobs",
+            id="s3-aws-region",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {
+                "AWS_ENDPOINT_URL": "http://127.0.0.1:14002",
+                "AWS_IGNORE_CONFIGURED_ENDPOINT_URLS": "true",
+            },
+            "s3://payloads/blobs",
+            id="s3-ignored-environment-and-config-file",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            {
+                **S3_PATH,
+                "config_kwargs": {"ignore_configured_endpoint_urls": True},
+            },
+            {},
+            "s3://payloads/blobs",
+            id="s3-ignored-by-client-config",
+        ),
+        pytest.param(
+            BlobBackendType.S3,
+            S3_PATH,
+            {"FSSPEC_S3_ENDPOINT_URL": "http://127.0.0.1:14006"},
+            "s3://payloads/blobs at http://127.0.0.1:14006",
+            id="s3-fsspec-config",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "account_key": "a2V5",
+            },
+            {},
+            AZURE_DEFAULT_LOCATION,
+            id="azure-account",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "sas_token": "sv=2024&sig=secret",
+            },
+            {},
+            AZURE_DEFAULT_LOCATION,
+            id="azure-sas-token",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            AZURE_PATH,
+            {
+                "AZURE_STORAGE_CONNECTION_STRING": (
+                    "BlobEndpoint=https://sameaccount.blob.core.windows.net/;"
+                    "SharedAccessSignature=sv=2024&sig=secret"
+                )
+            },
+            AZURE_DEFAULT_LOCATION,
+            id="azure-sas-connection-string",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "account_name": "sameaccount",
+                "account_key": "a2V5",
+                "account_host": "sameaccount.blob.core.usgovcloudapi.net",
+            },
+            {},
+            "az://payloads/blobs at "
+            "https://sameaccount.blob.core.usgovcloudapi.net",
+            id="azure-account-host",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "connection_string": (
+                    "AccountName=sameaccount;AccountKey=a2V5;"
+                    "BlobEndpoint=http://127.0.0.1:14001/sameaccount;"
+                ),
+            },
+            {},
+            "az://payloads/blobs at http://127.0.0.1:14001/sameaccount",
+            id="azure-blob-endpoint",
+        ),
+        pytest.param(
+            BlobBackendType.AZURE,
+            {
+                **AZURE_PATH,
+                "connection_string": (
+                    "DefaultEndpointsProtocol=https;AccountName=sameaccount;"
+                    "AccountKey=a2V5;EndpointSuffix=core.chinacloudapi.cn"
+                ),
+            },
+            {},
+            "az://payloads/blobs at https://sameaccount.blob.core.chinacloudapi.cn",
+            id="azure-endpoint-suffix",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            {**GCS_PATH, "endpoint_url": "http://a:9023"},
+            {},
+            "gs://payloads/blobs at http://a:9023",
+            id="gcs-option",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            GCS_PATH,
+            {"STORAGE_EMULATOR_HOST": "http://b:9023"},
+            "gs://payloads/blobs at http://b:9023",
+            id="gcs-environment",
+        ),
+        pytest.param(
+            BlobBackendType.GCS,
+            GCS_PATH,
+            {"FSSPEC_GCS_ENDPOINT_URL": "http://c:9023"},
+            "gs://payloads/blobs at http://c:9023",
+            id="gcs-fsspec-config",
+        ),
+    ],
+)
+def test_location_is_the_endpoint_the_client_uses(
+    monkeypatch: pytest.MonkeyPatch,
+    aws_config_file: Path,
+    backend_type: BlobBackendType,
+    options: Dict[str, Any],
+    environment: Dict[str, str],
+    expected_location: str,
+) -> None:
+    """The same path behind another endpoint is another location.
+
+    The endpoint counts wherever the client takes it from, as the provider
+    resolves it, while other credentials or the default endpoint of an AWS
+    region do not.
+    """
+    pytest.importorskip(
+        {
+            BlobBackendType.S3: "s3fs",
+            BlobBackendType.GCS: "gcsfs",
+            BlobBackendType.AZURE: "adlfs",
+        }[backend_type]
+    )
+    for variable in list(os.environ):
+        if variable.startswith(("AZURE_STORAGE_", "FSSPEC_")) or (
+            variable == "STORAGE_EMULATOR_HOST"
+        ):
+            monkeypatch.delenv(variable)
+    aws_config_file.write_text(AWS_CONFIG)
+    for variable, value in environment.items():
+        monkeypatch.setenv(variable, value)
+    # fsspec reads its configuration from the environment once, on import.
+    monkeypatch.setattr(fsspec_config, "conf", {})
+    fsspec_config.set_conf_env(fsspec_config.conf)
+
+    backend = create_blob_backend(
+        backend_type, options, max_concurrent_calls=4
+    )
+
+    assert backend.location == expected_location
+
+
+def test_payloads_stay_at_the_endpoint_the_store_started_with(
+    store: SqlZenStore, aws_config_file: Path
+) -> None:
+    """A store sends payloads to the endpoint in its location.
+
+    The endpoint comes from the AWS config file, which names an endpoint
+    without storage before the store first writes payloads. The store whose
+    endpoint is in its options then reads them where they were written.
+    """
+    backend_config = store.config.payload_storage.backend_config
+    client_kwargs = dict(backend_config["client_kwargs"])
+    aws_config_file.write_text(
+        f"[default]\nendpoint_url = {client_kwargs.pop('endpoint_url')}\n"
+    )
+    configured = _open_store(
+        store,
+        cache_max_bytes=0,
+        backend_config={**backend_config, "client_kwargs": client_kwargs},
+    )
+    aws_config_file.write_text(
+        "[default]\nendpoint_url = http://127.0.0.1:1\n"
+    )
+
+    snapshot = _create_snapshot(configured, config_name="before-the-change")
+
+    for reader in (configured, store):
+        read = reader.get_snapshot(snapshot.id, hydrate=True)
+        assert read.pipeline_configuration.name == "before-the-change"

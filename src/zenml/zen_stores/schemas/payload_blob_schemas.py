@@ -25,7 +25,6 @@ from sqlalchemy import (
 from sqlmodel import Field, SQLModel
 
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.schema_utils import build_index
 
 PAYLOAD_BLOB_SHA256_CONSTRAINT = "unique_payload_blob_sha256"
 LOCATION_FINGERPRINT_LENGTH = 16
@@ -37,15 +36,12 @@ class PayloadBlobSchema(SQLModel, table=True):
     Blobs are shared by every entity whose payload has the same content, and
     are never updated or deleted. A row only exists once its bytes are
     durable at the location that `location_fingerprint` identifies: the
-    backend and a digest of its path, such as `s3:6de5d6037f732`.
+    backend and a digest of its path and endpoint, such as `s3:6de5d6037f732`.
     """
 
     __tablename__ = "payload_blob"
     __table_args__ = (
         UniqueConstraint("sha256", name=PAYLOAD_BLOB_SHA256_CONSTRAINT),
-        build_index(
-            table_name=__tablename__, column_names=["location_fingerprint"]
-        ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)

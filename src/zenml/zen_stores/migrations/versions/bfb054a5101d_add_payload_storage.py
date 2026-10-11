@@ -2,7 +2,7 @@
 
 Revision ID: bfb054a5101d
 Revises: 8d638fcb4bd5
-Create Date: 2026-09-24 15:58:32.000000
+Create Date: 2026-10-11 23:37:06.197509
 
 """
 
@@ -71,10 +71,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("sha256", name="unique_payload_blob_sha256"),
     )
-    op.create_index(
-        "ix_payload_blob_location_fingerprint",
-        "payload_blob",
-        ["location_fingerprint"],
+    _add_columns(
+        "server_settings",
+        [sa.Column("payload_location_fingerprint", sa.String(length=16))],
     )
 
     for table, columns in BLOB_REFERENCE_COLUMNS.items():
@@ -109,8 +108,7 @@ def downgrade() -> None:
         with op.batch_alter_table(table, schema=None) as batch_op:
             for column in reversed(columns):
                 batch_op.drop_column(column)
+    with op.batch_alter_table("server_settings", schema=None) as batch_op:
+        batch_op.drop_column("payload_location_fingerprint")
 
-    op.drop_index(
-        "ix_payload_blob_location_fingerprint", table_name="payload_blob"
-    )
     op.drop_table("payload_blob")
