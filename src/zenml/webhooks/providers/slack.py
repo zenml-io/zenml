@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field, model_validator
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.utils.enum_utils import StrEnum
 from zenml.webhooks.providers.base import (
+    WEBHOOK_MAX_TARGET_EVENTS,
     BaseWebhookProvider,
     ParsedWebhookDelivery,
     ParsedWebhookEvent,
@@ -33,6 +34,10 @@ from zenml.webhooks.providers.base import (
     WebhookTargetEvent,
     WebhookTriggerMatch,
     matches_string_filter,
+)
+from zenml.webhooks.providers.dynamic import (
+    DynamicWebhookTargetEvent,
+    matches_webhook_target,
 )
 from zenml.webhooks.providers.types import BuiltinWebhookType
 
@@ -170,14 +175,17 @@ class FileSharedEventFilter(SlackEventFilter):
     file_id: StringFilterOption = None
 
 
-SlackWebhookEventFilter: TypeAlias = Annotated[
+SlackSemanticEventFilter: TypeAlias = (
     AppMentionEventFilter
     | MessageEventFilter
     | ReactionAddedEventFilter
     | ReactionRemovedEventFilter
     | MessageMetadataPostedEventFilter
     | MessageMetadataUpdatedEventFilter
-    | FileSharedEventFilter,
+    | FileSharedEventFilter
+)
+SlackWebhookEventFilter: TypeAlias = Annotated[
+    SlackSemanticEventFilter | DynamicWebhookTargetEvent,
     Field(discriminator="type"),
 ]
 
@@ -185,7 +193,9 @@ SlackWebhookEventFilter: TypeAlias = Annotated[
 class SlackWebhookConfiguration(WebhookConfiguration):
     """Typed configuration for a Slack webhook trigger."""
 
-    target_events: list[SlackWebhookEventFilter] = Field(min_length=1)
+    target_events: list[SlackWebhookEventFilter] = Field(
+        min_length=1, max_length=WEBHOOK_MAX_TARGET_EVENTS
+    )
 
 
 class _SlackCommonEventFields(TypedDict):
@@ -220,7 +230,7 @@ class SlackSemanticEvent(BaseModel):
     event_time: int
     event_ts: str
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Match identifiers shared by all Slack semantic events.
 
         Args:
@@ -239,7 +249,7 @@ class SlackUserEvent(SlackSemanticEvent):
 
     user_id: str
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Match the required user identifier.
 
         Args:
@@ -263,7 +273,7 @@ class SlackChannelEvent(SlackUserEvent):
 
     channel_id: str
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Match the required channel identifier.
 
         Args:
@@ -293,7 +303,7 @@ class SlackAppMentionEvent(SlackChannelEvent):
     message_ts: str | None = None
     thread_ts: str | None = None
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Return whether this mention matches an app-mention target.
 
         Args:
@@ -334,7 +344,7 @@ class SlackMessageEvent(SlackSemanticEvent):
     message_ts: str | None = None
     thread_ts: str | None = None
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Return whether this message matches a message target.
 
         Args:
@@ -394,7 +404,7 @@ class SlackReactionEvent(SlackUserEvent):
     item_user_id: str | None = None
     item: SlackReactionItem
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Return whether this reaction matches its reaction target.
 
         Args:
@@ -463,7 +473,7 @@ class SlackMessageMetadataEvent(SlackChannelEvent):
     message_ts: str
     metadata: SlackMessageMetadata
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Return whether this metadata event matches its typed target.
 
         Args:
@@ -520,7 +530,7 @@ class SlackFileSharedEvent(SlackChannelEvent):
     )
     file_id: str
 
-    def matches(self, target: SlackWebhookEventFilter) -> bool:
+    def matches(self, target: SlackSemanticEventFilter) -> bool:
         """Return whether this file share matches a file-share target.
 
         Args:
@@ -784,16 +794,23 @@ class SlackWebhookProvider(BaseWebhookProvider):
             The matching triggers and any parsed semantic event.
         """
         semantic = self.parse_semantic_event(event)
-        if semantic is None:
-            return WebhookTriggerMatch(triggers=[])
+        semantic_matcher = semantic.matches if semantic is not None else None
         matches: list[WebhookTriggerResponse] = []
         for trigger in candidates:
             targets = self._cast_runtime_targets(trigger)
-            if any(semantic.matches(target) for target in targets):
+            if any(
+                matches_webhook_target(
+                    target=target,
+                    event_type=event.event_type,
+                    payload=event.payload,
+                    semantic_matcher=semantic_matcher,
+                )
+                for target in targets
+            ):
                 matches.append(trigger)
         return WebhookTriggerMatch(
             triggers=matches,
-            event=semantic.model_dump(mode="json"),
+            event=(semantic.model_dump(mode="json") if semantic else None),
         )
 
     def parse_semantic_event(
