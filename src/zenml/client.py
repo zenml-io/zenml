@@ -262,23 +262,13 @@ class ClientConfiguration(FileSyncModel):
     _active_stack: Optional["StackResponse"] = None
 
     @property
-    def active_project(self) -> "ProjectResponse":
+    def active_project(self) -> Optional["ProjectResponse"]:
         """Get the active project for the local client.
 
         Returns:
-            The active project.
-
-        Raises:
-            RuntimeError: If no active project is set.
+            The active project, or None if no active project is configured.
         """
-        if self._active_project:
-            return self._active_project
-        else:
-            raise RuntimeError(
-                "No active project is configured. Run "
-                "`zenml project set <NAME>` to set the active "
-                "project."
-            )
+        return self._active_project
 
     def set_active_project(self, project: "ProjectResponse") -> None:
         """Set the project for the local client.
