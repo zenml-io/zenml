@@ -14,6 +14,7 @@
 """Step context class."""
 
 import contextvars
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -472,14 +473,21 @@ class StepContext(context_utils.BaseContext):
             )
         return super().__enter__()
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Exit the step context.
 
         Args:
-            *_: Unused keyword arguments.
+            exc_type: The class of the exception.
+            exc_value: The instance of the exception.
+            traceback: The traceback of the exception.
         """
         self._cleanup_registry.execute_callbacks(raise_on_exception=False)
-        super().__exit__(*_)
+        super().__exit__(exc_type, exc_value, traceback)
 
 
 class StepContextOutput:
