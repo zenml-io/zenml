@@ -18,6 +18,16 @@ Use this environment for every `python` and `zenml` command below. In separate s
 
 The example pins ZenML 0.96.4; use a matching server version. Connect your ZenML client to the intended workspace and select the appropriate project and stack before running pipelines. The service requires a Deployer component and an endpoint reachable from the caller.
 
+## Operations control tower showcase
+
+The control tower is the quickest show-off demo: it fans synthetic customer, inventory, and warehouse signals into a prioritized action queue and a self-contained HTML executive brief. The HTML report is stored as a visualizable ZenML artifact, while the structured metrics and alerts remain separately queryable.
+
+```bash
+python run.py control-tower --run-date 2026-10-12 --run-name control-tower-demo
+```
+
+Open the `control_tower_brief` artifact in the run dashboard to show the report. It is intentionally synthetic, deterministic, and local-stack friendly; it is not real customer insight.
+
 All demo pipelines use `build_settings.py` to build Python 3.11 images with ZenML 0.96.4 for Linux AMD64 workers. Their images install the explicit dependencies in `requirements.txt`, including matching OpenTelemetry API and SDK versions and the S3 and Kubernetes clients. The image build reinstalls the pinned OpenTelemetry API package and does not copy the launcher's installed packages or add integration dependencies from the selected stack. Use a remote image builder that supports this architecture. These settings apply when building an image; an explicitly reused image or `skip_build=True` bypasses dependency installation.
 
 ## Batch operations

@@ -18,17 +18,7 @@ import argparse
 from typing import Any
 from uuid import UUID
 
-from scenario_01.pipeline import inventory_report
-from scenario_02.pipeline import customer_scoring
-from scenario_03.pipelines import customer_risk_training
-from scenario_04.pipeline import replenishment_planning
-from scenario_05.pipelines import (
-    customer_model_evaluation,
-    customer_model_training,
-)
-from scenario_06.pipeline import customer_segment_training
-from scenario_07.data import SOURCE_URI, TRAINING_PIPELINE
-from scenario_07.pipelines import bike_demand_scoring, bike_demand_training
+from scenario_08.pipeline import operations_control_tower
 
 from zenml import Model
 from zenml.client import Client
@@ -98,8 +88,17 @@ def main() -> None:
     )
     bike_scoring.add_argument("--training-run-id", type=UUID, required=True)
     bike_scoring.add_argument("--scoring-date", default="2012-10-15")
+    control_tower = commands.add_parser(
+        "control-tower", help="Build an operations control-tower brief."
+    )
+    control_tower.add_argument("--sample-count", type=int, default=240)
+    control_tower.add_argument("--random-seed", type=int, default=2026)
+    control_tower.add_argument("--run-date")
     for command in (bike_training, bike_scoring):
-        command.add_argument("--source-uri", default=SOURCE_URI)
+        command.add_argument(
+            "--source-uri",
+            default="https://archive.ics.uci.edu/static/public/275/bike%2Bsharing%2Bdataset.zip",
+        )
         command.add_argument("--source-sha256")
     for command in (
         inventory,
@@ -111,6 +110,7 @@ def main() -> None:
         segments,
         bike_training,
         bike_scoring,
+        control_tower,
     ):
         command.add_argument("--run-name", help="Name for this execution.")
         command.add_argument("--no-cache", action="store_true")
@@ -121,6 +121,8 @@ def main() -> None:
     if args.no_cache:
         options["enable_cache"] = False
     if args.command == "inventory":
+        from scenario_01.pipeline import inventory_report
+
         run = inventory_report.with_options(**options)(
             batch_size=args.batch_size,
             source_seed=args.source_seed,
@@ -129,34 +131,55 @@ def main() -> None:
             simulation_start_date=args.simulation_start_date,
         )
     elif args.command == "customers":
+        from scenario_02.pipeline import customer_scoring
+
         run = customer_scoring.with_options(**options)(
             source_uri=args.source_uri
         )
     elif args.command == "train-risk":
+        from scenario_03.pipelines import customer_risk_training
+
         run = customer_risk_training.with_options(**options)(
             sample_count=args.sample_count, random_seed=args.random_seed
         )
     elif args.command == "replenishment":
+        from scenario_04.pipeline import replenishment_planning
+
         run = replenishment_planning.with_options(**options)(
             batch_size=args.batch_size,
             source_seed=args.source_seed,
             minimum_stock=args.minimum_stock,
         )
     elif args.command == "train-retention":
+        from scenario_05.pipelines import customer_model_training
+
         run = customer_model_training.with_options(**options)(
             sample_count=args.sample_count, random_seed=args.random_seed
         )
     elif args.command == "evaluate-retention":
+        from scenario_05.pipelines import customer_model_evaluation
+
         run = customer_model_evaluation.with_options(**options)(
             training_run_id=args.training_run_id
         )
     elif args.command == "train-segments":
+        from scenario_06.pipeline import customer_segment_training
+
         run = customer_segment_training.with_options(**options)(
             cpu_count=args.cpu_count,
             sample_count=args.sample_count,
             random_seed=args.random_seed,
         )
+    elif args.command == "control-tower":
+        run = operations_control_tower.with_options(**options)(
+            sample_count=args.sample_count,
+            random_seed=args.random_seed,
+            run_date=args.run_date,
+        )
     elif args.command == "train-bikes":
+        from scenario_07.data import SOURCE_URI
+        from scenario_07.pipelines import bike_demand_training
+
         options["model"] = Model(
             name="bike-demand", version=args.model_version
         )
@@ -169,6 +192,9 @@ def main() -> None:
             evaluation_end=args.evaluation_end,
         )
     else:
+        from scenario_07.data import SOURCE_URI, TRAINING_PIPELINE
+        from scenario_07.pipelines import bike_demand_scoring
+
         client = Client()
         training_run = client.get_pipeline_run(
             args.training_run_id, project=client.active_project.id
