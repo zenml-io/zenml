@@ -34,6 +34,17 @@ class InMemoryArtifactCache(context_utils.BaseContext):
         """Clear the artifact cache."""
         self._cache = {}
 
+    def has_artifact_data(self, id_: UUID) -> bool:
+        """Check whether data is cached for an artifact.
+
+        Args:
+            id_: The ID of the artifact to check.
+
+        Returns:
+            Whether data is cached for the artifact.
+        """
+        return id_ in self._cache
+
     def get_artifact_data(self, id_: UUID) -> Any:
         """Get the artifact data.
 

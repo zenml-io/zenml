@@ -26,6 +26,7 @@ from kubernetes import client as k8s_client
 from kubernetes.client.rest import ApiException
 
 from zenml.client import Client
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -226,6 +227,7 @@ def main() -> None:
 
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
+    oidc_claims = client.active_user.oidc_claims
 
     logs_context: ContextManager[Any] = nullcontext()
     if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
@@ -528,6 +530,8 @@ def main() -> None:
                 mount_local_stores=mount_local_stores,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
                 labels=step_labels,
+                run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+                run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
             )
 
             retry_config = step_config.retry

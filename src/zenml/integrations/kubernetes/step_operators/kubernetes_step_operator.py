@@ -26,8 +26,10 @@ from typing import (
 
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
@@ -311,6 +313,8 @@ class KubernetesStepOperator(BaseStepOperator):
                 )
             )
 
+        oidc_claims = Client().active_user.oidc_claims
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image_name,
@@ -321,6 +325,8 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
 
         job_manifest = build_job_manifest(

@@ -740,6 +740,7 @@ class ScheduleTriggerUpdate(TriggerUpdate, ScheduleTrigger):
             self.start_time,
             self.cron_expression,
             self.interval,
+            self.run_once_start_time,
         ]
 
         if not self.flavor == TriggerFlavor.NATIVE_SCHEDULE:
@@ -1241,6 +1242,7 @@ class WebhookTriggerExecutionInfo(BaseModel):
 
     webhook_id: UUID
     delivery_id: str
+    event_type: str | None = None
     event: dict[str, Any] | None = None
 
 
