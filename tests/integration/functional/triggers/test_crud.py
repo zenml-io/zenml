@@ -3,12 +3,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml import (
     PlatformEventTriggerRequest,
     PlatformEventTriggerResponse,
     PlatformEventTriggerUpdate,
 )
+from zenml.cli.cli import cli
 from zenml.client import Client
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
@@ -392,6 +394,34 @@ def test_list_schedule_triggers_filters_by_pipeline_and_snapshot(clean_client):
         triggers[0].id
     }
     assert sdk_snapshot_triggers.items[0].active is False
+
+    other_project = clean_client.create_project(
+        name=sample_name("trigger-filter-other-project"),
+        description="Project for cross-project trigger lookup",
+    )
+    try:
+        clean_client.set_active_project(other_project.id)
+        cross_project_triggers = clean_client.list_snapshot_triggers(
+            snapshot_id=source_snapshots[0].id,
+            project=project_id,
+        )
+        assert {trigger.id for trigger in cross_project_triggers.items} == {
+            triggers[0].id
+        }
+
+        delete_command = (
+            cli.commands["pipeline"].commands["snapshot"].commands["delete"]
+        )
+        result = cli_runner().invoke(
+            delete_command,
+            [str(source_snapshots[0].id)],
+            input="n\n",
+        )
+        assert result.exit_code == 0
+        assert triggers[0].name in result.output
+    finally:
+        clean_client.set_active_project(project_id)
+        clean_client.delete_project(str(other_project.id))
 
     store.delete_trigger(triggers[0].id, soft=True)
 

@@ -596,18 +596,20 @@ def test_pipeline_snapshot_delete_warns_about_attached_triggers(
     )
     trigger_lookup.assert_called_once_with(
         snapshot_id=snapshot.id,
+        project=snapshot.project_id,
         hydrate=False,
     )
     delete_snapshot.assert_not_called()
 
     trigger_lookup.reset_mock()
-    result = runner.invoke(delete_command, [str(snapshot.id)], input="y\n")
+    result = runner.invoke(delete_command, [snapshot.name], input="y\n")
 
     assert result.exit_code == 0
     trigger_lookup.assert_called_once_with(
         snapshot_id=snapshot.id,
+        project=snapshot.project_id,
         hydrate=False,
     )
     delete_snapshot.assert_called_once_with(
-        name_id_or_prefix=str(snapshot.id),
+        name_id_or_prefix=snapshot.id,
     )

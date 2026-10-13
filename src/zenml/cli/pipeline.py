@@ -16,7 +16,7 @@
 import json
 import os
 from datetime import timedelta
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
 import click
@@ -59,29 +59,26 @@ logger = get_logger(__name__)
 def _confirm_snapshot_removal(
     client: Client,
     snapshot: PipelineSnapshotResponse,
-    *,
-    action: Literal["delete", "recreate"],
 ) -> bool:
-    """Confirm an operation that removes an existing snapshot.
+    """Confirm deletion of an existing snapshot.
 
     Args:
         client: The client used to look up attached triggers.
         snapshot: The snapshot that will be removed.
-        action: The action presented to the user, such as `delete` or
-            `recreate`.
 
     Returns:
         Whether the user confirmed the operation.
     """
     attached_triggers = client.list_snapshot_triggers(
         snapshot_id=snapshot.id,
+        project=snapshot.project_id,
         hydrate=False,
     )
     snapshot_display_name = snapshot.name or str(snapshot.id)
 
     if not attached_triggers.total:
         return cli_utils.confirmation(
-            f"Are you sure you want to {action} snapshot "
+            "Are you sure you want to delete snapshot "
             f"`{snapshot_display_name}`?"
         )
 
@@ -98,7 +95,7 @@ def _confirm_snapshot_removal(
         f"Snapshot `{snapshot_display_name}` is attached to the following "
         "triggers:\n\n"
         + "\n".join(trigger_lines)
-        + f"\n\nThe snapshot will be removed when you {action} it, which "
+        + "\n\nThe snapshot will be removed when you delete it, which "
         "will also remove these trigger attachments. Are you sure you want "
         "to continue?"
     )
@@ -1943,6 +1940,7 @@ def delete_pipeline_snapshot(
         yes: If set, don't ask for confirmation.
     """
     client = Client()
+    snapshot_to_delete: Union[str, UUID] = snapshot_name_or_id
     if not yes:
         try:
             snapshot_model = client.get_snapshot(
@@ -1956,13 +1954,13 @@ def delete_pipeline_snapshot(
         if not _confirm_snapshot_removal(
             client=client,
             snapshot=snapshot_model,
-            action="delete",
         ):
             cli_utils.declare("Snapshot deletion canceled.")
             return
+        snapshot_to_delete = snapshot_model.id
 
     try:
-        client.delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
+        client.delete_snapshot(name_id_or_prefix=snapshot_to_delete)
     except KeyError as e:
         cli_utils.exception(e)
     else:
