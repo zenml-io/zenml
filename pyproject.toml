@@ -433,6 +433,8 @@ module = [
     "runai.*",
     "truss.*",
     "truss_train.*",
+    "typesafe_sdk",
+    "typesafe_sdk.*",
     "jsonref",
 ]
 ignore_missing_imports = true
