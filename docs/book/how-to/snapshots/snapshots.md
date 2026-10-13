@@ -223,7 +223,10 @@ from zenml.client import Client
 client = Client()
 snapshot = client.get_snapshot("<NAME-OR-ID>", hydrate=False)
 
-attached_triggers = client.list_snapshot_triggers(snapshot_id=snapshot.id)
+attached_triggers = client.list_snapshot_triggers(
+     snapshot_id=snapshot.id,
+     project=snapshot.project_id,
+)
 if attached_triggers.total:
     for trigger in attached_triggers:
         status = "active" if trigger.active else "inactive"
