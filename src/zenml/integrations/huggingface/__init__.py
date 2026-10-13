@@ -64,7 +64,7 @@ class HuggingfaceIntegration(Integration):
             # install hits a conflict. Those versions pin tokenizers<0.11,
             # which has no wheels and fails to build from source on modern
             # Rust toolchains.
-            "transformers>=4.40,<6.0.0",
+            "transformers[torch]>=4.40,<6.0.0",
         ]
 
         # Add the pandas integration requirements
