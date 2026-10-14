@@ -2006,12 +2006,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         original_parameters = original_run.config.parameters or {}
+        configured_parameters = set(self.configuration.parameters or {})
+        if params_from_file := self._from_config_file.get("parameters", None):
+            configured_parameters.update(params_from_file)
+
         # Only include pipeline parameters of the original run for inputs that
         # the user didn't provide a value for.
         inputs = {
             k: v
             for k, v in original_parameters.items()
-            if k in self.missing_parameters
+            if k not in configured_parameters
         }
 
         if input_overrides:

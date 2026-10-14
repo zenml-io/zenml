@@ -175,6 +175,43 @@ def test_replay_overrides_step_input_by_name():
     )
 
 
+@step
+def defaulted_parameter_consumer(value: str, expected_value: str) -> None:
+    assert value == expected_value
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_defaulted_parameter(
+    expected_value: str, value: str = "default"
+) -> None:
+    defaulted_parameter_consumer(value=value, expected_value=expected_value)
+
+
+def test_replay_forwards_parameters_with_defaults():
+    """Tests that replaying forwards original values of defaulted parameters."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_defaulted_parameter.replay(
+        pipeline_run=original_run.id
+    )
+
+
+def test_replay_prefers_configured_parameters():
+    """Tests that configured parameters win over the original run values."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_defaulted_parameter.with_options(
+        parameters={"value": "configured"}
+    ).replay(
+        pipeline_run=original_run.id,
+        input_overrides={"expected_value": "configured"},
+    )
+
+
 def pipeline_function_definition() -> None:
     producer()
 
