@@ -616,6 +616,33 @@ class Pipeline:
         return self
 
     @property
+    def parameters(self) -> List[str]:
+        """List of parameters for the pipeline entrypoint.
+
+        Returns:
+            List of parameters for the pipeline entrypoint.
+        """
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return [
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.kind is not inspect.Parameter.VAR_KEYWORD
+        ]
+
+    @property
+    def accepts_arbitrary_parameters(self) -> bool:
+        """Whether the pipeline entrypoint accepts arbitrary parameters.
+
+        Returns:
+            Whether the pipeline entrypoint accepts arbitrary parameters.
+        """
+        signature = inspect.signature(self.entrypoint, follow_wrapped=True)
+        return any(
+            parameter.kind is inspect.Parameter.VAR_KEYWORD
+            for parameter in signature.parameters.values()
+        )
+
+    @property
     def required_parameters(self) -> List[str]:
         """List of required parameters for the pipeline entrypoint.
 
@@ -2010,12 +2037,23 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if params_from_file := self._from_config_file.get("parameters", None):
             configured_parameters.update(params_from_file)
 
+        dropped_parameters: Set[str] = set()
+        if not self.accepts_arbitrary_parameters:
+            dropped_parameters = set(original_parameters) - set(
+                self.parameters
+            )
+        if dropped_parameters:
+            logger.warning(
+                "Ignoring parameters of the original run that the pipeline "
+                f"`{self.name}` does not accept anymore: {dropped_parameters}."
+            )
+
         # Only include pipeline parameters of the original run for inputs that
-        # the user didn't provide a value for.
+        # the user didn't provide a value for and that the entrypoint accepts.
         inputs = {
             k: v
             for k, v in original_parameters.items()
-            if k not in configured_parameters
+            if k not in configured_parameters and k not in dropped_parameters
         }
 
         if input_overrides:
