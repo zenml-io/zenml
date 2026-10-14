@@ -423,8 +423,6 @@ class StepLauncher:
                 step_run_info
             )
 
-        # Preserve output data on failure: artifact registration or completion
-        # may have succeeded even if the server response was lost.
         if self._step.config.step_operator:
             step_operator_name = None
             if isinstance(self._step.config.step_operator, str):
