@@ -18,7 +18,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.97.0"
+version = "0.98.0"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -88,7 +88,7 @@ server = [
     "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]>=2.13.0,<2.14.0",
+    "pyjwt[crypto]>=2.15.1,<2.16.0",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -433,6 +433,8 @@ module = [
     "runai.*",
     "truss.*",
     "truss_train.*",
+    "typesafe_sdk",
+    "typesafe_sdk.*",
     "jsonref",
 ]
 ignore_missing_imports = true
