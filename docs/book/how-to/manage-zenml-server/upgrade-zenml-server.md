@@ -5,6 +5,11 @@ description: >-
 icon: circle-arrow-up
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Upgrading ZenML
 
 The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. Before you upgrade, check out the [best practices for upgrading ZenML](best-practices-upgrading-zenml.md) guide.

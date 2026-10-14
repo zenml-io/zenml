@@ -3,6 +3,11 @@ description: >-
   Learn how to control and customize logging behavior in ZenML pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Logging
 
 By default, ZenML uses a logging handler to capture two types of logs:

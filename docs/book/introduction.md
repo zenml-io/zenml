@@ -14,6 +14,11 @@ layout:
     visible: false
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Welcome to ZenML
 
 ZenML is an open-source framework for orchestrating production ML and LLM pipelines, including pipelines that run agentic workloads.

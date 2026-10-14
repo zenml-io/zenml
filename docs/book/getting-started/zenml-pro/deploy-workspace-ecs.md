@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hybrid Deployment on AWS ECS
 
 This guide provides high-level instructions for deploying ZenML Pro in a Hybrid setup on AWS ECS (Elastic Container Service).

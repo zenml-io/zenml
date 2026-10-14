@@ -2,6 +2,11 @@
 description: Get started with finetuning LLMs by picking a use case and data.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Starter choices for finetuning LLMs
 
 Finetuning large language models can be a powerful way to tailor their

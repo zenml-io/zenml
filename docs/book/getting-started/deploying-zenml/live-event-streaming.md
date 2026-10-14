@@ -2,6 +2,11 @@
 description: Enable live event streaming on the ZenML server and consume the HTTP/SSE feed.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Live event streaming
 
 ZenML can send events published from inside a pipeline run to any HTTP
