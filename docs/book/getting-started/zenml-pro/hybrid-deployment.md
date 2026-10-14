@@ -5,6 +5,11 @@ description: >-
 icon: building-shield
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hybrid SaaS Deployment
 
 ZenML Pro Hybrid SaaS offers the perfect balance between control and convenience. While ZenML manages user authentication and RBAC through a cloud-hosted control plane, all your data, metadata, and workspaces run securely within your own infrastructure.

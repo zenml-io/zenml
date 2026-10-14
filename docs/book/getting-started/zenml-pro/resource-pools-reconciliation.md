@@ -3,6 +3,11 @@ description: >-
   How resource pool reconciliation, queueing, accounting, preemption, and lease
   management work at runtime.
 ---
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
 # Reconciliation process
 
 This page explains what happens after a dynamic step or external caller creates

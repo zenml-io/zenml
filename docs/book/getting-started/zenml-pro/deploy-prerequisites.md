@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Self-hosted Deployment Prerequisites and Preparation
 
 This page outlines the general infrastructure requirements and preparation steps for deploying ZenML Pro components (control plane or workspace servers) in a self-hosted environment. These prerequisites apply regardless of the specific deployment method you choose. After reviewing these requirements and collecting the necessary artifacts and information, proceed to the deployment guide for your chosen component and infrastructure type.

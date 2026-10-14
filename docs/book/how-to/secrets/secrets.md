@@ -3,6 +3,11 @@ description: Registering and using secrets.
 icon: user-secret
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Secrets
 
 ZenML secrets are groupings of **key-value pairs** which are securely stored in the ZenML secrets store. Additionally, a secret always has a **name** that allows you to fetch or reference them in your pipelines and stacks. Secrets are essential for both traditional ML workflows (database credentials, model registry access) and AI agent development (LLM API keys, third-party service credentials).

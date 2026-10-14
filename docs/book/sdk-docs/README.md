@@ -2,6 +2,11 @@
 description: Reference hub for the ZenML and Kitaru SDKs and CLIs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Overview
 
 ZenML and Kitaru each provide SDKs for working with their APIs:

@@ -2,6 +2,11 @@
 description: Understanding and creating materializers to handle custom data types in ZenML pipelines
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Materializers
 
 Materializers are a core concept in ZenML that enable the serialization, storage, and retrieval of artifacts in your ML pipelines. This guide explains how materializers work and how to create custom materializers for your specific data types.

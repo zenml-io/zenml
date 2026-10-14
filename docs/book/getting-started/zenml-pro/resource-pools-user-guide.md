@@ -3,6 +3,11 @@ description: >-
   How pipeline authors request pooled resources with ResourceSettings and
   inspect Resource Manager requests.
 ---
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
 # User guide
 
 This guide is for pipeline authors. Platform admins configure descriptors,
