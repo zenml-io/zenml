@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import ExitStack as does_not_raise
-from typing import Tuple
+from typing import Any, Tuple
 
 from typing_extensions import Annotated
 
@@ -209,6 +209,42 @@ def test_replay_prefers_configured_parameters():
     ).replay(
         pipeline_run=original_run.id,
         input_overrides={"expected_value": "configured"},
+    )
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_removed_parameter(expected_value: str) -> None:
+    defaulted_parameter_consumer(
+        value="original", expected_value=expected_value
+    )
+
+
+def test_replay_ignores_removed_parameters():
+    """Tests that replaying ignores parameters the entrypoint no longer has."""
+    original_run = replay_pipeline_with_defaulted_parameter(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_removed_parameter.replay(pipeline_run=original_run.id)
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_arbitrary_parameters(
+    expected_value: str, **kwargs: Any
+) -> None:
+    defaulted_parameter_consumer(
+        value=kwargs["value"], expected_value=expected_value
+    )
+
+
+def test_replay_forwards_arbitrary_parameters():
+    """Tests that replaying forwards parameters of a `**kwargs` entrypoint."""
+    original_run = replay_pipeline_with_arbitrary_parameters(
+        expected_value="original", value="original"
+    )
+
+    replay_pipeline_with_arbitrary_parameters.replay(
+        pipeline_run=original_run.id
     )
 
 
