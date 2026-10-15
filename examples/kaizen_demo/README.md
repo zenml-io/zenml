@@ -1,6 +1,6 @@
 # Inventory and customer operations
 
-This example contains inventory reporting, customer conversion scoring, warehouse replenishment planning, a deployed customer risk service, customer retention model evaluation, customer segment training, and historical bike demand prediction. Runs retain their input and output artifacts, execution configuration, and operational metrics in the connected ZenML project.
+This example contains inventory reporting, customer conversion scoring, warehouse replenishment planning, a deployed customer risk service, customer retention model evaluation, customer segment training, historical bike demand prediction, and an operations command center. Runs retain their input and output artifacts, execution configuration, and operational metrics in the connected ZenML project.
 
 ## Setup
 
@@ -95,6 +95,16 @@ python run.py train-segments --cpu-count 4
 ```
 
 Use `--sample-count` and `--random-seed` to configure the synthetic dataset. Resource pool admission requires a configured ZenML Pro pool and a policy associated with the execution component. The requested CPU and memory must fit that policy. Inspect the step's resource request and status reason in the workspace when diagnosing admission or allocation. Pool APIs differ between ZenML versions; use the API supported by the connected server.
+
+## Operations command center
+
+The command center fans out three reproducible signals—inventory health, customer demand momentum, and warehouse capacity—then joins them into a prioritized action board and a self-contained HTML dashboard. The three signal steps can be cached independently while the final board is intentionally fresh, making it a useful pattern for operational snapshots.
+
+```bash
+python run.py command-center
+```
+
+The dashboard is an artifact named `operations_command_center`; the structured `operations_summary` and `operations_actions` artifacts make the result easy to query without parsing HTML. The data is synthetic and demonstrates orchestration, fan-out/fan-in, metadata, typed artifacts, and a visual report in one pipeline.
 
 ## Bike demand prediction
 
