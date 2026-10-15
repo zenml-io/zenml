@@ -29,6 +29,7 @@ from scenario_05.pipelines import (
 from scenario_06.pipeline import customer_segment_training
 from scenario_07.data import SOURCE_URI, TRAINING_PIPELINE
 from scenario_07.pipelines import bike_demand_scoring, bike_demand_training
+from scenario_08.pipeline import operations_command_center
 
 from zenml import Model
 from zenml.client import Client
@@ -96,6 +97,15 @@ def main() -> None:
         "score-bikes",
         help="Score a historical day with an exact training run.",
     )
+    command_center = commands.add_parser(
+        "command-center",
+        help="Build an operations command center dashboard.",
+    )
+    command_center.add_argument("--item-count", type=int, default=24)
+    command_center.add_argument("--segment-count", type=int, default=5)
+    command_center.add_argument("--warehouse-count", type=int, default=3)
+    command_center.add_argument("--seed", type=int, default=2026)
+    command_center.add_argument("--reorder-level", type=int, default=30)
     bike_scoring.add_argument("--training-run-id", type=UUID, required=True)
     bike_scoring.add_argument("--scoring-date", default="2012-10-15")
     for command in (bike_training, bike_scoring):
@@ -111,6 +121,7 @@ def main() -> None:
         segments,
         bike_training,
         bike_scoring,
+        command_center,
     ):
         command.add_argument("--run-name", help="Name for this execution.")
         command.add_argument("--no-cache", action="store_true")
@@ -155,6 +166,14 @@ def main() -> None:
             cpu_count=args.cpu_count,
             sample_count=args.sample_count,
             random_seed=args.random_seed,
+        )
+    elif args.command == "command-center":
+        run = operations_command_center.with_options(**options)(
+            item_count=args.item_count,
+            segment_count=args.segment_count,
+            warehouse_count=args.warehouse_count,
+            seed=args.seed,
+            reorder_level=args.reorder_level,
         )
     elif args.command == "train-bikes":
         options["model"] = Model(
