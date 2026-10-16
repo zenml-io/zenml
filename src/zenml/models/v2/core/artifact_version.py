@@ -39,7 +39,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
     FilterGenerator,
     IntegerFilterOption,
@@ -618,7 +618,10 @@ class ArtifactVersionFilter(
         union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
-        default=False, description="Filter only for unused artifacts"
+        default=False,
+        description="Filter only for artifact versions that are not "
+        "referenced by any other ZenML entity, i.e. by no step input or "
+        "output, pipeline output, hook output, or model version.",
     )
     has_custom_name: Optional[bool] = Field(
         default=None,
@@ -787,7 +790,7 @@ class ArtifactVersionFilter(
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, select
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             ArtifactSchema,
@@ -795,8 +798,6 @@ class ArtifactVersionFilter(
             ModelSchema,
             ModelVersionArtifactSchema,
             ModelVersionSchema,
-            StepRunInputArtifactSchema,
-            StepRunOutputArtifactSchema,
         )
 
         if self.artifact:
@@ -817,15 +818,7 @@ class ArtifactVersionFilter(
                 )
 
         if self.only_unused:
-            unused_filter = and_(
-                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                    select(StepRunOutputArtifactSchema.artifact_id)
-                ),
-                ArtifactVersionSchema.id.notin_(  # type: ignore[attr-defined]
-                    select(StepRunInputArtifactSchema.artifact_id)
-                ),
-            )
-            custom_filters.append(unused_filter)
+            custom_filters.append(ArtifactVersionSchema.unused_filter())
 
         if self.model_version_id:
             model_version_filters = (
@@ -944,3 +937,64 @@ class LazyArtifactVersionResponse(ArtifactVersionResponse):
             self.lazy_load_name,
             self.lazy_load_version,
         )
+
+
+class ArtifactVersionPruneRequest(BaseZenModel):
+    """Request model for pruning unused artifact versions."""
+
+    project: UUID = Field(
+        description="The project whose unused artifact versions are pruned.",
+    )
+    only_versions: bool = Field(
+        default=True,
+        description="Whether to keep artifacts that are left without "
+        "versions.",
+    )
+    delete_metadata: bool = Field(
+        default=True,
+        description="Whether to delete the artifact versions from the "
+        "database.",
+    )
+    delete_from_artifact_store: bool = Field(
+        default=False,
+        description="Whether to delete the artifact data from the artifact "
+        "store.",
+    )
+    apply: bool = Field(
+        default=False,
+        description="Whether to prune. If false, the unused artifact "
+        "versions are only counted.",
+    )
+
+    @model_validator(mode="after")
+    def _require_something_to_delete(self) -> "ArtifactVersionPruneRequest":
+        """Reject a request that deletes neither metadata nor data.
+
+        Returns:
+            The validated request.
+
+        Raises:
+            ValueError: If neither metadata nor data is to be deleted.
+        """
+        if not self.delete_metadata and not self.delete_from_artifact_store:
+            raise ValueError(
+                "Nothing to prune: the request deletes neither the metadata "
+                "nor the data of the artifact versions."
+            )
+        return self
+
+
+class ArtifactVersionPruneResponse(BaseZenModel):
+    """Response model for pruning unused artifact versions."""
+
+    artifact_version_count: Optional[int] = Field(
+        default=None,
+        description="The number of unused artifact versions for a dry run, "
+        "or the number of pruned artifact versions. Unset if pruning was "
+        "scheduled in the background.",
+    )
+    task_id: Optional[str] = Field(
+        default=None,
+        description="ID of the background task pruning the artifact "
+        "versions. Only set if pruning was scheduled in the background.",
+    )
