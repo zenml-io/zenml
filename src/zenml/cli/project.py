@@ -209,6 +209,66 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
 
 
+@project.command("update")
+@click.argument("project_name_or_id", type=str, required=True)
+@click.option(
+    "--name",
+    type=str,
+    default=None,
+    help="New unique project name used by the CLI and SDK. Existing URLs using "
+    "the old name may stop working.",
+)
+@click.option(
+    "--display-name",
+    type=str,
+    default=None,
+    help="New display name of the project.",
+)
+@click.option(
+    "--description",
+    type=str,
+    default=None,
+    help="New description of the project. Pass an empty string to clear it.",
+)
+def update_project(
+    project_name_or_id: str,
+    name: Optional[str] = None,
+    display_name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> None:
+    """Update a project's name, display name, or description.
+
+    Args:
+        project_name_or_id: The current name or ID of the project to update.
+        name: New unique name of the project.
+        display_name: New display name of the project.
+        description: New description of the project.
+
+    Raises:
+        click.UsageError: If no update options are provided.
+    """
+    if name is None and display_name is None and description is None:
+        raise click.UsageError(
+            "Provide at least one of --name, --display-name, or --description."
+        )
+
+    client = Client()
+    with console.status("Updating project...\n"):
+        try:
+            updated_project = client.update_project(
+                name_id_or_prefix=project_name_or_id,
+                new_name=name,
+                new_display_name=display_name,
+                new_description=description,
+            )
+        except Exception as e:
+            cli_utils.exception(e)
+        else:
+            cli_utils.success(
+                f"Project '{updated_project.name}' updated successfully."
+            )
+
+
 @project.command("delete")
 @click.argument("project_name_or_id", type=str, required=True)
 def delete_project(project_name_or_id: str) -> None:
