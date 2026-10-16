@@ -30,6 +30,18 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
   workflow_dispatch:
     inputs:
       os:
@@ -82,6 +94,18 @@ on:
         type: number
         required: false
         default: 3
+      shards:
+        description: JSON list with one entry per shard the tests are split into.
+          Example '[1, 2, 3]'
+        type: string
+        required: false
+        default: '[1, 2, 3, 4, 5, 6]'
+      lanes:
+        description: Number of test processes to run side by side in each shard, to
+          use CPU cores a single process leaves idle. Example 2
+        type: string
+        required: false
+        default: '1'
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -90,10 +114,11 @@ jobs:
   integration-tests-fast:
     name: integration-tests-fast
     runs-on: ${{ inputs.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(inputs.shards) }}
     env:
       ZENML_ENABLE_RICH_TRACEBACK: false
       WHYLOGS_NO_ANALYTICS: 'True'
@@ -117,19 +142,6 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Free disk space (Ubuntu)
-        if: inputs.os == 'ubuntu-latest'
-        run: |
-          set -euxo pipefail
-          echo "Before cleanup:"
-          df -h
-          sudo rm -rf /usr/share/dotnet || true
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-          sudo docker image prune --all --force || true
-          echo "After cleanup:"
-          df -h
       - name: Set uv cache + temp dirs (/opt)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -170,14 +182,8 @@ jobs:
           sudo rm -rf /var/lib/docker/* || true
           sudo systemctl start docker
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Restore uv cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
-        with:
-          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
-          key: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+      - name: Free disk space
+        uses: $/.github/actions/free_disk_space
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
         with:
@@ -288,12 +294,14 @@ jobs:
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
-        # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
-          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} "${SHARD_COUNT}" "${SHARD}"
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          SHARD_COUNT: ${{ strategy.job-total }}
+          SHARD: ${{ matrix.shard }}
+          TEST_LANES: ${{ inputs.lanes }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
