@@ -767,6 +767,10 @@ def generate_dockerfile(
     )
 
     lines = [f"FROM {parent_image}"]
+    lines.append(
+        "RUN apt-get update && apt-get upgrade -y "
+        "&& rm -rf /var/lib/apt/lists/*"
+    )
     if apt_packages:
         apt_packages_string = " ".join(f"'{p}'" for p in apt_packages)
         lines.append(
