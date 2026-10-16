@@ -27,6 +27,9 @@ If you want to delete a specific pipeline run, you can use a script like this:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
+This also deletes the metadata that only this run referenced, see
+[Deleting Metadata](../../how-to/metadata/metadata.md#deleting-metadata).
+
 If you want to delete all pipeline runs in the last 24 hours, for example, you\
 could run a script like this:
 
