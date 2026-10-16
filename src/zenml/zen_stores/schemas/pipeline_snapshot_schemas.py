@@ -14,7 +14,16 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
@@ -42,6 +51,12 @@ from zenml.models import (
     PipelineSnapshotUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.payload_storage import (
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    PayloadColumn,
+    collect_payload_blob_ids,
+)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -133,6 +148,29 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     code_path: Optional[str] = Field(nullable=True)
     execution_mode: Optional[str] = Field(nullable=True, default=None)
     enable_heartbeat: Optional[bool] = Field(nullable=True, default=None)
+
+    # Not foreign keys, so that adding these columns to this large table
+    # never copies it.
+    pipeline_configuration_blob_id: Optional[UUID] = None
+    client_environment_blob_id: Optional[UUID] = None
+    pipeline_spec_blob_id: Optional[UUID] = None
+    source_code_blob_id: Optional[UUID] = None
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(
+            name="pipeline_configuration",
+            nullable=False,
+        ),
+        PayloadColumn(
+            name="client_environment",
+            nullable=False,
+        ),
+        PayloadColumn(
+            name="pipeline_spec",
+            nullable=True,
+        ),
+        PayloadColumn(name="source_code", nullable=True),
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -310,8 +348,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """Get step configurations for the snapshot.
 
         Args:
-            include: List of step names to include. If not given, all step
-                configurations will be included.
+            include: The names of the steps to include, or None for all of
+                them.
 
         Raises:
             RuntimeError: If no session for the schema exists.
@@ -319,6 +357,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             List of step configurations.
         """
+        if include == []:
+            return []
         if session := object_session(self):
             query = (
                 select(StepConfigurationSchema)
@@ -326,7 +366,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 .order_by(asc(StepConfigurationSchema.index))
             )
 
-            if include:
+            if include is not None:
                 query = query.where(
                     col(StepConfigurationSchema.name).in_(include)
                 )
@@ -358,6 +398,100 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             )
         return step_configs[0]
 
+    def _should_build_config_template(
+        self, include_config_schema: Optional[bool]
+    ) -> bool:
+        """Whether a conversion builds the config template and schema.
+
+        They are built from every step configuration, so such a conversion
+        reads them all, whatever step configurations it returns.
+
+        Args:
+            include_config_schema: Whether to include the config schema, as
+                passed to `to_model`.
+
+        Returns:
+            Whether the conversion builds them.
+        """
+        return bool(
+            include_config_schema and self.build and self.build.stack_id
+        )
+
+    def get_required_run_payload_blob_ids(self) -> List[Optional[UUID]]:
+        """Get the blobs of this snapshot that conversions of its runs read.
+
+        Returns:
+            The blob IDs.
+        """
+        return [
+            self.pipeline_configuration_blob_id,
+            self.client_environment_blob_id,
+        ]
+
+    def get_required_payload_blob_ids(
+        self,
+        step_configuration_filter: Optional[List[str]] = None,
+        include_config_schema: Optional[bool] = None,
+    ) -> List[Optional[UUID]]:
+        """Get the blobs that converting this snapshot with metadata reads.
+
+        Args:
+            step_configuration_filter: The step configurations to include, as
+                passed to `to_model`.
+            include_config_schema: Whether to include the config schema, as
+                passed to `to_model`.
+
+        Returns:
+            The blob IDs.
+        """
+        return self.get_required_page_payload_blob_ids(
+            [self],
+            include=None
+            if self._should_build_config_template(include_config_schema)
+            else step_configuration_filter,
+        )
+
+    @staticmethod
+    def get_required_page_payload_blob_ids(
+        snapshots: Sequence["PipelineSnapshotSchema"],
+        include: Optional[List[str]] = None,
+    ) -> List[Optional[UUID]]:
+        """Get the blobs that converting a page of snapshots reads.
+
+        Like `get_required_payload_blob_ids` for each snapshot of a page, with
+        metadata, but with one query for the whole page.
+
+        Args:
+            snapshots: The snapshots of the page.
+            include: The names of the steps whose configurations are
+                converted, or None for all of them, as in
+                `get_step_configurations`.
+
+        Raises:
+            RuntimeError: If no session for the schemas exists.
+
+        Returns:
+            The blob IDs.
+        """
+        if not snapshots:
+            return []
+        blob_ids = collect_payload_blob_ids(*snapshots)
+        if include == []:
+            return blob_ids
+        if session := object_session(snapshots[0]):
+            query = select(StepConfigurationSchema.config_blob_id).where(
+                col(StepConfigurationSchema.snapshot_id).in_(
+                    [snapshot.id for snapshot in snapshots]
+                )
+            )
+            if include is not None:
+                query = query.where(
+                    col(StepConfigurationSchema.name).in_(include)
+                )
+            return [*blob_ids, *session.execute(query).scalars()]
+
+        raise RuntimeError("Missing DB session to fetch step configurations.")
+
     def get_upstream_steps(self) -> Optional[Dict[str, List[str]]]:
         """Get the upstream steps of each step of the snapshot.
 
@@ -371,10 +505,13 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         # Snapshots created before the control columns existed have no
         # execution mode and only store the step graph in the pipeline spec.
         if self.execution_mode is None:
-            if not self.pipeline_spec:
+            pipeline_spec_json = INLINE_ONLY_PAYLOADS.resolve(
+                self.pipeline_spec, self.pipeline_spec_blob_id
+            )
+            if not pipeline_spec_json:
                 return None
             pipeline_spec = PipelineSpec.model_validate_json(
-                self.pipeline_spec
+                pipeline_spec_json
             )
             return {
                 step_spec.invocation_id: step_spec.upstream_steps
@@ -574,8 +711,15 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.enable_heartbeat is not None:
             return self.enable_heartbeat
 
+        # Snapshots without the control columns still hold their payloads
+        # inline, so this never loads a payload.
         return self._resolve_enable_heartbeat(
-            json.loads(self.pipeline_configuration).get("enable_heartbeat")
+            json.loads(
+                INLINE_ONLY_PAYLOADS.resolve(
+                    self.pipeline_configuration,
+                    self.pipeline_configuration_blob_id,
+                )
+            ).get("enable_heartbeat")
         )
 
     def get_execution_mode(self) -> ExecutionMode:
@@ -587,9 +731,25 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.execution_mode is not None:
             return ExecutionMode(self.execution_mode)
 
+        return self.get_pipeline_configuration().execution_mode
+
+    def get_pipeline_configuration(
+        self, payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS
+    ) -> PipelineConfiguration:
+        """Get the pipeline configuration of this snapshot.
+
+        Args:
+            payloads: The loaded payloads.
+
+        Returns:
+            The pipeline configuration.
+        """
         return PipelineConfiguration.model_validate_json(
-            self.pipeline_configuration
-        ).execution_mode
+            payloads.resolve(
+                self.pipeline_configuration,
+                self.pipeline_configuration_blob_id,
+            )
+        )
 
     @property
     def is_runnable(self) -> bool:
@@ -611,6 +771,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         include_python_packages: bool = False,
         include_config_schema: Optional[bool] = None,
         step_configuration_filter: Optional[List[str]] = None,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
         **kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Convert schema to response.
@@ -623,6 +784,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             step_configuration_filter: List of step configurations to include in
                 the response. If not given, all step configurations will be
                 included.
+            payloads: The loaded payloads, required to include
+                the metadata of a snapshot whose payloads are offloaded.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -644,9 +807,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
         metadata = None
         if include_metadata:
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
+            pipeline_configuration = self.get_pipeline_configuration(payloads)
             step_configurations = {}
             for step_configuration in self.get_step_configurations(
                 include=step_configuration_filter
@@ -655,20 +816,26 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     step_configuration.to_step(
                         pipeline_configuration,
                         exclude_hook_sources=self.is_dynamic,
+                        payloads=payloads,
                     )
                 )
 
-            client_environment = json.loads(self.client_environment)
+            client_environment = json.loads(
+                payloads.resolve(
+                    self.client_environment,
+                    self.client_environment_blob_id,
+                )
+            )
             if not include_python_packages:
                 client_environment.pop("python_packages", None)
 
             config_template = None
             config_schema = None
 
-            if include_config_schema and self.build and self.build.stack_id:
+            if self._should_build_config_template(include_config_schema):
                 from zenml.zen_stores import template_utils
 
-                if step_configuration_filter:
+                if step_configuration_filter is not None:
                     # If only a subset of step configurations is requested,
                     # we still need to get all of them to generate the config
                     # template and schema
@@ -676,6 +843,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         step_configuration.name: step_configuration.to_step(
                             pipeline_configuration,
                             exclude_hook_sources=self.is_dynamic,
+                            payloads=payloads,
                         )
                         for step_configuration in self.get_step_configurations()
                     }
@@ -693,9 +861,14 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     step_configurations=all_step_configurations,
                 )
 
+            pipeline_spec_json = payloads.resolve(
+                self.pipeline_spec, self.pipeline_spec_blob_id
+            )
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
-                source_code=self.source_code,
+                source_code=payloads.resolve(
+                    self.source_code, self.source_code_blob_id
+                ),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
@@ -704,9 +877,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 server_version=self.server_version,
                 pipeline_version_hash=self.pipeline_version_hash,
                 pipeline_spec=PipelineSpec.model_validate_json(
-                    self.pipeline_spec
+                    pipeline_spec_json
                 )
-                if self.pipeline_spec
+                if pipeline_spec_json
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
@@ -806,6 +979,11 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ),
         default=None,
     )
+    config_blob_id: Optional[UUID] = None
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="config", nullable=False),
+    )
 
     snapshot_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -824,10 +1002,27 @@ class StepConfigurationSchema(BaseSchema, table=True):
         nullable=True,
     )
 
+    def get_config(
+        self, payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS
+    ) -> Dict[str, Any]:
+        """Get the stored step configuration, not merged with any other.
+
+        Args:
+            payloads: The loaded payloads.
+
+        Returns:
+            The stored configuration.
+        """
+        config: Dict[str, Any] = json.loads(
+            payloads.resolve(self.config, self.config_blob_id)
+        )
+        return config
+
     def to_step(
         self,
         pipeline_configuration: PipelineConfiguration,
         exclude_hook_sources: bool,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
     ) -> Step:
         """Resolve the stored step configuration.
 
@@ -839,12 +1034,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
                 snapshot.
             exclude_hook_sources: Whether to skip propagating the pipeline's
                 lifecycle hook sources to the step.
+            payloads: The loaded payloads.
 
         Returns:
             The resolved step.
         """
         return Step.from_dict(
-            json.loads(self.config),
+            self.get_config(payloads),
             pipeline_configuration=pipeline_configuration,
             exclude_hook_sources=exclude_hook_sources,
         )

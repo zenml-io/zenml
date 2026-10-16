@@ -25,7 +25,7 @@ import shutil
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Generator, List, Optional, Tuple
 
 import pytest
 
@@ -36,6 +36,91 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH, ENV_ZENML_DEBUG
 from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
+
+if TYPE_CHECKING:
+    from moto.server import ThreadedMotoServer
+
+
+def start_local_s3(bucket: str) -> "ThreadedMotoServer":
+    """Start a local S3 server (moto) with an empty bucket.
+
+    Args:
+        bucket: The bucket to create.
+
+    Returns:
+        The running server.
+    """
+    from moto.server import ThreadedMotoServer
+
+    server = ThreadedMotoServer(ip_address="127.0.0.1", port=0, verbose=False)
+    server.start()
+    local_s3_client(server).create_bucket(Bucket=bucket)
+    return server
+
+
+def _local_s3_endpoint(server: "ThreadedMotoServer") -> str:
+    """Get the endpoint URL of a local S3 server.
+
+    Args:
+        server: The server.
+
+    Returns:
+        The endpoint URL.
+    """
+    host, port = server.get_host_and_port()
+    return f"http://{host}:{port}"
+
+
+def local_s3_client(server: "ThreadedMotoServer") -> Any:
+    """Get a boto3 client of a local S3 server.
+
+    Args:
+        server: The server.
+
+    Returns:
+        The client.
+    """
+    import boto3
+
+    return boto3.client(
+        "s3",
+        endpoint_url=_local_s3_endpoint(server),
+        region_name="us-east-1",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    )
+
+
+def local_s3_payload_storage_env_value(
+    server: "ThreadedMotoServer", path: str
+) -> str:
+    """Get payload storage settings that offload every payload to local S3.
+
+    Args:
+        server: The local S3 server.
+        path: Where blobs are written, such as `s3://payloads/tests`.
+
+    Returns:
+        The settings, as the JSON value of `ZENML_STORE_PAYLOAD_STORAGE`.
+    """
+    from zenml.zen_stores.payload_storage import (
+        BlobBackendType,
+        PayloadStorageConfiguration,
+    )
+
+    return PayloadStorageConfiguration(
+        offload_enabled=True,
+        backend=BlobBackendType.S3,
+        backend_config={
+            "path": path,
+            "key": "test",
+            "secret": "test",
+            "client_kwargs": {
+                "endpoint_url": _local_s3_endpoint(server),
+                "region_name": "us-east-1",
+            },
+        },
+    ).model_dump_json()
 
 
 def cleanup_folder(path: str) -> None:

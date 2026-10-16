@@ -30,6 +30,8 @@ from tests.harness.utils import (
     clean_default_client_session,
     clean_project_session,
     environment_session,
+    local_s3_payload_storage_env_value,
+    start_local_s3,
 )
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifact_stores.local_artifact_store import (
@@ -37,7 +39,10 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
+from zenml.constants import (
+    ENV_ZENML_CUSTOM_SOURCE_ROOT,
+    ENV_ZENML_STORE_PREFIX,
+)
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -53,13 +58,49 @@ from zenml.utils import source_utils
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 
+# Offloading payloads is off by default, so the suites only cover payloads kept
+# in their rows. With `ZENML_TEST_PAYLOAD_STORAGE_BACKEND=s3`, every store of
+# the session offloads its payloads to a local S3 server instead.
+TEST_PAYLOAD_STORAGE_BACKEND_ENV = "ZENML_TEST_PAYLOAD_STORAGE_BACKEND"
 
-def pytest_configure() -> None:
-    """Prevent the macOS OpenMP preload from reaching child processes."""
+
+def _offload_payloads_to_local_s3(config: pytest.Config) -> None:
+    """Start a local S3 server and offload every payload of the session to it.
+
+    Args:
+        config: The pytest configuration, which stops the server at the end.
+    """
+    server = start_local_s3("payloads")
+    config.add_cleanup(server.stop)
+    # Set before any store exists, so every store of the session, and the
+    # processes it starts, offloads.
+    os.environ[f"{ENV_ZENML_STORE_PREFIX}PAYLOAD_STORAGE"] = (
+        local_s3_payload_storage_env_value(server, "s3://payloads/tests")
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Prepare the process environment of the test session.
+
+    Args:
+        config: The pytest configuration.
+
+    Raises:
+        pytest.UsageError: If the payload storage to test is unknown.
+    """
     # macOS consumes this variable before Python starts. Child processes may
     # use a different architecture or load a different native library stack.
     if os.environ.get("PYTEST_DYLD_INSERT_LIBRARIES"):
         os.environ.pop("DYLD_INSERT_LIBRARIES", None)
+
+    payload_storage = os.environ.get(TEST_PAYLOAD_STORAGE_BACKEND_ENV)
+    if payload_storage == "s3":
+        _offload_payloads_to_local_s3(config)
+    elif payload_storage:
+        raise pytest.UsageError(
+            f"{TEST_PAYLOAD_STORAGE_BACKEND_ENV} only supports `s3`, not "
+            f"`{payload_storage}`."
+        )
 
 
 def pytest_addoption(parser):

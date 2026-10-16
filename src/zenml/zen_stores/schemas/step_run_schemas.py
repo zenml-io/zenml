@@ -15,7 +15,16 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -49,6 +58,13 @@ from zenml.models.v2.core.step_run import (
     StepRunResponseResources,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.payload_storage import (
+    INLINE_ONLY_PAYLOADS,
+    LoadedPayloads,
+    PayloadColumn,
+    PayloadValue,
+    collect_payload_blob_ids,
+)
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -118,6 +134,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     cache_expires_at: Optional[datetime] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code_blob_id: Optional[UUID] = None
+    docstring_blob_id: Optional[UUID] = None
     code_hash: Optional[str] = Field(nullable=True)
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
@@ -141,6 +159,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
         default=None,
     )
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="source_code", nullable=True),
+        PayloadColumn(name="docstring", nullable=True),
+    )
+
     # Foreign keys
     original_step_run_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -297,6 +321,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         options = [
             single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
                 jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration_blob_id),
                 jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
             single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
@@ -395,8 +420,61 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             else None,
         )
 
+    @staticmethod
+    def get_request_payload_values(
+        request: StepRunRequest,
+    ) -> List[PayloadValue]:
+        """Get the payload values of a step run request.
+
+        Args:
+            request: The step run request.
+
+        Returns:
+            The payload values, as `from_request` stores them.
+        """
+        return [
+            PayloadValue(text=text)
+            for text in (request.source_code, request.docstring)
+            if text is not None
+        ]
+
+    def get_required_payload_blob_ids(self) -> List[Optional[UUID]]:
+        """Get the blobs that converting this step run with metadata reads.
+
+        Returns:
+            The blob IDs.
+        """
+        return [
+            *collect_payload_blob_ids(self),
+            *self.get_step_configuration_blob_ids(
+                self.dynamic_config or self.static_config, self.snapshot
+            ),
+        ]
+
+    @staticmethod
+    def get_step_configuration_blob_ids(
+        config_schema: Optional["StepConfigurationSchema"],
+        snapshot: Optional["PipelineSnapshotSchema"],
+    ) -> List[Optional[UUID]]:
+        """Get the blobs that resolving a step's configuration reads.
+
+        Args:
+            config_schema: The step's static or dynamic configuration.
+            snapshot: The snapshot of the step's run, whose pipeline
+                configuration the step configuration is merged with.
+
+        Returns:
+            The blob IDs.
+        """
+        return [
+            config_schema.config_blob_id if config_schema else None,
+            snapshot.pipeline_configuration_blob_id if snapshot else None,
+        ]
+
     def get_step_configuration(
-        self, pipeline_configuration: Optional[PipelineConfiguration] = None
+        self,
+        pipeline_configuration: Optional[PipelineConfiguration] = None,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
     ) -> Step:
         """Get the step configuration for the step run.
 
@@ -404,6 +482,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
                 if the caller already parsed it.
+            payloads: The loaded payloads.
 
         Raises:
             ValueError: If the step run has no step configuration.
@@ -417,9 +496,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if config_schema := (self.dynamic_config or self.static_config):
                 if pipeline_configuration is None:
                     pipeline_configuration = (
-                        PipelineConfiguration.model_validate_json(
-                            self.snapshot.pipeline_configuration
-                        )
+                        self.snapshot.get_pipeline_configuration(payloads)
                     )
                     pipeline_configuration.finalize_substitutions(
                         start_time=self.pipeline_run.substitution_time,
@@ -428,6 +505,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 step = config_schema.to_step(
                     pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
+                    payloads=payloads,
                 )
 
                 if input_overrides := (
@@ -473,6 +551,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         pipeline_configuration: Optional[PipelineConfiguration] = None,
+        payloads: LoadedPayloads = INLINE_ONLY_PAYLOADS,
         **kwargs: Any,
     ) -> StepRunResponse:
         """Convert a `StepRunSchema` to a `StepRunResponse`.
@@ -483,6 +562,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_configuration: The pipeline configuration of the run as
                 returned by `PipelineRunSchema.get_pipeline_configuration`,
                 if the caller already parsed it.
+            payloads: The loaded payloads, required to include
+                the metadata of a step run whose payloads are offloaded.
             **kwargs: Keyword arguments to allow schema specific logic
 
 
@@ -491,7 +572,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step: Optional[Step] = None
         if include_metadata or self.substitutions is None:
-            step = self.get_step_configuration(pipeline_configuration)
+            step = self.get_step_configuration(
+                pipeline_configuration, payloads
+            )
             step_type = step.config.step_type
             substitutions: Dict[str, str] = step.config.substitutions
         else:
@@ -517,15 +600,21 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         )
         metadata = None
         if include_metadata:
-            step = step or self.get_step_configuration(pipeline_configuration)
+            step = step or self.get_step_configuration(
+                pipeline_configuration, payloads
+            )
             metadata = StepRunResponseMetadata(
                 config=step.config,
                 spec=step.spec,
                 cache_key=self.cache_key,
                 cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
-                docstring=self.docstring,
-                source_code=self.source_code,
+                docstring=payloads.resolve(
+                    self.docstring, self.docstring_blob_id
+                ),
+                source_code=payloads.resolve(
+                    self.source_code, self.source_code_blob_id
+                ),
                 exception_info=ExceptionInfo.model_validate_json(
                     self.exception_info
                 )

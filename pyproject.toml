@@ -164,6 +164,8 @@ dev = [
     "pyment>=0.3.3,<0.4.0",
     "tox>=3.24.3",
     "hypothesis>=6.43.1",
+    # A local S3 server for the payload storage tests.
+    "moto[server]>=5.0.0,<6.0.0",
     "typing-extensions>=3.7.4",
     "pydoclint>=0.8.3",
     "pytest-randomly>=3.10.1,<4.0.0",

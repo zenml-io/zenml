@@ -107,6 +107,14 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  payload-storage-test:
+    needs: linting
+    if: github.event.pull_request.draft == false
+    uses: $/.github/workflows/payload-storage-test.yml
+    with:
+      python-version: '3.11'
+      os: ubuntu-latest
+    secrets: inherit
   ubuntu-latest-integration-test:
     needs: [linting]
     if: github.event.pull_request.draft == false

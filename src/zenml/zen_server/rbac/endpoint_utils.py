@@ -331,7 +331,8 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    model = get_method(id, True)
+    # Without metadata, so that deleting never needs payload storage.
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id, **delete_method_kwargs)
     delete_model_resource(model)
