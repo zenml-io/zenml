@@ -57,6 +57,9 @@ class ServerSettingsSchema(SQLModel, table=True):
         default=None,
         sa_column=Column(String(LOCATION_FINGERPRINT_LENGTH), nullable=True),
     )
+    payload_backfill_completed: Optional[datetime] = Field(
+        nullable=True, default=None
+    )
 
     def update(
         self, settings_update: ServerSettingsUpdate
