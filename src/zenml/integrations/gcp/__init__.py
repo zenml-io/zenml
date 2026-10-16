@@ -69,12 +69,7 @@ class GcpIntegration(Integration):
         "google-cloud-logging>=3.8.0",
         "kubernetes",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = [
-        "kubernetes",
-        "kfp",
-        "grpcio",
-        "google-api-core",
-    ]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "kfp", "grpcio"]
 
     @classmethod
     def activate(cls) -> None:
