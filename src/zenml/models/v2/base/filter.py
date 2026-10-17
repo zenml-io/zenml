@@ -983,16 +983,21 @@ class BaseFilter(BaseModel):
     ) -> "ColumnElement[bool]":
         """Generate filter conditions for name or id of a table.
 
+        For positive operators, an entity matches if any of the columns
+        matches the value. For negative operators, an entity only matches if
+        none of the columns match the value, so the conditions for the
+        individual columns are combined with AND instead of OR.
+
         Args:
             value: The filter value.
             table: The table to filter.
             additional_columns: Additional table columns that should also
-                filter for the given value as part of the or condition.
+                be filtered by the given value.
 
         Returns:
             The query conditions.
         """
-        from sqlmodel import or_
+        from sqlmodel import and_, or_
 
         value, operator = BaseFilter._resolve_operator(value)
         # For the `oneof` operator, the return value here will be a list which
@@ -1017,6 +1022,13 @@ class BaseFilter(BaseModel):
                 column=column, value=value, operator=operator
             )
             conditions.append(filter_.generate_query_conditions(table=table))
+
+        if operator in {
+            GenericFilterOps.NOT_EQUALS,
+            GenericFilterOps.NOT_CONTAINS,
+            GenericFilterOps.NOT_ONEOF,
+        }:
+            return and_(*conditions)
 
         return or_(*conditions)
 
