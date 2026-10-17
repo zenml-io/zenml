@@ -49,6 +49,41 @@ def test_next_occurrence_for_interval_standard_scenarios() -> None:
             "base": dt.datetime(2026, 1, 1, 9, 58, 0),
             "expected": dt.datetime(2026, 1, 1, 10, 0, 0),
         },
+        {
+            "name": "start with seconds keeps them on every occurrence",
+            "interval": 300,
+            "start": dt.datetime(2026, 1, 1, 10, 0, 30),
+            "base": dt.datetime(2026, 1, 1, 10, 7, 30),
+            "expected": dt.datetime(2026, 1, 1, 10, 10, 30),
+        },
+        {
+            "name": "start with seconds does not return an occurrence in the past",
+            "interval": 60,
+            "start": dt.datetime(2026, 1, 1, 10, 0, 30),
+            "base": dt.datetime(2026, 1, 1, 10, 5, 10),
+            "expected": dt.datetime(2026, 1, 1, 10, 5, 30),
+        },
+        {
+            "name": "base exactly on an occurrence with seconds returns next one",
+            "interval": 60,
+            "start": dt.datetime(2026, 1, 1, 10, 0, 30),
+            "base": dt.datetime(2026, 1, 1, 10, 5, 30),
+            "expected": dt.datetime(2026, 1, 1, 10, 6, 30),
+        },
+        {
+            "name": "hourly interval keeps the sub-minute offset of start",
+            "interval": 3600,
+            "start": dt.datetime(2026, 1, 1, 10, 0, 45),
+            "base": dt.datetime(2026, 1, 1, 12, 0, 50),
+            "expected": dt.datetime(2026, 1, 1, 13, 0, 45),
+        },
+        {
+            "name": "start with microseconds keeps them",
+            "interval": 60,
+            "start": dt.datetime(2026, 1, 1, 10, 0, 30, 500000),
+            "base": dt.datetime(2026, 1, 1, 10, 5, 10),
+            "expected": dt.datetime(2026, 1, 1, 10, 5, 30, 500000),
+        },
     ]
 
     for case in cases:
@@ -59,6 +94,10 @@ def test_next_occurrence_for_interval_standard_scenarios() -> None:
         )
 
         assert result == case["expected"], case["name"]
+        assert result > case["base"], case["name"]
+        # The occurrence must sit on the schedule grid `start + k * interval`.
+        offset = (result - case["start"]).total_seconds()
+        assert offset % case["interval"] == 0, case["name"]
         _assert_naive(result)
 
 
@@ -127,6 +166,14 @@ def test_calculate_first_occurrence_standard_scenarios(
                 "start_time": dt.datetime(2026, 1, 1, 9, 58, 0),
             },
             "expected": dt.datetime(2026, 1, 1, 10, 3, 0),
+        },
+        {
+            "name": "interval with past start_time keeps the seconds of start_time",
+            "kwargs": {
+                "interval": 300,
+                "start_time": dt.datetime(2026, 1, 1, 9, 58, 30),
+            },
+            "expected": dt.datetime(2026, 1, 1, 10, 3, 30),
         },
         {
             "name": "run once returns provided datetime",
