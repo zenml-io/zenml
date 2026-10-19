@@ -27,8 +27,7 @@ the fix.
 | Actor | Role |
 | --- | --- |
 | Engineers and data scientists | Start chats, give the agent tasks, steer it while it works, review what it produced |
-| Bot owners | Configure bots: instructions, environment, skills, MCP servers, connectors, and the roles of the service account the bot acts as |
-| Admins | Install the Slack and GitHub apps, manage shared connectors, and control who may use which bot |
+| Admins | Configure bots, install the Slack and GitHub apps, manage shared connectors, and control who may use which bot |
 
 ## What you can do with Bots
 
@@ -87,7 +86,7 @@ without ever seeing the stored credential.
 | --- | --- | --- |
 | [Core concepts](bots-core-concepts.md) | Everyone | Chats, bots, environments, sandboxes, steering, artifacts, automations, channels, and connectors |
 | [System architecture](bots-system-architecture.md) | Admins, platform teams | How Bots fit into ZenML Pro and how sandboxes reach external services |
-| [Roles and permissions](bots-rbac.md) | Admins, bot owners | Who may create, use, and manage bots and the other Bots resources |
+| [Roles and permissions](bots-rbac.md) | Admins | Who may create, use, and manage bots and the other Bots resources |
 
 ## See also
 
