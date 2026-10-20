@@ -211,6 +211,13 @@ def _answer_to_metadata(key: str, answer: Answer) -> Dict[str, MetadataType]:
     """
     if isinstance(answer, NoulAnswer):
         return {key: answer.noul}
+    if not isinstance(answer, (ChoiceAnswer, ScoreAnswer)):
+        logger.warning(
+            "Skipping unsupported Jev answer type '%s' for metadata key '%s'.",
+            type(answer).__name__,
+            key,
+        )
+        return {}
     metadata: Dict[str, MetadataType] = {
         key: answer.choice
         if isinstance(answer, ChoiceAnswer)
@@ -234,12 +241,15 @@ def response_to_metadata(
 ) -> Dict[str, MetadataType]:
     """Convert a Jev response into flat ZenML metadata.
 
+    Only yes/no, choice, and score answers are supported. Other answer types
+    are skipped with a warning.
+
     Args:
         response: The Jev response.
         prefix: The prefix for all metadata keys.
 
     Returns:
-        The metadata entries for all answers plus the model that answered.
+        The metadata entries for supported answers plus the model that answered.
     """
     metadata: Dict[str, MetadataType] = {f"{prefix}.model": response.model}
     for name, answer in response.answers.items():
