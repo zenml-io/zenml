@@ -332,8 +332,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             load_payloads: Whether to load referenced payloads too. Only
                 rows that predate the control columns resolve their step
                 configuration without metadata, and their parents still hold
-                their payloads inline, since they were written before
-                execution payloads.
+                their payloads inline: the backfill moves a parent's payloads
+                only once every child has its control columns.
 
         Returns:
             The query options for what `get_step_configuration` reads, limited

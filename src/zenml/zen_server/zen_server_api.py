@@ -52,6 +52,7 @@ from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
 from zenml.zen_server.otel import configure_otel, otel_span, shutdown_otel
+from zenml.zen_server.payload_backfill_runner import PayloadBackfillTask
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -117,6 +118,7 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
 
@@ -195,6 +197,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
         await register_event_handlers()
         await register_webhook_event_handlers()
+        payload_backfill = PayloadBackfillTask(
+            zen_store(), cfg.payload_backfill_delay
+        )
+        payload_backfill.start()
 
     yield
 
@@ -202,6 +208,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         stop_event_loop_lag_monitor()
 
     try:
+        await payload_backfill.shutdown()
         snapshot_executor().shutdown(wait=True)
         maintenance_executor().shutdown(wait=True)
         await shutdown_snapshot_run_dispatcher()
