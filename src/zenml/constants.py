@@ -627,6 +627,10 @@ MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION = (
     10  # empirical value to pass heavy parallelized tests
 )
 
+# Attempts to store one execution payload: each attempt either finds the
+# row another writer committed or inserts it.
+MAX_RETRIES_FOR_PAYLOAD_CREATION = 5
+
 
 FINISHED_ONBOARDING_SURVEY_KEY = "finished_onboarding_survey"
 
