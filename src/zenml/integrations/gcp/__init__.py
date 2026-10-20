@@ -40,6 +40,7 @@ GCP_CONNECTOR_TYPE = "gcp"
 GCP_RESOURCE_TYPE = "gcp-generic"
 GCS_RESOURCE_TYPE = "gcs-bucket"
 
+
 class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
@@ -54,6 +55,9 @@ class GcpIntegration(Integration):
         "urllib3<2.6.0",
         "grpcio!=1.68.*,!=1.69.*,!=1.70.*",
         "gcsfs!=2025.5.0,!=2025.5.0.post1,<=2024.12.0",
+        # Versions >=2.36 require OpenTelemetry API >=1.44, conflicting with
+        # ZenML's pinned OpenTelemetry SDK (1.43.0).
+        "google-api-core<2.36.0",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-artifact-registry>=1.11.3",
