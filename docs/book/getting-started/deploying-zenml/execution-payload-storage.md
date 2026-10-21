@@ -34,7 +34,7 @@ Every server starts the backfill once it is due, and only one of them runs it at
 
 The backfill can be stopped at any time. When the server running it shuts down, it stops after the current batch, and the next server to start continues where it stopped. If it does not complete, for example because a process keeps writing values inline or a row cannot be moved, the server logs why and tries again later, waiting longer each time, up to an hour.
 
-On a large database, the backfill can take hours, and it shares the database with the requests the servers answer. Follow it in the server logs.
+On a large database, the backfill can take hours, and it shares the database with the requests the servers answer. Follow it in the server logs. On a MySQL or MariaDB database set to the `READ COMMITTED` isolation level instead of the default `REPEATABLE READ`, a request that lists step runs while the backfill moves their snapshot can fail with an error; repeating the request succeeds.
 
 ### Checking that the backfill is healthy
 
@@ -66,7 +66,7 @@ python -m zenml.zen_server.payload_backfill_runner --optimize-tables
 
 This runs `OPTIMIZE TABLE` on the four tables the backfill updated, and logs the size of each before and after. Until the backfill has completed, the command refuses to rebuild the tables; `--force --optimize-tables` runs the backfill first and rebuilds them if it completes.
 
-The rebuild runs online: reads and writes continue, apart from a short lock at the start and end of each table. It needs free disk space about the size of the table it rebuilds and takes a while on large tables, so run it outside of peak hours. On Amazon RDS, the released space returns to the instance's free storage, but its allocated storage does not shrink. SQLite databases are left as they are.
+The rebuild runs online: reads and writes continue, apart from a short lock at the start and end of each table. To take that lock, the rebuild waits for the transactions that use the table, and queries on the table wait behind it, so it waits at most 3 seconds: if a long transaction, such as a backup with `mysqldump --single-transaction`, keeps the table busy, the command fails, and you can run it again once that transaction has finished. It needs free disk space about the size of the table it rebuilds and takes a while on large tables, so run it outside of peak hours. On Amazon RDS, the released space returns to the instance's free storage, but its allocated storage does not shrink. SQLite databases are left as they are.
 
 ## Limitations
 

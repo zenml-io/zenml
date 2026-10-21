@@ -376,11 +376,21 @@ def _backfill(store: SqlZenStore, args: argparse.Namespace) -> None:
 def _optimize_tables(store: SqlZenStore) -> None:
     """Rebuild the payload tables and log the space each one released.
 
+    Exits with status 1 if the database reports an error for a table.
+
     Args:
         store: The store whose tables to rebuild.
     """
     logger.info("Rebuilding the payload tables to release disk space.")
-    tables = store.optimize_payload_tables()
+    try:
+        tables = store.optimize_payload_tables()
+    except RuntimeError as e:
+        logger.error(
+            "%s Tables rebuilt before it keep their released space; running "
+            "the command again rebuilds them all.",
+            e,
+        )
+        sys.exit(1)
     if not tables:
         logger.info("Only MySQL and MariaDB tables need rebuilding.")
     for table in tables:

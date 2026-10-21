@@ -94,6 +94,10 @@ BACKFILL_MAX_PASSES = 3
 # A batch with rows to update that takes longer than this is logged as a
 # warning, so that slow progress shows up at warning level.
 BACKFILL_SLOW_BATCH_SECONDS = 30.0
+# Seconds a table rebuild waits for transactions that use the table, at its
+# start and end. Queries on the table queue behind the waiting rebuild, so it
+# gives up early instead of waiting for MySQL's default of a year.
+OPTIMIZE_LOCK_WAIT_SECONDS = 3
 # Large columns that the backfill neither moves nor reads. None of them may be a
 # payload column: `PayloadColumn.get_inline_value` reads those.
 _UNREAD_COLUMNS: Dict[Type[PayloadRowSchema], List[str]] = {

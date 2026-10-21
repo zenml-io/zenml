@@ -440,6 +440,7 @@ from zenml.zen_stores.payload_backfill import (
     BACKFILL_ORDER,
     BACKFILL_PAUSE_SECONDS,
     BACKFILL_SLOW_BATCH_SECONDS,
+    OPTIMIZE_LOCK_WAIT_SECONDS,
     BackfillResult,
     BackfillRowUpdate,
     BackfillTableReport,
@@ -5530,14 +5531,17 @@ class SqlZenStore(BaseZenStore):
         each table, for new rows; only a rebuild returns them to the file
         system. `OPTIMIZE TABLE` rebuilds an InnoDB table online, blocking
         writes only briefly at its start and end, and needs free disk space
-        about the size of the table. SQLite databases are left as they are.
+        about the size of the table. It fails instead of waiting longer than
+        `OPTIMIZE_LOCK_WAIT_SECONDS` for transactions that use the table.
+        SQLite databases are left as they are.
 
         Returns:
             The size of each table before and after, in backfill order; empty
             on SQLite.
 
         Raises:
-            RuntimeError: If the database reports an error for a table.
+            RuntimeError: If the database reports an error for a table,
+                such as a lock wait timeout.
         """
         dialect = self.engine.dialect
         if not isinstance(dialect, MySQLDialect):
@@ -5550,6 +5554,12 @@ class SqlZenStore(BaseZenStore):
         with self.engine.connect().execution_options(
             isolation_level="AUTOCOMMIT"
         ) as connection:
+            connection.execute(
+                text(
+                    "SET SESSION lock_wait_timeout = "
+                    f"{OPTIMIZE_LOCK_WAIT_SECONDS}"
+                )
+            )
             if not dialect.is_mariadb and (
                 dialect.server_version_info or (0,)
             ) >= (8,):
@@ -5566,7 +5576,11 @@ class SqlZenStore(BaseZenStore):
                 messages = connection.execute(
                     text(f"OPTIMIZE TABLE `{table}`")
                 ).all()
-                errors = [row[3] for row in messages if row[2] == "error"]
+                # MySQL reports a lock wait timeout as `Error`, other
+                # failures as `error`.
+                errors = [
+                    row[3] for row in messages if row[2].lower() == "error"
+                ]
                 if errors:
                     raise RuntimeError(
                         f"Optimizing `{table}` failed: {'; '.join(errors)}"
