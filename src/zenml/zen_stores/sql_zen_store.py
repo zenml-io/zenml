@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Zen Store implementation."""
 
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 
 from zenml.dispatcher import EventDispatcher, PipelineRunStatusUpdate
 from zenml.models.v2.core.step_run import StepHeartbeatResponse
@@ -36,6 +36,7 @@ except ImportError:
 
 import base64
 import gzip
+import hashlib
 import inspect
 import json
 import logging
@@ -45,6 +46,7 @@ import random
 import re
 import secrets
 import sys
+import threading
 import time
 import uuid
 from collections import defaultdict
@@ -60,6 +62,7 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
+    Iterator,
     List,
     Literal,
     NoReturn,
@@ -90,8 +93,10 @@ from sqlalchemy import (
     Table,
     event,
     func,
+    text,
     update,
 )
+from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import ArgumentError, IntegrityError, OperationalError
 from sqlalchemy.orm import (
@@ -427,6 +432,26 @@ from zenml.zen_stores.dag.utils import (
 )
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
+)
+from zenml.zen_stores.payload_backfill import (
+    BACKFILL_BATCH_SIZE,
+    BACKFILL_GATE_SETTLE_SECONDS,
+    BACKFILL_MAX_PASSES,
+    BACKFILL_ORDER,
+    BACKFILL_PAUSE_SECONDS,
+    BACKFILL_SLOW_BATCH_SECONDS,
+    OPTIMIZE_LOCK_WAIT_SECONDS,
+    BackfillResult,
+    BackfillRowUpdate,
+    BackfillTableReport,
+    BackfillTableResult,
+    OptimizedTable,
+    PayloadRowSchema,
+    build_backfill_update,
+    get_missing_control_values,
+    select_backfill_batch,
+    select_backfill_report,
+    select_backfill_rows,
 )
 from zenml.zen_stores.schemas import (
     APIKeySchema,
@@ -5176,7 +5201,7 @@ class SqlZenStore(BaseZenStore):
         """Whether new rows reference their payloads instead of holding them.
 
         Read on every write rather than cached, so that a process starts
-        referencing payloads as soon as the setting turns on.
+        referencing payloads as soon as the backfill turns this on.
 
         Returns:
             Whether payload references are enabled.
@@ -5319,6 +5344,538 @@ class SqlZenStore(BaseZenStore):
         if not values or not self._payload_references_enabled():
             return None
         return self._store_payloads(values)
+
+    def get_payload_backfill_report(self) -> List[BackfillTableReport]:
+        """Report what the payload backfill still has to update, without writing.
+
+        Each table is read in full, in a transaction of its own.
+
+        Returns:
+            The report of each table, in backfill order.
+        """
+        reports = []
+        for schema in BACKFILL_ORDER:
+            with Session(self.engine) as session:
+                pending_rows, *inline_bytes = session.execute(
+                    select_backfill_report(schema)
+                ).one()
+            reports.append(
+                BackfillTableReport(
+                    table=schema.__tablename__,
+                    pending_rows=pending_rows,
+                    inline_bytes={
+                        column.name: int(size or 0)
+                        for column, size in zip(
+                            schema.PAYLOAD_COLUMNS, inline_bytes
+                        )
+                    },
+                )
+            )
+        return reports
+
+    def backfill_payloads(
+        self,
+        batch_size: int = BACKFILL_BATCH_SIZE,
+        pause_seconds: float = BACKFILL_PAUSE_SECONDS,
+        gate_settle_seconds: float = BACKFILL_GATE_SETTLE_SECONDS,
+        stop: Optional[threading.Event] = None,
+    ) -> BackfillResult:
+        """Store the inline payloads of existing rows in the payload table.
+
+        See `zenml.zen_stores.payload_backfill`. Every server and every other
+        process that opens the database must run a release that reads payload
+        references: releases before execution payloads cannot. First turns
+        payload references on, so that rows written from now on do not need
+        the backfill, and waits for the requests that read the setting as off
+        just before. Passes over every table then repeat until one finds
+        nothing to update, which is then recorded. A pass moves to the next
+        table only once every row of the current one has its control columns,
+        and a row that fails stops the backfill.
+
+        Args:
+            batch_size: The rows each batch reads, whether they need an update
+                or not, so that a batch never scans a whole table.
+            pause_seconds: How long to wait after each batch that updated
+                rows, to spare the database.
+            gate_settle_seconds: How long to wait after turning payload
+                references on, before the first pass.
+            stop: Set to stop the run after the current batch, without
+                recording completion.
+
+        What the run did to each table is logged when it returns, and when an
+        error stops it.
+
+        Returns:
+            What the run did, and whether it completed.
+
+        Raises:
+            ValueError: If the batch size is not positive, or a duration is
+                negative.
+            RuntimeError: If the database fails for another reason than a
+                deadlock.
+        """
+        if batch_size < 1:
+            raise ValueError("The backfill batch size must be 1 or more.")
+        if pause_seconds < 0 or gate_settle_seconds < 0:
+            raise ValueError("The backfill durations cannot be negative.")
+        stop = stop or threading.Event()
+        result = BackfillResult(
+            tables=[
+                BackfillTableResult(table=schema.__tablename__)
+                for schema in BACKFILL_ORDER
+            ]
+        )
+        try:
+            self._enable_payload_references()
+            if gate_settle_seconds:
+                logger.info(
+                    "Waiting %.0f seconds for requests that started before "
+                    "payload references were turned on.",
+                    gate_settle_seconds,
+                )
+                stop.wait(gate_settle_seconds)
+            for number in range(1, BACKFILL_MAX_PASSES + 1):
+                logger.info(
+                    "Backfill pass %d of at most %d.",
+                    number,
+                    BACKFILL_MAX_PASSES,
+                )
+                changed_rows = result.changed_rows
+                if not self._backfill_pass(
+                    batch_size, pause_seconds, result, stop
+                ):
+                    return result
+                if result.changed_rows == changed_rows:
+                    self._record_payload_backfill_completion()
+                    result.completed = True
+                    return result
+        except OperationalError as e:
+            raise RuntimeError(f"The database failed: {e}") from e
+        finally:
+            result.log_summary()
+        return result
+
+    def _backfill_pass(
+        self,
+        batch_size: int,
+        pause_seconds: float,
+        result: BackfillResult,
+        stop: threading.Event,
+    ) -> bool:
+        """Pass over the tables in backfill order.
+
+        Moves to the next table only once every row of the current one has
+        its control columns.
+
+        Args:
+            batch_size: The rows each batch reads.
+            pause_seconds: How long to wait after each batch that updated rows.
+            result: The result of the run, updated in place.
+            stop: Set to stop after the current batch.
+
+        Returns:
+            False if rows failed or the run was stopped, which stops the
+            backfill: a pass cut short must not count as one that found
+            nothing to update.
+        """
+        for schema, table in zip(BACKFILL_ORDER, result.tables):
+            lacking = self._backfill_table(
+                schema, batch_size, pause_seconds, table, stop
+            )
+            if stop.is_set():
+                return False
+            if table.failed_rows:
+                logger.error(
+                    "Backfill stopped: %d rows of `%s` failed. Fix or delete "
+                    "them, then run the backfill again:\n%s",
+                    len(table.failed_rows),
+                    table.table,
+                    "\n".join(
+                        f"  {row_id}: {reason}"
+                        for row_id, reason in table.failed_rows.items()
+                    ),
+                )
+                return False
+            if lacking:
+                logger.warning(
+                    "%d rows of `%s` could not be updated and still lack "
+                    "control columns: the next pass retries them before "
+                    "moving on.",
+                    lacking,
+                    table.table,
+                )
+                break
+        return True
+
+    def _record_payload_backfill_completion(self) -> None:
+        """Record that the payload backfill found nothing left to update."""
+        with Session(self.engine) as session:
+            self._get_server_settings(
+                session
+            ).payload_backfill_completed = utc_now()
+            session.commit()
+
+    def _enable_payload_references(self) -> None:
+        """Turn on payload references for new rows."""
+        with Session(self.engine) as session:
+            settings = self._get_server_settings(session)
+            settings.payload_references_enabled = True
+            session.add(settings)
+            session.commit()
+        logger.info("Payload references are turned on for new rows.")
+
+    def optimize_payload_tables(self) -> List[OptimizedTable]:
+        """Rebuild the payload tables to release the space of moved payloads.
+
+        MySQL and MariaDB keep the pages that moved payloads freed inside
+        each table, for new rows; only a rebuild returns them to the file
+        system. `OPTIMIZE TABLE` rebuilds an InnoDB table online, blocking
+        writes only briefly at its start and end, and needs free disk space
+        about the size of the table. It fails instead of waiting longer than
+        `OPTIMIZE_LOCK_WAIT_SECONDS` for transactions that use the table.
+        SQLite databases are left as they are.
+
+        Returns:
+            The size of each table before and after, in backfill order; empty
+            on SQLite.
+
+        Raises:
+            RuntimeError: If the database reports an error for a table,
+                such as a lock wait timeout.
+        """
+        dialect = self.engine.dialect
+        if not isinstance(dialect, MySQLDialect):
+            return []
+        size_query = text(
+            "SELECT DATA_LENGTH + INDEX_LENGTH FROM information_schema.TABLES "
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table"
+        )
+        tables = []
+        with self.engine.connect().execution_options(
+            isolation_level="AUTOCOMMIT"
+        ) as connection:
+            connection.execute(
+                text(
+                    "SET SESSION lock_wait_timeout = "
+                    f"{OPTIMIZE_LOCK_WAIT_SECONDS}"
+                )
+            )
+            if not dialect.is_mariadb and (
+                dialect.server_version_info or (0,)
+            ) >= (8,):
+                # MySQL 8 otherwise reports sizes cached for up to a day;
+                # MySQL 5.7 has no such cache, nor this variable.
+                connection.execute(
+                    text("SET SESSION information_schema_stats_expiry = 0")
+                )
+            for schema in BACKFILL_ORDER:
+                table = schema.__tablename__
+                before = connection.execute(size_query, {"table": table})
+                bytes_before = int(before.scalar_one())
+                started = time.monotonic()
+                messages = connection.execute(
+                    text(f"OPTIMIZE TABLE `{table}`")
+                ).all()
+                # MySQL reports a lock wait timeout as `Error`, other
+                # failures as `error`.
+                errors = [
+                    row[3] for row in messages if row[2].lower() == "error"
+                ]
+                if errors:
+                    raise RuntimeError(
+                        f"Optimizing `{table}` failed: {'; '.join(errors)}"
+                    )
+                after = connection.execute(size_query, {"table": table})
+                tables.append(
+                    OptimizedTable(
+                        table=table,
+                        bytes_before=bytes_before,
+                        bytes_after=int(after.scalar_one()),
+                        seconds=time.monotonic() - started,
+                    )
+                )
+        return tables
+
+    def get_payload_backfill_completion(self) -> Optional[datetime]:
+        """Get when the payload backfill last found nothing left to update.
+
+        Returns:
+            The completion time, or None if the backfill has not completed.
+        """
+        with Session(self.engine) as session:
+            return self._get_server_settings(
+                session
+            ).payload_backfill_completed
+
+    def get_execution_payloads_added(self) -> Optional[datetime]:
+        """Get when this database got execution payloads.
+
+        Returns:
+            When the migration that added them ran, or when the database was
+            created if it already had them.
+        """
+        with Session(self.engine) as session:
+            return self._get_server_settings(session).execution_payloads_added
+
+    @contextmanager
+    def payload_backfill_lock(self) -> Iterator[bool]:
+        """Hold the payload backfill lock of this database, if it is free.
+
+        The backfill stays correct when two run at once; the lock only keeps
+        its load to one runner. On MySQL and MariaDB, it is a named lock held
+        by a connection of its own, which the database releases if that
+        connection ends, so a crashed holder leaves nothing behind. A SQLite
+        database has a single server, which always gets it.
+
+        Yields:
+            Whether this process holds the lock.
+        """
+        if not isinstance(self.engine.dialect, MySQLDialect):
+            yield True
+            return
+        with self.engine.connect().execution_options(
+            isolation_level="AUTOCOMMIT"
+        ) as connection:
+            # The connection idles while the backfill runs on others, for
+            # hours on a large database. The server would otherwise close it
+            # after `wait_timeout` (8 hours by default) and release the lock.
+            connection.execute(text("SET SESSION wait_timeout = 31536000"))
+            database = connection.execute(select(func.database())).scalar()
+            # Named locks are server-wide, so the name includes the
+            # database's, hashed to fit the 64 characters a name may have.
+            digest = hashlib.sha256(str(database).encode()).hexdigest()
+            name = f"zenml_payload_backfill_{digest[:32]}"
+            acquired = (
+                connection.execute(select(func.get_lock(name, 0))).scalar()
+                == 1
+            )
+            try:
+                yield acquired
+            finally:
+                if acquired:
+                    try:
+                        connection.execute(select(func.release_lock(name)))
+                    except OperationalError as e:
+                        logger.warning(
+                            "The connection holding the payload backfill "
+                            "lock ended before the backfill did, which "
+                            "released the lock early: %s",
+                            e,
+                        )
+
+    def _backfill_table(
+        self,
+        schema: Type[PayloadRowSchema],
+        batch_size: int,
+        pause_seconds: float,
+        result: BackfillTableResult,
+        stop: threading.Event,
+    ) -> int:
+        """Pass over a table in batches and update the rows that need it.
+
+        Args:
+            schema: The table.
+            batch_size: The rows each batch reads.
+            pause_seconds: How long to wait after each batch that updated rows.
+            result: The result of the table, updated in place.
+            stop: Set to stop after the current batch.
+
+        Returns:
+            The rows that still lack control columns because their update was
+            skipped.
+        """
+        lacking = 0
+        after_id: Optional[UUID] = None
+        while not stop.is_set():
+            started = time.monotonic()
+            with Session(self.engine) as session:
+                batch = session.execute(
+                    select_backfill_batch(schema, after_id, batch_size)
+                ).all()
+            if not batch:
+                return lacking
+            after_id = batch[-1][0]
+            pending = [
+                (row_id, lacks_control_columns)
+                for row_id, is_pending, lacks_control_columns in batch
+                if is_pending
+            ]
+            if pending:
+                lacking += self._backfill_rows(schema, pending, result)
+                seconds = time.monotonic() - started
+                result.add_batch(seconds)
+                if seconds > BACKFILL_SLOW_BATCH_SECONDS:
+                    logger.warning(
+                        "A backfill batch of `%s` took %.0f seconds, which "
+                        "can mean the database is under load or the batch "
+                        "waited on locks.",
+                        result.table,
+                        seconds,
+                    )
+                logger.info(
+                    "Backfill of `%s`: %d rows updated, %d skipped, %d bytes "
+                    "moved, %s.",
+                    result.table,
+                    result.rows_updated,
+                    result.rows_skipped,
+                    result.bytes_moved,
+                    result.running_summary,
+                )
+                stop.wait(pause_seconds)
+        return lacking
+
+    def _backfill_rows(
+        self,
+        schema: Type[PayloadRowSchema],
+        pending: List[Tuple[UUID, bool]],
+        result: BackfillTableResult,
+    ) -> int:
+        """Store the inline payloads of rows and fill their control columns.
+
+        Reads the rows, ends the read, stores their payloads, which needs no
+        open transaction (see `_store_payloads`), and only then updates the
+        rows that still hold what was read.
+
+        Args:
+            schema: The table of the rows.
+            pending: The rows to update, and whether each lacks control
+                columns.
+            result: The result of the table, updated in place.
+
+        Returns:
+            The rows that still lack control columns because their update was
+            skipped.
+        """
+        updates = self._read_backfill_updates(schema, pending, result)
+        payload_ids = self._store_payloads(
+            [
+                value
+                for row_update in updates
+                for value in row_update.inline_values.values()
+            ]
+        )
+        return self._apply_backfill_updates(
+            schema, updates, payload_ids, result
+        )
+
+    def _read_backfill_updates(
+        self,
+        schema: Type[PayloadRowSchema],
+        pending: List[Tuple[UUID, bool]],
+        result: BackfillTableResult,
+    ) -> List[BackfillRowUpdate]:
+        """Read rows and compute what the backfill updates in each.
+
+        Args:
+            schema: The table of the rows.
+            pending: The rows to read, and whether each lacks control columns.
+            result: The result of the table; rows whose control columns
+                cannot be computed are recorded as failed.
+
+        Returns:
+            The updates of the rows that still need one.
+        """
+        updates = []
+        with Session(self.engine) as session:
+            # Only step runs read their parents to compute missing control
+            # columns; the rows of other tables are read in one query.
+            id_groups: Dict[bool, List[UUID]] = {True: [], False: []}
+            for row_id, lacks_control_columns in pending:
+                load_parents = schema is StepRunSchema and bool(
+                    lacks_control_columns
+                )
+                id_groups[load_parents].append(row_id)
+            rows: List[PayloadRowSchema] = []
+            for load_parents, row_ids in id_groups.items():
+                if row_ids:
+                    rows.extend(
+                        session.exec(
+                            select_backfill_rows(schema, row_ids, load_parents)
+                        ).all()
+                    )
+            for row in rows:
+                try:
+                    control_values = get_missing_control_values(row)
+                except (ValueError, KeyError, RuntimeError) as e:
+                    result.failed_rows[row.id] = f"{type(e).__name__}: {e}"
+                    continue
+                inline_values = {
+                    column: value
+                    for column in schema.PAYLOAD_COLUMNS
+                    if (value := column.get_inline_value(row)) is not None
+                }
+                # Updated since the scan, such as by another backfill.
+                if control_values or inline_values:
+                    updates.append(
+                        BackfillRowUpdate(
+                            row_id=row.id,
+                            control_values=control_values,
+                            inline_values=inline_values,
+                        )
+                    )
+        return updates
+
+    def _apply_backfill_updates(
+        self,
+        schema: Type[PayloadRowSchema],
+        updates: List[BackfillRowUpdate],
+        payload_ids: Dict[str, UUID],
+        result: BackfillTableResult,
+    ) -> int:
+        """Update the rows that still hold what was read, in one transaction.
+
+        Args:
+            schema: The table of the rows.
+            updates: The updates of the rows.
+            payload_ids: The payload rows of the stored values, by SHA-256.
+            result: The result of the table, updated in place.
+
+        Returns:
+            The rows that still lack control columns because their update was
+            skipped.
+
+        Raises:
+            OperationalError: If the database fails for another reason than a
+                deadlock.
+        """
+        lacking = 0
+        updated = 0
+        moved = 0
+        try:
+            with Session(self.engine) as session:
+                for row_update in updates:
+                    statement = build_backfill_update(
+                        schema, row_update, payload_ids
+                    )
+                    if session.execute(statement).rowcount:  # type: ignore[attr-defined]
+                        updated += 1
+                        moved += sum(
+                            value.size
+                            for value in row_update.inline_values.values()
+                        )
+                    elif row_update.control_values:
+                        lacking += 1
+                session.commit()
+        except OperationalError as error:
+            # A transaction of the server updating several rows of this
+            # table in another order (MySQL error 1213). The stored payloads
+            # are reused when the next pass retries the rows.
+            if not self._is_deadlock(error):
+                raise
+            logger.warning(
+                "A batch of `%s` was rolled back by a deadlock; the next "
+                "pass retries its %d rows.",
+                result.table,
+                len(updates),
+            )
+            updated, moved = 0, 0
+            lacking = sum(
+                bool(row_update.control_values) for row_update in updates
+            )
+        result.rows_updated += updated
+        result.rows_skipped += len(updates) - updated
+        result.bytes_moved += moved
+        return lacking
 
     # -------------------------- Pipeline Snapshots --------------------------
 
@@ -7371,8 +7928,9 @@ class SqlZenStore(BaseZenStore):
                     verify=False,
                 )
 
-        # The commits expired the snapshot, so this reads its current
-        # reference. Its payload never loads lazily.
+        # The commits expired the snapshot, and the backfill may have moved
+        # its configuration since, so this reads the current reference. Its
+        # payload never loads lazily.
         if snapshot.pipeline_configuration_payload_id:
             session.refresh(
                 snapshot, attribute_names=["pipeline_configuration_payload"]

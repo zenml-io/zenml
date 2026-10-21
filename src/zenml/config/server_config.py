@@ -23,6 +23,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    NonNegativeInt,
     PositiveFloat,
     PositiveInt,
     field_validator,
@@ -51,6 +52,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
     DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME,
+    DEFAULT_ZENML_SERVER_PAYLOAD_BACKFILL_DELAY,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT,
     DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT,
@@ -278,6 +280,13 @@ class ServerConfiguration(BaseModel):
             transactions to delete per SQL batch.
         api_transaction_cleanup_time_budget: The maximum number of seconds a
             cleanup pass spends draining full batches before sleeping again.
+        payload_backfill_delay: The seconds after the migration that added
+            execution payloads until the server moves the payloads of
+            existing rows and turns on references for new rows. Every server
+            and every other process that opens the database must run a
+            release that reads references by then: releases before execution
+            payloads cannot. 0 never starts it; the backfill command can then
+            run it instead.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -418,6 +427,9 @@ class ServerConfiguration(BaseModel):
     api_transaction_cleanup_time_budget: PositiveFloat = Field(
         default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
         le=MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+    )
+    payload_backfill_delay: NonNegativeInt = (
+        DEFAULT_ZENML_SERVER_PAYLOAD_BACKFILL_DELAY
     )
 
     max_request_body_size_in_bytes: int = (

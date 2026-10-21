@@ -73,8 +73,9 @@ class PayloadValue(BaseModel):
 
     Attributes:
         text: The value exactly as its inline column would hold it. Payload
-            rows are addressed by the SHA-256 of these UTF-8 bytes, so equal
-            values share one row.
+            rows are addressed by the SHA-256 of these UTF-8 bytes, so a value
+            maps to the same row whether it is stored on write or by the
+            backfill.
     """
 
     text: str
