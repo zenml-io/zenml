@@ -23,4 +23,4 @@ Before you upgrade to the next release, make sure that every server replica, and
 ## Limitations
 
 * **Downgrade only while no values are stored.** Once values are stored in the table, ZenML releases that predate this feature cannot read the affected runs, and the database migration refuses to downgrade. Databases created by this release and SQLite databases store values from their first run; upgraded MySQL and MariaDB databases store none in this release.
-* **No cleanup.** Deleting runs, snapshots or pipelines does not delete the stored values, since other runs can share them.
+* **Deleting does not erase the values.** Deleting runs, snapshots or pipelines does not delete the stored values, since other runs can share them. Their configurations, source code and environments then stay in the database and its backups, although no API returns them. Keep secrets out of step code and configurations, and use [secrets](../../how-to/secrets/secrets.md) instead.
