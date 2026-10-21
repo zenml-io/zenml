@@ -71,4 +71,4 @@ The rebuild runs online: reads and writes continue, apart from a short lock at t
 ## Limitations
 
 * **No downgrade.** Once values are stored in the table, which the backfill does for every database, ZenML releases that predate this feature cannot read the affected runs, and the database migration refuses to downgrade.
-* **No cleanup.** Deleting runs, snapshots or pipelines does not delete the stored values, since other runs can share them.
+* **Deleting does not erase the values.** Deleting runs, snapshots or pipelines does not delete the stored values, since other runs can share them. Their configurations, source code and environments then stay in the database and its backups, although no API returns them. Keep secrets out of step code and configurations, and use [secrets](../../how-to/secrets/secrets.md) instead.
