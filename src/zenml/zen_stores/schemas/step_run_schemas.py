@@ -15,7 +15,16 @@
 
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict
@@ -51,6 +60,12 @@ from zenml.models.v2.core.step_run import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
+from zenml.zen_stores.schemas.execution_payload_schemas import (
+    ExecutionPayloadSchema,
+    PayloadColumn,
+    get_payload_text,
+    payload_relationship_kwargs,
+)
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     PipelineSnapshotSchema,
@@ -118,6 +133,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     cache_expires_at: Optional[datetime] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
+    source_code_payload_id: Optional[UUID] = None
+    docstring_payload_id: Optional[UUID] = None
     code_hash: Optional[str] = Field(nullable=True)
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
@@ -263,7 +280,98 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
+    source_code_payload: Optional[ExecutionPayloadSchema] = Relationship(
+        sa_relationship_kwargs=payload_relationship_kwargs(
+            "StepRunSchema", "source_code"
+        )
+    )
+    docstring_payload: Optional[ExecutionPayloadSchema] = Relationship(
+        sa_relationship_kwargs=payload_relationship_kwargs(
+            "StepRunSchema", "docstring"
+        )
+    )
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="source_code", nullable=True),
+        PayloadColumn(name="docstring", nullable=True),
+    )
+
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
+
+    @property
+    def resolved_source_code(self) -> Optional[str]:
+        """The step source code, inline or from its payload.
+
+        Returns:
+            The source code, if the step run has one.
+        """
+        if self.source_code_payload_id is None:
+            return self.source_code
+        return get_payload_text(self.source_code_payload, self, "source_code")
+
+    @property
+    def resolved_docstring(self) -> Optional[str]:
+        """The step docstring, inline or from its payload.
+
+        Returns:
+            The docstring, if the step run has one.
+        """
+        if self.docstring_payload_id is None:
+            return self.docstring
+        return get_payload_text(self.docstring_payload, self, "docstring")
+
+    @classmethod
+    def get_step_configuration_query_options(
+        cls, many: bool = False, load_payloads: bool = True
+    ) -> List[Any]:
+        """Get the query options that resolving the step configuration needs.
+
+        Args:
+            many: Whether the options are applied to a query that returns many
+                rows.
+            load_payloads: Whether to load referenced payloads too. Only
+                rows that predate the control columns resolve their step
+                configuration without metadata, and their parents still hold
+                their payloads inline, since they were written before
+                execution payloads.
+
+        Returns:
+            The query options for what `get_step_configuration` reads, limited
+            to the columns it reads. The run comes without its large columns,
+            since responses also read its body.
+        """
+        single_loader = selectinload if many else joinedload
+        options = [
+            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(
+                    PipelineSnapshotSchema.pipeline_configuration_payload_id
+                ),
+                jl_arg(PipelineSnapshotSchema.is_dynamic),
+            ),
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
+                *PipelineRunSchema.defer_detail_columns()
+            ),
+            single_loader(jl_arg(StepRunSchema.static_config)),
+            single_loader(jl_arg(StepRunSchema.dynamic_config)),
+        ]
+        if load_payloads:
+            options.extend(
+                [
+                    single_loader(jl_arg(StepRunSchema.snapshot)).selectinload(
+                        jl_arg(
+                            PipelineSnapshotSchema.pipeline_configuration_payload
+                        )
+                    ),
+                    single_loader(jl_arg(StepRunSchema.static_config)).options(
+                        *StepConfigurationSchema.load_payloads()
+                    ),
+                    single_loader(
+                        jl_arg(StepRunSchema.dynamic_config)
+                    ).options(*StepConfigurationSchema.load_payloads()),
+                ]
+            )
+        return options
 
     @classmethod
     def get_query_options(
@@ -294,23 +402,17 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         single_loader = selectinload if many else joinedload
 
-        options = [
-            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
-                jl_arg(PipelineSnapshotSchema.is_dynamic),
-            ),
-            single_loader(jl_arg(StepRunSchema.pipeline_run)).options(
-                *PipelineRunSchema.defer_detail_columns()
-            ),
-            single_loader(jl_arg(StepRunSchema.static_config)),
-            single_loader(jl_arg(StepRunSchema.dynamic_config)),
-        ]
+        options = cls.get_step_configuration_query_options(
+            many=many, load_payloads=include_metadata
+        )
 
         if include_metadata:
             options.extend(
                 [
                     selectinload(jl_arg(StepRunSchema.parents)),
                     selectinload(jl_arg(StepRunSchema.run_metadata)),
+                    selectinload(jl_arg(StepRunSchema.source_code_payload)),
+                    selectinload(jl_arg(StepRunSchema.docstring_payload)),
                 ]
             )
         else:
@@ -395,6 +497,25 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             else None,
         )
 
+    @staticmethod
+    def get_control_values(step: Step) -> Dict[str, Optional[str]]:
+        """Get the values of the control columns of a step run.
+
+        Step responses read these columns instead of parsing the step
+        configuration.
+
+        Args:
+            step: The resolved step configuration of the step run.
+
+        Returns:
+            The values by column name.
+        """
+        step_type = step.config.step_type
+        return {
+            "step_type": step_type.value if step_type else None,
+            "substitutions": json.dumps(step.config.substitutions),
+        }
+
     def get_step_configuration(
         self, pipeline_configuration: Optional[PipelineConfiguration] = None
     ) -> Step:
@@ -417,9 +538,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             if config_schema := (self.dynamic_config or self.static_config):
                 if pipeline_configuration is None:
                     pipeline_configuration = (
-                        PipelineConfiguration.model_validate_json(
-                            self.snapshot.pipeline_configuration
-                        )
+                        self.snapshot.get_pipeline_configuration()
                     )
                     pipeline_configuration.finalize_substitutions(
                         start_time=self.pipeline_run.substitution_time,
@@ -524,8 +643,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 cache_key=self.cache_key,
                 cache_expires_at=self.cache_expires_at,
                 code_hash=self.code_hash,
-                docstring=self.docstring,
-                source_code=self.source_code,
+                docstring=self.resolved_docstring,
+                source_code=self.resolved_source_code,
                 exception_info=ExceptionInfo.model_validate_json(
                     self.exception_info
                 )

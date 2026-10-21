@@ -56,6 +56,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Collection,
     ContextManager,
     Dict,
     ForwardRef,
@@ -83,6 +84,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pymysql.constants import ER
 from sqlalchemy import (
     QueuePool,
     Table,
@@ -91,7 +93,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import ArgumentError, IntegrityError
+from sqlalchemy.exc import ArgumentError, IntegrityError, OperationalError
 from sqlalchemy.orm import (
     Mapped,
     aliased,
@@ -99,6 +101,7 @@ from sqlalchemy.orm import (
     noload,
     selectinload,
 )
+from sqlalchemy.orm.attributes import instance_state
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
@@ -149,6 +152,7 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
+    MAX_RETRIES_FOR_PAYLOAD_CREATION,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
     MEDIUMBLOB_MAX_LENGTH,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
@@ -435,6 +439,7 @@ from zenml.zen_stores.schemas import (
     CodeRepositorySchema,
     CuratedVisualizationSchema,
     DeploymentSchema,
+    ExecutionPayloadSchema,
     FlavorSchema,
     HookInvocationOutputArtifactSchema,
     HookInvocationSchema,
@@ -478,6 +483,11 @@ from zenml.zen_stores.schemas import (
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
+)
+from zenml.zen_stores.schemas.execution_payload_schemas import (
+    PayloadValue,
+    get_inline_payload_values,
+    reference_payloads,
 )
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
@@ -5116,6 +5126,200 @@ class SqlZenStore(BaseZenStore):
             session.delete(build)
             session.commit()
 
+    # -------------------------- Execution payloads --------------------------
+
+    @staticmethod
+    def _reload_for_response(session: Session, schema: AnySchema) -> AnySchema:
+        """Reload a row with the payloads its hydrated response reads.
+
+        Payload relationships never load lazily, and committing a write
+        expires the row, so responses read the row again with the metadata
+        options of its schema, which load the payloads. Resources still load
+        lazily: in profiling, loading them eagerly here cost more than the
+        queries it saved.
+
+        Args:
+            session: The session holding the row.
+            schema: The row.
+
+        Returns:
+            The reloaded row.
+        """
+        # The identity key, unlike `schema.id`, reads no expired attribute,
+        # which would load the row once more.
+        identity = instance_state(schema).identity
+        row_id = identity[0] if identity else schema.id
+        # Refreshes attributes loaded since the commit, which a plain select
+        # would keep, so that the payload relationships get their loaders.
+        return session.exec(
+            select(type(schema))
+            .where(col(type(schema).id) == row_id)
+            .options(*schema.get_query_options(include_metadata=True))
+            .execution_options(populate_existing=True)
+        ).one()
+
+    @staticmethod
+    def _is_deadlock(error: OperationalError) -> bool:
+        """Whether the database rolled back a transaction to end a deadlock.
+
+        Args:
+            error: The error of the transaction.
+
+        Returns:
+            Whether it is MySQL or MariaDB error 1213.
+        """
+        return error.orig is not None and error.orig.args[:1] == (
+            ER.LOCK_DEADLOCK,
+        )
+
+    def _payload_references_enabled(self) -> bool:
+        """Whether new rows reference their payloads instead of holding them.
+
+        Read on every write rather than cached, so that a process starts
+        referencing payloads as soon as the setting turns on.
+
+        Returns:
+            Whether payload references are enabled.
+        """
+        with Session(self.engine) as session:
+            enabled = session.exec(
+                select(ServerSettingsSchema.payload_references_enabled)
+            ).first()
+        return bool(enabled)
+
+    def _store_payloads(
+        self, values: Collection[PayloadValue]
+    ) -> Dict[str, UUID]:
+        """Store each distinct payload value once.
+
+        Each missing value is inserted and committed in a short transaction of
+        its own, before the transaction that writes the rows referencing it.
+        Inside that transaction, a concurrent writer of the same value could
+        not be resolved: under REPEATABLE READ, the re-read after the
+        duplicate-key error does not see the row the other writer committed.
+        So this must run while the caller's session holds no transaction,
+        which also keeps a request to one pooled connection at a time.
+
+        Args:
+            values: The payload values.
+
+        Returns:
+            The ID of the payload row of each value, by its SHA-256.
+        """
+        values_by_sha256 = {value.sha256: value for value in values}
+        if not values_by_sha256:
+            return {}
+        with Session(self.engine) as session:
+            payload_ids = self._get_payload_ids(session, values_by_sha256)
+            # Sorted, as in the measured write shape: concurrent writers of
+            # several shared values then reach them in the same order.
+            for sha256 in sorted(values_by_sha256.keys() - payload_ids.keys()):
+                payload_ids[sha256] = self._insert_payload(
+                    session, values_by_sha256[sha256]
+                )
+        return payload_ids
+
+    @staticmethod
+    def _get_payload_ids(
+        session: Session, sha256s: Collection[str]
+    ) -> Dict[str, UUID]:
+        """Get the IDs of the stored payloads with the given hashes.
+
+        Args:
+            session: The session to use.
+            sha256s: The SHA-256 hashes of the values.
+
+        Returns:
+            The ID of each stored payload, by its SHA-256.
+        """
+        rows = session.exec(
+            select(
+                ExecutionPayloadSchema.sha256, ExecutionPayloadSchema.id
+            ).where(col(ExecutionPayloadSchema.sha256).in_(sha256s))
+        ).all()
+        return {sha256: payload_id for sha256, payload_id in rows}
+
+    def _insert_payload(self, session: Session, value: PayloadValue) -> UUID:
+        """Insert a payload value, or find the row a concurrent writer added.
+
+        Args:
+            session: The session of the payload rows. Its transaction may
+                only hold reads of payload rows, never entity writes.
+            value: The payload value.
+
+        Returns:
+            The ID of the payload row holding the value.
+
+        Raises:
+            OperationalError: If the database fails for another reason than a
+                deadlock.
+            EntityCreationError: If the value could neither be inserted nor
+                found.
+        """
+        for attempt in range(MAX_RETRIES_FOR_PAYLOAD_CREATION):
+            payload = ExecutionPayloadSchema(
+                sha256=value.sha256, size=value.size, value=value.text
+            )
+            payload_id = payload.id
+            session.add(payload)
+            try:
+                session.commit()
+                return payload_id
+            except IntegrityError:
+                # Another writer committed the same value first.
+                session.rollback()
+            except OperationalError as error:
+                session.rollback()
+                # Waiters on a value whose first writer rolled back can
+                # deadlock among themselves (MySQL error 1213).
+                if not self._is_deadlock(error):
+                    raise
+                logger.warning(
+                    "A deadlock rolled back the insert of `execution_payload` "
+                    "%s (attempt %d of %d).",
+                    value.sha256[:12],
+                    attempt + 1,
+                    MAX_RETRIES_FOR_PAYLOAD_CREATION,
+                )
+                time.sleep(exponential_backoff_with_jitter(attempt))
+            # The rollback ended the read view, so this sees the row that a
+            # concurrent writer committed. It finds nothing only if that
+            # writer rolled back, and then the next attempt inserts again.
+            if existing := self._get_payload_ids(session, [value.sha256]):
+                return existing[value.sha256]
+            logger.warning(
+                "Retrying the insert of `execution_payload` %s (attempt %d "
+                "of %d): the row is still missing.",
+                value.sha256[:12],
+                attempt + 1,
+                MAX_RETRIES_FOR_PAYLOAD_CREATION,
+            )
+        raise EntityCreationError(
+            f"Failed to store the execution payload {value.sha256[:12]} of "
+            f"{value.size} bytes after {MAX_RETRIES_FOR_PAYLOAD_CREATION} "
+            "attempts."
+        )
+
+    def _store_new_payloads(
+        self, values: Collection[PayloadValue]
+    ) -> Optional[Dict[str, UUID]]:
+        """Store the payloads of new rows, if payload references are enabled.
+
+        Must run while the caller's session holds no transaction (see
+        `_store_payloads`).
+
+        Args:
+            values: The payload values of the new rows.
+
+        Returns:
+            The ID of the payload row of each value, by its SHA-256, or None
+            while payload references are disabled and new rows keep their
+            payloads inline.
+        """
+        if not values or not self._payload_references_enabled():
+            return None
+        return self._store_payloads(values)
+
     # -------------------------- Pipeline Snapshots --------------------------
 
     @staticmethod
@@ -5420,9 +5624,35 @@ class SqlZenStore(BaseZenStore):
             )
             for step_name, step_configuration in snapshot.step_configurations.items()
         ]
+        new_snapshot = PipelineSnapshotSchema.from_request(
+            snapshot, code_reference_id=None
+        )
+        step_configurations = [
+            StepConfigurationSchema(
+                index=index,
+                name=step_name,
+                # Don't include the merged config in the step configurations,
+                # we reconstruct it in the `to_model` method using the pipeline
+                # configuration.
+                config=serialized_configuration,
+                upstream_steps=upstream_steps,
+                snapshot_id=new_snapshot.id,
+            )
+            for index, (
+                step_name,
+                serialized_configuration,
+                upstream_steps,
+            ) in enumerate(serialized_step_configurations)
+        ]
+        payload_ids = self._store_new_payloads(
+            get_inline_payload_values(new_snapshot, *step_configurations)
+        )
+        reference_payloads(payload_ids, new_snapshot, *step_configurations)
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
+            # The schema was built before the active user was looked up.
+            new_snapshot.user_id = snapshot.user
             self._get_reference_schema_by_id(
                 resource=snapshot,
                 reference_schema=StackSchema,
@@ -5483,34 +5713,16 @@ class SqlZenStore(BaseZenStore):
                         name=snapshot.name,
                     )
 
-            code_reference_id = self._create_or_reuse_code_reference(
-                session=session,
-                project_id=snapshot.project,
-                code_reference=snapshot.code_reference,
-            )
-
-            new_snapshot = PipelineSnapshotSchema.from_request(
-                snapshot, code_reference_id=code_reference_id
+            new_snapshot.code_reference_id = (
+                self._create_or_reuse_code_reference(
+                    session=session,
+                    project_id=snapshot.project,
+                    code_reference=snapshot.code_reference,
+                )
             )
 
             session.add(new_snapshot)
-            for index, (
-                step_name,
-                serialized_configuration,
-                upstream_steps,
-            ) in enumerate(serialized_step_configurations):
-                session.add(
-                    StepConfigurationSchema(
-                        index=index,
-                        name=step_name,
-                        # Don't include the merged config in the step
-                        # configurations, we reconstruct it in the `to_model`
-                        # method using the pipeline configuration.
-                        config=serialized_configuration,
-                        upstream_steps=upstream_steps,
-                        snapshot_id=new_snapshot.id,
-                    )
-                )
+            session.add_all(step_configurations)
 
             try:
                 session.commit()
@@ -5537,7 +5749,7 @@ class SqlZenStore(BaseZenStore):
                 resources=new_snapshot,
                 session=session,
             )
-            session.refresh(new_snapshot)
+            new_snapshot = self._reload_for_response(session, new_snapshot)
 
             return new_snapshot.to_model(
                 include_metadata=True, include_resources=True
@@ -5688,7 +5900,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 session.commit()
 
-            session.refresh(snapshot)
+            snapshot = self._reload_for_response(session, snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -6293,7 +6505,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            session.refresh(template_schema)
+            template_schema = self._reload_for_response(
+                session, template_schema
+            )
 
             return template_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -6317,6 +6531,9 @@ class SqlZenStore(BaseZenStore):
                 resource_id=template_id,
                 schema_class=RunTemplateSchema,
                 session=session,
+                query_options=RunTemplateSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
             )
             return template.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -6350,6 +6567,7 @@ class SqlZenStore(BaseZenStore):
                 table=RunTemplateSchema,
                 filter_model=template_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_run_template(
@@ -6389,7 +6607,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            session.refresh(template)
+            template = self._reload_for_response(session, template)
 
             return template.to_model(
                 include_metadata=True, include_resources=True
@@ -6471,13 +6689,23 @@ class SqlZenStore(BaseZenStore):
                     ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                        jl_arg(
+                            PipelineSnapshotSchema.pipeline_configuration_payload_id
+                        ),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).selectinload(
-                        jl_arg(PipelineSnapshotSchema.step_configurations)
+                        jl_arg(
+                            PipelineSnapshotSchema.pipeline_configuration_payload
+                        )
                     ),
+                    selectinload(jl_arg(PipelineRunSchema.snapshot))
+                    .selectinload(
+                        jl_arg(PipelineSnapshotSchema.step_configurations)
+                    )
+                    .options(*StepConfigurationSchema.load_payloads()),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).load_only(
@@ -6486,9 +6714,9 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(StepRunSchema.start_time),
                         jl_arg(StepRunSchema.end_time),
                     ),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.dynamic_config))
+                    .options(*StepConfigurationSchema.load_payloads()),
                     selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
                     selectinload(jl_arg(PipelineRunSchema.step_runs))
                     .selectinload(jl_arg(StepRunSchema.triggered_runs))
@@ -6541,9 +6769,7 @@ class SqlZenStore(BaseZenStore):
                 if step.status != ExecutionStatus.RETRIED.value
             }
 
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                snapshot.pipeline_configuration
-            )
+            pipeline_configuration = snapshot.get_pipeline_configuration()
             pipeline_configuration.finalize_substitutions(
                 start_time=run.substitution_time, inplace=True
             )
@@ -6552,7 +6778,7 @@ class SqlZenStore(BaseZenStore):
                 # Ignore static config templates for dynamic pipeline DAGs
                 steps = {
                     name: DAGStepView.from_dict(
-                        json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
+                        json.loads(step_run.dynamic_config.resolved_config),  # type: ignore[union-attr]
                         substitutions=pipeline_configuration.substitutions,
                     )
                     for name, step_run in step_runs.items()
@@ -6560,7 +6786,7 @@ class SqlZenStore(BaseZenStore):
             else:
                 steps = {
                     config_table.name: DAGStepView.from_dict(
-                        json.loads(config_table.config),
+                        json.loads(config_table.resolved_config),
                         substitutions=pipeline_configuration.substitutions,
                     )
                     for config_table in snapshot.step_configurations
@@ -7016,13 +7242,21 @@ class SqlZenStore(BaseZenStore):
         return index
 
     def _create_run(
-        self, pipeline_run: PipelineRunRequest, session: Session
+        self,
+        pipeline_run: PipelineRunRequest,
+        orchestrator_environment: str,
+        session: Session,
+        payload_ids: Optional[Dict[str, UUID]],
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
+            orchestrator_environment: The serialized orchestrator environment
+                of the run.
             session: SQLAlchemy session.
+            payload_ids: The stored payloads of the run, or None while payload
+                references are disabled.
 
         Returns:
             The created pipeline run.
@@ -7069,11 +7303,13 @@ class SqlZenStore(BaseZenStore):
 
         new_run = PipelineRunSchema.from_request(
             pipeline_run,
+            orchestrator_environment=orchestrator_environment,
             pipeline_id=snapshot.pipeline_id,
             index=index,
             enable_heartbeat=snapshot.get_enable_heartbeat(),
             root_run_id=root_run_id,
         )
+        reference_payloads(payload_ids, new_run)
 
         session.add(new_run)
 
@@ -7135,6 +7371,12 @@ class SqlZenStore(BaseZenStore):
                     verify=False,
                 )
 
+        # The commits expired the snapshot, so this reads its current
+        # reference. Its payload never loads lazily.
+        if snapshot.pipeline_configuration_payload_id:
+            session.refresh(
+                snapshot, attribute_names=["pipeline_configuration_payload"]
+            )
         try:
             model_version_id = self._get_or_create_model_version_for_run(
                 new_run, config=new_run.get_pipeline_configuration()
@@ -7162,7 +7404,7 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-        session.refresh(new_run)
+        new_run = self._reload_for_response(session, new_run)
 
         return new_run.to_model(include_metadata=True, include_resources=True)
 
@@ -7245,16 +7487,19 @@ class SqlZenStore(BaseZenStore):
     def _replace_placeholder_run(
         self,
         pipeline_run: PipelineRunRequest,
+        orchestrator_environment: str,
         session: Session,
-        pre_replacement_hook: Optional[Callable[[], None]] = None,
+        payload_ids: Optional[Dict[str, UUID]],
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
+            orchestrator_environment: The serialized orchestrator environment
+                of the run.
             session: SQLAlchemy session.
-            pre_replacement_hook: Optional function to run before replacing the
-                pipeline run.
+            payload_ids: The stored payloads of the run, or None while payload
+                references are disabled.
 
         Raises:
             KeyError: If no placeholder run exists.
@@ -7306,9 +7551,8 @@ class SqlZenStore(BaseZenStore):
         if not run_schema:
             raise KeyError("No placeholder run found.")
 
-        if pre_replacement_hook:
-            pre_replacement_hook()
-        run_schema.update_placeholder(pipeline_run)
+        run_schema.update_placeholder(pipeline_run, orchestrator_environment)
+        reference_payloads(payload_ids, run_schema)
 
         session.add(run_schema)
         session.commit()
@@ -7319,7 +7563,7 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-        session.refresh(run_schema)
+        run_schema = self._reload_for_response(session, run_schema)
 
         return run_schema.to_model(
             include_metadata=True, include_resources=True
@@ -7364,6 +7608,8 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
+        # Payloads are loaded only once the lookup finds a run.
+        run_schema = self._reload_for_response(session, run_schema)
         return run_schema.to_model(
             include_metadata=True, include_resources=True
         )
@@ -7406,6 +7652,22 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
 
+            # Before anything is written, so that a caller who may not create
+            # the run neither stores payloads nor takes the lock below.
+            if pre_creation_hook:
+                pre_creation_hook()
+
+            # Ends the read transaction first, see `_store_payloads`.
+            session.commit()
+            orchestrator_environment = (
+                PipelineRunSchema.serialize_orchestrator_environment(
+                    pipeline_run
+                )
+            )
+            payload_ids = self._store_new_payloads(
+                [PayloadValue(text=orchestrator_environment)]
+            )
+
             # Acquire exclusive lock on the snapshot to prevent deadlocks
             # during insertion
             session.exec(
@@ -7422,8 +7684,9 @@ class SqlZenStore(BaseZenStore):
                     return (
                         self._replace_placeholder_run(
                             pipeline_run=pipeline_run,
-                            pre_replacement_hook=pre_creation_hook,
+                            orchestrator_environment=orchestrator_environment,
                             session=session,
+                            payload_ids=payload_ids,
                         ),
                         True,
                     )
@@ -7456,9 +7719,15 @@ class SqlZenStore(BaseZenStore):
                 #     create.
                 #     -> The `self._create_run(...)` call will fail due to the
                 #     unique constraint on those columns.
-                if pre_creation_hook:
-                    pre_creation_hook()
-                return self._create_run(pipeline_run, session=session), True
+                return (
+                    self._create_run(
+                        pipeline_run,
+                        orchestrator_environment=orchestrator_environment,
+                        session=session,
+                        payload_ids=payload_ids,
+                    ),
+                    True,
+                )
             except EntityExistsError as create_error:
                 if not pipeline_run.orchestrator_run_id:
                     # No orchestrator_run_id means this is likely a name conflict.
@@ -7662,7 +7931,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            session.refresh(existing_run)
+            existing_run = self._reload_for_response(session, existing_run)
 
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
@@ -12280,6 +12549,12 @@ class SqlZenStore(BaseZenStore):
                 session=session,
                 reference_type="original step run",
             )
+            if run.snapshot and run.snapshot.pipeline_configuration_payload_id:
+                # The payload relationship never loads lazily.
+                session.refresh(
+                    run.snapshot,
+                    attribute_names=["pipeline_configuration_payload"],
+                )
             pipeline_configuration = run.get_pipeline_configuration()
             step_config = (
                 step_run.dynamic_config
@@ -12288,6 +12563,32 @@ class SqlZenStore(BaseZenStore):
                     pipeline_configuration=pipeline_configuration,
                 )
             )
+            dynamic_configuration: Optional[StepConfigurationSchema] = None
+            resolved_step_config = step_config
+            if step_run.dynamic_config:
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
+                dynamic_configuration = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                )
+                # Resolved like reads resolve it, so that the values copied
+                # below match what reads would compute. Before its payload is
+                # referenced, so that this reads the inline value.
+                resolved_step_config = dynamic_configuration.to_step(
+                    pipeline_configuration,
+                    exclude_hook_sources=run.snapshot.is_dynamic,
+                )
             resource_runtime: Optional[StepRuntime] = None
             resource_request_heartbeat_enabled: Optional[bool] = None
             if (
@@ -12317,6 +12618,19 @@ class SqlZenStore(BaseZenStore):
             # Release the read locks of the previous two queries before we
             # try to acquire more exclusive locks
             session.commit()
+            # While the session holds no transaction, see `_store_payloads`.
+            payload_ids = self._store_new_payloads(
+                [
+                    PayloadValue(text=text)
+                    for text in (step_run.source_code, step_run.docstring)
+                    if text is not None
+                ]
+                + (
+                    get_inline_payload_values(dynamic_configuration)
+                    if dynamic_configuration
+                    else []
+                )
+            )
 
             # Acquire exclusive lock on the snapshot and run to prevent
             # deadlocks during insertion
@@ -12413,39 +12727,15 @@ class SqlZenStore(BaseZenStore):
                 else None
             )
 
+            reference_payloads(payload_ids, step_schema)
             session.add(step_schema)
+            if dynamic_configuration:
+                dynamic_configuration.step_run_id = step_schema.id
+                reference_payloads(payload_ids, dynamic_configuration)
+                session.add(dynamic_configuration)
 
-            resolved_step_config = step_config
-            if step_run.dynamic_config:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
-                step_configuration_schema = StepConfigurationSchema(
-                    index=0,
-                    name=step_run.name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_run.dynamic_config.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    step_run_id=step_schema.id,
-                )
-                session.add(step_configuration_schema)
-                # Resolved like reads resolve it, so that the values copied
-                # below match what reads would compute.
-                resolved_step_config = step_configuration_schema.to_step(
-                    pipeline_configuration,
-                    exclude_hook_sources=run.snapshot.is_dynamic,
-                )
-
-            step_type = resolved_step_config.config.step_type
-            step_schema.step_type = step_type.value if step_type else None
-            step_schema.substitutions = json.dumps(
-                resolved_step_config.config.substitutions
+            step_schema.sqlmodel_update(
+                StepRunSchema.get_control_values(resolved_step_config)
             )
 
             try:
@@ -12742,6 +13032,7 @@ class SqlZenStore(BaseZenStore):
 
                 session.refresh(step_schema)
 
+            step_schema = self._reload_for_response(session, step_schema)
             step_run_response = step_schema.to_model(
                 include_metadata=True,
                 include_resources=True,
@@ -13241,6 +13532,9 @@ class SqlZenStore(BaseZenStore):
                         verify=False,
                     )
 
+            existing_step_run = self._reload_for_response(
+                session, existing_step_run
+            )
             return existing_step_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -14522,9 +14816,10 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
+                # Without metadata, which permission checks never read.
                 return cast(
                     AnyIdentifiedResponse,
-                    to_model(include_metadata=True, include_resources=True),
+                    to_model(include_metadata=False, include_resources=True),
                 )
             else:
                 raise RuntimeError("Unable to convert schema to model.")
