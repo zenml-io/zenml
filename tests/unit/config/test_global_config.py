@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for global and client configuration."""
+
 import os
 
 from zenml.config.global_config import GlobalConfiguration
@@ -37,3 +39,21 @@ def test_global_config_returns_value_from_environment_variable(
 
     os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
     assert config.analytics_opt_in is False
+
+
+def test_client_active_project_falls_back_to_global_project(
+    clean_client, tmp_path
+):
+    """Tests that Client.active_project falls back to global project when repo config has none."""
+    from zenml.client import Client
+
+    clean_client.create_project(name="secondary_project", description="test")
+    Client.initialize(tmp_path)
+
+    repo_client = Client(root=tmp_path)
+    assert repo_client._config is not None
+    assert repo_client._config.active_project is None
+
+    active_project = repo_client.active_project
+    assert active_project is not None
+    assert active_project == GlobalConfiguration().get_active_project()
