@@ -70,10 +70,11 @@ def test_build_pod_manifest_image_pull_policy():
         privileged=False,
         image_pull_policy="Always",
     )
-    
+
     assert isinstance(manifest, V1Pod)
     container = manifest.spec.containers[0]
     assert container.image_pull_policy == "Always"
+
 
 @pytest.fixture
 def kubernetes_pod_settings() -> KubernetesPodSettings:
