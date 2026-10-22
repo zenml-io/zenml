@@ -60,6 +60,21 @@ def test_build_pod_manifest_metadata():
     assert container.security_context.privileged is True
 
 
+def test_build_pod_manifest_image_pull_policy():
+    """Test that the image pull policy is correctly set in the manifest."""
+    manifest: V1Pod = build_pod_manifest(
+        pod_name="test_name",
+        image_name="test_image",
+        command=["test", "command"],
+        args=["test", "args"],
+        privileged=False,
+        image_pull_policy="Always",
+    )
+    
+    assert isinstance(manifest, V1Pod)
+    container = manifest.spec.containers[0]
+    assert container.image_pull_policy == "Always"
+
 @pytest.fixture
 def kubernetes_pod_settings() -> KubernetesPodSettings:
     """build KubernetesPodSettings fixture."""
