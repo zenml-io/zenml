@@ -69,6 +69,10 @@ class KubernetesSandboxSettings(ContainerizedSandboxSettings):
         default=False,
         description="Whether sandbox session containers run in privileged mode.",
     )
+    image_pull_policy: str = Field(
+        default="IfNotPresent",
+        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    )
     owner: KubernetesSandboxOwner = Field(
         default=KubernetesSandboxOwner.NONE,
         description="Kubernetes object that owns sandbox session pods so they "

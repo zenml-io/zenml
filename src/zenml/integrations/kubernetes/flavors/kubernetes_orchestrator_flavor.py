@@ -66,6 +66,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=False,
         description="Whether to run containers in privileged mode with extended permissions.",
     )
+    image_pull_policy: str = Field(
+        default="IfNotPresent",
+        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
         description="Pod configuration for step execution containers.",

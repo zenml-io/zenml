@@ -527,6 +527,7 @@ def main() -> None:
                 args=step_args,
                 env=step_env,
                 privileged=settings.privileged,
+                image_pull_policy=settings.image_pull_policy,
                 pod_settings=pod_settings,
                 service_account_name=settings.step_pod_service_account_name
                 or settings.service_account_name,
