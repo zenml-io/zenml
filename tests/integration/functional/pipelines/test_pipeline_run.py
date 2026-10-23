@@ -143,8 +143,8 @@ def test_duplicate_pipeline_run_name_raises_improved_error(clean_client):
 
 
 @step
-def cacheable_step() -> int:
-    return 0
+def cacheable_step(value: int = 0) -> int:
+    return value
 
 
 def test_cache_expiration(clean_client):
@@ -161,7 +161,7 @@ def test_cache_expiration(clean_client):
 
     @pipeline(cache_policy=CachePolicy(expires_after=3600))
     def test_pipeline():
-        cacheable_step()
+        cacheable_step(value=1)
 
     test_pipeline()
     run = test_pipeline()
