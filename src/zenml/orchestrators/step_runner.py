@@ -158,7 +158,7 @@ class StepRunner:
             self._stack.orchestrator.run_init_cleanup_at_step_level
             and not runtime.is_active()
         ):
-            step_level_hooks_snapshot = pipeline_run.snapshot
+            step_level_hooks_snapshot = step_run_info.snapshot
 
         logs_context: ContextManager[Any] = nullcontext()
         if is_step_logging_enabled(
