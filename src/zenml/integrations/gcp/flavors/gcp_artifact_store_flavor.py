@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
 
+from pydantic import Field
+
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
@@ -37,6 +39,24 @@ class GCPArtifactStoreConfig(
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
     IS_IMMUTABLE_FILESYSTEM: ClassVar[bool] = True
+
+    request_timeout: Optional[float] = Field(
+        default=None,
+        gt=0,
+        allow_inf_nan=False,
+        description="Timeout in seconds for individual GCS requests and "
+        "synchronous file upload calls. Retries and operations spanning "
+        "multiple requests can take longer. Leave unset to preserve gcsfs "
+        "defaults and configuration.",
+    )
+    read_cache_type: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="Read cache type passed to gcsfs. Leave unset to use "
+        "the installed gcsfs version's default. Set to 'readahead' to avoid "
+        "adaptive background prefetching in affected releases; this can "
+        "reduce read throughput.",
+    )
 
 
 class GCPArtifactStoreFlavor(BaseArtifactStoreFlavor):
