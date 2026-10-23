@@ -467,3 +467,75 @@ def test_multiple_filters_for_same_numeric_field() -> None:
         GenericFilterOps.LT,
     ]
     assert [f.value for f in filters] == [1, 10]
+
+
+ALICE_USER_ID = uuid.UUID("5d0f2d4e-8b0a-4d8c-9f5e-3c1b2a7e6f10")
+
+
+def _filter_users_by_name_or_id(filter_value: str) -> List[str]:
+    """Filter users by id, name or full name on an in-memory database.
+
+    The user `bob` has the full name `alice`, so filtering for `alice` matches
+    `alice` by name and `bob` by full name.
+
+    Args:
+        filter_value: The name or id filter value, optionally with operator.
+
+    Returns:
+        The sorted names of the matching users.
+    """
+    from sqlmodel import Session, create_engine, select
+
+    from zenml.zen_stores.schemas import UserSchema
+
+    engine = create_engine("sqlite://")
+    UserSchema.__table__.create(engine)
+    try:
+        with Session(engine) as session:
+            session.add_all(
+                [
+                    UserSchema(
+                        id=ALICE_USER_ID,
+                        name="alice",
+                        full_name="Alice Smith",
+                        active=True,
+                    ),
+                    UserSchema(name="bob", full_name="alice", active=True),
+                    UserSchema(
+                        name="carol", full_name="Carol Jones", active=True
+                    ),
+                ]
+            )
+            session.commit()
+
+            condition = BaseFilter().generate_name_or_id_query_conditions(
+                value=filter_value,
+                table=UserSchema,
+                additional_columns=["full_name"],
+            )
+            return sorted(
+                session.exec(select(UserSchema.name).where(condition)).all()
+            )
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "filter_value, expected_names",
+    [
+        ("alice", ["alice", "bob"]),
+        ("notequals:alice", ["carol"]),
+        ("contains:ali", ["alice", "bob"]),
+        ("notcontains:ali", ["carol"]),
+        ('oneof:["alice"]', ["alice", "bob"]),
+        ('notoneof:["alice"]', ["carol"]),
+        (str(ALICE_USER_ID), ["alice"]),
+        (f"notequals:{ALICE_USER_ID}", ["bob", "carol"]),
+        (f'notoneof:["{ALICE_USER_ID}"]', ["bob", "carol"]),
+    ],
+)
+def test_name_or_id_filter_negative_operators_exclude_all_matches(
+    filter_value: str, expected_names: List[str]
+) -> None:
+    """Test negative name or id filters exclude matches on any column."""
+    assert _filter_users_by_name_or_id(filter_value) == expected_names
