@@ -29,7 +29,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from zenml.enums import GenericFilterOps
+from zenml.enums import GenericFilterOps, LogicalOperators
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -489,11 +489,13 @@ class TaggableFilter(BaseFilter):
         tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
 
         if tag_values:
-            from sqlmodel import exists, select
+            from sqlalchemy import case
+            from sqlmodel import col, exists, func, or_, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
-            for tag in tag_values:
+            conditions = []
+            for tag in dict.fromkeys(tag_values):
                 _, operator = self._resolve_operator(tag)
                 if operator == GenericFilterOps.IS_NULL:
                     custom_filters.append(
@@ -515,17 +517,37 @@ class TaggableFilter(BaseFilter):
                     )
                     continue
 
-                condition = self.generate_custom_query_conditions_for_column(
-                    value=tag, table=TagSchema, column="name"
-                )
-                exists_subquery = exists(
-                    select(TagResourceSchema)
-                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
-                    .where(
-                        TagResourceSchema.resource_id == table.id, condition
+                conditions.append(
+                    self.generate_custom_query_conditions_for_column(
+                        value=tag, table=TagSchema, column="name"
                     )
                 )
-                custom_filters.append(exists_subquery)
+
+            if conditions:
+                query = (
+                    select(TagResourceSchema.resource_id)
+                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
+                    .where(
+                        TagResourceSchema.resource_id == table.id,
+                        or_(*conditions),
+                    )
+                )
+                if (
+                    self.logical_operator == LogicalOperators.AND
+                    and len(conditions) > 1
+                ):
+                    # Count satisfied predicates independently: one tag can
+                    # match multiple conditions, including collation-equivalent
+                    # equalities. Counting distinct names changes that behavior.
+                    query = query.group_by(
+                        col(TagResourceSchema.resource_id)
+                    ).having(
+                        *(
+                            func.max(case((condition, 1), else_=0)) == 1
+                            for condition in conditions
+                        )
+                    )
+                custom_filters.append(exists(query))
 
         return custom_filters
 
@@ -690,7 +712,8 @@ class RunMetadataFilterMixin(BaseFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.run_metadata is not None:
-            from sqlmodel import exists, select
+            from sqlalchemy import case
+            from sqlmodel import and_, col, exists, func, or_, select
 
             from zenml.enums import MetadataResourceTypes
             from zenml.zen_stores.schemas import (
@@ -713,19 +736,30 @@ class RunMetadataFilterMixin(BaseFilter):
                 ScheduleSchema: MetadataResourceTypes.SCHEDULE,
             }
 
-            # Create an EXISTS subquery for each run_metadata filter
             metadata_entries = (
                 [self.run_metadata]
                 if isinstance(self.run_metadata, str)
                 else self.run_metadata
             )
-            for entry in metadata_entries:
-                # Split at the first colon to get the key
+            conditions = []
+            for entry in dict.fromkeys(metadata_entries):
                 key, value = entry.split(":", 1)
+                conditions.append(
+                    and_(
+                        self.generate_custom_query_conditions_for_column(
+                            value=key, table=RunMetadataSchema, column="key"
+                        ),
+                        self.generate_custom_query_conditions_for_column(
+                            value=value,
+                            table=RunMetadataSchema,
+                            column="value",
+                        ),
+                    )
+                )
 
-                # Create an exists subquery
-                exists_subquery = exists(
-                    select(RunMetadataResourceSchema.id)
+            if conditions:
+                query = (
+                    select(RunMetadataResourceSchema.resource_id)
                     .join(
                         RunMetadataSchema,
                         RunMetadataSchema.id  # type: ignore[arg-type]
@@ -735,18 +769,23 @@ class RunMetadataFilterMixin(BaseFilter):
                         RunMetadataResourceSchema.resource_id == table.id,
                         RunMetadataResourceSchema.resource_type
                         == resource_type_mapping[table].value,
-                        self.generate_custom_query_conditions_for_column(
-                            value=key,
-                            table=RunMetadataSchema,
-                            column="key",
-                        ),
-                        self.generate_custom_query_conditions_for_column(
-                            value=value,
-                            table=RunMetadataSchema,
-                            column="value",
-                        ),
+                        or_(*conditions),
                     )
                 )
-                custom_filters.append(exists_subquery)
+                if (
+                    self.logical_operator == LogicalOperators.AND
+                    and len(conditions) > 1
+                ):
+                    # Each condition needs a witness, but witnesses need not be
+                    # distinct. Duplicate metadata rows must not inflate matches.
+                    query = query.group_by(
+                        col(RunMetadataResourceSchema.resource_id)
+                    ).having(
+                        *(
+                            func.max(case((condition, 1), else_=0)) == 1
+                            for condition in conditions
+                        )
+                    )
+                custom_filters.append(exists(query))
 
         return custom_filters
