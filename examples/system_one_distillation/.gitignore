@@ -1,0 +1,14 @@
+# Local inputs and provider responses
+data/
+outputs/
+
+# Trained models and feature caches
+artifacts/
+models/
+*.joblib
+*.safetensors
+
+# Local ZenML state and Python caches
+.zenml/
+__pycache__/
+*.pyc
