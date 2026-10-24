@@ -35,6 +35,11 @@ SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
 # without a stored ZenML component token or a `~/.modal.toml` config file.
 MODAL_TOKEN_ID_ENV_KEY = "MODAL_TOKEN_ID"
 MODAL_TOKEN_SECRET_ENV_KEY = "MODAL_TOKEN_SECRET"
+# Sandbox tag keys shared by the orchestrator and step operator, whose
+# sandboxes share one Modal App per component and are told apart by tags.
+ORCHESTRATOR_RUN_ID_SANDBOX_TAG = "zenml-orchestrator-run-id"
+STEP_RUN_ID_SANDBOX_TAG = "zenml-step-run-id"
+STEP_NAME_SANDBOX_TAG = "zenml-step"
 
 SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {
     SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY,
@@ -404,6 +409,7 @@ def create_modal_sandbox(
     modal_client: Optional["modal.Client"],
     gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
     gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
+    tags: Optional[Dict[str, str]] = None,
 ) -> "modal.Sandbox":
     """Create a Modal sandbox for a ZenML entrypoint command.
 
@@ -417,6 +423,8 @@ def create_modal_sandbox(
         modal_client: Optional explicit Modal client.
         gpu_settings_field: Settings field name used in GPU errors.
         gpu_settings_example: Example configuration used in GPU errors.
+        tags: Optional Modal sandbox tags. Many runs share one Modal app, so
+            these tags identify which run and step a sandbox belongs to.
 
     Returns:
         The created Modal sandbox.
@@ -431,7 +439,20 @@ def create_modal_sandbox(
         gpu_settings_field=gpu_settings_field,
         gpu_settings_example=gpu_settings_example,
     )
-    return modal.Sandbox.create(*entrypoint_command, **sandbox_create_kwargs)
+    sandbox = modal.Sandbox.create(
+        *entrypoint_command, **sandbox_create_kwargs
+    )
+    if tags:
+        # `Sandbox.create(tags=...)` only exists from modal 1.4.3, but we
+        # support >=1.4. Tags are only a lookup aid, so failing here must not
+        # orphan a sandbox that is already running the step.
+        try:
+            sandbox.set_tags(tags)
+        except Exception as e:
+            logger.warning(
+                "Failed to tag Modal sandbox `%s`: %s", sandbox.object_id, e
+            )
+    return sandbox
 
 
 def wait_for_sandbox(
