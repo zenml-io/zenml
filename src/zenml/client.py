@@ -92,6 +92,7 @@ from zenml.exceptions import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.models import (
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -1127,10 +1128,14 @@ class Client(metaclass=ClientMetaClass):
         """Update a project.
 
         Args:
-            name_id_or_prefix: Name, ID or prefix of the project to update.
-            new_name: New name of the project.
-            new_display_name: New display name of the project.
-            new_description: New description of the project.
+            name_id_or_prefix: Current name or ID of the project to update, or
+                None to update the active project.
+            new_name: New unique name of the project. The project UUID and its
+                associated resources are preserved.
+            new_display_name: New display name of the project. An empty string
+                clears the display name.
+            new_description: New description of the project. An empty string
+                clears the description.
             project_metadata: New metadata for the project.
 
         Returns:
@@ -1139,18 +1144,28 @@ class Client(metaclass=ClientMetaClass):
         project = self.get_project(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        project_update = ProjectUpdate(
-            name=new_name or project.name,
-            display_name=new_display_name or project.display_name,
+        project_update = ProjectUpdate.model_validate(
+            {
+                field: value
+                for field, value in {
+                    "name": new_name,
+                    "display_name": new_display_name,
+                    "description": new_description,
+                    "project_metadata": project_metadata,
+                }.items()
+                if value is not None
+            }
         )
-        if new_description:
-            project_update.description = new_description
-        if project_metadata is not None:
-            project_update.project_metadata = project_metadata
-        return self.zen_store.update_project(
+        updated_project = self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
         )
+        if self._active_project and self._active_project.id == project.id:
+            self._active_project = updated_project
+        if self._config and self._config.active_project_id == project.id:
+            self._config.set_active_project(updated_project)
+        GlobalConfiguration().refresh_active_project(updated_project)
+        return updated_project
 
     def delete_project(self, name_id_or_prefix: str) -> None:
         """Delete a project.
@@ -4044,6 +4059,40 @@ class Client(metaclass=ClientMetaClass):
         self.zen_store.delete_run_template(template_id=template_id)
 
     # ------------------------------- Triggers ---------------------------------
+
+    def list_snapshot_triggers(
+        self,
+        snapshot_id: UUID,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        project: Optional[Union[str, UUID]] = None,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List triggers attached to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            project: The project name or ID to filter by.
+            hydrate: Whether to include metadata fields in the response.
+
+        Returns:
+            A page of triggers attached to the snapshot.
+        """
+        return self.zen_store.list_triggers(
+            triggers_filter_model=TriggerFilter(
+                project=project or self.active_project.id,
+                snapshot_id=str(snapshot_id),
+                is_archived=False,
+                sort_by=sort_by,
+                page=page,
+                size=size,
+            ),
+            hydrate=hydrate,
+        )
 
     def create_schedule_trigger(
         self,
