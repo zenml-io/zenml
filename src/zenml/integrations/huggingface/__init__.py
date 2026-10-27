@@ -55,7 +55,8 @@ class HuggingfaceIntegration(Integration):
         """
         requirements = [
             "datasets>=2.16.0,<4.0.0",
-            "huggingface_hub>0.19.0",
+            # The Space deployer uses the storage tier API removed in Hub 2.0.
+            "huggingface_hub>0.19.0,<2.0.0",
             "accelerate",
             "bitsandbytes>=0.41.3",
             "peft",
