@@ -125,7 +125,7 @@ def openai_chatgpt_alerter_failure_hook(
     Args:
         exception: The exception that was raised.
     """
-    openai_alerter_failure_hook_helper(exception, "gpt-3.5-turbo")
+    openai_alerter_failure_hook_helper(exception, "gpt-5.6-terra")
 
 
 def openai_gpt4_alerter_failure_hook(
