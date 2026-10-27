@@ -68,7 +68,7 @@ from zenml.enums import (
     RunWaitConditionType,
     StepRuntime,
 )
-from zenml.exceptions import RunMonitoringError, RunStoppedException
+from zenml.exceptions import RunStoppedException
 from zenml.execution.context import (
     record_step_run,
     setup_execution_context,
@@ -146,6 +146,7 @@ from zenml.models import (
 )
 from zenml.orchestrators.publish_utils import (
     publish_cancelled_step_run,
+    publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_pipeline_run_status_update,
     publish_stopped_step_run,
@@ -369,15 +370,10 @@ class DynamicPipelineRunner:
 
         self._shutdown_requested = False
         self._stop_mode: Optional[PipelineRunStopMode] = None
-        self._monitoring_exception: Optional[Exception] = None
-        self._monitoring_failures: Dict[str, int] = {}
-        self._drain_completed = True
-        self._startup_thread: Optional[threading.Thread] = None
         self._failure_detected = False
         self._exception: Optional[BaseException] = None
         self._lifecycle_lock = threading.RLock()
         self._monitoring_event = threading.Event()
-        self._cancellation_event = threading.Event()
         self._startup_event = threading.Event()
         self._dependency_graph = InvocationDependencyGraph()
         self._future_registry = FutureRegistry()
@@ -494,285 +490,253 @@ class DynamicPipelineRunner:
         """
         return self._orchestrator
 
-    def _observe_stop_request(self) -> None:
-        """Read cancellation independently of individual workload status."""
-        run = Client().zen_store.get_run(self._run.id)
-        self._run = run
-        if run.stop_mode is not None:
-            self.request_stop(run.stop_mode)
-
-    def _record_monitoring_error(self, key: str, exception: Exception) -> None:
-        """Keep monitoring alive and surface sustained failures to the runner.
-
-        Args:
-            key: The run or invocation whose observation failed.
-            exception: The observation error.
-        """
-        failures = self._monitoring_failures.get(key, 0) + 1
-        self._monitoring_failures[key] = failures
-        logger.warning("Failed to monitor `%s`: %s", key, exception)
-        if failures >= 3 and self._monitoring_exception is None:
-            self._monitoring_exception = exception
-            self.record_failure(exception)
-
     def _monitoring_loop(self) -> None:
-        """Supervise isolated-step monitoring independently of stop requests."""
+        """Monitoring loop.
+
+        This should run in a separate thread and monitors the running steps.
+        """
+        from zenml.config.step_configurations import Step
+
         monitoring_interval = handle_float_env_var(
             ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL, default=10.0
         )
         monitoring_delay = handle_float_env_var(
             ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY, default=0.1
         )
+
         while not self._shutdown_requested:
-            start_time = time.monotonic()
+            start_time = time.time()
+
+            try:
+                run = Client().zen_store.get_run(self._run.id)
+            except Exception:
+                logger.exception("Failed to check pipeline stop requests.")
+            else:
+                stop_mode = run.stop_mode
+                if stop_mode is None and run.status in {
+                    ExecutionStatus.STOPPING,
+                    ExecutionStatus.STOPPED,
+                }:
+                    stop_mode = PipelineRunStopMode.IMMEDIATE
+                if stop_mode is not None:
+                    self.request_stop(stop_mode)
+
+            # Copy the steps to avoid the dictionary getting modified by
+            # the main thread while we're iterating over it.
             for invocation_id, step_run in list(
                 self._steps_to_monitor.items()
             ):
+                infra_status: Optional[ExecutionStatus] = None
                 try:
-                    self._monitor_step(invocation_id, step_run)
-                except Exception as exception:
-                    self._record_monitoring_error(invocation_id, exception)
+                    infra_status = self._get_isolated_step_infra_status(
+                        step_run
+                    )
+                except Exception as e:
+                    logger.error(
+                        "Failed to get infra status for step `%s`: %s",
+                        invocation_id,
+                        e,
+                    )
                 else:
-                    self._monitoring_failures.pop(invocation_id, None)
-                if self._shutdown_requested:
-                    break
+                    logger.debug(
+                        "Step `%s` infra status: %s.",
+                        invocation_id,
+                        infra_status,
+                    )
+
+                infra_is_running = infra_status in [
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                ]
+                if infra_is_running and self._stop_mode is None:
+                    # Step still running on the infra side, no need to
+                    # do anything here.
+                    continue
+
+                step_run = Client().get_run_step(step_run.id)
+
+                db_status = step_run.status
+
+                if (
+                    infra_is_running or infra_status is None
+                ) and db_status in [
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                ]:
+                    # Active attempts may finish during graceful stopping.
+                    # Unknown infrastructure status also requires another poll.
+                    self._steps_to_monitor[invocation_id] = step_run
+                    continue
+
+                if self._stop_mode and db_status == ExecutionStatus.RETRYING:
+                    # A Kubernetes Job can remain active between attempts.
+                    # Remove it before settling the suppressed retry's future.
+                    try:
+                        self._stop_isolated_step(step_run)
+                    except Exception:
+                        logger.exception(
+                            "Failed to stop retrying step `%s`.", invocation_id
+                        )
+                        self._steps_to_monitor[invocation_id] = step_run
+                        continue
+
+                self._steps_to_monitor.pop(invocation_id, None)
+
+                if db_status == ExecutionStatus.STOPPING:
+                    # The step runner sets the status to STOPPING when receiving
+                    # a heartbeat response that the pipeline should be stopped.
+                    # We now update this status to STOPPED.
+                    step_run = publish_stopped_step_run(step_run.id)
+                elif db_status == ExecutionStatus.CANCELLING:
+                    # Resource preemption sets the status to CANCELLING. We now
+                    # update the status to CANCELLED.
+                    step_run = publish_cancelled_step_run(step_run.id)
+                elif infra_status in [
+                    ExecutionStatus.FAILED,
+                    ExecutionStatus.STOPPED,
+                ] and db_status in [
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                ]:
+                    # Step failed/stopped on the infra side, but the
+                    # code failed before it could report the status back to us.
+                    step_run = publish_failed_step_run(step_run.id)
+                elif (
+                    infra_status == ExecutionStatus.COMPLETED
+                    and db_status == ExecutionStatus.RUNNING
+                ):
+                    if step_run.config.command is not None:
+                        # For isolated command steps, no zenml code is running
+                        # and therefore nothing publishes the status. We assume
+                        # the command finished successfully because of the
+                        # infra status.
+                        step_run = publish_successful_step_run(
+                            step_run_id=step_run.id,
+                            output_artifact_ids={},
+                        )
+                    else:
+                        # This should never happen, handle it just in case. If
+                        # this happens, the node would stay in `RUNNING` status
+                        # forever and keep the pipeline from finishing. We
+                        # record a failure but don't raise to keep the
+                        # monitoring loop alive during the shutdown phase.
+                        exc = RuntimeError(
+                            f"Step `{invocation_id}` completed on the "
+                            "infrastructure side but its status was not "
+                            "updated."
+                        )
+                        self.record_failure(
+                            wrap_step_failure(exc, invocation_id=invocation_id)
+                        )
+
+                # Either infra or DB status indicates that the step has
+                # finished -> we run the step cleanup
+                self._cleanup_isolated_step(step_run)
+
+                # Get the updated status that we might have just published
+                db_status = step_run.status
+
+                duration_string = (
+                    string_utils.get_human_readable_time(
+                        step_run.duration.total_seconds()
+                    )
+                    if step_run.duration
+                    else None
+                )
+                if db_status.is_successful:
+                    if duration_string:
+                        logger.info(
+                            "Step `%s` finished successfully in %s.",
+                            invocation_id,
+                            duration_string,
+                        )
+                    else:
+                        logger.info(
+                            "Step `%s` finished successfully.",
+                            invocation_id,
+                        )
+                    self._on_step_finished(step_run=step_run)
+                elif db_status.is_failed:
+                    if duration_string:
+                        logger.error(
+                            "Step `%s` failed after %s.",
+                            invocation_id,
+                            duration_string,
+                        )
+                    else:
+                        logger.error(
+                            "Step `%s` failed.",
+                            invocation_id,
+                        )
+                    self._on_step_finished(step_run=step_run)
+                elif db_status == ExecutionStatus.STOPPED:
+                    if duration_string:
+                        logger.info(
+                            "Step `%s` stopped after %s.",
+                            invocation_id,
+                            duration_string,
+                        )
+                    else:
+                        logger.info("Step `%s` stopped.", invocation_id)
+                    self._on_step_finished(step_run=step_run)
+                elif db_status == ExecutionStatus.RETRYING:
+                    # The server set the status of the step run to retrying ->
+                    # The server expects the step to be retried.
+                    remaining_retries = get_remaining_retries(
+                        step_run=step_run
+                    )
+
+                    if duration_string:
+                        logger.error(
+                            "Step `%s` failed after %s. Remaining retries: %d.",
+                            invocation_id,
+                            duration_string,
+                            remaining_retries,
+                        )
+                    else:
+                        logger.error(
+                            "Step `%s` failed. Remaining retries: %d.",
+                            invocation_id,
+                            remaining_retries,
+                        )
+
+                    with self._lifecycle_lock:
+                        if (
+                            remaining_retries > 0
+                            and not self._failure_detected
+                        ):
+                            # If there was a failure already, we do not want to
+                            # start any new work no matter the execution mode.
+                            step = Step(
+                                spec=step_run.spec,
+                                config=step_run.config,
+                                step_config_overrides=step_run.config,
+                            )
+                            execution_future = (
+                                self._queue_concurrent_isolated_step(step=step)
+                            )
+                            # Replace the execution future of the registered
+                            # step future. This is done so a failed submission
+                            # resolves the future instead of leaving it polling
+                            # the step run that is stuck in `RETRYING` status.
+                            self._future_registry.rebind_step_execution_future(
+                                invocation_id=invocation_id,
+                                future=execution_future,
+                            )
+                        else:
+                            # No replacement will arrive. Leaving this attempt
+                            # RETRYING would keep its future and controller alive.
+                            step_run = publish_stopped_step_run(step_run.id)
+                            self._on_step_finished(step_run)
+
                 time.sleep(monitoring_delay)
 
-            duration = time.monotonic() - start_time
-            self._monitoring_event.wait(
-                timeout=max(0, monitoring_interval - duration)
-            )
+            duration = time.time() - start_time
+            time_to_sleep = max(0, monitoring_interval - duration)
+            self._monitoring_event.wait(timeout=time_to_sleep)
             self._monitoring_event.clear()
-
-    def _cancellation_loop(self) -> None:
-        """Observe run cancellation without waiting for workload probes."""
-        interval = handle_float_env_var(
-            ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL, default=10.0
-        )
-        while not self._shutdown_requested:
-            try:
-                self._observe_stop_request()
-            except Exception as exception:
-                self._record_monitoring_error("pipeline", exception)
-            else:
-                self._monitoring_failures.pop("pipeline", None)
-            self._cancellation_event.wait(timeout=interval)
-            self._cancellation_event.clear()
-
-    def _start_cancellation_loop(self) -> threading.Thread:
-        """Start independent run-level cancellation observation.
-
-        Returns:
-            The cancellation observer thread.
-        """
-        ctx = contextvars.copy_context()
-        thread = threading.Thread(
-            name="DynamicPipelineRunner-Cancellation-Loop",
-            target=lambda: ctx.run(self._cancellation_loop),
-            daemon=True,
-        )
-        thread.start()
-        return thread
-
-    def _monitor_step(
-        self, invocation_id: str, step_run: "StepRunResponse"
-    ) -> None:
-        """Observe one attempt and settle it or arrange its next retry.
-
-        Args:
-            invocation_id: The invocation to observe.
-            step_run: Its latest monitored attempt.
-        """
-        infra_status = self._get_isolated_step_infra_status(step_run)
-        logger.debug(
-            "Step `%s` infra status: %s.", invocation_id, infra_status
-        )
-
-        if infra_status in [
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-            ExecutionStatus.RUNNING,
-        ]:
-            # Step still running on the infra side, no need to
-            # do anything here.
-            return
-
-        step_run = Client().get_run_step(step_run.id)
-
-        db_status = step_run.status
-
-        if infra_status is None and db_status in [
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-            ExecutionStatus.RUNNING,
-            ExecutionStatus.STOPPING,
-            ExecutionStatus.CANCELLING,
-        ]:
-            # Step is running in the DB and we have no information on
-            # the infra side, so we wait for the next
-            # monitoring interval to check again. We store the
-            # refreshed step run to have the most up to date status.
-            self._steps_to_monitor[invocation_id] = step_run
-            return
-
-        if db_status == ExecutionStatus.STOPPING:
-            # The step runner sets the status to STOPPING when receiving
-            # a heartbeat response that the pipeline should be stopped.
-            # We now update this status to STOPPED.
-            step_run = publish_stopped_step_run(step_run.id)
-        elif db_status == ExecutionStatus.CANCELLING:
-            # Resource preemption sets the status to CANCELLING. We now
-            # update the status to CANCELLED.
-            step_run = publish_cancelled_step_run(step_run.id)
-        elif infra_status in [
-            ExecutionStatus.FAILED,
-            ExecutionStatus.STOPPED,
-        ] and db_status in [
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-            ExecutionStatus.RUNNING,
-        ]:
-            # Step failed/stopped on the infra side, but the
-            # code failed before it could report the status back to us.
-            if self._stop_mode == PipelineRunStopMode.IMMEDIATE:
-                step_run = publish_stopped_step_run(step_run.id)
-            else:
-                step_run = publish_failed_step_run(step_run.id)
-        elif (
-            infra_status == ExecutionStatus.COMPLETED
-            and db_status == ExecutionStatus.RUNNING
-        ):
-            if step_run.config.command is not None:
-                # For isolated command steps, no zenml code is running
-                # and therefore nothing publishes the status. We assume
-                # the command finished successfully because of the
-                # infra status.
-                step_run = publish_successful_step_run(
-                    step_run_id=step_run.id,
-                    output_artifact_ids={},
-                )
-            else:
-                # This should never happen, handle it just in case. If
-                # this happens, the node would stay in `RUNNING` status
-                # forever and keep the pipeline from finishing. We
-                # record a failure but don't raise to keep the
-                # monitoring loop alive during the shutdown phase.
-                exc = RuntimeError(
-                    f"Step `{invocation_id}` completed on the "
-                    "infrastructure side but its status was not "
-                    "updated."
-                )
-                self.record_failure(
-                    wrap_step_failure(exc, invocation_id=invocation_id)
-                )
-                step_run = publish_failed_step_run(step_run.id)
-
-        # Either infra or DB status indicates that the step has
-        # finished -> we run the step cleanup
-        self._cleanup_isolated_step(step_run)
-
-        # Get the updated status that we might have just published
-        db_status = step_run.status
-
-        duration_string = (
-            string_utils.get_human_readable_time(
-                step_run.duration.total_seconds()
-            )
-            if step_run.duration
-            else None
-        )
-        if db_status.is_successful:
-            if duration_string:
-                logger.info(
-                    "Step `%s` finished successfully in %s.",
-                    invocation_id,
-                    duration_string,
-                )
-            else:
-                logger.info(
-                    "Step `%s` finished successfully.",
-                    invocation_id,
-                )
-            self._on_step_finished(step_run=step_run)
-        elif db_status.is_failed:
-            if duration_string:
-                logger.error(
-                    "Step `%s` failed after %s.",
-                    invocation_id,
-                    duration_string,
-                )
-            else:
-                logger.error(
-                    "Step `%s` failed.",
-                    invocation_id,
-                )
-            self._on_step_finished(step_run=step_run)
-        elif db_status == ExecutionStatus.STOPPED:
-            if duration_string:
-                logger.info(
-                    "Step `%s` stopped after %s.",
-                    invocation_id,
-                    duration_string,
-                )
-            else:
-                logger.info("Step `%s` stopped.", invocation_id)
-            self._on_step_finished(step_run=step_run)
-        elif db_status == ExecutionStatus.RETRYING:
-            # The server set the status of the step run to retrying ->
-            # The server expects the step to be retried.
-            remaining_retries = get_remaining_retries(step_run=step_run)
-
-            if duration_string:
-                logger.error(
-                    "Step `%s` failed after %s. Remaining retries: %d.",
-                    invocation_id,
-                    duration_string,
-                    remaining_retries,
-                )
-            else:
-                logger.error(
-                    "Step `%s` failed. Remaining retries: %d.",
-                    invocation_id,
-                    remaining_retries,
-                )
-
-            with self._lifecycle_lock:
-                if remaining_retries > 0 and not self._startup_cancelled:
-                    # If there was a failure already, we do not want to
-                    # start any new work no matter the execution mode.
-                    step = Step(
-                        spec=step_run.spec,
-                        config=step_run.config,
-                        step_config_overrides=step_run.config,
-                    )
-                    execution_future = self._queue_concurrent_isolated_step(
-                        step=step
-                    )
-                    # Replace the execution future of the registered
-                    # step future. This is done so a failed submission
-                    # resolves the future instead of leaving it polling
-                    # the step run that is stuck in `RETRYING` status.
-                    self._future_registry.rebind_step_execution_future(
-                        invocation_id=invocation_id,
-                        future=execution_future,
-                    )
-                else:
-                    exception = self._get_step_exception(step_run)
-                    step_run = publish_stopped_step_run(step_run.id)
-                    if self._stop_mode is not None:
-                        exception = self._get_step_exception(step_run)
-                    self._future_registry.set_step_execution_exception(
-                        invocation_id=invocation_id, exception=exception
-                    )
-                    self.apply_graph_update(
-                        self._dependency_graph.mark_node_failed(invocation_id),
-                        exception=exception,
-                    )
-
-        with self._lifecycle_lock:
-            monitored = self._steps_to_monitor.get(invocation_id)
-            if monitored is not None and monitored.id == step_run.id:
-                self._steps_to_monitor.pop(invocation_id, None)
 
     def _start_monitoring_loop(self) -> threading.Thread:
         """Start the monitoring loop.
@@ -791,10 +755,10 @@ class DynamicPipelineRunner:
 
     def _startup_loop(self) -> None:
         """Startup loop."""
-        while not self._startup_cancelled and not self._shutdown_requested:
+        while not self._failure_detected and not self._shutdown_requested:
             self._startup_event.wait(timeout=None)
 
-            while not self._startup_cancelled and not self._shutdown_requested:
+            while not self._failure_detected and not self._shutdown_requested:
                 node = self._dependency_graph.get_ready_node()
                 if node is None:
                     # Clear and immediately re-check to avoid missing work that
@@ -837,7 +801,6 @@ class DynamicPipelineRunner:
             daemon=True,
         )
         startup_thread.start()
-        self._startup_thread = startup_thread
         return startup_thread
 
     def _register_isolated_step_for_monitoring(
@@ -854,9 +817,9 @@ class DynamicPipelineRunner:
             should_stop_step = (
                 self._stop_mode == PipelineRunStopMode.IMMEDIATE
                 or (
-                    self._failure_detected
+                    self._stop_mode is None
+                    and self._failure_detected
                     and self._fail_fast
-                    and self._stop_mode is None
                 )
             )
 
@@ -889,11 +852,17 @@ class DynamicPipelineRunner:
         Args:
             step_run: The finished step run.
         """
-        if step_run.config.step_operator:
-            assert self._step_operator
-            self._step_operator.cleanup_step_submission(step_run)
-        else:
-            self._orchestrator.cleanup_isolated_step(step_run)
+        try:
+            if step_run.config.step_operator:
+                assert self._step_operator
+                self._step_operator.cleanup_step_submission(step_run)
+            else:
+                self._orchestrator.cleanup_isolated_step(step_run)
+        except Exception:
+            logger.exception(
+                "Failed to run cleanup for isolated step `%s`.",
+                step_run.name,
+            )
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
@@ -903,9 +872,6 @@ class DynamicPipelineRunner:
             Exception: If loading the pipeline fails.
         """
         self._state.id = threading.get_ident()
-        if self._run.stop_mode is not None:
-            self._continue_stopped_run()
-            return
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
             logs_context = setup_logging_context(
@@ -977,145 +943,54 @@ class DynamicPipelineRunner:
             ):
                 monitoring_thread = self._start_monitoring_loop()
                 startup_thread = self._start_startup_loop()
-                cancellation_thread = self._start_cancellation_loop()
+
+                if run_start_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.start_hook_source,
+                        HookType.RUN_START,
+                    )
+                elif run_resume_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.resume_hook_source,
+                        HookType.RUN_RESUME,
+                    )
+
+                if not self._run.triggered_by_deployment:
+                    # Only run the init hook if the run is not triggered by
+                    # a deployment, as the deployment service will have
+                    # already run the init hook.
+                    try:
+                        self._orchestrator.run_init_hook(
+                            snapshot=self._snapshot
+                        )
+                    except BaseException as e:
+                        # The init hook itself is not tracked, but its failure
+                        # ends the run, so the run end and failure hooks fire
+                        # before the failure propagates.
+                        self._fire_terminal_run_hooks(
+                            ExecutionStatus.FAILED, e
+                        )
+                        raise
 
                 try:
-                    if run_start_hook:
-                        run_lifecycle_hook(
-                            self._snapshot.pipeline_configuration.start_hook_source,
-                            HookType.RUN_START,
-                        )
-                    elif run_resume_hook:
-                        run_lifecycle_hook(
-                            self._snapshot.pipeline_configuration.resume_hook_source,
-                            HookType.RUN_RESUME,
-                        )
-
-                    if not self._run.triggered_by_deployment:
-                        # Only run the init hook if the run is not triggered by
-                        # a deployment, as the deployment service will have
-                        # already run the init hook.
-                        try:
-                            self._orchestrator.run_init_hook(
-                                snapshot=self._snapshot
-                            )
-                        except BaseException as e:
-                            # The init hook itself is not tracked, but its failure
-                            # ends the run, so the run end and failure hooks fire
-                            # before the failure propagates.
-                            self._fire_terminal_run_hooks(
-                                ExecutionStatus.FAILED, e
-                            )
-                            raise
-
                     self._run_entrypoint_and_finalize()
                 finally:
-                    try:
-                        if not self._run.triggered_by_deployment:
-                            self._orchestrator.run_cleanup_hook(
-                                snapshot=self._snapshot
-                            )
-                    finally:
-                        self._shutdown_background_threads(
-                            [
-                                monitoring_thread,
-                                startup_thread,
-                                cancellation_thread,
-                            ]
+                    if not self._run.triggered_by_deployment:
+                        # Only run the cleanup hook if the run is not
+                        # triggered by a deployment, as the deployment
+                        # service will have already run the cleanup hook.
+                        self._orchestrator.run_cleanup_hook(
+                            snapshot=self._snapshot
                         )
 
-    def _shutdown_background_threads(
-        self, threads: Sequence[threading.Thread]
-    ) -> None:
-        """Release controller coordination without waiting forever on user code.
+                    self._executor.shutdown(wait=True, cancel_futures=True)
 
-        Args:
-            threads: The controller threads that were started.
-        """
-        self._shutdown_requested = True
-        self._startup_event.set()
-        self._monitoring_event.set()
-        self._cancellation_event.set()
-        self._executor.shutdown(wait=False, cancel_futures=True)
-        for thread in threads:
-            thread.join(timeout=5.0)
-            if thread.is_alive():
-                logger.warning(
-                    "Shutdown coordination for `%s` is incomplete; a backend "
-                    "request or user code is still running.",
-                    thread.name,
-                )
-        self._pause_coordinator.unregister(self)
-
-    def _continue_stopped_run(self) -> None:
-        """Recover observation of stopped isolated work without replaying code.
-
-        Raises:
-            RunMonitoringError: If existing execution cannot be reconstructed
-                safely and needs another immediate backend cleanup attempt.
-        """
-        threads: List[threading.Thread] = []
-        try:
-            if not self._run.in_progress:
-                return
-            if any(
-                child.in_progress
-                for child in self._existing_child_runs.values()
-            ):
-                error = RuntimeError(
-                    "Stopped run still has unfinished child execution from a "
-                    "previous controller. Retry immediate stop to complete "
-                    "backend cleanup before resuming."
-                )
-                raise RunMonitoringError(error) from error
-
-            for step_run in self._existing_step_runs.values():
-                if step_run.status in {
-                    ExecutionStatus.CACHED,
-                    ExecutionStatus.SKIPPED,
-                    ExecutionStatus.RETRIED,
-                }:
-                    continue
-                runtime, _ = get_step_runtime(
-                    step_config=step_run.config,
-                    pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
-                    orchestrator=self._orchestrator,
-                )
-                if runtime == StepRuntime.INLINE:
-                    if step_run.status.is_finished:
-                        continue
-                    error = RuntimeError(
-                        f"Cannot confirm termination of inline step "
-                        f"`{step_run.name}` from a previous controller. Retry "
-                        "immediate backend cleanup before resuming."
-                    )
-                    raise RunMonitoringError(error) from error
-                # A terminal DB status can precede backend termination. Recover
-                # its monitor too, so a heartbeat cannot fabricate completion.
-                self._dependency_graph.register_step_node(
-                    node_id=step_run.name, state=NodeState.RUNNING
-                )
-                self._future_registry.register_step_future(
-                    invocation_id=step_run.name,
-                    future=StepFuture(
-                        invocation_id=step_run.name,
-                        output_keys=list(step_run.config.outputs),
-                        execution_future=_IsolatedStepFuture(
-                            pipeline_run_id=self._run.id,
-                            invocation_id=step_run.name,
-                        ),
-                    ),
-                )
-                self._steps_to_monitor[step_run.name] = step_run
-
-            assert self._run.stop_mode is not None
-            self._stop_mode = self._run.stop_mode
-            threads.append(self._start_monitoring_loop())
-            threads.append(self._start_cancellation_loop())
-            self._drain_work()
-            self._publish_run_status(exception=self._exception)
-        finally:
-            self._shutdown_background_threads(threads)
+                    self._shutdown_requested = True
+                    self._startup_event.set()
+                    self._monitoring_event.set()
+                    monitoring_thread.join()
+                    startup_thread.join()
+                    self._pause_coordinator.unregister(self)
 
     def _run_entrypoint_and_finalize(self) -> None:
         """Run the user entrypoint, drain remaining work, publish final status.
@@ -1127,8 +1002,6 @@ class DynamicPipelineRunner:
         params = self.pipeline.configuration.parameters or {}
         return_value: Any = None
         try:
-            self._observe_stop_request()
-            self.raise_if_startup_cancelled()
             with self._state.claim():
                 return_value = self.pipeline._call_entrypoint(**params)
         except RunPaused:
@@ -1149,12 +1022,10 @@ class DynamicPipelineRunner:
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
             self._abort_and_drain(exception=e)
-            if self._stop_mode is not None and self._is_stop_exception(e):
-                self._publish_run_status(exception=self._exception)
-                self._fire_terminal_run_hooks(self._run.status)
-                return
             self._publish_run_status(exception=e)
-            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
+            self._fire_terminal_run_hooks(self._run.status, e)
+            if self._stop_mode is not None:
+                return
             raise
 
         # The user code has returned. But there might still be concurrent work
@@ -1165,12 +1036,10 @@ class DynamicPipelineRunner:
         except BaseException as e:
             logger.debug("Failure during settle: %s", e)
             self._abort_and_drain(exception=e)
-            if self._stop_mode is not None and self._is_stop_exception(e):
-                self._publish_run_status(exception=self._exception)
-                self._fire_terminal_run_hooks(self._run.status)
-                return
             self._publish_run_status(exception=e)
-            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
+            self._fire_terminal_run_hooks(self._run.status, e)
+            if self._stop_mode is not None:
+                return
             raise
 
         try:
@@ -1317,19 +1186,7 @@ class DynamicPipelineRunner:
             exception=exception,
         )
 
-        if (
-            self._stop_mode is None
-            and not self._failure_detected
-            and self._is_stop_exception(exception)
-        ):
-            self._observe_stop_request()
-        if self._stop_mode is not None and self._is_stop_exception(exception):
-            return
-        if (
-            force_record
-            or not self._continue_on_failure
-            or self._stop_mode is not None
-        ):
+        if force_record or not self._continue_on_failure:
             self.record_failure(exception=exception)
 
     def allocate_invocation_id(
@@ -1657,6 +1514,7 @@ class DynamicPipelineRunner:
         Returns:
             The step run response.
         """
+        self.raise_if_startup_cancelled()
         return launch_step(
             snapshot=self._snapshot,
             step=step,
@@ -1664,7 +1522,6 @@ class DynamicPipelineRunner:
             wait=True,
             retry=True,
             remaining_retries=remaining_retries,
-            startup_check=self.raise_if_startup_cancelled,
         )
 
     def _get_implicit_upstream_steps(self) -> Set[str]:
@@ -2151,9 +2008,6 @@ class DynamicPipelineRunner:
         while True:
             if self._exception:
                 raise self._exception
-            if self._stop_mode is not None:
-                self._drain_work()
-                return
 
             has_in_progress_work = False
             for future in self._future_registry.get_all_futures():
@@ -2177,7 +2031,7 @@ class DynamicPipelineRunner:
                     if not self._continue_on_failure:
                         raise
 
-            if not has_in_progress_work and not self._steps_to_monitor:
+            if not has_in_progress_work:
                 return
             time.sleep(1)
 
@@ -2235,7 +2089,7 @@ class DynamicPipelineRunner:
         logger.debug("Requested stopping of isolated steps.")
 
         child_runner_shutdown_reason = StartupCancelled(
-            f"Parent pipeline `{self._snapshot.pipeline.name}` failed."
+            f"Parent pipeline `{self.pipeline.name}` failed."
         )
         for child_runner in child_runners_to_shutdown:
             child_runner.request_shutdown(reason=child_runner_shutdown_reason)
@@ -2255,15 +2109,39 @@ class DynamicPipelineRunner:
         else:
             self._orchestrator.stop_isolated_step(step_run)
 
+    def request_stop(self, mode: PipelineRunStopMode) -> None:
+        """Apply an explicit stop independently of the failure policy.
+
+        Args:
+            mode: Whether to drain active attempts or stop them immediately.
+        """
+        with self._lifecycle_lock:
+            if self._stop_mode != PipelineRunStopMode.IMMEDIATE:
+                self._stop_mode = mode
+            mode = self._stop_mode
+            self._on_failure_detected(
+                RunStoppedException("Pipeline stop requested.")
+            )
+            steps = list(self._steps_to_monitor.values())
+            children = list(self._child_runners.values())
+
+        if mode == PipelineRunStopMode.IMMEDIATE:
+            for step_run in steps:
+                try:
+                    self._stop_isolated_step(step_run)
+                except Exception:
+                    logger.exception(
+                        "Failed to stop step `%s`.", step_run.name
+                    )
+        for child in children:
+            child.request_stop(mode)
+
     def raise_if_startup_cancelled(self) -> None:
         """Abort startup work once a failure has been detected.
 
         Raises:
             StartupCancelled: If a failure has been detected.
-            RunStoppedException: If cancellation has been requested.
         """
-        if self._stop_mode is not None:
-            raise RunStoppedException("Pipeline run stop requested.")
         if self._failure_detected:
             raise StartupCancelled(
                 "Dynamic pipeline runner is not starting new work."
@@ -2274,117 +2152,9 @@ class DynamicPipelineRunner:
 
         Args:
             exception: Exception that triggered the abort.
-
-        Raises:
-            TimeoutError: If immediate shutdown cannot finish in time.
-        """  # noqa: DOC502
-        if (
-            self._stop_mode is None
-            and not self._failure_detected
-            and self._is_stop_exception(exception)
-        ):
-            self._observe_stop_request()
-        if self._stop_mode is None or not self._is_stop_exception(exception):
-            self._on_failure_detected(exception=exception)
-        self._drain_work()
-
-    @property
-    def _startup_cancelled(self) -> bool:
-        """Whether this runner has closed admission for new work.
-
-        Returns:
-            Whether failure or a stop request prevents new startup.
         """
-        return self._failure_detected or self._stop_mode is not None
-
-    @staticmethod
-    def _is_stop_exception(exception: BaseException) -> bool:
-        """Recognize cancellation propagated through a future exception.
-
-        Args:
-            exception: The exception to classify.
-
-        Returns:
-            Whether cancellation caused the exception.
-        """
-        seen: Set[int] = set()
-        current: Optional[BaseException] = exception
-        while current is not None and id(current) not in seen:
-            seen.add(id(current))
-            if isinstance(current, (RunStoppedException, StartupCancelled)):
-                return True
-            current = current.__cause__
-        return False
-
-    def _drain_work(self) -> None:
-        """Drain admitted work while retaining a deadline for forced shutdown.
-
-        Raises:
-            TimeoutError: If forced shutdown or failed monitoring leaves work
-                unresolved after the coordination deadline.
-        """
-        deadline: Optional[float] = None
-        while True:
-            if deadline is None and (
-                self._stop_mode == PipelineRunStopMode.IMMEDIATE
-                or self._monitoring_exception is not None
-            ):
-                deadline = time.monotonic() + handle_float_env_var(
-                    "ZENML_DYNAMIC_PIPELINE_SHUTDOWN_TIMEOUT", default=30.0
-                )
-            settled = self._future_registry.await_all_no_raise(timeout=0.5)
-            startup_finished = (
-                self._startup_thread is None
-                or not self._startup_thread.is_alive()
-            )
-            if settled and startup_finished and not self._steps_to_monitor:
-                self._drain_completed = True
-                return
-            if deadline is not None and time.monotonic() >= deadline:
-                self._drain_completed = False
-                raise TimeoutError(
-                    "Pipeline shutdown is incomplete. Some admitted work has "
-                    "not settled; retry immediate stop to continue backend "
-                    "cleanup."
-                )
-            time.sleep(0.1)
-
-    def request_stop(self, mode: PipelineRunStopMode) -> None:
-        """Close admission and propagate explicit cancellation to descendants.
-
-        Args:
-            mode: Whether admitted attempts should drain or be terminated.
-        """
-        with self._lifecycle_lock:
-            previous_mode = self._stop_mode
-            if self._stop_mode != PipelineRunStopMode.IMMEDIATE:
-                self._stop_mode = mode
-            mode = self._stop_mode
-            nodes = self._dependency_graph.list_nodes(
-                states={NodeState.PENDING, NodeState.READY, NodeState.STARTING}
-            )
-            steps = list(self._steps_to_monitor.values())
-            children = list(self._child_runners.values())
-            self._executor.shutdown(wait=False, cancel_futures=True)
-
-        for node in nodes:
-            self._future_registry.set_startup_exception(
-                invocation_id=node.node_id,
-                exception=RunStoppedException("Pipeline run stop requested."),
-            )
-        for child in children:
-            child.request_stop(mode)
-        if mode == PipelineRunStopMode.IMMEDIATE:
-            for step_run in steps:
-                try:
-                    self._stop_isolated_step(step_run)
-                except Exception:
-                    logger.exception(
-                        "Failed to stop step `%s`.", step_run.name
-                    )
-        self._startup_event.set()
-        if previous_mode != mode:
-            self._monitoring_event.set()
+        self._on_failure_detected(exception=exception)
+        self._future_registry.await_all_no_raise()
 
     def _publish_run_status(
         self,
@@ -2397,6 +2167,14 @@ class DynamicPipelineRunner:
             return_value: Pipeline entrypoint return value.
             exception: Exception that caused the run to fail.
         """
+        if self._stop_mode is not None:
+            # The server preserves a prior FAILED outcome and owns the end time.
+            self._run = Client().zen_store.update_run(
+                run_id=self._run.id,
+                run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPED),
+            )
+            return
+
         if exception is not None:
             pipeline_func = (
                 self._pipeline.entrypoint if self._pipeline else None
@@ -2405,33 +2183,15 @@ class DynamicPipelineRunner:
                 exception=exception,
                 user_func=pipeline_func,
             )
-            self._run = Client().zen_store.update_run(
-                run_id=self._run.id,
-                run_update=PipelineRunUpdate(
-                    status=ExecutionStatus.FAILED,
-                    exception_info=exception_info,
-                    in_progress=False,
-                ),
-            )
-            return
-
-        if self._stop_mode is not None:
-            self._run = Client().zen_store.update_run(
-                run_id=self._run.id,
-                run_update=PipelineRunUpdate(
-                    status=ExecutionStatus.STOPPED,
-                    in_progress=False,
-                    stop_mode=self._stop_mode,
-                ),
+            self._run = publish_failed_pipeline_run(
+                self._run.id, exception_info=exception_info
             )
             return
 
         if self._is_paused:
             self._run = Client().zen_store.update_run(
                 run_id=self._run.id,
-                run_update=PipelineRunUpdate(
-                    status=ExecutionStatus.PAUSED, in_progress=False
-                ),
+                run_update=PipelineRunUpdate(status=ExecutionStatus.PAUSED),
             )
             logger.info("Pausing pipeline run `%s`.", self._run.id)
             return
@@ -2443,9 +2203,7 @@ class DynamicPipelineRunner:
         self._run = Client().zen_store.update_run(
             run_id=self._run.id,
             run_update=PipelineRunUpdate(
-                status=ExecutionStatus.COMPLETED,
-                outputs=outputs,
-                in_progress=False,
+                status=ExecutionStatus.COMPLETED, outputs=outputs
             ),
         )
         logger.info(
@@ -2472,8 +2230,6 @@ class DynamicPipelineRunner:
         Returns:
             The failure exception.
         """
-        if step_run.status == ExecutionStatus.STOPPED:
-            return RunStoppedException(f"Step `{step_run.name}` was stopped.")
         return exception_utils.reconstruct_exception(
             exception_info=step_run.exception_info,
             fallback_message=(
@@ -2545,7 +2301,7 @@ class DynamicPipelineRunner:
         start_upstream_node_ids = collect_start_upstream_node_ids(start_after)
 
         with self._lifecycle_lock:
-            if self._startup_cancelled and initial_state in {
+            if self._failure_detected and initial_state in {
                 None,
                 NodeState.PENDING,
                 NodeState.READY,
@@ -2817,7 +2573,7 @@ class DynamicPipelineRunner:
         start_upstream_node_ids = collect_start_upstream_node_ids(start_after)
 
         with self._lifecycle_lock:
-            if self._startup_cancelled:
+            if self._failure_detected:
                 future._cancel_startup(
                     StartupCancelled(
                         f"Startup for map expansion `{node_id}` was cancelled."
@@ -3005,7 +2761,7 @@ class DynamicPipelineRunner:
             child_runner = self._build_child_runner(child_run=child_run)
 
             with self._lifecycle_lock:
-                if self._startup_cancelled:
+                if self._failure_detected:
                     self._mark_child_run_placeholder_failed(
                         child_run=child_run,
                         reason=(
@@ -3071,7 +2827,7 @@ class DynamicPipelineRunner:
         )
 
         with self._lifecycle_lock:
-            if self._startup_cancelled:
+            if self._failure_detected:
                 future._cancel_startup(
                     StartupCancelled(
                         f"Startup for child pipeline `{node_id}` was cancelled."
@@ -3082,16 +2838,15 @@ class DynamicPipelineRunner:
                 node_id=node_id,
                 future=future,
             )
-            (
-                node,
-                nodes_ready,
-            ) = self._dependency_graph.register_child_pipeline_node(
-                node_id=node_id,
-                pipeline=pipeline,
-                args=args,
-                kwargs=kwargs,
-                upstream_ids=upstream_node_ids,
-                start_upstream_ids=start_upstream_node_ids,
+            node, nodes_ready = (
+                self._dependency_graph.register_child_pipeline_node(
+                    node_id=node_id,
+                    pipeline=pipeline,
+                    args=args,
+                    kwargs=kwargs,
+                    upstream_ids=upstream_node_ids,
+                    start_upstream_ids=start_upstream_node_ids,
+                )
             )
             self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready=nodes_ready)
@@ -3154,7 +2909,7 @@ class DynamicPipelineRunner:
                 self._unregister_child_runner(node_id=node_id)
 
         with self._lifecycle_lock:
-            if self._startup_cancelled:
+            if self._failure_detected:
                 # Failure detected between our placeholder creation and lock
                 # acquisition. Mark the placeholder as failed so we don't
                 # leak an INITIALIZING run in the DB.
@@ -3311,10 +3066,6 @@ class DynamicPipelineRunner:
 
         if child_run.status == ExecutionStatus.PAUSED:
             raise RunPaused()
-        if child_run.status == ExecutionStatus.STOPPED:
-            raise RunStoppedException(
-                f"Child pipeline `{child_run.name}` was stopped."
-            )
 
         raise exception_utils.reconstruct_exception(
             exception_info=child_run.exception_info,

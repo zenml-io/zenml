@@ -15,10 +15,9 @@
 
 import contextvars
 import queue
-import sys
 import threading
 import time
-from concurrent.futures import Future, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
@@ -105,7 +104,6 @@ class DagRunner:
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
-        shutdown_timeout: float = 30.0,
     ) -> None:
         """Initialize the DAG runner.
 
@@ -122,9 +120,6 @@ class DagRunner:
             interrupt_check_interval: The interval in which the interrupt
                 function is called.
             max_parallelism: The maximum number of nodes to run in parallel.
-            shutdown_timeout: Maximum seconds to coordinate immediate shutdown.
-                A timeout reports incomplete cleanup; running Python threads
-                cannot be terminated by the runner.
         """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
@@ -144,16 +139,6 @@ class DagRunner:
         self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
-        self._force_stop_event = threading.Event()
-        self._admission_closed = False
-        self._state_lock = threading.RLock()
-        self._startup_futures: Dict[str, Future[None]] = {}
-        self._cleanup_errors: Dict[str, Exception] = {}
-        self._monitoring_error: Optional[Exception] = None
-        self.shutdown_timeout = shutdown_timeout
-        self._stop_executor = ThreadPoolExecutor(
-            thread_name_prefix="DagRunner-Stop"
-        )
         worker_count = handle_int_env_var(
             ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
         )
@@ -235,60 +220,29 @@ class DagRunner:
         Args:
             node: The node to start.
         """
-        with self._state_lock:
-            if self._admission_closed:
-                node.status = NodeStatus.CANCELLED
-                return
-            node.status = NodeStatus.STARTING
+        node.status = NodeStatus.STARTING
 
         def _start_node_task() -> None:
-            if self._force_stop_event.is_set():
-                with self._state_lock:
-                    node.status = NodeStatus.CANCELLED
+            if self.shutdown_event.is_set():
+                logger.debug(
+                    "Cancelling startup of node `%s` because shutdown was "
+                    "requested.",
+                    node.id,
+                )
                 return
 
             try:
-                status = self.node_startup_function(node)
+                node.status = self.node_startup_function(node)
             except Exception:
-                status = NodeStatus.FAILED
+                node.status = NodeStatus.FAILED
                 logger.exception("Node `%s` failed to start.", node.id)
-                if self.node_stop_function is not None:
-                    try:
-                        self._stop_node(node)
-                    except Exception as error:
-                        # A lost create response can leave a workload running.
-                        # Failed startup is terminal only after cleanup succeeds.
-                        self._monitoring_error = error
-                        with self._state_lock:
-                            self._cleanup_errors[node.id] = error
-                        logger.exception(
-                            "Cleanup after node `%s` startup failed.", node.id
-                        )
-                        return
-
-            with self._state_lock:
-                force_stop = self._force_stop_event.is_set()
-                if not force_stop:
-                    node.status = status
-            if force_stop:
-                # Submission may have succeeded even if its response was lost.
-                # The backend identity must be recorded before submission so
-                # this pass also handles ambiguous API failures.
-                try:
-                    self._stop_node(node)
-                except Exception as error:
-                    with self._state_lock:
-                        self._cleanup_errors[node.id] = error
-                    logger.exception("Failed stopping node `%s`.", node.id)
-                else:
-                    with self._state_lock:
-                        self._cleanup_errors.pop(node.id, None)
-                        node.status = NodeStatus.CANCELLED
+            else:
+                logger.info(
+                    "Node `%s` started (status: %s)", node.id, node.status
+                )
 
         ctx = contextvars.copy_context()
-        self._startup_futures[node.id] = self.startup_executor.submit(
-            ctx.run, _start_node_task
-        )
+        self.startup_executor.submit(ctx.run, _start_node_task)
 
     def _stop_node(self, node: Node) -> None:
         """Stop a node.
@@ -304,38 +258,11 @@ class DagRunner:
 
         self.node_stop_function(node)
 
-    def _stop_all_nodes(self) -> List[Future[None]]:
-        """Start independent cleanup operations for active nodes.
-
-        Returns:
-            Futures that complete only after each backend stop has finished.
-        """
-
-        def stop(node: Node) -> None:
-            try:
-                self._stop_node(node)
-            except Exception as error:
-                with self._state_lock:
-                    self._cleanup_errors[node.id] = error
-                logger.exception("Failed stopping node `%s`.", node.id)
-            else:
-                with self._state_lock:
-                    self._cleanup_errors.pop(node.id, None)
-                    node.status = NodeStatus.CANCELLED
-
-        futures = []
+    def _stop_all_nodes(self) -> None:
+        """Stop all running or starting nodes."""
         for node in self.active_nodes:
-            ctx = contextvars.copy_context()
-            futures.append(self._stop_executor.submit(ctx.run, stop, node))
-        return futures
-
-    def _close_admission(self) -> None:
-        """Prevent new startup while preserving already admitted nodes."""
-        with self._state_lock:
-            self._admission_closed = True
-            for node in self.nodes.values():
-                if node.status in {NodeStatus.NOT_READY, NodeStatus.READY}:
-                    node.status = NodeStatus.CANCELLED
+            self._stop_node(node)
+            node.status = NodeStatus.CANCELLED
 
     def _process_nodes(self) -> bool:
         """Process the nodes.
@@ -385,15 +312,11 @@ class DagRunner:
             start_time = time.time()
             for node in self.running_nodes:
                 try:
-                    status = self.node_monitoring_function(node)
-                except Exception as error:
-                    self._monitoring_error = error
-                    logger.exception("Monitoring node `%s` failed.", node.id)
-                    return
+                    node.status = self.node_monitoring_function(node)
+                except Exception:
+                    node.status = NodeStatus.FAILED
+                    logger.exception("Node `%s` failed.", node.id)
                 else:
-                    with self._state_lock:
-                        if not self._force_stop_event.is_set():
-                            node.status = status
                     logger.debug(
                         "Node `%s` status updated to `%s`",
                         node.id,
@@ -411,81 +334,65 @@ class DagRunner:
             self.shutdown_event.wait(timeout=time_to_sleep)
 
     def run(self) -> Dict[str, NodeStatus]:
-        """Run the DAG and drain admitted work after graceful interruption.
+        """Run the DAG.
 
         Returns:
             The final node states.
-
-        Raises:
-            RuntimeError: If monitoring fails or immediate shutdown cannot be
-                confirmed before its deadline.
         """
         self._initialize_startup_queue()
-        self.monitoring_thread.start()
-        last_interrupt_check = float("-inf")
-        shutdown_deadline = None
-        try:
-            while True:
-                if self._monitoring_error is not None:
-                    raise RuntimeError(
-                        "DAG monitoring failed; workload completion is unknown."
-                    ) from self._monitoring_error
 
-                if self.interrupt_function is not None and (
-                    time.monotonic() - last_interrupt_check
+        self.monitoring_thread.start()
+
+        interrupt_mode: Optional[InterruptMode] = None
+        last_interrupt_check = time.time()
+
+        while True:
+            if self.interrupt_function is not None:
+                if (
+                    time.time() - last_interrupt_check
                     >= self.interrupt_check_interval
                 ):
-                    interrupt_mode = self.interrupt_function()
-                    last_interrupt_check = time.monotonic()
-                    if interrupt_mode is not None:
-                        self._close_admission()
-                    if interrupt_mode == InterruptMode.FORCE:
-                        shutdown_deadline = (
-                            time.monotonic() + self.shutdown_timeout
-                        )
-                        with self._state_lock:
-                            self._force_stop_event.set()
-                        stop_futures = self._stop_all_nodes()
-                        _, pending = wait(
-                            [*self._startup_futures.values(), *stop_futures],
-                            timeout=self.shutdown_timeout,
-                        )
-                        if pending or self._cleanup_errors:
-                            raise RuntimeError(
-                                "DAG shutdown is incomplete: "
-                                f"{len(pending)} startup/cleanup task(s) remain and "
-                                f"{len(self._cleanup_errors)} node(s) could not "
-                                "be stopped. Retry immediate stop."
-                            )
+                    requested_mode = self.interrupt_function()
+                    if requested_mode == InterruptMode.FORCE:
+                        interrupt_mode = requested_mode
+                        logger.warning("DAG execution interrupted.")
                         break
+                    if requested_mode == InterruptMode.GRACEFUL:
+                        interrupt_mode = requested_mode
+                    last_interrupt_check = time.time()
 
-                if self._admission_closed:
-                    if not self.active_nodes and all(
-                        future.done()
-                        for future in self._startup_futures.values()
-                    ):
-                        break
-                elif self._process_nodes():
-                    break
-                self.shutdown_event.wait(0.05)
-        finally:
-            self._close_admission()
-            self.shutdown_event.set()
-            self.startup_executor.shutdown(wait=False, cancel_futures=True)
-            self._stop_executor.shutdown(wait=False, cancel_futures=True)
-            remaining = (
-                max(0, shutdown_deadline - time.monotonic())
-                if shutdown_deadline is not None
-                else self.shutdown_timeout
-            )
-            self.monitoring_thread.join(timeout=remaining)
-            if self.monitoring_thread.is_alive() and sys.exc_info()[0] is None:
-                raise RuntimeError(
-                    "DAG monitoring did not stop before the shutdown deadline."
-                )
+            if interrupt_mode == InterruptMode.GRACEFUL:
+                # Keep monitoring current work, without scheduling downstream
+                # nodes. Continue polling so the user can escalate the stop.
+                is_finished = not self.active_nodes
+            else:
+                is_finished = self._process_nodes()
+            if is_finished:
+                break
+
+            time.sleep(0.5)
+
+        self.shutdown_event.set()
+        self.monitoring_thread.join()
+        if interrupt_mode == InterruptMode.FORCE:
+            # A startup task can finish creating its resource after the first
+            # stop pass. Drain those tasks before stopping any late resource.
+            try:
+                self._stop_all_nodes()
+            finally:
+                self.startup_executor.shutdown(wait=True)
+                self._stop_all_nodes()
+        else:
+            self.startup_executor.shutdown(wait=True)
+
+        if interrupt_mode is not None:
+            for node in self.nodes.values():
+                if node.status in {NodeStatus.NOT_READY, NodeStatus.READY}:
+                    node.status = NodeStatus.CANCELLED
 
         node_statuses = {
             node_id: node.status for node_id, node in self.nodes.items()
         }
         logger.debug("Finished with node statuses: %s", node_statuses)
+
         return node_statuses

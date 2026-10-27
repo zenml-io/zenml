@@ -257,9 +257,6 @@ class PipelineRunUpdate(BaseUpdate):
     stop_mode: Optional[PipelineRunStopMode] = Field(
         default=None, title="Request stopping or escalate an existing request."
     )
-    in_progress: Optional[bool] = Field(
-        default=None, title="Whether admitted execution remains in progress."
-    )
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",

@@ -232,44 +232,30 @@ The following rules apply:
 
 ### Stopping a run
 
-A graceful stop lets already-admitted step attempts finish. It prevents new
-steps, child runs, and retries, including retries managed by the execution
-backend. An admitted attempt may still be preparing its execution environment.
-Graceful stopping does not automatically escalate after a timeout.
+A graceful stop lets current step attempts finish and prevents new steps and
+retries from starting. It does not automatically escalate after a timeout.
 
 ```shell
 zenml pipeline runs stop <run-name-or-id> --graceful
 ```
 
-Send another request without `--graceful` to stop immediately. You can repeat an
-immediate request if infrastructure cleanup is incomplete; a subsequent graceful
-request cannot weaken an immediate request.
+Send another request without `--graceful` to stop immediately:
 
 ```shell
 zenml pipeline runs stop <run-name-or-id>
 ```
 
-Stopping applies independently of the execution mode. For example, with
+You can also stop a failed run that still has active steps. For example, with
 `CONTINUE_ON_FAILURE`, step A can fail while step B continues and step C waits.
-A graceful stop lets B finish and prevents C and any retries from starting.
-The run keeps its `FAILED` outcome and the original failure. An immediate stop
-also terminates the remaining execution where the orchestrator supports it.
+A graceful stop lets B finish and prevents C and any retries from starting;
+an immediate stop interrupts B where the orchestrator supports it. The run
+keeps its `FAILED` outcome and original error.
 
-A successful stop request does not necessarily mean execution has already
-ended. Infrastructure removal and graceful draining can take time. Runs that
-have not failed move to `STOPPED` after shutdown is confirmed. Failed runs keep
-their failure outcome. Resume or retry is blocked while the previous execution
-still has active attempts.
+A successful request does not mean execution has already ended: current steps
+and external workloads can take time to shut down. You can repeat an immediate
+request if needed. A later graceful request does not undo an immediate request.
 
-Stopping a parent includes its descendants. Stopping a child preserves its
-siblings; if they share a controller, that controller stays alive. Terminating
-Python code running inside a shared process may require cooperation from that
-code. Incomplete cleanup is reported and can require another immediate request.
-
-Use matching upgraded server, controller, and worker versions for these
-semantics. Older runtimes may not drain or report completion correctly, even
-when connected to an upgraded server. Orchestrator support for terminating
-external workloads still applies.
+Use matching upgraded server, controller, and worker versions for this behavior.
 
 ### Step Heartbeat
 
@@ -281,7 +267,7 @@ Step heartbeat is a background mechanism that runs alongside step executions and
 This enables ZenML to:
 
  - Track the liveness of a step execution and assess its health based on incoming heartbeats.
- - Allow admitted attempts to finish during a graceful stop, and interrupt them during an immediate stop.
+ - Allow current attempts to finish during a graceful stop, and interrupt them during an immediate stop.
 
 *Scope and current behavior*
 

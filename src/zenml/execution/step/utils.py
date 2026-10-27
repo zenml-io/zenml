@@ -16,10 +16,8 @@
 import time
 from typing import (
     TYPE_CHECKING,
-    Callable,
     Optional,
 )
-from uuid import UUID
 
 from zenml.config.step_configurations import Step
 from zenml.exceptions import RunStoppedException
@@ -44,8 +42,6 @@ def launch_step(
     retry: bool = False,
     remaining_retries: Optional[int] = None,
     wait: bool = True,
-    step_run_id: Optional[UUID] = None,
-    startup_check: Optional[Callable[[], None]] = None,
 ) -> StepRunResponse:
     """Launch a step.
 
@@ -57,10 +53,6 @@ def launch_step(
         remaining_retries: The number of remaining retries. If not passed, this
             will be read from the step configuration.
         wait: Whether to wait for the step to complete.
-        step_run_id: Existing admitted attempt to execute on the first launch.
-            Subsequent retries create their own attempts.
-        startup_check: Optional cancellation check before each launch and
-            during retry backoff.
 
     Raises:
         RunStoppedException: If the run was stopped.
@@ -71,17 +63,12 @@ def launch_step(
     """
 
     def _launch_without_retry() -> StepRunResponse:
-        nonlocal step_run_id
-        if startup_check is not None:
-            startup_check()
         launcher = StepLauncher(
             snapshot=snapshot,
             step=step,
             orchestrator_run_id=orchestrator_run_id,
             wait=wait,
-            step_run_id=step_run_id,
         )
-        step_run_id = None
         return launcher.launch()
 
     if not retry:
@@ -110,16 +97,7 @@ def launch_step(
                         delay,
                         step.config.name,
                     )
-                    if startup_check is None:
-                        time.sleep(delay)
-                    else:
-                        deadline = time.monotonic() + delay
-                        while True:
-                            startup_check()
-                            remaining = deadline - time.monotonic()
-                            if remaining <= 0:
-                                break
-                            time.sleep(min(1.0, remaining))
+                    time.sleep(delay)
                     delay *= backoff
                 else:
                     if max_retries > 0:

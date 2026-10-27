@@ -44,6 +44,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import (
     HookExecutionException,
+    IllegalOperationError,
     RunMonitoringError,
 )
 from zenml.hooks.execution import run_hook
@@ -523,13 +524,11 @@ class BaseOrchestrator(StackComponent, ABC):
     def run_step(
         self,
         step: "Step",
-        step_run_id: Optional[UUID] = None,
     ) -> None:
         """Runs the given step.
 
         Args:
             step: The step to run.
-            step_run_id: An attempt admitted before submitting its workload.
         """
         from zenml.execution.step.utils import launch_step
 
@@ -540,7 +539,6 @@ class BaseOrchestrator(StackComponent, ABC):
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
             retry=not self.config.handles_step_retries,
-            step_run_id=step_run_id,
         )
 
     @property
@@ -930,13 +928,25 @@ class BaseOrchestrator(StackComponent, ABC):
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is False.
 
+        Raises:
+            IllegalOperationError: If the run has no orchestrator run id yet.
         """
+        if not run.orchestrator_run_id:
+            raise IllegalOperationError(
+                "Cannot stop a pipeline run that has no orchestrator run id "
+                "yet."
+            )
+
         from zenml.utils.run_utils import request_run_stop
 
         run = request_run_stop(run, graceful=graceful)
-        if "stop_mode" in run.get_body().model_fields_set:
+        if run.stop_mode is not None:
             graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)
+        if not graceful and run.stop_mode is not None:
+            publish_pipeline_run_status_update(
+                pipeline_run_id=run.id, status=ExecutionStatus.STOPPED
+            )
 
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
@@ -947,7 +957,7 @@ class BaseOrchestrator(StackComponent, ABC):
         instead of stop_run to ensure proper status management.
 
         Args:
-            run: A pipeline run with its stop request already persisted.
+            run: A pipeline run with its stop request already recorded.
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
         """

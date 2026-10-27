@@ -110,10 +110,6 @@ class StepRunInputResponse(ArtifactVersionResponse):
 class StepRunRequest(ProjectScopedRequest):
     """Request model for step runs."""
 
-    admitted_step_run_id: Optional[UUID] = Field(
-        default=None,
-        title="Populate an existing static attempt admitted before submission.",
-    )
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -202,10 +198,6 @@ class StepRunRequest(ProjectScopedRequest):
 class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
-    claim_execution: bool = Field(
-        default=False,
-        title="Atomically claim a previously admitted step before execution.",
-    )
     outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default={},

@@ -138,7 +138,6 @@ def test_unawaited_isolated_failure_raises_during_settlement(
 
     runner = object.__new__(DynamicPipelineRunner)
     runner._exception = None
-    runner._stop_mode = None
     runner._continue_on_failure = False
     runner._future_registry = registry
 

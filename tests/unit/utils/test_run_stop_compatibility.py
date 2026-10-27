@@ -8,6 +8,7 @@ import pytest
 
 from zenml.enums import ExecutionStatus, PipelineRunStopMode
 from zenml.exceptions import IllegalOperationError
+from zenml.orchestrators import base_orchestrator
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils import run_utils
 
@@ -16,7 +17,12 @@ from zenml.utils import run_utils
 def test_old_server_stop_preserves_requested_backend_mode(
     monkeypatch: pytest.MonkeyPatch, graceful: bool
 ) -> None:
-    """An omitted capability field uses the legacy status update contract."""
+    """An omitted capability field uses the legacy status update contract.
+
+    Args:
+        monkeypatch: Fixture for replacing external collaborators.
+        graceful: Whether to request graceful stopping.
+    """
     run = SimpleNamespace(
         id=uuid4(),
         status=ExecutionStatus.RUNNING,
@@ -40,11 +46,15 @@ def test_old_server_stop_preserves_requested_backend_mode(
 def test_persisted_immediate_mode_cannot_be_downgraded(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Backend cleanup follows the server's strongest persisted stop request."""
+    """Backend cleanup follows the server's strongest persisted stop request.
+
+    Args:
+        monkeypatch: Fixture for replacing external collaborators.
+    """
     run = SimpleNamespace(
         id=uuid4(),
         status=ExecutionStatus.FAILED,
-        orchestrator_run_id=None,
+        orchestrator_run_id="job",
         stop_mode=PipelineRunStopMode.IMMEDIATE,
         get_body=lambda: SimpleNamespace(model_fields_set={"stop_mode"}),
     )
@@ -52,6 +62,10 @@ def test_persisted_immediate_mode_cannot_be_downgraded(
     client = SimpleNamespace(zen_store=SimpleNamespace(update_run=update))
     monkeypatch.setattr(run_utils, "Client", lambda: client)
     orchestrator = Mock()
+
+    monkeypatch.setattr(
+        base_orchestrator, "publish_pipeline_run_status_update", Mock()
+    )
 
     BaseOrchestrator.stop_run(orchestrator, run, graceful=True)
 
@@ -69,7 +83,13 @@ def test_old_server_rejects_new_cleanup_contract(
     status: ExecutionStatus,
     backend_id: str | None,
 ) -> None:
-    """Old servers cannot silently accept cleanup they cannot represent."""
+    """Old servers cannot silently accept cleanup they cannot represent.
+
+    Args:
+        monkeypatch: Fixture for replacing external collaborators.
+        status: Stored execution status.
+        backend_id: Existing orchestrator run identifier.
+    """
     run = SimpleNamespace(
         id=uuid4(),
         status=status,

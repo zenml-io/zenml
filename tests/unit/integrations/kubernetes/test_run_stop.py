@@ -1,17 +1,24 @@
-"""Tests for run cleanup ownership and finalization with mocked providers."""
+"""Focused Kubernetes stop tests without cluster access."""
 
 from contextlib import nullcontext
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from kubernetes import client as k8s_client
+from kubernetes.client import ApiException
 
 from zenml.enums import (
     ExecutionStatus,
-    PipelineRunStopMode,
     StackComponentType,
+)
+from zenml.integrations.kubernetes import kube_utils
+from zenml.integrations.kubernetes.constants import (
+    ORCHESTRATOR_ANNOTATION_KEY,
+    STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorConfig,
@@ -20,89 +27,46 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import (
     kubernetes_orchestrator as module,
 )
-from zenml.orchestrators import base_orchestrator
-from zenml.utils import run_utils
 
 
 def setup_stop(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
-    """Build a controller and store that never access configured infrastructure.
+    """Create an orchestrator backed only by test doubles.
 
     Args:
         monkeypatch: Pytest patching fixture.
 
     Returns:
-        Test state containing the public orchestrator and captured updates.
+        Run, client, APIs, and orchestrator used by a test.
     """
     run = SimpleNamespace(
         id=uuid4(),
         project_id=uuid4(),
         name="test-run",
         status=ExecutionStatus.FAILED,
-        stop_mode=None,
-        in_progress=True,
         child_key=None,
         orchestrator_run_id="controller",
-        run_metadata={},
-        snapshot=SimpleNamespace(stack=object()),
-        get_body=lambda: SimpleNamespace(model_fields_set={"stop_mode"}),
     )
-    updates: list[Any] = []
-    updated_run_ids: list[Any] = []
-    steps: list[Any] = []
     children: list[Any] = []
-    cleanups: list[Any] = []
-
-    def update_run(**kwargs: Any) -> SimpleNamespace:
-        update = kwargs["run_update"]
-        updates.append(update)
-        updated_run_ids.append(kwargs["run_id"])
-        if update.stop_mode:
-            run.stop_mode = update.stop_mode
-        return run
-
-    client = SimpleNamespace(
-        get_pipeline_run=lambda run_id, **kwargs: next(
-            (child for child in children if child.id == run_id), run
-        ),
-        create_run_metadata=lambda **kwargs: run.run_metadata.update(
-            kwargs["metadata"]
-        ),
-        list_pipeline_runs=lambda **kwargs: (
-            children if kwargs["parent_run_id"] == run.id else []
-        ),
-        list_run_steps=lambda **kwargs: steps,
-        zen_store=SimpleNamespace(
-            update_run=update_run,
-            update_run_step=lambda **kwargs: None,
-        ),
+    client = Mock()
+    client.get_pipeline_run.return_value = run
+    client.list_pipeline_runs.side_effect = lambda **kwargs: SimpleNamespace(
+        items=children if kwargs["parent_run_id"] == run.id else [],
+        index=1,
+        total_pages=1,
     )
+    batch_api, core_api = Mock(), Mock()
+    batch_api.list_namespaced_job.return_value = k8s_client.V1JobList(items=[])
+    core_api.read_namespaced_pod.side_effect = ApiException(status=404)
     monkeypatch.setattr(module, "Client", lambda: client)
-    monkeypatch.setattr(base_orchestrator, "Client", lambda: client)
-    monkeypatch.setattr(run_utils, "Client", lambda: client)
-    monkeypatch.setattr(
-        module.pagination_utils,
-        "depaginate",
-        lambda method, **kwargs: iter(method(**kwargs)),
-    )
-    monkeypatch.setattr(
-        module, "stop_workloads", lambda **kwargs: cleanups.append(kwargs)
-    )
     monkeypatch.setattr(
         module.KubernetesOrchestrator, "get_kube_client", lambda self: None
     )
-    monkeypatch.setattr(
-        module.k8s_client, "BatchV1Api", lambda *args: object()
-    )
-    monkeypatch.setattr(module.k8s_client, "CoreV1Api", lambda *args: object())
-    monkeypatch.setattr(
-        module.KubernetesOrchestrator,
-        "get_settings",
-        lambda *args: KubernetesOrchestratorSettings(stop_timeout=0.1),
-    )
+    monkeypatch.setattr(k8s_client, "BatchV1Api", lambda *args: batch_api)
+    monkeypatch.setattr(k8s_client, "CoreV1Api", lambda *args: core_api)
     orchestrator = module.KubernetesOrchestrator(
         name="test",
         id=uuid4(),
-        config=KubernetesOrchestratorConfig(),
+        config=KubernetesOrchestratorConfig(max_api_retries=0),
         flavor="kubernetes",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
@@ -111,220 +75,190 @@ def setup_stop(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     )
     return SimpleNamespace(
         run=run,
-        updates=updates,
-        updated_run_ids=updated_run_ids,
-        steps=steps,
         children=children,
-        cleanups=cleanups,
+        client=client,
+        batch=batch_api,
+        core=core_api,
         orchestrator=orchestrator,
     )
 
 
-def test_immediate_root_cleanup_includes_descendants_preserves_failure(
+def make_job(name: str, *, controller: bool = False) -> k8s_client.V1Job:
+    """Create a minimal Job with the existing ZenML annotations.
+
+    Args:
+        name: Job name.
+        controller: Whether the Job runs the pipeline controller.
+
+    Returns:
+        The Job model.
+    """
+    return k8s_client.V1Job(
+        metadata=k8s_client.V1ObjectMeta(
+            name=name,
+            annotations={ORCHESTRATOR_ANNOTATION_KEY: "orchestrator"}
+            if controller
+            else {STEP_NAME_ANNOTATION_KEY: name},
+        )
+    )
+
+
+def test_immediate_root_stop_deletes_step_and_controller_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verified cleanup ends activity without replacing a failed outcome."""
+    """Root stop includes descendant workers and its controller Job.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
     state = setup_stop(monkeypatch)
-    child = SimpleNamespace(id=uuid4(), status=ExecutionStatus.RUNNING)
+    child = SimpleNamespace(id=uuid4())
     state.children.append(child)
-    state.orchestrator.stop_run(state.run, graceful=False)
-    assert state.updates[0].stop_mode == PipelineRunStopMode.IMMEDIATE
-    assert state.cleanups[0]["run_ids"] == {str(state.run.id), str(child.id)}
-    assert state.cleanups[0]["include_controller"] is True
-    assert state.updates[-1].status == ExecutionStatus.FAILED
-    assert state.updates[-1].in_progress is False
-    assert state.updated_run_ids[-2:] == [child.id, state.run.id]
+    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
+        items=[make_job("step"), make_job("controller", controller=True)]
+    )
+    state.orchestrator._stop_run(state.run, graceful=False)
+    assert {
+        call.kwargs["name"]
+        for call in state.batch.delete_namespaced_job.call_args_list
+    } == {"step", "controller"}
+    selector = state.batch.list_namespaced_job.call_args.kwargs[
+        "label_selector"
+    ]
+    assert str(state.run.id) in selector and str(child.id) in selector
+    assert all(
+        call.kwargs["propagation_policy"] == "Foreground"
+        for call in state.batch.delete_namespaced_job.call_args_list
+    )
+    state.core.list_namespaced_pod.assert_not_called()
+    state.core.delete_namespaced_pod.assert_not_called()
+    state.client.zen_store.update_run.assert_not_called()
 
 
-def test_child_cleanup_requires_shared_controller_acknowledgement(
+def test_child_stop_preserves_shared_controller(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """No Job remaining does not prove inline child execution terminated."""
+    """Stopping one child never terminates its shared controller.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
     state = setup_stop(monkeypatch)
     state.run.child_key = "child"
-    with pytest.raises(RuntimeError, match="shared controller"):
-        state.orchestrator.stop_run(state.run, graceful=False)
-    assert state.cleanups[0]["include_controller"] is False
-    assert all(update.in_progress is None for update in state.updates)
-
-
-@pytest.mark.parametrize("can_confirm", [True, False])
-@pytest.mark.parametrize(
-    "step_status", [ExecutionStatus.RUNNING, ExecutionStatus.FAILED]
-)
-def test_external_step_operator_requires_termination_confirmation(
-    monkeypatch: pytest.MonkeyPatch,
-    can_confirm: bool,
-    step_status: ExecutionStatus,
-) -> None:
-    """Deleting Kubernetes launchers alone cannot settle external workloads."""
-    state = setup_stop(monkeypatch)
-    cancelled = []
-    operator = SimpleNamespace(
-        cancel=lambda step: cancelled.append(step.id),
-        get_status=lambda step: (
-            ExecutionStatus.STOPPED
-            if can_confirm and cancelled
-            else ExecutionStatus.RUNNING
-        ),
+    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
+        items=[make_job("child-step"), make_job("controller", controller=True)]
     )
-    monkeypatch.setattr(
-        module.Stack,
-        "from_model",
-        lambda model: SimpleNamespace(step_operators={"external": operator}),
-    )
-    step = SimpleNamespace(
-        id=uuid4(),
-        pipeline_run_id=state.run.id,
-        status=step_status,
-        config=SimpleNamespace(step_operator="external"),
-    )
-    state.steps.append(step)
-    if can_confirm:
-        state.orchestrator.stop_run(state.run, graceful=False)
-        assert state.updates[-1].in_progress is False
-    else:
-        with pytest.raises(RuntimeError, match="step operator|Step operator"):
-            state.orchestrator.stop_run(state.run, graceful=False)
-        assert all(update.in_progress is None for update in state.updates)
-    assert cancelled == [step.id]
+    state.orchestrator._stop_run(state.run, graceful=False)
+    assert [
+        call.kwargs["name"]
+        for call in state.batch.delete_namespaced_job.call_args_list
+    ] == ["child-step"]
+    state.core.read_namespaced_pod.assert_not_called()
 
 
-def test_missing_submission_identity_is_not_confirmed_by_empty_discovery(
+def test_static_controller_pod_resolves_owning_job(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A submission that has not published its identity remains unresolved."""
+    """Legacy static run IDs identify a Pod whose owning Job must be stopped.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
     state = setup_stop(monkeypatch)
-    state.run.orchestrator_run_id = None
-    with pytest.raises(RuntimeError, match="not been acknowledged"):
-        state.orchestrator.stop_run(state.run, graceful=False)
-    assert all(update.in_progress is None for update in state.updates)
-
-
-def test_recorded_job_name_does_not_confirm_inflight_submission(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An identity recorded before create does not acknowledge API completion."""
-    state = setup_stop(monkeypatch)
-    state.run.orchestrator_run_id = None
-    state.run.run_metadata["orchestrator_job_name"] = "pending-controller"
-    with pytest.raises(RuntimeError, match="not been acknowledged"):
-        state.orchestrator.stop_run(state.run, graceful=False)
-    assert state.cleanups[0]["job_names"] == {"pending-controller"}
-    assert all(update.in_progress is None for update in state.updates)
-
-
-def test_isolated_status_propagates_discovery_failure(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An unavailable API cannot prove that a worker terminated."""
-    state = setup_stop(monkeypatch)
-
-    def fail(**kwargs: Any) -> None:
-        raise RuntimeError("API unavailable")
-
-    monkeypatch.setattr(module.kube_utils, "list_jobs", fail)
-    with pytest.raises(RuntimeError, match="API unavailable"):
-        state.orchestrator.get_isolated_step_status(
-            SimpleNamespace(id=uuid4())
+    state.run.orchestrator_run_id = "controller-pod"
+    state.core.read_namespaced_pod.side_effect = None
+    state.core.read_namespaced_pod.return_value = k8s_client.V1Pod(
+        metadata=k8s_client.V1ObjectMeta(
+            name="controller-pod", labels={"job-name": "controller-job"}
         )
-
-
-def test_isolated_status_waits_for_all_matching_jobs(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """One terminal Job cannot hide another replacement still running."""
-    state = setup_stop(monkeypatch)
-    monkeypatch.setattr(
-        module.kube_utils,
-        "list_jobs",
-        lambda **kwargs: SimpleNamespace(
-            items=[
-                SimpleNamespace(metadata=SimpleNamespace(name=name))
-                for name in ["completed", "running"]
-            ]
-        ),
     )
-    monkeypatch.setattr(
-        module.kube_utils,
-        "check_job_status",
-        lambda **kwargs: (
-            module.kube_utils.JobStatus.SUCCEEDED
-            if kwargs["job_name"] == "completed"
-            else module.kube_utils.JobStatus.RUNNING,
-            None,
-        ),
-    )
+    state.orchestrator._stop_run(state.run, graceful=False)
     assert (
-        state.orchestrator.get_isolated_step_status(
-            SimpleNamespace(id=uuid4())
-        )
-        == ExecutionStatus.RUNNING
+        state.batch.delete_namespaced_job.call_args.kwargs["name"]
+        == "controller-job"
     )
 
 
-@pytest.mark.parametrize(
-    "submission_outcome", ["success", "ambiguous", "aborted"]
-)
-def test_controller_submit_reconciles_stop_even_after_ambiguous_response(
+def test_graceful_stop_does_not_delete_current_jobs(
     monkeypatch: pytest.MonkeyPatch,
-    submission_outcome: str,
 ) -> None:
-    """The submitting caller acknowledges only successful or unsent creates."""
+    """The controller handles graceful drain without provider deletion here.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
     state = setup_stop(monkeypatch)
-    state.run.orchestrator_run_id = None
-    created = []
+    state.orchestrator._stop_run(state.run, graceful=True)
+    state.batch.list_namespaced_job.assert_not_called()
+    state.batch.delete_namespaced_job.assert_not_called()
 
-    def create_job(**kwargs: Any) -> None:
-        created.append(kwargs)
-        state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
-        if submission_outcome == "ambiguous":
-            raise RuntimeError("create response lost")
 
-    monkeypatch.setattr(module.kube_utils, "create_job", create_job)
-    monkeypatch.setattr(
-        module.KubernetesOrchestrator,
-        "get_image",
-        lambda *args, **kwargs: "image",
+def test_isolated_stop_deletes_all_attempt_jobs_and_ignores_absence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A concurrent delete is harmless, and no matching Job is left out.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
+    state = setup_stop(monkeypatch)
+    attempt_id = uuid4()
+    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
+        items=[make_job("one"), make_job("two")]
     )
-    monkeypatch.setattr(
-        module.KubernetesOrchestrator,
-        "_get_job_name",
-        lambda *args, **kwargs: "controller-job",
+    state.batch.delete_namespaced_job.side_effect = [
+        ApiException(status=404),
+        None,
+    ]
+    state.orchestrator.stop_isolated_step(SimpleNamespace(id=attempt_id))
+    assert state.batch.delete_namespaced_job.call_count == 2
+    assert (
+        state.batch.list_namespaced_job.call_args.kwargs["label_selector"]
+        == f"step_run_id={attempt_id}"
     )
-    monkeypatch.setattr(
-        module.KubernetesOrchestrator,
-        "_prepare_job_manifest",
-        lambda *args, **kwargs: object(),
-    )
-    monkeypatch.setattr(
-        module.KubernetesOrchestrator,
-        "_create_auth_secret_if_necessary",
-        lambda *args, **kwargs: nullcontext(),
-    )
-    snapshot = SimpleNamespace(
-        pipeline_configuration=SimpleNamespace(name="pipeline"),
-        project_id=state.run.project_id,
-        schedule=None,
-    )
-    if submission_outcome == "aborted":
-        state.run.stop_mode = PipelineRunStopMode.GRACEFUL
-    expected = (
-        "create response lost"
-        if submission_outcome == "ambiguous"
-        else "Pipeline stopped"
-    )
-    with pytest.raises(Exception, match=expected):
-        state.orchestrator._submit_orchestrator_job(
-            snapshot=snapshot,
-            command=[],
-            args=[],
-            environment={},
-            placeholder_run=state.run,
-        )
-    assert state.cleanups[0]["job_names"] == {"controller-job"}
-    if submission_outcome == "ambiguous":
-        assert not any(update.in_progress is False for update in state.updates)
+
+
+@pytest.mark.parametrize("operation", ["list", "delete"])
+def test_provider_errors_are_not_reported_as_success(
+    monkeypatch: pytest.MonkeyPatch, operation: str
+) -> None:
+    """Failure to access Kubernetes propagates to stop handling.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+        operation: Provider operation configured to fail.
+    """
+    state = setup_stop(monkeypatch)
+    if operation == "list":
+        state.batch.list_namespaced_job.side_effect = ApiException(status=403)
+        expected = ApiException
     else:
-        assert state.updates[-1].in_progress is False
-    assert bool(created) is (submission_outcome != "aborted")
+        state.batch.delete_namespaced_job.side_effect = ApiException(
+            status=403
+        )
+        expected = RuntimeError
+    with pytest.raises(expected):
+        state.orchestrator._stop_run(state.run, graceful=False)
+
+
+def test_finished_jobs_are_left_for_normal_retention(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stopping work does not require removing completed Job records.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+    """
+    state = setup_stop(monkeypatch)
+    finished = make_job("completed")
+    finished.status = k8s_client.V1JobStatus(
+        conditions=[k8s_client.V1JobCondition(type="Complete", status="True")]
+    )
+    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
+        items=[finished, make_job("controller", controller=True)]
+    )
+    state.orchestrator._stop_run(state.run, graceful=False)
+    assert [
+        call.kwargs["name"]
+        for call in state.batch.delete_namespaced_job.call_args_list
+    ] == ["controller"]

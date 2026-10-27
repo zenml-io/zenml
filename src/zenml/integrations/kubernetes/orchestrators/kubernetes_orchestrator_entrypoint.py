@@ -36,7 +36,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     PipelineRunStopMode,
 )
-from zenml.exceptions import AuthorizationException, IllegalOperationError
+from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -54,7 +54,6 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.orchestrators.cleanup import stop_workloads
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
 )
@@ -64,7 +63,6 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
-    StepRunUpdate,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
@@ -82,7 +80,7 @@ from zenml.orchestrators.utils import (
     get_config_environment_vars,
 )
 from zenml.pipelines.run_utils import create_placeholder_run
-from zenml.utils import env_utils, pagination_utils
+from zenml.utils import env_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
     is_pipeline_logging_enabled,
@@ -464,10 +462,6 @@ def main() -> None:
 
             Returns:
                 The status of the node.
-
-            Raises:
-                IllegalOperationError: If admission fails for a reason other
-                    than a concurrently requested stop.
             """
             step_name = node.id
             step_config = snapshot.step_configurations[step_name].config
@@ -480,29 +474,6 @@ def main() -> None:
             if not pipeline_settings.prevent_orchestrator_pod_caching:
                 if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
-
-            admitted_step_id = None
-            if "stop_mode" in pipeline_run.get_body().model_fields_set:
-                request = step_run_request_factory.create_request(step_name)
-                request.status = ExecutionStatus.INITIALIZING
-                try:
-                    admitted_step = client.zen_store.create_run_step(request)
-                except IllegalOperationError:
-                    if (
-                        client.get_pipeline_run(pipeline_run.id).stop_mode
-                        is not None
-                    ):
-                        return NodeStatus.CANCELLED
-                    raise
-                step_run_request_factory.record_step_run(admitted_step)
-                admitted_step_id = admitted_step.id
-                node.metadata["step_run_id"] = str(admitted_step.id)
-                if admitted_step.status.is_finished:
-                    return (
-                        NodeStatus.COMPLETED
-                        if admitted_step.status.is_successful
-                        else NodeStatus.FAILED
-                    )
 
             step_labels = base_labels.copy()
             step_labels["step_name"] = kube_utils.sanitize_label_value(
@@ -524,9 +495,7 @@ def main() -> None:
                 snapshot=snapshot, step_name=step_name
             )
             step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_name,
-                snapshot_id=snapshot.id,
-                step_run_id=admitted_step_id,
+                step_name=step_name, snapshot_id=snapshot.id
             )
 
             # We set some default minimum memory resource requests for the step pod
@@ -615,7 +584,6 @@ def main() -> None:
             # The job name will be used as a label on the pods, so we need to make
             # sure it doesn't exceed the label length limit
             job_name = kube_utils.sanitize_label(job_name)
-            node.metadata["job_name"] = job_name
 
             job_manifest = build_job_manifest(
                 job_name=job_name,
@@ -677,35 +645,44 @@ def main() -> None:
             return NodeStatus.RUNNING
 
         def stop_step(node: Node) -> None:
-            """Delete a node's Jobs and confirm their Pods have disappeared.
+            """Stop a step.
 
             Args:
-                node: Node whose submission may still be in progress.
+                node: The node to stop.
+
+            Raises:
+                ApiException: If Kubernetes rejects deletion.
             """
-            deadline = time.monotonic() + pipeline_settings.stop_timeout
-            if snapshot.step_configurations[node.id].config.step_operator:
-                for step_run in pagination_utils.depaginate(
-                    client.list_run_steps,
-                    pipeline_run_id=pipeline_run.id,
-                    name=node.id,
-                    project=pipeline_run.project_id,
-                    exclude_retried=True,
-                ):
-                    if not step_run.status.is_successful:
-                        orchestrator.stop_step_operator_workload(
-                            step_run, deadline
-                        )
-            job_name = node.metadata.get("job_name")
-            stop_workloads(
-                batch_api=batch_api,
-                core_api=core_api,
-                namespace=namespace,
-                run_ids={str(pipeline_run.id)},
-                job_names={job_name} if job_name else None,
-                step_name=node.id,
-                timeout=max(0, deadline - time.monotonic()),
-                api_request_timeout=pipeline_settings.api_request_timeout,
+            label_selector = (
+                f"run_id={kube_utils.sanitize_label_value(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label_value(node.id)}"
             )
+
+            jobs = kube_utils.list_jobs(
+                batch_api=batch_api,
+                namespace=namespace,
+                label_selector=label_selector,
+                api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
+            )
+            for job in jobs.items:
+                if job.status and any(
+                    condition.type in {"Complete", "Failed"}
+                    and condition.status == "True"
+                    for condition in job.status.conditions or []
+                ):
+                    continue
+                try:
+                    kube_utils.delete_job(
+                        batch_api=batch_api,
+                        namespace=namespace,
+                        job_name=job.metadata.name,
+                        api_request_timeout=pipeline_settings.api_request_timeout,
+                        max_retries=pipeline_settings.max_api_retries,
+                    )
+                except ApiException as error:
+                    if error.status != 404:
+                        raise
 
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
@@ -759,30 +736,30 @@ def main() -> None:
             )
             run = client.get_pipeline_run(pipeline_run.id, hydrate=False)
             if run.stop_mode is not None:
-                step_runs = client.list_run_steps(
+                steps = client.list_run_steps(
                     pipeline_run_id=pipeline_run.id,
                     name=step_name,
                     project=pipeline_run.project_id,
                     exclude_retried=True,
                     hydrate=False,
-                )
-                if (
-                    step_runs
-                    and step_runs[0].status == ExecutionStatus.RETRYING
+                ).items
+                if steps and (
+                    steps[0].status == ExecutionStatus.RETRYING
+                    or steps[0].status.is_finished
                 ):
-                    stop_step(node)
-                    client.zen_store.update_run_step(
-                        step_run_id=step_runs[0].id,
-                        step_run_update=StepRunUpdate(
-                            status=ExecutionStatus.STOPPED, end_time=utc_now()
-                        ),
-                    )
-                    return NodeStatus.CANCELLED
-                if step_runs and step_runs[0].status.is_finished:
-                    stop_step(node)
+                    # A Job can otherwise retry after its current attempt
+                    # finishes, even though the DAG has stopped scheduling.
+                    try:
+                        stop_step(node)
+                    except Exception:
+                        logger.exception(
+                            "Failed to stop retrying Job for step `%s`.",
+                            step_name,
+                        )
+                        return NodeStatus.RUNNING
                     return (
                         NodeStatus.COMPLETED
-                        if step_runs[0].status.is_successful
+                        if steps[0].status.is_successful
                         else NodeStatus.CANCELLED
                     )
 
@@ -896,7 +873,6 @@ def main() -> None:
                 interrupt_check_interval=pipeline_settings.interrupt_check_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
                 node_stop_function=stop_step,
-                shutdown_timeout=pipeline_settings.stop_timeout,
             ).run()
         finally:
             if (
@@ -978,35 +954,9 @@ def main() -> None:
             # as the pipeline run status will already have been published.
             pass
 
-        final_run = client.get_pipeline_run(pipeline_run.id)
-        if (
-            final_run.stop_mode is not None
-            or final_run.status == ExecutionStatus.FAILED
-        ):
-            for step_run in pagination_utils.depaginate(
-                client.list_run_steps,
-                pipeline_run_id=pipeline_run.id,
-                project=pipeline_run.project_id,
-                hydrate=False,
-            ):
-                if not step_run.status.is_finished:
-                    client.zen_store.update_run_step(
-                        step_run_id=step_run.id,
-                        step_run_update=StepRunUpdate(
-                            status=ExecutionStatus.STOPPED,
-                            end_time=utc_now(),
-                        ),
-                    )
-            client.zen_store.update_run(
-                run_id=pipeline_run.id,
-                run_update=PipelineRunUpdate(
-                    status=(
-                        ExecutionStatus.FAILED
-                        if final_run.status == ExecutionStatus.FAILED
-                        else ExecutionStatus.STOPPED
-                    ),
-                    in_progress=False,
-                ),
+        if client.get_pipeline_run(pipeline_run.id).stop_mode is not None:
+            publish_utils.publish_pipeline_run_status_update(
+                pipeline_run.id, ExecutionStatus.STOPPED
             )
 
         logger.info("Orchestrator pod finished.")

@@ -38,7 +38,7 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models import PipelineRunUpdate, StepRunUpdate
+from zenml.models import PipelineRunUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.publish_utils import (
@@ -51,8 +51,6 @@ from zenml.stack import Stack, StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
-from zenml.utils import pagination_utils
-from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -580,7 +578,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         snapshot: "PipelineSnapshotResponse",
         step_name: str,
         environment: Dict[str, str],
-        step_run_id: Optional[UUID] = None,
     ) -> "modal.Sandbox":
         """Create a child sandbox for a static pipeline step.
 
@@ -588,7 +585,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             snapshot: Static pipeline snapshot containing the step.
             step_name: Name of the step to execute.
             environment: Runtime environment for the step sandbox.
-            step_run_id: Step attempt admitted before sandbox submission.
 
         Returns:
             The created Modal step sandbox.
@@ -601,7 +597,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name,
             snapshot_id=snapshot.id,
-            step_run_id=step_run_id,
         )
         image_name = self.get_image(snapshot=snapshot, step_name=step_name)
         return self._create_step_sandbox(
@@ -851,14 +846,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         """
         if graceful:
             return
-        refreshed_run: Optional["PipelineRunResponse"] = None
+        refreshed_run = Client().get_pipeline_run(run.id)
 
         errors: List[str] = []
         attempted_child_sandbox_ids: set[str] = set()
         attempted_orchestration_sandbox_ids: set[str] = set()
-
-        if refreshed_run is None:
-            refreshed_run = Client().get_pipeline_run(run.id)
 
         def _terminate_child_sandboxes(
             target_run: "PipelineRunResponse",
@@ -915,97 +907,25 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 "Failed to stop all Modal sandboxes: " + "; ".join(errors)
             )
-        if late_run.in_progress:
-            if late_run.child_key is not None:
-                raise RuntimeError(
-                    "Modal child cleanup is incomplete: the shared controller "
-                    "has not acknowledged that the child stopped."
-                )
-            if not attempted_orchestration_sandbox_ids:
-                raise RuntimeError(
-                    "Modal cleanup is incomplete: controller sandbox identity "
-                    "is unknown. Retry immediate stop after submission settles."
-                )
-        client = Client()
-        if any(
-            child.in_progress
-            for child in pagination_utils.depaginate(
-                client.list_pipeline_runs,
-                parent_run_id=late_run.id,
-                project=late_run.project_id,
-                hydrate=False,
-            )
-        ):
-            raise RuntimeError(
-                "Modal cleanup is incomplete: descendant runs are still active. "
-                "Retry immediate stop after their controllers acknowledge shutdown."
-            )
-        fallback_ids = _metadata_values_with_prefix(
-            late_run.run_metadata,
-            MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX,
-        )
-        steps = list(
-            pagination_utils.depaginate(
-                client.list_run_steps,
-                pipeline_run_id=late_run.id,
-                project=late_run.project_id,
-                hydrate=True,
-            )
-        )
-        for step in steps:
-            if step.config.step_operator and not step.status.is_successful:
-                raise RuntimeError(
-                    f"Modal cleanup is incomplete for step `{step.id}`: "
-                    "external workload termination cannot be confirmed."
-                )
-            if step.status.is_finished:
-                continue
-            sandbox_id = _metadata_value(
-                step.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
-            ) or fallback_ids.get(step.name)
-            if (
-                step.config.step_operator
-                or sandbox_id not in attempted_child_sandbox_ids
-            ):
-                raise RuntimeError(
-                    f"Modal cleanup is incomplete for step `{step.id}`: "
-                    "external workload termination cannot be confirmed."
-                )
-        for step in steps:
-            if not step.status.is_finished:
-                client.zen_store.update_run_step(
-                    step_run_id=step.id,
-                    step_run_update=StepRunUpdate(
-                        status=ExecutionStatus.STOPPED, end_time=utc_now()
-                    ),
-                )
-        client.zen_store.update_run(
-            run_id=late_run.id,
-            run_update=PipelineRunUpdate(
-                status=late_run.status
-                if late_run.status.is_finished
-                else ExecutionStatus.STOPPED,
-                in_progress=False,
-            ),
-        )
 
     @staticmethod
     def _get_fresh_pipeline_run(
         run: "PipelineRunResponse",
     ) -> "PipelineRunResponse":
-        """Fetch hydrated metadata for status display, preserving known fallback IDs.
+        """Fetch the latest hydrated run, falling back to the given one.
 
         Args:
             run: Pipeline run to refresh.
 
         Returns:
-            The refreshed pipeline run or supplied metadata if refresh fails.
+            The refreshed pipeline run, or the supplied run if refresh fails.
         """
         try:
             return Client().get_pipeline_run(run.id)
         except Exception:
             logger.debug(
-                "Failed to refresh Modal pipeline run metadata.", exc_info=True
+                "Failed to fetch a fresh Modal pipeline run before cleanup.",
+                exc_info=True,
             )
             return run
 
@@ -1052,9 +972,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         Args:
             sandbox_id: ID of the Modal sandbox.
             description: Human-readable sandbox description for logs.
-
-        Raises:
-            RuntimeError: If termination has not been confirmed by Modal.
         """
         sandbox = sandbox_utils.get_sandbox_by_id(
             sandbox_id, modal_client=self.get_modal_client()
@@ -1066,11 +983,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             return
 
         sandbox.terminate()
-        if sandbox.poll() is None:
-            raise RuntimeError(
-                f"Modal sandbox `{sandbox_id}` termination is unconfirmed. "
-                "Retry immediate stop to confirm cleanup."
-            )
         logger.info("Terminated Modal sandbox for %s.", description)
 
     @staticmethod

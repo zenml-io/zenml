@@ -40,7 +40,7 @@ def request_run_stop(
 
     Args:
         run: The run to stop.
-        graceful: Whether to drain admitted attempts.
+        graceful: Whether to let current attempts finish.
 
     Returns:
         The run with the strongest persisted stop request.
@@ -81,7 +81,6 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
         IllegalOperationError: If the run already completed successfully.
         ValueError: If the stack is not accessible.
     """
-    run = request_run_stop(run, graceful=graceful)
     # Check if the stack is still accessible
     if run.stack is None:
         raise ValueError(

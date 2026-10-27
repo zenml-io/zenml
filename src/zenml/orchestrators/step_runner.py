@@ -142,11 +142,10 @@ class StepRunner:
         Raises:
             BaseException: A general exception if the step fails.
             StepHeartBeatTerminationException: if step heartbeat is enabled and the step is remotely stopped.
-            RunStoppedException: If a signal confirms that the step was stopped.
 
         Returns:
             The updated step run.
-        """  # noqa: DOC503
+        """
         from zenml.deployers.server import runtime
 
         # Deployment invocations share a single run context that the
@@ -262,25 +261,14 @@ class StepRunner:
                         )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-                    try:
+                    if isinstance(step_exception, RunStoppedException) or (
+                        isinstance(step_exception, KeyboardInterrupt)
+                        and heartbeat_worker.is_terminated
+                    ):
                         step_run = Client().get_run_step(
                             step_run_id=step_run_info.step_run_id,
                             hydrate=False,
                         )
-                    except Exception:
-                        logger.exception(
-                            "Failed to refresh step status while handling an exception."
-                        )
-                    remotely_stopped = isinstance(
-                        step_exception, RunStoppedException
-                    ) or (
-                        isinstance(step_exception, KeyboardInterrupt)
-                        and heartbeat_worker.is_terminated
-                    )
-                    if (
-                        remotely_stopped
-                        and step_run.status != ExecutionStatus.FAILED
-                    ):
                         if step_run.status == ExecutionStatus.RUNNING:
                             # Only update the status if the step status hasn't
                             # been changed by the server yet.
@@ -314,15 +302,9 @@ class StepRunner:
                             )
                         )
                         step_exception_info.set(exception_info)
-                        if not step_run.status.is_finished:
-                            try:
-                                step_run = publish_failed_step_run(
-                                    step_run_id=step_run_info.step_run_id
-                                )
-                            except Exception:
-                                logger.exception(
-                                    "Failed to publish step failure while handling an exception."
-                                )
+                        step_run = publish_failed_step_run(
+                            step_run_id=step_run_info.step_run_id
+                        )
 
                         # The per-attempt end hook fires before the retry
                         # decision, so it precedes the terminal failure hook.

@@ -15,11 +15,13 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
+from unittest.mock import ANY, create_autospec
 from uuid import UUID, uuid4
 
 import pytest
 
 from zenml.client import Client
+from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
@@ -34,12 +36,22 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsSQLStoreInterface,
+)
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
 def store(clean_client: Client) -> SqlZenStore:
-    """Return the isolated SQL store."""
+    """Return the isolated SQL store.
+
+    Args:
+        clean_client: Client fixture using a disposable store.
+
+    Returns:
+        The disposable SQL store.
+    """
     store = clean_client.zen_store
     assert isinstance(store, SqlZenStore)
     return store
@@ -49,7 +61,15 @@ def store(clean_client: Client) -> SqlZenStore:
 def create_run(
     clean_client: Client, store: SqlZenStore
 ) -> Callable[..., PipelineRunResponse]:
-    """Create related runs using a snapshot with one retryable step."""
+    """Create related runs using a snapshot with one retryable step.
+
+    Args:
+        clean_client: Client fixture using a disposable store.
+        store: Disposable SQL store.
+
+    Returns:
+        A factory for creating test pipeline runs.
+    """
     project_id = clean_client.active_project.id
     pipeline = store.create_pipeline(
         PipelineRequest(project=project_id, name=uuid4().hex)
@@ -80,23 +100,28 @@ def create_run(
             )
         },
     )
-    snapshots = {
-        dynamic: store.create_snapshot(
-            snapshot_request.model_copy(update={"is_dynamic": dynamic})
-        )
-        for dynamic in (True, False)
-    }
 
     def create(
         parent: UUID | None = None,
         status: ExecutionStatus = ExecutionStatus.RUNNING,
         dynamic: bool = True,
+        execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE,
     ) -> PipelineRunResponse:
+        snapshot = store.create_snapshot(
+            snapshot_request.model_copy(
+                update={
+                    "is_dynamic": dynamic,
+                    "pipeline_configuration": PipelineConfiguration(
+                        name="stopping", execution_mode=execution_mode
+                    ),
+                }
+            )
+        )
         run, _ = store.get_or_create_run(
             PipelineRunRequest(
                 project=project_id,
                 name=uuid4().hex,
-                snapshot=snapshots[dynamic].id,
+                snapshot=snapshot.id,
                 status=status,
                 parent_run_id=parent,
                 child_key=uuid4().hex if parent else None,
@@ -112,18 +137,21 @@ def _step_request(run: PipelineRunResponse) -> StepRunRequest:
         name="step",
         project=run.project_id,
         pipeline_run_id=run.id,
-        status=ExecutionStatus.INITIALIZING,
+        status=ExecutionStatus.RUNNING,
         start_time=utc_now(),
     )
 
 
-def test_mode_is_durable_monotonic_and_serialized(
+def test_repeated_requests_preserve_immediate_mode(
     store: SqlZenStore, create_run: Callable
 ) -> None:
-    """Mode is durable monotonic and serialized."""
+    """Escalation persists even when another caller requests graceful stop.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+    """
     run = create_run()
-    assert "stop_mode" in run.model_dump()["body"]
-    assert run.stop_mode is None
     for mode in [
         PipelineRunStopMode.GRACEFUL,
         PipelineRunStopMode.IMMEDIATE,
@@ -133,14 +161,17 @@ def test_mode_is_durable_monotonic_and_serialized(
     current = store.get_run(run.id)
     assert current.stop_mode == PipelineRunStopMode.IMMEDIATE
     assert current.status == ExecutionStatus.STOPPING
-    with pytest.raises(IllegalOperationError):
-        store.update_run(run.id, PipelineRunUpdate(stop_mode=None))
 
 
 def test_concurrent_escalation_cannot_downgrade(
     store: SqlZenStore, create_run: Callable
 ) -> None:
-    """Concurrent escalation cannot downgrade."""
+    """Concurrent stop requests preserve the strongest requested mode.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+    """
     run = create_run()
     with ThreadPoolExecutor(max_workers=2) as executor:
         updates = [
@@ -157,271 +188,244 @@ def test_concurrent_escalation_cannot_downgrade(
     assert store.get_run(run.id).stop_mode == PipelineRunStopMode.IMMEDIATE
 
 
-def test_failed_outcome_survives_stop_and_cleanup(
-    store: SqlZenStore, create_run: Callable
+@pytest.mark.parametrize("dynamic", [False, True])
+@pytest.mark.parametrize(
+    "execution_mode",
+    [ExecutionMode.CONTINUE_ON_FAILURE, ExecutionMode.STOP_ON_FAILURE],
+)
+def test_failed_run_remains_stoppable_until_work_finishes(
+    store: SqlZenStore,
+    create_run: Callable,
+    dynamic: bool,
+    execution_mode: ExecutionMode,
 ) -> None:
-    """Failed outcome survives stop and cleanup."""
-    run = create_run()
-    store.update_run(
+    """A failed outcome does not close activity or expire running workers.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+        dynamic: Whether the test run uses a dynamic snapshot.
+        execution_mode: Failure policy to exercise.
+    """
+    run = create_run(dynamic=dynamic, execution_mode=execution_mode)
+    step = store.create_run_step(_step_request(run))
+    failed = store.update_run(
         run.id,
         PipelineRunUpdate(
-            status=ExecutionStatus.FAILED, status_reason="Step A failed"
+            status=ExecutionStatus.FAILED, status_reason="A failed"
         ),
-    )
-    failed = store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
     )
     assert failed.status == ExecutionStatus.FAILED
     assert failed.in_progress
-    settled = store.update_run(
-        run.id,
-        PipelineRunUpdate(status=ExecutionStatus.STOPPED, in_progress=False),
-    )
-    assert settled.status == ExecutionStatus.FAILED
-    assert settled.get_body().status_reason == "Step A failed"
-    assert not settled.in_progress
-    assert settled.end_time is not None
-
-
-def test_graceful_admitted_attempt_runs_without_retry(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Graceful admitted attempt runs without retry."""
-    run = create_run()
-    step = store.create_run_step(_step_request(run))
-    store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
-    )
-    store.update_run_step(
-        step.id,
-        StepRunUpdate(status=ExecutionStatus.RUNNING, claim_execution=True),
-    )
-    with pytest.raises(IllegalOperationError):
-        store.update_run_step(
-            step.id,
-            StepRunUpdate(
-                status=ExecutionStatus.RUNNING, claim_execution=True
-            ),
-        )
-    failed = store.update_run_step(
-        step.id,
-        StepRunUpdate(status=ExecutionStatus.FAILED, end_time=utc_now()),
-    )
-    assert failed.status == ExecutionStatus.FAILED
-    with pytest.raises(IllegalOperationError):
-        store.create_run_step(_step_request(run))
-
-
-def test_immediate_prevents_execution_and_stale_completion(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Immediate prevents execution and stale completion."""
-    run = create_run()
-    step = store.create_run_step(_step_request(run))
-    store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
-    )
-    with pytest.raises(IllegalOperationError):
-        store.update_run_step(
-            step.id,
-            StepRunUpdate(
-                status=ExecutionStatus.RUNNING, claim_execution=True
-            ),
-        )
-    updated = store.update_run(
-        run.id, PipelineRunUpdate(status=ExecutionStatus.COMPLETED)
-    )
-    assert updated.status == ExecutionStatus.STOPPING
-    assert updated.in_progress
-
-
-def test_child_stop_preserves_siblings_and_fences_descendants(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Child stop preserves siblings and fences descendants."""
-    root = create_run()
-    child = create_run(parent=root.id)
-    grandchild = create_run(parent=child.id)
-    sibling = create_run(parent=root.id)
-    store.update_run(
-        child.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
-    )
-    assert store.get_run(root.id).stop_mode is None
-    assert store.get_run(sibling.id).stop_mode is None
-    assert (
-        store.get_run(grandchild.id).stop_mode == PipelineRunStopMode.GRACEFUL
-    )
-    with pytest.raises(IllegalOperationError):
-        create_run(parent=child.id)
-    with pytest.raises(IllegalOperationError):
-        store.create_run_step(_step_request(grandchild))
-    store.create_run_step(_step_request(sibling))
-    store.update_run(
-        root.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
-    )
-    assert (
-        store.get_run(grandchild.id).stop_mode == PipelineRunStopMode.IMMEDIATE
-    )
-    assert store.get_run(sibling.id).stop_mode == PipelineRunStopMode.IMMEDIATE
-
-
-def test_resume_requires_settled_execution(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Resume requires settled execution."""
-    run = create_run()
-    store.update_run(run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED))
-    store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
-    )
-    with pytest.raises(IllegalOperationError):
-        store.update_run(
-            run.id, PipelineRunUpdate(status=ExecutionStatus.RESUMING)
-        )
-    store.update_run(run.id, PipelineRunUpdate(in_progress=False))
-    resumed = store.update_run(
-        run.id, PipelineRunUpdate(status=ExecutionStatus.RESUMING)
-    )
-    assert resumed.stop_mode is None
-    assert resumed.status == ExecutionStatus.RESUMING
-
-
-def test_request_before_orchestrator_id_fences_admission(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Request before orchestrator id fences admission."""
-    run = create_run(status=ExecutionStatus.INITIALIZING)
+    assert failed.end_time is None
     requested = store.update_run(
         run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
     )
-    assert requested.orchestrator_run_id is None
+    assert requested.status == ExecutionStatus.FAILED
+    assert requested.in_progress
     with pytest.raises(IllegalOperationError):
         store.create_run_step(_step_request(run))
-
-
-def test_completed_runs_reject_stop(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Completed runs reject stop."""
-    run = create_run()
-    store.update_run(
-        run.id, PipelineRunUpdate(status=ExecutionStatus.COMPLETED)
+    stopped = store.update_run(
+        run.id, PipelineRunUpdate(status=ExecutionStatus.STOPPED)
     )
-    with pytest.raises(IllegalOperationError):
+    assert stopped.status == ExecutionStatus.FAILED
+    assert stopped.get_body().status_reason == "A failed"
+    assert not stopped.in_progress
+    assert stopped.end_time is not None
+    assert store.get_run_step(step.id).status == ExecutionStatus.STOPPED
+    assert (
         store.update_run(
-            run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
-        )
+            run.id, PipelineRunUpdate(status=ExecutionStatus.STOPPED)
+        ).end_time
+        == stopped.end_time
+    )
 
 
-def test_static_reservation_is_populated_once_during_graceful_stop(
-    store: SqlZenStore, create_run: Callable
+@pytest.mark.parametrize("failed", [False, True])
+def test_graceful_stop_prevents_new_steps_and_retries(
+    store: SqlZenStore, create_run: Callable, failed: bool
 ) -> None:
-    """Static reservation is populated once during graceful stop."""
-    run = create_run(dynamic=False)
-    reserved = store.create_run_step(_step_request(run))
+    """The existing step creation guard also respects stop intent on FAILED.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+        failed: Whether the run fails before stopping.
+    """
+    run = create_run()
+    step = store.create_run_step(_step_request(run))
+    if failed:
+        store.update_run(
+            run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
+        )
     store.update_run(
         run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
     )
-    prepared = _step_request(run)
-    prepared.admitted_step_run_id = reserved.id
-    prepared.status = ExecutionStatus.RUNNING
-    prepared.cache_key = "prepared-in-worker"
-    current = store.create_run_step(prepared)
-    assert current.id == reserved.id
-    assert current.version == 1
-    assert current.cache_key == "prepared-in-worker"
+    assert store.get_run_step(step.id).status == ExecutionStatus.RUNNING
     with pytest.raises(IllegalOperationError):
-        store.create_run_step(prepared)
-    assert store.get_run(run.id).in_progress
+        store.create_run_step(_step_request(run))
+    finished = store.update_run_step(
+        step.id,
+        StepRunUpdate(status=ExecutionStatus.FAILED, end_time=utc_now()),
+    )
+    assert finished.status == ExecutionStatus.FAILED
 
 
-def test_static_reservation_cannot_start_after_immediate_stop(
+def test_completed_publication_after_stop_does_not_clear_stop(
     store: SqlZenStore, create_run: Callable
 ) -> None:
-    """Static reservation cannot start after immediate stop."""
+    """A late controller result cannot turn an explicit stop into success.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+    """
+    run = create_run()
+    store.update_run(
+        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
+    )
+    finished = store.update_run(
+        run.id, PipelineRunUpdate(status=ExecutionStatus.COMPLETED)
+    )
+    assert finished.status == ExecutionStatus.STOPPED
+    assert not finished.in_progress
+    assert finished.end_time is not None
+
+
+@pytest.mark.parametrize("validated", [False, True])
+@pytest.mark.parametrize("mode", list(PipelineRunStopMode))
+def test_heartbeat_exposes_stop_mode_for_failed_runs(
+    store: SqlZenStore,
+    create_run: Callable,
+    validated: bool,
+    mode: PipelineRunStopMode,
+) -> None:
+    """Workers distinguish graceful draining from immediate stop after failure.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+        validated: Whether to exercise the authenticated heartbeat path.
+        mode: Requested stop mode.
+    """
+    run = create_run()
+    step = store.create_run_step(_step_request(run))
+    store.update_run(run.id, PipelineRunUpdate(status=ExecutionStatus.FAILED))
+    store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
+    if validated:
+        response = store.validate_and_update_heartbeat(
+            step.id, token_run_id=run.id
+        )
+    else:
+        response = store.update_step_heartbeat(step.id)
+    assert response.stop_mode == mode
+    assert response.pipeline_run_status == ExecutionStatus.FAILED
+    assert store.get_run_step(step.id).status == ExecutionStatus.RUNNING
+
+
+@pytest.mark.parametrize("with_step", [False, True])
+def test_static_stop_with_unstarted_steps_is_terminal(
+    store: SqlZenStore, create_run: Callable, with_step: bool
+) -> None:
+    """Stopping a partially executed static graph does not resume it.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+        with_step: Whether a step starts before the stop.
+    """
     run = create_run(dynamic=False)
-    reserved = store.create_run_step(_step_request(run))
+    if with_step:
+        step = store.create_run_step(_step_request(run))
     store.update_run(
         run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
     )
-    prepared = _step_request(run)
-    prepared.admitted_step_run_id = reserved.id
-    prepared.status = ExecutionStatus.RUNNING
-    with pytest.raises(IllegalOperationError):
-        store.create_run_step(prepared)
+    stopped = store.update_run(
+        run.id, PipelineRunUpdate(status=ExecutionStatus.STOPPED)
+    )
+    assert stopped.status == ExecutionStatus.STOPPED
+    assert not stopped.in_progress
+    assert stopped.end_time is not None
+    if with_step:
+        assert store.get_run_step(step.id).status == ExecutionStatus.STOPPED
 
 
-def test_completion_racing_with_stop_settles_as_stopped(
+def test_root_stop_settles_child_records_after_terminating_workloads(
     store: SqlZenStore, create_run: Callable
 ) -> None:
-    """Completion racing with stop settles as stopped."""
-    run = create_run()
+    """Terminated child workloads do not remain active after the root stops.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for pipeline runs in the disposable store.
+    """
+    root = create_run()
+    child = create_run(parent=root.id)
+    child_step = store.create_run_step(_step_request(child))
     store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.GRACEFUL)
+        child.id, PipelineRunUpdate(status=ExecutionStatus.FAILED)
     )
-    final = store.update_run(
-        run.id,
-        PipelineRunUpdate(status=ExecutionStatus.COMPLETED, in_progress=False),
+    store.update_run(
+        root.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
     )
-    assert final.status == ExecutionStatus.STOPPED
-    assert not final.in_progress
-
-
-def test_cannot_clear_activity_while_an_attempt_is_running(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Cannot clear activity while an attempt is running."""
-    run = create_run()
-    store.create_run_step(_step_request(run))
-    with pytest.raises(IllegalOperationError):
-        store.update_run(
-            run.id,
-            PipelineRunUpdate(
-                status=ExecutionStatus.FAILED, in_progress=False
-            ),
-        )
-    assert store.get_run(run.id).in_progress
+    assert store.get_run(child.id).stop_mode == PipelineRunStopMode.IMMEDIATE
+    store.update_run(
+        root.id, PipelineRunUpdate(status=ExecutionStatus.STOPPED)
+    )
+    stopped_child = store.get_run(child.id)
+    assert stopped_child.status == ExecutionStatus.FAILED
+    assert not stopped_child.in_progress
+    assert stopped_child.end_time is not None
+    assert store.get_run_step(child_step.id).status == ExecutionStatus.STOPPED
 
 
 @pytest.mark.parametrize("mode", list(PipelineRunStopMode))
-def test_placeholder_attachment_preserves_stop_intent(
+def test_replacement_worker_cannot_restart_existing_step(
     store: SqlZenStore, create_run: Callable, mode: PipelineRunStopMode
 ) -> None:
-    """Attaching an orchestrator cannot reopen a stopped placeholder."""
-    run = create_run(status=ExecutionStatus.INITIALIZING)
-    store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
-    attached, _ = store.get_or_create_run(
-        PipelineRunRequest(
-            name=run.name,
-            project=run.project_id,
-            snapshot=run.snapshot.id,
-            status=ExecutionStatus.RUNNING,
-            orchestrator_run_id=uuid4().hex,
-        )
-    )
-    assert attached.id == run.id
-    assert attached.stop_mode == mode
-    assert attached.status == ExecutionStatus.STOPPING
+    """A backend retry cannot bypass stopping by reusing its step record.
 
-
-def test_repeated_cleanup_preserves_step_outcome_and_end_time(
-    store: SqlZenStore, create_run: Callable
-) -> None:
-    """Repeated cleanup cannot overwrite a worker's terminal report."""
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for test pipeline runs.
+        mode: Requested stop mode.
+    """
     run = create_run()
     step = store.create_run_step(_step_request(run))
-    end_time = utc_now()
-    store.update_run_step(
-        step.id,
-        StepRunUpdate(status=ExecutionStatus.COMPLETED, end_time=end_time),
+    retrying = store.update_run_step(
+        step.id, StepRunUpdate(status=ExecutionStatus.FAILED)
     )
+    assert retrying.status == ExecutionStatus.RETRYING
+    store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
+    with pytest.raises(IllegalOperationError, match="Cannot start a step"):
+        store.update_run_step(
+            step.id, StepRunUpdate(status=ExecutionStatus.RUNNING)
+        )
+    assert store.get_run_step(step.id).status == ExecutionStatus.RETRYING
+
+
+def test_stopped_steps_release_resources_once(
+    store: SqlZenStore, create_run: Callable
+) -> None:
+    """Finalizing a stop releases step resources even without a worker update.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for test pipeline runs.
+    """
+    run = create_run()
+    step = store.create_run_step(_step_request(run))
+    resource_pools = create_autospec(ResourcePoolsSQLStoreInterface)
+    store.resource_pools = resource_pools
     store.update_run(
         run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
     )
+    resource_pools.release_step_run_resources.assert_not_called()
     for _ in range(2):
-        stopped = store.update_run_step(
-            step.id,
-            StepRunUpdate(status=ExecutionStatus.STOPPED, end_time=utc_now()),
+        store.update_run(
+            run.id, PipelineRunUpdate(status=ExecutionStatus.STOPPED)
         )
-        assert stopped.status == ExecutionStatus.COMPLETED
-        assert stopped.end_time == end_time
+    assert store.get_run_step(step.id).status == ExecutionStatus.STOPPED
+    resource_pools.release_step_run_resources.assert_called_once_with(
+        ANY, step.id
+    )

@@ -35,42 +35,6 @@ from zenml.steps.heartbeat import StepHeartBeatTerminationException
             True,
             False,
         ),
-        (
-            RuntimeError,
-            ExecutionStatus.FAILED,
-            False,
-            RuntimeError,
-            False,
-            False,
-            False,
-        ),
-        (
-            RuntimeError,
-            ExecutionStatus.RUNNING,
-            False,
-            RuntimeError,
-            True,
-            False,
-            False,
-        ),
-        (
-            RuntimeError,
-            ExecutionStatus.RUNNING,
-            False,
-            RuntimeError,
-            True,
-            False,
-            True,
-        ),
-        (
-            KeyboardInterrupt,
-            ExecutionStatus.FAILED,
-            True,
-            KeyboardInterrupt,
-            False,
-            False,
-            False,
-        ),
     ],
 )
 def test_step_exception_preserves_terminal_state_and_classification(
@@ -83,7 +47,18 @@ def test_step_exception_preserves_terminal_state_and_classification(
     clean_stop: bool,
     publish_fails: bool,
 ) -> None:
-    """Signal and heartbeat cancellation never repeat a terminal status write."""
+    """Signal and heartbeat cancellation never repeat a terminal status write.
+
+    Args:
+        monkeypatch: Fixture for replacing external collaborators.
+        error_type: Exception raised by the step.
+        status: Stored execution status.
+        heartbeat_terminated: Whether the heartbeat observed cancellation.
+        expected_type: Expected exception propagated by the runner.
+        publish_failure: Whether failure should be published.
+        clean_stop: Whether the end hook receives a cancellation.
+        publish_fails: Whether failure publication raises.
+    """
     config = SimpleNamespace(
         start_hook_source=None, end_hook_source=None, failure_hook_source=None
     )

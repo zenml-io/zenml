@@ -626,7 +626,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if session := object_session(self):
             step_run_statuses = session.execute(
                 select(StepRunSchema.status)
-                .with_for_update()
                 .where(StepRunSchema.pipeline_run_id == self.id)
                 .where(
                     col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
@@ -928,10 +927,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         return self
 
     def request_stop(self, mode: PipelineRunStopMode) -> None:
-        """Persist a stop request without replacing an existing failure.
+        """Record a stop request while preserving a previous failure.
 
         Args:
-            mode: The requested stop mode.
+            mode: Whether to finish current attempts or stop immediately.
 
         Raises:
             IllegalOperationError: If the run completed successfully.
@@ -940,18 +939,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             raise IllegalOperationError("Cannot stop a completed run.")
         if self.stop_mode != PipelineRunStopMode.IMMEDIATE:
             self.stop_mode = mode.value
-        if not self.in_progress and self.status in {
-            ExecutionStatus.PAUSED,
-            ExecutionStatus.RESUMING,
-        }:
-            self.status = ExecutionStatus.STOPPED.value
-        if self.status not in {
-            ExecutionStatus.FAILED,
-            ExecutionStatus.STOPPED,
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-        }:
-            self.status = ExecutionStatus.STOPPING.value
         self.updated = utc_now()
 
     def update_status(
@@ -984,29 +971,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         current_status = ExecutionStatus(self.status)
-
-        if self.stop_mode and requested_status != ExecutionStatus.RESUMING:
-            # Stop intent fences stale publishers independently of the outcome.
-            # Only an explicit terminal publication settles a stopped run; a
-            # snapshot of step rows cannot account for in-flight submissions.
-            if current_status == ExecutionStatus.FAILED:
-                return False
-            if requested_status in {
-                ExecutionStatus.RUNNING,
-                ExecutionStatus.PROVISIONING,
-                ExecutionStatus.INITIALIZING,
-                ExecutionStatus.COMPLETED,
-            }:
-                return False
-            if requested_status is None:
-                if (
-                    self.snapshot is not None
-                    and not self.snapshot.is_dynamic
-                    and ExecutionStatus.FAILED in self._get_step_run_statuses()
-                ):
-                    requested_status = ExecutionStatus.FAILED
-                else:
-                    return False
 
         if (
             requested_status == ExecutionStatus.RESUMING
@@ -1041,12 +1005,35 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
 
-        if self.stop_mode:
-            new_status = requested_status or current_status
+        if requested_status == ExecutionStatus.RESUMING:
+            self.stop_mode = None
+        elif self.stop_mode:
+            if current_status == ExecutionStatus.FAILED:
+                requested_status = ExecutionStatus.FAILED
+            elif requested_status in {
+                ExecutionStatus.RUNNING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                return False
+            elif requested_status in {
+                ExecutionStatus.COMPLETED,
+                ExecutionStatus.FAILED,
+            }:
+                requested_status = ExecutionStatus.STOPPED
+
+        if self.stop_mode and (
+            requested_status == ExecutionStatus.STOPPED
+            or current_status == ExecutionStatus.STOPPED
+        ):
+            new_status = ExecutionStatus.STOPPED
         elif is_dynamic_pipeline:
             # In dynamic pipelines, the run status is only updated on manual
             # status updates and does not depend on step statuses.
-            if requested_status is None and status_reason is None:
+            if (
+                requested_status is None
+                and status_reason is None
+                and current_status != ExecutionStatus.FAILED
+            ):
                 return False
 
             new_status = requested_status or current_status
@@ -1081,23 +1068,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.status = new_status.value
 
-        if self.stop_mode:
-            # Only the controller or a confirmed cleanup acknowledges that
-            # submissions and infrastructure have finished, via in_progress.
-            pass
-        elif is_dynamic_pipeline:
-            if new_status != ExecutionStatus.FAILED:
-                self.in_progress = not new_status.is_finished
+        if is_dynamic_pipeline and new_status != ExecutionStatus.FAILED:
+            self.in_progress = not new_status.is_finished
         else:
             self.in_progress = self._check_if_run_in_progress()
 
         now = utc_now()
         if not self.in_progress and self.end_time is None:
             self.end_time = now
-        elif new_status == ExecutionStatus.RESUMING or (
-            current_status == ExecutionStatus.RESUMING
-            and new_status == ExecutionStatus.RUNNING
-        ):
+        elif self.in_progress:
             self.end_time = None
 
         if status_reason:
@@ -1170,14 +1149,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
-        self.status = (
-            ExecutionStatus.STOPPING.value
-            if self.stop_mode
-            else request.status.value
-        )
-        self.in_progress = (
-            bool(self.stop_mode) or not request.status.is_finished
-        )
+        self.status = request.status.value
+        self.in_progress = not request.status.is_finished
 
         self.updated = utc_now()
 
@@ -1233,10 +1206,15 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 
-            if execution_mode in [
-                ExecutionMode.FAIL_FAST,
-                ExecutionMode.STOP_ON_FAILURE,
-            ]:
+            if (
+                self.stop_mode
+                or (self.snapshot and self.snapshot.is_dynamic)
+                or execution_mode
+                in [
+                    ExecutionMode.FAIL_FAST,
+                    ExecutionMode.STOP_ON_FAILURE,
+                ]
+            ):
                 return any(
                     not status.is_finished
                     for status in self._get_step_run_statuses()
@@ -1252,7 +1230,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             StepRunSchema.name,
                             StepRunSchema.status,
                         )
-                        .with_for_update()
                         .where(StepRunSchema.pipeline_run_id == self.id)
                         .where(
                             StepRunSchema.status
@@ -1402,7 +1379,10 @@ def _compute_static_pipeline_run_status(
             return ExecutionStatus.STOPPED
         else:
             return ExecutionStatus.STOPPING
-    elif any(not status.is_finished for status in step_statuses):
+    elif (
+        ExecutionStatus.RUNNING in step_statuses
+        or ExecutionStatus.RETRYING in step_statuses
+    ):
         return ExecutionStatus.RUNNING
     elif len(step_statuses) < num_steps:
         if run_status in {

@@ -639,24 +639,11 @@ docs page.
 
 ## Stopping runs
 
-Graceful stopping lets admitted attempts finish and prevents new steps and
-retries. This includes Kubernetes Job retries: replacement workers are not
-allowed to start another attempt after a stop request. Send another immediate
-stop request to escalate; graceful stopping has no automatic timeout.
-
-Immediate stopping reconciles matching Jobs and Pods repeatedly, including
-workloads discovered while cleanup is running. Stopping a root run includes its
-controller and descendants. Stopping a child preserves the shared controller
-and sibling workloads. ZenML waits for observed removal before reporting
-cleanup complete. Missing permissions, unavailable Kubernetes APIs, ambiguous
-submission failures, or a child that has not finished shutting down produce an
-incomplete-cleanup error. You can repeat the immediate request.
-
-Stop requests are accepted before the controller starts. If submission is still
-in flight, cleanup may need another request after submission settles. A failed
-run keeps its failure outcome and exception even when you stop its remaining
-workloads. See [Stopping a run](../../how-to/steps-pipelines/advanced_features.md#stopping-a-run)
-for examples and runtime compatibility requirements.
+See [Stopping a run](../../how-to/steps-pipelines/advanced_features.md#stopping-a-run)
+for graceful and immediate stopping behavior. On Kubernetes, graceful stopping
+also prevents new step attempts from Job retries. Immediate stopping requests
+deletion of matching Kubernetes Jobs; Kubernetes may take time to remove their
+Pods after accepting the deletion requests.
 
 ## Best practices for highly parallel pipelines
 

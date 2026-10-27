@@ -181,11 +181,6 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
-    stop_timeout: PositiveFloat = Field(
-        default=60.0,
-        description="Maximum seconds to confirm immediate workload cleanup. "
-        "Incomplete cleanup raises an error and can be retried.",
-    )
     api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",

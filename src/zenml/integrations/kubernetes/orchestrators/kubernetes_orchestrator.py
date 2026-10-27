@@ -30,13 +30,10 @@
 # inspired by the Kubernetes dag runner implementation of tfx
 """Kubernetes-native orchestrator."""
 
-import contextvars
 import json
 import os
 import random
 import socket
-import time
-from concurrent.futures import ThreadPoolExecutor, wait
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
@@ -68,10 +65,8 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
-    PipelineRunStopMode,
     StackComponentType,
 )
-from zenml.exceptions import RunStoppedException
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -92,14 +87,13 @@ from zenml.integrations.kubernetes.manifest_utils import (
     job_template_manifest_from_job,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.orchestrators.cleanup import stop_workloads
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models import PipelineRunUpdate, RunMetadataResource, StepRunUpdate
+from zenml.models import RunMetadataResource
 from zenml.models.v2.core.schedule import ScheduleUpdate
 from zenml.orchestrators import (
     ContainerizedOrchestrator,
@@ -107,12 +101,11 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.orchestrators import utils as orchestrator_utils
-from zenml.stack import Stack, StackValidator
+from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
 from zenml.utils import pagination_utils
-from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -124,6 +117,7 @@ if TYPE_CHECKING:
         ScheduleResponse,
         StepRunResponse,
     )
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -569,7 +563,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         pod_settings: Optional[KubernetesPodSettings] = None,
         backoff_limit: Optional[int] = None,
         pod_failure_policy: Optional[Dict[str, Any]] = None,
-        owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -586,7 +579,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             backoff_limit: The backoff limit for the job.
             pod_failure_policy: Default pod failure policy for the job. The
                 `pod_failure_policy` setting takes precedence over this value.
-            owner_references: Controller Job references for isolated steps.
 
         Returns:
             The job manifest.
@@ -672,7 +664,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             pod_failure_policy=pod_failure_policy,
             labels=labels,
             annotations=annotations,
-            owner_references=owner_references,
         )
 
     def _get_job_name(
@@ -785,9 +776,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             RuntimeError: If a schedule without cron expression is given.
             PipelineSubmissionError: If an APIException happens during job submission,
                 it is propagated as custom error.
-            RunStoppedException: If cancellation wins before or during submission.
-            Exception: If submission or post-submission reconciliation fails.
-            BaseException: If controller submission is interrupted.
 
         Returns:
             Optional submission result.
@@ -921,67 +909,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         }
                     )
                 else:
-                    if placeholder_run is not None:
-                        Client().create_run_metadata(
-                            metadata={"orchestrator_job_name": job_name},
-                            resources=[
-                                RunMetadataResource(
-                                    id=placeholder_run.id,
-                                    type=MetadataResourceTypes.PIPELINE_RUN,
-                                )
-                            ],
-                        )
-                        refreshed_run = Client().get_pipeline_run(
-                            placeholder_run.id
-                        )
-                        if refreshed_run.stop_mode:
-                            self._stop_run_workloads(
-                                refreshed_run, submission_complete=True
-                            )
-                            raise RunStoppedException(
-                                "Pipeline stopped before submission."
-                            )
-                    submission_complete = False
-                    submission_error: Optional[BaseException] = None
-                    try:
-                        kube_utils.create_job(
-                            batch_api=self._k8s_batch_api,
-                            namespace=self.config.kubernetes_namespace,
-                            job_manifest=job_manifest,
-                            api_request_timeout=settings.api_request_timeout,
-                            max_retries=settings.max_api_retries,
-                        )
-                        submission_complete = True
-                    except BaseException as error:
-                        submission_error = error
-                        raise
-                    finally:
-                        if placeholder_run is not None:
-                            try:
-                                refreshed_run = Client().get_pipeline_run(
-                                    placeholder_run.id
-                                )
-                                if (
-                                    refreshed_run.stop_mode
-                                    == PipelineRunStopMode.IMMEDIATE
-                                ):
-                                    self._stop_run_workloads(
-                                        refreshed_run,
-                                        submission_complete=submission_complete,
-                                    )
-                                    if submission_error is None:
-                                        raise RunStoppedException(
-                                            "Pipeline stopped during submission."
-                                        )
-                            except Exception:
-                                if submission_error is None:
-                                    raise
-                                # Preserve the submission failure while making
-                                # an inconclusive cleanup visible to the caller.
-                                logger.exception(
-                                    "Post-submission stop reconciliation failed. "
-                                    "Retry immediate stop to confirm cleanup."
-                                )
+                    kube_utils.create_job(
+                        batch_api=self._k8s_batch_api,
+                        namespace=self.config.kubernetes_namespace,
+                        job_manifest=job_manifest,
+                        api_request_timeout=settings.api_request_timeout,
+                        max_retries=settings.max_api_retries,
+                    )
 
                     if settings.synchronous:
 
@@ -1033,9 +967,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 environment.
             allocated_resource_request: The allocated resource request for the
                 step, if any.
-
-        Raises:
-            RunStoppedException: If immediate cancellation prevents submission.
         """
         logger.info(
             "Launching job for step `%s`.",
@@ -1096,26 +1027,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             )
         )
 
-        owner_references = None
-        if not self.config.skip_owner_references:
-            try:
-                owner_references = kube_utils.get_pod_owner_references(
-                    core_api=self._k8s_core_api,
-                    pod_name=socket.gethostname(),
-                    namespace=self.config.kubernetes_namespace,
-                    api_request_timeout=settings.api_request_timeout,
-                    max_retries=settings.max_api_retries,
-                )
-                for owner in owner_references:
-                    owner.controller = False
-            except Exception as error:
-                logger.warning(
-                    "Could not attach controller ownership to isolated step "
-                    "`%s`; cancellation must discover its Job by run labels: %s",
-                    step_run_info.pipeline_step_name,
-                    error,
-                )
-
         job_manifest = self._prepare_job_manifest(
             name=job_name,
             command=command,
@@ -1130,37 +1041,34 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # orchestrator level because the entrypoint args contain a step
             # run ID.
             backoff_limit=settings.backoff_limit_margin,
-            owner_references=owner_references,
         )
 
-        Client().create_run_metadata(
-            metadata={
-                "step_jobs": {step_run_info.pipeline_step_name: job_name}
-            },
-            resources=[
-                RunMetadataResource(
-                    id=step_run_info.run_id,
-                    type=MetadataResourceTypes.PIPELINE_RUN,
-                )
-            ],
+        kube_utils.create_job(
+            batch_api=self._k8s_batch_api,
+            namespace=self.config.kubernetes_namespace,
+            job_manifest=job_manifest,
+            api_request_timeout=settings.api_request_timeout,
+            max_retries=settings.max_api_retries,
         )
-        run = Client().get_pipeline_run(step_run_info.run_id)
-        if run.stop_mode == PipelineRunStopMode.IMMEDIATE:
-            raise RunStoppedException(
-                "Pipeline stopped before step submission."
-            )
+
         try:
-            kube_utils.create_job(
-                batch_api=self._k8s_batch_api,
-                namespace=self.config.kubernetes_namespace,
-                job_manifest=job_manifest,
-                api_request_timeout=settings.api_request_timeout,
-                max_retries=settings.max_api_retries,
+            Client().create_run_metadata(
+                metadata={
+                    "step_jobs": {step_run_info.pipeline_step_name: job_name}
+                },
+                resources=[
+                    RunMetadataResource(
+                        id=step_run_info.run_id,
+                        type=MetadataResourceTypes.PIPELINE_RUN,
+                    )
+                ],
             )
-        finally:
-            run = Client().get_pipeline_run(step_run_info.run_id)
-            if run.stop_mode == PipelineRunStopMode.IMMEDIATE:
-                self.stop_isolated_step(step_run_info.step_run)
+        except Exception as e:
+            logger.warning(
+                "Failed to create run metadata for step `%s`: %s",
+                step_run_info.pipeline_step_name,
+                str(e),
+            )
 
         logger.debug(
             "Launched job for step `%s`.",
@@ -1181,55 +1089,85 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         label_selector = (
             f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
-        job_list = kube_utils.list_jobs(
-            batch_api=self._k8s_batch_api,
-            namespace=self.config.kubernetes_namespace,
-            label_selector=label_selector,
-            api_request_timeout=self.config.api_request_timeout,
-            max_retries=self.config.max_api_retries,
-        )
+        try:
+            job_list = kube_utils.list_jobs(
+                batch_api=self._k8s_batch_api,
+                namespace=self.config.kubernetes_namespace,
+                label_selector=label_selector,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to list jobs for step run `%s`: %s", step_run.id, e
+            )
+            return ExecutionStatus.FAILED
+
         if not job_list.items:
             logger.warning("No jobs found for step run `%s`", step_run.id)
             return ExecutionStatus.FAILED
 
-        failed = False
+        job = job_list.items[0]
+        job_name = job.metadata.name
+        status, error_message = kube_utils.check_job_status(
+            batch_api=self._k8s_batch_api,
+            core_api=self._k8s_core_api,
+            namespace=self.config.kubernetes_namespace,
+            job_name=job_name,
+            api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
+        )
+        if status == kube_utils.JobStatus.SUCCEEDED:
+            return ExecutionStatus.COMPLETED
+        if status == kube_utils.JobStatus.FAILED:
+            logger.error(
+                "Kubernetes job `%s:%s` for step run `%s` failed: %s",
+                self.config.kubernetes_namespace,
+                job_name,
+                step_run.id,
+                error_message,
+            )
+            return ExecutionStatus.FAILED
+
+        return ExecutionStatus.RUNNING
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop every Job belonging to an isolated step attempt.
+
+        Args:
+            step_run: The step run.
+        """
+        job_list = kube_utils.list_jobs(
+            batch_api=self._k8s_batch_api,
+            namespace=self.config.kubernetes_namespace,
+            label_selector=f"step_run_id={step_run.id}",
+            api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
+        )
         for job in job_list.items:
-            job_name = job.metadata.name
-            status, error_message = kube_utils.check_job_status(
+            self._delete_job(job.metadata.name)
+
+    def _delete_job(self, job_name: str) -> None:
+        """Delete a Job and let Kubernetes terminate its Pods.
+
+        Args:
+            job_name: Exact name of the Job to stop.
+
+        Raises:
+            ApiException: If Kubernetes rejects deletion for a reason other
+                than the Job already being absent.
+        """
+        try:
+            kube_utils.delete_job(
                 batch_api=self._k8s_batch_api,
-                core_api=self._k8s_core_api,
                 namespace=self.config.kubernetes_namespace,
                 job_name=job_name,
                 api_request_timeout=self.config.api_request_timeout,
                 max_retries=self.config.max_api_retries,
             )
-            if status == kube_utils.JobStatus.RUNNING:
-                return ExecutionStatus.RUNNING
-            if status == kube_utils.JobStatus.FAILED:
-                failed = True
-                logger.error(
-                    "Kubernetes job `%s:%s` for step run `%s` failed: %s",
-                    self.config.kubernetes_namespace,
-                    job_name,
-                    step_run.id,
-                    error_message,
-                )
-        return ExecutionStatus.FAILED if failed else ExecutionStatus.COMPLETED
-
-    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
-        """Stop an isolated step.
-
-        Args:
-            step_run: The step run.
-        """
-        stop_workloads(
-            batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
-            namespace=self.config.kubernetes_namespace,
-            step_run_id=str(step_run.id),
-            timeout=self.config.stop_timeout,
-            api_request_timeout=self.config.api_request_timeout,
-        )
+        except ApiException as error:
+            if error.status != 404:
+                raise
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings
@@ -1293,214 +1231,79 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
     ) -> None:
-        """Request draining or reconcile immediate workload deletion.
+        """Stop scoped step Jobs and the root run's controller Job.
 
         Args:
-            run: Run whose execution subtree should stop.
-            graceful: Whether admitted attempts may finish.
+            run: The run whose execution subtree should stop.
+            graceful: Whether to let the controller drain current attempts.
 
         Raises:
-            RuntimeError: If workload termination cannot be confirmed.
-        """  # noqa: DOC502
-        if not graceful:
-            self._stop_run_workloads(run)
-
-    def _stop_run_workloads(
-        self, run: "PipelineRunResponse", submission_complete: bool = False
-    ) -> None:
-        """Remove scoped workloads and finalize only confirmed cleanup.
-
-        Args:
-            run: Run whose execution subtree should stop.
-            submission_complete: Whether this caller knows that controller
-                submission succeeded or was aborted before any API call.
-
-        Raises:
-            RuntimeError: If workload termination cannot be confirmed.
+            RuntimeError: If deleting any selected Job fails.
         """
-        client = Client()
-        run_ids = {str(run.id)}
-        ordered_run_ids = [run.id]
+        if graceful:
+            return
+
+        run_ids = {run.id}
         pending = [run.id]
         while pending:
-            parent_id = pending.pop()
             for child in pagination_utils.depaginate(
-                client.list_pipeline_runs,
-                parent_run_id=parent_id,
+                Client().list_pipeline_runs,
+                parent_run_id=pending.pop(),
                 project=run.project_id,
                 hydrate=False,
             ):
-                if str(child.id) not in run_ids:
-                    run_ids.add(str(child.id))
-                    ordered_run_ids.append(child.id)
+                if child.id not in run_ids:
+                    run_ids.add(child.id)
                     pending.append(child.id)
 
         include_controller = run.child_key is None
-        controller_ids = (
-            {run.orchestrator_run_id} if run.orchestrator_run_id else set()
-        )
-        job_names = set()
-        if include_controller:
-            controller_job_name = run.run_metadata.get("orchestrator_job_name")
-            if isinstance(controller_job_name, str):
-                job_names.add(controller_job_name)
-
-        settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
-        deadline = time.monotonic() + settings.stop_timeout
-        step_operator_runs = []
-        for scoped_run_id in run_ids:
-            for step_run in pagination_utils.depaginate(
-                client.list_run_steps,
-                pipeline_run_id=UUID(scoped_run_id),
-                project=run.project_id,
-                hydrate=True,
-            ):
-                if (
-                    step_run.config.step_operator
-                    and not step_run.status.is_successful
-                ):
-                    step_operator_runs.append(step_run)
-
-        executor = ThreadPoolExecutor(
-            thread_name_prefix="Kubernetes-StepOperator-Stop"
-        )
-        external_stops = [
-            executor.submit(
-                contextvars.copy_context().run,
-                self.stop_step_operator_workload,
-                step_run,
-                deadline,
-            )
-            for step_run in step_operator_runs
-        ]
-        executor.shutdown(wait=False)
-        stop_workloads(
+        job_list = kube_utils.list_jobs(
             batch_api=self._k8s_batch_api,
-            core_api=self._k8s_core_api,
             namespace=self.config.kubernetes_namespace,
-            run_ids=run_ids,
-            controller_ids=controller_ids,
-            job_names=job_names,
-            include_controller=include_controller,
-            timeout=max(0, deadline - time.monotonic()),
-            api_request_timeout=settings.api_request_timeout,
+            label_selector="run_id in ("
+            + ",".join(sorted(map(str, run_ids)))
+            + ")",
+            api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
         )
-        _, pending_stops = wait(
-            external_stops, timeout=max(0, deadline - time.monotonic())
-        )
-        if pending_stops:
-            raise RuntimeError(
-                "Kubernetes workloads were removed, but step operator "
-                "cleanup is still incomplete. Retry immediate stop."
+        job_names = {
+            job.metadata.name
+            for job in job_list.items
+            if (include_controller or kube_utils.is_step_job(job))
+            and not (
+                job.status
+                and any(
+                    condition.type in {"Complete", "Failed"}
+                    and condition.status == "True"
+                    for condition in job.status.conditions or []
+                )
             )
-        for external_stop in external_stops:
-            external_stop.result()
-
-        if (
-            include_controller
-            and not controller_ids
-            and not submission_complete
-            and client.get_pipeline_run(run.id).in_progress
-        ):
-            raise RuntimeError(
-                "Workloads currently visible were removed, but controller "
-                "submission has not been acknowledged. Cleanup is unconfirmed; "
-                "retry immediate stop."
-            )
-
-        if (
-            not include_controller
-            and client.get_pipeline_run(run.id).in_progress
-        ):
-            raise RuntimeError(
-                "Isolated child workloads were removed, but the shared "
-                "controller has not confirmed that the child stopped. "
-                "Retry immediate stop after the child finishes shutting down."
-            )
-
-        for run_id in run_ids:
-            for step_run in pagination_utils.depaginate(
-                client.list_run_steps,
-                pipeline_run_id=UUID(run_id),
-                project=run.project_id,
-                hydrate=False,
+        }
+        if include_controller and run.orchestrator_run_id:
+            if not any(
+                not kube_utils.is_step_job(job) for job in job_list.items
             ):
-                if not step_run.status.is_finished:
-                    client.zen_store.update_run_step(
-                        step_run_id=step_run.id,
-                        step_run_update=StepRunUpdate(
-                            status=ExecutionStatus.STOPPED,
-                            end_time=utc_now(),
-                        ),
-                    )
-        # Settle the entire subtree before finalizing activity, and finalize
-        # descendants before their parents so ancestor checks remain truthful.
-        for finalized_run_id in reversed(ordered_run_ids):
-            refreshed = client.get_pipeline_run(finalized_run_id)
-            client.zen_store.update_run(
-                run_id=refreshed.id,
-                run_update=PipelineRunUpdate(
-                    status=(
-                        refreshed.status
-                        if refreshed.status.is_finished
-                        else ExecutionStatus.STOPPED
-                    ),
-                    in_progress=False,
-                ),
-            )
+                # Static runs historically store the controller Pod name;
+                # dynamic runs store its Job name. Resolve only that Pod.
+                controller_job_name = kube_utils.get_parent_job_name(
+                    core_api=self._k8s_core_api,
+                    pod_name=run.orchestrator_run_id,
+                    namespace=self.config.kubernetes_namespace,
+                    api_request_timeout=self.config.api_request_timeout,
+                    max_retries=self.config.max_api_retries,
+                )
+                job_names.add(controller_job_name or run.orchestrator_run_id)
 
-    def stop_step_operator_workload(
-        self, step_run: "StepRunResponse", deadline: float
-    ) -> None:
-        """Cancel an external step operator workload and verify termination.
-
-        Args:
-            step_run: Admitted step with a configured step operator.
-            deadline: Monotonic deadline for completion.
-
-        Raises:
-            RuntimeError: If the step operator cannot be resolved or its
-                workload termination cannot be confirmed.
-        """
-        run = Client().get_pipeline_run(step_run.pipeline_run_id)
-        if run.snapshot is None or run.snapshot.stack is None:
-            raise RuntimeError(
-                "Cannot resolve stack for step operator cleanup."
-            )
-        stack = Stack.from_model(run.snapshot.stack)
-        name = step_run.config.step_operator
-        operator = (
-            stack.step_operators.get(name)
-            if isinstance(name, str)
-            else stack.step_operator
-        )
-        if operator is None:
-            raise RuntimeError(
-                f"Cannot resolve step operator for step `{step_run.id}`."
-            )
-        try:
-            if operator.get_status(step_run).is_finished:
-                return
+        errors = []
+        for job_name in job_names:
             try:
-                operator.cancel(step_run)
-            except Exception as cancellation_error:
-                if operator.get_status(step_run).is_finished:
-                    return
-                raise RuntimeError(
-                    "Step operator cancellation failed."
-                ) from cancellation_error
-            while time.monotonic() < deadline:
-                if operator.get_status(step_run).is_finished:
-                    return
-                time.sleep(min(0.5, max(0, deadline - time.monotonic())))
-        except Exception as error:
+                self._delete_job(job_name)
+            except Exception as error:
+                errors.append(f"{job_name}: {error}")
+        if errors:
             raise RuntimeError(
-                f"Step operator cleanup is unconfirmed for step `{step_run.id}`: {error}"
-            ) from error
-        raise RuntimeError(
-            f"Step operator workload for step `{step_run.id}` did not terminate "
-            "before the cleanup deadline. Retry immediate stop."
-        )
+                "Failed to stop Kubernetes Jobs: " + "; ".join(errors)
+            )
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False

@@ -85,19 +85,14 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """
         if self._step_run is None:
             step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
-            if (
-                self.snapshot.is_dynamic
-                or Client().zen_store.get_run_step(step_run_id).status
-                == ExecutionStatus.PROVISIONING
-            ):
+            if self.snapshot.is_dynamic:
                 # Isolated steps in dynamic pipelines are created in
                 # provisioning status. Update the status to signal that the
                 # execution environment started.
                 self._step_run = Client().zen_store.update_run_step(
                     step_run_id=step_run_id,
                     step_run_update=StepRunUpdate(
-                        status=ExecutionStatus.RUNNING,
-                        claim_execution=True,
+                        status=ExecutionStatus.RUNNING
                     ),
                 )
             else:

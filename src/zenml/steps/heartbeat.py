@@ -133,8 +133,6 @@ class StepHeartbeatWorker:
         self._running = True
         self._terminated = False
         self._interrupt_signaled = False
-        self._consecutive_failures = 0
-        self._heartbeat_interval_seconds = self.STEP_HEARTBEAT_INTERVAL_SECONDS
 
         active_context = contextvars.copy_context()
         self._thread = threading.Thread(
@@ -170,9 +168,8 @@ class StepHeartbeatWorker:
                 try:
                     self._heartbeat()
                     self._consecutive_failures = 0
-                    self._heartbeat_interval_seconds = (
-                        self.STEP_HEARTBEAT_INTERVAL_SECONDS
-                    )
+                    if self._terminated:
+                        self._signal_main_thread_interrupt()
 
                 except Exception as exc:
                     self._consecutive_failures += 1
@@ -192,14 +189,6 @@ class StepHeartbeatWorker:
                         self._heartbeat_interval_seconds = (
                             self.MAX_HEARTBEAT_INTERVAL_SECONDS
                         )
-
-                if self._terminated:
-                    # Once observed, cancellation must survive later store or
-                    # credential failures while the main thread unwinds.
-                    self._signal_main_thread_interrupt()
-                    self._heartbeat_interval_seconds = (
-                        self.STEP_HEARTBEAT_INTERVAL_SECONDS
-                    )
 
                 # Sleep after each attempt (even after errors, unless stopped).
                 if self._running:
@@ -242,6 +231,11 @@ class StepHeartbeatWorker:
             ),
         )
 
+        if not response.heartbeat_enabled:
+            logger.debug("Heartbeat set to disabled - stopping worker")
+            self.stop()
+            return
+
         if response.status in {
             ExecutionStatus.STOPPED,
             ExecutionStatus.STOPPING,
@@ -256,10 +250,6 @@ class StepHeartbeatWorker:
             in {ExecutionStatus.STOPPED, ExecutionStatus.STOPPING}
         ):
             self._terminated = True
-
-        if not response.heartbeat_enabled:
-            logger.debug("Heartbeat set to disabled - stopping worker")
-            self.stop()
 
 
 def is_heartbeat_unhealthy(
