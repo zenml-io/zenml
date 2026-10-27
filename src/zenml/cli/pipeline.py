@@ -1276,8 +1276,12 @@ def stop_pipeline_run(
     try:
         run = Client().get_pipeline_run(name_id_or_prefix=run_name_or_id)
         run_utils.stop_run(run=run, graceful=graceful)
-        action = "Gracefully stopped" if graceful else "Force stopped"
-        cli_utils.declare(f"{action} pipeline run '{run.name}'.")
+        action = (
+            "Graceful stop requested"
+            if graceful
+            else "Immediate stop requested"
+        )
+        cli_utils.declare(f"{action} for pipeline run '{run.name}'.")
     except NotImplementedError:
         cli_utils.error(
             "The orchestrator used for this pipeline run does not support "

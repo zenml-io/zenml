@@ -38,6 +38,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
+    PipelineRunStopMode,
     PipelineRunTriggeredByType,
     TriggerType,
 )
@@ -253,6 +254,12 @@ class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None
+    stop_mode: Optional[PipelineRunStopMode] = Field(
+        default=None, title="Request stopping or escalate an existing request."
+    )
+    in_progress: Optional[bool] = Field(
+        default=None, title="Whether admitted execution remains in progress."
+    )
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
@@ -290,6 +297,9 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
 
     status: ExecutionStatus = Field(
         title="The status of the pipeline run.",
+    )
+    stop_mode: Optional[PipelineRunStopMode] = Field(
+        default=None, title="The strongest stop mode requested for this run."
     )
     in_progress: bool = Field(
         title="Whether the pipeline run is in progress.",
@@ -617,6 +627,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().in_progress
+
+    @property
+    def stop_mode(self) -> Optional[PipelineRunStopMode]:
+        """The requested stop mode, if any.
+
+        Returns:
+            The strongest requested stop mode.
+        """
+        return self.get_body().stop_mode
 
     @property
     def client_environment(self) -> Dict[str, Any]:

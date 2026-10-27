@@ -36,10 +36,14 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    PipelineRunStopMode,
+    StackComponentType,
+)
 from zenml.exceptions import (
     HookExecutionException,
-    IllegalOperationError,
     RunMonitoringError,
 )
 from zenml.hooks.execution import run_hook
@@ -519,11 +523,13 @@ class BaseOrchestrator(StackComponent, ABC):
     def run_step(
         self,
         step: "Step",
+        step_run_id: Optional[UUID] = None,
     ) -> None:
         """Runs the given step.
 
         Args:
             step: The step to run.
+            step_run_id: An attempt admitted before submitting its workload.
         """
         from zenml.execution.step.utils import launch_step
 
@@ -534,6 +540,7 @@ class BaseOrchestrator(StackComponent, ABC):
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
             retry=not self.config.handles_step_retries,
+            step_run_id=step_run_id,
         )
 
     @property
@@ -923,24 +930,12 @@ class BaseOrchestrator(StackComponent, ABC):
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is False.
 
-        Raises:
-            IllegalOperationError: If the run has no orchestrator run id yet.
         """
-        if not run.orchestrator_run_id:
-            raise IllegalOperationError(
-                "Cannot stop a pipeline run that has no orchestrator run id "
-                "yet."
-            )
+        from zenml.utils.run_utils import request_run_stop
 
-        # Update pipeline status to STOPPING before calling concrete implementation
-        # Initiates graceful termination.
-        publish_pipeline_run_status_update(
-            pipeline_run_id=run.id,
-            status=ExecutionStatus.STOPPING,
-            status_reason="Manual stop requested.",
-        )
-
-        # Now call the concrete implementation
+        run = request_run_stop(run, graceful=graceful)
+        if "stop_mode" in run.get_body().model_fields_set:
+            graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)
 
     def _stop_run(
@@ -952,7 +947,7 @@ class BaseOrchestrator(StackComponent, ABC):
         instead of stop_run to ensure proper status management.
 
         Args:
-            run: A pipeline run response to stop (already updated to STOPPING status).
+            run: A pipeline run with its stop request already persisted.
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
         """

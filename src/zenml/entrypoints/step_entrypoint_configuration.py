@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 STEP_NAME_OPTION = "step_name"
+STEP_RUN_ID_OPTION = "step_run_id"
 
 
 class StepEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -121,7 +122,10 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             The superclass options as well as an option for the name of the
             step to run.
         """
-        return super().get_entrypoint_options() | {STEP_NAME_OPTION: True}
+        return super().get_entrypoint_options() | {
+            STEP_NAME_OPTION: True,
+            STEP_RUN_ID_OPTION: False,
+        }
 
     @classmethod
     def get_entrypoint_arguments(
@@ -143,10 +147,13 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             The superclass arguments as well as arguments for the name of the
             step to run.
         """
-        return super().get_entrypoint_arguments(**kwargs) + [
+        arguments = super().get_entrypoint_arguments(**kwargs) + [
             f"--{STEP_NAME_OPTION}",
             kwargs[STEP_NAME_OPTION],
         ]
+        if step_run_id := kwargs.get(STEP_RUN_ID_OPTION):
+            arguments.extend([f"--{STEP_RUN_ID_OPTION}", str(step_run_id)])
+        return arguments
 
     @property
     def docker_settings(self) -> "DockerSettings":
@@ -213,4 +220,7 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
         """
         orchestrator = Client().active_stack.orchestrator
         orchestrator._prepare_run(snapshot=snapshot)
-        orchestrator.run_step(step=step)
+        if step_run_id := self.entrypoint_args.get(STEP_RUN_ID_OPTION):
+            orchestrator.run_step(step=step, step_run_id=UUID(step_run_id))
+        else:
+            orchestrator.run_step(step=step)

@@ -22,8 +22,8 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus
-from zenml.exceptions import AuthorizationException
+from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
+from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
     ModalOrchestratorSettings,
@@ -36,7 +36,7 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     get_static_step_sandbox_metadata_key,
 )
 from zenml.logger import get_logger
-from zenml.models import PipelineRunUpdate
+from zenml.models import PipelineRunUpdate, StepRunUpdate
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
     DagRunner,
@@ -51,7 +51,7 @@ from zenml.orchestrators.step_run_utils import (
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.pipelines.run_utils import create_placeholder_run
-from zenml.utils import env_utils
+from zenml.utils import env_utils, pagination_utils
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
@@ -121,15 +121,41 @@ class _StaticModalPipelineController:
 
         Returns:
             The initial node status after cache lookup or sandbox creation.
+
+        Raises:
+            IllegalOperationError: If admission fails for a reason other than
+                a concurrently requested stop.
         """
         step_name = node.id
         if self._cache_step_run_if_possible(step_name):
             return NodeStatus.COMPLETED
 
+        admitted_step_id = None
+        if "stop_mode" in self.pipeline_run.get_body().model_fields_set:
+            request = self.step_run_request_factory.create_request(step_name)
+            request.status = ExecutionStatus.INITIALIZING
+            try:
+                admitted_step = self.client.zen_store.create_run_step(request)
+            except IllegalOperationError:
+                if self.client.get_pipeline_run(
+                    self.pipeline_run.id
+                ).stop_mode:
+                    return NodeStatus.CANCELLED
+                raise
+            self.step_run_request_factory.record_step_run(admitted_step)
+            admitted_step_id = admitted_step.id
+            if admitted_step.status.is_finished:
+                return (
+                    NodeStatus.COMPLETED
+                    if admitted_step.status.is_successful
+                    else NodeStatus.FAILED
+                )
+
         sandbox = self.orchestrator.create_static_step_sandbox(
             snapshot=self.snapshot,
             step_name=step_name,
             environment=self._step_environment(step_name),
+            step_run_id=admitted_step_id,
         )
         node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = sandbox.object_id
         try:
@@ -217,6 +243,10 @@ class _StaticModalPipelineController:
             )
             return None
 
+        if run.stop_mode == PipelineRunStopMode.IMMEDIATE:
+            return InterruptMode.FORCE
+        if run.stop_mode == PipelineRunStopMode.GRACEFUL:
+            return InterruptMode.GRACEFUL
         if run.status == ExecutionStatus.STOPPING:
             logger.info(
                 "Gracefully stopping Modal DAG because pipeline run `%s` "
@@ -559,6 +589,32 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         try:
             client = Client()
             run = client.get_pipeline_run(pipeline_run_id)
+
+            if run.stop_mode is not None:
+                for step in pagination_utils.depaginate(
+                    client.list_run_steps,
+                    pipeline_run_id=pipeline_run_id,
+                    project=run.project_id,
+                    hydrate=False,
+                ):
+                    if not step.status.is_finished:
+                        client.zen_store.update_run_step(
+                            step_run_id=step.id,
+                            step_run_update=StepRunUpdate(
+                                status=ExecutionStatus.STOPPED,
+                                end_time=utc_now(),
+                            ),
+                        )
+                client.zen_store.update_run(
+                    run_id=pipeline_run_id,
+                    run_update=PipelineRunUpdate(
+                        status=ExecutionStatus.FAILED
+                        if run.status == ExecutionStatus.FAILED
+                        else ExecutionStatus.STOPPED,
+                        in_progress=False,
+                    ),
+                )
+                return
 
             # A graceful local stop only marks the run as STOPPING. Once the
             # controller has drained the DAG, it publishes the terminal status.

@@ -67,7 +67,7 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
 
     worker = StepHeartbeatWorker(step_id=step_run_id)
 
-    worker._heartbeat_interval_seconds = 0.1
+    worker.STEP_HEARTBEAT_INTERVAL_SECONDS = 0.1
 
     fake_server = FakeServerHeartbeat(step_id=step_run_id)
 
@@ -153,7 +153,7 @@ def test_worker_with_disabled_heartbeat(monkeypatch):
 
     worker = StepHeartbeatWorker(step_id=step_run_id)
 
-    worker._heartbeat_interval_seconds = 0.1
+    worker.STEP_HEARTBEAT_INTERVAL_SECONDS = 0.1
 
     fake_server = FakeServerHeartbeat(step_id=step_run_id)
 

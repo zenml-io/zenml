@@ -14,7 +14,6 @@
 """Dynamic pipeline execution outputs."""
 
 import threading
-import time
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from contextlib import AbstractContextManager, nullcontext
@@ -32,7 +31,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import StepExecutionException
+from zenml.exceptions import RunStoppedException, StepExecutionException
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -216,8 +215,19 @@ class _IsolatedStepFuture(BaseFuture):
         """
         self._wrapped = wrapped
         self._finished_step_run: Optional[StepRunResponse] = None
+        self._exception: Optional[BaseException] = None
+        self._settled = threading.Event()
         self.pipeline_run_id = pipeline_run_id
         self.invocation_id = invocation_id
+
+    def set_exception(self, exception: BaseException) -> None:
+        """Settle an invocation whose next attempt will not be submitted.
+
+        Args:
+            exception: The reason execution cannot continue.
+        """
+        self._exception = exception
+        self._settled.set()
 
     def running(self) -> bool:
         """Check if the isolated step future is running.
@@ -227,7 +237,7 @@ class _IsolatedStepFuture(BaseFuture):
         """
         from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
 
-        if self._finished_step_run is not None:
+        if self._exception is not None or self._finished_step_run is not None:
             return False
 
         if self._wrapped:
@@ -255,21 +265,24 @@ class _IsolatedStepFuture(BaseFuture):
         Raises:
             BaseException: Any exception that happened while waiting for the
                 step to finish.
-            RuntimeError: If the step was stopped.
+            RunStoppedException: If the step was stopped.
 
         Returns:
             The result of the step future.
         """  # noqa: DOC503
+        if self._exception is not None:
+            raise self._exception
         if self._finished_step_run is not None:
             step_run = self._finished_step_run
         else:
             step_run = self._wait_for_step_to_finish()
             self._finished_step_run = step_run
 
-        if (
-            step_run.status.is_failed
-            or step_run.status == ExecutionStatus.STOPPED
-        ):
+        if step_run.status == ExecutionStatus.STOPPED:
+            raise RunStoppedException(
+                f"Step `{self.invocation_id}` was stopped."
+            )
+        if step_run.status.is_failed:
             raise exception_utils.reconstruct_exception(
                 exception_info=step_run.exception_info,
                 fallback_message=(
@@ -285,13 +298,19 @@ class _IsolatedStepFuture(BaseFuture):
 
         Returns:
             The finished step run.
-        """
+
+        Raises:
+            BaseException: If submission failed or the invocation was settled
+                exceptionally while waiting.
+        """  # noqa: DOC503
         from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
 
         sleep_interval = 1
         max_sleep_interval = 64
 
         while True:
+            if self._exception is not None:
+                raise self._exception
             # Re-check the wrapped future in case it got replaced.
             if wrapped := self._wrapped:
                 wrapped.result()
@@ -301,11 +320,7 @@ class _IsolatedStepFuture(BaseFuture):
             )
             # If a step is in `retrying` status, another step run will be
             # created and we will try to pick it up in the next iteration.
-            if step_run.status not in {
-                ExecutionStatus.PROVISIONING,
-                ExecutionStatus.RUNNING,
-                ExecutionStatus.RETRYING,
-            }:
+            if step_run.status.is_finished:
                 return step_run
 
             logger.debug(
@@ -314,7 +329,7 @@ class _IsolatedStepFuture(BaseFuture):
                 step_run.status,
             )
 
-            time.sleep(sleep_interval)
+            self._settled.wait(timeout=sleep_interval)
             if sleep_interval < max_sleep_interval:
                 sleep_interval *= 2
 
@@ -695,6 +710,19 @@ class StepFuture(BaseStepFuture):
         assert isinstance(existing_future, _IsolatedStepFuture)
 
         existing_future._wrapped = future._wrapped
+
+    def set_execution_exception(self, exception: BaseException) -> None:
+        """Settle an isolated invocation without starting another attempt.
+
+        Args:
+            exception: The reason execution cannot continue.
+        """
+        if not self._startup.done():
+            self._startup.set_exception(exception)
+        elif not self._startup.failed():
+            execution_future = self._startup.result()
+            if isinstance(execution_future, _IsolatedStepFuture):
+                execution_future.set_exception(exception)
 
     def _set_startup_failed(self, exception: BaseException) -> None:
         """Store a startup exception for the step.

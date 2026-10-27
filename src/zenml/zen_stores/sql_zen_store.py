@@ -168,6 +168,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    PipelineRunStopMode,
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
@@ -7034,6 +7035,7 @@ class SqlZenStore(BaseZenStore):
                 scope of the same pipeline run.
             KeyError: If the run requires a model version that doesn't exist and
                 can not be created.
+            IllegalOperationError: If an ancestor has requested stopping.
         """
         self._set_request_user_id(request_model=pipeline_run, session=session)
 
@@ -7067,6 +7069,15 @@ class SqlZenStore(BaseZenStore):
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
+
+        if pipeline_run.parent_run_id:
+            parent_run = self._lock_run_tree(
+                pipeline_run.parent_run_id, session
+            )
+            if self._get_effective_stop_mode(parent_run, session, locked=True):
+                raise IllegalOperationError(
+                    "Cannot create a child of a stopping run."
+                )
 
         new_run = PipelineRunSchema.from_request(
             pipeline_run,
@@ -7307,6 +7318,22 @@ class SqlZenStore(BaseZenStore):
         if not run_schema:
             raise KeyError("No placeholder run found.")
 
+        # SQLite ignores SELECT FOR UPDATE. Acquire its write lock before
+        # refreshing stop intent, without reversing the tree/child lock order.
+        session.execute(
+            update(PipelineRunSchema)
+            .where(col(PipelineRunSchema.id) == run_schema.id)
+            .values(updated=PipelineRunSchema.updated)
+        )
+        run_schema = session.exec(
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.id == run_schema.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).one()
+        if not run_schema.is_placeholder_run():
+            raise KeyError("No placeholder run found.")
+
         if pre_replacement_hook:
             pre_replacement_hook()
         run_schema.update_placeholder(pipeline_run)
@@ -7542,6 +7569,150 @@ class SqlZenStore(BaseZenStore):
                 },
             )
 
+    def _lock_run_tree(
+        self, run_id: UUID, session: Session
+    ) -> PipelineRunSchema:
+        """Serialize lifecycle writes and admissions within a run tree.
+
+        Args:
+            run_id: Run whose tree should be locked.
+            session: The active transaction.
+
+        Returns:
+            A freshly loaded run schema.
+        """
+        run = self._get_schema_by_id(
+            resource_id=run_id, schema_class=PipelineRunSchema, session=session
+        )
+        root_id = run.root_run_id or run.id
+        # A write lock also serializes SQLite, which ignores SELECT FOR UPDATE.
+        session.execute(
+            update(PipelineRunSchema)
+            .where(col(PipelineRunSchema.id) == root_id)
+            .values(updated=PipelineRunSchema.updated)
+        )
+        return session.exec(
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.id == run_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).one()
+
+    def _get_effective_stop_mode(
+        self, run: PipelineRunSchema, session: Session, locked: bool = False
+    ) -> Optional[PipelineRunStopMode]:
+        """Get the strongest stop request on a run or its ancestors.
+
+        Args:
+            run: The run to inspect.
+            session: The active transaction.
+            locked: Whether the caller holds the run-tree write lock.
+
+        Returns:
+            The effective stop mode, or None when execution is permitted.
+        """
+        mode: Optional[PipelineRunStopMode] = None
+        current = run
+        while True:
+            if current.stop_mode == PipelineRunStopMode.IMMEDIATE:
+                return PipelineRunStopMode.IMMEDIATE
+            if current.stop_mode:
+                mode = PipelineRunStopMode(current.stop_mode)
+            elif current.status in {
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+            }:
+                return PipelineRunStopMode.IMMEDIATE
+            if current.parent_run_id is None:
+                return mode
+            query = (
+                select(PipelineRunSchema)
+                .where(PipelineRunSchema.id == current.parent_run_id)
+                .execution_options(populate_existing=True)
+            )
+            if locked:
+                query = query.with_for_update()
+            current = session.exec(query).one()
+
+    def _get_descendant_runs(
+        self, run_id: UUID, session: Session
+    ) -> List[PipelineRunSchema]:
+        """Get descendants without including siblings of a selected child.
+
+        Args:
+            run_id: Root of the selected subtree.
+            session: The active transaction.
+
+        Returns:
+            All descendants of the selected run.
+        """
+        descendants: List[PipelineRunSchema] = []
+        pending = [run_id]
+        while pending:
+            children = session.exec(
+                select(PipelineRunSchema)
+                .where(col(PipelineRunSchema.parent_run_id).in_(pending))
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            ).all()
+            descendants.extend(children)
+            pending = [child.id for child in children]
+        return descendants
+
+    def _prepare_run_resume(
+        self, run: PipelineRunSchema, session: Session
+    ) -> None:
+        """Clear stop intent only after the previous run tree has settled.
+
+        Args:
+            run: The root run, locked by the current transaction.
+            session: The active transaction.
+
+        Raises:
+            IllegalOperationError: If previous execution is still active.
+        """
+        descendants = self._get_descendant_runs(run.id, session)
+        runs = [run, *descendants]
+        if any(
+            item.in_progress
+            and (item.stop_mode or item.status != ExecutionStatus.PAUSED)
+            for item in runs
+        ):
+            raise IllegalOperationError(
+                "Cannot resume a run with unfinished execution. Finish stopping the previous execution first."
+            )
+        active_step = session.exec(
+            select(StepRunSchema.id)
+            .where(
+                col(StepRunSchema.pipeline_run_id).in_(
+                    [item.id for item in runs]
+                )
+            )
+            .where(
+                col(StepRunSchema.status).in_(
+                    [
+                        status.value
+                        for status in ExecutionStatus
+                        if not status.is_finished
+                    ]
+                )
+            )
+            .limit(1)
+            .with_for_update()
+        ).first()
+        if active_step is not None:
+            raise IllegalOperationError(
+                "Cannot resume a run with unfinished step attempts."
+            )
+        for child in descendants:
+            if child.stop_mode:
+                child.stop_mode = None
+                if child.status != ExecutionStatus.COMPLETED:
+                    child.status = ExecutionStatus.RESUMING.value
+                    child.in_progress = False
+                session.add(child)
+        run.stop_mode = None
+
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -7560,20 +7731,115 @@ class SqlZenStore(BaseZenStore):
                 already set and is different from the new orchestrator run id.
         """
         with Session(self.engine) as session:
-            # Check if pipeline run with the given ID exists
-            existing_run = self._get_schema_by_id(
-                resource_id=run_id,
-                schema_class=PipelineRunSchema,
-                session=session,
-            )
+            existing_run = self._lock_run_tree(run_id, session)
+            previous_status = ExecutionStatus(existing_run.status)
+            if run_update.status == ExecutionStatus.RESUMING:
+                self._prepare_run_resume(existing_run, session)
+            elif (
+                "stop_mode" in run_update.model_fields_set
+                and run_update.stop_mode is None
+            ):
+                raise IllegalOperationError(
+                    "Stop intent can only be cleared by resuming a run."
+                )
 
-            if run_update.status is not None:
-                self._update_pipeline_run_status(
-                    pipeline_run_id=run_id,
-                    session=session,
-                    requested_status=run_update.status,
+            if run_update.stop_mode is not None:
+                existing_run.request_stop(run_update.stop_mode)
+                stopped_runs = [existing_run]
+                for child in self._get_descendant_runs(
+                    existing_run.id, session
+                ):
+                    if child.status != ExecutionStatus.COMPLETED:
+                        child.request_stop(
+                            PipelineRunStopMode(existing_run.stop_mode)
+                        )
+                        session.add(child)
+                        stopped_runs.append(child)
+
+                # Older servers could mark a failed run inactive while attempts
+                # were still running. Restore activity only with that evidence.
+                active_run_ids = session.exec(
+                    select(StepRunSchema.pipeline_run_id)
+                    .with_for_update()
+                    .where(
+                        col(StepRunSchema.pipeline_run_id).in_(
+                            [item.id for item in stopped_runs]
+                        ),
+                        col(StepRunSchema.status).in_(
+                            [
+                                status.value
+                                for status in ExecutionStatus
+                                if not status.is_finished
+                            ]
+                        ),
+                    )
+                ).all()
+                for active_run_id in set(active_run_ids):
+                    active_run = session.get(PipelineRunSchema, active_run_id)
+                    if active_run is not None:
+                        active_run.in_progress = True
+                        session.add(active_run)
+
+            requested_status = run_update.status
+            if (
+                existing_run.stop_mode
+                and run_update.in_progress is False
+                and requested_status
+                in {ExecutionStatus.COMPLETED, ExecutionStatus.PAUSED}
+            ):
+                requested_status = ExecutionStatus.STOPPED
+            if requested_status is not None:
+                existing_run.update_status(
+                    requested_status=requested_status,
                     status_reason=run_update.status_reason,
                 )
+
+            if run_update.in_progress is not None:
+                was_in_progress = existing_run.in_progress
+                if not run_update.in_progress:
+                    descendants = self._get_descendant_runs(
+                        existing_run.id, session
+                    )
+                    active_step = session.exec(
+                        select(StepRunSchema.id)
+                        .where(
+                            col(StepRunSchema.pipeline_run_id).in_(
+                                [
+                                    existing_run.id,
+                                    *[child.id for child in descendants],
+                                ]
+                            )
+                        )
+                        .where(
+                            col(StepRunSchema.status).in_(
+                                [
+                                    status.value
+                                    for status in ExecutionStatus
+                                    if not status.is_finished
+                                ]
+                            )
+                        )
+                        .limit(1)
+                        .with_for_update()
+                    ).first()
+                    if (
+                        active_step is not None
+                        or any(child.in_progress for child in descendants)
+                        or (
+                            not ExecutionStatus(
+                                existing_run.status
+                            ).is_finished
+                            and existing_run.status != ExecutionStatus.PAUSED
+                        )
+                    ):
+                        raise IllegalOperationError(
+                            "Cannot finish execution while the run or its attempts are still active."
+                        )
+                existing_run.in_progress = run_update.in_progress
+                if not run_update.in_progress and (
+                    was_in_progress or existing_run.end_time is None
+                ):
+                    existing_run.end_time = utc_now()
 
             if run_update.orchestrator_run_id:
                 if not existing_run.is_placeholder_run():
@@ -7630,6 +7896,11 @@ class SqlZenStore(BaseZenStore):
                     )
             session.commit()
             session.refresh(existing_run)
+
+            if ExecutionStatus(existing_run.status) != previous_status:
+                self._publish_pipeline_run_status(
+                    existing_run, previous_status, session
+                )
 
             if run_update.add_logs:
                 for log_request in run_update.add_logs:
@@ -12254,28 +12525,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Validate pipeline status before creating step
-            if run.status in [
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-            ]:
-                raise IllegalOperationError(
-                    f"Cannot create step '{step_run.name}' for pipeline in "
-                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
-                )
-
-            if run.status == ExecutionStatus.FAILED:
-                execution_mode = (
-                    run.get_pipeline_configuration().execution_mode
-                )
-
-                if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
-                    raise IllegalOperationError(
-                        f"Cannot create step '{step_run.name}' for the run '{run.name}' "
-                        "because the run is in a FAILED state and the execution "
-                        f"mode is {execution_mode}."
-                    )
-
             self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
@@ -12325,11 +12574,57 @@ class SqlZenStore(BaseZenStore):
                 .with_for_update()
                 .where(PipelineSnapshotSchema.id == run.snapshot_id)
             )
-            session.exec(
-                select(PipelineRunSchema.id)
-                .with_for_update()
-                .where(PipelineRunSchema.id == step_run.pipeline_run_id)
+            run = self._lock_run_tree(step_run.pipeline_run_id, session)
+            stop_mode = self._get_effective_stop_mode(
+                run, session, locked=True
             )
+            admitted_step = None
+            if step_run.admitted_step_run_id is not None:
+                admitted_step = self._get_reference_schema_by_id(
+                    resource=step_run,
+                    reference_schema=StepRunSchema,
+                    reference_id=step_run.admitted_step_run_id,
+                    session=session,
+                )
+                admitted_step = session.exec(
+                    select(StepRunSchema)
+                    .where(StepRunSchema.id == admitted_step.id)
+                    .with_for_update()
+                    .execution_options(populate_existing=True)
+                ).one()
+                if (
+                    admitted_step.pipeline_run_id != run.id
+                    or admitted_step.name != step_run.name
+                    or admitted_step.status != ExecutionStatus.INITIALIZING
+                    or step_run.status
+                    not in {
+                        ExecutionStatus.RUNNING,
+                        ExecutionStatus.PROVISIONING,
+                        ExecutionStatus.CACHED,
+                        ExecutionStatus.SKIPPED,
+                        ExecutionStatus.FAILED,
+                    }
+                    or run.snapshot is None
+                    or run.snapshot.is_dynamic
+                ):
+                    raise IllegalOperationError(
+                        "This attempt cannot be prepared again."
+                    )
+            if stop_mode == PipelineRunStopMode.IMMEDIATE or (
+                stop_mode and admitted_step is None
+            ):
+                raise IllegalOperationError(
+                    f"Cannot admit step '{step_run.name}': stopping was requested."
+                )
+            if (
+                admitted_step is None
+                and run.status == ExecutionStatus.FAILED
+                and run.get_pipeline_configuration().execution_mode
+                != ExecutionMode.CONTINUE_ON_FAILURE
+            ):
+                raise IllegalOperationError(
+                    f"Cannot admit step '{step_run.name}' after a pipeline failure."
+                )
 
             existing_step_runs = session.exec(
                 select(StepRunSchema)
@@ -12345,7 +12640,16 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(col(StepRunSchema.name) == step_run.name)
                 .order_by(desc(StepRunSchema.version))
+                .with_for_update()
+                .execution_options(populate_existing=True)
             ).all()
+
+            if admitted_step is not None:
+                existing_step_runs = [
+                    item
+                    for item in existing_step_runs
+                    if item.id != admitted_step.id
+                ]
 
             if any(
                 ExecutionStatus(sr.status).is_successful
@@ -12367,7 +12671,7 @@ class SqlZenStore(BaseZenStore):
                     f"exceeded the maximum number of retries."
                 )
 
-            if existing_step_runs:
+            if existing_step_runs and admitted_step is None:
                 # Update all existing step runs to retried.
                 # TODO: Once we have the health check, this should probably also
                 # cancel the existing step runs in case they're still running?
@@ -12387,7 +12691,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
 
-            is_retriable = len(existing_step_runs) < max_retries
+            is_retriable = (
+                len(existing_step_runs) < max_retries and stop_mode is None
+            )
             if is_retriable and step_run.status == ExecutionStatus.FAILED:
                 # This step will be retried by the orchestrator, so we
                 # set its status accordingly.
@@ -12404,6 +12710,24 @@ class SqlZenStore(BaseZenStore):
                 # the step run is created.
                 is_retriable=is_retriable,
             )
+
+            if admitted_step is not None:
+                # The reservation carries identity and admission, while inputs,
+                # caching and user-code inspection happen in the worker image.
+                admitted_step.status = step_schema.status
+                admitted_step.start_time = step_schema.start_time
+                admitted_step.end_time = step_schema.end_time
+                admitted_step.cache_key = step_schema.cache_key
+                admitted_step.cache_expires_at = step_schema.cache_expires_at
+                admitted_step.code_hash = step_schema.code_hash
+                admitted_step.docstring = step_schema.docstring
+                admitted_step.source_code = step_schema.source_code
+                admitted_step.original_step_run_id = (
+                    step_schema.original_step_run_id
+                )
+                admitted_step.exception_info = step_schema.exception_info
+                admitted_step.is_retriable = step_schema.is_retriable
+                step_schema = admitted_step
 
             # cached top-level heartbeat config property (for fast validation).
             step_schema.heartbeat_threshold = (
@@ -13011,12 +13335,35 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
+            run = self._get_schema_by_id(
+                resource_id=existing_step_run.pipeline_run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
+            stop_mode = self._get_effective_stop_mode(run, session)
+            pipeline_status = ExecutionStatus(run.status)
+            if (
+                stop_mode == PipelineRunStopMode.GRACEFUL
+                and pipeline_status == ExecutionStatus.STOPPING
+            ):
+                pipeline_status = ExecutionStatus.RUNNING
+            elif (
+                stop_mode == PipelineRunStopMode.IMMEDIATE
+                and not heartbeat_status.is_finished
+                and heartbeat_status != ExecutionStatus.CANCELLING
+            ):
+                # Old heartbeat clients do not understand stop_mode, and the
+                # pipeline status must preserve a failure during cancellation.
+                heartbeat_status = ExecutionStatus.STOPPING
+
             return StepHeartbeatResponse(
                 id=existing_step_run.id,
                 status=heartbeat_status,
                 latest_heartbeat=existing_step_run.latest_heartbeat,
                 heartbeat_enabled=existing_step_run.heartbeat_threshold
                 is not None,
+                pipeline_run_status=pipeline_status,
+                stop_mode=stop_mode,
             )
 
     def validate_and_update_heartbeat(
@@ -13090,12 +13437,27 @@ class SqlZenStore(BaseZenStore):
                 )
             )
 
+            stop_mode = self._get_effective_stop_mode(run, session)
+            pipeline_status = ExecutionStatus(run.status)
+            if (
+                stop_mode == PipelineRunStopMode.GRACEFUL
+                and pipeline_status == ExecutionStatus.STOPPING
+            ):
+                pipeline_status = ExecutionStatus.RUNNING
+            elif (
+                stop_mode == PipelineRunStopMode.IMMEDIATE
+                and not heartbeat_status.is_finished
+                and heartbeat_status != ExecutionStatus.CANCELLING
+            ):
+                heartbeat_status = ExecutionStatus.STOPPING
+
             return StepHeartbeatResponse(
                 id=step_run_id,
                 status=heartbeat_status,
                 latest_heartbeat=latest_heartbeat,
                 heartbeat_enabled=step_run.heartbeat_threshold is not None,
-                pipeline_run_status=ExecutionStatus(run.status),
+                pipeline_run_status=pipeline_status,
+                stop_mode=stop_mode,
             )
 
     def update_run_step(
@@ -13111,6 +13473,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated step run.
+
+        Raises:
+            IllegalOperationError: If a stopped or already submitted attempt
+                cannot claim execution.
         """
         with Session(self.engine) as session:
             # Check if the step exists
@@ -13119,6 +13485,57 @@ class SqlZenStore(BaseZenStore):
                 schema_class=StepRunSchema,
                 session=session,
             )
+
+            run = self._lock_run_tree(
+                existing_step_run.pipeline_run_id, session
+            )
+            existing_step_run = session.exec(
+                select(StepRunSchema)
+                .where(StepRunSchema.id == step_run_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            ).one()
+            stop_mode = self._get_effective_stop_mode(
+                run, session, locked=True
+            )
+            if (
+                stop_mode
+                and step_run_update.status == ExecutionStatus.STOPPED
+                and ExecutionStatus(existing_step_run.status).is_finished
+            ):
+                # Reconciliation can race a worker's final report or another
+                # stop request. Preserve its outcome and original end time.
+                step_run_update = step_run_update.model_copy(
+                    update={"status": None, "end_time": None}
+                )
+            if step_run_update.claim_execution:
+                if stop_mode == PipelineRunStopMode.IMMEDIATE or (
+                    stop_mode == PipelineRunStopMode.GRACEFUL
+                    and existing_step_run.status
+                    not in {
+                        ExecutionStatus.INITIALIZING,
+                        ExecutionStatus.PROVISIONING,
+                        ExecutionStatus.QUEUED,
+                    }
+                ):
+                    raise IllegalOperationError(
+                        "Cannot start a replacement attempt after stopping was requested."
+                    )
+                if step_run_update.status not in {
+                    ExecutionStatus.RUNNING,
+                    ExecutionStatus.PROVISIONING,
+                }:
+                    raise IllegalOperationError(
+                        "Execution claims must start an admitted attempt."
+                    )
+                if (
+                    step_run_update.status == ExecutionStatus.PROVISIONING
+                    and existing_step_run.status
+                    == ExecutionStatus.PROVISIONING
+                ):
+                    raise IllegalOperationError(
+                        "This attempt was already submitted."
+                    )
 
             if step_run_update.status:
                 self._verify_step_status_transition(
@@ -13130,23 +13547,9 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                can_retry = existing_step_run.is_retriable
-
-                if can_retry:
-                    run_status = ExecutionStatus(
-                        session.exec(
-                            select(PipelineRunSchema.status).where(
-                                PipelineRunSchema.id
-                                == existing_step_run.pipeline_run_id
-                            )
-                        ).one()
-                    )
-                    if run_status in {
-                        ExecutionStatus.STOPPING,
-                        ExecutionStatus.STOPPED,
-                    }:
-                        # The run is stopping, which prevents any step retries.
-                        can_retry = False
+                can_retry = (
+                    existing_step_run.is_retriable and stop_mode is None
+                )
 
                 if can_retry:
                     # This step will be retried by the orchestrator, so we
@@ -13466,11 +13869,9 @@ class SqlZenStore(BaseZenStore):
             A tuple containing whether the schema was updated, the updated
             pipeline run schema and the previous status.
         """
-        pipeline_run = session.exec(
-            select(PipelineRunSchema).where(
-                PipelineRunSchema.id == pipeline_run_id
-            )
-        ).one()
+        pipeline_run = self._lock_run_tree(pipeline_run_id, session)
+        if requested_status == ExecutionStatus.RESUMING:
+            self._prepare_run_resume(pipeline_run, session)
         previous_status = ExecutionStatus(pipeline_run.status)
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
@@ -13509,6 +13910,25 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         if not did_update:
             return
+
+        self._publish_pipeline_run_status(
+            pipeline_run, previous_status, session
+        )
+
+    def _publish_pipeline_run_status(
+        self,
+        pipeline_run: PipelineRunSchema,
+        previous_status: ExecutionStatus,
+        session: Session,
+    ) -> None:
+        """Publish events for a committed run status update.
+
+        Args:
+            pipeline_run: The committed run.
+            previous_status: Its status before the update.
+            session: The database session.
+        """
+        pipeline_run_id = pipeline_run.id
 
         new_status = ExecutionStatus(pipeline_run.status)
 
@@ -13631,6 +14051,7 @@ class SqlZenStore(BaseZenStore):
             if new_status not in {
                 ExecutionStatus.CANCELLED,
                 ExecutionStatus.FAILED,
+                ExecutionStatus.STOPPED,
             }:
                 raise IllegalOperationError(
                     "Cancelling steps can not be transitioned to status "

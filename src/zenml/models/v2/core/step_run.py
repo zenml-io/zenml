@@ -33,6 +33,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
+    PipelineRunStopMode,
     StepRunInputArtifactType,
     StepRuntime,
     StepType,
@@ -109,6 +110,10 @@ class StepRunInputResponse(ArtifactVersionResponse):
 class StepRunRequest(ProjectScopedRequest):
     """Request model for step runs."""
 
+    admitted_step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="Populate an existing static attempt admitted before submission.",
+    )
     name: str = Field(
         title="The name of the pipeline run step.",
         max_length=STR_FIELD_MAX_LENGTH,
@@ -197,6 +202,10 @@ class StepRunRequest(ProjectScopedRequest):
 class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
+    claim_execution: bool = Field(
+        default=False,
+        title="Atomically claim a previously admitted step before execution.",
+    )
     outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default={},
@@ -949,4 +958,5 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     status: ExecutionStatus
     latest_heartbeat: datetime
     pipeline_run_status: ExecutionStatus | None = None
+    stop_mode: PipelineRunStopMode | None = None
     heartbeat_enabled: bool

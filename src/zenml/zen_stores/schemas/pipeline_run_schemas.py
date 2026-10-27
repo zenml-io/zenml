@@ -38,6 +38,7 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunStopMode,
     PipelineRunTriggeredByType,
     RunWaitConditionStatus,
     TaggableResourceTypes,
@@ -147,6 +148,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     end_time: Optional[datetime] = Field(nullable=True, default=None)
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
+    stop_mode: Optional[str] = Field(default=None, nullable=True, max_length=9)
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
@@ -624,6 +626,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if session := object_session(self):
             step_run_statuses = session.execute(
                 select(StepRunSchema.status)
+                .with_for_update()
                 .where(StepRunSchema.pipeline_run_id == self.id)
                 .where(
                     col(StepRunSchema.status) != ExecutionStatus.RETRIED.value
@@ -719,6 +722,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
+            stop_mode=PipelineRunStopMode(self.stop_mode)
+            if self.stop_mode
+            else None,
             status_reason=self.status_reason,
             created=self.created,
             updated=self.updated,
@@ -911,11 +917,42 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
             self.orchestrator_run_id = run_update.orchestrator_run_id
 
-        if run_update.exception_info:
+        if run_update.exception_info and not (
+            self.stop_mode
+            and self.status == ExecutionStatus.FAILED
+            and self.exception_info
+        ):
             self.exception_info = run_update.exception_info.model_dump_json()
 
         self.updated = utc_now()
         return self
+
+    def request_stop(self, mode: PipelineRunStopMode) -> None:
+        """Persist a stop request without replacing an existing failure.
+
+        Args:
+            mode: The requested stop mode.
+
+        Raises:
+            IllegalOperationError: If the run completed successfully.
+        """
+        if self.status == ExecutionStatus.COMPLETED:
+            raise IllegalOperationError("Cannot stop a completed run.")
+        if self.stop_mode != PipelineRunStopMode.IMMEDIATE:
+            self.stop_mode = mode.value
+        if not self.in_progress and self.status in {
+            ExecutionStatus.PAUSED,
+            ExecutionStatus.RESUMING,
+        }:
+            self.status = ExecutionStatus.STOPPED.value
+        if self.status not in {
+            ExecutionStatus.FAILED,
+            ExecutionStatus.STOPPED,
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+        }:
+            self.status = ExecutionStatus.STOPPING.value
+        self.updated = utc_now()
 
     def update_status(
         self,
@@ -947,6 +984,29 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             )
 
         current_status = ExecutionStatus(self.status)
+
+        if self.stop_mode and requested_status != ExecutionStatus.RESUMING:
+            # Stop intent fences stale publishers independently of the outcome.
+            # Only an explicit terminal publication settles a stopped run; a
+            # snapshot of step rows cannot account for in-flight submissions.
+            if current_status == ExecutionStatus.FAILED:
+                return False
+            if requested_status in {
+                ExecutionStatus.RUNNING,
+                ExecutionStatus.PROVISIONING,
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.COMPLETED,
+            }:
+                return False
+            if requested_status is None:
+                if (
+                    self.snapshot is not None
+                    and not self.snapshot.is_dynamic
+                    and ExecutionStatus.FAILED in self._get_step_run_statuses()
+                ):
+                    requested_status = ExecutionStatus.FAILED
+                else:
+                    return False
 
         if (
             requested_status == ExecutionStatus.RESUMING
@@ -981,7 +1041,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
 
-        if is_dynamic_pipeline:
+        if self.stop_mode:
+            new_status = requested_status or current_status
+        elif is_dynamic_pipeline:
             # In dynamic pipelines, the run status is only updated on manual
             # status updates and does not depend on step statuses.
             if requested_status is None and status_reason is None:
@@ -1019,15 +1081,23 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.status = new_status.value
 
-        if is_dynamic_pipeline:
-            self.in_progress = not new_status.is_finished
+        if self.stop_mode:
+            # Only the controller or a confirmed cleanup acknowledges that
+            # submissions and infrastructure have finished, via in_progress.
+            pass
+        elif is_dynamic_pipeline:
+            if new_status != ExecutionStatus.FAILED:
+                self.in_progress = not new_status.is_finished
         else:
             self.in_progress = self._check_if_run_in_progress()
 
         now = utc_now()
         if not self.in_progress and self.end_time is None:
             self.end_time = now
-        elif new_status == ExecutionStatus.RESUMING:
+        elif new_status == ExecutionStatus.RESUMING or (
+            current_status == ExecutionStatus.RESUMING
+            and new_status == ExecutionStatus.RUNNING
+        ):
             self.end_time = None
 
         if status_reason:
@@ -1100,8 +1170,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.orchestrator_run_id = request.orchestrator_run_id
         self.orchestrator_environment = orchestrator_environment
-        self.status = request.status.value
-        self.in_progress = not request.status.is_finished
+        self.status = (
+            ExecutionStatus.STOPPING.value
+            if self.stop_mode
+            else request.status.value
+        )
+        self.in_progress = (
+            bool(self.stop_mode) or not request.status.is_finished
+        )
 
         self.updated = utc_now()
 
@@ -1161,7 +1237,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 ExecutionMode.FAIL_FAST,
                 ExecutionMode.STOP_ON_FAILURE,
             ]:
-                return False
+                return any(
+                    not status.is_finished
+                    for status in self._get_step_run_statuses()
+                )
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 from zenml.zen_stores.schemas import StepRunSchema
@@ -1173,6 +1252,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                             StepRunSchema.name,
                             StepRunSchema.status,
                         )
+                        .with_for_update()
                         .where(StepRunSchema.pipeline_run_id == self.id)
                         .where(
                             StepRunSchema.status
@@ -1322,10 +1402,7 @@ def _compute_static_pipeline_run_status(
             return ExecutionStatus.STOPPED
         else:
             return ExecutionStatus.STOPPING
-    elif (
-        ExecutionStatus.RUNNING in step_statuses
-        or ExecutionStatus.RETRYING in step_statuses
-    ):
+    elif any(not status.is_finished for status in step_statuses):
         return ExecutionStatus.RUNNING
     elif len(step_statuses) < num_steps:
         if run_status in {

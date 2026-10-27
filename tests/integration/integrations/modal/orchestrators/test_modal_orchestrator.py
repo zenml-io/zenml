@@ -29,6 +29,7 @@ from zenml.constants import (  # noqa: E402
 from zenml.enums import (  # noqa: E402
     ExecutionMode,
     ExecutionStatus,
+    PipelineRunStopMode,
     StackComponentType,
 )
 from zenml.exceptions import AuthorizationException  # noqa: E402
@@ -103,6 +104,7 @@ class SandboxStub:
 
     def terminate(self):
         self.terminate_calls += 1
+        self.poll_values = [137]
 
 
 class ModalClientStub:
@@ -122,6 +124,8 @@ class PageStub:
     def __init__(self, items):
         self.items = list(items)
         self.total = len(self.items)
+        self.index = 1
+        self.total_pages = 1
 
 
 def _make_orchestrator(
@@ -607,6 +611,7 @@ def test_fetch_status_uses_run_and_step_metadata(monkeypatch):
     }
     _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
     run = SimpleNamespace(
+        child_key=None,
         id=uuid4(),
         status=ExecutionStatus.RUNNING,
         run_metadata={
@@ -638,6 +643,7 @@ def test_fetch_status_uses_static_pipeline_metadata_when_step_metadata_missing(
     }
     _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
     run = SimpleNamespace(
+        child_key=None,
         id=uuid4(),
         status=ExecutionStatus.RUNNING,
         run_metadata={
@@ -675,6 +681,7 @@ def test_fetch_status_refreshes_static_fallback_metadata_for_hydrated_run(
     _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
     run_id = uuid4()
     stale_run = SimpleNamespace(
+        child_key=None,
         id=run_id,
         status=ExecutionStatus.RUNNING,
         run_metadata={
@@ -689,6 +696,7 @@ def test_fetch_status_refreshes_static_fallback_metadata_for_hydrated_run(
         },
     )
     fresh_run = SimpleNamespace(
+        child_key=None,
         id=run_id,
         status=ExecutionStatus.RUNNING,
         run_metadata={
@@ -839,6 +847,7 @@ def test_graceful_stop_run_leaves_sandboxes_for_controller_to_drain(
         monkeypatch, from_id_sandboxes=from_id_sandboxes
     )
     run = SimpleNamespace(
+        child_key=None,
         id=uuid4(),
         snapshot=SimpleNamespace(is_dynamic=False),
         run_metadata={
@@ -868,7 +877,7 @@ def test_graceful_stop_run_leaves_sandboxes_for_controller_to_drain(
     assert from_id_sandboxes["child-running"].terminate_calls == 0
 
 
-def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
+def test_graceful_stop_run_does_not_require_snapshot(monkeypatch):
     from_id_sandboxes = {
         "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
         "child-running": SandboxStub("child-running", [None]),
@@ -878,9 +887,10 @@ def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
     )
     run_id = uuid4()
     stale_run = SimpleNamespace(
-        id=run_id, snapshot=None, run_metadata={}, steps={}
+        child_key=None, id=run_id, snapshot=None, run_metadata={}, steps={}
     )
     hydrated_run = SimpleNamespace(
+        child_key=None,
         id=run_id,
         snapshot=SimpleNamespace(is_dynamic=False),
         run_metadata={
@@ -905,13 +915,13 @@ def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
     _make_orchestrator()._stop_run(stale_run, graceful=True)
 
-    assert fetched_run_ids == [run_id]
+    assert fetched_run_ids == []
     assert recorded["termination_order"] == []
     assert from_id_sandboxes["orchestrator-sandbox"].terminate_calls == 0
     assert from_id_sandboxes["child-running"].terminate_calls == 0
 
 
-def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
+def test_graceful_stop_run_does_not_escalate_dynamic_runs(monkeypatch):
     from_id_sandboxes = {
         "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
         "child-running": SandboxStub("child-running", [None]),
@@ -921,6 +931,7 @@ def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
     )
     run_id = uuid4()
     run = SimpleNamespace(
+        child_key=None,
         id=run_id,
         status=ExecutionStatus.STOPPING,
         snapshot=SimpleNamespace(is_dynamic=True),
@@ -947,8 +958,7 @@ def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
     _make_orchestrator()._stop_run(run, graceful=True)
 
-    assert recorded["termination_order"].count("child-running") == 1
-    assert recorded["termination_order"].count("orchestrator-sandbox") == 1
+    assert recorded["termination_order"] == []
 
 
 def test_stop_run_refreshes_and_terminates_children_before_orchestration(
@@ -965,8 +975,18 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
         monkeypatch, from_id_sandboxes=from_id_sandboxes
     )
     run_id = uuid4()
-    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    stale_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
+        id=run_id,
+        run_metadata={},
+        steps={},
+    )
     first_refresh = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
         id=run_id,
         run_metadata={
             MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
@@ -985,6 +1005,9 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
         },
     )
     second_refresh = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
         id=run_id,
         status=ExecutionStatus.STOPPING,
         run_metadata={
@@ -998,6 +1021,13 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     )
 
     class ClientStub:
+        zen_store = SimpleNamespace(
+            update_run=lambda **kwargs: None,
+            update_run_step=lambda **kwargs: None,
+        )
+        list_pipeline_runs = staticmethod(lambda **kwargs: PageStub([]))
+        list_run_steps = staticmethod(lambda **kwargs: PageStub([]))
+
         @staticmethod
         def get_pipeline_run(_run_id):
             return next(refreshed_runs)
@@ -1039,6 +1069,9 @@ def test_stop_run_only_terminates_modal_resources(monkeypatch):
     )
     run_id = uuid4()
     refreshed_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
         id=run_id,
         status=ExecutionStatus.STOPPING,
         run_metadata={
@@ -1061,6 +1094,7 @@ def test_stop_run_only_terminates_modal_resources(monkeypatch):
             ),
             "remote_train": SimpleNamespace(
                 id=uuid4(),
+                name="remote_train",
                 status=ExecutionStatus.RUNNING,
                 run_metadata={},
                 config=SimpleNamespace(step_operator="sagemaker"),
@@ -1069,13 +1103,30 @@ def test_stop_run_only_terminates_modal_resources(monkeypatch):
     )
 
     class ClientStub:
+        zen_store = SimpleNamespace(
+            update_run=lambda **kwargs: None,
+            update_run_step=lambda **kwargs: None,
+        )
+        list_pipeline_runs = staticmethod(lambda **kwargs: PageStub([]))
+        list_run_steps = staticmethod(
+            lambda **kwargs: PageStub(list(refreshed_run.steps.values()))
+        )
+
         @staticmethod
         def get_pipeline_run(_run_id):
             return refreshed_run
 
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
-    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
-    _make_orchestrator()._stop_run(stale_run)
+    stale_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
+        id=run_id,
+        run_metadata={},
+        steps={},
+    )
+    with pytest.raises(RuntimeError, match="external workload"):
+        _make_orchestrator()._stop_run(stale_run)
 
     assert recorded["termination_order"].count("child-running") == 1
     assert recorded["termination_order"].count("orchestrator-sandbox") == 1
@@ -1099,6 +1150,9 @@ def test_stop_run_terminates_after_late_failed_pipeline_status(
         config=SimpleNamespace(step_operator=None),
     )
     active_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
         id=run_id,
         status=ExecutionStatus.STOPPING,
         run_metadata={
@@ -1109,6 +1163,9 @@ def test_stop_run_terminates_after_late_failed_pipeline_status(
         steps={"train": running_step},
     )
     failed_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
         id=run_id,
         status=ExecutionStatus.FAILED,
         run_metadata=active_run.run_metadata,
@@ -1117,12 +1174,26 @@ def test_stop_run_terminates_after_late_failed_pipeline_status(
     refreshed_runs = iter([active_run, active_run, active_run, failed_run])
 
     class ClientStub:
+        zen_store = SimpleNamespace(
+            update_run=lambda **kwargs: None,
+            update_run_step=lambda **kwargs: None,
+        )
+        list_pipeline_runs = staticmethod(lambda **kwargs: PageStub([]))
+        list_run_steps = staticmethod(lambda **kwargs: PageStub([]))
+
         @staticmethod
         def get_pipeline_run(_run_id):
             return next(refreshed_runs)
 
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
-    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    stale_run = SimpleNamespace(
+        child_key=None,
+        project_id=uuid4(),
+        in_progress=True,
+        id=run_id,
+        run_metadata={},
+        steps={},
+    )
     _make_orchestrator()._stop_run(stale_run)
 
     assert recorded["termination_order"].count("child-running") == 1
@@ -1166,6 +1237,7 @@ def _make_static_controller(
         id=uuid4(),
         project_id=uuid4(),
         run_metadata={},
+        get_body=lambda: SimpleNamespace(model_fields_set={"stop_mode"}),
     )
     snapshot = _make_snapshot()
     active_stack = SimpleNamespace()
@@ -1377,7 +1449,7 @@ def test_static_controller_interrupts_for_external_stop_or_failure(
 ):
     setup = _make_static_controller(monkeypatch)
     setup.controller.client.get_pipeline_run = lambda **_kwargs: (
-        SimpleNamespace(status=run_status)
+        SimpleNamespace(stop_mode=None, status=run_status)
     )
 
     assert setup.controller.should_interrupt_execution() == expected_interrupt
@@ -1713,6 +1785,7 @@ def test_static_controller_finalize_raises_after_failed_child_publish(
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
+                stop_mode=None,
                 id=pipeline_run_id,
                 status=ExecutionStatus.RUNNING,
             )
@@ -1723,6 +1796,7 @@ def test_static_controller_finalize_raises_after_failed_child_publish(
         "fetch_step_runs_by_names",
         lambda **_kwargs: {
             "train": SimpleNamespace(
+                stop_mode=None,
                 id=step_run_id,
                 status=ExecutionStatus.RUNNING,
             )
@@ -1763,6 +1837,7 @@ def test_static_controller_finalize_ignores_cancelled_children(
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
+                stop_mode=None,
                 id=pipeline_run_id,
                 status=ExecutionStatus.RUNNING,
             )
@@ -1771,6 +1846,7 @@ def test_static_controller_finalize_ignores_cancelled_children(
         fetched_step_names.extend(kwargs["step_run_names"])
         return {
             "train": SimpleNamespace(
+                stop_mode=None,
                 id=failed_step_run_id,
                 status=ExecutionStatus.PROVISIONING,
             )
@@ -1826,6 +1902,7 @@ def test_static_controller_finalize_ignores_cancelled_only_run(
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
+                stop_mode=None,
                 id=pipeline_run_id,
                 status=ExecutionStatus.RUNNING,
             )
@@ -1876,6 +1953,7 @@ def test_static_controller_finalize_logs_skipped_without_failing_steps(
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
+                stop_mode=None,
                 id=pipeline_run_id,
                 status=ExecutionStatus.RUNNING,
             )
@@ -1937,7 +2015,9 @@ def test_static_controller_finalize_stopping_run_does_not_raise(
     class ClientStub:
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
-            return SimpleNamespace(status=ExecutionStatus.STOPPING)
+            return SimpleNamespace(
+                stop_mode=None, status=ExecutionStatus.STOPPING
+            )
 
     monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
     monkeypatch.setattr(
@@ -1967,6 +2047,7 @@ def test_static_controller_finalize_respects_late_stop_request(
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
+                stop_mode=None,
                 id=pipeline_run_id,
                 status=next(refreshed_statuses),
             )
@@ -2065,3 +2146,136 @@ def test_get_orchestrator_run_id_raises_when_missing(monkeypatch):
 
     with pytest.raises(RuntimeError, match=ENV_ZENML_MODAL_RUN_ID):
         _make_orchestrator().get_orchestrator_run_id()
+
+
+@pytest.mark.parametrize(
+    "stop_mode,expected",
+    [
+        (
+            PipelineRunStopMode.GRACEFUL,
+            modal_entrypoint_module.InterruptMode.GRACEFUL,
+        ),
+        (
+            PipelineRunStopMode.IMMEDIATE,
+            modal_entrypoint_module.InterruptMode.FORCE,
+        ),
+    ],
+)
+def test_static_controller_observes_stop_mode_on_failed_run(
+    monkeypatch: pytest.MonkeyPatch,
+    stop_mode: PipelineRunStopMode,
+    expected: modal_entrypoint_module.InterruptMode,
+) -> None:
+    """An explicit stop overrides failure policy without changing the outcome."""
+    setup = _make_static_controller(monkeypatch)
+    setup.controller.client.get_pipeline_run = lambda **kwargs: (
+        SimpleNamespace(
+            status=ExecutionStatus.FAILED,
+            stop_mode=stop_mode,
+        )
+    )
+    assert setup.controller.should_interrupt_execution() == expected
+
+
+def test_static_controller_finalizes_cleanup_without_erasing_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cleanup completion preserves the failed result and ends activity."""
+    updates = []
+    step_updates = []
+    reserved_step = SimpleNamespace(
+        id=uuid4(), status=ExecutionStatus.INITIALIZING
+    )
+    run_id = uuid4()
+    client = SimpleNamespace(
+        get_pipeline_run=lambda *args: SimpleNamespace(
+            project_id=uuid4(),
+            status=ExecutionStatus.FAILED,
+            stop_mode=PipelineRunStopMode.GRACEFUL,
+        ),
+        list_run_steps=lambda **kwargs: PageStub([reserved_step]),
+        zen_store=SimpleNamespace(
+            update_run=lambda **kwargs: updates.append(kwargs),
+            update_run_step=lambda **kwargs: step_updates.append(kwargs),
+        ),
+    )
+    monkeypatch.setattr(modal_entrypoint_module, "Client", lambda: client)
+    modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+        run_id,
+        {"step": NodeStatus.CANCELLED},
+    )
+    assert updates[0]["run_update"].status == ExecutionStatus.FAILED
+    assert updates[0]["run_update"].in_progress is False
+    assert step_updates[0]["step_run_update"].status == ExecutionStatus.STOPPED
+    assert step_updates[0]["step_run_update"].end_time is not None
+
+
+def test_old_server_static_controller_does_not_reserve_step(monkeypatch):
+    """Legacy stores must not aggregate a newly reserved INITIALIZING row."""
+    setup = _make_static_controller(monkeypatch)
+    setup.pipeline_run.get_body = lambda: SimpleNamespace(
+        model_fields_set=set()
+    )
+    launched = []
+    sandbox = SandboxStub("legacy-step")
+
+    def create_sandbox(**kwargs):
+        launched.append(kwargs)
+        return sandbox
+
+    setup.orchestrator.create_static_step_sandbox = create_sandbox
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_metadata",
+        lambda *_args, **_kwargs: None,
+    )
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+    assert setup.controller.start_step_sandbox(dag_node) == NodeStatus.RUNNING
+    assert setup.created_run_steps == []
+    assert launched[0]["step_run_id"] is None
+
+
+@pytest.mark.parametrize(
+    "cleanup_state", ["confirmed", "unconfirmed", "missing"]
+)
+def test_immediate_modal_stop_requires_confirmed_controller_termination(
+    monkeypatch: pytest.MonkeyPatch, cleanup_state: str
+) -> None:
+    """Stop completion needs a known controller and provider confirmation."""
+    sandbox = SandboxStub("controller")
+    if cleanup_state == "unconfirmed":
+        sandbox.terminate = lambda: None
+    _install_modal_sdk_stubs(
+        monkeypatch, from_id_sandboxes={"controller": sandbox}
+    )
+    updates = []
+    run = SimpleNamespace(
+        id=uuid4(),
+        project_id=uuid4(),
+        child_key=None,
+        in_progress=True,
+        status=ExecutionStatus.FAILED,
+        steps={},
+        run_metadata=(
+            {MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "controller"}
+            if cleanup_state != "missing"
+            else {}
+        ),
+    )
+    client = SimpleNamespace(
+        get_pipeline_run=lambda *args: run,
+        list_pipeline_runs=lambda **kwargs: PageStub([]),
+        list_run_steps=lambda **kwargs: PageStub([]),
+        zen_store=SimpleNamespace(
+            update_run=lambda **kwargs: updates.append(kwargs)
+        ),
+    )
+    monkeypatch.setattr(modal_orchestrator_module, "Client", lambda: client)
+    if cleanup_state == "confirmed":
+        _make_orchestrator()._stop_run(run)
+        assert updates[0]["run_update"].status == ExecutionStatus.FAILED
+        assert updates[0]["run_update"].in_progress is False
+    else:
+        with pytest.raises(RuntimeError, match="unconfirmed|identity"):
+            _make_orchestrator()._stop_run(run)
+        assert updates == []

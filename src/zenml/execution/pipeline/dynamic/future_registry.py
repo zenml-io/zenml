@@ -15,7 +15,7 @@
 
 import threading
 import time
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from zenml.execution.pipeline.dynamic.outputs import (
     MapResultsFuture,
@@ -210,6 +210,17 @@ class FutureRegistry:
             future = self.get_map_future(map_id=map_id)
             future._set_startup_result(child_futures)
 
+    def set_step_execution_exception(
+        self, invocation_id: str, exception: BaseException
+    ) -> None:
+        """Settle a step whose execution cannot continue.
+
+        Args:
+            invocation_id: The step invocation ID.
+            exception: The reason execution cannot continue.
+        """
+        self.get_step_future(invocation_id).set_execution_exception(exception)
+
     def set_startup_exception(
         self, invocation_id: str, exception: BaseException
     ) -> None:
@@ -251,40 +262,50 @@ class FutureRegistry:
                 *self._pipeline_futures.values(),
             ]
 
-    def await_all_no_raise(self) -> None:
-        """Wait for all tracked futures to finish without raising."""
-        futures = self.get_all_futures()
+    def await_all_no_raise(self, timeout: Optional[float] = None) -> bool:
+        """Wait for tracked futures without propagating their exceptions.
+
+        Args:
+            timeout: Maximum coordination time in seconds, or no deadline.
+                Individual backend requests still use their own timeouts.
+
+        Returns:
+            Whether every tracked future settled before the deadline.
+        """
+        deadline = time.monotonic() + timeout if timeout is not None else None
 
         # Poll all futures concurrently before awaiting each of them. This
         # avoids long cumulative waits when individual futures use backoff-based
         # polling internally.
         poll_interval_seconds = 2.0
         while True:
+            futures = self.get_all_futures()
             any_running = False
             for future in futures:
                 try:
                     if future.running():
                         any_running = True
-                        break
                 except Exception:
-                    # We still fall back to `wait()` below for this future.
+                    # A failed status read is not evidence of settlement.
+                    any_running = True
                     continue
 
+                if not any_running:
+                    try:
+                        future.wait()
+                    except Exception as e:
+                        e.__suppress_context__ = True
+
             if not any_running:
-                break
+                return True
 
-            time.sleep(poll_interval_seconds)
-
-        for future in futures:
-            try:
-                future.wait()
-            except Exception as e:
-                # This is needed to handle the following exception context
-                # cycle:
-                # - Concurrent step fails with original exception `e`
-                # - We wrap it in a `StepExecutionException`
-                # - The pipeline function exits with the wrapped exception
-                # - This function here catches the original exception, and
-                #   sets the active exception (the wrapped one) as the context
-                e.__suppress_context__ = True
-                pass
+            remaining = (
+                deadline - time.monotonic() if deadline is not None else None
+            )
+            if remaining is not None and remaining <= 0:
+                return False
+            time.sleep(
+                min(poll_interval_seconds, remaining)
+                if remaining is not None
+                else poll_interval_seconds
+            )

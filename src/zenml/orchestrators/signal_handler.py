@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Type
 from typing_extensions import Self
 
 from zenml.client import Client
-from zenml.enums import ExecutionMode, ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.models import StepRunResponse
@@ -135,17 +135,19 @@ class SignalHandler:
             f"Received signal {signum}. Requesting shutdown for step run "
             f"`{self._step_run.name}`..."
         )
-        try:
-            raise self._finalize_shutdown()
-        finally:
-            prev = self._previous.get(signum)
-            if callable(prev):
-                try:
-                    prev(signum, frame)
-                except Exception:
+        shutdown_exception = self._finalize_shutdown()
+        prev = self._previous.get(signum)
+        if callable(prev):
+            try:
+                prev(signum, frame)
+            except BaseException:
+                # Keep callback side effects, but preserve the classified
+                # cancellation instead of replacing it with KeyboardInterrupt.
+                if prev is not signal.default_int_handler:
                     logger.exception(
                         f"Previous signal handler raised for signal {signum}."
                     )
+        raise shutdown_exception
 
     def _finalize_shutdown(self) -> BaseException:
         """Finalize the shutdown process.
@@ -161,24 +163,32 @@ class SignalHandler:
             pipeline_run = client.get_pipeline_run(
                 self._step_run.pipeline_run_id, hydrate=False
             )
+            step_run = client.get_run_step(self._step_run.id, hydrate=False)
 
-            if pipeline_run.status in (
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
+            if step_run.status.is_finished:
+                if step_run.status == ExecutionStatus.STOPPED:
+                    return RunStoppedException("Step run is stopped.")
+                return RunInterruptedException(
+                    "The execution was interrupted."
+                )
+
+            if pipeline_run.stop_mode == PipelineRunStopMode.IMMEDIATE or (
+                pipeline_run.stop_mode is None
+                and pipeline_run.status
+                in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
             ):
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
                     status=ExecutionStatus.STOPPED,
                     end_time=utc_now(),
                 )
-                return RunStoppedException("Pipeline run is stopped.")
-
-            step_run = client.get_run_step(self._step_run.id, hydrate=False)
+                return RunStoppedException("Pipeline stop was requested.")
 
             if (
                 pipeline_run.status == ExecutionStatus.FAILED
                 and step_run.status == ExecutionStatus.RUNNING
                 and self._execution_mode == ExecutionMode.FAIL_FAST
+                and pipeline_run.stop_mode != PipelineRunStopMode.GRACEFUL
             ):
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
@@ -196,7 +206,7 @@ class SignalHandler:
                     status=ExecutionStatus.STOPPED,
                     end_time=utc_now(),
                 )
-                return RunStoppedException("Pipeline run is stopped.")
+                return RunStoppedException("Step stop was requested.")
 
             return RunInterruptedException("The execution was interrupted.")
         except Exception as e:

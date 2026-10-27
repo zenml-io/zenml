@@ -26,6 +26,7 @@ from typing import (
     Optional,
     Tuple,
 )
+from uuid import UUID
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
@@ -35,12 +36,13 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ExecutionStatus,
+    PipelineRunStopMode,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
     StepRuntime,
 )
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import RunStoppedException
+from zenml.exceptions import IllegalOperationError, RunStoppedException
 from zenml.execution.context import ExecutionContext, record_step_run
 from zenml.logger import get_logger
 from zenml.models import (
@@ -50,6 +52,7 @@ from zenml.models import (
     ResourceRequestRenewalRequest,
     ResourceRequestResponse,
     StepRunResponse,
+    StepRunUpdate,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
@@ -131,6 +134,7 @@ class StepLauncher:
         step: Step,
         orchestrator_run_id: str,
         wait: bool = True,
+        step_run_id: Optional[UUID] = None,
     ):
         """Initializes the launcher.
 
@@ -139,6 +143,7 @@ class StepLauncher:
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
             wait: Whether to wait for the step to finish.
+            step_run_id: Attempt admitted before external submission.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -147,6 +152,7 @@ class StepLauncher:
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
         self._wait = wait
+        self._admitted_step_run_id = step_run_id
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -200,143 +206,247 @@ class StepLauncher:
                         model_version=model_version
                     )
 
-            request_factory = step_run_utils.StepRunRequestFactory(
-                snapshot=self._snapshot,
-                pipeline_run=pipeline_run,
-                stack=self._stack,
-            )
-            dynamic_config = self._step if self._snapshot.is_dynamic else None
-            step_run_request = request_factory.create_request(
-                invocation_id=self._invocation_id,
-                dynamic_config=dynamic_config,
-            )
-            step_run_request.status = self._get_initial_step_run_status()
+            step_run = self._prepare_step_run(pipeline_run, logs_context)
+
             if isinstance(logs_context, LoggingContext):
-                step_run_request.logs = logs_context.log_model.id
+                logs_context.update(step_run=step_run)
 
-            try:
-                request_factory.populate_request(request=step_run_request)
-            except BaseException as e:
-                logger.exception(
-                    f"Failed preparing step `{self._invocation_id}`."
+            self._step_run = step_run
+            if model_version := step_run.model_version:
+                step_run_utils.log_model_version_dashboard_url(
+                    model_version=model_version
                 )
-                step_run_request.status = ExecutionStatus.FAILED
-                step_run_request.end_time = utc_now()
-                step_run_request.exception_info = (
-                    exception_utils.collect_exception_information(e)
-                )
-                raise
-            finally:
-                step_run = Client().zen_store.create_run_step(step_run_request)
 
-                if isinstance(logs_context, LoggingContext):
-                    logs_context.update(step_run=step_run)
+            if not step_run.status.is_finished:
+                logger.info(f"Step `{self._invocation_id}` has started.")
 
-                self._step_run = step_run
-                if model_version := step_run.model_version:
-                    step_run_utils.log_model_version_dashboard_url(
-                        model_version=model_version
-                    )
-
-                if not step_run.status.is_finished:
-                    logger.info(f"Step `{self._invocation_id}` has started.")
-
-                    signal_handler: Optional[SignalHandler] = None
-                    start_time = time.time()
-                    try:
-                        if self._should_register_signal_handler():
-                            signal_handler = SignalHandler(
-                                step_run=step_run,
-                                execution_mode=self._snapshot.pipeline_configuration.execution_mode,
-                            )
-                            signal_handler.register()
-
-                        if terminal_step_run := self._run_step(
-                            pipeline_run=pipeline_run,
+                signal_handler: Optional[SignalHandler] = None
+                start_time = time.time()
+                try:
+                    if self._should_register_signal_handler():
+                        signal_handler = SignalHandler(
                             step_run=step_run,
-                            force_write_logs=lambda: None,
-                        ):
-                            step_run = terminal_step_run
-                    except RunStoppedException as e:
-                        raise e
-                    except BaseException as e:  # noqa: E722
-                        step_run = Client().get_run_step(
+                            execution_mode=self._snapshot.pipeline_configuration.execution_mode,
+                        )
+                        signal_handler.register()
+
+                    if terminal_step_run := self._run_step(
+                        pipeline_run=pipeline_run,
+                        step_run=step_run,
+                        force_write_logs=lambda: None,
+                    ):
+                        step_run = terminal_step_run
+                except RunStoppedException as e:
+                    raise e
+                except BaseException as e:  # noqa: E722
+                    step_run = Client().get_run_step(step_run_id=step_run.id)
+
+                    if step_run.status.is_finished:
+                        # Signal and heartbeat handlers may already have
+                        # settled the attempt while execution unwound.
+                        pass
+                    elif step_run.status == ExecutionStatus.CANCELLING:
+                        publish_utils.publish_cancelled_step_run(
                             step_run_id=step_run.id
                         )
+                    elif (
+                        isinstance(e, StepHeartBeatTerminationException)
+                        or step_run.status == ExecutionStatus.STOPPING
+                    ):
+                        # Handle as a non-failure as exception is a propagation of graceful termination.
+                        publish_utils.publish_stopped_step_run(step_run.id)
 
-                        if step_run.status == ExecutionStatus.CANCELLING:
-                            publish_utils.publish_cancelled_step_run(
-                                step_run_id=step_run.id
-                            )
-                        elif (
-                            isinstance(e, StepHeartBeatTerminationException)
-                            or step_run.status == ExecutionStatus.STOPPING
-                        ):
-                            # Handle as a non-failure as exception is a propagation of graceful termination.
-                            publish_utils.publish_stopped_step_run(step_run.id)
-
-                        else:
-                            logger.error(
-                                "Failed to run step `%s`: %s",
-                                self._invocation_id,
-                                e,
-                            )
-                            if step_run.status in {
-                                ExecutionStatus.PROVISIONING,
-                                ExecutionStatus.RUNNING,
-                                ExecutionStatus.QUEUED,
-                            }:
-                                # Only update the status if the step runner
-                                # somehow failed to do so.
-                                publish_utils.publish_failed_step_run(
-                                    step_run.id
-                                )
-                        raise
-                    finally:
-                        if signal_handler:
-                            signal_handler.unregister()
-
-                    if self._wait:
-                        duration = time.time() - start_time
-                        logger.info(
-                            f"Step `{self._invocation_id}` has finished in "
-                            f"`{string_utils.get_human_readable_time(duration)}`."
-                        )
                     else:
-                        logger.info("Step `%s` launched.", self._invocation_id)
-                elif step_run.status == ExecutionStatus.CACHED:
+                        logger.error(
+                            "Failed to run step `%s`: %s",
+                            self._invocation_id,
+                            e,
+                        )
+                        if step_run.status in {
+                            ExecutionStatus.PROVISIONING,
+                            ExecutionStatus.RUNNING,
+                            ExecutionStatus.QUEUED,
+                        }:
+                            # Only update the status if the step runner
+                            # somehow failed to do so.
+                            publish_utils.publish_failed_step_run(step_run.id)
+                    raise
+                finally:
+                    if signal_handler:
+                        signal_handler.unregister()
+
+                if self._wait:
+                    duration = time.time() - start_time
                     logger.info(
-                        f"Using cached version of step `{self._invocation_id}`."
+                        f"Step `{self._invocation_id}` has finished in "
+                        f"`{string_utils.get_human_readable_time(duration)}`."
                     )
-                    if (
-                        model_version := step_run.model_version
-                        or pipeline_run.model_version
-                    ):
-                        step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=step_run.outputs,
-                            model_version=model_version,
-                        )
-                elif step_run.status == ExecutionStatus.SKIPPED:
-                    logger.info("Skipping step `%s`.", self._invocation_id)
-                    if (
-                        model_version := step_run.model_version
-                        or pipeline_run.model_version
-                    ):
-                        step_run_utils.link_output_artifacts_to_model_version(
-                            artifacts=step_run.outputs,
-                            model_version=model_version,
-                        )
-                elif step_run.status == ExecutionStatus.FAILED:
-                    # No need to link anything for a failed step run.
-                    pass
                 else:
-                    raise RuntimeError(
-                        f"Unexpected step run status `{step_run.status}` for "
-                        f"step `{self._invocation_id}`."
+                    logger.info("Step `%s` launched.", self._invocation_id)
+            elif step_run.status == ExecutionStatus.CACHED:
+                logger.info(
+                    f"Using cached version of step `{self._invocation_id}`."
+                )
+                if (
+                    model_version := step_run.model_version
+                    or pipeline_run.model_version
+                ):
+                    step_run_utils.link_output_artifacts_to_model_version(
+                        artifacts=step_run.outputs,
+                        model_version=model_version,
                     )
+            elif step_run.status == ExecutionStatus.SKIPPED:
+                logger.info("Skipping step `%s`.", self._invocation_id)
+                if (
+                    model_version := step_run.model_version
+                    or pipeline_run.model_version
+                ):
+                    step_run_utils.link_output_artifacts_to_model_version(
+                        artifacts=step_run.outputs,
+                        model_version=model_version,
+                    )
+            elif step_run.status in {
+                ExecutionStatus.FAILED,
+                ExecutionStatus.COMPLETED,
+            }:
+                # No need to link anything for a failed step run.
+                pass
+            else:
+                raise RuntimeError(
+                    f"Unexpected step run status `{step_run.status}` for "
+                    f"step `{self._invocation_id}`."
+                )
 
         record_step_run(step_run)
 
+        return step_run
+
+    def _prepare_step_run(
+        self,
+        pipeline_run: PipelineRunResponse,
+        logs_context: ContextManager[Any],
+    ) -> StepRunResponse:
+        """Prepare an attempt or claim one admitted by the controller.
+
+        Args:
+            pipeline_run: The owning pipeline run.
+            logs_context: The preparation logging context.
+
+        Returns:
+            The admitted step attempt.
+
+        Raises:
+            RunStoppedException: If stopping prevents admission or execution.
+            IllegalOperationError: If the supplied attempt belongs elsewhere.
+            BaseException: If preparing the step fails.
+        """
+        store = Client().zen_store
+        current_run = store.get_run(pipeline_run.id)
+        supports_stop_mode = (
+            "stop_mode" in current_run.get_body().model_fields_set
+        )
+        if current_run.stop_mode == PipelineRunStopMode.IMMEDIATE or (
+            current_run.stop_mode and self._admitted_step_run_id is None
+        ):
+            raise RunStoppedException("Step preparation was stopped.")
+        step_run = None
+        if self._admitted_step_run_id is not None:
+            step_run = store.get_run_step(self._admitted_step_run_id)
+            if (
+                step_run.pipeline_run_id != pipeline_run.id
+                or step_run.name != self._invocation_id
+            ):
+                raise IllegalOperationError(
+                    "The admitted attempt belongs to a different step or run."
+                )
+            if step_run.status in {
+                ExecutionStatus.RETRYING,
+                ExecutionStatus.RETRIED,
+                ExecutionStatus.FAILED,
+            }:
+                # Kubernetes reuses Job arguments for retries. Admission below
+                # creates a fresh version, and is denied after a stop request.
+                step_run = None
+            elif step_run.status.is_successful:
+                return step_run
+            elif step_run.status == ExecutionStatus.STOPPED:
+                raise RunStoppedException("The admitted step was stopped.")
+            elif step_run.status != ExecutionStatus.INITIALIZING:
+                if store.get_run(pipeline_run.id).stop_mode:
+                    raise RunStoppedException(
+                        "Replacement attempts are disabled while stopping."
+                    )
+                step_run = None
+
+        request_factory = step_run_utils.StepRunRequestFactory(
+            snapshot=self._snapshot,
+            pipeline_run=pipeline_run,
+            stack=self._stack,
+        )
+        request = request_factory.create_request(
+            invocation_id=self._invocation_id,
+            dynamic_config=self._step if self._snapshot.is_dynamic else None,
+        )
+        request.admitted_step_run_id = (
+            step_run.id if step_run is not None else None
+        )
+        request.status = (
+            self._get_initial_step_run_status()
+            if step_run is not None
+            else ExecutionStatus.INITIALIZING
+        )
+        if not supports_stop_mode:
+            request.status = (
+                self._get_initial_step_run_status()
+                if self._snapshot.is_dynamic
+                else ExecutionStatus.RUNNING
+            )
+        if isinstance(logs_context, LoggingContext):
+            request.logs = logs_context.log_model.id
+        try:
+            request_factory.populate_request(request=request)
+        except BaseException as error:
+            request.status = ExecutionStatus.FAILED
+            request.end_time = utc_now()
+            request.exception_info = (
+                exception_utils.collect_exception_information(error)
+            )
+            try:
+                store.create_run_step(request)
+            except Exception:
+                logger.warning(
+                    "Could not record the preparation failure.", exc_info=True
+                )
+            raise
+        try:
+            step_run = store.create_run_step(request)
+        except IllegalOperationError:
+            if store.get_run(pipeline_run.id).stop_mode:
+                raise RunStoppedException(
+                    "Step admission was stopped."
+                ) from None
+            raise
+
+        if (
+            supports_stop_mode
+            and request.admitted_step_run_id is None
+            and not step_run.status.is_finished
+            and step_run.status != ExecutionStatus.QUEUED
+        ):
+            try:
+                step_run = store.update_run_step(
+                    step_run.id,
+                    StepRunUpdate(
+                        status=self._get_initial_step_run_status(),
+                        claim_execution=True,
+                    ),
+                )
+            except IllegalOperationError:
+                if store.get_run(pipeline_run.id).stop_mode:
+                    raise RunStoppedException(
+                        "Step execution was stopped."
+                    ) from None
+                raise
         return step_run
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
@@ -770,6 +880,9 @@ class StepLauncher:
         Returns:
             The initial status of the step run.
         """
+        if self._step.config.step_operator:
+            return ExecutionStatus.PROVISIONING
+
         if self._snapshot.is_dynamic:
             from zenml.execution.pipeline.dynamic.compilation import (
                 get_step_runtime,
@@ -807,6 +920,9 @@ class StepLauncher:
         Raises:
             RuntimeError: If the resource request was not found, or
                 was rejected, preempted, or cancelled.
+            RunStoppedException: If immediate stopping interrupts allocation.
+            IllegalOperationError: If the attempt cannot be settled and is
+                still active after a rejected stop update.
         """
         resource_request_id = step_run_info.step_run.resource_request_id
         resource_request = step_run_info.step_run.resource_request
@@ -844,6 +960,29 @@ class StepLauncher:
             factor=2.0,
             jitter="equal",
         ):
+            if (
+                zen_store.get_run(step_run_info.run_id).stop_mode
+                == PipelineRunStopMode.IMMEDIATE
+            ):
+                try:
+                    if not zen_store.get_run_step(
+                        step_run_info.step_run_id
+                    ).status.is_finished:
+                        zen_store.update_run_step(
+                            step_run_info.step_run_id,
+                            StepRunUpdate(
+                                status=ExecutionStatus.STOPPED,
+                                end_time=utc_now(),
+                            ),
+                        )
+                except IllegalOperationError:
+                    if not zen_store.get_run_step(
+                        step_run_info.step_run_id
+                    ).status.is_finished:
+                        raise
+                raise RunStoppedException(
+                    "Stopped while waiting for resources."
+                )
             now = utc_now()
             if now >= allocation_wait_deadline:
                 raise RuntimeError(
@@ -889,9 +1028,12 @@ class StepLauncher:
                     resource_request.id,
                     step_name,
                 )
-                publish_utils.publish_step_run_status_update(
+                zen_store.update_run_step(
                     step_run_id=step_run_info.step_run_id,
-                    status=ExecutionStatus.RUNNING,
+                    step_run_update=StepRunUpdate(
+                        status=self._get_initial_step_run_status(),
+                        claim_execution=True,
+                    ),
                 )
                 return resource_request
             if resource_request.status == ResourceRequestStatus.REJECTED:

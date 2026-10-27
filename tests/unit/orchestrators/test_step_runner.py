@@ -24,6 +24,7 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import (
     ArtifactSaveType,
+    ExecutionStatus,
     HookType,
     StepRunInputArtifactType,
 )
@@ -111,12 +112,21 @@ def _hook_step_run_info(
     )
 
 
-def _patch_step_runner_io(mocker):
+def _patch_step_runner_io(mocker, sample_step_run: StepRunResponse):
     """Patches step runner IO and captures fired hooks.
+
+    Args:
+        mocker: Pytest mocking fixture.
+        sample_step_run: Executing attempt returned by status refreshes.
 
     Returns:
         A list of (hook_type, optional_args) tuples for each fired hook.
     """
+    sample_step_run.get_body().status = ExecutionStatus.RUNNING
+    mocker.patch(
+        "zenml.orchestrators.step_runner.Client.get_run_step",
+        return_value=sample_step_run,
+    )
     fired = []
     mocker.patch(
         "zenml.orchestrators.step_runner.run_lifecycle_hook",
@@ -211,6 +221,12 @@ def test_running_a_failing_step(
 ):
     """Tests that running a failing step runs the step entrypoint
     and correctly prepares/cleans up."""
+
+    sample_step_run.get_body().status = ExecutionStatus.RUNNING
+    mocker.patch(
+        "zenml.orchestrators.step_runner.Client.get_run_step",
+        return_value=sample_step_run,
+    )
 
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
@@ -343,7 +359,7 @@ def test_step_hooks_fire_on_successful_attempt(
     sample_snapshot_response_model: PipelineSnapshotResponse,
 ):
     """Tests that a successful attempt fires start, end, and success hooks."""
-    fired = _patch_step_runner_io(mocker)
+    fired = _patch_step_runner_io(mocker, sample_step_run)
     step = _step_with_hooks(f"{HOOK_MODULE}.successful_step")
     step_run_info = _hook_step_run_info(
         step, sample_snapshot_response_model, sample_step_run
@@ -378,7 +394,7 @@ def test_step_hooks_fire_one_pair_per_attempt(
 ):
     """Tests that two retriable failures then a success fire one pair each."""
     _flaky_calls["count"] = 0
-    fired = _patch_step_runner_io(mocker)
+    fired = _patch_step_runner_io(mocker, sample_step_run)
     mock_failed = mocker.patch(
         "zenml.orchestrators.step_runner.publish_failed_step_run"
     )
@@ -427,7 +443,7 @@ def test_step_hooks_terminal_failure_fires_failure_hook(
     sample_snapshot_response_model: PipelineSnapshotResponse,
 ):
     """Tests that a retriable then terminal failure fires one failure hook."""
-    fired = _patch_step_runner_io(mocker)
+    fired = _patch_step_runner_io(mocker, sample_step_run)
     mock_failed = mocker.patch(
         "zenml.orchestrators.step_runner.publish_failed_step_run"
     )

@@ -170,6 +170,13 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
+class PipelineRunStopMode(StrEnum):
+    """Requested termination behavior, independent of execution outcome."""
+
+    GRACEFUL = "graceful"
+    IMMEDIATE = "immediate"
+
+
 class ExecutionMode(StrEnum):
     """Enum that represents the execution mode of a pipeline run."""
 
