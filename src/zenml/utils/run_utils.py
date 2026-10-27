@@ -16,11 +16,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, cast
 
 from zenml.client import Client
-from zenml.enums import (
-    ExecutionStatus,
-    PipelineRunStopMode,
-    StackComponentType,
-)
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse, PipelineRunUpdate, StepRunUpdate
@@ -31,43 +27,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
-
-
-def request_run_stop(
-    run: PipelineRunResponse, graceful: bool
-) -> PipelineRunResponse:
-    """Persist a stop request before contacting execution infrastructure.
-
-    Args:
-        run: The run to stop.
-        graceful: Whether to let current attempts finish.
-
-    Returns:
-        The run with the strongest persisted stop request.
-
-    Raises:
-        IllegalOperationError: If stopping is unsupported for this run.
-    """
-    if run.status == ExecutionStatus.COMPLETED:
-        raise IllegalOperationError("Cannot stop a completed run.")
-    if "stop_mode" in run.get_body().model_fields_set:
-        update = PipelineRunUpdate(
-            stop_mode=PipelineRunStopMode.GRACEFUL
-            if graceful
-            else PipelineRunStopMode.IMMEDIATE
-        )
-    else:
-        # Older servers ignore unknown request fields. Preserve their existing
-        # status-based behavior instead of silently turning graceful into force.
-        if (
-            run.status in {ExecutionStatus.FAILED, ExecutionStatus.STOPPED}
-            or not run.orchestrator_run_id
-        ):
-            raise IllegalOperationError(
-                "This server must be upgraded to stop failed or unsubmitted runs."
-            )
-        update = PipelineRunUpdate(status=ExecutionStatus.STOPPING)
-    return Client().zen_store.update_run(run_id=run.id, run_update=update)
 
 
 def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:

@@ -50,6 +50,7 @@ from zenml.exceptions import (
 from zenml.hooks.execution import run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import PipelineRunUpdate
 from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
@@ -929,7 +930,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 If False, forces immediate termination. Default is False.
 
         Raises:
-            IllegalOperationError: If the run has no orchestrator run id yet.
+            IllegalOperationError: If the run has no orchestrator run id,
+                completed successfully, or requires a newer server to stop.
         """
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
@@ -937,9 +939,27 @@ class BaseOrchestrator(StackComponent, ABC):
                 "yet."
             )
 
-        from zenml.utils.run_utils import request_run_stop
+        if run.status == ExecutionStatus.COMPLETED:
+            raise IllegalOperationError("Cannot stop a completed run.")
+        if (
+            run.status in {ExecutionStatus.FAILED, ExecutionStatus.STOPPED}
+            and "stop_mode" not in run.get_body().model_fields_set
+        ):
+            raise IllegalOperationError(
+                "This server must be upgraded to stop failed or stopped runs."
+            )
 
-        run = request_run_stop(run, graceful=graceful)
+        # The server records the mode and preserves an existing FAILED outcome.
+        # Older servers ignore the mode and use the existing STOPPING behavior.
+        run = Client().zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.STOPPING,
+                stop_mode=PipelineRunStopMode.GRACEFUL
+                if graceful
+                else PipelineRunStopMode.IMMEDIATE,
+            ),
+        )
         if run.stop_mode is not None:
             graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)

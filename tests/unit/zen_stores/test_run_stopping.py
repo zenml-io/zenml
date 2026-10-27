@@ -219,9 +219,14 @@ def test_failed_run_remains_stoppable_until_work_finishes(
     assert failed.in_progress
     assert failed.end_time is None
     requested = store.update_run(
-        run.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
+        run.id,
+        PipelineRunUpdate(
+            status=ExecutionStatus.STOPPING,
+            stop_mode=PipelineRunStopMode.IMMEDIATE,
+        ),
     )
     assert requested.status == ExecutionStatus.FAILED
+    assert requested.get_body().status_reason == "A failed"
     assert requested.in_progress
     with pytest.raises(IllegalOperationError):
         store.create_run_step(_step_request(run))

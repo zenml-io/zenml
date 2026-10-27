@@ -10,7 +10,6 @@ from zenml.enums import ExecutionStatus, PipelineRunStopMode
 from zenml.exceptions import IllegalOperationError
 from zenml.orchestrators import base_orchestrator
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
-from zenml.utils import run_utils
 
 
 @pytest.mark.parametrize("graceful", [False, True])
@@ -32,14 +31,18 @@ def test_old_server_stop_preserves_requested_backend_mode(
     )
     update = Mock(return_value=run)
     client = SimpleNamespace(zen_store=SimpleNamespace(update_run=update))
-    monkeypatch.setattr(run_utils, "Client", lambda: client)
+    monkeypatch.setattr(base_orchestrator, "Client", lambda: client)
     orchestrator = Mock()
 
     BaseOrchestrator.stop_run(orchestrator, run, graceful=graceful)
 
     request = update.call_args.kwargs["run_update"]
     assert request.status == ExecutionStatus.STOPPING
-    assert "stop_mode" not in request.model_fields_set
+    assert request.stop_mode == (
+        PipelineRunStopMode.GRACEFUL
+        if graceful
+        else PipelineRunStopMode.IMMEDIATE
+    )
     orchestrator._stop_run.assert_called_once_with(run=run, graceful=graceful)
 
 
@@ -60,7 +63,7 @@ def test_persisted_immediate_mode_cannot_be_downgraded(
     )
     update = Mock(return_value=run)
     client = SimpleNamespace(zen_store=SimpleNamespace(update_run=update))
-    monkeypatch.setattr(run_utils, "Client", lambda: client)
+    monkeypatch.setattr(base_orchestrator, "Client", lambda: client)
     orchestrator = Mock()
 
     monkeypatch.setattr(
@@ -70,6 +73,7 @@ def test_persisted_immediate_mode_cannot_be_downgraded(
     BaseOrchestrator.stop_run(orchestrator, run, graceful=True)
 
     request = update.call_args.kwargs["run_update"]
+    assert request.status == ExecutionStatus.STOPPING
     assert request.stop_mode == PipelineRunStopMode.GRACEFUL
     orchestrator._stop_run.assert_called_once_with(run=run, graceful=False)
 
@@ -97,9 +101,10 @@ def test_old_server_rejects_new_cleanup_contract(
         get_body=lambda: SimpleNamespace(model_fields_set=set()),
     )
     client = Mock()
-    monkeypatch.setattr(run_utils, "Client", lambda: client)
+    monkeypatch.setattr(base_orchestrator, "Client", lambda: client)
 
-    with pytest.raises(IllegalOperationError, match="upgraded"):
-        run_utils.request_run_stop(run, graceful=True)
+    message = "upgraded" if backend_id else "no orchestrator run id"
+    with pytest.raises(IllegalOperationError, match=message):
+        BaseOrchestrator.stop_run(Mock(), run, graceful=True)
 
     client.zen_store.update_run.assert_not_called()
