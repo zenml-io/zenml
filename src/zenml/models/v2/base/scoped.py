@@ -29,7 +29,10 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from zenml.enums import GenericFilterOps
+from zenml.enums import (
+    GenericFilterOps,
+    TaggableResourceTypes,
+)
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -458,7 +461,11 @@ class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
     tags: StringFilterOption = Field(
-        description="Tags to apply to the filter query.", default=None
+        description=(
+            "Tags to apply to the filter query. At most 8 tag and run metadata "
+            "filter expressions may be supplied combined."
+        ),
+        default=None,
     )
 
     CLI_EXCLUDE_FIELDS = [
@@ -489,17 +496,21 @@ class TaggableFilter(BaseFilter):
         tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
 
         if tag_values:
-            from sqlmodel import exists, select
+            from sqlmodel import col, exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
-            for tag in tag_values:
+            resource_condition = col(
+                TagResourceSchema.resource_type
+            ) == TaggableResourceTypes(table.__tablename__)
+            for tag in dict.fromkeys(tag_values):
                 _, operator = self._resolve_operator(tag)
                 if operator == GenericFilterOps.IS_NULL:
                     custom_filters.append(
                         ~exists(
                             select(TagResourceSchema).where(
-                                TagResourceSchema.resource_id == table.id
+                                TagResourceSchema.resource_id == table.id,
+                                resource_condition,
                             )
                         )
                     )
@@ -509,7 +520,8 @@ class TaggableFilter(BaseFilter):
                     custom_filters.append(
                         exists(
                             select(TagResourceSchema).where(
-                                TagResourceSchema.resource_id == table.id
+                                TagResourceSchema.resource_id == table.id,
+                                resource_condition,
                             )
                         )
                     )
@@ -522,7 +534,9 @@ class TaggableFilter(BaseFilter):
                     select(TagResourceSchema)
                     .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
                     .where(
-                        TagResourceSchema.resource_id == table.id, condition
+                        TagResourceSchema.resource_id == table.id,
+                        resource_condition,
+                        condition,
                     )
                 )
                 custom_filters.append(exists_subquery)
@@ -616,7 +630,10 @@ class RunMetadataFilterMixin(BaseFilter):
 
     run_metadata: StringFilterOption = Field(
         default=None,
-        description="The run_metadata to filter the pipeline runs by.",
+        description=(
+            "The run_metadata to filter the pipeline runs by. At most 8 tag "
+            "and run metadata filter expressions may be supplied combined."
+        ),
     )
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,

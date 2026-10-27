@@ -41,6 +41,7 @@ from pydantic import (
 
 from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
+    MAX_TAG_AND_METADATA_FILTERS,
     PAGE_SIZE_DEFAULT,
     PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
@@ -795,6 +796,29 @@ class BaseFilter(BaseModel):
         """
         cls._generate_filter_list(data)
         return data
+
+    @model_validator(mode="after")
+    def validate_relationship_filter_count(self) -> "BaseFilter":
+        """Bound the combined number of tag and metadata expressions.
+
+        Returns:
+            The validated filter model.
+
+        Raises:
+            ValueError: If more than eight expressions are supplied.
+        """
+        values = self.model_dump(include={"tags", "run_metadata"})
+        count = sum(
+            1 if isinstance(value, str) else len(value or [])
+            for value in values.values()
+        )
+        if count > MAX_TAG_AND_METADATA_FILTERS:
+            raise ValueError(
+                "At most "
+                f"{MAX_TAG_AND_METADATA_FILTERS} tag and run metadata filter "
+                f"expressions are allowed combined; received {count}."
+            )
+        return self
 
     @property
     def list_of_filters(self) -> List[Filter]:

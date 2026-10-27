@@ -714,3 +714,6 @@ STREAM_EVENT_PAYLOAD_BYTES_MAX = 64 * 1024
 STREAM_PUBLISHER_BATCH_SIZE = max(
     1, handle_int_env_var(ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE, default=64)
 )
+
+# Limit the combined number of tag and run metadata filter expressions.
+MAX_TAG_AND_METADATA_FILTERS = 8
