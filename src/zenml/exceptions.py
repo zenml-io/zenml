@@ -43,6 +43,33 @@ class InitializationException(ZenMLBaseException):
     """Raised when an error occurred during initialization of a ZenML repository."""
 
 
+class LogStoreError(ZenMLBaseException):
+    """Raised when a log backend rejects a request or returns invalid data."""
+
+
+class LogStoreUnavailableError(LogStoreError):
+    """Raised when a log backend is temporarily unavailable."""
+
+
+class LogStoreRateLimitError(LogStoreError):
+    """Raised when a log backend rate limits a request."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        *,
+        retry_after: Optional[int] = None,
+    ) -> None:
+        """Initialize the rate limit error.
+
+        Args:
+            message: A user-facing error message.
+            retry_after: Retry delay in seconds, if available.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class AuthorizationException(ZenMLBaseException):
     """Raised when an authorization error occurred while trying to access a ZenML resource ."""
 
@@ -104,6 +131,10 @@ class EntityExistsError(ZenMLBaseException):
 
 class EntityCreationError(ZenMLBaseException, RuntimeError):
     """Raised when failing to create an entity."""
+
+
+class ApiTransactionResultTooLargeError(ZenMLBaseException):
+    """Raised when an API transaction result exceeds the database limit."""
 
 
 class WebhookInactiveError(ZenMLBaseException):

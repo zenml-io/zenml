@@ -181,6 +181,41 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
 
+### Workspace account annotations
+
+The Kubernetes orchestrator and Kubernetes step operator add
+`zenml.io/workspace-user-id: "<workspace-account-uuid>"` to Job and Pod
+annotations, including scheduled templates. The Run:AI step operator adds the
+same annotation through its workload specification.
+
+The value is the authenticated ZenML workspace account ID, which may identify a
+service account. It differs from the client/analytics UUID in `ZENML_USER_ID`.
+Look it up using `/api/v1/users/{id}?hydrate=true` on the workspace API; in
+ZenML Pro, `metadata.external_user_id` links to the Pro account.
+
+Custom annotations are preserved; ZenML overrides a conflicting workspace user
+annotation. This metadata alone is not proof of identity for granting permissions.
+
+### Running with an externally synchronized Linux identity
+
+When ZenML Pro is configured to synchronize numeric Linux UID and GID claims
+from an external OIDC provider, the Kubernetes orchestrator automatically runs
+the orchestration pod and all step containers as that user. ZenML sets
+`runAsUser` and `runAsGroup` on the pod and every container. These synchronized
+values take precedence over conflicting pod settings; unrelated security
+settings such as `fsGroup`, seccomp, capabilities, and supplemental groups are
+preserved.
+
+The UID and GID are applied independently. A synchronized UID sets
+`runAsUser`, while a synchronized GID sets `runAsGroup`. Missing values are
+omitted, while unexpected non-positive or non-integer values produce a warning
+and are ignored. ZenML does not derive `fsGroup` from the synchronized GID;
+administrators can configure it explicitly through the existing pod settings.
+On OpenShift, the applicable SCC must permit the requested UID, GID, and any
+configured `fsGroup`. For an existing scheduled pipeline, update or recreate
+its Kubernetes CronJob after the identity has synchronized so the stored pod
+template includes the security context.
+
 #### Kubernetes permissions and service accounts
 
 For production setups, use separate identities for:

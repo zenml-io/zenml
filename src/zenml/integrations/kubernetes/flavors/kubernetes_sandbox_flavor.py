@@ -26,9 +26,27 @@ from zenml.sandboxes.base import (
     BaseSandboxFlavor,
     ContainerizedSandboxSettings,
 )
+from zenml.utils.enum_utils import StrEnum
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.sandboxes import KubernetesSandbox
+
+
+class KubernetesSandboxOwner(StrEnum):
+    """Kubernetes object that owns sandbox session pods.
+
+    Kubernetes garbage-collects a sandbox pod once its owner object is
+    deleted, not when the owner terminates. An owned sandbox therefore
+    outlives a crashed step only until the step pod or Job is removed from
+    the cluster.
+    """
+
+    NONE = "none"
+    """No owner: the pod lives until `session.destroy()` is called."""
+    POD = "pod"
+    """The pod running the step, so every retry gets its own sandboxes."""
+    JOB = "job"
+    """The Job running the step pod, which also covers all its retries."""
 
 
 class KubernetesSandboxSettings(ContainerizedSandboxSettings):
@@ -50,6 +68,13 @@ class KubernetesSandboxSettings(ContainerizedSandboxSettings):
     privileged: bool = Field(
         default=False,
         description="Whether sandbox session containers run in privileged mode.",
+    )
+    owner: KubernetesSandboxOwner = Field(
+        default=KubernetesSandboxOwner.NONE,
+        description="Kubernetes object that owns sandbox session pods so they "
+        "are garbage-collected with it, even if the step crashes before "
+        "destroying the session. `pod` and `job` require the step to run on "
+        "Kubernetes in the sandbox namespace. Example: 'job'",
     )
     pod_startup_timeout: PositiveInt = Field(
         default=120,

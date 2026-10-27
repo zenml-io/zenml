@@ -121,12 +121,25 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
+    # The combined integration environment resolves Evidently to 0.6.0, whose
+    # NumPy/scikit-learn dependencies have no Python 3.14 wheels.
+    if [ "$python_version" = "3.14" ]; then
+        ignore_integrations="$ignore_integrations evidently"
+    fi
+
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
     os_name=$(python -c "import platform; print(platform.system())")
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
+    fi
+
+    # whylogs-sketching has no Python 3.13/3.14 wheels. Its source build
+    # fails with GCC 15 on Ubuntu, so retain coverage on the other CI jobs.
+    if [ "$os_name" = "Linux" ] &&
+        { [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; }; then
+        ignore_integrations="$ignore_integrations whylogs"
     fi
     
     # turn the ignore integrations into a list of --ignore-integration args

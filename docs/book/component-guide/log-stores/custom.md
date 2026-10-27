@@ -20,28 +20,32 @@ The log store is responsible for collecting, storing, and retrieving logs during
    - `emit()`: Process and export a log record for a given origin
    - `_release_origin()`: Called when logging for an origin is complete (cleanup resources)
    - `flush()`: Ensure all pending logs are exported
-   - `fetch()`: Retrieve stored logs for display
+   - `fetch()`: Retrieve one page of stored log entries
 
-3. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
+3. **Page size**: Use `resolve_limit()` to apply `default_query_size` and the `LOGS_MAX_ENTRIES_PER_REQUEST` cap. Override `default_query_size` for backend defaults and apply any lower provider limit.
+
+4. **Thread safety**: The base implementation includes locking mechanisms to ensure thread-safe operation.
 
 Here's a simplified view of the base implementation:
 
 ```python
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Optional, Type
 import logging
 import threading
 
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import StackComponentType
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
-    pass
 
 
 class BaseLogStoreOrigin:
@@ -128,15 +132,25 @@ class BaseLogStore(StackComponent, ABC):
     def flush(self, blocking: bool = True) -> None:
         """Flush all pending logs."""
 
+    @property
+    def default_query_size(self) -> int:
+        """Default page size when no limit is specified."""
+        return LOGS_MAX_ENTRIES_PER_REQUEST
+
+    def resolve_limit(self, limit: Optional[int]) -> int:
+        """Resolve the page size and apply the global limit."""
+
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: int = 20000,
-    ) -> List[LogEntry]:
-        """Fetch stored logs."""
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries."""
 
 
 class BaseLogStoreFlavor(Flavor):
@@ -174,15 +188,17 @@ To create a custom OTEL-based log store, you only need to implement:
 2. `fetch()`: Retrieve logs from your backend (optional, raise `NotImplementedError` if not supported)
 
 ```python
-from typing import List, Optional, Type
-from datetime import datetime
+from typing import Optional, Type, cast
 
 from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig, OtelLogStoreFlavor
-from zenml.models import LogsResponse
-from zenml.utils.logging_utils import LogEntry
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 
 
 class MyLogStoreConfig(OtelLogStoreConfig):
@@ -209,13 +225,13 @@ class MyLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: LogsResponse,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        limit: int = 20000,
-    ) -> List[LogEntry]:
-        """Fetch logs from your backend."""
-        # Implement log retrieval from your backend
-        # Return a list of LogEntry objects
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries from your backend."""
         raise NotImplementedError(
             "Log fetching is not supported by this log store."
         )
@@ -243,6 +259,8 @@ If you're using a custom backend, you'll need to implement a log exporter. The e
 
 ```python
 from typing import Sequence
+
+import requests
 
 from opentelemetry.sdk._logs import ReadableLogRecord
 from opentelemetry.sdk._logs.export import LogRecordExporter, LogRecordExportResult
@@ -295,41 +313,168 @@ class MyCustomLogExporter(LogRecordExporter):
 
 ### Implementing Log Fetching
 
-If your backend supports log retrieval, implement the `fetch()` method to enable log viewing in the ZenML dashboard:
+Implement `fetch()` to retrieve logs from your backend for the ZenML dashboard and API.
+
+Return each page in chronological order. `start` selects the initial end of the stream (`oldest` or `newest`); choose a supported default when omitted and reject unsupported values.
+
+Expose native continuation tokens through `before` and `after`, using only the directions the backend supports. Encode each token with its filters, fixed absolute time bounds, direction, and page size so clients can continue with only the cursor. Reject conflicting continuation parameters. Validate the payload and stream IDs, and build backend stream restrictions from the authorized `logs_model`. Unsigned cursors do not provide authorization or tamper detection.
+
+`LogEntry.id` is a UUID. Derive a UUID5 from a stable provider event ID and a fixed provider namespace, as shown below. Keep this mapping consistent across deployments and log stores; message text and timestamps do not uniquely identify events.
+
+Raise `LogStoreError`, `LogStoreUnavailableError`, or `LogStoreRateLimitError` for backend failures. Log endpoints map these to HTTP `502`, `503`, and `429`; direct SDK calls raise the exceptions. Set `retry_after` in seconds to include an HTTP `Retry-After` header.
+
+The example below assumes native pagination in both directions. Adapt its request fields to your provider.
 
 ```python
+import base64
+from typing import Literal, Optional
+from uuid import NAMESPACE_URL, UUID, uuid5
+
+import requests
+from pydantic import BaseModel, Field
+
+from zenml.enums import LoggingLevels
+from zenml.exceptions import LogStoreError, LogStoreRateLimitError, LogStoreUnavailableError
+from zenml.models import LogEntry, LogsEntriesFilter, LogsEntriesResponse, LogsResponse
+from zenml.utils.time_utils import iso8601_to_utc_naive, to_utc_timezone, utc_now
+
+
+class BackendCursor(BaseModel):
+    """Native continuation token and query parameters."""
+
+    version: Literal[1] = 1
+    token: str = Field(min_length=1, pattern=r"\S")
+    log_store_id: UUID
+    logs_id: UUID
+    direction: Literal["before", "after"]
+    filters: LogsEntriesFilter
+    limit: int = Field(gt=0)
+
+
 def fetch(
     self,
     logs_model: LogsResponse,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
-    limit: int = 20000,
-) -> List[LogEntry]:
-    """Fetch logs from the backend."""
-    # Query your backend using logs_model.id to filter
-    response = requests.get(
-        f"{self.config.endpoint}/logs",
-        params={
-            "log_id": str(logs_model.id),
-            "start_time": start_time.isoformat() if start_time else None,
-            "end_time": end_time.isoformat() if end_time else None,
-            "limit": limit,
-        },
-        headers={"Authorization": f"Bearer {self.config.api_key}"},
+    start: Optional[str] = None,
+    limit: Optional[int] = None,
+    before: Optional[str] = None,
+    after: Optional[str] = None,
+    filter_: Optional[LogsEntriesFilter] = None,
+) -> LogsEntriesResponse:
+    """Fetch a page of log entries from the backend."""
+    if logs_model.log_store_id != self.id:
+        raise ValueError("The log stream belongs to a different log store.")
+    if start not in (None, "oldest", "newest"):
+        raise ValueError("`start` must be `oldest` or `newest`.")
+    if before is not None and after is not None:
+        raise ValueError("Pass only one of `before` and `after`.")
+    cursor = before if before is not None else after
+    if before is not None:
+        direction = "before"
+    elif after is not None:
+        direction = "after"
+    else:
+        direction = "before" if start == "newest" else "after"
+    if cursor is not None:
+        try:
+            saved = BackendCursor.model_validate_json(
+                base64.b64decode(cursor.encode("ascii"), altchars=b"-_", validate=True)
+            )
+        except (ValueError, UnicodeError) as exc:
+            raise ValueError("Invalid pagination cursor.") from exc
+        if (saved.log_store_id, saved.logs_id, saved.direction) != (
+            self.id, logs_model.id, direction
+        ):
+            raise ValueError("The cursor belongs to another stream or direction.")
+        expected_start = "newest" if direction == "before" else "oldest"
+        if start is not None and start != expected_start:
+            raise ValueError("Keep the original pagination direction.")
+        if filter_ is not None:
+            for name, value in filter_.model_dump(exclude_none=True).items():
+                if value != saved.filters.model_dump()[name]:
+                    raise ValueError("Keep the original filters or start a new read.")
+        if limit is not None and self.resolve_limit(limit) != saved.limit:
+            raise ValueError("Keep the original limit or start a new read.")
+        filters, page_limit, native_cursor = saved.filters, saved.limit, saved.token
+    else:
+        filter_ = filter_ or LogsEntriesFilter()
+        filters = LogsEntriesFilter(
+            search=filter_.search,
+            level=filter_.level,
+            since=filter_.since or to_utc_timezone(logs_model.created),
+            until=filter_.until or utc_now(tz_aware=True),
+        )
+        page_limit, native_cursor = self.resolve_limit(limit), None
+    if filters.since is None or filters.until is None:
+        raise ValueError("The cursor must retain both time bounds.")
+    query = {
+        "log_id": str(logs_model.id),
+        "contains": filters.search,
+        "min_severity": filters.level.name if filters.level else None,
+        "start_time": filters.since.isoformat(),
+        "end_time": filters.until.isoformat(),
+    }
+
+    try:
+        response = requests.get(
+            self.config.endpoint,
+            params={
+                **query,
+                "limit": self.resolve_limit(page_limit),
+                "start_at": "newest" if direction == "before" else "oldest",
+                "direction": direction,
+                "page_token": native_cursor,
+            },
+            headers={"Authorization": f"Bearer {self.config.api_key}"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        raise LogStoreUnavailableError("Could not reach the log backend.") from exc
+    if response.status_code == 429:
+        raise LogStoreRateLimitError("The log backend rate limited the search.")
+    if response.status_code >= 500:
+        raise LogStoreUnavailableError("The log backend is unavailable.")
+    if response.status_code != 200:
+        raise LogStoreError("The log backend rejected the search.")
+    try:
+        body = response.json()
+        if any(
+            not isinstance(log["id"], str) or not log["id"].strip()
+            for log in body["logs"] or []
+        ):
+            raise ValueError("The backend returned an empty or invalid event ID.")
+        entries = [
+            LogEntry(
+                id=uuid5(
+                    NAMESPACE_URL,
+                    f"https://my-backend.example.com/logs/{log['id']}",
+                ),
+                message=log["message"],
+                level=LoggingLevels[log["severity"].upper()],
+                timestamp=to_utc_timezone(iso8601_to_utc_naive(log["timestamp"])),
+            )
+            for log in body["logs"] or []
+        ]
+    except (ValueError, KeyError, TypeError) as exc:
+        raise LogStoreError("The log backend returned invalid data.") from exc
+
+    def encode_cursor(token: Optional[str], direction: Literal["before", "after"]) -> Optional[str]:
+        if token is None:
+            return None
+        payload = BackendCursor(
+            token=token,
+            log_store_id=self.id,
+            logs_id=logs_model.id,
+            direction=direction,
+            filters=filters,
+            limit=page_limit,
+        )
+        return base64.urlsafe_b64encode(payload.model_dump_json().encode()).decode()
+
+    return LogsEntriesResponse(
+        items=sorted(entries, key=lambda entry: entry.timestamp or filters.since),
+        before=encode_cursor(body.get("prev_page_token"), "before"),
+        after=encode_cursor(body.get("next_page_token"), "after"),
     )
-    
-    log_entries = []
-    for log in response.json()["logs"]:
-        log_entries.append(LogEntry(
-            message=log["message"],
-            level=LoggingLevels[log["severity"].upper()],
-            timestamp=datetime.fromisoformat(log["timestamp"]),
-            name=log.get("logger_name"),
-            filename=log.get("filename"),
-            lineno=log.get("line_number"),
-        ))
-    
-    return log_entries
 ```
 
 ### Build Your Own Custom Log Store
@@ -370,7 +515,7 @@ zenml log-store register my_logs \
     --endpoint=https://my-backend.example.com/logs \
     --api_key=<MY_API_KEY>
 
-zenml stack register my_stack -ls my_logs ... --set
+zenml stack register my_stack --log_store my_logs ... --set
 ```
 
 {% hint style="info" %}
@@ -403,5 +548,7 @@ This separation allows you to register flavors even when their dependencies aren
 6. **Document configuration**: Clearly document all configuration options and their defaults.
 
 7. **Keep fetch() simple**: Remember that `fetch()` runs on the server with limited dependencies. Use only built-in Python libraries and HTTP APIs.
+
+8. **Make one backend request per fetch**: Return short pages with continuation tokens instead of looping to fill a page. Cap requests at the backend's page-size limit.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

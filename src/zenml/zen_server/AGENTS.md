@@ -1,7 +1,8 @@
 # ZenML Server Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/zen_server/` or below. For
-detailed FastAPI guidance, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
+This file applies to changes in `src/zenml/zen_server/` and below. For
+detailed FastAPI guidance, use the repo-root
+`.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Critical Import Boundary
 
@@ -25,7 +26,12 @@ Most server endpoints follow this order:
 2. Check entitlements when feature access is gated.
 3. Verify RBAC permissions.
 4. Call `zen_store()` for the data operation.
-5. Use the async compatibility wrapper where existing routes do so.
+
+Ordinary store-backed handlers use synchronous `def` with
+`async_fastapi_endpoint_wrapper`, as neighboring routes do. Keep async handlers
+when they await request-body access or other I/O. For example, webhook intake
+awaits the raw body and uses `run_in_threadpool` for synchronous processing;
+do not move blocking store work onto the event loop.
 
 Non-CRUD endpoints, such as trigger attach/detach, may need permission checks
 across multiple resource domains.

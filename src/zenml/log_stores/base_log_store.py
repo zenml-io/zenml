@@ -16,13 +16,16 @@
 import logging
 import threading
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, Optional, Type, cast
 
+from zenml.constants import LOGS_MAX_ENTRIES_PER_REQUEST
 from zenml.enums import StackComponentType
-from zenml.models import LogsResponse
+from zenml.models import (
+    LogsEntriesFilter,
+    LogsEntriesResponse,
+    LogsResponse,
+)
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
-from zenml.utils.logging_utils import LogEntry
 
 
 class BaseLogStoreConfig(StackComponentConfig):
@@ -188,28 +191,68 @@ class BaseLogStore(StackComponent, ABC):
             blocking: Whether to block until the flush is complete.
         """
 
+    @property
+    def default_query_size(self) -> int:
+        """Default page size when no limit is specified.
+
+        Returns:
+            The default number of entries per page.
+        """
+        return LOGS_MAX_ENTRIES_PER_REQUEST
+
+    def resolve_limit(self, limit: Optional[int]) -> int:
+        """Resolve the page size and apply the global limit.
+
+        Args:
+            limit: The limit requested by the caller, if any.
+
+        Returns:
+            The page size, capped at `LOGS_MAX_ENTRIES_PER_REQUEST`.
+
+        Raises:
+            ValueError: If the requested limit is not positive.
+        """
+        if limit is None:
+            limit = self.default_query_size
+        elif limit <= 0:
+            raise ValueError("`limit` must be a positive integer.")
+
+        return min(limit, LOGS_MAX_ENTRIES_PER_REQUEST)
+
     @abstractmethod
     def fetch(
         self,
         logs_model: LogsResponse,
-        limit: int,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[LogEntry]:
-        """Fetch logs from the log store.
+        start: Optional[str] = None,
+        limit: Optional[int] = None,
+        before: Optional[str] = None,
+        after: Optional[str] = None,
+        filter_: Optional[LogsEntriesFilter] = None,
+    ) -> LogsEntriesResponse:
+        """Fetch a page of log entries.
 
-        This method is called from the server to retrieve logs for display
-        on the dashboard or via API. The implementation should not require
-        any integration-specific SDKs that aren't available on the server.
+        Implementations must use dependencies available on the server. Pages
+        are ordered chronologically regardless of the starting end.
+
+        Return cursors only for directions supported by the backend. Each
+        cursor preserves the native token and query parameters needed for
+        continuation. Explicit continuation parameters must match the cursor.
 
         Args:
             logs_model: The logs model containing metadata about the logs.
-            start_time: Filter logs after this time.
-            end_time: Filter logs before this time.
-            limit: Maximum number of log entries to return.
+            start: Initial end of the stream: `oldest` or `newest`.
+                Defaults to the log store's preferred end.
+            limit: Maximum number of log entries to return. Defaults to the
+                log store's `default_query_size`.
+            before: Cursor towards older entries. Mutually exclusive with after.
+            after: Cursor towards newer entries. Mutually exclusive with before.
+            filter_: Filters to apply while retrieving the entries.
 
         Returns:
-            List of log entries matching the query.
+            Log entries ordered from oldest to newest and supported cursors.
+
+        Raises:
+            ValueError: If parameters are unsupported or conflict with a cursor.
         """
 
 

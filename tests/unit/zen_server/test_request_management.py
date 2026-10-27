@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.responses import JSONResponse
 
+from zenml.exceptions import ApiTransactionResultTooLargeError
 from zenml.zen_server import utils as server_utils
 from zenml.zen_server.request_management import RequestManager
 
@@ -57,12 +58,16 @@ class _ZenStore:
     """Minimal transaction store used by request manager tests."""
 
     def __init__(
-        self, cleanup_deleted_counts: list[int] | None = None
+        self,
+        cleanup_deleted_counts: list[int] | None = None,
+        finalize_error: Exception | None = None,
     ) -> None:
         self.finalized_transaction_id: UUID | None = None
         self.finalized_result: str | None = None
+        self.deleted_transaction_ids: list[UUID] = []
         self.cleanup_batch_sizes: list[int] = []
         self.cleanup_deleted_counts = list(cleanup_deleted_counts or [])
+        self.finalize_error = finalize_error
 
     def get_or_create_api_transaction(
         self, api_transaction: object
@@ -79,11 +84,14 @@ class _ZenStore:
         self, api_transaction_id: UUID, api_transaction_update: Any
     ) -> None:
         """Record the transaction finalization."""
+        if self.finalize_error:
+            raise self.finalize_error
         self.finalized_transaction_id = api_transaction_id
         self.finalized_result = api_transaction_update.get_result()
 
-    def delete_api_transaction(self, _api_transaction_id: UUID) -> None:
-        """No-op delete for failed transaction paths."""
+    def delete_api_transaction(self, api_transaction_id: UUID) -> None:
+        """Record transaction deletion for failed cache writes."""
+        self.deleted_transaction_ids.append(api_transaction_id)
 
     def cleanup_expired_api_transactions(self, batch_size: int) -> int:
         """Record batch sizes and return configured delete counts."""
@@ -190,3 +198,30 @@ async def test_deduplicated_requests_can_timeout_and_continue(
     assert transaction_id not in manager.transactions
     assert zen_store.finalized_transaction_id == transaction_id
     assert zen_store.finalized_result is not None
+
+
+async def test_oversized_transaction_result_skips_caching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Oversized compressed results do not fail the original request."""
+    _configure_request_manager(
+        monkeypatch,
+        _ServerConfig(request_timeout=1.0),
+    )
+    zen_store = _ZenStore(
+        finalize_error=ApiTransactionResultTooLargeError("too large")
+    )
+    monkeypatch.setattr(server_utils, "_zen_store", zen_store)
+
+    manager = RequestManager()
+    transaction_id = uuid4()
+    manager.current_request = _RequestContext(
+        transaction_id=transaction_id,
+        is_cacheable=True,
+    )
+
+    result = await manager.execute(lambda: {"ok": True}, deduplicate=None)
+
+    assert result == {"ok": True}
+    assert zen_store.finalized_transaction_id is None
+    assert zen_store.deleted_transaction_ids == [transaction_id]

@@ -423,19 +423,38 @@ class StepLauncher:
                 step_run_info
             )
 
-        terminal_step_run = None
-        try:
-            if self._step.config.step_operator:
-                step_operator_name = None
-                if isinstance(self._step.config.step_operator, str):
-                    step_operator_name = self._step.config.step_operator
+        if self._step.config.step_operator:
+            step_operator_name = None
+            if isinstance(self._step.config.step_operator, str):
+                step_operator_name = self._step.config.step_operator
 
-                terminal_step_run = self._run_step_with_step_operator(
-                    step_operator_name=step_operator_name,
-                    step_run_info=step_run_info,
-                    allocated_resource_request=allocated_resource_request,
-                )
-            elif not self._snapshot.is_dynamic:
+            terminal_step_run = self._run_step_with_step_operator(
+                step_operator_name=step_operator_name,
+                step_run_info=step_run_info,
+                allocated_resource_request=allocated_resource_request,
+            )
+        elif not self._snapshot.is_dynamic:
+            terminal_step_run = self._run_step_in_current_thread(
+                pipeline_run=pipeline_run,
+                step_run=step_run,
+                step_run_info=step_run_info,
+                input_artifacts=step_run.regular_inputs,
+                output_artifact_uris=output_artifact_uris,
+            )
+        else:
+            from zenml.execution.pipeline.dynamic.compilation import (
+                get_step_runtime,
+            )
+
+            step_runtime, runtime_warning = get_step_runtime(
+                step_config=self._step.config,
+                pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                orchestrator=self._stack.orchestrator,
+            )
+            if runtime_warning:
+                logger.warning("%s", runtime_warning)
+
+            if step_runtime == StepRuntime.INLINE:
                 terminal_step_run = self._run_step_in_current_thread(
                     pipeline_run=pipeline_run,
                     step_run=step_run,
@@ -444,36 +463,10 @@ class StepLauncher:
                     output_artifact_uris=output_artifact_uris,
                 )
             else:
-                from zenml.execution.pipeline.dynamic.compilation import (
-                    get_step_runtime,
+                terminal_step_run = self._run_step_with_dynamic_orchestrator(
+                    step_run_info=step_run_info,
+                    allocated_resource_request=allocated_resource_request,
                 )
-
-                step_runtime, runtime_warning = get_step_runtime(
-                    step_config=self._step.config,
-                    pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
-                    orchestrator=self._stack.orchestrator,
-                )
-                if runtime_warning:
-                    logger.warning("%s", runtime_warning)
-
-                if step_runtime == StepRuntime.INLINE:
-                    terminal_step_run = self._run_step_in_current_thread(
-                        pipeline_run=pipeline_run,
-                        step_run=step_run,
-                        step_run_info=step_run_info,
-                        input_artifacts=step_run.regular_inputs,
-                        output_artifact_uris=output_artifact_uris,
-                    )
-                else:
-                    terminal_step_run = self._run_step_with_dynamic_orchestrator(
-                        step_run_info=step_run_info,
-                        allocated_resource_request=allocated_resource_request,
-                    )
-        except:  # noqa: E722
-            output_utils.remove_artifact_dirs(
-                artifact_uris=list(output_artifact_uris.values())
-            )
-            raise
 
         return terminal_step_run
 

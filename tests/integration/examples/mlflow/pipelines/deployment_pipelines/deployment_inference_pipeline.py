@@ -11,18 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pipelines.docker_settings import docker_settings
 from steps.dynamic_importer_step import dynamic_importer
 from steps.predict_preprocessor_step import predict_preprocessor
 from steps.prediction_service_loader_step import prediction_service_loader
 from steps.predictor_step import predictor
 
 from zenml import pipeline
-from zenml.config import DockerSettings
-from zenml.integrations.constants import MLFLOW, SKLEARN
-
-docker_settings = DockerSettings(
-    required_integrations=[MLFLOW, SKLEARN], requirements=["scikit-image"]
-)
 
 
 @pipeline(enable_cache=False, settings={"docker": docker_settings})
