@@ -17,6 +17,7 @@ from typing import Any, List, Optional, Type
 
 import pytest
 from pydantic.error_wrappers import ValidationError
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 import zenml.exceptions
 from zenml.constants import FILTERING_DATETIME_FORMAT
@@ -46,6 +47,13 @@ class SomeFilterModel(BaseFilter):
     float_field: FloatFilterOption = None
     str_field: StringFilterOption = None
     bool_field: bool | str | None = None
+
+
+class OneofFilterSchema(SQLModel, table=True):
+    """Small schema for deterministic membership-query regressions."""
+
+    id: int = Field(primary_key=True)
+    str_field: Optional[str] = None
 
 
 def _test_filter_model(
@@ -426,6 +434,31 @@ def test_string_filter_oneof_operators_parse_json_lists(
     assert isinstance(model_filter, StrFilter)
     assert model_filter.operation == filter_op
     assert model_filter.value == ["first", "second"]
+
+
+def test_empty_string_oneof_filter_matches_no_rows() -> None:
+    """An empty membership set must not compile away the SQL predicate."""
+    engine = create_engine("sqlite://")
+    OneofFilterSchema.__table__.create(engine)  # type: ignore[attr-defined]
+    with Session(engine) as session:
+        session.add(OneofFilterSchema(id=1, str_field=None))
+        session.commit()
+
+        query = SomeFilterModel(str_field="oneof:[]").apply_filter(
+            select(OneofFilterSchema),
+            table=OneofFilterSchema,  # type: ignore[type-var]
+        )
+
+        assert session.exec(query).all() == []
+
+
+@pytest.mark.parametrize("operator", ["oneof", "notoneof"])
+def test_string_membership_filter_rejects_nested_list_members(
+    operator: str,
+) -> None:
+    """String membership values must contain only scalar strings."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(str_field=f'{operator}:[["nested"]]')
 
 
 @pytest.mark.parametrize(
