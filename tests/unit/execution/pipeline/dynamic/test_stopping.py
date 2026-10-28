@@ -57,6 +57,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunUpdate,
 )
+from zenml.orchestrators import base_orchestrator, publish_utils
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -73,7 +74,7 @@ def runner() -> DynamicPipelineRunner:
         id=uuid4(), status=ExecutionStatus.RUNNING, stop_mode=None
     )
     value._pipeline = SimpleNamespace(name="parent")
-    value._orchestrator = MagicMock()
+    value._orchestrator = MagicMock(supports_run_stop_modes=True)
     value._step_operator = None
     value._stop_mode = None
     value._failure_detected = False
@@ -375,9 +376,11 @@ def hooks(
     [
         (PipelineRunStopMode.GRACEFUL, False),
         (PipelineRunStopMode.IMMEDIATE, True),
+        (None, False),
+        (None, True),
     ],
 )
-def test_failure_is_persisted_before_draining(
+def test_failure_drain_preserves_orchestrator_stop_contract(
     runner: DynamicPipelineRunner,
     clean_client: Client,
     store: SqlZenStore,
@@ -385,9 +388,9 @@ def test_failure_is_persisted_before_draining(
     monkeypatch: pytest.MonkeyPatch,
     hooks: MagicMock,
     during_settlement: bool,
-    mode: PipelineRunStopMode,
+    mode: PipelineRunStopMode | None,
 ) -> None:
-    """A later stop preserves the original failure and closes run activity.
+    """Failure draining preserves modern failure outcomes and legacy stopping.
 
     Args:
         runner: Runner with isolated execution state.
@@ -397,7 +400,7 @@ def test_failure_is_persisted_before_draining(
         monkeypatch: Fixture for replacing infrastructure and drain timing.
         hooks: Hook execution mock that preserves real dispatch decisions.
         during_settlement: Whether failure surfaces after the entrypoint returns.
-        mode: Stop to request during draining.
+        mode: Explicit stop mode, or None for a legacy status-only stop.
     """
     run = create_run(execution_mode=ExecutionMode.STOP_ON_FAILURE)
     active_step = store.create_run_step(
@@ -418,6 +421,7 @@ def test_failure_is_persisted_before_draining(
             raise original
 
     runner._run = run
+    runner._orchestrator.supports_run_stop_modes = mode is not None
     runner._continue_on_failure = False
     runner._state = SimpleNamespace(claim=nullcontext)
     runner._pipeline = SimpleNamespace(
@@ -427,15 +431,35 @@ def test_failure_is_persisted_before_draining(
         _call_entrypoint=entrypoint,
     )
     monkeypatch.setattr(runner_module, "Client", lambda: clean_client)
+    monkeypatch.setattr(publish_utils, "Client", lambda: clean_client)
 
     def finish_outstanding_work() -> None:
         before_stop = store.get_run(run.id)
-        assert before_stop.status == ExecutionStatus.FAILED
         assert before_stop.in_progress
         assert before_stop.end_time is None
+        assert runner._exception is original
+        if mode is None:
+            assert before_stop.status == ExecutionStatus.RUNNING
+            assert before_stop.exception_info is None
+            base_orchestrator.BaseOrchestrator.stop_run(
+                runner._orchestrator, before_stop, graceful=False
+            )
+            runner._orchestrator._stop_run.assert_called_once_with(
+                run=before_stop, graceful=False
+            )
+            assert store.get_run(run.id).status == ExecutionStatus.STOPPING
+            runner.request_stop(PipelineRunStopMode.IMMEDIATE)
+            store.update_run_step(
+                active_step.id,
+                StepRunUpdate(
+                    status=ExecutionStatus.STOPPED, end_time=utc_now()
+                ),
+            )
+            return
+
+        assert before_stop.status == ExecutionStatus.FAILED
         assert before_stop.exception_info is not None
         assert before_stop.exception_info.message == str(original)
-        assert runner._exception is original
 
         requested = store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
         assert requested.status == ExecutionStatus.FAILED
@@ -461,18 +485,26 @@ def test_failure_is_persisted_before_draining(
     runner._run_entrypoint_and_finalize()
 
     final = store.get_run(run.id)
-    assert final.status == ExecutionStatus.FAILED
-    assert final.exception_info is not None
-    assert final.exception_info.message == str(original)
-    assert final.exception_info.source == "builtins.ValueError"
     assert not final.in_progress
     assert final.end_time is not None
     assert final.stop_mode == mode
     assert store.get_run_step(active_step.id).status == (
         ExecutionStatus.STOPPED
-        if mode == PipelineRunStopMode.IMMEDIATE
+        if mode in {None, PipelineRunStopMode.IMMEDIATE}
         else ExecutionStatus.COMPLETED
     )
+    if mode is None:
+        assert final.status == ExecutionStatus.STOPPED
+        assert final.exception_info is None
+        hooks.assert_called_once_with(
+            "end", HookType.RUN_END, optional_args=(None,)
+        )
+        return
+
+    assert final.status == ExecutionStatus.FAILED
+    assert final.exception_info is not None
+    assert final.exception_info.message == str(original)
+    assert final.exception_info.source == "builtins.ValueError"
     assert hooks.call_args_list == [
         call("end", HookType.RUN_END, optional_args=(original,)),
         call("failure", HookType.RUN_FAILURE, optional_args=(original,)),

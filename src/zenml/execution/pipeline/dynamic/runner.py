@@ -1024,10 +1024,15 @@ class DynamicPipelineRunner:
             return
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
-            # A stop arriving during the drain must preserve this failure.
+            # Mode-aware stops preserve failures during draining. Legacy
+            # orchestrators need a nonterminal run to accept a stop request.
             try:
-                if self._stop_mode is None and not isinstance(
-                    e, (RunStoppedException, StartupCancelled)
+                if (
+                    self._orchestrator.supports_run_stop_modes
+                    and self._stop_mode is None
+                    and not isinstance(
+                        e, (RunStoppedException, StartupCancelled)
+                    )
                 ):
                     self._publish_run_status(exception=e)
             finally:
@@ -1046,8 +1051,12 @@ class DynamicPipelineRunner:
         except BaseException as e:
             logger.debug("Failure during settle: %s", e)
             try:
-                if self._stop_mode is None and not isinstance(
-                    e, (RunStoppedException, StartupCancelled)
+                if (
+                    self._orchestrator.supports_run_stop_modes
+                    and self._stop_mode is None
+                    and not isinstance(
+                        e, (RunStoppedException, StartupCancelled)
+                    )
                 ):
                     self._publish_run_status(exception=e)
             finally:
