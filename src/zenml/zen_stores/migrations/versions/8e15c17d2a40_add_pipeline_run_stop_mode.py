@@ -18,6 +18,7 @@ Revises: 0.98.0
 """
 
 import sqlalchemy as sa
+import sqlmodel
 from alembic import op
 
 revision = "8e15c17d2a40"
@@ -30,7 +31,9 @@ def upgrade() -> None:
     """Add nullable stop intent without inferring historical stop modes."""
     with op.batch_alter_table("pipeline_run") as batch_op:
         batch_op.add_column(
-            sa.Column("stop_mode", sa.String(9), nullable=True)
+            sa.Column(
+                "stop_mode", sqlmodel.sql.sqltypes.AutoString(), nullable=True
+            )
         )
 
 

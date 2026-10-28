@@ -148,7 +148,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     end_time: Optional[datetime] = Field(nullable=True, default=None)
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
-    stop_mode: Optional[str] = Field(default=None, nullable=True, max_length=9)
+    stop_mode: Optional[str] = Field(default=None, nullable=True)
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
