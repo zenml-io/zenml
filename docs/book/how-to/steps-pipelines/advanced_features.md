@@ -232,6 +232,10 @@ The following rules apply:
 
 ### Stopping a run
 
+The following behavior applies to the Kubernetes orchestrator. Other
+orchestrators may have different stopping capabilities; see their component
+pages for details.
+
 A graceful stop lets current step attempts finish and prevents new steps and
 retries from starting. It does not automatically escalate after a timeout.
 
@@ -267,7 +271,7 @@ Step heartbeat is a background mechanism that runs alongside step executions and
 This enables ZenML to:
 
  - Track the liveness of a step execution and assess its health based on incoming heartbeats.
- - Allow current attempts to finish during a graceful stop, and interrupt them during an immediate stop.
+ - On Kubernetes, allow current attempts to finish during a graceful stop and interrupt them during an immediate stop.
 
 *Scope and current behavior*
 

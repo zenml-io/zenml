@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, cast
 
-from zenml.client import Client
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
@@ -37,7 +36,8 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
         graceful: Whether to stop the run gracefully.
 
     Raises:
-        IllegalOperationError: If the run already completed successfully.
+        IllegalOperationError: If the run already completed successfully or
+            the orchestrator does not support repeated stop requests.
         ValueError: If the stack is not accessible.
     """
     # Check if the stack is still accessible
@@ -67,6 +67,12 @@ def stop_run(run: PipelineRunResponse, graceful: bool = False) -> None:
         BaseOrchestrator,
         StackComponent.from_model(component_model=orchestrator_list[0]),
     )
+
+    if not orchestrator.supports_run_stop_modes:
+        if run.status == ExecutionStatus.STOPPED:
+            raise IllegalOperationError("Run is already stopped.")
+        if run.status == ExecutionStatus.STOPPING:
+            raise IllegalOperationError("Run is already being stopped.")
 
     # Stop the run
     orchestrator.stop_run(run=run, graceful=graceful)

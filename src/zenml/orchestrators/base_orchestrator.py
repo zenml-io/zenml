@@ -916,6 +916,20 @@ class BaseOrchestrator(StackComponent, ABC):
             f"'{self.__class__.__name__}' orchestrator."
         )
 
+    @property
+    def supports_run_stop_modes(self) -> bool:
+        """Whether the orchestrator honors persisted pipeline stop modes.
+
+        Orchestrators opting in must observe graceful and immediate stop modes
+        independently of the pipeline status. They must publish the final run
+        status after cleanup when stopping removes the controller responsible
+        for finalization.
+
+        Returns:
+            Whether persisted pipeline stop modes are supported.
+        """
+        return False
+
     def stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
@@ -941,6 +955,17 @@ class BaseOrchestrator(StackComponent, ABC):
 
         if run.status == ExecutionStatus.COMPLETED:
             raise IllegalOperationError("Cannot stop a completed run.")
+        if not self.supports_run_stop_modes:
+            # Keep the status-only contract for existing integrations, including
+            # their handling of graceful requests that require forceful cleanup.
+            publish_pipeline_run_status_update(
+                pipeline_run_id=run.id,
+                status=ExecutionStatus.STOPPING,
+                status_reason="Manual stop requested.",
+            )
+            self._stop_run(run=run, graceful=graceful)
+            return
+
         # The store records the mode and preserves an existing FAILED outcome.
         # Older servers ignore the mode and use the existing STOPPING behavior.
         run = Client().zen_store.update_run(
@@ -957,10 +982,6 @@ class BaseOrchestrator(StackComponent, ABC):
         if run.stop_mode is not None:
             graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)
-        if not graceful and run.stop_mode is not None:
-            publish_pipeline_run_status_update(
-                pipeline_run_id=run.id, status=ExecutionStatus.STOPPED
-            )
 
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False

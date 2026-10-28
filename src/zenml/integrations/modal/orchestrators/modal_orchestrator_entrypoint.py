@@ -22,7 +22,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
@@ -217,10 +217,6 @@ class _StaticModalPipelineController:
             )
             return None
 
-        if run.stop_mode == PipelineRunStopMode.IMMEDIATE:
-            return InterruptMode.FORCE
-        if run.stop_mode == PipelineRunStopMode.GRACEFUL:
-            return InterruptMode.GRACEFUL
         if run.status == ExecutionStatus.STOPPING:
             logger.info(
                 "Gracefully stopping Modal DAG because pipeline run `%s` "
@@ -564,12 +560,9 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             client = Client()
             run = client.get_pipeline_run(pipeline_run_id)
 
-            # Once the controller has drained the DAG, publish completion of
-            # the stop even if an earlier failure kept the run status FAILED.
-            if (
-                run.stop_mode is not None
-                or run.status == ExecutionStatus.STOPPING
-            ):
+            # A graceful local stop only marks the run as STOPPING. Once the
+            # controller has drained the DAG, it publishes the terminal status.
+            if run.status == ExecutionStatus.STOPPING:
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,
@@ -604,10 +597,7 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                     publish_utils.publish_failed_step_run(step_run.id)
 
             refreshed_run = client.get_pipeline_run(pipeline_run_id)
-            if (
-                refreshed_run.stop_mode is not None
-                or refreshed_run.status == ExecutionStatus.STOPPING
-            ):
+            if refreshed_run.status == ExecutionStatus.STOPPING:
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,

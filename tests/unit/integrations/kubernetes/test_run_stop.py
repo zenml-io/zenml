@@ -15,7 +15,7 @@ from zenml.enums import (
     PipelineRunStopMode,
     StackComponentType,
 )
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, RunStoppedException
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ORCHESTRATOR_ANNOTATION_KEY,
@@ -31,8 +31,8 @@ from zenml.integrations.kubernetes.orchestrators import (
 from zenml.integrations.kubernetes.orchestrators import (
     kubernetes_orchestrator_entrypoint as entrypoint,
 )
-from zenml.orchestrators import publish_utils
-from zenml.orchestrators.dag_runner import Node
+from zenml.orchestrators import base_orchestrator, publish_utils
+from zenml.orchestrators.dag_runner import InterruptMode, Node, NodeStatus
 
 
 def setup_stop(
@@ -70,6 +70,10 @@ def setup_stop(
     batch_api.list_namespaced_job.return_value = k8s_client.V1JobList(items=[])
     core_api.read_namespaced_pod.side_effect = ApiException(status=404)
     monkeypatch.setattr(module, "Client", lambda: client)
+    publish_status = Mock()
+    monkeypatch.setattr(
+        module, "publish_pipeline_run_status_update", publish_status
+    )
     monkeypatch.setattr(
         module.KubernetesOrchestrator, "get_kube_client", lambda self: None
     )
@@ -97,6 +101,7 @@ def setup_stop(
         batch=batch_api,
         core=core_api,
         orchestrator=orchestrator,
+        publish_status=publish_status,
     )
 
 
@@ -120,118 +125,245 @@ def make_job(name: str, *, controller: bool = False) -> k8s_client.V1Job:
     )
 
 
-def test_immediate_root_stop_deletes_step_and_controller_jobs(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("target", ["root", "child", "unowned"])
+def test_immediate_stop_cleans_workers_and_preserves_needed_controller(
+    monkeypatch: pytest.MonkeyPatch, target: str
 ) -> None:
-    """Root stop includes descendant workers and its controller Job.
+    """Stop descendants while retaining a controller needed for later cleanup.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        target: Root, child, or root with worker ownership disabled.
     """
-    state = setup_stop(monkeypatch)
+    state = setup_stop(
+        monkeypatch,
+        KubernetesOrchestratorConfig(
+            max_api_retries=0, skip_owner_references=target == "unowned"
+        ),
+    )
+    state.run.child_key = "child" if target == "child" else None
+    state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
     child = SimpleNamespace(id=uuid4())
     state.children.append(child)
     state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=[make_job("step"), make_job("controller", controller=True)]
+        items=[make_job("worker"), make_job("controller", controller=True)]
     )
+
     state.orchestrator._stop_run(state.run, graceful=False)
-    assert {
-        call.kwargs["name"]
-        for call in state.batch.delete_namespaced_job.call_args_list
-    } == {"step", "controller"}
+
+    deletions = state.batch.delete_namespaced_job.call_args_list
+    expected = {"worker", "controller"} if target == "root" else {"worker"}
+    assert {call.kwargs["name"] for call in deletions} == expected
+    assert all(
+        call.kwargs["propagation_policy"] == "Foreground" for call in deletions
+    )
     selector = state.batch.list_namespaced_job.call_args.kwargs[
         "label_selector"
     ]
     assert str(state.run.id) in selector and str(child.id) in selector
-    assert all(
-        call.kwargs["propagation_policy"] == "Foreground"
-        for call in state.batch.delete_namespaced_job.call_args_list
-    )
-    state.core.list_namespaced_pod.assert_not_called()
-    state.core.delete_namespaced_pod.assert_not_called()
-    state.client.zen_store.update_run.assert_not_called()
+    if target == "root":
+        state.publish_status.assert_called_once_with(
+            pipeline_run_id=state.run.id, status=ExecutionStatus.STOPPED
+        )
+    else:
+        state.publish_status.assert_not_called()
 
 
-def test_child_stop_preserves_shared_controller(
+@pytest.mark.parametrize("skip_owner_references", [False, True])
+def test_stop_finalizes_failed_run_with_terminal_controller(
     monkeypatch: pytest.MonkeyPatch,
+    skip_owner_references: bool,
 ) -> None:
-    """Stopping one child never terminates its shared controller.
+    """A public stop request must settle work when its controller is dead.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        skip_owner_references: Whether worker ownership is disabled.
     """
-    state = setup_stop(monkeypatch)
-    state.run.child_key = "child"
+    state = setup_stop(
+        monkeypatch,
+        KubernetesOrchestratorConfig(
+            max_api_retries=0,
+            skip_owner_references=skip_owner_references,
+        ),
+    )
+    state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
+    state.client.zen_store.update_run.return_value = state.run
+    monkeypatch.setattr(base_orchestrator, "Client", lambda: state.client)
+    controller = make_job("controller", controller=True)
+    controller.status = k8s_client.V1JobStatus(
+        conditions=[k8s_client.V1JobCondition(type="Failed", status="True")]
+    )
     state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=[make_job("child-step"), make_job("controller", controller=True)]
+        items=[make_job("worker"), controller]
     )
-    state.orchestrator._stop_run(state.run, graceful=False)
-    assert [
-        call.kwargs["name"]
-        for call in state.batch.delete_namespaced_job.call_args_list
-    ] == ["child-step"]
-    state.core.read_namespaced_pod.assert_not_called()
+    operations: list[str] = []
+    state.batch.delete_namespaced_job.side_effect = lambda **kwargs: (
+        operations.append("delete-worker")
+    )
+    state.publish_status.side_effect = lambda **kwargs: operations.append(
+        "finalize-run"
+    )
+
+    state.orchestrator.stop_run(state.run, graceful=False)
+
+    assert operations == ["delete-worker", "finalize-run"]
+    state.batch.delete_namespaced_job.assert_called_once_with(
+        name="worker", namespace="zenml", propagation_policy="Foreground"
+    )
+    state.publish_status.assert_called_once_with(
+        pipeline_run_id=state.run.id, status=ExecutionStatus.STOPPED
+    )
+    assert state.run.status == ExecutionStatus.FAILED
 
 
-def test_static_controller_pod_resolves_owning_job(
+def setup_submission(
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Legacy static run IDs identify a Pod whose owning Job must be stopped.
+    *,
+    skip_owner_references: bool = False,
+) -> SimpleNamespace:
+    """Prepare an isolated submission with a root controller Pod owner.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        skip_owner_references: Whether to opt out of worker ownership.
+
+    Returns:
+        Stop fixtures extended with the worker's submission information.
     """
-    state = setup_stop(monkeypatch)
-    state.run.orchestrator_run_id = "controller-pod"
+    state = setup_stop(
+        monkeypatch,
+        KubernetesOrchestratorConfig(
+            max_api_retries=0, skip_owner_references=skip_owner_references
+        ),
+    )
+    state.run.status = ExecutionStatus.RUNNING
+    state.info = SimpleNamespace(
+        pipeline_step_name="worker",
+        step_run_id=uuid4(),
+        run_id=state.run.id,
+        run_name=state.run.name,
+        snapshot=SimpleNamespace(id=uuid4(), project_id=state.run.project_id),
+        pipeline=SimpleNamespace(name="pipeline"),
+        config=object(),
+        get_image=lambda **kwargs: "image",
+    )
+    monkeypatch.setattr(
+        module.orchestrator_utils,
+        "get_step_entrypoint_command",
+        lambda **kwargs: (["python"], ["step.py"]),
+    )
+    monkeypatch.setattr(
+        module.KubernetesOrchestrator,
+        "_get_job_name",
+        lambda *args, **kwargs: "worker-job",
+    )
+    monkeypatch.setattr(
+        module.KubernetesOrchestrator,
+        "_prepare_job_manifest",
+        lambda *args, **kwargs: make_job("worker-job"),
+    )
+    monkeypatch.setattr(module.socket, "gethostname", lambda: "root-pod")
     state.core.read_namespaced_pod.side_effect = None
     state.core.read_namespaced_pod.return_value = k8s_client.V1Pod(
         metadata=k8s_client.V1ObjectMeta(
-            name="controller-pod", labels={"job-name": "controller-job"}
+            name="root-pod",
+            owner_references=[
+                k8s_client.V1OwnerReference(
+                    api_version="batch/v1",
+                    kind="Job",
+                    name="root-controller",
+                    uid="root-controller-uid",
+                    controller=True,
+                    block_owner_deletion=True,
+                )
+            ],
         )
     )
-    state.orchestrator._stop_run(state.run, graceful=False)
-    assert (
-        state.batch.delete_namespaced_job.call_args.kwargs["name"]
-        == "controller-job"
-    )
+    return state
 
 
-def test_graceful_stop_does_not_delete_current_jobs(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("ownership", ["enabled", "disabled", "missing"])
+def test_dynamic_worker_ownership(
+    monkeypatch: pytest.MonkeyPatch, ownership: str
 ) -> None:
-    """The controller handles graceful drain without provider deletion here.
+    """Child workers require root ownership unless it was explicitly disabled.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        ownership: Available, disabled, or missing controller ownership.
     """
-    state = setup_stop(monkeypatch)
-    state.orchestrator._stop_run(state.run, graceful=True)
-    state.batch.list_namespaced_job.assert_not_called()
-    state.batch.delete_namespaced_job.assert_not_called()
+    state = setup_submission(
+        monkeypatch, skip_owner_references=ownership == "disabled"
+    )
+    state.run.child_key = "child"
+    if ownership == "missing":
+        state.core.read_namespaced_pod.return_value.metadata.owner_references = []
+        with pytest.raises(RuntimeError, match="controller Job owner"):
+            state.orchestrator.submit_isolated_step_with_allocation(
+                state.info, environment={}, allocated_resource_request=None
+            )
+        state.batch.create_namespaced_job.assert_not_called()
+        return
+
+    state.orchestrator.submit_isolated_step_with_allocation(
+        state.info, environment={}, allocated_resource_request=None
+    )
+
+    manifest = state.batch.create_namespaced_job.call_args.kwargs["body"]
+    if ownership == "disabled":
+        assert manifest.metadata.owner_references is None
+        state.core.read_namespaced_pod.assert_not_called()
+    else:
+        (owner,) = manifest.metadata.owner_references
+        assert (owner.kind, owner.name, owner.uid) == (
+            "Job",
+            "root-controller",
+            "root-controller-uid",
+        )
+        assert owner.controller is False
+        assert owner.block_owner_deletion is False
 
 
-def test_isolated_stop_ignores_concurrent_deletion(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("token_invalidated", [False, True])
+def test_dynamic_submission_cleans_job_created_during_stop(
+    monkeypatch: pytest.MonkeyPatch, token_invalidated: bool
 ) -> None:
-    """Concurrent run-level deletion does not fail a step stop.
+    """A stop racing with creation is cleaned before publishing metadata.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        token_invalidated: Whether the stopped run's token already expired.
     """
-    state = setup_stop(monkeypatch)
-    attempt_id = uuid4()
-    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=[make_job("step")]
+    state = setup_submission(monkeypatch, skip_owner_references=True)
+    state.run.child_key = "child"
+
+    def accept_late_job(**kwargs: Any) -> None:
+        """Accept a worker after an immediate stop was persisted.
+
+        Args:
+            kwargs: Kubernetes creation request arguments.
+        """
+        state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
+        if token_invalidated:
+            state.client.get_pipeline_run.side_effect = AuthorizationException(
+                "Runtime token invalidated"
+            )
+
+    state.batch.create_namespaced_job.side_effect = accept_late_job
+    expected_error = (
+        AuthorizationException if token_invalidated else RunStoppedException
     )
-    state.batch.delete_namespaced_job.side_effect = ApiException(status=404)
-    state.orchestrator.stop_isolated_step(SimpleNamespace(id=attempt_id))
+
+    with pytest.raises(expected_error):
+        state.orchestrator.submit_isolated_step_with_allocation(
+            state.info, environment={}, allocated_resource_request=None
+        )
+
     state.batch.delete_namespaced_job.assert_called_once_with(
-        name="step", namespace="zenml", propagation_policy="Foreground"
+        name="worker-job", namespace="zenml", propagation_policy="Foreground"
     )
-    assert (
-        state.batch.list_namespaced_job.call_args.kwargs["label_selector"]
-        == f"step_run_id={attempt_id}"
-    )
+    state.client.create_run_metadata.assert_not_called()
 
 
 @pytest.mark.parametrize("operation", ["list", "delete"])
@@ -245,6 +377,7 @@ def test_provider_errors_are_not_reported_as_success(
         operation: Provider operation configured to fail.
     """
     state = setup_stop(monkeypatch)
+    state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
     if operation == "list":
         state.batch.list_namespaced_job.side_effect = ApiException(status=403)
     else:
@@ -253,6 +386,7 @@ def test_provider_errors_are_not_reported_as_success(
         )
     with pytest.raises(RuntimeError):
         state.orchestrator._stop_run(state.run, graceful=False)
+    state.publish_status.assert_not_called()
 
 
 def test_isolated_stop_list_failure_does_not_complete_retry_drain(
@@ -269,93 +403,14 @@ def test_isolated_stop_list_failure_does_not_complete_retry_drain(
         state.orchestrator.stop_isolated_step(SimpleNamespace(id=uuid4()))
 
 
-def test_finished_jobs_are_left_for_normal_retention(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Stopping work does not require removing completed Job records.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-    """
-    state = setup_stop(monkeypatch)
-    finished = make_job("completed")
-    finished.status = k8s_client.V1JobStatus(
-        conditions=[k8s_client.V1JobCondition(type="Complete", status="True")]
-    )
-    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=[finished, make_job("controller", controller=True)]
-    )
-    state.orchestrator._stop_run(state.run, graceful=False)
-    assert [
-        call.kwargs["name"]
-        for call in state.batch.delete_namespaced_job.call_args_list
-    ] == ["controller"]
-
-
-@pytest.mark.parametrize(
-    "graceful,child,scheduled,delete_status,clean_secret",
-    [
-        (False, False, False, None, True),
-        (False, False, False, 404, True),
-        (False, False, False, 403, False),
-        (False, False, True, None, False),
-        (False, True, False, None, False),
-        (True, False, False, None, False),
-    ],
-)
-def test_controller_stop_cleans_only_its_nonscheduled_token_secret(
-    monkeypatch: pytest.MonkeyPatch,
-    graceful: bool,
-    child: bool,
-    scheduled: bool,
-    delete_status: int | None,
-    clean_secret: bool,
-) -> None:
-    """Controller deletion replaces its finally cleanup without shared deletion.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-        graceful: Whether to let the controller finish naturally.
-        child: Whether only a child pipeline is stopped.
-        scheduled: Whether future scheduled runs share the Secret.
-        delete_status: Optional Job deletion failure status.
-        clean_secret: Whether the Secret must be deleted.
-    """
-    state = setup_stop(
-        monkeypatch,
-        KubernetesOrchestratorConfig(
-            max_api_retries=0, pass_zenml_token_as_secret=True
-        ),
-    )
-    state.run.child_key = "child" if child else None
-    state.run.snapshot.schedule = object() if scheduled else None
-    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=[make_job("controller", controller=True)]
-    )
-    if delete_status:
-        state.batch.delete_namespaced_job.side_effect = ApiException(
-            status=delete_status
-        )
-
-    if delete_status == 403:
-        with pytest.raises(RuntimeError):
-            state.orchestrator._stop_run(state.run, graceful=graceful)
-    else:
-        state.orchestrator._stop_run(state.run, graceful=graceful)
-
-    if clean_secret:
-        state.core.delete_namespaced_secret.assert_called_once_with(
-            name=f"zenml-token-{state.run.snapshot.id}", namespace="zenml"
-        )
-    else:
-        state.core.delete_namespaced_secret.assert_not_called()
-
-
-def setup_entrypoint(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
+def setup_entrypoint(
+    monkeypatch: pytest.MonkeyPatch, *, skip_owner_references: bool = True
+) -> SimpleNamespace:
     """Prepare the static entrypoint with mocked storage and Kubernetes APIs.
 
     Args:
         monkeypatch: Pytest patching fixture.
+        skip_owner_references: Whether to opt out of worker ownership.
 
     Returns:
         Stop state with entrypoint dependency mocks.
@@ -363,7 +418,7 @@ def setup_entrypoint(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     state = setup_stop(
         monkeypatch,
         KubernetesOrchestratorConfig(
-            max_api_retries=0, skip_owner_references=True
+            max_api_retries=0, skip_owner_references=skip_owner_references
         ),
     )
     state.run.snapshot.pipeline_configuration = SimpleNamespace(name="test")
@@ -420,74 +475,72 @@ def setup_entrypoint(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     return state
 
 
-def test_static_stop_disambiguates_colliding_step_labels(
+@pytest.mark.parametrize("lookup_fails", [False, True])
+def test_static_startup_requires_controller_job_ownership(
+    monkeypatch: pytest.MonkeyPatch, lookup_fails: bool
+) -> None:
+    """Default startup must not create unowned workers after a lookup failure.
+
+    Args:
+        monkeypatch: Pytest patching fixture.
+        lookup_fails: Whether lookup raises instead of returning no owners.
+    """
+    state = setup_entrypoint(monkeypatch, skip_owner_references=False)
+    lookup = Mock(return_value=[])
+    if lookup_fails:
+        lookup.side_effect = ApiException(status=403)
+    monkeypatch.setattr(kube_utils, "get_pod_owner_references", lookup)
+
+    with pytest.raises(RuntimeError, match="controller Job owner"):
+        entrypoint.main()
+
+    state.dag_runner.assert_not_called()
+    state.batch.create_namespaced_job.assert_not_called()
+
+
+def test_static_monitor_reuses_stop_request_from_interrupt_poll(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A truncated label collision must not stop another step's Job.
+    """Polling stop intent once must suffice to drain multiple retrying nodes.
 
     Args:
         monkeypatch: Pytest patching fixture.
     """
     state = setup_entrypoint(monkeypatch)
-    step_name = "a" * 63 + "-requested"
-    other_name = "a" * 63 + "-unrelated"
-    label = kube_utils.sanitize_label_value(step_name)
-    assert label == kube_utils.sanitize_label_value(other_name)
-    jobs = [make_job("unrelated-job"), make_job("requested-job")]
-    for job, annotation in zip(jobs, [other_name, step_name]):
-        job.metadata.labels = {"step_name": label}
-        job.metadata.annotations[STEP_NAME_ANNOTATION_KEY] = annotation
-        job.status = k8s_client.V1JobStatus(conditions=[])
-    state.batch.list_namespaced_job.return_value = k8s_client.V1JobList(
-        items=jobs
+    state.run.snapshot.step_configurations = {
+        "first": object(),
+        "second": object(),
+    }
+    state.client.list_run_steps.return_value = SimpleNamespace(
+        items=[SimpleNamespace(status=ExecutionStatus.RETRYING)]
     )
 
-    def stop_requested_step() -> dict[str, Any]:
-        """Run the real stop callback supplied to the mocked DAG runner.
+    def monitor_stopped_nodes() -> dict[str, NodeStatus]:
+        """Poll the stop request, then monitor both active nodes.
 
         Returns:
-            Empty terminal node states for entrypoint finalization.
+            Terminal node states after retry cleanup.
         """
-        state.dag_runner.call_args.kwargs["node_stop_function"](
-            Node(id=step_name)
-        )
-        return {}
+        callbacks = state.dag_runner.call_args.kwargs
+        state.run.stop_mode = PipelineRunStopMode.GRACEFUL
+        state.client.get_pipeline_run.reset_mock()
+        assert callbacks["interrupt_function"]() == InterruptMode.GRACEFUL
+        assert state.client.get_pipeline_run.call_count == 1
+        result = {
+            name: callbacks["node_monitoring_function"](
+                Node(id=name, metadata={"job_name": name})
+            )
+            for name in ("first", "second")
+        }
+        assert result == dict.fromkeys(result, NodeStatus.CANCELLED)
+        assert state.client.get_pipeline_run.call_count == 1
+        return result
 
-    state.dag_runner.return_value.run.side_effect = stop_requested_step
+    state.dag_runner.return_value.run.side_effect = monitor_stopped_nodes
+
     entrypoint.main()
 
-    state.batch.delete_namespaced_job.assert_called_once_with(
-        name="requested-job",
-        namespace="zenml",
-        propagation_policy="Foreground",
+    assert state.client.list_run_steps.call_count == 2
+    state.publish_status.assert_called_once_with(
+        state.run.id, ExecutionStatus.STOPPED
     )
-
-
-@pytest.mark.parametrize("failure", [None, "settlement", "read", "publish"])
-def test_static_finalization_tolerates_invalidated_token(
-    monkeypatch: pytest.MonkeyPatch, failure: str | None
-) -> None:
-    """Token invalidation during finalization must not crash the controller.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-        failure: Finalization operation where the runtime token is invalidated.
-    """
-    state = setup_entrypoint(monkeypatch)
-    state.run.stop_mode = PipelineRunStopMode.GRACEFUL
-    error = AuthorizationException("Runtime token invalidated")
-    if failure == "settlement":
-        state.fetch_steps.side_effect = error
-    elif failure == "read":
-        state.client.get_pipeline_run.side_effect = [state.run, error]
-    elif failure == "publish":
-        state.publish_status.side_effect = error
-
-    entrypoint.main()
-
-    if failure in {"settlement", "read"}:
-        state.publish_status.assert_not_called()
-    else:
-        state.publish_status.assert_called_once_with(
-            state.run.id, ExecutionStatus.STOPPED
-        )

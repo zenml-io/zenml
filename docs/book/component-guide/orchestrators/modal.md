@@ -187,11 +187,11 @@ The pipeline still runs on Modal. You can monitor it from ZenML because the pipe
 
 ## Stopping runs
 
-Stop behavior depends on whether the stop is graceful or immediate.
+Stop behavior depends on the pipeline type and whether the stop is graceful or forceful.
 
-For a graceful stop of a static or dynamic Modal run, the orchestration sandbox observes the stop request, stops scheduling new steps and retries, lets current step attempts finish, and then publishes the final run status.
+For a graceful stop of a static Modal run, ZenML marks the pipeline run as `STOPPING`. The orchestration sandbox notices that status, stops scheduling new step sandboxes, lets already-running child sandboxes finish, and then publishes the final run status.
 
-For an immediate stop, ZenML terminates the Modal sandboxes it knows about:
+For a force stop of a static Modal run, ZenML terminates the Modal sandboxes it knows about:
 
 1. ZenML refreshes the pipeline run metadata and reads known child sandbox IDs from step metadata and pipeline-run fallback metadata.
 2. ZenML terminates each known child sandbox that is still running.
@@ -199,7 +199,7 @@ For an immediate stop, ZenML terminates the Modal sandboxes it knows about:
 4. ZenML refreshes the run metadata once more and terminates any child sandbox IDs that appeared during cleanup.
 5. If a sandbox has already finished, ZenML leaves it alone.
 
-See [Stopping a run](../../how-to/steps-pipelines/advanced_features.md#stopping-a-run) for the shared rules on escalation and stopping failed runs.
+For dynamic Modal runs, graceful stop requests use the same termination flow as force stop requests. ZenML terminates known child sandboxes and the orchestration sandbox, refreshes run metadata, and then terminates any late child sandboxes that appeared while cleanup was running.
 
 ## Current v1 limitations
 

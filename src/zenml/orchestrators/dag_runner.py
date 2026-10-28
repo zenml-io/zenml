@@ -376,13 +376,17 @@ class DagRunner:
 
             time.sleep(0.5)
 
+        # Capture active resources before shutting down the monitor, whose
+        # in-flight status request may fail while the workload remains alive.
+        nodes_to_stop = (
+            self.active_nodes if interrupt_mode == InterruptMode.FORCE else []
+        )
         self.shutdown_event.set()
         self.monitoring_thread.join()
         if interrupt_mode == InterruptMode.FORCE:
             # A startup task can finish creating its resource after the first
             # stop pass. Revisit the same nodes after draining startup, even if
             # the first pass marked them cancelled after startup finished.
-            nodes_to_stop = self.active_nodes
             try:
                 self._stop_all_nodes(nodes_to_stop)
             finally:

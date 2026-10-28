@@ -600,9 +600,12 @@ class DynamicPipelineRunner:
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
-                    # Step failed/stopped on the infra side, but the
-                    # code failed before it could report the status back to us.
-                    step_run = publish_failed_step_run(step_run.id)
+                    # Immediate termination can remove a worker before it
+                    # publishes its status, including before its code starts.
+                    if self._stop_mode == PipelineRunStopMode.IMMEDIATE:
+                        step_run = publish_stopped_step_run(step_run.id)
+                    else:
+                        step_run = publish_failed_step_run(step_run.id)
                 elif (
                     infra_status == ExecutionStatus.COMPLETED
                     and db_status == ExecutionStatus.RUNNING
@@ -1087,8 +1090,12 @@ class DynamicPipelineRunner:
 
         Args:
             status: The terminal status of the run.
-            exception: The exception that ended the run, if any.
+            exception: The failure exception, if the run failed.
         """
+        if status != ExecutionStatus.FAILED:
+            # Stopping uses exceptions to unwind execution, but end hooks
+            # receive an exception only when the final outcome is a failure.
+            exception = None
         config = self._snapshot.pipeline_configuration
         run_lifecycle_hook(
             config.end_hook_source,
@@ -1099,7 +1106,7 @@ class DynamicPipelineRunner:
             run_lifecycle_hook(
                 config.success_hook_source, HookType.RUN_SUCCESS
             )
-        elif exception is not None:
+        elif status == ExecutionStatus.FAILED and exception is not None:
             run_lifecycle_hook(
                 config.failure_hook_source,
                 HookType.RUN_FAILURE,

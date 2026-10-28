@@ -16,7 +16,6 @@
 
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -30,7 +29,6 @@ from zenml.constants import (  # noqa: E402
 from zenml.enums import (  # noqa: E402
     ExecutionMode,
     ExecutionStatus,
-    PipelineRunStopMode,
     StackComponentType,
 )
 from zenml.exceptions import AuthorizationException  # noqa: E402
@@ -870,7 +868,7 @@ def test_graceful_stop_run_leaves_sandboxes_for_controller_to_drain(
     assert from_id_sandboxes["child-running"].terminate_calls == 0
 
 
-def test_graceful_stop_run_does_not_require_snapshot(monkeypatch):
+def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
     from_id_sandboxes = {
         "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
         "child-running": SandboxStub("child-running", [None]),
@@ -907,13 +905,13 @@ def test_graceful_stop_run_does_not_require_snapshot(monkeypatch):
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
     _make_orchestrator()._stop_run(stale_run, graceful=True)
 
-    assert fetched_run_ids == []
+    assert fetched_run_ids == [run_id]
     assert recorded["termination_order"] == []
     assert from_id_sandboxes["orchestrator-sandbox"].terminate_calls == 0
     assert from_id_sandboxes["child-running"].terminate_calls == 0
 
 
-def test_graceful_stop_run_does_not_escalate_dynamic_runs(monkeypatch):
+def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
     from_id_sandboxes = {
         "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
         "child-running": SandboxStub("child-running", [None]),
@@ -949,7 +947,8 @@ def test_graceful_stop_run_does_not_escalate_dynamic_runs(monkeypatch):
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
     _make_orchestrator()._stop_run(run, graceful=True)
 
-    assert recorded["termination_order"] == []
+    assert recorded["termination_order"].count("child-running") == 1
+    assert recorded["termination_order"].count("orchestrator-sandbox") == 1
 
 
 def test_stop_run_refreshes_and_terminates_children_before_orchestration(
@@ -1080,45 +1079,6 @@ def test_stop_run_only_terminates_modal_resources(monkeypatch):
 
     assert recorded["termination_order"].count("child-running") == 1
     assert recorded["termination_order"].count("orchestrator-sandbox") == 1
-
-
-def test_stop_run_uses_known_sandboxes_when_refresh_fails(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Keep cleanup available when fetching updated run metadata fails.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-    """
-    sandboxes = {
-        "controller": SandboxStub("controller", [None]),
-        "worker": SandboxStub("worker", [None]),
-    }
-    recorded = _install_modal_sdk_stubs(
-        monkeypatch, from_id_sandboxes=sandboxes
-    )
-    run = SimpleNamespace(
-        id=uuid4(),
-        run_metadata={
-            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "controller"
-        },
-        steps={
-            "step": SimpleNamespace(
-                run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "worker"}
-            )
-        },
-    )
-    client = SimpleNamespace(
-        get_pipeline_run=Mock(side_effect=RuntimeError("refresh failed"))
-    )
-    monkeypatch.setattr(
-        modal_orchestrator_module,
-        "Client",
-        lambda: client,
-    )
-    _make_orchestrator()._stop_run(run)
-
-    assert recorded["termination_order"] == ["worker", "controller"]
 
 
 def test_stop_run_terminates_after_late_failed_pipeline_status(
@@ -1417,7 +1377,7 @@ def test_static_controller_interrupts_for_external_stop_or_failure(
 ):
     setup = _make_static_controller(monkeypatch)
     setup.controller.client.get_pipeline_run = lambda **_kwargs: (
-        SimpleNamespace(stop_mode=None, status=run_status)
+        SimpleNamespace(status=run_status)
     )
 
     assert setup.controller.should_interrupt_execution() == expected_interrupt
@@ -1754,7 +1714,6 @@ def test_static_controller_finalize_raises_after_failed_child_publish(
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
                 id=pipeline_run_id,
-                stop_mode=None,
                 status=ExecutionStatus.RUNNING,
             )
 
@@ -1805,7 +1764,6 @@ def test_static_controller_finalize_ignores_cancelled_children(
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
                 id=pipeline_run_id,
-                stop_mode=None,
                 status=ExecutionStatus.RUNNING,
             )
 
@@ -1869,7 +1827,6 @@ def test_static_controller_finalize_ignores_cancelled_only_run(
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
                 id=pipeline_run_id,
-                stop_mode=None,
                 status=ExecutionStatus.RUNNING,
             )
 
@@ -1920,7 +1877,6 @@ def test_static_controller_finalize_logs_skipped_without_failing_steps(
         def get_pipeline_run(*args, **kwargs):
             return SimpleNamespace(
                 id=pipeline_run_id,
-                stop_mode=None,
                 status=ExecutionStatus.RUNNING,
             )
 
@@ -1972,33 +1928,16 @@ def test_static_controller_finalize_raises_failed_child_on_auth_error(
         )
 
 
-@pytest.mark.parametrize(
-    "run_status, stop_mode",
-    [
-        (ExecutionStatus.STOPPING, None),
-        (ExecutionStatus.FAILED, PipelineRunStopMode.GRACEFUL),
-        (ExecutionStatus.FAILED, PipelineRunStopMode.IMMEDIATE),
-    ],
-)
 def test_static_controller_finalize_stopping_run_does_not_raise(
-    monkeypatch: pytest.MonkeyPatch,
-    run_status: ExecutionStatus,
-    stop_mode: PipelineRunStopMode | None,
-) -> None:
-    """Publish stop completion, including for a run that was already failed.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-        run_status: Current pipeline run status.
-        stop_mode: Explicit stop request, if present.
-    """
+    monkeypatch,
+):
     pipeline_run_id = uuid4()
     published = []
 
     class ClientStub:
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
-            return SimpleNamespace(stop_mode=stop_mode, status=run_status)
+            return SimpleNamespace(status=ExecutionStatus.STOPPING)
 
     monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
     monkeypatch.setattr(
@@ -2015,40 +1954,21 @@ def test_static_controller_finalize_stopping_run_does_not_raise(
     assert published == [(pipeline_run_id, ExecutionStatus.STOPPED)]
 
 
-@pytest.mark.parametrize(
-    "run_status, stop_mode",
-    [
-        (ExecutionStatus.STOPPING, None),
-        (ExecutionStatus.FAILED, PipelineRunStopMode.GRACEFUL),
-        (ExecutionStatus.FAILED, PipelineRunStopMode.IMMEDIATE),
-    ],
-)
 def test_static_controller_finalize_respects_late_stop_request(
-    monkeypatch: pytest.MonkeyPatch,
-    run_status: ExecutionStatus,
-    stop_mode: PipelineRunStopMode | None,
-) -> None:
-    """Honor a stop recorded while the controller is publishing failed steps.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-        run_status: Pipeline status after the stop request.
-        stop_mode: Explicit stop request, if present.
-    """
+    monkeypatch,
+):
     pipeline_run_id = uuid4()
     published = []
-    refreshed_states = iter(
-        [(ExecutionStatus.RUNNING, None), (run_status, stop_mode)]
+    refreshed_statuses = iter(
+        [ExecutionStatus.RUNNING, ExecutionStatus.STOPPING]
     )
 
     class ClientStub:
         @staticmethod
         def get_pipeline_run(*args, **kwargs):
-            status, mode = next(refreshed_states)
             return SimpleNamespace(
                 id=pipeline_run_id,
-                stop_mode=mode,
-                status=status,
+                status=next(refreshed_statuses),
             )
 
     monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
@@ -2145,24 +2065,3 @@ def test_get_orchestrator_run_id_raises_when_missing(monkeypatch):
 
     with pytest.raises(RuntimeError, match=ENV_ZENML_MODAL_RUN_ID):
         _make_orchestrator().get_orchestrator_run_id()
-
-
-@pytest.mark.parametrize("mode", list(PipelineRunStopMode))
-def test_static_controller_observes_stop_mode_on_failed_run(
-    monkeypatch: pytest.MonkeyPatch, mode: PipelineRunStopMode
-) -> None:
-    """Honor explicit stop requests even when the run is already failed.
-
-    Args:
-        monkeypatch: Pytest patching fixture.
-        mode: Requested stop mode.
-    """
-    setup = _make_static_controller(monkeypatch)
-    setup.controller.client.get_pipeline_run = lambda **kwargs: (
-        SimpleNamespace(status=ExecutionStatus.FAILED, stop_mode=mode)
-    )
-    assert setup.controller.should_interrupt_execution() == (
-        modal_entrypoint_module.InterruptMode.FORCE
-        if mode == PipelineRunStopMode.IMMEDIATE
-        else modal_entrypoint_module.InterruptMode.GRACEFUL
-    )

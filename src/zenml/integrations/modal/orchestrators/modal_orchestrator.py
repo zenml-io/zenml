@@ -835,28 +835,43 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
-        """Stop a Modal run, allowing active steps to finish when graceful.
+        """Stop a Modal run, honoring graceful stops where possible.
 
         Args:
             run: Pipeline run whose sandboxes should be stopped.
-            graceful: Whether to allow running steps to finish.
+            graceful: Whether to allow running static steps to finish.
 
         Raises:
             RuntimeError: If one or more Modal sandboxes cannot be stopped.
         """
+        refreshed_run: Optional["PipelineRunResponse"] = None
         if graceful:
-            logger.info(
-                "Gracefully stopping Modal run `%s`. The orchestration "
-                "sandbox will stop scheduling new steps and let running "
-                "child sandboxes finish.",
+            snapshot = run.snapshot
+            if snapshot is None:
+                refreshed_run = self._get_fresh_pipeline_run(run)
+                snapshot = refreshed_run.snapshot
+
+            if snapshot is not None and not snapshot.is_dynamic:
+                logger.info(
+                    "Gracefully stopping Modal run `%s`. The orchestration "
+                    "sandbox will stop scheduling new steps and let running "
+                    "child sandboxes finish.",
+                    run.id,
+                )
+                return
+
+            logger.warning(
+                "Graceful stops are only supported for static Modal runs. "
+                "Force-stopping Modal run `%s` instead.",
                 run.id,
             )
-            return
-        refreshed_run = self._get_fresh_pipeline_run(run)
 
         errors: List[str] = []
         attempted_child_sandbox_ids: set[str] = set()
         attempted_orchestration_sandbox_ids: set[str] = set()
+
+        if refreshed_run is None:
+            refreshed_run = self._get_fresh_pipeline_run(run)
 
         def _terminate_child_sandboxes(
             target_run: "PipelineRunResponse",

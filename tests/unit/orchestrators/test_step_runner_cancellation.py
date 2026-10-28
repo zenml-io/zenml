@@ -15,49 +15,33 @@ from zenml.steps.heartbeat import StepHeartBeatTerminationException
 
 
 @pytest.mark.parametrize(
-    "error_type,status,heartbeat_terminated,expected_type,publish_failure,clean_stop,publish_fails",
+    "error_type,heartbeat_terminated,expected_type",
     [
         (
             RunStoppedException,
-            ExecutionStatus.STOPPED,
             False,
             RunStoppedException,
-            False,
-            True,
-            False,
         ),
         (
             KeyboardInterrupt,
-            ExecutionStatus.STOPPED,
             True,
             StepHeartBeatTerminationException,
-            False,
-            True,
-            False,
         ),
     ],
 )
 def test_step_exception_preserves_terminal_state_and_classification(
     monkeypatch: pytest.MonkeyPatch,
     error_type: type[BaseException],
-    status: ExecutionStatus,
     heartbeat_terminated: bool,
     expected_type: type[BaseException],
-    publish_failure: bool,
-    clean_stop: bool,
-    publish_fails: bool,
 ) -> None:
     """Signal and heartbeat cancellation never repeat a terminal status write.
 
     Args:
         monkeypatch: Fixture for replacing external collaborators.
         error_type: Exception raised by the step.
-        status: Stored execution status.
         heartbeat_terminated: Whether the heartbeat observed cancellation.
         expected_type: Expected exception propagated by the runner.
-        publish_failure: Whether failure should be published.
-        clean_stop: Whether the end hook receives a cancellation.
-        publish_fails: Whether failure publication raises.
     """
     config = SimpleNamespace(
         start_hook_source=None, end_hook_source=None, failure_hook_source=None
@@ -76,14 +60,12 @@ def test_step_exception_preserves_terminal_state_and_classification(
         id=uuid4(),
         name="step",
         config=config,
-        status=status,
+        status=ExecutionStatus.STOPPED,
         is_retriable=False,
     )
     heartbeat = Mock(is_terminated=heartbeat_terminated)
     client = Mock(get_run_step=Mock(return_value=attempt))
     publish = Mock(return_value=attempt)
-    if publish_fails:
-        publish.side_effect = RuntimeError("Failure publication unavailable")
     hooks = Mock()
 
     monkeypatch.setattr(runner, "_load_step", lambda: step_instance)
@@ -128,15 +110,13 @@ def test_step_exception_preserves_terminal_state_and_classification(
 
     if expected_type is error_type:
         assert caught.value is error
-    assert publish.call_count == int(publish_failure)
+    publish.assert_not_called()
     client.zen_store.update_run_step.assert_not_called()
     end_hook = next(
         call
         for call in hooks.call_args_list
         if call.args[1] == HookType.STEP_END
     )
-    assert end_hook.kwargs["optional_args"] == (
-        (None,) if clean_stop else (error,)
-    )
+    assert end_hook.kwargs["optional_args"] == (None,)
     heartbeat.stop.assert_called_once()
     stack.cleanup_step_run.assert_called_once()

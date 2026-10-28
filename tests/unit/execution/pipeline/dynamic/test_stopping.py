@@ -17,12 +17,26 @@ import threading
 from concurrent.futures import Future
 from contextlib import nullcontext
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from typing import Callable
+from unittest.mock import MagicMock, call
 from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
+from tests.unit.zen_stores.test_run_stopping import (
+    create_run as create_run,
+)
+from tests.unit.zen_stores.test_run_stopping import (
+    store as store,
+)
+from zenml.client import Client
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    HookType,
+    PipelineRunStopMode,
+)
+from zenml.execution.pipeline.dynamic import runner as runner_module
 from zenml.execution.pipeline.dynamic.future_registry import (
     FutureRegistry,
     StartupCancelled,
@@ -37,6 +51,14 @@ from zenml.execution.pipeline.dynamic.outputs import (
     _IsolatedStepFuture,
 )
 from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
+from zenml.models import (
+    PipelineRunResponse,
+    PipelineRunUpdate,
+    StepRunRequest,
+    StepRunUpdate,
+)
+from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 @pytest.fixture
@@ -108,14 +130,13 @@ def prepare_monitor_iteration(
     client = MagicMock()
     client.zen_store.get_run.return_value = runner._run
     client.get_run_step.return_value = step
-    monkeypatch.setattr(
-        "zenml.execution.pipeline.dynamic.runner.Client", lambda: client
-    )
+    monkeypatch.setattr(runner_module, "Client", lambda: client)
     monkeypatch.setattr(
         runner, "_get_isolated_step_infra_status", lambda _: infra_status
     )
     monkeypatch.setattr(
-        "zenml.execution.pipeline.dynamic.runner.handle_float_env_var",
+        runner_module,
+        "handle_float_env_var",
         lambda *args, **kwargs: 0.0,
     )
     runner._monitoring_event = MagicMock()
@@ -126,53 +147,32 @@ def prepare_monitor_iteration(
     return client
 
 
-@pytest.mark.parametrize("execution_mode", list(ExecutionMode))
-def test_explicit_stop_escalates_after_failure(
-    runner: DynamicPipelineRunner, execution_mode: ExecutionMode
+def test_immediate_stop_catches_late_submission_after_failure(
+    runner: DynamicPipelineRunner,
 ) -> None:
-    """Graceful stop drains, while immediate stop ignores the failure policy.
+    """An explicit stop cancels even late submissions after an earlier failure.
 
     Args:
         runner: The runner under test.
-        execution_mode: The failure policy to exercise.
     """
-    runner._fail_fast = execution_mode == ExecutionMode.FAIL_FAST
-    runner._continue_on_failure = (
-        execution_mode == ExecutionMode.CONTINUE_ON_FAILURE
-    )
     original_error = RuntimeError("original failure")
     runner._failure_detected = True
     runner._exception = original_error
-    step = make_step(ExecutionStatus.RUNNING)
-    runner._steps_to_monitor[step.name] = step
-    child = MagicMock(spec=DynamicPipelineRunner)
-    runner._child_runners["child"] = child
-
-    runner.request_stop(PipelineRunStopMode.GRACEFUL)
-    runner._orchestrator.stop_isolated_step.assert_not_called()
-    child.request_stop.assert_called_with(PipelineRunStopMode.GRACEFUL)
-
     runner.request_stop(PipelineRunStopMode.IMMEDIATE)
     runner.request_stop(PipelineRunStopMode.GRACEFUL)
     assert runner._stop_mode == PipelineRunStopMode.IMMEDIATE
     assert runner._exception is original_error
-    runner._orchestrator.stop_isolated_step.assert_called_with(step)
-    child.request_stop.assert_called_with(PipelineRunStopMode.IMMEDIATE)
+
+    late_step = make_step(ExecutionStatus.PROVISIONING)
+    runner._register_isolated_step_for_monitoring("late", late_step)
+    runner._orchestrator.stop_isolated_step.assert_called_once_with(late_step)
 
 
-@pytest.mark.parametrize(
-    ("mode", "legacy"),
-    [
-        (PipelineRunStopMode.GRACEFUL, False),
-        (PipelineRunStopMode.IMMEDIATE, False),
-        (PipelineRunStopMode.IMMEDIATE, True),
-    ],
-)
+@pytest.mark.parametrize("mode", list(PipelineRunStopMode))
 def test_stop_is_observed_while_infrastructure_remains_active(
     runner: DynamicPipelineRunner,
     monkeypatch: pytest.MonkeyPatch,
     mode: PipelineRunStopMode,
-    legacy: bool,
 ) -> None:
     """Running infrastructure must not skip checking the run's stop request.
 
@@ -180,13 +180,9 @@ def test_stop_is_observed_while_infrastructure_remains_active(
         runner: The runner under test.
         monkeypatch: Fixture for replacing external dependencies.
         mode: Whether the running attempt should drain or stop immediately.
-        legacy: Whether to use the status-only stop representation.
     """
     step = make_step(ExecutionStatus.RUNNING)
-    if legacy:
-        runner._run.status = ExecutionStatus.STOPPING
-    else:
-        runner._run.stop_mode = mode
+    runner._run.stop_mode = mode
     client = prepare_monitor_iteration(
         runner, step, ExecutionStatus.RUNNING, monkeypatch
     )
@@ -235,46 +231,53 @@ def test_graceful_stop_preserves_active_future_and_prevents_new_startup(
     runner._future_registry.await_all_no_raise()
 
 
-def test_immediate_stop_catches_a_late_submission(
+@pytest.mark.parametrize("mode", [None, *PipelineRunStopMode])
+def test_removed_worker_is_stopped_only_after_immediate_request(
     runner: DynamicPipelineRunner,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: PipelineRunStopMode | None,
 ) -> None:
-    """A submission finishing after the stop request is still cancelled.
+    """A removed worker preserves cancellation without hiding ordinary failures.
 
     Args:
         runner: The runner under test.
+        monkeypatch: Fixture for replacing external dependencies.
+        mode: Optional stop mode requested before worker termination.
     """
-    runner.request_stop(PipelineRunStopMode.IMMEDIATE)
     step = make_step(ExecutionStatus.PROVISIONING)
+    runner._run.stop_mode = mode
+    prepare_monitor_iteration(
+        runner, step, ExecutionStatus.FAILED, monkeypatch
+    )
+    stopped = make_step(ExecutionStatus.STOPPED)
+    failed = make_step(ExecutionStatus.FAILED)
+    monkeypatch.setattr(
+        runner_module, "publish_stopped_step_run", lambda _: stopped
+    )
+    monkeypatch.setattr(
+        runner_module, "publish_failed_step_run", lambda _: failed
+    )
+    finished = MagicMock()
+    monkeypatch.setattr(runner, "_on_step_finished", finished)
 
-    runner._register_isolated_step_for_monitoring(step.name, step)
+    runner._monitoring_loop()
 
-    runner._orchestrator.stop_isolated_step.assert_called_once_with(step)
+    if mode == PipelineRunStopMode.IMMEDIATE:
+        finished.assert_called_once_with(step_run=stopped)
+    else:
+        finished.assert_called_once_with(step_run=failed)
+    assert not runner._steps_to_monitor
 
 
-@pytest.mark.parametrize(
-    ("explicit_stop", "infra_status", "stop_fails_once"),
-    [
-        (False, ExecutionStatus.FAILED, False),
-        (True, ExecutionStatus.FAILED, False),
-        (True, ExecutionStatus.RUNNING, False),
-        (True, ExecutionStatus.RUNNING, True),
-    ],
-)
 def test_suppressed_retry_settles_the_existing_future(
     runner: DynamicPipelineRunner,
     monkeypatch: pytest.MonkeyPatch,
-    explicit_stop: bool,
-    infra_status: ExecutionStatus,
-    stop_fails_once: bool,
 ) -> None:
     """A suppressed retry must not leave the original future waiting forever.
 
     Args:
         runner: The runner under test.
         monkeypatch: Fixture for replacing external dependencies.
-        explicit_stop: Whether cancellation follows a stop request or failure.
-        infra_status: The status reported by the backend Job.
-        stop_fails_once: Whether the first backend stop fails transiently.
     """
     step = make_step(ExecutionStatus.RETRYING)
     future = StepFuture(
@@ -285,14 +288,13 @@ def test_suppressed_retry_settles_the_existing_future(
     runner._register_concurrent_step_invocation(
         future, initial_state=NodeState.RUNNING
     )
-    if explicit_stop:
-        runner._run.stop_mode = PipelineRunStopMode.GRACEFUL
-    else:
-        runner._failure_detected = True
-        runner._exception = RuntimeError("another step failed")
-    prepare_monitor_iteration(runner, step, infra_status, monkeypatch)
+    runner._run.stop_mode = PipelineRunStopMode.GRACEFUL
+    prepare_monitor_iteration(
+        runner, step, ExecutionStatus.RUNNING, monkeypatch
+    )
     monkeypatch.setattr(
-        "zenml.execution.pipeline.dynamic.runner.get_remaining_retries",
+        runner_module,
+        "get_remaining_retries",
         lambda **kwargs: 2,
     )
     monkeypatch.setattr(
@@ -314,29 +316,27 @@ def test_suppressed_retry_settles_the_existing_future(
         return step
 
     monkeypatch.setattr(
-        "zenml.execution.pipeline.dynamic.runner.publish_stopped_step_run",
+        runner_module,
+        "publish_stopped_step_run",
         publish_stopped,
     )
     retry = MagicMock()
     monkeypatch.setattr(runner, "_queue_concurrent_isolated_step", retry)
 
-    if stop_fails_once:
-        runner._orchestrator.stop_isolated_step.side_effect = RuntimeError(
-            "Backend unavailable"
-        )
-        runner._monitoring_loop()
-        assert step.status == ExecutionStatus.RETRYING
-        assert runner._steps_to_monitor == {step.name: step}
-        assert future.running()
-        runner._orchestrator.stop_isolated_step.side_effect = None
-        runner._shutdown_requested = False
+    runner._orchestrator.stop_isolated_step.side_effect = RuntimeError(
+        "Backend unavailable"
+    )
+    runner._monitoring_loop()
+    assert step.status == ExecutionStatus.RETRYING
+    assert runner._steps_to_monitor == {step.name: step}
+    assert future.running()
+    runner._orchestrator.stop_isolated_step.side_effect = None
+    runner._shutdown_requested = False
 
     runner._monitoring_loop()
 
     retry.assert_not_called()
-    assert runner._orchestrator.stop_isolated_step.call_count == (
-        int(explicit_stop) + int(stop_fails_once)
-    )
+    runner._orchestrator.stop_isolated_step.assert_called_with(step)
     assert step.status == ExecutionStatus.STOPPED
     assert not future.running()
     with pytest.raises(RuntimeError, match="stopped"):
@@ -345,40 +345,180 @@ def test_suppressed_retry_settles_the_existing_future(
     assert not runner._steps_to_monitor
 
 
-@pytest.mark.parametrize("failed", [False, True])
-def test_drained_stop_uses_existing_terminal_status_update(
-    runner: DynamicPipelineRunner,
-    monkeypatch: pytest.MonkeyPatch,
-    failed: bool,
-) -> None:
-    """Finalization reports STOPPED and leaves failure preservation to the server.
+@pytest.fixture
+def hooks(
+    runner: DynamicPipelineRunner, monkeypatch: pytest.MonkeyPatch
+) -> MagicMock:
+    """Observe hook dispatch without executing user hooks.
 
     Args:
-        runner: The runner under test.
-        monkeypatch: Fixture for replacing external dependencies.
-        failed: Whether the server preserves an earlier failure.
+        runner: Runner with isolated execution state.
+        monkeypatch: Fixture for replacing hook execution.
+
+    Returns:
+        The hook execution mock.
     """
+    runner._snapshot = SimpleNamespace(
+        pipeline_configuration=SimpleNamespace(
+            end_hook_source="end",
+            failure_hook_source="failure",
+            success_hook_source="success",
+        )
+    )
+    hook = MagicMock()
+    monkeypatch.setattr(runner_module, "run_lifecycle_hook", hook)
+    return hook
+
+
+@pytest.mark.parametrize(
+    "mode,during_settlement",
+    [
+        (PipelineRunStopMode.GRACEFUL, False),
+        (PipelineRunStopMode.IMMEDIATE, True),
+    ],
+)
+def test_failure_is_persisted_before_draining(
+    runner: DynamicPipelineRunner,
+    clean_client: Client,
+    store: SqlZenStore,
+    create_run: Callable[..., PipelineRunResponse],
+    monkeypatch: pytest.MonkeyPatch,
+    hooks: MagicMock,
+    during_settlement: bool,
+    mode: PipelineRunStopMode,
+) -> None:
+    """A later stop preserves the original failure and closes run activity.
+
+    Args:
+        runner: Runner with isolated execution state.
+        clean_client: Client connected to the disposable SQLite store.
+        store: Disposable SQLite store.
+        create_run: Factory for runs in the disposable store.
+        monkeypatch: Fixture for replacing infrastructure and drain timing.
+        hooks: Hook execution mock that preserves real dispatch decisions.
+        during_settlement: Whether failure surfaces after the entrypoint returns.
+        mode: Stop to request during draining.
+    """
+    run = create_run(execution_mode=ExecutionMode.STOP_ON_FAILURE)
+    active_step = store.create_run_step(
+        StepRunRequest(
+            name="step",
+            project=run.project_id,
+            pipeline_run_id=run.id,
+            status=ExecutionStatus.RUNNING,
+            start_time=utc_now(),
+        )
+    )
+    original = ValueError("Pipeline failed before the stop request")
+
+    def entrypoint() -> None:
+        if during_settlement:
+            runner.record_failure(original)
+        else:
+            raise original
+
+    runner._run = run
+    runner._continue_on_failure = False
     runner._state = SimpleNamespace(claim=nullcontext)
     runner._pipeline = SimpleNamespace(
-        name="parent",
+        name="stopping",
         configuration=SimpleNamespace(parameters={}),
-        _call_entrypoint=lambda: None,
+        entrypoint=entrypoint,
+        _call_entrypoint=entrypoint,
     )
-    runner.request_stop(PipelineRunStopMode.GRACEFUL)
-    client = MagicMock()
-    client.zen_store.update_run.return_value = SimpleNamespace(
-        status=ExecutionStatus.FAILED if failed else ExecutionStatus.STOPPED
-    )
+    monkeypatch.setattr(runner_module, "Client", lambda: clean_client)
+
+    def finish_outstanding_work() -> None:
+        before_stop = store.get_run(run.id)
+        assert before_stop.status == ExecutionStatus.FAILED
+        assert before_stop.in_progress
+        assert before_stop.end_time is None
+        assert before_stop.exception_info is not None
+        assert before_stop.exception_info.message == str(original)
+        assert runner._exception is original
+
+        requested = store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
+        assert requested.status == ExecutionStatus.FAILED
+        runner.request_stop(mode)
+        if mode == PipelineRunStopMode.IMMEDIATE:
+            # Provider termination can leave database rows active until
+            # the controller publishes the terminal stop update.
+            return
+
+        store.update_run_step(
+            active_step.id,
+            StepRunUpdate(
+                status=ExecutionStatus.COMPLETED, end_time=utc_now()
+            ),
+        )
+
     monkeypatch.setattr(
-        "zenml.execution.pipeline.dynamic.runner.Client", lambda: client
+        runner._future_registry,
+        "await_all_no_raise",
+        finish_outstanding_work,
     )
-    hooks = MagicMock()
-    monkeypatch.setattr(runner, "_fire_terminal_run_hooks", hooks)
 
     runner._run_entrypoint_and_finalize()
 
-    update = client.zen_store.update_run.call_args.kwargs["run_update"]
-    assert update.model_dump(exclude_unset=True) == {
-        "status": ExecutionStatus.STOPPED
-    }
-    assert hooks.call_args.args[0] == runner._run.status
+    final = store.get_run(run.id)
+    assert final.status == ExecutionStatus.FAILED
+    assert final.exception_info is not None
+    assert final.exception_info.message == str(original)
+    assert final.exception_info.source == "builtins.ValueError"
+    assert not final.in_progress
+    assert final.end_time is not None
+    assert final.stop_mode == mode
+    assert store.get_run_step(active_step.id).status == (
+        ExecutionStatus.STOPPED
+        if mode == PipelineRunStopMode.IMMEDIATE
+        else ExecutionStatus.COMPLETED
+    )
+    assert hooks.call_args_list == [
+        call("end", HookType.RUN_END, optional_args=(original,)),
+        call("failure", HookType.RUN_FAILURE, optional_args=(original,)),
+    ]
+
+
+@pytest.mark.parametrize("mode", list(PipelineRunStopMode))
+def test_stop_fires_only_the_end_hook(
+    runner: DynamicPipelineRunner,
+    clean_client: Client,
+    store: SqlZenStore,
+    create_run: Callable[..., PipelineRunResponse],
+    monkeypatch: pytest.MonkeyPatch,
+    hooks: MagicMock,
+    mode: PipelineRunStopMode,
+) -> None:
+    """Cancellation records a stopped outcome without dispatching failure hooks.
+
+    Args:
+        runner: Runner with isolated execution state.
+        clean_client: Client connected to the disposable SQLite store.
+        store: Disposable SQLite store.
+        create_run: Factory for runs in the disposable store.
+        monkeypatch: Fixture for replacing infrastructure calls.
+        hooks: Hook execution mock that preserves real dispatch decisions.
+        mode: Explicit stop mode observed before cancellation.
+    """
+    run = create_run()
+    store.update_run(run.id, PipelineRunUpdate(stop_mode=mode))
+    runner._run = run
+    runner.request_stop(mode)
+    runner._state = SimpleNamespace(claim=nullcontext)
+    runner._pipeline = SimpleNamespace(
+        name="stopping",
+        configuration=SimpleNamespace(parameters={}),
+        _call_entrypoint=lambda: None,
+    )
+    monkeypatch.setattr(runner_module, "Client", lambda: clean_client)
+
+    runner._run_entrypoint_and_finalize()
+
+    final = store.get_run(run.id)
+    assert final.status == ExecutionStatus.STOPPED
+    assert final.exception_info is None
+    assert not final.in_progress
+    assert final.end_time is not None
+    hooks.assert_called_once_with(
+        "end", HookType.RUN_END, optional_args=(None,)
+    )

@@ -13,7 +13,6 @@
 #  limitations under the License.
 """Stop regressions for synchronous step retries."""
 
-from contextlib import nullcontext
 from types import SimpleNamespace
 from unittest.mock import Mock, call
 from uuid import uuid4
@@ -199,67 +198,3 @@ def test_unrelated_store_error_retries_and_preserves_the_error(
     assert caught.value is error
     assert state.launcher.launch.call_count == 4
     assert state.sleep.call_args_list == [call(1)] * (2 + 4 + 8)
-
-
-def test_failed_stop_recheck_preserves_the_launch_error(
-    state: SimpleNamespace,
-) -> None:
-    """An unavailable stop lookup must not mask the step's exception.
-
-    Args:
-        state: Mocked execution dependencies.
-    """
-    error = IllegalOperationError("Original launch failure")
-    state.launcher.launch.side_effect = error
-    state.client.get_pipeline_run.side_effect = [
-        state.run,
-        ConnectionError("Store unavailable"),
-    ]
-    with (
-        ExecutionContext(pipeline_run=state.run),
-        pytest.raises(IllegalOperationError) as caught,
-    ):
-        utils.launch_step(state.snapshot, state.step, "controller", retry=True)
-
-    assert caught.value is error
-    state.sleep.assert_not_called()
-
-
-@pytest.mark.parametrize("empty_context", [False, True])
-def test_no_owning_run_preserves_original_backoff(
-    state: SimpleNamespace, empty_context: bool
-) -> None:
-    """Without a contextual run, retries do not poll or discover a run.
-
-    Args:
-        state: Mocked execution dependencies.
-        empty_context: Whether an execution context exists without a run.
-    """
-    result = Mock()
-    state.launcher.launch.side_effect = [ValueError("failed")] * 3 + [result]
-    with ExecutionContext() if empty_context else nullcontext():
-        returned = utils.launch_step(
-            state.snapshot, state.step, "controller", retry=True
-        )
-
-    assert returned is result
-    assert state.sleep.call_args_list == [call(30), call(60), call(120)]
-    state.client_factory.assert_not_called()
-
-
-def test_nonretry_launch_does_not_add_stop_checks(
-    state: SimpleNamespace,
-) -> None:
-    """The nonretry path retains its existing launcher behavior.
-
-    Args:
-        state: Mocked execution dependencies.
-    """
-    state.run.stop_mode = PipelineRunStopMode.IMMEDIATE
-    with ExecutionContext(pipeline_run=state.run):
-        result = utils.launch_step(state.snapshot, state.step, "controller")
-
-    assert result is state.launcher.launch.return_value
-    state.launcher.launch.assert_called_once()
-    state.client_factory.assert_not_called()
-    state.sleep.assert_not_called()

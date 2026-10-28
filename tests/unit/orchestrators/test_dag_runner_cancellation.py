@@ -11,39 +11,6 @@ from zenml.orchestrators.dag_runner import (
 )
 
 
-def test_force_stop_cleans_up_startup_completing_after_first_stop() -> None:
-    """A submission completing during stop receives a second cleanup pass."""
-    entered = threading.Event()
-    release = threading.Event()
-    created = threading.Event()
-    stops = []
-
-    def start(node: Node) -> NodeStatus:
-        entered.set()
-        assert release.wait(2)
-        created.set()
-        return NodeStatus.RUNNING
-
-    def stop(node: Node) -> None:
-        stops.append(created.is_set())
-        release.set()
-
-    runner = DagRunner(
-        [Node(id="step")],
-        start,
-        lambda node: NodeStatus.RUNNING,
-        stop,
-        lambda: InterruptMode.FORCE if entered.is_set() else None,
-        interrupt_check_interval=0,
-        monitoring_interval=0.01,
-    )
-    try:
-        assert runner.run() == {"step": NodeStatus.CANCELLED}
-        assert True in stops
-    finally:
-        release.set()
-
-
 def test_force_stop_revisits_node_cancelled_after_startup_finishes() -> None:
     """Cleanup revisits resources created before the first stop returns."""
     entered = threading.Event()
@@ -82,6 +49,40 @@ def test_force_stop_revisits_node_cancelled_after_startup_finishes() -> None:
         assert not resource_exists.is_set()
     finally:
         release.set()
+
+
+def test_force_stop_retains_node_after_monitoring_fails_during_shutdown() -> (
+    None
+):
+    """A monitoring error during shutdown cannot drop a live cleanup target."""
+    monitoring = threading.Event()
+    stopped = []
+
+    def monitor(node: Node) -> NodeStatus:
+        """Fail an in-flight status request after shutdown begins.
+
+        Args:
+            node: The node whose workload is still running.
+
+        Raises:
+            ConnectionError: The status request failed.
+        """
+        monitoring.set()
+        assert runner.shutdown_event.wait(2)
+        raise ConnectionError("The monitoring service is unavailable.")
+
+    runner = DagRunner(
+        [Node(id="step", status=NodeStatus.RUNNING)],
+        lambda node: NodeStatus.RUNNING,
+        monitor,
+        lambda node: stopped.append(node.id),
+        lambda: InterruptMode.FORCE if monitoring.is_set() else None,
+        interrupt_check_interval=0,
+        monitoring_interval=0.01,
+    )
+
+    assert runner.run() == {"step": NodeStatus.CANCELLED}
+    assert "step" in stopped
 
 
 def test_graceful_stop_drains_starting_node_without_starting_downstream() -> (
