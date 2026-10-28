@@ -926,21 +926,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.updated = utc_now()
         return self
 
-    def request_stop(self, mode: PipelineRunStopMode) -> None:
-        """Record a stop request while preserving a previous failure.
-
-        Args:
-            mode: Whether to finish current attempts or stop immediately.
-
-        Raises:
-            IllegalOperationError: If the run completed successfully.
-        """
-        if self.status == ExecutionStatus.COMPLETED:
-            raise IllegalOperationError("Cannot stop a completed run.")
-        if self.stop_mode != PipelineRunStopMode.IMMEDIATE:
-            self.stop_mode = mode.value
-        self.updated = utc_now()
-
     def update_status(
         self,
         requested_status: Optional[ExecutionStatus],

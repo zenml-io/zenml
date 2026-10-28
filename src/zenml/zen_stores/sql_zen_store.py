@@ -7558,7 +7558,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the orchestrator run id is being updated
                 on a non-placeholder run or if the orchestrator run id is
-                already set and is different from the new orchestrator run id.
+                already set and is different from the new orchestrator run id,
+                or if a stop is requested for a completed run.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
@@ -7584,8 +7585,8 @@ class SqlZenStore(BaseZenStore):
                     .values(stop_mode=run_update.stop_mode.value)
                 )
                 session.refresh(existing_run)
-                existing_run.request_stop(run_update.stop_mode)
-                session.add(existing_run)
+                if existing_run.status == ExecutionStatus.COMPLETED:
+                    raise IllegalOperationError("Cannot stop a completed run.")
 
             if (
                 existing_run.stop_mode
