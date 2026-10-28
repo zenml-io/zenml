@@ -15,7 +15,7 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
-from unittest.mock import ANY, create_autospec
+from unittest.mock import ANY, Mock, create_autospec
 from uuid import UUID, uuid4
 
 import pytest
@@ -35,6 +35,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunUpdate,
 )
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
@@ -123,6 +124,7 @@ def create_run(
                 name=uuid4().hex,
                 snapshot=snapshot.id,
                 status=status,
+                orchestrator_run_id=uuid4().hex,
                 parent_run_id=parent,
                 child_key=uuid4().hex if parent else None,
             )
@@ -382,6 +384,86 @@ def test_root_stop_settles_child_records_after_terminating_workloads(
     assert not stopped_child.in_progress
     assert stopped_child.end_time is not None
     assert store.get_run_step(child_step.id).status == ExecutionStatus.STOPPED
+
+
+@pytest.mark.parametrize("child_disappears", [False, True])
+def test_child_finishing_during_stop_does_not_block_backend_cleanup(
+    store: SqlZenStore,
+    create_run: Callable,
+    monkeypatch: pytest.MonkeyPatch,
+    child_disappears: bool,
+) -> None:
+    """A child finishing after selection cannot prevent parent cleanup.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for test pipeline runs.
+        monkeypatch: Fixture for injecting the concurrent child change.
+        child_disappears: Whether to delete the child instead of completing it.
+    """
+    root = create_run()
+    child = create_run(parent=root.id)
+    sibling = create_run(parent=root.id)
+    original_update = SqlZenStore.update_run
+
+    def update_after_child_finishes(
+        self: SqlZenStore, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
+        if run_id == child.id:
+            if child_disappears:
+                self.delete_run(child.id)
+            else:
+                original_update(
+                    self,
+                    child.id,
+                    PipelineRunUpdate(status=ExecutionStatus.COMPLETED),
+                )
+        return original_update(self, run_id, run_update)
+
+    monkeypatch.setattr(SqlZenStore, "update_run", update_after_child_finishes)
+    orchestrator = Mock()
+    BaseOrchestrator.stop_run(orchestrator, root, graceful=False)
+
+    orchestrator._stop_run.assert_called_once()
+    assert store.get_run(root.id).status == ExecutionStatus.STOPPED
+    assert store.get_run(sibling.id).status == ExecutionStatus.STOPPED
+    if child_disappears:
+        with pytest.raises(KeyError):
+            store.get_run(child.id)
+    else:
+        finished_child = store.get_run(child.id)
+        assert finished_child.status == ExecutionStatus.COMPLETED
+        assert finished_child.stop_mode is None
+
+
+def test_child_stop_does_not_hide_unrelated_invalid_updates(
+    store: SqlZenStore,
+    create_run: Callable,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only missing or completed children are ignored during propagation.
+
+    Args:
+        store: Disposable SQL store.
+        create_run: Factory for test pipeline runs.
+        monkeypatch: Fixture for injecting an unrelated validation failure.
+    """
+    root = create_run()
+    child = create_run(parent=root.id)
+    original_update = SqlZenStore.update_run
+
+    def reject_child_update(
+        self: SqlZenStore, run_id: UUID, run_update: PipelineRunUpdate
+    ) -> PipelineRunResponse:
+        if run_id == child.id:
+            raise IllegalOperationError("Unrelated validation failure")
+        return original_update(self, run_id, run_update)
+
+    monkeypatch.setattr(SqlZenStore, "update_run", reject_child_update)
+    with pytest.raises(IllegalOperationError, match="Unrelated validation"):
+        store.update_run(
+            root.id, PipelineRunUpdate(stop_mode=PipelineRunStopMode.IMMEDIATE)
+        )
 
 
 @pytest.mark.parametrize("mode", list(PipelineRunStopMode))

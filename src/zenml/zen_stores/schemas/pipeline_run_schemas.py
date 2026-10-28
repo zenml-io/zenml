@@ -1189,6 +1189,22 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return True
 
         if run_status == ExecutionStatus.FAILED:
+            if self.snapshot and self.snapshot.is_dynamic:
+                session = object_session(self)
+                if session is None:
+                    raise RuntimeError(
+                        "Missing DB session to check the in progress "
+                        "status of the run."
+                    )
+                # Child runs share their parent's controller and runtime token.
+                if session.execute(
+                    select(PipelineRunSchema.id)
+                    .where(PipelineRunSchema.parent_run_id == self.id)
+                    .where(col(PipelineRunSchema.in_progress).is_(True))
+                    .limit(1)
+                ).first():
+                    return True
+
             execution_mode = self.get_pipeline_configuration().execution_mode
 
             if (

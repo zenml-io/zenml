@@ -651,38 +651,76 @@ def main() -> None:
                 node: The node to stop.
 
             Raises:
-                ApiException: If Kubernetes rejects deletion.
+                Exception: If listing or deleting the step Job fails.
             """
+            step_name = node.id
+
             label_selector = (
                 f"run_id={kube_utils.sanitize_label_value(str(pipeline_run.id))},"
                 f"step_name={kube_utils.sanitize_label_value(node.id)}"
             )
 
-            jobs = kube_utils.list_jobs(
-                batch_api=batch_api,
-                namespace=namespace,
-                label_selector=label_selector,
-                api_request_timeout=pipeline_settings.api_request_timeout,
-                max_retries=pipeline_settings.max_api_retries,
-            )
+            try:
+                jobs = batch_api.list_namespaced_job(
+                    namespace=namespace,
+                    label_selector=label_selector,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to find jobs for step {step_name}: {e}"
+                )
+                raise
+
+            if not jobs.items:
+                logger.debug(f"No jobs found for step {step_name}")
+                return
+
             for job in jobs.items:
-                if job.status and any(
-                    condition.type in {"Complete", "Failed"}
-                    and condition.status == "True"
-                    for condition in job.status.conditions or []
+                # Check if this is a job related to the correct step
+                step_name_annotation = job.metadata.annotations.get(
+                    STEP_NAME_ANNOTATION_KEY, None
+                )
+                if (
+                    step_name_annotation is None
+                    or step_name_annotation != step_name
                 ):
                     continue
-                try:
-                    kube_utils.delete_job(
-                        batch_api=batch_api,
-                        namespace=namespace,
-                        job_name=job.metadata.name,
-                        api_request_timeout=pipeline_settings.api_request_timeout,
-                        max_retries=pipeline_settings.max_api_retries,
+
+                # Check if job is already completed or failed - skip deletion
+                job_finished = False
+                if job.status.conditions:
+                    for condition in job.status.conditions:
+                        if (
+                            condition.type in ["Complete", "Failed"]
+                            and condition.status == "True"
+                        ):
+                            job_finished = True
+                            break
+
+                if job_finished:
+                    logger.debug(
+                        f"Job {job.metadata.name} for step {step_name} already finished, skipping deletion"
                     )
-                except ApiException as error:
-                    if error.status != 404:
-                        raise
+                    continue
+
+                # Delete the running/pending job
+                try:
+                    batch_api.delete_namespaced_job(
+                        name=job.metadata.name,
+                        namespace=namespace,
+                        propagation_policy="Foreground",
+                    )
+                    logger.info(
+                        f"Successfully stopped step job: {job.metadata.name}"
+                    )
+                    break
+                except Exception as e:
+                    if isinstance(e, ApiException) and e.status == 404:
+                        break
+                    logger.warning(
+                        f"Failed to stop step job {job.metadata.name}: {e}"
+                    )
+                    raise
 
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
@@ -947,17 +985,17 @@ def main() -> None:
                     ExecutionStatus.RUNNING,
                 }:
                     publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+
+            if client.get_pipeline_run(pipeline_run.id).stop_mode is not None:
+                publish_utils.publish_pipeline_run_status_update(
+                    pipeline_run.id, ExecutionStatus.STOPPED
+                )
         except AuthorizationException:
             # If a step of the pipeline failed or all of them completed
             # successfully, the pipeline run will be finished and the API token
             # will be invalidated. We catch this exception and do nothing here,
             # as the pipeline run status will already have been published.
             pass
-
-        if client.get_pipeline_run(pipeline_run.id).stop_mode is not None:
-            publish_utils.publish_pipeline_run_status_update(
-                pipeline_run.id, ExecutionStatus.STOPPED
-            )
 
         logger.info("Orchestrator pod finished.")
 

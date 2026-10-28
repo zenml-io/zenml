@@ -835,18 +835,24 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
-        """Stop a Modal run, honoring graceful stops where possible.
+        """Stop a Modal run, allowing active steps to finish when graceful.
 
         Args:
             run: Pipeline run whose sandboxes should be stopped.
-            graceful: Whether to allow running static steps to finish.
+            graceful: Whether to allow running steps to finish.
 
         Raises:
             RuntimeError: If one or more Modal sandboxes cannot be stopped.
         """
         if graceful:
+            logger.info(
+                "Gracefully stopping Modal run `%s`. The orchestration "
+                "sandbox will stop scheduling new steps and let running "
+                "child sandboxes finish.",
+                run.id,
+            )
             return
-        refreshed_run = Client().get_pipeline_run(run.id)
+        refreshed_run = self._get_fresh_pipeline_run(run)
 
         errors: List[str] = []
         attempted_child_sandbox_ids: set[str] = set()
@@ -872,8 +878,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         def _terminate_orchestration_sandbox(
             target_run: "PipelineRunResponse",
         ) -> None:
-            if target_run.child_key is not None:
-                return
             orchestration_sandbox_id = _metadata_value(
                 target_run.run_metadata,
                 MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY,
@@ -899,7 +903,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         _terminate_child_sandboxes(refreshed_run)
         _terminate_orchestration_sandbox(refreshed_run)
 
-        late_run = Client().get_pipeline_run(run.id)
+        late_run = self._get_fresh_pipeline_run(run)
         _terminate_child_sandboxes(late_run)
         _terminate_orchestration_sandbox(late_run)
 

@@ -1021,7 +1021,14 @@ class DynamicPipelineRunner:
             return
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
-            self._abort_and_drain(exception=e)
+            # A stop arriving during the drain must preserve this failure.
+            try:
+                if self._stop_mode is None and not isinstance(
+                    e, (RunStoppedException, StartupCancelled)
+                ):
+                    self._publish_run_status(exception=e)
+            finally:
+                self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
             self._fire_terminal_run_hooks(self._run.status, e)
             if self._stop_mode is not None:
@@ -1035,7 +1042,13 @@ class DynamicPipelineRunner:
             self._settle_concurrent_work()
         except BaseException as e:
             logger.debug("Failure during settle: %s", e)
-            self._abort_and_drain(exception=e)
+            try:
+                if self._stop_mode is None and not isinstance(
+                    e, (RunStoppedException, StartupCancelled)
+                ):
+                    self._publish_run_status(exception=e)
+            finally:
+                self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
             self._fire_terminal_run_hooks(self._run.status, e)
             if self._stop_mode is not None:

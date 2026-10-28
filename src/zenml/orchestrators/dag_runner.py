@@ -258,9 +258,13 @@ class DagRunner:
 
         self.node_stop_function(node)
 
-    def _stop_all_nodes(self) -> None:
-        """Stop all running or starting nodes."""
-        for node in self.active_nodes:
+    def _stop_all_nodes(self, nodes: List[Node]) -> None:
+        """Stop the nodes selected for cleanup.
+
+        Args:
+            nodes: The nodes to stop, regardless of their current status.
+        """
+        for node in nodes:
             self._stop_node(node)
             node.status = NodeStatus.CANCELLED
 
@@ -376,12 +380,14 @@ class DagRunner:
         self.monitoring_thread.join()
         if interrupt_mode == InterruptMode.FORCE:
             # A startup task can finish creating its resource after the first
-            # stop pass. Drain those tasks before stopping any late resource.
+            # stop pass. Revisit the same nodes after draining startup, even if
+            # the first pass marked them cancelled after startup finished.
+            nodes_to_stop = self.active_nodes
             try:
-                self._stop_all_nodes()
+                self._stop_all_nodes(nodes_to_stop)
             finally:
                 self.startup_executor.shutdown(wait=True)
-                self._stop_all_nodes()
+                self._stop_all_nodes(nodes_to_stop)
         else:
             self.startup_executor.shutdown(wait=True)
 

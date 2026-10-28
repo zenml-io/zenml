@@ -931,7 +931,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Raises:
             IllegalOperationError: If the run has no orchestrator run id,
-                completed successfully, or requires a newer server to stop.
+                or completed successfully.
         """
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
@@ -941,15 +941,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         if run.status == ExecutionStatus.COMPLETED:
             raise IllegalOperationError("Cannot stop a completed run.")
-        if (
-            run.status in {ExecutionStatus.FAILED, ExecutionStatus.STOPPED}
-            and "stop_mode" not in run.get_body().model_fields_set
-        ):
-            raise IllegalOperationError(
-                "This server must be upgraded to stop failed or stopped runs."
-            )
-
-        # The server records the mode and preserves an existing FAILED outcome.
+        # The store records the mode and preserves an existing FAILED outcome.
         # Older servers ignore the mode and use the existing STOPPING behavior.
         run = Client().zen_store.update_run(
             run_id=run.id,
@@ -960,6 +952,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 else PipelineRunStopMode.IMMEDIATE,
             ),
         )
+        # A graceful request must not weaken an immediate stop already recorded
+        # by another caller. Older stores omit the mode, so keep the request.
         if run.stop_mode is not None:
             graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)

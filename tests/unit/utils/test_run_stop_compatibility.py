@@ -27,7 +27,6 @@ def test_old_server_stop_preserves_requested_backend_mode(
         status=ExecutionStatus.RUNNING,
         orchestrator_run_id="job",
         stop_mode=None,
-        get_body=lambda: SimpleNamespace(model_fields_set=set()),
     )
     update = Mock(return_value=run)
     client = SimpleNamespace(zen_store=SimpleNamespace(update_run=update))
@@ -59,7 +58,6 @@ def test_persisted_immediate_mode_cannot_be_downgraded(
         status=ExecutionStatus.FAILED,
         orchestrator_run_id="job",
         stop_mode=PipelineRunStopMode.IMMEDIATE,
-        get_body=lambda: SimpleNamespace(model_fields_set={"stop_mode"}),
     )
     update = Mock(return_value=run)
     client = SimpleNamespace(zen_store=SimpleNamespace(update_run=update))
@@ -80,14 +78,14 @@ def test_persisted_immediate_mode_cannot_be_downgraded(
 
 @pytest.mark.parametrize(
     "status,backend_id",
-    [(ExecutionStatus.FAILED, "job"), (ExecutionStatus.RUNNING, None)],
+    [(ExecutionStatus.COMPLETED, "job"), (ExecutionStatus.RUNNING, None)],
 )
-def test_old_server_rejects_new_cleanup_contract(
+def test_unstoppable_run_is_rejected_before_backend_cleanup(
     monkeypatch: pytest.MonkeyPatch,
     status: ExecutionStatus,
     backend_id: str | None,
 ) -> None:
-    """Old servers cannot silently accept cleanup they cannot represent.
+    """Completed runs and runs without a backend ID cannot be stopped.
 
     Args:
         monkeypatch: Fixture for replacing external collaborators.
@@ -98,12 +96,11 @@ def test_old_server_rejects_new_cleanup_contract(
         id=uuid4(),
         status=status,
         orchestrator_run_id=backend_id,
-        get_body=lambda: SimpleNamespace(model_fields_set=set()),
     )
     client = Mock()
     monkeypatch.setattr(base_orchestrator, "Client", lambda: client)
 
-    message = "upgraded" if backend_id else "no orchestrator run id"
+    message = "completed" if backend_id else "no orchestrator run id"
     with pytest.raises(IllegalOperationError, match=message):
         BaseOrchestrator.stop_run(Mock(), run, graceful=True)
 

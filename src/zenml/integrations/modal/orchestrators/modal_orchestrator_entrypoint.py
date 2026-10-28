@@ -564,15 +564,12 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             client = Client()
             run = client.get_pipeline_run(pipeline_run_id)
 
-            if run.stop_mode is not None:
-                publish_utils.publish_pipeline_run_status_update(
-                    pipeline_run_id, ExecutionStatus.STOPPED
-                )
-                return
-
-            # A graceful local stop only marks the run as STOPPING. Once the
-            # controller has drained the DAG, it publishes the terminal status.
-            if run.status == ExecutionStatus.STOPPING:
+            # Once the controller has drained the DAG, publish completion of
+            # the stop even if an earlier failure kept the run status FAILED.
+            if (
+                run.stop_mode is not None
+                or run.status == ExecutionStatus.STOPPING
+            ):
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,
@@ -607,7 +604,10 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                     publish_utils.publish_failed_step_run(step_run.id)
 
             refreshed_run = client.get_pipeline_run(pipeline_run_id)
-            if refreshed_run.status == ExecutionStatus.STOPPING:
+            if (
+                refreshed_run.stop_mode is not None
+                or refreshed_run.status == ExecutionStatus.STOPPING
+            ):
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,

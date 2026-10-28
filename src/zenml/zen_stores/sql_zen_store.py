@@ -7747,15 +7747,39 @@ class SqlZenStore(BaseZenStore):
         # The same stop operation applies to children whose workloads belong
         # to this run; each child keeps its own failure outcome and activity.
         for child_id in children:
-            self.update_run(
-                child_id,
-                PipelineRunUpdate(
-                    stop_mode=result.stop_mode,
-                    status=ExecutionStatus.STOPPED
-                    if run_update.status == ExecutionStatus.STOPPED
-                    else None,
-                ),
-            )
+            try:
+                self.update_run(
+                    child_id,
+                    PipelineRunUpdate(
+                        stop_mode=result.stop_mode,
+                        status=ExecutionStatus.STOPPED
+                        if run_update.status == ExecutionStatus.STOPPED
+                        else None,
+                    ),
+                )
+            except KeyError:
+                # The child can disappear after collecting its ID.
+                continue
+            except IllegalOperationError:
+                # A child may finish while the stop propagates. Other invalid
+                # updates must still surface to the caller.
+                try:
+                    child = self.get_run(child_id)
+                except KeyError:
+                    continue
+                if child.status != ExecutionStatus.COMPLETED:
+                    raise
+        if (
+            run_update.status == ExecutionStatus.STOPPED
+            and result.status == ExecutionStatus.FAILED
+            and result.in_progress
+        ):
+            # Failed parents stay active until their children have settled.
+            with Session(self.engine) as session:
+                self._update_pipeline_run_status(
+                    pipeline_run_id=run_id, session=session
+                )
+            result = self.get_run(run_id)
         return result
 
     def delete_run(self, run_id: UUID) -> None:

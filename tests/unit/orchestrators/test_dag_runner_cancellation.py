@@ -44,6 +44,46 @@ def test_force_stop_cleans_up_startup_completing_after_first_stop() -> None:
         release.set()
 
 
+def test_force_stop_revisits_node_cancelled_after_startup_finishes() -> None:
+    """Cleanup revisits resources created before the first stop returns."""
+    entered = threading.Event()
+    release = threading.Event()
+    resource_exists = threading.Event()
+    stops = []
+
+    def start(node: Node) -> NodeStatus:
+        entered.set()
+        assert release.wait(2)
+        resource_exists.set()
+        return NodeStatus.RUNNING
+
+    def stop(node: Node) -> None:
+        stops.append(resource_exists.is_set())
+        resource_exists.clear()
+        if len(stops) == 1:
+            release.set()
+            # Ensure startup publishes RUNNING before this callback returns
+            # and the runner overwrites that status with CANCELLED.
+            runner.startup_executor.shutdown(wait=True)
+            assert node.status == NodeStatus.RUNNING
+
+    runner = DagRunner(
+        [Node(id="step")],
+        start,
+        lambda node: NodeStatus.RUNNING,
+        stop,
+        lambda: InterruptMode.FORCE if entered.is_set() else None,
+        interrupt_check_interval=0,
+        monitoring_interval=0.01,
+    )
+    try:
+        assert runner.run() == {"step": NodeStatus.CANCELLED}
+        assert stops == [False, True]
+        assert not resource_exists.is_set()
+    finally:
+        release.set()
+
+
 def test_graceful_stop_drains_starting_node_without_starting_downstream() -> (
     None
 ):
