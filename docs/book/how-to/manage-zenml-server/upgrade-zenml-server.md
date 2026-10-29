@@ -50,8 +50,12 @@ To upgrade your ZenML server Helm release to a new version, follow the steps bel
 If you don't need to change any configuration values, you can perform a simple in-place upgrade that reuses your existing configuration:
 
 ```bash
-helm -n <namespace> upgrade zenml-server oci://public.ecr.aws/zenml/zenml --version <VERSION> --reuse-values
+helm -n <namespace> upgrade zenml-server oci://public.ecr.aws/zenml/zenml --version <VERSION> --reset-then-reuse-values
 ```
+
+{% hint style="warning" %}
+Use `--reset-then-reuse-values` (Helm 3.14+) rather than `--reuse-values`. With `--reuse-values`, Helm ignores the new chart version's default values and keeps the defaults of the version you originally installed, so new defaults such as the [Pod Security settings](https://docs.zenml.io/deploying-zenml/deploying-zenml/deploy-with-helm#pod-security) are never applied. In a namespace that enforces the Kubernetes Pod Security `restricted` profile, this makes the upgrade fail because the database migration pod is rejected. On older Helm versions, use the `-f custom-values.yaml` flow below instead.
+{% endhint %}
 
 #### Upgrade with configuration changes
 
