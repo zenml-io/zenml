@@ -72,14 +72,14 @@ def configure_langfuse_callbacks() -> None:
 
 def call_llm(
     prompt: str,
-    model: str = "gpt-3.5-turbo",
+    model: str = "gpt-5.6-terra",
     metadata: Optional[dict[str, Any]] = None,
 ) -> str:
     """Call LLM using LiteLLM with optional Langfuse observability and fallback to mock response.
 
     Args:
         prompt: The prompt to send to the LLM
-        model: The model to use (defaults to gpt-3.5-turbo)
+        model: The model to use (defaults to gpt-5.6-terra)
         metadata: Optional metadata for Langfuse tracing
 
     Returns:
@@ -97,8 +97,7 @@ def call_llm(
         call_params = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 200,
-            "temperature": 0.7,
+            "max_completion_tokens": 200,
         }
 
         # Add metadata for Langfuse if available

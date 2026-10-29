@@ -115,7 +115,7 @@ class SingleAgentRAG(BaseAgent):
 
             response_text = call_llm(
                 prompt,
-                model="gpt-3.5-turbo",
+                model="gpt-5.6-terra",
                 metadata={
                     "agent_type": "SingleAgentRAG",
                     "query_length": len(query),
@@ -305,7 +305,7 @@ class MultiSpecialistAgents(BaseAgent):
 
             response_text = call_llm(
                 prompt,
-                model="gpt-3.5-turbo",
+                model="gpt-5.6-terra",
                 metadata={
                     "agent_type": "MultiSpecialistAgents",
                     "specialist": specialist,
@@ -580,7 +580,7 @@ class LangGraphCustomerServiceAgent(BaseAgent):
 
             response = call_llm(
                 prompt,
-                model="gpt-3.5-turbo",
+                model="gpt-5.6-terra",
                 metadata={
                     "agent_type": "LangGraphCustomerServiceAgent",
                     "query_type": query_type,

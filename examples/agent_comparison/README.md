@@ -225,19 +225,19 @@ from litellm import completion
 
 # This works with any provider supported by LiteLLM:
 response = completion(
-    model="gpt-3.5-turbo",  # OpenAI
+    model="gpt-5.6-terra",  # OpenAI
     # model="claude-3-sonnet",  # Anthropic
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
     messages=[{"role": "user", "content": query}],
-    max_tokens=200,
+    max_completion_tokens=200,
     # Langfuse integration (automatic when env vars are set)
     metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)},
 )
 ```
 
 **Supported Providers via LiteLLM:**
-- **OpenAI**: `gpt-4`, `gpt-3.5-turbo`
+- **OpenAI**: `gpt-5.6-sol`, `gpt-5.6-terra`
 - **Anthropic**: `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
 - **Groq**: `groq/llama2-70b-4096`, `groq/mixtral-8x7b-32768`
 - **Cohere**: `command-r`, `command-r-plus`
