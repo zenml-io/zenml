@@ -895,6 +895,14 @@ class ServerConfiguration(BaseModel):
                 server_pro_config.dashboard_url,
                 server_pro_config.api_url,
             ]
+            classic_dashboard_url = {
+                "https://cloud.zenml.io": "https://classic.cloud.zenml.io",
+                "https://staging.cloud.zenml.io": (
+                    "https://classic.staging.cloud.zenml.io"
+                ),
+            }.get(server_pro_config.dashboard_url)
+            if classic_dashboard_url:
+                extra_cors_allow_origins.append(classic_dashboard_url)
             if server_config.server_url:
                 extra_cors_allow_origins.append(server_config.server_url)
             if (
