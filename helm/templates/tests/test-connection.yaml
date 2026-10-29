@@ -9,18 +9,12 @@ metadata:
     "helm.sh/hook": test
 spec:
   securityContext:
-    runAsNonRoot: true
-    runAsUser: 65534
-    seccompProfile:
-      type: RuntimeDefault
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
   containers:
     - name: wget
       image: busybox:1.37
       securityContext:
-        allowPrivilegeEscalation: false
-        capabilities:
-          drop:
-          - ALL
+        {{- toYaml .Values.securityContext | nindent 8 }}
       command: ['wget']
       args: ['-O', '/dev/null', '{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
   restartPolicy: Never
