@@ -8,9 +8,19 @@ metadata:
   annotations:
     "helm.sh/hook": test
 spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
   containers:
     - name: wget
-      image: busybox
+      image: busybox:1.37
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
       command: ['wget']
-      args: ['{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
+      args: ['-O', '/dev/null', '{{ include "zenml.fullname" . }}:{{ $server.service.port }}']
   restartPolicy: Never
