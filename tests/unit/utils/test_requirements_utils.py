@@ -22,6 +22,10 @@ from zenml.cli.utils import install_packages
 from zenml.utils import requirements_utils
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="The expression is POSIX shell syntax that only runs in Linux images.",
+)
 def test_installed_zenml_shell_requirement():
     """Tests that the shell expression pins the installed ZenML version."""
     expression = requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT.replace(
@@ -30,7 +34,7 @@ def test_installed_zenml_shell_requirement():
 
     output = subprocess.run(
         f"echo {expression}",
-        shell=True,
+        shell=True,  # nosec B602
         capture_output=True,
         text=True,
         check=True,
