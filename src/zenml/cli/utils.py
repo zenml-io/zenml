@@ -3207,7 +3207,7 @@ def get_parsed_labels(
     metadata_dict = {}
     for m in labels:
         try:
-            key, value = m.split("=")
+            key, value = m.split("=", maxsplit=1)
         except ValueError:
             if not allow_label_only:
                 raise ValueError(
