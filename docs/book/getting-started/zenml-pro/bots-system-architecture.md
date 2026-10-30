@@ -5,7 +5,7 @@ icon: diagram-project
 
 # Bots System Architecture
 
-Bots run coding agents for your ZenML Pro organization. Every chat gets its own sandbox, a remote computer with a browser, a terminal, and a checkout of your repositories. This page explains how Bots fit into ZenML Pro, where your data lives, and how sandboxes keep credentials safe.
+Bots run coding agents for your ZenML Pro organization. Every chat gets its own sandbox, a remote computer with a checkout of your repositories. This page explains how Bots fit into ZenML Pro, where your data lives, and how sandboxes keep credentials safe.
 
 For the objects users work with, such as bots, environments, chats, and automations, see [Bots core concepts](bots-core-concepts.md). For who may do what, see [Bots roles and permissions](bots-rbac.md). For an introduction, see the [Bots overview](bots.md).
 
@@ -19,7 +19,6 @@ flowchart LR
     Proxy[Sandbox egress proxy<br/>credential injection]
     subgraph Sandbox[Sandbox, one per chat]
         Agent[Agent]
-        Desktop[Browser and terminal]
     end
     Ext[Model provider, GitHub,<br/>ZenML workspaces, connectors]
 
@@ -31,7 +30,6 @@ flowchart LR
     Agent --> Server
     Agent --> Proxy
     Proxy --> Ext
-    UI -. live view .-> Desktop
 ```
 
 ## How Bots Fit into ZenML Pro
@@ -51,7 +49,7 @@ The Bots server is a service of the ZenML Pro control plane, next to your worksp
 1. You send a message from the UI, Slack, GitHub, or the SDK. When the chat has no running sandbox, one is started from the chat's environment. A stopped sandbox starts again with its files intact.
 2. The agent works in the sandbox. Its messages, reasoning, commands, and tool calls stream to the chat live.
 3. While it works, the agent calls the model provider, GitHub, your ZenML workspaces, and attached connectors. All of this traffic goes through the sandbox egress proxy, which adds the credentials.
-4. The live browser view, the terminal, and SSH use signed, short-lived access that you request from the chat.
+4. SSH uses short-lived access that you request from the chat.
 5. The agent ends its turn with a report or a question. Chats started from Slack or GitHub receive them in their thread.
 6. After the sandbox has been idle for a few minutes, it is stopped. The next message starts it again.
 
@@ -79,7 +77,7 @@ Bots are currently available as a shared ZenML-managed service only. Your ZenML 
 The sandbox runs code the agent writes, so real credentials are kept out of it. Every sandbox sends its outbound traffic through an egress proxy. The sandbox only holds placeholders for the GitHub token, the bot's ZenML Pro service account key, and connector credentials. The proxy replaces a placeholder with the real credential on its way out, and only for the destination the credential belongs to.
 
 - Credentials are added only for approved destinations such as GitHub, the ZenML Pro API, and the model provider. Requests to other hosts pass through without credentials, so the agent can still browse the public web.
-- GitHub credentials only cover repositories of a GitHub installation connected to the chat's organization.
+- GitHub credentials only cover the repositories configured in the bot's environment, and only those the ZenML Pro GitHub app has access to.
 - A connector credential is added only when the connector is attached to the chat's bot.
 - Changes to a connector can take a few minutes to reach a running chat.
 - The API key of a [custom MCP server](bots-core-concepts.md#custom-mcp-servers) connector is placed in the sandbox, because the server runs there.

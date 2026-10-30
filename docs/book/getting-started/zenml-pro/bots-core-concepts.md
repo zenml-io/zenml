@@ -17,7 +17,7 @@ flowchart LR
     Env[Environment<br/>Repositories, commands, variables]
     Conn[Connectors]
     Chat[Chat]
-    Sandbox[Sandbox<br/>Agent, browser, terminal]
+    Sandbox[Sandbox<br/>Agent and tools]
     Auto[Automation]
     Channel[Slack or GitHub channel]
     WS[ZenML and Kitaru workspaces]
@@ -254,7 +254,7 @@ from a snapshot.
 ## Sandboxes
 
 A sandbox is the isolated computer a chat runs in. Each chat has its own
-sandbox, and the agent, its browser, and its tools all run inside it. You do
+sandbox, and the agent and its tools run inside it. You do
 not create sandboxes yourself. A sandbox starts with the chat, stops when the
 chat is paused or idle, and starts again when the chat continues.
 
@@ -263,25 +263,11 @@ skills installed, and the ZenML and Kitaru clients logged in to the workspaces
 the bot's service account can read. The environment's start command and the
 agent run in it.
 
-### Live browser view
-
-The sandbox runs a full browser. The agent drives this browser, for example
-to open a dashboard or test a web app it is building. The live browser view
-streams it to you, so you can watch the agent and interact with the page
-yourself.
-
-### Terminal
-
-Each running sandbox offers a web terminal: a shell in the sandbox that you
-open from your browser, next to the agent.
-
 ### SSH access
 
 You can request SSH access to the sandbox of a running chat. Every request
-issues a fresh SSH command to run, which expires after one hour.
-
-The live browser view, terminal, and SSH links of a chat belong to its
-current sandbox and can expire. Request them again when they do.
+issues a fresh SSH command to run, which expires after one hour. Request a new
+one when it expires or the sandbox restarts.
 
 ### Credentials in the sandbox
 
@@ -289,9 +275,9 @@ The agent uses GitHub and connector services without their real credentials
 ever entering the sandbox. See
 [Credentials Stay Outside the Sandbox](bots-system-architecture.md#credentials-stay-outside-the-sandbox).
 For GitHub, the agent can clone, fetch, and push the
-repositories the chat works with, and use the `gh` CLI, through the ZenML Pro
-GitHub app. Only repositories of a GitHub installation connected to the chat's
-organization are reachable this way. Commits are authored by the app's bot
+repositories configured in the bot's environment, and use the `gh` CLI on
+them, through the ZenML Pro GitHub app. This only works for repositories the
+app has access to. Commits are authored by the app's bot
 user unless the environment sets the Git author and committer variables.
 
 ## Artifacts

@@ -1,7 +1,7 @@
 ---
 description: >-
-  Run coding agents in sandboxes with a live browser view, a terminal, SSH,
-  and steering from the UI, Slack, or GitHub.
+  Run coding agents in sandboxes with SSH access and steering from the UI,
+  Slack, or GitHub.
 icon: robot
 ---
 
@@ -9,9 +9,8 @@ icon: robot
 
 Bots run a coding agent for your team. Every conversation with the agent is a
 chat, and every chat gets its own sandbox: an isolated computer with your
-repositories cloned, your setup commands run, and a browser the agent can
-drive. While the agent works, you can watch its browser live, open a terminal
-or an SSH session into the sandbox, send it new instructions, answer its
+repositories cloned and your setup commands run. While the agent works, you
+can open an SSH session into the sandbox, send it new instructions, answer its
 questions, and stop it.
 
 Bots work on ZenML Pro data. You sign in with your ZenML Pro account, and
@@ -40,9 +39,7 @@ or a stack. ZenML Pro picks the bot that fits the prompt best, unless you
 choose one, and starts a sandbox for the chat.
 
 Every step the agent takes appears in the chat as it happens: its messages,
-its reasoning, the commands it runs, and the tools it calls. A live browser
-view shows the browser in the sandbox, and a web terminal gives you a shell
-next to the agent.
+its reasoning, the commands it runs, and the tools it calls.
 
 ### Steer the agent instead of waiting for it
 

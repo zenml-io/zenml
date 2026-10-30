@@ -74,8 +74,7 @@ Permissions apply to five resource types:
 | Connector | `create`, `update`, `delete` | Every member of the organization can see the connectors |
 
 Chats and everything in them, such as messages, events, artifacts, feedback,
-the live browser view, the terminal, and SSH access, have no permissions of
-their own. Access to a chat follows from the bot of the chat, as described in
+and SSH access, have no permissions of their own. Access to a chat follows from the bot of the chat, as described in
 [Chats](#chats).
 
 Linked Slack and GitHub identities are private. You can only see, create,
@@ -164,7 +163,7 @@ actions to add or remove.
 | Start a chat and let ZenML Pro pick the bot | `use` on at least one bot. Only the bots you can use are considered. |
 | View a chat, its messages, events, and artifacts, or give feedback | Ownership of the chat, or `read` on its bot |
 | Send a message, retry or discard a failed message, or rename, archive, pause, resume, or interrupt a chat | `use` on its bot |
-| Open the live browser view, the terminal, or SSH access | `use` on its bot |
+| Request SSH access | `use` on its bot |
 | Create or delete an artifact | `use` on its bot |
 
 The chat list contains your own chats and the chats of every bot you can
