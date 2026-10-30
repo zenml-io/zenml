@@ -740,6 +740,7 @@ class KubernetesSandbox(BaseSandbox):
             command=["/bin/sh", "-c"],
             args=["while true; do sleep 30; done"],
             privileged=resolved_settings.privileged,
+            image_pull_policy=resolved_settings.image_pull_policy,
             pod_settings=resolved_settings.pod_settings,
             service_account_name=resolved_settings.service_account_name,
             env=env,
