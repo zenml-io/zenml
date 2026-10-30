@@ -134,6 +134,13 @@ install_integrations() {
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
+
+    # whylogs-sketching has no Python 3.13/3.14 wheels. Its source build
+    # fails with GCC 15 on Ubuntu, so retain coverage on the other CI jobs.
+    if [ "$os_name" = "Linux" ] &&
+        { [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; }; then
+        ignore_integrations="$ignore_integrations whylogs"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
