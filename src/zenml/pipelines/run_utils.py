@@ -32,6 +32,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import CustomFlavorImportError
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
@@ -165,8 +166,8 @@ def validate_stack_is_runnable_from_server(
         stack: The stack to validate.
 
     Raises:
-        ValueError: If the stack has components of a custom flavor or local
-            components.
+        ValueError: If the stack has components of a custom flavor that can't
+            be imported or local components.
     """
     for component_list in stack.components.values():
         assert len(component_list) == 1
@@ -177,13 +178,14 @@ def validate_stack_is_runnable_from_server(
         assert len(flavors) == 1
         flavor_model = flavors[0]
 
-        if flavor_model.is_custom:
+        try:
+            flavor = Flavor.from_model(flavor_model)
+        except CustomFlavorImportError as e:
             raise ValueError(
                 "Unable to run pipeline from the server on a stack that "
-                "includes stack components with a custom flavor."
-            )
+                f"includes stack components with a custom flavor: {e}"
+            ) from e
 
-        flavor = Flavor.from_model(flavor_model)
         component_config = flavor.config_class(**component.configuration)
 
         if component_config.is_local:
