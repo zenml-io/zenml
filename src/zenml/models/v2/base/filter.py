@@ -936,8 +936,7 @@ class BaseFilter(BaseModel):
             A tuple of the filter value and the operator.
 
         Raises:
-            ValueError: when we try to use the `oneof` operator with the wrong
-                value.
+            ValueError: If an operator receives an invalid or empty operand.
         """
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
@@ -972,6 +971,13 @@ class BaseFilter(BaseModel):
                         raise ValueError
                 except ValueError:
                     raise ValueError(ONEOF_ERROR)
+
+        if operator not in VALUELESS_FILTER_OPS and (
+            value == "" or isinstance(value, list) and not value
+        ):
+            raise ValueError(
+                f"Filter operator '{operator}' requires a nonempty operand."
+            )
 
         return value, operator
 
