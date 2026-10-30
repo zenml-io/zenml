@@ -778,6 +778,11 @@ def generate_dockerfile(
         pypi_requirements_string = " ".join(
             [f"'{r}'" for r in pypi_requirements]
         )
+        # Keeps the installer from replacing dependencies of the image's ZenML
+        # with incompatible versions.
+        pypi_requirements_string += (
+            f" {requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT}"
+        )
 
         if handle_bool_env_var(
             ENV_ZENML_RUNNER_IMAGE_DISABLE_UV, default=False

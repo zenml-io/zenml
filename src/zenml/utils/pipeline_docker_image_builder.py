@@ -43,7 +43,7 @@ from zenml.container_engines import ContainerEngine, get_container_engine
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import io_utils, source_utils
+from zenml.utils import io_utils, requirements_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -784,14 +784,25 @@ class PipelineDockerImageBuilder:
             f"--{key}" if value is None else f"--{key}={value}"
             for key, value in installer_args.items()
         )
-        for file, _, options in requirements_files:
+        for file, file_content, options in requirements_files:
             lines.append(f"COPY {file} .")
             option_string = " ".join(options)
-
-            lines.append(
+            install = (
                 f"{run_directive} {install_command} {installer_args_string}"
                 f"{option_string} -r {file}"
             )
+
+            # Keeps the installer from replacing dependencies of the image's
+            # ZenML with incompatible versions. A file that installs ZenML
+            # itself already brings its requirements.
+            if not requirements_utils.requires_zenml(
+                file_content.splitlines()
+            ):
+                install += (
+                    f" {requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT}"
+                )
+
+            lines.append(install)
 
         lines.append(f"ENV {ENV_ZENML_ENABLE_REPO_INIT_WARNINGS}=False")
         lines.append(

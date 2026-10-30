@@ -101,7 +101,7 @@ from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
-from zenml.utils import secret_utils
+from zenml.utils import requirements_utils, secret_utils
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
@@ -1066,6 +1066,14 @@ def install_packages(
         command += ["--upgrade"]
 
     command += packages
+
+    # Keeps the installer from replacing dependencies of the installed ZenML
+    # with incompatible versions.
+    if (
+        zenml_requirement
+        := requirements_utils.get_installed_zenml_requirement()
+    ):
+        command.append(zenml_requirement)
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
