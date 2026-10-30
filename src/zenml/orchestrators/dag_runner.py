@@ -258,9 +258,13 @@ class DagRunner:
 
         self.node_stop_function(node)
 
-    def _stop_all_nodes(self) -> None:
-        """Stop all running nodes."""
-        for node in self.running_nodes:
+    def _stop_all_nodes(self, nodes: List[Node]) -> None:
+        """Stop the nodes selected for cleanup.
+
+        Args:
+            nodes: The nodes to stop, regardless of their current status.
+        """
+        for node in nodes:
             self._stop_node(node)
             node.status = NodeStatus.CANCELLED
 
@@ -343,7 +347,7 @@ class DagRunner:
 
         self.monitoring_thread.start()
 
-        interrupt_mode = None
+        interrupt_mode: Optional[InterruptMode] = None
         last_interrupt_check = time.time()
 
         while True:
@@ -352,23 +356,49 @@ class DagRunner:
                     time.time() - last_interrupt_check
                     >= self.interrupt_check_interval
                 ):
-                    if interrupt_mode := self.interrupt_function():
+                    requested_mode = self.interrupt_function()
+                    if requested_mode == InterruptMode.FORCE:
+                        interrupt_mode = requested_mode
                         logger.warning("DAG execution interrupted.")
                         break
+                    if requested_mode == InterruptMode.GRACEFUL:
+                        interrupt_mode = requested_mode
                     last_interrupt_check = time.time()
 
-            is_finished = self._process_nodes()
+            if interrupt_mode == InterruptMode.GRACEFUL:
+                # Keep monitoring current work, without scheduling downstream
+                # nodes. Continue polling so the user can escalate the stop.
+                is_finished = not self.active_nodes
+            else:
+                is_finished = self._process_nodes()
             if is_finished:
                 break
 
             time.sleep(0.5)
 
+        # Capture active resources before shutting down the monitor, whose
+        # in-flight status request may fail while the workload remains alive.
+        nodes_to_stop = (
+            self.active_nodes if interrupt_mode == InterruptMode.FORCE else []
+        )
         self.shutdown_event.set()
-        if interrupt_mode == InterruptMode.FORCE:
-            # If a force interrupt was requested, we stop all running nodes.
-            self._stop_all_nodes()
-
         self.monitoring_thread.join()
+        if interrupt_mode == InterruptMode.FORCE:
+            # A startup task can finish creating its resource after the first
+            # stop pass. Revisit the same nodes after draining startup, even if
+            # the first pass marked them cancelled after startup finished.
+            try:
+                self._stop_all_nodes(nodes_to_stop)
+            finally:
+                self.startup_executor.shutdown(wait=True)
+                self._stop_all_nodes(nodes_to_stop)
+        else:
+            self.startup_executor.shutdown(wait=True)
+
+        if interrupt_mode is not None:
+            for node in self.nodes.values():
+                if node.status in {NodeStatus.NOT_READY, NodeStatus.READY}:
+                    node.status = NodeStatus.CANCELLED
 
         node_statuses = {
             node_id: node.status for node_id, node in self.nodes.items()

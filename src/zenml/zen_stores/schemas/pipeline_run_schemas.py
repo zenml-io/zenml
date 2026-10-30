@@ -38,6 +38,7 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunStopMode,
     PipelineRunTriggeredByType,
     RunWaitConditionStatus,
     TaggableResourceTypes,
@@ -147,6 +148,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     end_time: Optional[datetime] = Field(nullable=True, default=None)
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
+    stop_mode: Optional[str] = Field(default=None, nullable=True)
     status_reason: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
@@ -719,6 +721,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             user_id=self.user_id,
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
+            stop_mode=PipelineRunStopMode(self.stop_mode)
+            if self.stop_mode
+            else None,
             status_reason=self.status_reason,
             created=self.created,
             updated=self.updated,
@@ -911,7 +916,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 )
             self.orchestrator_run_id = run_update.orchestrator_run_id
 
-        if run_update.exception_info:
+        if run_update.exception_info and not (
+            self.stop_mode
+            and self.status == ExecutionStatus.FAILED
+            and self.exception_info
+        ):
             self.exception_info = run_update.exception_info.model_dump_json()
 
         self.updated = utc_now()
@@ -981,10 +990,35 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         assert self.snapshot
         is_dynamic_pipeline = self.snapshot.is_dynamic
 
-        if is_dynamic_pipeline:
+        if requested_status == ExecutionStatus.RESUMING:
+            self.stop_mode = None
+        elif self.stop_mode:
+            if current_status == ExecutionStatus.FAILED:
+                requested_status = ExecutionStatus.FAILED
+            elif requested_status in {
+                ExecutionStatus.RUNNING,
+                ExecutionStatus.PROVISIONING,
+            }:
+                return False
+            elif requested_status in {
+                ExecutionStatus.COMPLETED,
+                ExecutionStatus.FAILED,
+            }:
+                requested_status = ExecutionStatus.STOPPED
+
+        if self.stop_mode and (
+            requested_status == ExecutionStatus.STOPPED
+            or current_status == ExecutionStatus.STOPPED
+        ):
+            new_status = ExecutionStatus.STOPPED
+        elif is_dynamic_pipeline:
             # In dynamic pipelines, the run status is only updated on manual
             # status updates and does not depend on step statuses.
-            if requested_status is None and status_reason is None:
+            if (
+                requested_status is None
+                and status_reason is None
+                and current_status != ExecutionStatus.FAILED
+            ):
                 return False
 
             new_status = requested_status or current_status
@@ -1019,7 +1053,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         self.status = new_status.value
 
-        if is_dynamic_pipeline:
+        if is_dynamic_pipeline and new_status != ExecutionStatus.FAILED:
             self.in_progress = not new_status.is_finished
         else:
             self.in_progress = self._check_if_run_in_progress()
@@ -1027,7 +1061,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         now = utc_now()
         if not self.in_progress and self.end_time is None:
             self.end_time = now
-        elif new_status == ExecutionStatus.RESUMING:
+        elif self.in_progress:
             self.end_time = None
 
         if status_reason:
@@ -1155,13 +1189,37 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             return True
 
         if run_status == ExecutionStatus.FAILED:
+            if self.snapshot and self.snapshot.is_dynamic:
+                session = object_session(self)
+                if session is None:
+                    raise RuntimeError(
+                        "Missing DB session to check the in progress "
+                        "status of the run."
+                    )
+                # Child runs share their parent's controller and runtime token.
+                if session.execute(
+                    select(PipelineRunSchema.id)
+                    .where(PipelineRunSchema.parent_run_id == self.id)
+                    .where(col(PipelineRunSchema.in_progress).is_(True))
+                    .limit(1)
+                ).first():
+                    return True
+
             execution_mode = self.get_pipeline_configuration().execution_mode
 
-            if execution_mode in [
-                ExecutionMode.FAIL_FAST,
-                ExecutionMode.STOP_ON_FAILURE,
-            ]:
-                return False
+            if (
+                self.stop_mode
+                or (self.snapshot and self.snapshot.is_dynamic)
+                or execution_mode
+                in [
+                    ExecutionMode.FAIL_FAST,
+                    ExecutionMode.STOP_ON_FAILURE,
+                ]
+            ):
+                return any(
+                    not status.is_finished
+                    for status in self._get_step_run_statuses()
+                )
 
             elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
                 from zenml.zen_stores.schemas import StepRunSchema

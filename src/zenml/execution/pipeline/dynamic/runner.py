@@ -61,12 +61,14 @@ from zenml.enums import (
     ExecutionStatus,
     GroupType,
     HookType,
+    PipelineRunStopMode,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
     RunWaitConditionType,
     StepRuntime,
 )
+from zenml.exceptions import RunStoppedException
 from zenml.execution.context import (
     record_step_run,
     setup_execution_context,
@@ -367,6 +369,7 @@ class DynamicPipelineRunner:
         self._steps_to_monitor: Dict[str, "StepRunResponse"] = {}
 
         self._shutdown_requested = False
+        self._stop_mode: Optional[PipelineRunStopMode] = None
         self._failure_detected = False
         self._exception: Optional[BaseException] = None
         self._lifecycle_lock = threading.RLock()
@@ -504,6 +507,20 @@ class DynamicPipelineRunner:
         while not self._shutdown_requested:
             start_time = time.time()
 
+            try:
+                run = Client().zen_store.get_run(self._run.id)
+            except Exception:
+                logger.exception("Failed to check pipeline stop requests.")
+            else:
+                stop_mode = run.stop_mode
+                if stop_mode is None and run.status in {
+                    ExecutionStatus.STOPPING,
+                    ExecutionStatus.STOPPED,
+                }:
+                    stop_mode = PipelineRunStopMode.IMMEDIATE
+                if stop_mode is not None:
+                    self.request_stop(stop_mode)
+
             # Copy the steps to avoid the dictionary getting modified by
             # the main thread while we're iterating over it.
             for invocation_id, step_run in list(
@@ -527,11 +544,12 @@ class DynamicPipelineRunner:
                         infra_status,
                     )
 
-                if infra_status in [
+                infra_is_running = infra_status in [
                     ExecutionStatus.INITIALIZING,
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
-                ]:
+                ]
+                if infra_is_running and self._stop_mode is None:
                     # Step still running on the infra side, no need to
                     # do anything here.
                     continue
@@ -540,17 +558,29 @@ class DynamicPipelineRunner:
 
                 db_status = step_run.status
 
-                if infra_status is None and db_status in [
+                if (
+                    infra_is_running or infra_status is None
+                ) and db_status in [
                     ExecutionStatus.INITIALIZING,
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
-                    # Step is running in the DB and we have no information on
-                    # the infra side, so we wait for the next
-                    # monitoring interval to check again. We store the
-                    # refreshed step run to have the most up to date status.
+                    # Active attempts may finish during graceful stopping.
+                    # Unknown infrastructure status also requires another poll.
                     self._steps_to_monitor[invocation_id] = step_run
                     continue
+
+                if self._stop_mode and db_status == ExecutionStatus.RETRYING:
+                    # A Kubernetes Job can remain active between attempts.
+                    # Remove it before settling the suppressed retry's future.
+                    try:
+                        self._stop_isolated_step(step_run)
+                    except Exception:
+                        logger.exception(
+                            "Failed to stop retrying step `%s`.", invocation_id
+                        )
+                        self._steps_to_monitor[invocation_id] = step_run
+                        continue
 
                 self._steps_to_monitor.pop(invocation_id, None)
 
@@ -570,9 +600,12 @@ class DynamicPipelineRunner:
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
-                    # Step failed/stopped on the infra side, but the
-                    # code failed before it could report the status back to us.
-                    step_run = publish_failed_step_run(step_run.id)
+                    # Immediate termination can remove a worker before it
+                    # publishes its status, including before its code starts.
+                    if self._stop_mode == PipelineRunStopMode.IMMEDIATE:
+                        step_run = publish_stopped_step_run(step_run.id)
+                    else:
+                        step_run = publish_failed_step_run(step_run.id)
                 elif (
                     infra_status == ExecutionStatus.COMPLETED
                     and db_status == ExecutionStatus.RUNNING
@@ -695,6 +728,11 @@ class DynamicPipelineRunner:
                                 invocation_id=invocation_id,
                                 future=execution_future,
                             )
+                        else:
+                            # No replacement will arrive. Leaving this attempt
+                            # RETRYING would keep its future and controller alive.
+                            step_run = publish_stopped_step_run(step_run.id)
+                            self._on_step_finished(step_run)
 
                 time.sleep(monitoring_delay)
 
@@ -779,7 +817,14 @@ class DynamicPipelineRunner:
         """
         with self._lifecycle_lock:
             self._steps_to_monitor[invocation_id] = step_run
-            should_stop_step = self._failure_detected and self._fail_fast
+            should_stop_step = (
+                self._stop_mode == PipelineRunStopMode.IMMEDIATE
+                or (
+                    self._stop_mode is None
+                    and self._failure_detected
+                    and self._fail_fast
+                )
+            )
 
         if should_stop_step:
             try:
@@ -979,9 +1024,23 @@ class DynamicPipelineRunner:
             return
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
-            self._abort_and_drain(exception=e)
+            # Mode-aware stops preserve failures during draining. Legacy
+            # orchestrators need a nonterminal run to accept a stop request.
+            try:
+                if (
+                    self._orchestrator.supports_run_stop_modes
+                    and self._stop_mode is None
+                    and not isinstance(
+                        e, (RunStoppedException, StartupCancelled)
+                    )
+                ):
+                    self._publish_run_status(exception=e)
+            finally:
+                self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
-            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
+            self._fire_terminal_run_hooks(self._run.status, e)
+            if self._stop_mode is not None:
+                return
             raise
 
         # The user code has returned. But there might still be concurrent work
@@ -991,9 +1050,21 @@ class DynamicPipelineRunner:
             self._settle_concurrent_work()
         except BaseException as e:
             logger.debug("Failure during settle: %s", e)
-            self._abort_and_drain(exception=e)
+            try:
+                if (
+                    self._orchestrator.supports_run_stop_modes
+                    and self._stop_mode is None
+                    and not isinstance(
+                        e, (RunStoppedException, StartupCancelled)
+                    )
+                ):
+                    self._publish_run_status(exception=e)
+            finally:
+                self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
-            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
+            self._fire_terminal_run_hooks(self._run.status, e)
+            if self._stop_mode is not None:
+                return
             raise
 
         try:
@@ -1028,8 +1099,12 @@ class DynamicPipelineRunner:
 
         Args:
             status: The terminal status of the run.
-            exception: The exception that ended the run, if any.
+            exception: The failure exception, if the run failed.
         """
+        if status != ExecutionStatus.FAILED:
+            # Stopping uses exceptions to unwind execution, but end hooks
+            # receive an exception only when the final outcome is a failure.
+            exception = None
         config = self._snapshot.pipeline_configuration
         run_lifecycle_hook(
             config.end_hook_source,
@@ -1040,7 +1115,7 @@ class DynamicPipelineRunner:
             run_lifecycle_hook(
                 config.success_hook_source, HookType.RUN_SUCCESS
             )
-        elif exception is not None:
+        elif status == ExecutionStatus.FAILED and exception is not None:
             run_lifecycle_hook(
                 config.failure_hook_source,
                 HookType.RUN_FAILURE,
@@ -1468,6 +1543,7 @@ class DynamicPipelineRunner:
         Returns:
             The step run response.
         """
+        self.raise_if_startup_cancelled()
         return launch_step(
             snapshot=self._snapshot,
             step=step,
@@ -2014,7 +2090,7 @@ class DynamicPipelineRunner:
             nodes_to_cancel = self._dependency_graph.list_nodes(
                 states={NodeState.PENDING, NodeState.READY, NodeState.STARTING}
             )
-            if self._fail_fast:
+            if self._fail_fast and self._stop_mode is None:
                 steps_to_stop = list(self._steps_to_monitor.values())
                 child_runners_to_shutdown = list(self._child_runners.values())
 
@@ -2062,6 +2138,33 @@ class DynamicPipelineRunner:
         else:
             self._orchestrator.stop_isolated_step(step_run)
 
+    def request_stop(self, mode: PipelineRunStopMode) -> None:
+        """Apply an explicit stop independently of the failure policy.
+
+        Args:
+            mode: Whether to drain active attempts or stop them immediately.
+        """
+        with self._lifecycle_lock:
+            if self._stop_mode != PipelineRunStopMode.IMMEDIATE:
+                self._stop_mode = mode
+            mode = self._stop_mode
+            self._on_failure_detected(
+                RunStoppedException("Pipeline stop requested.")
+            )
+            steps = list(self._steps_to_monitor.values())
+            children = list(self._child_runners.values())
+
+        if mode == PipelineRunStopMode.IMMEDIATE:
+            for step_run in steps:
+                try:
+                    self._stop_isolated_step(step_run)
+                except Exception:
+                    logger.exception(
+                        "Failed to stop step `%s`.", step_run.name
+                    )
+        for child in children:
+            child.request_stop(mode)
+
     def raise_if_startup_cancelled(self) -> None:
         """Abort startup work once a failure has been detected.
 
@@ -2093,6 +2196,14 @@ class DynamicPipelineRunner:
             return_value: Pipeline entrypoint return value.
             exception: Exception that caused the run to fail.
         """
+        if self._stop_mode is not None:
+            # The server preserves a prior FAILED outcome and owns the end time.
+            self._run = Client().zen_store.update_run(
+                run_id=self._run.id,
+                run_update=PipelineRunUpdate(status=ExecutionStatus.STOPPED),
+            )
+            return
+
         if exception is not None:
             pipeline_func = (
                 self._pipeline.entrypoint if self._pipeline else None
@@ -2323,6 +2434,7 @@ class DynamicPipelineRunner:
 
         def _launch_no_wait() -> StepRunResponse:
             try:
+                self.raise_if_startup_cancelled()
                 step_run = launch_step(
                     snapshot=self._snapshot,
                     step=step,

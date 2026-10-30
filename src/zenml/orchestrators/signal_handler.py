@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Type
 from typing_extensions import Self
 
 from zenml.client import Client
-from zenml.enums import ExecutionMode, ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus, PipelineRunStopMode
 from zenml.exceptions import RunInterruptedException, RunStoppedException
 from zenml.logger import get_logger
 from zenml.models import StepRunResponse
@@ -162,9 +162,10 @@ class SignalHandler:
                 self._step_run.pipeline_run_id, hydrate=False
             )
 
-            if pipeline_run.status in (
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
+            if pipeline_run.stop_mode == PipelineRunStopMode.IMMEDIATE or (
+                pipeline_run.stop_mode is None
+                and pipeline_run.status
+                in (ExecutionStatus.STOPPING, ExecutionStatus.STOPPED)
             ):
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
@@ -179,6 +180,7 @@ class SignalHandler:
                 pipeline_run.status == ExecutionStatus.FAILED
                 and step_run.status == ExecutionStatus.RUNNING
                 and self._execution_mode == ExecutionMode.FAIL_FAST
+                and pipeline_run.stop_mode != PipelineRunStopMode.GRACEFUL
             ):
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,

@@ -18,9 +18,16 @@ from typing import (
     TYPE_CHECKING,
     Optional,
 )
+from uuid import UUID
 
+from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.enums import ExecutionStatus, PipelineRunStopMode
 from zenml.exceptions import RunStoppedException
+from zenml.execution.context import ExecutionContext
+from zenml.execution.pipeline.dynamic.run_context import (
+    DynamicPipelineRunContext,
+)
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineSnapshotResponse,
@@ -33,6 +40,33 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+
+def _raise_if_run_stopped(
+    run_id: Optional[UUID],
+    run_context: Optional[DynamicPipelineRunContext],
+) -> None:
+    """Interrupt retries when the owning run has a stop request.
+
+    Args:
+        run_id: Owning run ID supplied by an active execution context.
+        run_context: Optional dynamic context whose runner must observe the stop.
+
+    Raises:
+        RunStoppedException: If the owning run is stopping or stopped.
+    """
+    if run_id is None:
+        return
+    run = Client().get_pipeline_run(run_id, hydrate=False)
+    if run.stop_mode is not None or run.status in {
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.STOPPED,
+    }:
+        if run_context:
+            run_context.runner.request_stop(
+                run.stop_mode or PipelineRunStopMode.IMMEDIATE
+            )
+        raise RunStoppedException("Pipeline stop requested.")
 
 
 def launch_step(
@@ -74,6 +108,14 @@ def launch_step(
     if not retry:
         step_run = _launch_without_retry()
     else:
+        run_id = None
+        if run_context := DynamicPipelineRunContext.get():
+            run_id = run_context.run.id
+        elif (
+            execution_context := ExecutionContext.get()
+        ) and execution_context.pipeline_run:
+            run_id = execution_context.pipeline_run.id
+
         retries = 0
         retry_config = step.config.retry
         if remaining_retries is None:
@@ -84,12 +126,23 @@ def launch_step(
         backoff = retry_config.backoff if retry_config else 1
 
         while retries <= max_retries:
+            _raise_if_run_stopped(run_id, run_context)
             try:
                 step_run = _launch_without_retry()
             except RunStoppedException:
                 # Don't retry if the run was stopped
                 raise
             except BaseException:
+                # A stop can race the store's attempt creation guard.
+                stop_check_failed = False
+                try:
+                    _raise_if_run_stopped(run_id, run_context)
+                except RunStoppedException:
+                    raise
+                except Exception:
+                    stop_check_failed = True
+                if stop_check_failed:
+                    raise
                 retries += 1
                 if retries <= max_retries:
                     logger.info(
@@ -97,7 +150,15 @@ def launch_step(
                         delay,
                         step.config.name,
                     )
-                    time.sleep(delay)
+                    if run_id is None:
+                        time.sleep(delay)
+                    else:
+                        remaining_delay = delay
+                        while remaining_delay > 0:
+                            _raise_if_run_stopped(run_id, run_context)
+                            sleep_seconds = min(1, remaining_delay)
+                            time.sleep(sleep_seconds)
+                            remaining_delay -= sleep_seconds
                     delay *= backoff
                 else:
                     if max_retries > 0:

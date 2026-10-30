@@ -637,6 +637,19 @@ Scheduled
 Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 docs page.
 
+## Stopping runs
+
+See [Stopping a run](../../how-to/steps-pipelines/advanced_features.md#stopping-a-run)
+for graceful and immediate stopping behavior. On Kubernetes, graceful stopping
+also prevents new step attempts from Job retries. Immediate stopping requests
+deletion of matching Kubernetes Jobs; Kubernetes may take time to remove their
+Pods after accepting the deletion requests.
+
+If `skip_owner_references=True`, ZenML keeps the orchestration Pod alive to
+finish stopping step submissions already in progress. Stop completion then
+depends on the controller exiting; blocking code in the pipeline function can
+delay this cleanup.
+
 ## Best practices for highly parallel pipelines
 
 If you're trying to run pipelines with multiple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:

@@ -30,7 +30,12 @@ from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, MetadataResourceTypes
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    MetadataResourceTypes,
+    PipelineRunStopMode,
+)
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
@@ -220,7 +225,8 @@ def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod.
 
     Raises:
-        RuntimeError: If the orchestrator pod is not associated with a job.
+        RuntimeError: If the orchestrator pod is not associated with a job or
+            the required controller Job ownership cannot be resolved.
     """
     args = parse_args()
 
@@ -341,20 +347,28 @@ def main() -> None:
         owner_references = None
         if not orchestrator.config.skip_owner_references:
             try:
-                owner_references = kube_utils.get_pod_owner_references(
+                pod_owners = kube_utils.get_pod_owner_references(
                     core_api=core_api,
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
                     api_request_timeout=pipeline_settings.api_request_timeout,
                     max_retries=pipeline_settings.max_api_retries,
                 )
-                # Make sure None of the owner references are marked as
-                # controllers of the created pod, which messes with the
-                # garbage collection logic.
-                for owner_reference in owner_references:
-                    owner_reference.controller = False
             except Exception as e:
-                logger.warning(f"Failed to get pod owner references: {str(e)}")
+                raise RuntimeError(
+                    "Failed to resolve the controller Job owner for step Jobs."
+                ) from e
+            owner_references = [
+                owner for owner in pod_owners if owner.kind == "Job"
+            ]
+            if not owner_references:
+                raise RuntimeError(
+                    "Cannot start step Jobs without their controller Job owner."
+                )
+            # The owning Job provides cleanup after a stop; it must not act
+            # as the controller of the step's own Pods.
+            for owner_reference in owner_references:
+                owner_reference.controller = False
 
         step_run_request_factory = StepRunRequestFactory(
             snapshot=snapshot,
@@ -376,6 +390,9 @@ def main() -> None:
         }
 
         step_run_skip_hb_set = set()
+        stop_requested = threading.Event()
+        if pipeline_run.stop_mode is not None:
+            stop_requested.set()
 
         def _cache_step_run_if_possible(step_name: str) -> bool:
             if not step_run_request_factory.has_caching_enabled(step_name):
@@ -644,6 +661,9 @@ def main() -> None:
 
             Args:
                 node: The node to stop.
+
+            Raises:
+                Exception: If listing or deleting the step Job fails.
             """
             step_name = node.id
 
@@ -661,7 +681,7 @@ def main() -> None:
                 logger.warning(
                     f"Failed to find jobs for step {step_name}: {e}"
                 )
-                return
+                raise
 
             if not jobs.items:
                 logger.debug(f"No jobs found for step {step_name}")
@@ -707,10 +727,12 @@ def main() -> None:
                     )
                     break
                 except Exception as e:
+                    if isinstance(e, ApiException) and e.status == 404:
+                        break
                     logger.warning(
                         f"Failed to stop step job {job.metadata.name}: {e}"
                     )
-                    break
+                    raise
 
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
@@ -762,6 +784,34 @@ def main() -> None:
                     snapshot.step_configurations[step_name]
                 ),
             )
+            if stop_requested.is_set():
+                steps = client.list_run_steps(
+                    pipeline_run_id=pipeline_run.id,
+                    name=step_name,
+                    project=pipeline_run.project_id,
+                    exclude_retried=True,
+                    hydrate=False,
+                ).items
+                if steps and (
+                    steps[0].status == ExecutionStatus.RETRYING
+                    or steps[0].status.is_finished
+                ):
+                    # A Job can otherwise retry after its current attempt
+                    # finishes, even though the DAG has stopped scheduling.
+                    try:
+                        stop_step(node)
+                    except Exception:
+                        logger.exception(
+                            "Failed to stop retrying Job for step `%s`.",
+                            step_name,
+                        )
+                        return NodeStatus.RUNNING
+                    return (
+                        NodeStatus.COMPLETED
+                        if steps[0].status.is_successful
+                        else NodeStatus.CANCELLED
+                    )
+
             status, status_message = kube_utils.check_job_status(
                 batch_api=batch_api,
                 core_api=core_api,
@@ -819,6 +869,14 @@ def main() -> None:
                     hydrate=False,  # We only need status, not full hydration
                 )
 
+                if run.stop_mode is not None:
+                    # The monitor runs in another thread. Share the monotonic
+                    # stop intent without fetching the run for every node.
+                    stop_requested.set()
+                if run.stop_mode == PipelineRunStopMode.IMMEDIATE:
+                    return InterruptMode.FORCE
+                if run.stop_mode == PipelineRunStopMode.GRACEFUL:
+                    return InterruptMode.GRACEFUL
                 if run.status in [
                     ExecutionStatus.STOPPING,
                     ExecutionStatus.STOPPED,
@@ -942,6 +1000,11 @@ def main() -> None:
                     ExecutionStatus.RUNNING,
                 }:
                     publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+
+            if client.get_pipeline_run(pipeline_run.id).stop_mode is not None:
+                publish_utils.publish_pipeline_run_status_update(
+                    pipeline_run.id, ExecutionStatus.STOPPED
+                )
         except AuthorizationException:
             # If a step of the pipeline failed or all of them completed
             # successfully, the pipeline run will be finished and the API token

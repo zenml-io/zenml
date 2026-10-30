@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, PipelineRunStopMode
 from zenml.utils.time_utils import to_utc_timezone
 
 if TYPE_CHECKING:
@@ -244,10 +244,11 @@ class StepHeartbeatWorker:
         }:
             self._terminated = True
 
-        if response.pipeline_run_status in {
-            ExecutionStatus.STOPPED,
-            ExecutionStatus.STOPPING,
-        }:
+        if response.stop_mode == PipelineRunStopMode.IMMEDIATE or (
+            response.stop_mode is None
+            and response.pipeline_run_status
+            in {ExecutionStatus.STOPPED, ExecutionStatus.STOPPING}
+        ):
             self._terminated = True
 
 

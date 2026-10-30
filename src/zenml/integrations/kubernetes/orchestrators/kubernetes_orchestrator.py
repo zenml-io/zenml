@@ -65,8 +65,10 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunStopMode,
     StackComponentType,
 )
+from zenml.exceptions import RunStoppedException
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_RUN_ID,
@@ -101,10 +103,14 @@ from zenml.orchestrators import (
     SubmissionResult,
 )
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.publish_utils import (
+    publish_pipeline_run_status_update,
+)
 from zenml.stack import StackValidator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
+from zenml.utils import pagination_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -125,6 +131,18 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes."""
 
     _k8s_client: Optional[k8s_client.ApiClient] = None
+    _step_job_owner_references: Optional[List[k8s_client.V1OwnerReference]] = (
+        None
+    )
+
+    @property
+    def supports_run_stop_modes(self) -> bool:
+        """Whether explicit stop modes are supported.
+
+        Returns:
+            True, as both Kubernetes controllers observe stop modes.
+        """
+        return True
 
     def should_build_pipeline_image(
         self, snapshot: "PipelineSnapshotBase"
@@ -966,6 +984,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 environment.
             allocated_resource_request: The allocated resource request for the
                 step, if any.
+
+        Raises:
+            ApiException: If deleting a cancelled worker Job fails.
+            Exception: If checking the run after submission fails.
+            RunStoppedException: If an immediate stop was requested during
+                submission.
         """
         logger.info(
             "Launching job for step `%s`.",
@@ -1041,6 +1065,12 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             # run ID.
             backoff_limit=settings.backoff_limit_margin,
         )
+        if not self.config.skip_owner_references:
+            # Nested runs share this controller Pod. Its Job must also own a
+            # worker accepted after the stop caller listed existing Jobs.
+            job_manifest.metadata.owner_references = (
+                self._get_step_job_owner_references()
+            )
 
         kube_utils.create_job(
             batch_api=self._k8s_batch_api,
@@ -1049,6 +1079,31 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             api_request_timeout=settings.api_request_timeout,
             max_retries=settings.max_api_retries,
         )
+
+        try:
+            run = Client().get_pipeline_run(
+                step_run_info.run_id, hydrate=False
+            )
+            if run.stop_mode == PipelineRunStopMode.IMMEDIATE or (
+                run.stop_mode is None
+                and run.status
+                in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
+            ):
+                raise RunStoppedException("Pipeline stop requested.")
+        except Exception:
+            # A child stop keeps the shared controller alive, so ownership
+            # alone cannot remove a worker created during that stop. Also
+            # clean up if stop completion already invalidated our token.
+            try:
+                self._k8s_batch_api.delete_namespaced_job(
+                    name=job_name,
+                    namespace=self.config.kubernetes_namespace,
+                    propagation_policy="Foreground",
+                )
+            except ApiException as e:
+                if e.status != 404:
+                    raise
+            raise
 
         try:
             Client().create_run_metadata(
@@ -1073,6 +1128,44 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             "Launched job for step `%s`.",
             step_run_info.pipeline_step_name,
         )
+
+    def _get_step_job_owner_references(
+        self,
+    ) -> List[k8s_client.V1OwnerReference]:
+        """Resolve the root controller Job that owns dynamic workers.
+
+        Returns:
+            Non-controller references to the current Pod's owning Job.
+
+        Raises:
+            RuntimeError: If the controller Pod has no owning Job.
+        """
+        if self._step_job_owner_references is None:
+            owners = kube_utils.get_pod_owner_references(
+                core_api=self._k8s_core_api,
+                pod_name=socket.gethostname(),
+                namespace=self.config.kubernetes_namespace,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+            references = [
+                k8s_client.V1OwnerReference(
+                    api_version=owner.api_version,
+                    kind=owner.kind,
+                    name=owner.name,
+                    uid=owner.uid,
+                    controller=False,
+                    block_owner_deletion=False,
+                )
+                for owner in owners
+                if owner.kind == "Job"
+            ]
+            if not references:
+                raise RuntimeError(
+                    "Cannot submit a step without its controller Job owner."
+                )
+            self._step_job_owner_references = references
+        return self._step_job_owner_references
 
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"
@@ -1135,6 +1228,10 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Args:
             step_run: The step run.
+
+        Raises:
+            Exception: If listing the step Job fails.
+            ApiException: If deleting the step Job fails.
         """
         label_selector = (
             f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
@@ -1151,18 +1248,22 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             logger.warning(
                 "Failed to list jobs for step run `%s`: %s", step_run.id, e
             )
-            return
+            raise
 
         if not job_list.items:
             logger.warning("No jobs found for step run `%s`", step_run.id)
             return
 
         job_name = job_list.items[0].metadata.name
-        self._k8s_batch_api.delete_namespaced_job(
-            name=job_name,
-            namespace=self.config.kubernetes_namespace,
-            propagation_policy="Foreground",
-        )
+        try:
+            self._k8s_batch_api.delete_namespaced_job(
+                name=job_name,
+                namespace=self.config.kubernetes_namespace,
+                propagation_policy="Foreground",
+            )
+        except ApiException as e:
+            if e.status != 404:
+                raise
         logger.info(f"Successfully stopped step job: {job_name}")
 
     def _get_service_account_name(
@@ -1227,12 +1328,13 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = True
     ) -> None:
-        """Stops a specific pipeline run by terminating step pods.
+        """Stops a specific pipeline run by terminating its Jobs.
 
         Args:
             run: The run that was executed by this orchestrator.
             graceful: If True, does nothing (lets the orchestrator and steps finish naturally).
-                If False, stops all running step jobs.
+                If False, stops running step jobs and deletes the root
+                controller unless worker ownership is disabled.
 
         Raises:
             RuntimeError: If we fail to stop the run.
@@ -1248,9 +1350,27 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         jobs_stopped = []
         errors = []
 
-        # Find all jobs running steps of the pipeline
+        # Child workers use their own run IDs and share the root controller.
+        run_ids = {run.id}
+        pending = [run.id]
+        while pending:
+            for child in pagination_utils.depaginate(
+                Client().list_pipeline_runs,
+                parent_run_id=pending.pop(),
+                project=run.project_id,
+                hydrate=False,
+            ):
+                if child.id not in run_ids:
+                    run_ids.add(child.id)
+                    pending.append(child.id)
+
         label_selector = (
-            f"run_id={kube_utils.sanitize_label_value(str(run.id))}"
+            "run_id in ("
+            + ",".join(
+                kube_utils.sanitize_label_value(str(run_id))
+                for run_id in run_ids
+            )
+            + ")"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -1265,39 +1385,95 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f"Failed to list step jobs with run ID {run.id}: {e}"
             )
 
+        # Without worker ownership, the controller must stay alive to drain
+        # submissions that were already in flight when stopping was requested.
+        include_controller = (
+            run.child_key is None and not self.config.skip_owner_references
+        )
+        jobs_to_stop = {}
+        controller_finished = False
         for job in job_list.items:
-            if not kube_utils.is_step_job(job):
-                # This is the orchestrator job which stops by itself
+            is_step = kube_utils.is_step_job(job)
+            if job.status and any(
+                condition.type in {"Complete", "Failed"}
+                and condition.status == "True"
+                for condition in job.status.conditions or []
+            ):
+                if not is_step and run.child_key is None:
+                    # A dead controller cannot finalize unfinished step
+                    # records after its remaining workers are removed.
+                    controller_finished = True
                 continue
 
-            if job.status and job.status.conditions:
-                # Don't delete completed/failed jobs
-                for condition in job.status.conditions:
-                    if (
-                        condition.type == "Complete"
-                        and condition.status == "True"
-                    ):
-                        continue
-                    if (
-                        condition.type == "Failed"
-                        and condition.status == "True"
-                    ):
-                        continue
+            if not is_step and not include_controller:
+                # Child runs execute in the root run's controller.
+                continue
 
+            jobs_to_stop[job.metadata.name] = (
+                "step job" if is_step else "orchestrator job"
+            )
+
+        if (
+            include_controller
+            and run.orchestrator_run_id
+            and not any(
+                not kube_utils.is_step_job(job) for job in job_list.items
+            )
+        ):
+            # Older static controller Jobs have no run ID label and the
+            # orchestrator run ID identifies their Pod instead of their Job.
+            controller_job_name = kube_utils.get_parent_job_name(
+                core_api=self._k8s_core_api,
+                pod_name=run.orchestrator_run_id,
+                namespace=self.config.kubernetes_namespace,
+                api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
+            )
+            jobs_to_stop[controller_job_name or run.orchestrator_run_id] = (
+                "orchestrator job"
+            )
+
+        controller_stopped = controller_finished
+        for job_name, job_type in jobs_to_stop.items():
             try:
                 self._k8s_batch_api.delete_namespaced_job(
-                    name=job.metadata.name,
+                    name=job_name,
                     namespace=self.config.kubernetes_namespace,
                     propagation_policy="Foreground",
                 )
-                jobs_stopped.append(f"step job: {job.metadata.name}")
+                jobs_stopped.append(f"{job_type}: {job_name}")
                 logger.debug(
-                    f"Successfully initiated graceful stop of step job: {job.metadata.name}"
+                    f"Successfully initiated graceful stop of {job_type}: {job_name}"
                 )
+                if job_type == "orchestrator job":
+                    controller_stopped = True
             except Exception as e:
-                error_msg = f"Failed to stop step job {job.metadata.name}: {e}"
+                # The controller may stop the same Job concurrently.
+                if isinstance(e, ApiException) and e.status == 404:
+                    if job_type == "orchestrator job":
+                        controller_stopped = True
+                    continue
+                error_msg = f"Failed to stop {job_type} {job_name}: {e}"
                 logger.warning(error_msg)
                 errors.append(error_msg)
+
+        if controller_stopped and self.config.pass_zenml_token_as_secret:
+            snapshot = run.snapshot
+            if snapshot and snapshot.schedule is None:
+                # Deleting the controller bypasses its finally cleanup.
+                # Scheduled runs share this Secret with future executions.
+                secret_name = self.get_token_secret_name(snapshot.id)
+                try:
+                    kube_utils.delete_secret(
+                        core_api=self._k8s_core_api,
+                        namespace=self.config.kubernetes_namespace,
+                        secret_name=secret_name,
+                    )
+                except ApiException as e:
+                    if e.status != 404:
+                        logger.error(
+                            f"Error cleaning up secret {secret_name}: {e}"
+                        )
 
         # Summary logging
         settings = cast(KubernetesOrchestratorSettings, self.get_settings(run))
@@ -1324,6 +1500,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if not jobs_stopped and not errors:
             logger.info(
                 f"No running step jobs found for pipeline run with ID: {run.id}"
+            )
+
+        if controller_stopped and run.stop_mode is not None:
+            publish_pipeline_run_status_update(
+                pipeline_run_id=run.id, status=ExecutionStatus.STOPPED
             )
 
     def fetch_status(

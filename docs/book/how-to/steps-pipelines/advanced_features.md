@@ -230,17 +230,48 @@ The following rules apply:
 - Steps that depend on a failed asynchronous step (through its output or `after=...`) are skipped.
 - Awaiting a failed step through `future.result()` or `future.wait()` still raises the step's exception, and a failure in a step that you call synchronously still fails the run.
 
+### Stopping a run
+
+The following behavior applies to the Kubernetes orchestrator. Other
+orchestrators may have different stopping capabilities; see their component
+pages for details.
+
+A graceful stop lets current step attempts finish and prevents new steps and
+retries from starting. It does not automatically escalate after a timeout.
+
+```shell
+zenml pipeline runs stop <run-name-or-id> --graceful
+```
+
+Send another request without `--graceful` to stop immediately:
+
+```shell
+zenml pipeline runs stop <run-name-or-id>
+```
+
+You can also stop a failed run that still has active steps. For example, with
+`CONTINUE_ON_FAILURE`, step A can fail while step B continues and step C waits.
+A graceful stop lets B finish and prevents C and any retries from starting;
+an immediate stop interrupts B where the orchestrator supports it. The run
+keeps its `FAILED` outcome and original error.
+
+A successful request does not mean execution has already ended: current steps
+and external workloads can take time to shut down. You can repeat an immediate
+request if needed. A later graceful request does not undo an immediate request.
+
+Use matching upgraded server, controller, and worker versions for this behavior.
+
 ### Step Heartbeat
 
 Step heartbeat is a background mechanism that runs alongside step executions and performs two core functions:
 
  - Periodically pings the ZenML server to refresh the step's heartbeat value.
- - Retrieves the current pipeline and step status, and terminates the step if the pipeline has entered a stopping state.
+ - Retrieves the current stop request and step status, and interrupts the step for an immediate stop or step cancellation.
 
 This enables ZenML to:
 
  - Track the liveness of a step execution and assess its health based on incoming heartbeats.
- - Gracefully interrupt running steps when a pipeline is being stopped.
+ - On Kubernetes, allow current attempts to finish during a graceful stop and interrupt them during an immediate stop.
 
 *Scope and current behavior*
 

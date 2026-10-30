@@ -34,7 +34,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ArtifactSaveType, ExecutionStatus, HookType
-from zenml.exceptions import StepInterfaceError
+from zenml.exceptions import RunStoppedException, StepInterfaceError
 from zenml.hooks.execution import run_lifecycle_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -261,7 +261,7 @@ class StepRunner:
                         )
                 except BaseException as step_exception:  # noqa: E722
                     step_failed = True
-                    if (
+                    if isinstance(step_exception, RunStoppedException) or (
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
@@ -290,6 +290,8 @@ class StepRunner:
                             optional_args=(None,),
                         )
 
+                        if isinstance(step_exception, RunStoppedException):
+                            raise
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )

@@ -36,7 +36,12 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionMode,
+    ExecutionStatus,
+    PipelineRunStopMode,
+    StackComponentType,
+)
 from zenml.exceptions import (
     HookExecutionException,
     IllegalOperationError,
@@ -45,6 +50,7 @@ from zenml.exceptions import (
 from zenml.hooks.execution import run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import PipelineRunUpdate
 from zenml.orchestrators.exceptions import PipelineSubmissionError
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
@@ -910,6 +916,20 @@ class BaseOrchestrator(StackComponent, ABC):
             f"'{self.__class__.__name__}' orchestrator."
         )
 
+    @property
+    def supports_run_stop_modes(self) -> bool:
+        """Whether the orchestrator honors persisted pipeline stop modes.
+
+        Orchestrators opting in must observe graceful and immediate stop modes
+        independently of the pipeline status. They must publish the final run
+        status after cleanup when stopping removes the controller responsible
+        for finalization.
+
+        Returns:
+            Whether persisted pipeline stop modes are supported.
+        """
+        return False
+
     def stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
@@ -924,7 +944,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 If False, forces immediate termination. Default is False.
 
         Raises:
-            IllegalOperationError: If the run has no orchestrator run id yet.
+            IllegalOperationError: If the run has no orchestrator run id,
+                or completed successfully.
         """
         if not run.orchestrator_run_id:
             raise IllegalOperationError(
@@ -932,15 +953,34 @@ class BaseOrchestrator(StackComponent, ABC):
                 "yet."
             )
 
-        # Update pipeline status to STOPPING before calling concrete implementation
-        # Initiates graceful termination.
-        publish_pipeline_run_status_update(
-            pipeline_run_id=run.id,
-            status=ExecutionStatus.STOPPING,
-            status_reason="Manual stop requested.",
-        )
+        if run.status == ExecutionStatus.COMPLETED:
+            raise IllegalOperationError("Cannot stop a completed run.")
+        if not self.supports_run_stop_modes:
+            # Keep the status-only contract for existing integrations, including
+            # their handling of graceful requests that require forceful cleanup.
+            publish_pipeline_run_status_update(
+                pipeline_run_id=run.id,
+                status=ExecutionStatus.STOPPING,
+                status_reason="Manual stop requested.",
+            )
+            self._stop_run(run=run, graceful=graceful)
+            return
 
-        # Now call the concrete implementation
+        # The store records the mode and preserves an existing FAILED outcome.
+        # Older servers ignore the mode and use the existing STOPPING behavior.
+        run = Client().zen_store.update_run(
+            run_id=run.id,
+            run_update=PipelineRunUpdate(
+                status=ExecutionStatus.STOPPING,
+                stop_mode=PipelineRunStopMode.GRACEFUL
+                if graceful
+                else PipelineRunStopMode.IMMEDIATE,
+            ),
+        )
+        # A graceful request must not weaken an immediate stop already recorded
+        # by another caller. Older stores omit the mode, so keep the request.
+        if run.stop_mode is not None:
+            graceful = run.stop_mode == PipelineRunStopMode.GRACEFUL
         self._stop_run(run=run, graceful=graceful)
 
     def _stop_run(
@@ -952,7 +992,7 @@ class BaseOrchestrator(StackComponent, ABC):
         instead of stop_run to ensure proper status management.
 
         Args:
-            run: A pipeline run response to stop (already updated to STOPPING status).
+            run: A pipeline run with its stop request already recorded.
             graceful: If True, allows for graceful shutdown where possible.
                 If False, forces immediate termination. Default is True.
         """

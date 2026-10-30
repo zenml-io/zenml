@@ -33,6 +33,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
+    PipelineRunStopMode,
     StepRunInputArtifactType,
     StepRuntime,
     StepType,
@@ -949,4 +950,5 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     status: ExecutionStatus
     latest_heartbeat: datetime
     pipeline_run_status: ExecutionStatus | None = None
+    stop_mode: PipelineRunStopMode | None = None
     heartbeat_enabled: bool
