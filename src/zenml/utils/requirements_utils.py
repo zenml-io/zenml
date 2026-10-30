@@ -85,51 +85,31 @@ def get_requirements_for_component(
 
 
 # pip and uv only resolve the packages they are asked to install, not the ones
-# that are already installed. Installing other packages can therefore upgrade
-# `opentelemetry-api` past the version that the installed `opentelemetry-sdk`
-# requires, e.g. through a newer `fastapi`, after which the SDK fails to
-# import. Installs pass the installed versions of these packages as
-# constraints to prevent that.
-OPENTELEMETRY_PACKAGES = ("opentelemetry-api", "opentelemetry-sdk")
-OPENTELEMETRY_CONSTRAINTS_FILE_NAME = ".zenml_opentelemetry_constraints"
+# that are already installed. Installing other packages can therefore replace
+# ZenML dependencies with versions ZenML doesn't support, e.g. a newer
+# `fastapi` upgrading `opentelemetry-api` past what the pinned
+# `opentelemetry-sdk` supports. Adding the installed ZenML version to an install
+# makes the resolver respect ZenML's requirements. Since that version is
+# already installed, this works for unreleased versions too.
+
+# Shell expression for Dockerfile installs. It is evaluated inside the image,
+# whose parent image can contain a different ZenML version than the client
+# building it, and expands to nothing if ZenML isn't installed.
+INSTALLED_ZENML_SHELL_REQUIREMENT = (
+    "$(pip show zenml 2>/dev/null | sed -n 's/^Version: /zenml==/p')"
+)
 
 
-def get_opentelemetry_constraints() -> List[str]:
-    """Get the installed OpenTelemetry versions as constraints.
-
-    Use this for installs into the current environment. For installs into a
-    Docker image, use `get_opentelemetry_constraints_dockerfile_line`.
-
-    Returns:
-        A `<package>==<version>` constraint for each installed package of
-        `OPENTELEMETRY_PACKAGES`.
-    """
-    constraints = []
-    for package in OPENTELEMETRY_PACKAGES:
-        try:
-            constraints.append(f"{package}=={version(package)}")
-        except PackageNotFoundError:
-            continue
-    return constraints
-
-
-def get_opentelemetry_constraints_dockerfile_line() -> str:
-    """Get a Dockerfile line that writes the image's OpenTelemetry constraints.
-
-    The versions are read inside the image, because its parent image can
-    contain a different ZenML (and therefore OpenTelemetry) version than the
-    client that builds it.
+def get_installed_zenml_requirement() -> Optional[str]:
+    """Get a requirement for the ZenML version installed locally.
 
     Returns:
-        A `RUN` line that writes the constraints for the installed packages of
-        `OPENTELEMETRY_PACKAGES` to `OPENTELEMETRY_CONSTRAINTS_FILE_NAME`.
+        `zenml==<version>`, or None if ZenML isn't installed.
     """
-    packages = "|".join(OPENTELEMETRY_PACKAGES)
-    # `grep` fails if none of the packages are installed, which is fine.
-    return (
-        f"RUN pip list --format=freeze | grep -iE '^({packages})==' "
-        f"> {OPENTELEMETRY_CONSTRAINTS_FILE_NAME} || true"
-    )
+    try:
+        return f"zenml=={version('zenml')}"
+    except PackageNotFoundError:
+        return None
 
 
 def requires_zenml(requirements: Iterable[str]) -> bool:

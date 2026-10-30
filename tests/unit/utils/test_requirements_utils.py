@@ -14,6 +14,7 @@
 
 import subprocess
 import sys
+from importlib.metadata import version
 
 import pytest
 
@@ -21,25 +22,21 @@ from zenml.cli.utils import install_packages
 from zenml.utils import requirements_utils
 
 
-def test_opentelemetry_constraints_dockerfile_line():
-    """Tests that the Dockerfile line writes the installed versions."""
-    command = (
-        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
-        .removeprefix("RUN ")
-        .replace("pip", f'"{sys.executable}" -m pip', 1)
-        .replace(
-            requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME,
-            "/dev/stdout",
-        )
+def test_installed_zenml_shell_requirement():
+    """Tests that the shell expression pins the installed ZenML version."""
+    expression = requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT.replace(
+        "pip", f'"{sys.executable}" -m pip', 1
     )
 
     output = subprocess.run(
-        command, shell=True, capture_output=True, text=True, check=True
+        f"echo {expression}",
+        shell=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
-    assert (
-        output.splitlines()
-        == requirements_utils.get_opentelemetry_constraints()
-    )
+
+    assert output.strip() == f"zenml=={version('zenml')}"
 
 
 @pytest.mark.parametrize(
@@ -54,10 +51,10 @@ def test_requires_zenml(requirements, expected):
     assert requirements_utils.requires_zenml(requirements) is expected
 
 
-def test_install_packages_adds_opentelemetry_constraints(mocker):
-    """Tests that CLI installs pass the OpenTelemetry constraints."""
+def test_install_packages_pins_installed_zenml(mocker):
+    """Tests that CLI installs include the installed ZenML version."""
     check_call = mocker.patch("zenml.cli.utils.subprocess.check_call")
 
     install_packages(["sagemaker"])
 
-    assert "-c" in check_call.call_args.args[0]
+    assert f"zenml=={version('zenml')}" in check_call.call_args.args[0]

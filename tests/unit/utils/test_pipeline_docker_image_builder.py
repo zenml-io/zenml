@@ -318,8 +318,8 @@ def test_build_args_are_added_to_dockerfile():
     assert "ARG ARG2" in generated_dockerfile
 
 
-def test_installs_add_opentelemetry_constraints():
-    """Tests that installs pass the OpenTelemetry constraints of the image."""
+def test_installs_pin_zenml_in_image():
+    """Tests that installs pin the ZenML version installed in the image."""
     requirements_files = [
         ("requirements.txt", "sagemaker", []),
         ("zenml_requirements.txt", "zenml==0.1.0", []),
@@ -330,13 +330,10 @@ def test_installs_add_opentelemetry_constraints():
         requirements_files=requirements_files,
     ).splitlines()
 
-    write_line = (
-        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+    zenml_requirement = requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT
+    assert any(
+        line.endswith(f"-r requirements.txt {zenml_requirement}")
+        for line in lines
     )
-    install_line = "-r requirements.txt -c .zenml_opentelemetry_constraints"
-    assert lines.count(write_line) == 1
-    install_index = next(
-        i for i, line in enumerate(lines) if line.endswith(install_line)
-    )
-    assert lines.index(write_line) < install_index
+    # A file that installs ZenML itself already brings its requirements.
     assert any(line.endswith("-r zenml_requirements.txt") for line in lines)

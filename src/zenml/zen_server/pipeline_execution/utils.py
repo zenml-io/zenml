@@ -778,13 +778,10 @@ def generate_dockerfile(
         pypi_requirements_string = " ".join(
             [f"'{r}'" for r in pypi_requirements]
         )
-        # Keeps the installer from upgrading `opentelemetry-api` past what
-        # the image's `opentelemetry-sdk` supports.
-        lines.append(
-            requirements_utils.get_opentelemetry_constraints_dockerfile_line()
-        )
+        # Keeps the installer from replacing dependencies of the image's ZenML
+        # with incompatible versions.
         pypi_requirements_string += (
-            f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
+            f" {requirements_utils.INSTALLED_ZENML_SHELL_REQUIREMENT}"
         )
 
         if handle_bool_env_var(
