@@ -58,8 +58,8 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
 from zenml.zen_stores.schemas.execution_payload_schemas import (
     ExecutionPayloadSchema,
     PayloadColumn,
-    get_payload_text,
     payload_relationship_kwargs,
+    resolve_payload,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -148,10 +148,18 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     code_path: Optional[str] = Field(nullable=True)
     execution_mode: Optional[str] = Field(nullable=True, default=None)
     enable_heartbeat: Optional[bool] = Field(nullable=True, default=None)
-    pipeline_configuration_payload_id: Optional[UUID] = None
-    client_environment_payload_id: Optional[UUID] = None
-    pipeline_spec_payload_id: Optional[UUID] = None
-    source_code_payload_id: Optional[UUID] = None
+    pipeline_configuration_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    client_environment_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    pipeline_spec_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    source_code_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
 
     PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
         PayloadColumn(name="pipeline_configuration", nullable=False),
@@ -314,10 +322,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The pipeline configuration JSON.
         """
-        if self.pipeline_configuration_payload_id is None:
-            return self.pipeline_configuration
-        return get_payload_text(
-            self.pipeline_configuration_payload, self, "pipeline_configuration"
+        return resolve_payload(
+            self, "pipeline_configuration", self.pipeline_configuration
         )
 
     @property
@@ -327,10 +333,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The client environment JSON.
         """
-        if self.client_environment_payload_id is None:
-            return self.client_environment
-        return get_payload_text(
-            self.client_environment_payload, self, "client_environment"
+        return resolve_payload(
+            self, "client_environment", self.client_environment
         )
 
     @property
@@ -340,11 +344,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The pipeline spec JSON, if the snapshot has one.
         """
-        if self.pipeline_spec_payload_id is None:
-            return self.pipeline_spec
-        return get_payload_text(
-            self.pipeline_spec_payload, self, "pipeline_spec"
-        )
+        return resolve_payload(self, "pipeline_spec", self.pipeline_spec)
 
     @property
     def resolved_source_code(self) -> Optional[str]:
@@ -353,9 +353,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The source code, if the snapshot has one.
         """
-        if self.source_code_payload_id is None:
-            return self.source_code
-        return get_payload_text(self.source_code_payload, self, "source_code")
+        return resolve_payload(self, "source_code", self.source_code)
 
     @classmethod
     def load_run_payloads(cls) -> List[Any]:
@@ -942,7 +940,9 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ),
         default=None,
     )
-    config_payload_id: Optional[UUID] = None
+    config_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
 
     PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
         PayloadColumn(name="config", nullable=False),
@@ -977,9 +977,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
         Returns:
             The step configuration JSON.
         """
-        if self.config_payload_id is None:
-            return self.config
-        return get_payload_text(self.config_payload, self, "config")
+        return resolve_payload(self, "config", self.config)
 
     @classmethod
     def load_payloads(cls) -> List[Any]:

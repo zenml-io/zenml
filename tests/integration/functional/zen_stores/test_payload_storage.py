@@ -40,6 +40,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
     RunTemplateFilter,
     RunTemplateRequest,
     StepRunFilter,
@@ -232,7 +233,9 @@ def _move_payloads_inline(store: SqlZenStore, every_other: bool) -> None:
     with Session(store.engine) as session:
         values = dict(
             session.exec(
-                select(ExecutionPayloadSchema.id, ExecutionPayloadSchema.value)
+                select(
+                    ExecutionPayloadSchema.sha256, ExecutionPayloadSchema.value
+                )
             ).all()
         )
         for schema in PAYLOAD_SCHEMAS:
@@ -370,6 +373,28 @@ def test_replaced_placeholder_run_references_its_new_environment(
     assert created and run.id == placeholder.id
     assert run.orchestrator_environment == stored
     assert store.get_run(run.id).orchestrator_environment == stored
+
+
+def test_invalid_snapshot_request_stores_no_payloads(
+    store: SqlZenStore,
+) -> None:
+    """A snapshot request with a missing reference stores no payloads."""
+    request = PipelineSnapshotRequest(
+        project=Client().active_project.id,
+        stack=uuid4(),
+        pipeline=uuid4(),
+        run_name_template="",
+        pipeline_configuration={"name": "pipeline"},
+        client_version="test",
+        server_version="test",
+        source_code=uuid4().hex,
+    )
+
+    with pytest.raises(KeyError):
+        store.create_snapshot(request)
+
+    with Session(store.engine) as session:
+        assert not session.exec(select(ExecutionPayloadSchema)).all()
 
 
 @pytest.fixture

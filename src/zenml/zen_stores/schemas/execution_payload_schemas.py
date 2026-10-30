@@ -16,49 +16,54 @@
 Snapshots, step configurations, step runs and runs keep configurations,
 environments and source code in payload columns. Each payload column comes
 with a `<column>_payload_id` column. A row either holds its value inline, or
-references the `execution_payload` row holding it, and then clears the
-inline column. Rows with the same value reference the same payload row.
+references the `execution_payload` row holding it by the SHA-256 of the
+value, and then clears the inline column. Rows with the same value reference
+the same payload row.
 """
 
 import hashlib
+from datetime import datetime
 from functools import cached_property
 from typing import (
     Any,
     ClassVar,
+    Collection,
     Dict,
     List,
-    Mapping,
     Optional,
     Protocol,
     Tuple,
+    TypeVar,
 )
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import BigInteger, Column, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, String
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlmodel import Field
+from sqlmodel import Field, SQLModel
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
+PayloadText = TypeVar("PayloadText", str, Optional[str])
 
-class ExecutionPayloadSchema(BaseSchema, table=True):
+
+class ExecutionPayloadSchema(SQLModel, table=True):
     """A distinct execution payload value, stored once and never changed.
 
     Rows are only reachable through the entities that reference them, and
     there are no foreign keys to them: adding one to the large entity tables
-    would copy them on MySQL.
+    would copy them on MySQL. Not a `BaseSchema`: the SHA-256 of the value is
+    the primary key, so that writers reference a value without reading back
+    an ID, and rows never change.
     """
 
     __tablename__ = "execution_payload"
-    __table_args__ = (
-        UniqueConstraint("sha256", name="unique_execution_payload_sha256"),
-    )
 
     # Lowercase hex: MySQL compares this column case-insensitively, SQLite
     # case-sensitively.
-    sha256: str = Field(sa_column=Column(String(64), nullable=False))
+    sha256: str = Field(sa_column=Column(String(64), primary_key=True))
+    created: datetime = Field(default_factory=utc_now)
     size: int = Field(sa_column=Column(BigInteger, nullable=False))
     value: str = Field(
         sa_column=Column(
@@ -150,14 +155,14 @@ class PayloadColumn(BaseModel):
         text: Optional[str] = getattr(schema, self.name)
         return None if text is None else PayloadValue(text=text)
 
-    def reference(self, schema: "HasPayloadColumns", payload_id: UUID) -> None:
+    def reference(self, schema: "HasPayloadColumns", sha256: str) -> None:
         """Reference a stored payload and clear the inline column.
 
         Args:
             schema: The row to update.
-            payload_id: The payload row holding the value.
+            sha256: The SHA-256 of the stored value.
         """
-        setattr(schema, self.payload_id_column_name, payload_id)
+        setattr(schema, self.payload_id_column_name, sha256)
         setattr(schema, self.name, self.cleared_inline_value)
 
 
@@ -187,14 +192,14 @@ def get_inline_payload_values(
 
 
 def reference_payloads(
-    payload_ids: Optional[Mapping[str, UUID]], *schemas: HasPayloadColumns
+    payload_ids: Optional[Collection[str]], *schemas: HasPayloadColumns
 ) -> None:
     """Replace the inline payload values of rows by references.
 
     Args:
-        payload_ids: The stored payload rows, by the SHA-256 of their value,
-            or None while payload references are disabled, which leaves the
-            rows unchanged.
+        payload_ids: The IDs of the stored payloads, which are the SHA-256 of
+            their values, or None while payload references are disabled,
+            which leaves the rows unchanged.
         *schemas: The rows to update.
 
     Raises:
@@ -207,33 +212,36 @@ def reference_payloads(
             value = column.get_inline_value(schema)
             if value is None:
                 continue
-            payload_id = payload_ids.get(value.sha256)
-            if payload_id is None:
+            if value.sha256 not in payload_ids:
                 raise RuntimeError(
                     f"The `{column.name}` payload of a "
                     f"`{type(schema).__name__}` was not stored."
                 )
-            column.reference(schema, payload_id)
+            column.reference(schema, value.sha256)
 
 
-def get_payload_text(
-    payload: Optional[ExecutionPayloadSchema],
-    owner: BaseSchema,
-    column_name: str,
-) -> str:
-    """Get the value of a referenced payload.
+def resolve_payload(
+    owner: BaseSchema, column_name: str, inline_value: PayloadText
+) -> PayloadText:
+    """Get the value of a payload column, inline or from its payload.
 
     Args:
-        payload: The loaded payload row of a reference.
-        owner: The row holding the reference.
-        column_name: The payload column of the reference.
+        owner: The row.
+        column_name: The payload column.
+        inline_value: The value of the inline column of the row.
 
     Returns:
-        The payload value.
+        The inline value, or the value of the referenced payload.
 
     Raises:
         RuntimeError: If the referenced payload row does not exist.
     """
+    if getattr(owner, f"{column_name}_payload_id") is None:
+        return inline_value
+    # Read only for references: the relationship never loads lazily.
+    payload: Optional[ExecutionPayloadSchema] = getattr(
+        owner, f"{column_name}_payload"
+    )
     if payload is None:
         raise RuntimeError(
             f"The `{column_name}` payload of {type(owner).__name__} "
@@ -258,7 +266,7 @@ def payload_relationship_kwargs(
     """
     return {
         "primaryjoin": f"foreign({owner}.{column_name}_payload_id) == "
-        "ExecutionPayloadSchema.id",
+        "ExecutionPayloadSchema.sha256",
         "viewonly": True,
         "uselist": False,
         "lazy": "raise",

@@ -5187,87 +5187,70 @@ class SqlZenStore(BaseZenStore):
             ).first()
         return bool(enabled)
 
-    def _store_payloads(
-        self, values: Collection[PayloadValue]
-    ) -> Dict[str, UUID]:
+    def _store_payloads(self, values: Collection[PayloadValue]) -> None:
         """Store each distinct payload value once.
 
         Each missing value is inserted and committed in a short transaction of
         its own, before the transaction that writes the rows referencing it.
-        Inside that transaction, a concurrent writer of the same value could
-        not be resolved: under REPEATABLE READ, the re-read after the
-        duplicate-key error does not see the row the other writer committed.
         So this must run while the caller's session holds no transaction,
         which also keeps a request to one pooled connection at a time.
+        Inserting into the transaction of the referencing rows instead
+        deadlocked on MySQL 8.4 and MariaDB 11.4 in concurrency tests, and
+        failed with error 1020 on MariaDB 12.3. It would also hold the lock on
+        a new value until that transaction commits, so that every concurrent
+        writer of the value waits for the whole transaction.
 
         Args:
             values: The payload values.
-
-        Returns:
-            The ID of the payload row of each value, by its SHA-256.
         """
         values_by_sha256 = {value.sha256: value for value in values}
         if not values_by_sha256:
-            return {}
+            return
         with Session(self.engine) as session:
-            payload_ids = self._get_payload_ids(session, values_by_sha256)
+            # Most values are stored already, and the probe only sends their
+            # hashes.
+            stored = session.exec(
+                select(ExecutionPayloadSchema.sha256).where(
+                    col(ExecutionPayloadSchema.sha256).in_(
+                        list(values_by_sha256)
+                    )
+                )
+            ).all()
             # Sorted, as in the measured write shape: concurrent writers of
             # several shared values then reach them in the same order.
-            for sha256 in sorted(values_by_sha256.keys() - payload_ids.keys()):
-                payload_ids[sha256] = self._insert_payload(
-                    session, values_by_sha256[sha256]
-                )
-        return payload_ids
+            for sha256 in sorted(values_by_sha256.keys() - set(stored)):
+                self._insert_payload(session, values_by_sha256[sha256])
 
-    @staticmethod
-    def _get_payload_ids(
-        session: Session, sha256s: Collection[str]
-    ) -> Dict[str, UUID]:
-        """Get the IDs of the stored payloads with the given hashes.
+    def _insert_payload(self, session: Session, value: PayloadValue) -> None:
+        """Insert a payload value, unless a concurrent writer stores it first.
 
-        Args:
-            session: The session to use.
-            sha256s: The SHA-256 hashes of the values.
-
-        Returns:
-            The ID of each stored payload, by its SHA-256.
-        """
-        rows = session.exec(
-            select(
-                ExecutionPayloadSchema.sha256, ExecutionPayloadSchema.id
-            ).where(col(ExecutionPayloadSchema.sha256).in_(sha256s))
-        ).all()
-        return {sha256: payload_id for sha256, payload_id in rows}
-
-    def _insert_payload(self, session: Session, value: PayloadValue) -> UUID:
-        """Insert a payload value, or find the row a concurrent writer added.
+        A plain INSERT, since INSERT IGNORE would store a truncated value
+        without an error.
 
         Args:
             session: The session of the payload rows. Its transaction may
                 only hold reads of payload rows, never entity writes.
             value: The payload value.
 
-        Returns:
-            The ID of the payload row holding the value.
-
         Raises:
             OperationalError: If the database fails for another reason than a
                 deadlock.
-            EntityCreationError: If the value could neither be inserted nor
-                found.
+            EntityCreationError: If every attempt ended in a deadlock.
         """
         for attempt in range(MAX_RETRIES_FOR_PAYLOAD_CREATION):
-            payload = ExecutionPayloadSchema(
-                sha256=value.sha256, size=value.size, value=value.text
+            session.add(
+                ExecutionPayloadSchema(
+                    sha256=value.sha256, size=value.size, value=value.text
+                )
             )
-            payload_id = payload.id
-            session.add(payload)
             try:
                 session.commit()
-                return payload_id
+                return
             except IntegrityError:
-                # Another writer committed the same value first.
+                # The duplicate key is only reported once the other writer of
+                # the value committed. If it rolls back, this insert succeeds.
                 session.rollback()
+                return
             except OperationalError as error:
                 session.rollback()
                 # Waiters on a value whose first writer rolled back can
@@ -5282,18 +5265,6 @@ class SqlZenStore(BaseZenStore):
                     MAX_RETRIES_FOR_PAYLOAD_CREATION,
                 )
                 time.sleep(exponential_backoff_with_jitter(attempt))
-            # The rollback ended the read view, so this sees the row that a
-            # concurrent writer committed. It finds nothing only if that
-            # writer rolled back, and then the next attempt inserts again.
-            if existing := self._get_payload_ids(session, [value.sha256]):
-                return existing[value.sha256]
-            logger.warning(
-                "Retrying the insert of `execution_payload` %s (attempt %d "
-                "of %d): the row is still missing.",
-                value.sha256[:12],
-                attempt + 1,
-                MAX_RETRIES_FOR_PAYLOAD_CREATION,
-            )
         raise EntityCreationError(
             f"Failed to store the execution payload {value.sha256[:12]} of "
             f"{value.size} bytes after {MAX_RETRIES_FOR_PAYLOAD_CREATION} "
@@ -5302,7 +5273,7 @@ class SqlZenStore(BaseZenStore):
 
     def _store_new_payloads(
         self, values: Collection[PayloadValue]
-    ) -> Optional[Dict[str, UUID]]:
+    ) -> Optional[Set[str]]:
         """Store the payloads of new rows, if payload references are enabled.
 
         Must run while the caller's session holds no transaction (see
@@ -5312,13 +5283,14 @@ class SqlZenStore(BaseZenStore):
             values: The payload values of the new rows.
 
         Returns:
-            The ID of the payload row of each value, by its SHA-256, or None
-            while payload references are disabled and new rows keep their
-            payloads inline.
+            The IDs of the stored payloads, which are the SHA-256 of their
+            values, or None while payload references are disabled and new
+            rows keep their payloads inline.
         """
         if not values or not self._payload_references_enabled():
             return None
-        return self._store_payloads(values)
+        self._store_payloads(values)
+        return {value.sha256 for value in values}
 
     # -------------------------- Pipeline Snapshots --------------------------
 
@@ -5644,10 +5616,6 @@ class SqlZenStore(BaseZenStore):
                 upstream_steps,
             ) in enumerate(serialized_step_configurations)
         ]
-        payload_ids = self._store_new_payloads(
-            get_inline_payload_values(new_snapshot, *step_configurations)
-        )
-        reference_payloads(payload_ids, new_snapshot, *step_configurations)
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
@@ -5706,12 +5674,21 @@ class SqlZenStore(BaseZenStore):
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
 
-                if snapshot.replace:
-                    self._release_snapshot_name(
-                        session=session,
-                        pipeline_id=snapshot.pipeline,
-                        name=snapshot.name,
-                    )
+            # Validated before storing payloads, so that an invalid request
+            # stores none. Ends the read transaction first, see
+            # `_store_payloads`.
+            session.commit()
+            payload_ids = self._store_new_payloads(
+                get_inline_payload_values(new_snapshot, *step_configurations)
+            )
+            reference_payloads(payload_ids, new_snapshot, *step_configurations)
+
+            if isinstance(snapshot.name, str) and snapshot.replace:
+                self._release_snapshot_name(
+                    session=session,
+                    pipeline_id=snapshot.pipeline,
+                    name=snapshot.name,
+                )
 
             new_snapshot.code_reference_id = (
                 self._create_or_reuse_code_reference(
@@ -7246,7 +7223,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_run: PipelineRunRequest,
         orchestrator_environment: str,
         session: Session,
-        payload_ids: Optional[Dict[str, UUID]],
+        payload_ids: Optional[Set[str]],
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
@@ -7489,7 +7466,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_run: PipelineRunRequest,
         orchestrator_environment: str,
         session: Session,
-        payload_ids: Optional[Dict[str, UUID]],
+        payload_ids: Optional[Set[str]],
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
