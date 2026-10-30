@@ -12,9 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import re
 import subprocess
-from pathlib import Path
+import sys
 
 import pytest
 
@@ -22,30 +21,25 @@ from zenml.cli.utils import install_packages
 from zenml.utils import requirements_utils
 
 
-def test_opentelemetry_constraints_match_pyproject():
-    """Tests that the hardcoded constraints match ZenML's SDK pin."""
-    pyproject = Path(__file__).parents[3] / "pyproject.toml"
-    sdk_version = re.search(
-        r'"opentelemetry-sdk==([^"]+)"', pyproject.read_text()
-    ).group(1)
-
-    assert requirements_utils.OPENTELEMETRY_CONSTRAINTS == [
-        f"opentelemetry-api=={sdk_version}",
-        f"opentelemetry-sdk=={sdk_version}",
-    ]
-
-
 def test_opentelemetry_constraints_dockerfile_line():
-    """Tests that the Dockerfile line writes the constraints."""
-    command = requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
-    command = command.removeprefix("RUN ").replace(
-        requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME, "/dev/stdout"
+    """Tests that the Dockerfile line writes the installed versions."""
+    command = (
+        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+        .removeprefix("RUN ")
+        .replace("pip", f'"{sys.executable}" -m pip', 1)
+        .replace(
+            requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME,
+            "/dev/stdout",
+        )
     )
 
     output = subprocess.run(
         command, shell=True, capture_output=True, text=True, check=True
     ).stdout
-    assert output.splitlines() == requirements_utils.OPENTELEMETRY_CONSTRAINTS
+    assert (
+        output.splitlines()
+        == requirements_utils.get_opentelemetry_constraints()
+    )
 
 
 @pytest.mark.parametrize(

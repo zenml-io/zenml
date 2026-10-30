@@ -330,7 +330,9 @@ def test_installs_add_opentelemetry_constraints():
         requirements_files=requirements_files,
     ).splitlines()
 
-    write_line = requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
+    write_line = (
+        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+    )
     install_line = "-r requirements.txt -c .zenml_opentelemetry_constraints"
     assert lines.count(write_line) == 1
     install_index = next(
