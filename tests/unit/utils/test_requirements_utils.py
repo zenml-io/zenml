@@ -22,15 +22,16 @@ from zenml.utils import requirements_utils
 
 
 def test_opentelemetry_constraints_dockerfile_line():
-    """Tests that the Dockerfile line writes the installed SDK constraints."""
-    line = requirements_utils.get_opentelemetry_constraints_dockerfile_line()
-    command, output_file = line.removeprefix("RUN ").rsplit(" > ", 1)
-    assert (
-        output_file == requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME
+    """Tests that the Dockerfile line writes the installed versions."""
+    command = requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
+    command = command.removeprefix("RUN ").replace(
+        "pip", f'"{sys.executable}" -m pip', 1
     )
+    output_file = requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME
+    assert f"> {output_file}" in command
 
     output = subprocess.run(
-        command.replace("python", f'"{sys.executable}"', 1),
+        command.replace(output_file, "/dev/stdout"),
         shell=True,
         capture_output=True,
         text=True,

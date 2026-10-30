@@ -388,8 +388,7 @@ def test_generate_dockerfile_adds_opentelemetry_constraints():
     ).splitlines()
 
     assert (
-        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
-        in lines
+        requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE in lines
     )
     assert lines[-1].endswith(
         "'sagemaker' -c .zenml_opentelemetry_constraints"

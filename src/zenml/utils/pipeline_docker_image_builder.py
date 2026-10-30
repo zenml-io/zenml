@@ -801,7 +801,7 @@ class PipelineDockerImageBuilder:
                 file_content.splitlines()
             ):
                 lines.append(
-                    requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+                    requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
                 )
                 install += f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
 

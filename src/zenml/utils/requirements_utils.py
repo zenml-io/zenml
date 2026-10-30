@@ -84,52 +84,38 @@ def get_requirements_for_component(
         return [], []
 
 
+# pip and uv only resolve the packages they are asked to install, not the ones
+# that are already installed. Installing other packages can therefore upgrade
+# `opentelemetry-api` past the version that the installed (pinned)
+# `opentelemetry-sdk` requires, e.g. through a newer `fastapi`, after which the
+# SDK fails to import. Installs pass the installed versions of both as
+# constraints to prevent that.
+OPENTELEMETRY_PACKAGES = ("opentelemetry-api", "opentelemetry-sdk")
 OPENTELEMETRY_CONSTRAINTS_FILE_NAME = ".zenml_opentelemetry_constraints"
+
+# Writes the constraints inside a Docker image, whose parent image might
+# contain different versions than the client building the image.
+OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE = (
+    "RUN pip list --format=freeze "
+    "| grep -iE '^opentelemetry-(api|sdk)==' "
+    f"> {OPENTELEMETRY_CONSTRAINTS_FILE_NAME} || true"
+)
 
 
 def get_opentelemetry_constraints() -> List[str]:
     """Get constraints that keep the installed OpenTelemetry SDK working.
 
-    pip and uv only resolve the packages they are asked to install, not the
-    ones that are already installed. Installing other packages can therefore
-    upgrade `opentelemetry-api` past the version that the installed (pinned)
-    `opentelemetry-sdk` requires, e.g. through a newer `fastapi`, after which
-    the SDK fails to import. The SDK requires the API with the same version,
-    so both are pinned to the installed SDK version.
-
     Returns:
-        Constraints for `opentelemetry-api` and `opentelemetry-sdk`. Empty if
-        the SDK is not installed.
+        The installed versions of `opentelemetry-api` and `opentelemetry-sdk`
+        as constraints. Packages that aren't installed are skipped.
     """
-    try:
-        sdk_version = version("opentelemetry-sdk")
-    except PackageNotFoundError:
-        return []
-    return [
-        f"opentelemetry-api=={sdk_version}",
-        f"opentelemetry-sdk=={sdk_version}",
-    ]
-
-
-def get_opentelemetry_constraints_dockerfile_line() -> str:
-    """Get a Dockerfile line that writes the OpenTelemetry constraints.
-
-    The line writes the constraints of `get_opentelemetry_constraints` for the
-    SDK installed in the image to `OPENTELEMETRY_CONSTRAINTS_FILE_NAME`, so
-    installs can pass them with `-c`. It runs inside the image because the
-    parent image might contain a different version than the client building
-    the image, and uses the standard library only.
-
-    Returns:
-        The Dockerfile `RUN` line.
-    """
-    snippet = (
-        "import importlib.metadata as m; "
-        "print(*('opentelemetry-%s==%s' % (p, d.version) "
-        "for d in m.distributions(name='opentelemetry-sdk') "
-        "for p in ('api', 'sdk')), sep=chr(10))"
-    )
-    return f'RUN python -c "{snippet}" > {OPENTELEMETRY_CONSTRAINTS_FILE_NAME}'
+    constraints = []
+    for package in OPENTELEMETRY_PACKAGES:
+        try:
+            constraints.append(f"{package}=={version(package)}")
+        except PackageNotFoundError:
+            continue
+    return constraints
 
 
 def requires_zenml(requirements: Iterable[str]) -> bool:

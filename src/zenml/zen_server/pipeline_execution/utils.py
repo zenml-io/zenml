@@ -782,7 +782,7 @@ def generate_dockerfile(
         # image's `opentelemetry-sdk` supports.
         if not requirements_utils.requires_zenml(pypi_requirements):
             lines.append(
-                requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+                requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
             )
             pypi_requirements_string += (
                 f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
