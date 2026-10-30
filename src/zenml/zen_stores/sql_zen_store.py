@@ -5216,6 +5216,12 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
             ).all()
+            # With MariaDB's `innodb_snapshot_isolation` (on by default in
+            # 12.3), an insert that meets a row committed after an earlier
+            # read of its transaction fails with error 1020 instead of a
+            # duplicate-key error. So no insert shares a transaction with
+            # the probe.
+            session.commit()
             # Sorted, as in the measured write shape: concurrent writers of
             # several shared values then reach them in the same order.
             for sha256 in sorted(values_by_sha256.keys() - set(stored)):
@@ -5228,8 +5234,8 @@ class SqlZenStore(BaseZenStore):
         without an error.
 
         Args:
-            session: The session of the payload rows. Its transaction may
-                only hold reads of payload rows, never entity writes.
+            session: The session of the payload rows. It must hold no
+                transaction, see `_store_payloads`.
             value: The payload value.
 
         Raises:
