@@ -21,6 +21,7 @@ from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
 from zenml.integrations.sklearn import SKLEARN, SklearnIntegration
+from zenml.utils import requirements_utils
 from zenml.utils.pipeline_docker_image_builder import (
     PipelineDockerImageBuilder,
 )
@@ -315,3 +316,27 @@ def test_build_args_are_added_to_dockerfile():
     )
     assert "ARG ARG1" in generated_dockerfile
     assert "ARG ARG2" in generated_dockerfile
+
+
+def test_installs_add_requirements_of_zenml_in_image():
+    """Tests that installs include the requirements of the image's ZenML."""
+    requirements_files = [
+        ("requirements.txt", "sagemaker", []),
+        ("zenml_requirements.txt", "zenml[server]==0.1.0\nnumpy", []),
+    ]
+    lines = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+        "image:tag",
+        DockerSettings(),
+        requirements_files=requirements_files,
+    ).splitlines()
+
+    write_line = requirements_utils.get_zenml_requirements_dockerfile_line()
+    install_index = next(
+        i
+        for i, line in enumerate(lines)
+        if line.endswith("-r requirements.txt -r .zenml_requirements")
+    )
+    assert lines[install_index - 1] == write_line
+    assert lines.count(write_line) == 1
+    # A file that installs ZenML itself brings its own requirements.
+    assert any(line.endswith("-r zenml_requirements.txt") for line in lines)
