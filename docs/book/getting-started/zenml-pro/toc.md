@@ -50,6 +50,13 @@
   * [Reconciliation Process](resource-pools-reconciliation.md)
   * [Examples](resource-pools-examples.md)
 
+## Bots
+
+* [Bots](bots.md)
+  * [Core Concepts](bots-core-concepts.md)
+  * [System Architecture](bots-system-architecture.md)
+  * [Roles and Permissions](bots-rbac.md)
+
 ## Access Management
 
 * [Roles & Permissions](roles.md)
