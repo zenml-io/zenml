@@ -1068,11 +1068,9 @@ def install_packages(
 
     command += packages
 
-    constraints = []
-    if not requirements_utils.requires_zenml(packages):
-        # Keeps the installer from upgrading `opentelemetry-api` past what the
-        # installed `opentelemetry-sdk` supports.
-        constraints = requirements_utils.get_opentelemetry_constraints()
+    # Keeps the installer from upgrading `opentelemetry-api` past what the
+    # installed `opentelemetry-sdk` supports.
+    constraints = requirements_utils.get_opentelemetry_constraints()
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"

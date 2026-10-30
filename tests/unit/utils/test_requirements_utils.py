@@ -59,7 +59,5 @@ def test_install_packages_adds_opentelemetry_constraints(mocker):
     check_call = mocker.patch("zenml.cli.utils.subprocess.check_call")
 
     install_packages(["sagemaker"])
-    assert "-c" in check_call.call_args.args[0]
 
-    install_packages(["zenml==0.98.1"])
-    assert "-c" not in check_call.call_args.args[0]
+    assert "-c" in check_call.call_args.args[0]

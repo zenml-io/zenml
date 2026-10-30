@@ -780,13 +780,12 @@ def generate_dockerfile(
         )
         # Keeps the installer from upgrading `opentelemetry-api` past what
         # the image's `opentelemetry-sdk` supports.
-        if not requirements_utils.requires_zenml(pypi_requirements):
-            lines.append(
-                requirements_utils.get_opentelemetry_constraints_dockerfile_line()
-            )
-            pypi_requirements_string += (
-                f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
-            )
+        lines.append(
+            requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+        )
+        pypi_requirements_string += (
+            f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
+        )
 
         if handle_bool_env_var(
             ENV_ZENML_RUNNER_IMAGE_DISABLE_UV, default=False
