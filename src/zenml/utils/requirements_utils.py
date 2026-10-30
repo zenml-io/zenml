@@ -13,7 +13,11 @@
 #  permissions and limitations under the License.
 """Requirement utils."""
 
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from importlib.metadata import PackageNotFoundError, version
+from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
+
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
 
 from zenml.integrations.utils import get_integration_for_module
 
@@ -78,3 +82,51 @@ def get_requirements_for_component(
         ), integration.APT_PACKAGES
     else:
         return [], []
+
+
+# pip and uv only resolve the packages they are asked to install, not the ones
+# that are already installed. Installing other packages can therefore replace
+# ZenML dependencies with versions ZenML doesn't support, e.g. a newer
+# `fastapi` upgrading `opentelemetry-api` past what the pinned
+# `opentelemetry-sdk` supports. Adding the installed ZenML version to an install
+# makes the resolver respect ZenML's requirements. Since that version is
+# already installed, this works for unreleased versions too.
+
+# Shell expression for Dockerfile installs. It is evaluated inside the image,
+# whose parent image can contain a different ZenML version than the client
+# building it, and expands to nothing if ZenML isn't installed.
+INSTALLED_ZENML_SHELL_REQUIREMENT = (
+    "$(pip show zenml 2>/dev/null | sed -n 's/^Version: /zenml==/p')"
+)
+
+
+def get_installed_zenml_requirement() -> Optional[str]:
+    """Get a requirement for the ZenML version installed locally.
+
+    Returns:
+        `zenml==<version>`, or None if ZenML isn't installed.
+    """
+    try:
+        return f"zenml=={version('zenml')}"
+    except PackageNotFoundError:
+        return None
+
+
+def requires_zenml(requirements: Iterable[str]) -> bool:
+    """Check whether a list of requirements contains ZenML itself.
+
+    Args:
+        requirements: The requirements to check. Lines that aren't valid
+            requirements, like comments or installer options, are ignored.
+
+    Returns:
+        Whether any of the requirements is for the `zenml` package.
+    """
+    for requirement in requirements:
+        try:
+            name = Requirement(requirement).name
+        except InvalidRequirement:
+            continue
+        if canonicalize_name(name) == "zenml":
+            return True
+    return False
