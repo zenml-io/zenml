@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Requirement utils."""
 
-from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from packaging.requirements import InvalidRequirement, Requirement
@@ -86,36 +85,20 @@ def get_requirements_for_component(
 
 # pip and uv only resolve the packages they are asked to install, not the ones
 # that are already installed. Installing other packages can therefore upgrade
-# `opentelemetry-api` past the version that the installed (pinned)
-# `opentelemetry-sdk` requires, e.g. through a newer `fastapi`, after which the
-# SDK fails to import. Installs pass the installed versions of both as
-# constraints to prevent that.
-OPENTELEMETRY_PACKAGES = ("opentelemetry-api", "opentelemetry-sdk")
+# `opentelemetry-api` past the version that ZenML's pinned `opentelemetry-sdk`
+# requires, e.g. through a newer `fastapi`, after which the SDK fails to
+# import. Installs pass these as constraints to prevent that. Interim fix:
+# the versions must match the `opentelemetry-sdk` pin in `pyproject.toml`,
+# which a unit test enforces.
+OPENTELEMETRY_CONSTRAINTS = [
+    "opentelemetry-api==1.43.0",
+    "opentelemetry-sdk==1.43.0",
+]
 OPENTELEMETRY_CONSTRAINTS_FILE_NAME = ".zenml_opentelemetry_constraints"
-
-# Writes the constraints inside a Docker image, whose parent image might
-# contain different versions than the client building the image.
 OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE = (
-    "RUN pip list --format=freeze "
-    "| grep -iE '^opentelemetry-(api|sdk)==' "
-    f"> {OPENTELEMETRY_CONSTRAINTS_FILE_NAME} || true"
+    f"RUN printf '%s\\n' {' '.join(OPENTELEMETRY_CONSTRAINTS)} "
+    f"> {OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
 )
-
-
-def get_opentelemetry_constraints() -> List[str]:
-    """Get constraints that keep the installed OpenTelemetry SDK working.
-
-    Returns:
-        The installed versions of `opentelemetry-api` and `opentelemetry-sdk`
-        as constraints. Packages that aren't installed are skipped.
-    """
-    constraints = []
-    for package in OPENTELEMETRY_PACKAGES:
-        try:
-            constraints.append(f"{package}=={version(package)}")
-        except PackageNotFoundError:
-            continue
-    return constraints
 
 
 def requires_zenml(requirements: Iterable[str]) -> bool:

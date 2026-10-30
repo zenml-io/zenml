@@ -12,8 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import re
 import subprocess
-import sys
+from pathlib import Path
 
 import pytest
 
@@ -21,26 +22,30 @@ from zenml.cli.utils import install_packages
 from zenml.utils import requirements_utils
 
 
+def test_opentelemetry_constraints_match_pyproject():
+    """Tests that the hardcoded constraints match ZenML's SDK pin."""
+    pyproject = Path(__file__).parents[3] / "pyproject.toml"
+    sdk_version = re.search(
+        r'"opentelemetry-sdk==([^"]+)"', pyproject.read_text()
+    ).group(1)
+
+    assert requirements_utils.OPENTELEMETRY_CONSTRAINTS == [
+        f"opentelemetry-api=={sdk_version}",
+        f"opentelemetry-sdk=={sdk_version}",
+    ]
+
+
 def test_opentelemetry_constraints_dockerfile_line():
-    """Tests that the Dockerfile line writes the installed versions."""
+    """Tests that the Dockerfile line writes the constraints."""
     command = requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
     command = command.removeprefix("RUN ").replace(
-        "pip", f'"{sys.executable}" -m pip', 1
+        requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME, "/dev/stdout"
     )
-    output_file = requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME
-    assert f"> {output_file}" in command
 
     output = subprocess.run(
-        command.replace(output_file, "/dev/stdout"),
-        shell=True,
-        capture_output=True,
-        text=True,
-        check=True,
+        command, shell=True, capture_output=True, text=True, check=True
     ).stdout
-    assert (
-        output.splitlines()
-        == requirements_utils.get_opentelemetry_constraints()
-    )
+    assert output.splitlines() == requirements_utils.OPENTELEMETRY_CONSTRAINTS
 
 
 @pytest.mark.parametrize(
@@ -57,11 +62,6 @@ def test_requires_zenml(requirements, expected):
 
 def test_install_packages_adds_opentelemetry_constraints(mocker):
     """Tests that CLI installs pass the OpenTelemetry constraints."""
-    mocker.patch.object(
-        requirements_utils,
-        "get_opentelemetry_constraints",
-        return_value=["opentelemetry-api==1.43.0"],
-    )
     check_call = mocker.patch("zenml.cli.utils.subprocess.check_call")
 
     install_packages(["sagemaker"])

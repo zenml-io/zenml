@@ -784,6 +784,11 @@ class PipelineDockerImageBuilder:
             f"--{key}" if value is None else f"--{key}={value}"
             for key, value in installer_args.items()
         )
+        if requirements_files:
+            lines.append(
+                requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
+            )
+
         for file, file_content, options in requirements_files:
             lines.append(f"COPY {file} .")
             option_string = " ".join(options)
@@ -793,16 +798,11 @@ class PipelineDockerImageBuilder:
             )
 
             # Keeps the installer from upgrading `opentelemetry-api` past what
-            # the image's `opentelemetry-sdk` supports. The constraints are
-            # regenerated per file because an earlier file might have changed
-            # the installed versions, and skipped for a file that installs
-            # ZenML itself, which brings its own OpenTelemetry pins.
+            # ZenML's pinned `opentelemetry-sdk` supports. Skipped for a file
+            # that installs ZenML itself, which brings its own pins.
             if not requirements_utils.requires_zenml(
                 file_content.splitlines()
             ):
-                lines.append(
-                    requirements_utils.OPENTELEMETRY_CONSTRAINTS_DOCKERFILE_LINE
-                )
                 install += f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
 
             lines.append(install)
