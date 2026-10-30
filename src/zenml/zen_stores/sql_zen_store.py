@@ -7241,35 +7241,19 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
-    def _create_run(
-        self,
-        pipeline_run: PipelineRunRequest,
-        orchestrator_environment: str,
-        session: Session,
-        payload_ids: Optional[Set[str]],
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    def _get_run_references(
+        self, pipeline_run: PipelineRunRequest, session: Session
+    ) -> Tuple[PipelineSnapshotSchema, Optional[UUID]]:
+        """Fetch the snapshot of a run request and check its other references.
 
         Args:
-            pipeline_run: The pipeline run to create.
-            orchestrator_environment: The serialized orchestrator environment
-                of the run.
+            pipeline_run: The pipeline run request.
             session: SQLAlchemy session.
-            payload_ids: The stored payloads of the run, or None while payload
-                references are disabled.
 
         Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If a run with the same name already exists or
-                a log entry with the same source already exists within the
-                scope of the same pipeline run.
-            KeyError: If the run requires a model version that doesn't exist and
-                can not be created.
+            The snapshot of the run, and the root run ID if the run has a
+            parent run.
         """
-        self._set_request_user_id(request_model=pipeline_run, session=session)
-
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -7296,6 +7280,41 @@ class SqlZenStore(BaseZenStore):
                 reference_type="parent run",
             )
             root_run_id = parent_run.root_run_id or parent_run.id
+
+        return snapshot, root_run_id
+
+    def _create_run(
+        self,
+        pipeline_run: PipelineRunRequest,
+        snapshot: PipelineSnapshotSchema,
+        root_run_id: Optional[UUID],
+        orchestrator_environment: str,
+        session: Session,
+        payload_ids: Optional[Set[str]],
+    ) -> PipelineRunResponse:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+            snapshot: The snapshot of the run.
+            root_run_id: The root run ID, if the run has a parent run.
+            orchestrator_environment: The serialized orchestrator environment
+                of the run.
+            session: SQLAlchemy session.
+            payload_ids: The stored payloads of the run, or None while payload
+                references are disabled.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If a run with the same name already exists or
+                a log entry with the same source already exists within the
+                scope of the same pipeline run.
+            KeyError: If the run requires a model version that doesn't exist and
+                can not be created.
+        """
+        self._set_request_user_id(request_model=pipeline_run, session=session)
 
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
@@ -7631,6 +7650,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
+            KeyError: If the snapshot of the run was deleted during the
+                request.
 
         Returns:
             The pipeline run, and a boolean indicating whether the run was
@@ -7657,6 +7678,11 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
 
+            # Checked before storing payloads, so that a request with a
+            # missing reference stores none.
+            snapshot, root_run_id = self._get_run_references(
+                pipeline_run, session=session
+            )
             # Ends the read transaction first, see `_store_payloads`.
             session.commit()
             orchestrator_environment = (
@@ -7670,11 +7696,18 @@ class SqlZenStore(BaseZenStore):
 
             # Acquire exclusive lock on the snapshot to prevent deadlocks
             # during insertion
-            session.exec(
+            locked_snapshot_id = session.exec(
                 select(PipelineSnapshotSchema.id)
                 .with_for_update()
                 .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
-            )
+            ).first()
+            # The snapshot was looked up before the lock, so it may have been
+            # deleted since.
+            if locked_snapshot_id is None:
+                raise KeyError(
+                    f"Unable to create pipeline run: snapshot "
+                    f"{pipeline_run.snapshot} no longer exists."
+                )
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -7722,6 +7755,8 @@ class SqlZenStore(BaseZenStore):
                 return (
                     self._create_run(
                         pipeline_run,
+                        snapshot=snapshot,
+                        root_run_id=root_run_id,
                         orchestrator_environment=orchestrator_environment,
                         session=session,
                         payload_ids=payload_ids,

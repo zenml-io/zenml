@@ -377,10 +377,10 @@ def test_replaced_placeholder_run_references_its_new_environment(
     assert store.get_run(run.id).orchestrator_environment == stored
 
 
-def test_rejected_snapshot_requests_store_no_payloads(
+def test_rejected_requests_store_no_payloads(
     store: SqlZenStore,
 ) -> None:
-    """Snapshot requests that fail validation store no payloads."""
+    """Snapshot and run requests that fail validation store no payloads."""
     _set_payload_references(store, True)
     client = Client()
     pipeline_id = store.create_pipeline(
@@ -411,6 +411,8 @@ def test_rejected_snapshot_requests_store_no_payloads(
         store.create_snapshot(request(stack=uuid4()))
     with pytest.raises(EntityExistsError):
         store.create_snapshot(request(name="taken"))
+    with pytest.raises(KeyError):
+        store.get_or_create_run(_run_request(uuid4()))
 
     assert payload_count() == stored
 
