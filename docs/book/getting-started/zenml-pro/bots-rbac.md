@@ -38,7 +38,8 @@ Admin cannot.
 
 The first time a ZenML Pro user or service account signs in, a matching bots
 account is created for it. The name, display name, and email of that account
-are kept in sync with ZenML Pro on every sign-in.
+are kept in sync with ZenML Pro on every sign-in. You can only see your own
+bots account.
 
 ## Organizations and workspaces
 
@@ -83,8 +84,9 @@ the live browser view, the terminal, and SSH access, have no permissions of
 their own. Access to a chat follows from the bot of the chat, as described in
 [Chats](#chats).
 
-Linked Slack and GitHub identities are private. You can only see, create, and
-remove the links of your own account.
+Linked Slack and GitHub identities are private. You can only see, create,
+change, and remove the links of your own account, including which one is your
+notification target.
 
 ## Ownership
 
@@ -155,7 +157,7 @@ actions to add or remove.
 
 | Operation | Required |
 | --- | --- |
-| Create a bot | `create` on `bot`, and `read` on the environment the bot runs in |
+| Create a bot | `create` on `bot`, and `read` on the environment the bot runs in. Connectors attached at creation must belong to the organization and be configured. |
 | View a bot, or list bots | `read` on the bot. Lists contain only the bots you can read. |
 | Change a bot, archive it, or attach or detach a connector | `update` on the bot. Moving the bot to another environment also requires `read` on that environment. |
 | Delete a bot | `delete` on the bot |
@@ -205,7 +207,8 @@ bot for scheduled runs to start.
 | Operation | Required |
 | --- | --- |
 | View channels | Membership in the organization |
-| Install the Slack or GitHub app | `create` on `channel`, which only Organization Admins have by default. Reinstalling into a Slack workspace that is already installed also requires `update` on that channel. |
+| Install the Slack or GitHub app | `create` on `channel`, which only Organization Admins have by default. Reinstalling into a Slack workspace that is already installed also requires `update` on that channel. A GitHub installation also requires that you own the GitHub user account or are an owner of the GitHub organization. |
+| List the repositories of the GitHub installations | Membership in the organization |
 | Change a channel | `update` on the channel |
 | Uninstall a channel | `delete` on the channel |
 
@@ -230,12 +233,12 @@ attachment requires `read` on the chat or automation it belongs to.
 
 Messages in Slack and on GitHub run as the bots account of their sender. To
 use Bots from Slack or GitHub, link your Slack or GitHub account to your bots
-account on the channels page of the Bots UI. Service accounts cannot link an
-identity.
+account on the connections page of the ZenML Pro dashboard settings. Service
+accounts cannot link an identity.
 
 The same permissions apply as in the UI:
 
-* A message from an unlinked user does not reach the agent. The ZenML Bots
+* A message from an unlinked user does not reach the agent. The ZenML Pro
   app replies with a link to the page where they can link their account. In
   Slack, only the sender sees this reply. On GitHub, the app posts it once per
   user and thread as a comment that mentions the sender.
@@ -251,11 +254,12 @@ The same permissions apply as in the UI:
 The agent in a sandbox does not act as a user. It holds a credential for its
 own chat only. It can report events and create artifacts on that chat, but it
 cannot read or change any other chat or resource, and the server rejects
-that credential everywhere else with `403 Forbidden`.
+that credential everywhere else with `403 Forbidden`. It can also notify the
+owner of its chat, and nobody else.
 
 Connectors follow the bot of the chat. A sandbox only receives the
 credentials of connectors attached to its bot, and the agent never sees the
-stored credential itself. See
+stored credential itself, except for the API key of a custom MCP server. See
 [Credentials Stay Outside the Sandbox](bots-system-architecture.md#credentials-stay-outside-the-sandbox).
 
 ## When access is denied

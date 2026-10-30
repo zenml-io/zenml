@@ -1,7 +1,7 @@
 ---
 description: >-
   Definitions for chats, bots, environments, sandboxes, steering, artifacts,
-  automations, channels, and connectors in ZenML Pro Bots.
+  automations, channels, notifications, and connectors in ZenML Pro Bots.
 ---
 
 # Core concepts
@@ -13,7 +13,7 @@ other and to ZenML Pro. For an overview of what Bots do, see the
 ```mermaid
 flowchart LR
     Org[ZenML Pro organization]
-    Bot[Bot<br/>Instructions, skills, MCP servers]
+    Bot[Bot<br/>Instructions, skills]
     Env[Environment<br/>Repositories, commands, variables]
     Conn[Connectors]
     Chat[Chat]
@@ -193,8 +193,7 @@ has:
 | Instructions | Added to the base instructions every agent gets |
 | Environment | The environment the bot's chats run in |
 | Skills | Extra skills installed in the sandbox |
-| MCP servers | MCP servers started inside the sandbox |
-| Connectors | Organization connectors attached to the bot |
+| Connectors | Organization connectors attached to the bot. You can attach them when you create the bot or later. |
 | ZenML Pro service account and API key | The identity the agent uses for ZenML Pro inside the sandbox |
 
 ### Skills
@@ -212,9 +211,9 @@ working with ZenML and Kitaru when the bot can reach a workspace of that type.
 
 ### MCP servers
 
-An MCP server on a bot is a command started inside the sandbox, with optional
-arguments. Server names must be unique within a bot. To give a bot access to a
-hosted service with a stored credential, use a connector instead.
+To give a bot an MCP server, attach a connector: a provider connector for a
+hosted service, or a [custom MCP server](#custom-mcp-servers) connector for a
+command started inside the sandbox.
 
 ### ZenML Pro identity
 
@@ -238,7 +237,7 @@ environment, and several bots can share one. An environment has:
 
 | Property | Meaning |
 | --- | --- |
-| Repositories | Git repositories to clone, each with an optional branch or tag and directory name. The first repository is the main repository, and the agent works in it. |
+| Repositories | Git repositories to clone, each with an optional branch or tag and directory name. The first repository is the main repository, and the agent works in it. The Bots UI offers the repositories of the GitHub installations connected to the organization. |
 | Setup command | Runs once in the main repository after cloning |
 | Start command | Runs in the background every time the sandbox boots, for example to start a development server |
 | Environment variables | Plain variables available in the sandbox |
@@ -304,9 +303,10 @@ current sandbox and can expire. Request them again when they do.
 The agent uses GitHub and connector services without their real credentials
 ever entering the sandbox. The credentials are added to the agent's requests
 on their way out. For GitHub, the agent can clone, fetch, and push the
-repositories the chat works with, and use the `gh` CLI, through the ZenML Bots
-GitHub app. Commits are authored by the app's bot user unless the
-environment sets the Git author and committer variables.
+repositories the chat works with, and use the `gh` CLI, through the ZenML Pro
+GitHub app. Only repositories of a GitHub installation connected to the chat's
+organization are reachable this way. Commits are authored by the app's bot
+user unless the environment sets the Git author and committer variables.
 
 ## Artifacts
 
@@ -353,11 +353,16 @@ Chats started by a schedule trigger belong to the owner of the automation.
 A channel connects Bots to an external messaging platform for an
 organization. Two channel types exist:
 
-* **Slack**: one channel per Slack workspace the ZenML Bots app is installed
+* **Slack**: one channel per Slack workspace the ZenML Pro app is installed
   in.
-* **GitHub**: one channel per GitHub installation of the ZenML Bots app, on an
+* **GitHub**: one channel per GitHub installation of the ZenML Pro app, on an
   organization or user account and the repositories picked during the
   install.
+
+Install the apps from the Bots UI. An install started anywhere else, such as
+from the app page on GitHub, creates no channel. A GitHub installation is only
+connected when the person installing it owns the GitHub user account, or is an
+owner of the GitHub organization it is installed on.
 
 Removing or suspending the app disables its channel, and reinstalling it from
 the Bots UI enables it again.
@@ -365,13 +370,14 @@ the Bots UI enables it again.
 ### Linked identities
 
 Before your Slack messages or GitHub comments are acted on, link your Slack or
-GitHub user to your bots account from the channel settings. A message from an
-unlinked user gets a hint to link and is otherwise ignored. You can list and
-remove your linked identities.
+GitHub user to your bots account from the connections page of the ZenML Pro
+dashboard settings. A message from an unlinked user gets a hint to link and is
+otherwise ignored. You can list and remove your linked identities, and choose
+one linked Slack identity as your [notification target](#notifications).
 
 ### Slack threads
 
-Mentioning the ZenML Bots app or sending it a direct message starts a chat
+Mentioning the ZenML Pro app or sending it a direct message starts a chat
 bound to that Slack thread. Replies in the thread steer the chat. The thread
 shows whether the agent is working, and the agent posts its reports and
 questions there with a link to the chat. A question with options arrives as a
@@ -382,13 +388,26 @@ invitation.
 
 ### GitHub threads
 
-Mentioning the ZenML Bots app on an issue or pull request starts a chat bound
-to that thread. Later comments, reviews, and review comments are queued on the
+Mentioning `@zenml-pro` on an issue or pull request starts a chat bound to
+that thread. Later comments, reviews, and review comments are queued on the
 chat until its current turn ends. The agent posts its reports and questions as
 comments with a link to the chat, and a pull request shows the state of the
 chat as a check run. A chat started from GitHub does not clone the
 repository of the thread on its own. The bot's environment decides which
 repositories are cloned.
+
+## Notifications
+
+The agent can ping you on Slack when something needs your attention right
+away, for example a failure with live effects, work that is blocked on you, or
+a time-sensitive approval. It does not use notifications for progress or
+results. A notification links to the chat and does not end the agent's turn.
+
+Notifications go to the owner of the chat, and only when the owner has made a
+linked Slack identity their notification target. A chat bound to a Slack
+thread is notified in that thread. Every other chat is notified with a direct
+message from the ZenML Pro app. Without a notification target, the agent has
+no notification tool.
 
 ## Connectors
 
@@ -407,6 +426,7 @@ These providers are supported:
 | Firecrawl | API key |
 | Tavily | API key |
 | Notion | OAuth authorization in the browser |
+| Custom MCP server | API key, or none |
 
 Each provider describes the capabilities a connector offers. The account
 behind the key or OAuth grant decides what the agent can actually do.
@@ -426,11 +446,24 @@ latest test result is shown on the connector.
 ### Using connectors in chats
 
 Each enabled connector attached to a bot appears to the agent as a separate
-tool server. The stored key or token never enters the sandbox and is never
-returned by the server after you save it. A running chat keeps the connectors it
+tool server. The stored key or token is never returned by the server after you
+save it, and it never enters the sandbox, except for
+[custom MCP servers](#custom-mcp-servers). A running chat keeps the connectors it
 started with, and credential or access changes can take a few minutes to
 apply. If a connector cannot be used when a chat starts, the chat shows a
 warning.
 
 Disabling, detaching, or deleting a Notion connector does not revoke its grant
 in Notion. Revoke it in Notion if you need to.
+
+### Custom MCP servers
+
+A custom MCP server connector starts a command inside the sandbox, with
+optional arguments, and the agent uses the tools of that MCP server. If the
+server needs an API key, name the environment variable it reads the key from
+and store the key on the connector. Without such a variable, the connector
+needs no credential.
+
+Unlike the other providers, a custom MCP server receives its API key inside the
+sandbox, so the agent can read it. Custom MCP server connectors cannot be
+tested from the server.

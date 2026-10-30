@@ -68,7 +68,7 @@ The Bots server serves the API that the UI, the Python SDK, Slack, GitHub, and t
 - **Configuration:** Storing bots, environments, automations, connectors, and channel installations for each organization
 - **Chats:** Storing messages and agent events, and streaming them to the UI
 - **Sandbox lifecycle:** Starting a sandbox when a chat needs one, stopping idle sandboxes, waking them for the next message, and building environment snapshots
-- **Channels:** Receiving Slack and GitHub events, and posting reports, questions, files, and screenshots back to the thread
+- **Channels:** Receiving Slack and GitHub events, posting reports, questions, files, and screenshots back to the thread, and delivering agent notifications to Slack
 - **Automations:** Starting chats from scheduled triggers
 - **Credential broker:** Answering the sandbox egress proxy with the credential a sandbox request needs
 
@@ -83,7 +83,7 @@ A runner inside every sandbox supervises:
 - **The agent runtime**, which runs the agent on the configured model and connects back to the Bots server
 - **A virtual display with a Chromium browser**, started on the agent's first browser use or the first time someone opens the live view
 - **A terminal**, shared between the agent and the people watching
-- **The built-in bot tools**, which let the agent publish artifacts, ask the user a question, and report a result
+- **The built-in bot tools**, which let the agent publish artifacts, ask the user a question, report a result, and notify the user on Slack
 
 Environments can be prebuilt into snapshots, so a new chat starts from a sandbox where the repositories are already cloned and the setup command has already run.
 
@@ -111,12 +111,12 @@ The Bots server is a service of the ZenML Pro control plane, next to your worksp
 4. The server stores these events and streams them to the UI as server-sent events.
 5. While it works, the agent calls the model provider, GitHub, your ZenML workspaces, and attached connectors. All of this traffic goes through the sandbox egress proxy, which adds the credentials. The built-in bot tools call the server with a token that is valid for this one chat only.
 6. To show the browser or the terminal, the UI asks the server for access and receives signed, time-limited URLs from the sandbox provider. The user's browser then connects to the sandbox provider directly. SSH access works the same way with a short-lived SSH command.
-7. When the agent ends its turn with a report or a question, the server records it. When configured, a classifier decides whether a turn without a report needs input from the user, and a language model names and summarizes the chat.
+7. When the agent ends its turn with a report or a question, the server records it. When configured, a classifier decides whether a turn without a report needs input from the user, and a language model names and summarizes the chat. When the agent notifies the user, the server posts the notification to the chat's Slack thread or as a direct message to the user's Slack notification target.
 8. After the sandbox has been idle for a few minutes, the server stops it. The next message wakes it.
 
 ### From Slack and GitHub
 
-An Organization Admin installs the ZenML Bots Slack app into a Slack workspace, or the ZenML Bots GitHub App into a GitHub account, from the Bots UI. Each user then links their Slack or GitHub identity to their bots account once. Messages from users who have not linked are answered with a hint and otherwise dropped, so every chat started from a thread belongs to a known ZenML Pro user and is subject to that user's Bots permissions.
+An Organization Admin installs the ZenML Pro Slack app into a Slack workspace, or the ZenML Pro GitHub App into a GitHub account, from the Bots UI. The install is bound to the browser that started it, so a forwarded install link connects nothing. A GitHub installation is only connected after the server verifies that the GitHub user owns the personal account or is an active owner of the GitHub organization. Each user then links their Slack or GitHub identity to their bots account once. Messages from users who have not linked are answered with a hint and otherwise dropped, so every chat started from a thread belongs to a known ZenML Pro user and is subject to that user's Bots permissions.
 
 Slack and GitHub deliver events to public webhook endpoints of the Bots server, which verifies every request with the app's signing or webhook secret. A mention or a direct message starts a chat bound to its thread, and replies in the thread steer the agent. From there the chat follows the same flow as in the UI. The server posts the agent's reports and questions to the thread with a link to the chat in the UI. Questions with choices arrive as Slack forms, and files and screenshots the agent shares are uploaded with the report.
 
@@ -137,8 +137,6 @@ The Python SDK and the REST API expose the same operations as the UI. A script o
 | **Working files** | Repository checkouts and files the agent creates | Sandbox disk, kept while the sandbox exists |
 | **Environment snapshots** | Prebuilt sandboxes with repositories and setup applied | Sandbox provider |
 | **ML metadata** | Pipelines, runs, artifacts, and models the agent reads or creates | Your ZenML workspace servers. The Bots database stores only pointers. |
-| **Agent traces** | Prompts, tool calls, and model responses of the agent | The Langfuse project configured for agent traces |
-| **Server model calls** | Chat naming, summaries, and turn classification | The Langfuse projects configured for them |
 
 ## Deployment
 
@@ -171,10 +169,10 @@ Only the public API paths of the Bots server are routed from the internet. The c
 
 The sandbox runs code the agent writes, so real credentials are kept out of it. Every sandbox sends its outbound traffic through the egress proxy, which is always on and runs [agentgateway](https://agentgateway.dev). The sandbox receives placeholders for the GitHub tokens, the bot's ZenML Pro service account key, the chat token of the Bots server, connector credentials, and the OpenAI key. The egress proxy decrypts each outbound HTTPS request with a certificate authority the sandbox trusts, checks the sandbox's signed token, and asks the Bots server for the credential that belongs to the destination. It then replaces the placeholder in the request.
 
-- Credentials are added only for the destinations listed in the sandbox's token, such as GitHub, the ZenML Pro API, and the model provider. Requests to other hosts pass through without credentials, so the agent can browse the public web. The list is not a browsing allowlist.
+- Credentials are added only for the destinations listed in the sandbox's token, such as GitHub, the ZenML Pro API, and the model provider. GitHub credentials are issued only for repositories of a GitHub installation connected to the chat's organization. Requests to other hosts pass through without credentials, so the agent can browse the public web. The list is not a browsing allowlist.
 - A connector credential is added only for that provider's approved endpoint and only when the connector is attached to the chat's bot. If the check fails, the request is denied.
 - The proxy caches credential lookups for a few minutes, so a revoked or changed connector can stay usable in a running chat until its cached entry expires.
-- The keys of the Langfuse project that receives agent traces do reach the sandbox. Use a Langfuse project that holds only agent traces. The values of secret environment variables are masked before traces are sent.
+- The API key of a custom MCP server connector is placed in the sandbox as an environment variable, because the server runs inside the sandbox.
 - A model provider other than OpenAI receives its key as an environment variable inside the sandbox, without the placeholder swap.
 
 ### Isolation

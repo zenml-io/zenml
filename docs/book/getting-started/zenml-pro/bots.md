@@ -62,10 +62,11 @@ It ends its work with a report that summarizes the result.
 
 ### Work from Slack and GitHub
 
-Mention the ZenML Bots app in Slack or on a GitHub issue or pull request, and
-a chat bound to that thread starts. Replies in the thread steer the chat, and
-the agent posts its reports and questions back to the thread with a link to
-the chat.
+Mention the ZenML Pro app in Slack, or `@zenml-pro` on a GitHub issue or pull
+request, and a chat bound to that thread starts. Replies in the thread steer
+the chat, and the agent posts its reports and questions back to the thread
+with a link to the chat. When something needs your attention right away, the
+agent can also ping you on Slack.
 
 ### Run agents on a schedule
 
@@ -76,15 +77,16 @@ check of failed pipeline runs.
 ### Give agents access to more tools
 
 Connectors give bots access to external services such as GitHub, Notion,
-Context7, Firecrawl, and Tavily. A connector is configured once for the
-organization and attached to any number of bots. The agent uses the service
-without ever seeing the stored credential.
+Context7, Firecrawl, and Tavily, or to a custom MCP server that runs in the
+sandbox. A connector is configured once for the organization and attached to
+any number of bots. For hosted services, the agent uses the service without
+ever seeing the stored credential.
 
 ## Where to go next
 
 | Page | For whom | What you learn |
 | --- | --- | --- |
-| [Core concepts](bots-core-concepts.md) | Everyone | Chats, bots, environments, sandboxes, steering, artifacts, automations, channels, and connectors |
+| [Core concepts](bots-core-concepts.md) | Everyone | Chats, bots, environments, sandboxes, steering, artifacts, automations, channels, notifications, and connectors |
 | [System architecture](bots-system-architecture.md) | Admins, platform teams | How Bots fit into ZenML Pro and how sandboxes reach external services |
 | [Roles and permissions](bots-rbac.md) | Admins | Who may create, use, and manage bots and the other Bots resources |
 
