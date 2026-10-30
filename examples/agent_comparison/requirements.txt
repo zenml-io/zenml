@@ -11,8 +11,8 @@ pandas>=1.5.0
 numpy>=1.21.0
 
 # LLM Integration (automatically used if API keys are available)
-litellm>=1.40.0
-openai>=1.0.0
+litellm>=1.80.0
+openai>=2.8.0
 
 # Observability (optional - automatically used if API keys are available)
 # Note: LiteLLM requires Langfuse v2, not v3

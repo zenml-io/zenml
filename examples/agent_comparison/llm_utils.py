@@ -72,14 +72,14 @@ def configure_langfuse_callbacks() -> None:
 
 def call_llm(
     prompt: str,
-    model: str = "gpt-5.6-terra",
+    model: str = "openai/gpt-5.6-luna",
     metadata: Optional[dict[str, Any]] = None,
 ) -> str:
     """Call LLM using LiteLLM with optional Langfuse observability and fallback to mock response.
 
     Args:
         prompt: The prompt to send to the LLM
-        model: The model to use (defaults to gpt-5.6-terra)
+        model: The model to use (defaults to openai/gpt-5.6-luna)
         metadata: Optional metadata for Langfuse tracing
 
     Returns:
@@ -97,8 +97,10 @@ def call_llm(
         call_params = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "max_completion_tokens": 200,
+            "max_completion_tokens": 512,
         }
+        if model.removeprefix("openai/") == "gpt-5.6-luna":
+            call_params["reasoning_effort"] = "none"
 
         # Add metadata for Langfuse if available
         if metadata and should_use_langfuse():

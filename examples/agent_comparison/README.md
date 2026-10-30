@@ -223,21 +223,24 @@ The pipeline automatically uses real LLMs when API keys are detected, with optio
 # The pipeline uses LiteLLM for unified access to 100+ providers
 from litellm import completion
 
-# This works with any provider supported by LiteLLM:
+# OpenAI example using LiteLLM:
 response = completion(
-    model="gpt-5.6-terra",  # OpenAI
+    model="openai/gpt-5.6-luna",  # OpenAI
     # model="claude-3-sonnet",  # Anthropic
     # model="groq/llama2-70b-4096",  # Groq
     # model="command-r",  # Cohere
     messages=[{"role": "user", "content": query}],
-    max_completion_tokens=200,
+    max_completion_tokens=512,
+    reasoning_effort="none",  # OpenAI Luna; omit for other providers
     # Langfuse integration (automatic when env vars are set)
     metadata={"agent_type": "SingleAgentRAG", "query_length": len(query)},
 )
 ```
 
+The default uses Luna for short customer-service replies, with reasoning disabled so internal reasoning does not consume the completion budget. The 512-token limit leaves headroom for the answer and token overhead. The `openai/` prefix selects the provider even when LiteLLM's model list does not yet include Luna.
+
 **Supported Providers via LiteLLM:**
-- **OpenAI**: `gpt-5.6-sol`, `gpt-5.6-terra`
+- **OpenAI**: `openai/gpt-5.6-luna` (default), `openai/gpt-5.6-terra`, `openai/gpt-5.6-sol`
 - **Anthropic**: `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`
 - **Groq**: `groq/llama2-70b-4096`, `groq/mixtral-8x7b-32768`
 - **Cohere**: `command-r`, `command-r-plus`
