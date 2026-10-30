@@ -9,7 +9,7 @@ icon: lock
 
 Bots use the [roles and permissions](roles.md) of ZenML Pro. You sign in to
 Bots with your ZenML Pro account, every Bots resource belongs to a ZenML Pro
-organization, and the Bots server asks ZenML Pro which actions you may perform.
+organization, and ZenML Pro roles decide which actions you may perform.
 You manage access to Bots in the same place as access to the rest of your
 organization.
 
@@ -20,11 +20,10 @@ see when a request is denied. For the resources themselves, see
 
 ## Signing in
 
-The Bots server accepts two kinds of ZenML Pro credentials:
+Bots accept two kinds of ZenML Pro credentials:
 
-* **Your ZenML Pro session.** When you open the Bots UI, it exchanges your
-  ZenML Pro session for a Bots session in the organization you choose. A Bots
-  session lasts one hour by default.
+* **Your ZenML Pro session.** When you open the Bots UI, you sign in to the
+  organization you choose. A Bots session lasts one hour.
 * **A ZenML Pro API key**, for example the API key of a
   [service account](service-accounts.md). Pass it to the Python SDK together
   with the organization. When you call the REST API directly, send the key as
@@ -35,11 +34,6 @@ organization in ZenML Pro. The owner of the organization and every member
 with the Organization Admin, Organization Manager, Organization Viewer, or
 Organization Member role can sign in. A member whose only role is Billing
 Admin cannot.
-
-The first time a ZenML Pro user or service account signs in, a matching bots
-account is created for it. The name, display name, and email of that account
-are kept in sync with ZenML Pro on every sign-in. You can only see your own
-bots account.
 
 ## Organizations and workspaces
 
@@ -69,7 +63,7 @@ other service account.
 
 ## Protected resources and actions
 
-The Bots server checks permissions on five resource types:
+Permissions apply to five resource types:
 
 | Resource | Actions | Notes |
 | --- | --- | --- |
@@ -174,7 +168,7 @@ actions to add or remove.
 | Create or delete an artifact | `use` on its bot |
 
 The chat list contains your own chats and the chats of every bot you can
-read. Internal chats are hidden from every list and reported as not found.
+read.
 
 ### Environments
 
@@ -231,9 +225,9 @@ attachment requires `read` on the chat or automation it belongs to.
 
 ## Slack and GitHub
 
-Messages in Slack and on GitHub run as the bots account of their sender. To
-use Bots from Slack or GitHub, link your Slack or GitHub account to your bots
-account on the connections page of the ZenML Pro dashboard settings. Service
+Messages in Slack and on GitHub run as the ZenML Pro user who sent them. To
+use Bots from Slack or GitHub, link your Slack or GitHub account to your ZenML
+Pro account on the connections page of the ZenML Pro dashboard settings. Service
 accounts cannot link an identity.
 
 The same permissions apply as in the UI:
@@ -251,11 +245,9 @@ The same permissions apply as in the UI:
 
 ## The agent in the sandbox
 
-The agent in a sandbox does not act as a user. It holds a credential for its
-own chat only. It can report events and create artifacts on that chat, but it
-cannot read or change any other chat or resource, and the server rejects
-that credential everywhere else with `403 Forbidden`. It can also notify the
-owner of its chat, and nobody else.
+The agent in a sandbox does not act as a user. It can only work on its own
+chat, for example to add artifacts or notify the owner of the chat. It cannot
+read or change any other chat or Bots resource.
 
 Connectors follow the bot of the chat. A sandbox only receives the
 credentials of connectors attached to its bot, and the agent never sees the
@@ -270,7 +262,7 @@ stored credential itself, except for the API key of a custom MCP server. See
 | An action you may not perform on one resource | `403 Forbidden` | `Not permitted to update bot <bot-id>` |
 | An action you may not perform on any resource of a type | `403 Forbidden` | `Not permitted to create environments` |
 | A chat operation that needs an action on the chat's bot | `403 Forbidden` | `Not permitted to use chat <chat-id>. Requires use on bot <bot-id>` |
-| A resource of another organization, or an internal chat | `404 Not Found` | |
+| A resource of another organization | `404 Not Found` | |
 | An invalid share, such as a share with yourself | `422 Unprocessable Entity` | `Sharing with the caller is not allowed` |
 | ZenML Pro cannot be reached for a permission check | `503 Service Unavailable` | `Control plane permission check failed.` |
 
@@ -278,8 +270,7 @@ The Python SDK raises `AuthenticationError` for `401`, `AuthorizationError`
 for `403`, `NotFoundError` for `404`, `ValidationError` for `422`, and
 `ServerError` for `503`.
 
-When ZenML Pro cannot be reached, the server denies the request instead of
-allowing it. Lists of bots, environments, automations, chats, and artifacts
+When ZenML Pro cannot be reached, the request is denied instead of allowed. Lists of bots, environments, automations, chats, and artifacts
 leave out every resource you cannot read, so a resource missing from one of
 these lists may be one you have no access to.
 

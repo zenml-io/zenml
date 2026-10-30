@@ -44,9 +44,9 @@ own tenants.
   [organization](organization.md). Bot, environment, and automation names
   are unique within an organization.
   Resources of one organization are never visible from another.
-* **Users**: you sign in to Bots with your ZenML Pro account. Your bots
-  account mirrors your ZenML Pro user, and every chat, bot, environment, and
-  automation records the account that created it as its owner.
+* **Users**: you sign in to Bots with your ZenML Pro account. Every chat,
+  bot, environment, and automation records the user that created it as its
+  owner.
 * **Workspaces**: Bots do not belong to a single
   [workspace](workspaces.md). Instead, each bot acts as a ZenML Pro
   [service account](service-accounts.md). When a chat starts, ZenML Pro looks
@@ -80,9 +80,8 @@ A chat has:
 
 You start a chat with a prompt. A prompt is text plus optional context:
 
-* **Attachments**: files you upload with the prompt. The server announces the
-  maximum number of attachments per message and the maximum size of one
-  attachment and of a whole message.
+* **Attachments**: files you upload with the prompt, within limits on their
+  number and size.
 * **External resources**: references to things the prompt is about. These can
   be a URL, a GitHub URL, a ZenML Pro workspace, or a ZenML resource such as
   a project, pipeline, pipeline run, artifact version, model version,
@@ -114,11 +113,9 @@ or fails. A chat can have any number of turns.
 
 ### Events
 
-Everything that happens in a chat is recorded as an event and streamed to the
-UI live. Event kinds include the start and end of a turn, agent messages,
-reasoning, executed commands, MCP tool calls, function calls, warnings, and
-errors. A warning is used, for example, when a connector is not available to
-the chat.
+Everything that happens in a chat appears in it live: agent messages,
+reasoning, executed commands, tool calls, warnings, and errors. A warning
+shows, for example, when a connector is not available to the chat.
 
 ### Pausing, resuming, and archiving
 
@@ -127,10 +124,8 @@ chat starts the same sandbox again without cloning the repositories or running
 the setup command again. Sending a message to a paused chat resumes it
 automatically.
 
-The server also stops the sandbox of a chat on its own when the agent has
-nothing to do for a while. The idle time is set by the operator of the Bots
-server and defaults to five minutes. The chat behaves like a paused chat
-afterwards.
+The sandbox of a chat is also stopped when the agent has had nothing to do
+for a few minutes. The chat behaves like a paused chat afterwards.
 
 Archiving a chat hides it from chat lists. An archived chat does not accept new
 messages until you unarchive it.
@@ -154,9 +149,8 @@ Every message you send to a chat has a delivery mode:
 | `steer` | Default. Joins the turn the agent is working on, so the agent sees it right away. If no turn is open, the message starts a new one. |
 | `queue` | Waits until the current turn ends, then starts the next turn |
 
-Messages that wait for delivery at the same time are delivered together. When a
-file attached to a message could not be downloaded, for example from Slack,
-the message is held back. You can retry the download or discard the message.
+When a file attached to a message could not be downloaded, for example from
+Slack, the message is held back. You can retry the download or discard it.
 
 ### Interrupting
 
@@ -194,7 +188,7 @@ has:
 | Environment | The environment the bot's chats run in |
 | Skills | Extra skills installed in the sandbox |
 | Connectors | Organization connectors attached to the bot. You can attach them when you create the bot or later. |
-| ZenML Pro service account and API key | The identity the agent uses for ZenML Pro inside the sandbox |
+| ZenML Pro service account | The identity the agent uses for ZenML Pro inside the sandbox |
 
 ### Skills
 
@@ -255,33 +249,26 @@ from it instead of repeating the setup. A snapshot is `building`, `ready`, or
 Only a ready snapshot that matches the current repositories and setup command
 of the environment is used. After you change them, build a new snapshot.
 New chats still pull the latest changes of the repositories when they start
-from a snapshot. Snapshots are only available when the Bots server runs its
-sandboxes on a platform that supports them.
+from a snapshot.
 
 ## Sandboxes
 
 A sandbox is the isolated computer a chat runs in. Each chat has its own
 sandbox, and the agent, its browser, and its tools all run inside it. You do
-not create sandboxes yourself: the server creates one when a chat starts,
-stops it when the chat is paused or idle, and starts it again when the chat
-continues.
+not create sandboxes yourself. A sandbox starts with the chat, stops when the
+chat is paused or idle, and starts again when the chat continues.
 
-When a new sandbox starts, the server:
-
-1. Restores a ready environment snapshot, or clones the repositories and runs
-   the setup command.
-2. Installs the bot's skills and the built-in skills.
-3. Logs the ZenML and Kitaru clients in to the workspaces the bot's service
-   account can read.
-4. Starts the environment's start command and the agent.
+A new sandbox has the environment's repositories and setup in place, the bot's
+skills installed, and the ZenML and Kitaru clients logged in to the workspaces
+the bot's service account can read. The environment's start command and the
+agent run in it.
 
 ### Live browser view
 
-The sandbox runs a full browser on a virtual display. The agent drives this
-browser, for example to open a dashboard or test a web app it is building.
-The live browser view streams that display to you, so you can watch the agent
-and interact with the page yourself. The browser starts the first time the
-agent or the live view uses it.
+The sandbox runs a full browser. The agent drives this browser, for example
+to open a dashboard or test a web app it is building. The live browser view
+streams it to you, so you can watch the agent and interact with the page
+yourself.
 
 ### Terminal
 
@@ -291,9 +278,7 @@ open from your browser, next to the agent.
 ### SSH access
 
 You can request SSH access to the sandbox of a running chat. Every request
-issues a fresh access with an SSH command to run, which expires after a time
-the operator configures, one hour by default. SSH access is only available
-when the Bots server runs its sandboxes on a platform that supports it.
+issues a fresh SSH command to run, which expires after one hour.
 
 The live browser view, terminal, and SSH links of a chat belong to its
 current sandbox and can expire. Request them again when they do.
@@ -301,8 +286,9 @@ current sandbox and can expire. Request them again when they do.
 ### Credentials in the sandbox
 
 The agent uses GitHub and connector services without their real credentials
-ever entering the sandbox. The credentials are added to the agent's requests
-on their way out. For GitHub, the agent can clone, fetch, and push the
+ever entering the sandbox. See
+[Credentials Stay Outside the Sandbox](bots-system-architecture.md#credentials-stay-outside-the-sandbox).
+For GitHub, the agent can clone, fetch, and push the
 repositories the chat works with, and use the `gh` CLI, through the ZenML Pro
 GitHub app. Only repositories of a GitHub installation connected to the chat's
 organization are reachable this way. Commits are authored by the app's bot
@@ -315,8 +301,7 @@ records artifacts as soon as they exist, so you can find a pull request or a
 pipeline run without reading the whole chat. Artifacts can also be added to a
 chat through the API.
 
-An artifact either points to an external resource or holds data that the
-server stores:
+An artifact either points to an external resource or holds data:
 
 | Type | Content |
 | --- | --- |
@@ -360,9 +345,9 @@ organization. Two channel types exist:
   install.
 
 Install the apps from the Bots UI. An install started anywhere else, such as
-from the app page on GitHub, creates no channel. A GitHub installation is only
-connected when the person installing it owns the GitHub user account, or is an
-owner of the GitHub organization it is installed on.
+from the app page on GitHub, creates no channel. To install the GitHub app,
+you must own the GitHub user account or be an owner of the GitHub
+organization.
 
 Removing or suspending the app disables its channel, and reinstalling it from
 the Bots UI enables it again.
@@ -370,7 +355,7 @@ the Bots UI enables it again.
 ### Linked identities
 
 Before your Slack messages or GitHub comments are acted on, link your Slack or
-GitHub user to your bots account from the connections page of the ZenML Pro
+GitHub user to your ZenML Pro account from the connections page of the ZenML Pro
 dashboard settings. A message from an unlinked user gets a hint to link and is
 otherwise ignored. You can list and remove your linked identities, and choose
 one linked Slack identity as your [notification target](#notifications).
@@ -406,8 +391,8 @@ results. A notification links to the chat and does not end the agent's turn.
 Notifications go to the owner of the chat, and only when the owner has made a
 linked Slack identity their notification target. A chat bound to a Slack
 thread is notified in that thread. Every other chat is notified with a direct
-message from the ZenML Pro app. Without a notification target, the agent has
-no notification tool.
+message from the ZenML Pro app. Without a notification target, the agent
+cannot notify you.
 
 ## Connectors
 
@@ -445,13 +430,12 @@ latest test result is shown on the connector.
 
 ### Using connectors in chats
 
-Each enabled connector attached to a bot appears to the agent as a separate
-tool server. The stored key or token is never returned by the server after you
-save it, and it never enters the sandbox, except for
-[custom MCP servers](#custom-mcp-servers). A running chat keeps the connectors it
-started with, and credential or access changes can take a few minutes to
-apply. If a connector cannot be used when a chat starts, the chat shows a
-warning.
+The agent can use every enabled connector attached to its bot. The stored key
+or token is never shown again after you save it, and it never enters the
+sandbox, except for [custom MCP servers](#custom-mcp-servers). A running chat
+keeps the connectors it started with, and credential or access changes can
+take a few minutes to apply. If a connector cannot be used when a chat starts,
+the chat shows a warning.
 
 Disabling, detaching, or deleting a Notion connector does not revoke its grant
 in Notion. Revoke it in Notion if you need to.
@@ -466,4 +450,4 @@ needs no credential.
 
 Unlike the other providers, a custom MCP server receives its API key inside the
 sandbox, so the agent can read it. Custom MCP server connectors cannot be
-tested from the server.
+tested.
