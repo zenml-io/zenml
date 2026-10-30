@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, Optional, Set
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Boolean, Column, false
 from sqlmodel import Field, SQLModel
 
 from zenml.models import (
@@ -48,6 +48,23 @@ class ServerSettingsSchema(SQLModel, table=True):
     )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
+    # Whether new rows reference their execution payloads instead of holding
+    # them inline. Releases before execution payloads only read inline values,
+    # so a database they used keeps this off (the column default) while they
+    # may still open it. A later release moves the payloads of existing rows
+    # and then turns it on. A database created with execution payloads starts
+    # with it on.
+    payload_references_enabled: bool = Field(
+        default=True,
+        sa_column=Column(Boolean, nullable=False, server_default=false()),
+    )
+    # When the migration that added execution payloads ran, or when the
+    # database was created with them. The release that turns references on
+    # waits a delay after this, to give a rolling upgrade time to replace the
+    # processes that cannot read them.
+    execution_payloads_added: Optional[datetime] = Field(
+        nullable=True, default_factory=utc_now
+    )
 
     def update(
         self, settings_update: ServerSettingsUpdate
