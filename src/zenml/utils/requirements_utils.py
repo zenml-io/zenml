@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """Requirement utils."""
 
-from importlib.metadata import PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import canonicalize_name
 
 from zenml.integrations.utils import get_integration_for_module
-from zenml.utils.package_utils import get_dependencies
 
 if TYPE_CHECKING:
     from zenml.models import ComponentResponse, StackResponse
@@ -85,51 +84,52 @@ def get_requirements_for_component(
         return [], []
 
 
-ZENML_REQUIREMENTS_FILE_NAME = ".zenml_requirements"
+OPENTELEMETRY_CONSTRAINTS_FILE_NAME = ".zenml_opentelemetry_constraints"
 
 
-def get_zenml_requirements() -> List[str]:
-    """Get the requirements of the installed ZenML package.
+def get_opentelemetry_constraints() -> List[str]:
+    """Get constraints that keep the installed OpenTelemetry SDK working.
 
-    Installing packages with pip or uv only resolves the requested packages,
-    not the ones that are already installed. Passing these requirements along
-    with every install keeps the installer from replacing packages with
-    versions that the installed ZenML does not support, e.g. an
-    `opentelemetry-api` version that is incompatible with the pinned
-    `opentelemetry-sdk`.
+    pip and uv only resolve the packages they are asked to install, not the
+    ones that are already installed. Installing other packages can therefore
+    upgrade `opentelemetry-api` past the version that the installed (pinned)
+    `opentelemetry-sdk` requires, e.g. through a newer `fastapi`, after which
+    the SDK fails to import. The SDK requires the API with the same version,
+    so both are pinned to the installed SDK version.
 
     Returns:
-        The requirements of the installed ZenML package without its extras.
-        Empty if ZenML is not installed as a distribution.
+        Constraints for `opentelemetry-api` and `opentelemetry-sdk`. Empty if
+        the SDK is not installed.
     """
     try:
-        dependencies = get_dependencies(Requirement("zenml"))
+        sdk_version = version("opentelemetry-sdk")
     except PackageNotFoundError:
         return []
-    return [str(dependency) for dependency in dependencies]
+    return [
+        f"opentelemetry-api=={sdk_version}",
+        f"opentelemetry-sdk=={sdk_version}",
+    ]
 
 
-def get_zenml_requirements_dockerfile_line() -> str:
-    """Get a Dockerfile line that writes the image's ZenML requirements.
+def get_opentelemetry_constraints_dockerfile_line() -> str:
+    """Get a Dockerfile line that writes the OpenTelemetry constraints.
 
-    The line writes the requirements of the ZenML installed in the image to
-    `ZENML_REQUIREMENTS_FILE_NAME`, so installs can pass them with
-    `-r ZENML_REQUIREMENTS_FILE_NAME`. It runs inside the image because the
-    parent image might contain a different ZenML version than the client
-    building the image, which also means it can't import ZenML and uses the
-    standard library only. Requirements that only apply to an extra are
-    skipped; the installer evaluates all other markers itself.
+    The line writes the constraints of `get_opentelemetry_constraints` for the
+    SDK installed in the image to `OPENTELEMETRY_CONSTRAINTS_FILE_NAME`, so
+    installs can pass them with `-c`. It runs inside the image because the
+    parent image might contain a different version than the client building
+    the image, and uses the standard library only.
 
     Returns:
         The Dockerfile `RUN` line.
     """
     snippet = (
-        "import importlib.metadata as m, re; "
-        "print(*(r for d in m.distributions(name='zenml') "
-        "for r in d.requires or [] "
-        "if not re.search('extra *==', r)), sep=chr(10))"
+        "import importlib.metadata as m; "
+        "print(*('opentelemetry-%s==%s' % (p, d.version) "
+        "for d in m.distributions(name='opentelemetry-sdk') "
+        "for p in ('api', 'sdk')), sep=chr(10))"
     )
-    return f'RUN python -c "{snippet}" > {ZENML_REQUIREMENTS_FILE_NAME}'
+    return f'RUN python -c "{snippet}" > {OPENTELEMETRY_CONSTRAINTS_FILE_NAME}'
 
 
 def requires_zenml(requirements: Iterable[str]) -> bool:

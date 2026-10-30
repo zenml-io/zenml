@@ -14,31 +14,20 @@
 
 import subprocess
 import sys
-from importlib.metadata import PackageNotFoundError
 
 import pytest
-from packaging.requirements import Requirement
 
 from zenml.cli.utils import install_packages
 from zenml.utils import requirements_utils
 
 
-def test_get_zenml_requirements_without_zenml_distribution(mocker):
-    """Tests that no requirements are returned if ZenML isn't installed."""
-    mocker.patch.object(
-        requirements_utils,
-        "get_dependencies",
-        side_effect=PackageNotFoundError("zenml"),
-    )
-
-    assert requirements_utils.get_zenml_requirements() == []
-
-
-def test_zenml_requirements_dockerfile_line_skips_extras():
-    """Tests that the Dockerfile line writes ZenML's non-extra requirements."""
-    line = requirements_utils.get_zenml_requirements_dockerfile_line()
+def test_opentelemetry_constraints_dockerfile_line():
+    """Tests that the Dockerfile line writes the installed SDK constraints."""
+    line = requirements_utils.get_opentelemetry_constraints_dockerfile_line()
     command, output_file = line.removeprefix("RUN ").rsplit(" > ", 1)
-    assert output_file == requirements_utils.ZENML_REQUIREMENTS_FILE_NAME
+    assert (
+        output_file == requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME
+    )
 
     output = subprocess.run(
         command.replace("python", f'"{sys.executable}"', 1),
@@ -47,28 +36,17 @@ def test_zenml_requirements_dockerfile_line_skips_extras():
         text=True,
         check=True,
     ).stdout
-    names = {Requirement(r).name for r in output.splitlines()}
-
-    expected = {
-        r.name
-        for r in map(Requirement, requirements_utils.get_zenml_requirements())
-    }
-    assert expected <= names
-    # `fastapi` is only required by the `server` extra.
-    assert "fastapi" not in names
+    assert (
+        output.splitlines()
+        == requirements_utils.get_opentelemetry_constraints()
+    )
 
 
 @pytest.mark.parametrize(
     "requirements, expected",
     [
-        (["zenml"], True),
-        (["zenml==0.98.1"], True),
-        (["zenml[server]>=0.98"], True),
-        (["ZenML ; python_version > '3.9'"], True),
-        (["zenml @ git+https://github.com/zenml-io/zenml.git"], True),
-        (["zenml-foo", "zenml_bar==1.0"], False),
-        (["# zenml", "--index-url https://example.com", "boto3"], False),
-        ([], False),
+        (["zenml[server]==0.98.1"], True),
+        (["zenml-foo", "# zenml", "--index-url https://x.io"], False),
     ],
 )
 def test_requires_zenml(requirements, expected):
@@ -76,17 +54,17 @@ def test_requires_zenml(requirements, expected):
     assert requirements_utils.requires_zenml(requirements) is expected
 
 
-def test_install_packages_adds_zenml_requirements(mocker):
-    """Tests that CLI installs include the requirements of ZenML."""
+def test_install_packages_adds_opentelemetry_constraints(mocker):
+    """Tests that CLI installs pass the OpenTelemetry constraints."""
     mocker.patch.object(
         requirements_utils,
-        "get_zenml_requirements",
-        return_value=["opentelemetry-sdk==1.43.0"],
+        "get_opentelemetry_constraints",
+        return_value=["opentelemetry-api==1.43.0"],
     )
     check_call = mocker.patch("zenml.cli.utils.subprocess.check_call")
 
     install_packages(["sagemaker"])
-    assert "opentelemetry-sdk==1.43.0" in check_call.call_args.args[0]
+    assert "-c" in check_call.call_args.args[0]
 
     install_packages(["zenml==0.98.1"])
-    assert "opentelemetry-sdk==1.43.0" not in check_call.call_args.args[0]
+    assert "-c" not in check_call.call_args.args[0]

@@ -376,8 +376,8 @@ def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
     build_and_run.assert_not_called()
 
 
-def test_generate_dockerfile_adds_requirements_of_zenml_in_image():
-    """Tests that the runner image install includes ZenML's requirements."""
+def test_generate_dockerfile_adds_opentelemetry_constraints():
+    """Tests that the runner image install passes the OTel constraints."""
     from zenml.utils import requirements_utils
 
     lines = utils.generate_dockerfile(
@@ -387,14 +387,10 @@ def test_generate_dockerfile_adds_requirements_of_zenml_in_image():
         python_version="3.12",
     ).splitlines()
 
-    write_line = requirements_utils.get_zenml_requirements_dockerfile_line()
-    assert write_line in lines
-    assert lines[-1].endswith("'sagemaker' -r .zenml_requirements")
-
-    lines = utils.generate_dockerfile(
-        pypi_requirements=["zenml==0.98.1"],
-        apt_packages=[],
-        zenml_version="0.98.1",
-        python_version="3.12",
-    ).splitlines()
-    assert write_line not in lines
+    assert (
+        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
+        in lines
+    )
+    assert lines[-1].endswith(
+        "'sagemaker' -c .zenml_opentelemetry_constraints"
+    )

@@ -318,11 +318,11 @@ def test_build_args_are_added_to_dockerfile():
     assert "ARG ARG2" in generated_dockerfile
 
 
-def test_installs_add_requirements_of_zenml_in_image():
-    """Tests that installs include the requirements of the image's ZenML."""
+def test_installs_add_opentelemetry_constraints():
+    """Tests that installs pass the OpenTelemetry constraints of the image."""
     requirements_files = [
         ("requirements.txt", "sagemaker", []),
-        ("zenml_requirements.txt", "zenml[server]==0.1.0\nnumpy", []),
+        ("zenml_requirements.txt", "zenml==0.1.0", []),
     ]
     lines = PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
         "image:tag",
@@ -330,13 +330,10 @@ def test_installs_add_requirements_of_zenml_in_image():
         requirements_files=requirements_files,
     ).splitlines()
 
-    write_line = requirements_utils.get_zenml_requirements_dockerfile_line()
-    install_index = next(
-        i
-        for i, line in enumerate(lines)
-        if line.endswith("-r requirements.txt -r .zenml_requirements")
+    write_line = (
+        requirements_utils.get_opentelemetry_constraints_dockerfile_line()
     )
-    assert lines[install_index - 1] == write_line
+    install_line = "-r requirements.txt -c .zenml_opentelemetry_constraints"
     assert lines.count(write_line) == 1
-    # A file that installs ZenML itself brings its own requirements.
+    assert lines[lines.index(write_line) + 1].endswith(install_line)
     assert any(line.endswith("-r zenml_requirements.txt") for line in lines)

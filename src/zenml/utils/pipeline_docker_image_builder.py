@@ -792,20 +792,18 @@ class PipelineDockerImageBuilder:
                 f"{option_string} -r {file}"
             )
 
-            # Without the requirements of the ZenML version in the image, the
-            # installer could replace ZenML dependencies with incompatible
-            # versions. They're regenerated per file because an earlier file
-            # might have changed the installed ZenML version, and skipped for
-            # a file that installs ZenML itself.
+            # Keeps the installer from upgrading `opentelemetry-api` past what
+            # the image's `opentelemetry-sdk` supports. The constraints are
+            # regenerated per file because an earlier file might have changed
+            # the installed versions, and skipped for a file that installs
+            # ZenML itself, which brings its own OpenTelemetry pins.
             if not requirements_utils.requires_zenml(
                 file_content.splitlines()
             ):
                 lines.append(
-                    requirements_utils.get_zenml_requirements_dockerfile_line()
+                    requirements_utils.get_opentelemetry_constraints_dockerfile_line()
                 )
-                install += (
-                    f" -r {requirements_utils.ZENML_REQUIREMENTS_FILE_NAME}"
-                )
+                install += f" -c {requirements_utils.OPENTELEMETRY_CONSTRAINTS_FILE_NAME}"
 
             lines.append(install)
 

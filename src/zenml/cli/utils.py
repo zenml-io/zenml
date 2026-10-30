@@ -23,6 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from functools import partial, wraps
 from typing import (
     IO,
@@ -1066,10 +1067,12 @@ def install_packages(
         command += ["--upgrade"]
 
     command += packages
+
+    constraints = []
     if not requirements_utils.requires_zenml(packages):
-        # Keeps the installer from replacing ZenML dependencies with versions
-        # that the installed ZenML does not support.
-        command += requirements_utils.get_zenml_requirements()
+        # Keeps the installer from upgrading `opentelemetry-api` past what the
+        # installed `opentelemetry-sdk` supports.
+        constraints = requirements_utils.get_opentelemetry_constraints()
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
@@ -1078,7 +1081,15 @@ def install_packages(
             command.append("--no-warn-conflicts")
 
     try:
-        subprocess.check_call(command)
+        with tempfile.TemporaryDirectory() as constraints_dir:
+            if constraints:
+                constraints_file = os.path.join(
+                    constraints_dir, "constraints.txt"
+                )
+                with open(constraints_file, "w") as f:
+                    f.write("\n".join(constraints))
+                command += ["-c", constraints_file]
+            subprocess.check_call(command)
     except subprocess.CalledProcessError as e:
         if (
             use_uv
