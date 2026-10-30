@@ -5317,6 +5317,7 @@ class Client(metaclass=ClientMetaClass):
         trigger_id: UUIDFilterOption = None,
         parent_run_id: UUIDFilterOption = None,
         root_runs_only: Optional[bool] = None,
+        triggered_by_deployment: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5372,6 +5373,8 @@ class Client(metaclass=ClientMetaClass):
             trigger_id: The ID of the trigger that generated this run.
             parent_run_id: The parent run ID for nested child pipeline runs.
             root_runs_only: Whether to include only root runs. Ignored if False.
+            triggered_by_deployment: Whether the pipeline run was triggered by
+                a deployment invocation.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -5417,6 +5420,7 @@ class Client(metaclass=ClientMetaClass):
             trigger_id=trigger_id,
             parent_run_id=parent_run_id,
             root_runs_only=root_runs_only,
+            triggered_by_deployment=triggered_by_deployment,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
