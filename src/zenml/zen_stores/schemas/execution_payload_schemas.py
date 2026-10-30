@@ -53,9 +53,10 @@ class ExecutionPayloadSchema(SQLModel, table=True):
 
     Rows are only reachable through the entities that reference them, and
     there are no foreign keys to them: adding one to the large entity tables
-    would copy them on MySQL. Not a `BaseSchema`: the SHA-256 of the value is
-    the primary key, so that writers reference a value without reading back
-    an ID, and rows never change.
+    would copy them on MySQL. The SHA-256 of the value is the primary key, so
+    that writers reference a value without reading back an ID. That is why
+    this is not a `BaseSchema`, which has a UUID primary key and an update
+    time that rows which never change don't need.
     """
 
     __tablename__ = "execution_payload"
@@ -238,7 +239,7 @@ def resolve_payload(
     """
     if getattr(owner, f"{column_name}_payload_id") is None:
         return inline_value
-    # Read only for references: the relationship never loads lazily.
+    # Only read for references, since the relationship never loads lazily.
     payload: Optional[ExecutionPayloadSchema] = getattr(
         owner, f"{column_name}_payload"
     )

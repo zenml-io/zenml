@@ -35,8 +35,10 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import EntityExistsError
 from zenml.models import (
     PipelineBuildRequest,
+    PipelineRequest,
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineSnapshotFilter,
@@ -375,26 +377,42 @@ def test_replaced_placeholder_run_references_its_new_environment(
     assert store.get_run(run.id).orchestrator_environment == stored
 
 
-def test_invalid_snapshot_request_stores_no_payloads(
+def test_rejected_snapshot_requests_store_no_payloads(
     store: SqlZenStore,
 ) -> None:
-    """A snapshot request with a missing reference stores no payloads."""
-    request = PipelineSnapshotRequest(
-        project=Client().active_project.id,
-        stack=uuid4(),
-        pipeline=uuid4(),
-        run_name_template="",
-        pipeline_configuration={"name": "pipeline"},
-        client_version="test",
-        server_version="test",
-        source_code=uuid4().hex,
-    )
+    """Snapshot requests that fail validation store no payloads."""
+    _set_payload_references(store, True)
+    client = Client()
+    pipeline_id = store.create_pipeline(
+        PipelineRequest(name="pipeline", project=client.active_project.id)
+    ).id
+
+    def request(**kwargs: Any) -> PipelineSnapshotRequest:
+        fields: Dict[str, Any] = dict(
+            project=client.active_project.id,
+            stack=client.active_stack_model.id,
+            pipeline=pipeline_id,
+            run_name_template="",
+            pipeline_configuration={"name": "pipeline"},
+            client_version="test",
+            server_version="test",
+            source_code=uuid4().hex,
+        )
+        return PipelineSnapshotRequest(**{**fields, **kwargs})
+
+    def payload_count() -> int:
+        with Session(store.engine) as session:
+            return len(session.exec(select(ExecutionPayloadSchema)).all())
+
+    store.create_snapshot(request(name="taken"))
+    stored = payload_count()
 
     with pytest.raises(KeyError):
-        store.create_snapshot(request)
+        store.create_snapshot(request(stack=uuid4()))
+    with pytest.raises(EntityExistsError):
+        store.create_snapshot(request(name="taken"))
 
-    with Session(store.engine) as session:
-        assert not session.exec(select(ExecutionPayloadSchema)).all()
+    assert payload_count() == stored
 
 
 @pytest.fixture

@@ -5194,11 +5194,13 @@ class SqlZenStore(BaseZenStore):
         its own, before the transaction that writes the rows referencing it.
         So this must run while the caller's session holds no transaction,
         which also keeps a request to one pooled connection at a time.
-        Inserting into the transaction of the referencing rows instead
-        deadlocked on MySQL 8.4 and MariaDB 11.4 in concurrency tests, and
-        failed with error 1020 on MariaDB 12.3. It would also hold the lock on
-        a new value until that transaction commits, so that every concurrent
-        writer of the value waits for the whole transaction.
+        Inserting into the transaction of the referencing rows instead failed
+        with error 1020 on MariaDB 12.3 in concurrency tests, since that
+        transaction always reads first. It would also hold the lock on a new
+        value until that transaction commits, so that every concurrent writer
+        of the value waits for the whole transaction. After the existence
+        check, ON DUPLICATE KEY UPDATE would do no more than a plain INSERT
+        whose duplicate-key error is caught.
 
         Args:
             values: The payload values.
@@ -5216,8 +5218,8 @@ class SqlZenStore(BaseZenStore):
                     )
                 )
             ).all()
-            # With MariaDB's `innodb_snapshot_isolation` (on by default in
-            # 12.3), an insert that meets a row committed after an earlier
+            # MariaDB 12.3 enables `innodb_snapshot_isolation` by default.
+            # With it, an insert that meets a row committed after an earlier
             # read of its transaction fails with error 1020 instead of a
             # duplicate-key error. So no insert shares a transaction with
             # the probe.
@@ -5230,8 +5232,8 @@ class SqlZenStore(BaseZenStore):
     def _insert_payload(self, session: Session, value: PayloadValue) -> None:
         """Insert a payload value, unless a concurrent writer stores it first.
 
-        A plain INSERT, since INSERT IGNORE would store a truncated value
-        without an error.
+        This is a plain INSERT because INSERT IGNORE would store a truncated
+        value without an error.
 
         Args:
             session: The session of the payload rows. It must hold no
@@ -5527,6 +5529,25 @@ class SqlZenStore(BaseZenStore):
 
             deleted_count += len(snapshot_ids)
 
+    def _snapshot_name_taken(
+        self, snapshot: PipelineSnapshotRequest, name: Optional[str]
+    ) -> bool:
+        """Check if a snapshot request names a snapshot that it doesn't replace.
+
+        Args:
+            snapshot: The snapshot request.
+            name: The name of the new snapshot, if it has one.
+
+        Returns:
+            If another snapshot of the pipeline has the name and the request
+            doesn't replace it.
+        """
+        return bool(
+            name
+            and not snapshot.replace
+            and self._snapshot_exists(pipeline_id=snapshot.pipeline, name=name)
+        )
+
     def _release_snapshot_name(
         self,
         session: Session,
@@ -5680,10 +5701,18 @@ class SqlZenStore(BaseZenStore):
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
 
-            # Validated before storing payloads, so that an invalid request
-            # stores none. Ends the read transaction first, see
-            # `_store_payloads`.
+            # Ends the read transaction first, see `_store_payloads`.
             session.commit()
+            # Checked before storing payloads, so that a request that fails
+            # these checks stores none. A snapshot that takes the name
+            # concurrently is only detected by the commit below.
+            name_taken_message = (
+                f"Snapshot with name `{new_snapshot.name}` already exists "
+                f"for pipeline `{snapshot.pipeline}`. If you want to replace "
+                "the existing snapshot, set the `replace` flag to `True`."
+            )
+            if self._snapshot_name_taken(snapshot, name=new_snapshot.name):
+                raise EntityExistsError(name_taken_message)
             payload_ids = self._store_new_payloads(
                 get_inline_payload_values(new_snapshot, *step_configurations)
             )
@@ -5711,20 +5740,8 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
             except IntegrityError as e:
                 session.rollback()
-                if (
-                    new_snapshot.name
-                    and not snapshot.replace
-                    and self._snapshot_exists(
-                        pipeline_id=snapshot.pipeline,
-                        name=new_snapshot.name,
-                    )
-                ):
-                    raise EntityExistsError(
-                        f"Snapshot with name `{new_snapshot.name}` already "
-                        f"exists for pipeline `{snapshot.pipeline}`. If you "
-                        "want to replace the existing snapshot, set the "
-                        "`replace` flag to `True`."
-                    )
+                if self._snapshot_name_taken(snapshot, name=new_snapshot.name):
+                    raise EntityExistsError(name_taken_message)
                 raise RuntimeError("Snapshot creation failed.") from e
 
             self._attach_tags_to_resources(
