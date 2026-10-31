@@ -48,6 +48,8 @@ pip install -r requirements.txt
 export OPENAI_API_KEY=sk-xxx  # Optional - works without it
 ```
 
+With an API key, responses use `gpt-5.6-luna` with reasoning disabled and a 512-token completion limit. This leaves room for the requested two or three sentences without spending the budget on internal reasoning. Without a key, the example uses template responses.
+
 ### Setup
 ```bash
 zenml init

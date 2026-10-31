@@ -40,9 +40,8 @@ except (
     )
 
 # Constants
-DEFAULT_MODEL = "gpt-3.5-turbo"
+DEFAULT_MODEL = "gpt-5.6-luna"
 INTENT_TEMPERATURE = 0.1
-RESPONSE_TEMPERATURE = 0.7
 
 # LLM Integration
 try:
@@ -144,8 +143,8 @@ def generate_llm_response(original_text: str, intent: str) -> str:
         response = client.chat.completions.create(
             model=DEFAULT_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=RESPONSE_TEMPERATURE,
-            max_tokens=150,
+            max_completion_tokens=512,
+            reasoning_effort="none",
         )
 
         content = response.choices[0].message.content
