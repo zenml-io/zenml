@@ -1339,13 +1339,19 @@ podSecurityContext:
   # fsGroupChangePolicy controls when fsGroup ownership changes are applied.
   # "OnRootMismatch" only changes ownership if the root of the volume doesn't match the fsGroup.
   fsGroupChangePolicy: "OnRootMismatch"
+  seccompProfile:
+    type: RuntimeDefault
 
+# Applied to every ZenML container, including init containers, the migration
+# job and worker deployments. Together with podSecurityContext, the defaults
+# satisfy the Kubernetes Pod Security "restricted" profile.
 securityContext:
   runAsNonRoot: true
   runAsUser: 1000
-  # capabilities:
-  #   drop:
-  #   - ALL
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
