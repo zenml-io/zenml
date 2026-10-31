@@ -38,7 +38,6 @@ from zenml.zen_server.rbac.utils import (
     delete_model_resource,
     get_allowed_resource_ids,
     get_resource_type_for_model,
-    verify_permission,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -315,25 +314,3 @@ def verify_permissions_and_delete_entity(
     delete_model_resource(model)
 
     return model
-
-
-def verify_permissions_and_prune_entities(
-    resource_type: ResourceType,
-    prune_method: Callable[..., None],
-    project_id: Optional[UUID] = None,
-    **kwargs: Any,
-) -> None:
-    """Verify permissions and prune entities of certain type.
-
-    Args:
-        resource_type: The resource type of the entities to prune.
-        prune_method: The method to prune the entities.
-        project_id: The project ID to prune the entities for.
-        kwargs: Keyword arguments to pass to the prune method.
-    """
-    verify_permission(
-        resource_type=resource_type,
-        action=Action.PRUNE,
-        project_id=project_id,
-    )
-    prune_method(**kwargs)
