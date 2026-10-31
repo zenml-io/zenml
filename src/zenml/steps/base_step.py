@@ -365,17 +365,26 @@ class BaseStep:
         return self.__doc__
 
     @property
+    def source_code_hash(self) -> str:
+        """The hash of this step's source code, as stored on a step run.
+
+        Returns:
+            The hex digest written to `caching_parameters` under
+            `CODE_HASH_PARAMETER_NAME` and persisted as a step run's
+            `code_hash`.
+        """
+        return hashlib.sha256(
+            self.source_code_cache_value.encode("utf-8")
+        ).hexdigest()
+
+    @property
     def caching_parameters(self) -> Dict[str, Any]:
         """Caching parameters for this step.
 
         Returns:
             A dictionary containing the caching parameters
         """
-        parameters = {
-            CODE_HASH_PARAMETER_NAME: hashlib.sha256(
-                self.source_code_cache_value.encode("utf-8")
-            ).hexdigest()
-        }
+        parameters = {CODE_HASH_PARAMETER_NAME: self.source_code_hash}
         for name, output in self.configuration.outputs.items():
             if output.materializer_source:
                 key = f"{name}_materializer_source"
@@ -1776,7 +1785,12 @@ To avoid this consider setting step parameters only in one place (config or code
                 "No pipeline, pipeline run, or step run provided."
             )
 
-        if step_run.code_hash != self.source_code_cache_value:
+        # `code_hash` is a sha256 hex digest of the source, so it has to be
+        # compared against the hash of the local source and not the source
+        # itself -- the two could never be equal. A step run recorded while
+        # `code_hash` was being populated from the wrong dict carries `None`,
+        # and that says nothing about the local code, so it is skipped.
+        if step_run.code_hash and step_run.code_hash != self.source_code_hash:
             logger.warning(
                 "The code of the step run that you're trying to replay does "
                 "not match your local step code."
