@@ -2,6 +2,11 @@
 description: Configure and test GitHub webhook delivery to ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # GitHub webhooks
 
 The GitHub webhook provider authenticates repository webhook deliveries and

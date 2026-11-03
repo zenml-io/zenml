@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Self-hosted Deployment on Kubernetes with Helm
 
 This guide provides step-by-step instructions for deploying ZenML Pro workspaces on Kubernetes using Helm and enrolling them in the ZenML Pro control plane.

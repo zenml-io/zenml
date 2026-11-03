@@ -2,6 +2,11 @@
 description: A no-isolation subprocess sandbox for development and examples.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Local Sandbox
 
 The local sandbox flavor runs commands as `subprocess.Popen` on the same machine as the step, with the same OS user, full filesystem access, and full network access. **It provides no isolation.**

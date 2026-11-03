@@ -4,6 +4,11 @@ description: >-
 icon: traffic-light-go
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Triggering Pipelines from External Systems
 
 This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods: ZenML Pro's [Snapshots](https://docs.zenml.io/concepts/snapshots) for batch-style triggering, [Pipeline Deployments](https://docs.zenml.io/how-to/deployment/deployment) for persistent HTTP services (available in OSS and Pro), and a custom API approach for fully bespoke solutions.

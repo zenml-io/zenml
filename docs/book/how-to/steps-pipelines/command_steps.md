@@ -2,6 +2,11 @@
 description: Run arbitrary commands as pipeline steps
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Command Steps
 
 A command step runs an arbitrary command as a step in your pipeline instead of a Python function. Use the `CommandStep` class to wrap any command, and add it to a pipeline like any other step:

@@ -3,6 +3,11 @@ description: Manage organizations in ZenML
 icon: building
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Organizations
 
 ZenML Pro arranges various aspects of your work experience around the concept of an **Organization**. This is the top-most level structure within the ZenML Cloud environment. Generally, an organization contains a group of users and one or more [workspaces](workspaces.md).
