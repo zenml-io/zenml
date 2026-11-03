@@ -55,7 +55,7 @@ ASK_INTERVAL_SECONDS = 1.0
 # Only the server decides when a workspace opens, so workers can ask less often.
 WORKER_ASK_INTERVAL_SECONDS = 10.0
 HTTP_TIMEOUT_SECONDS = 10
-READY_REPORT_TIMEOUT_SECONDS = 300
+READY_REPORT_MAX_INTERVAL_SECONDS = 60.0
 MAX_WAITING_THREADS = 32
 
 
@@ -386,32 +386,49 @@ def _port_of(arguments: List[str]) -> int:
     return int(arguments[arguments.index("--port") + 1])
 
 
+def _is_serving(port: int) -> bool:
+    """Check whether this server is taking requests.
+
+    Args:
+        port: The port of the server.
+
+    Returns:
+        Whether the server answered its readiness check.
+    """
+    try:
+        with urllib.request.urlopen(  # nosec
+            f"http://127.0.0.1:{port}/ready", timeout=HTTP_TIMEOUT_SECONDS
+        ):
+            return True
+    except Exception:
+        return False
+
+
 def _report_when_serving(port: int) -> None:
     """Tell the ZenML Pro API once this server is taking requests.
 
     The browser opens the workspace on this report, so it waits for the port.
-    Doing it during server startup would be too early.
+    Doing it during server startup would be too early. Nothing else can open
+    the workspace, so this doesn't give up while the process lives.
 
     Args:
         port: The port of the server.
     """
-    deadline = time.time() + READY_REPORT_TIMEOUT_SECONDS
     api = _ProApi()
-    while time.time() < deadline:
+    while not _is_serving(port):
+        time.sleep(ASK_INTERVAL_SECONDS)
+
+    retry_interval = ASK_INTERVAL_SECONDS
+    while True:
         try:
-            with urllib.request.urlopen(  # nosec
-                f"http://127.0.0.1:{port}/ready", timeout=HTTP_TIMEOUT_SECONDS
-            ):
-                pass
             api.report_ready()
             return
-        except (
-            urllib.error.URLError,
-            OSError,
-            requests.RequestException,
-        ) as e:
+        except Exception as e:
             print(f"Could not report the server as ready: {e}", flush=True)
-        time.sleep(ASK_INTERVAL_SECONDS)
+        time.sleep(retry_interval)
+        retry_interval = min(
+            retry_interval * 2, READY_REPORT_MAX_INTERVAL_SECONDS
+        )
 
 
 def main() -> None:

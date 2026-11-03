@@ -15,11 +15,15 @@
 
 import subprocess
 import sys
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
+import requests
 from pydantic import ValidationError
 
+from zenml.zen_server import warm_start
 from zenml.zen_server.warm_start import WorkspaceIdentity
 
 
@@ -55,3 +59,42 @@ def test_identity_ignores_variables_it_does_not_expect() -> None:
         }
     )
     assert identity.environment == {}
+
+
+def test_ready_report_survives_a_long_api_outage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only this report opens the workspace, so an outage must not end it."""
+    outage_seconds = 3600
+    now = [0.0]
+    sleeps = []
+    reported_at = []
+
+    def sleep(seconds: float) -> None:
+        now[0] += seconds
+        sleeps.append(seconds)
+
+    def report_ready() -> None:
+        if now[0] < 5:
+            raise KeyError("access_token")
+        if now[0] < outage_seconds:
+            raise requests.ConnectionError("API is down")
+        reported_at.append(now[0])
+
+    monkeypatch.setattr(
+        warm_start,
+        "time",
+        SimpleNamespace(time=lambda: now[0], sleep=sleep),
+    )
+    monkeypatch.setattr("urllib.request.urlopen", MagicMock())
+    monkeypatch.setattr(
+        warm_start,
+        "_ProApi",
+        lambda: SimpleNamespace(report_ready=report_ready),
+    )
+
+    warm_start._report_when_serving(port=1)
+
+    assert len(reported_at) == 1
+    assert sleeps[0] == warm_start.ASK_INTERVAL_SECONDS
+    assert max(sleeps) == warm_start.READY_REPORT_MAX_INTERVAL_SECONDS
