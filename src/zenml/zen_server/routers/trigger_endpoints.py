@@ -48,6 +48,7 @@ from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
 from zenml.zen_server.pipeline_execution.utils import (
     create_snapshot_from_source,
     validate_snapshot_for_server_execution,
+    verify_model_version_permissions_for_snapshot_run,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
@@ -358,8 +359,13 @@ def attach_trigger_to_snapshot(
         project_id=snapshot.project_id,
     )
 
+    verify_model_version_permissions_for_snapshot_run(
+        snapshot=snapshot,
+        run_configuration=run_configuration,
+    )
+
     # Validates and creates a runnable snapshot from the source snapshot + run configuration
-    build, stack, model_version = validate_snapshot_for_server_execution(
+    _, stack, _ = validate_snapshot_for_server_execution(
         snapshot=snapshot,
         run_configuration=run_configuration,
     )
