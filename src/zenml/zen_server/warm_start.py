@@ -52,6 +52,8 @@ ALLOWED_ENVIRONMENT = frozenset(
     {"ZENML_SERVER_RESOURCE_POOL_IMPLEMENTATION_SOURCE"}
 )
 ASK_INTERVAL_SECONDS = 1.0
+# Only the server decides when a workspace opens, so workers can ask less often.
+WORKER_ASK_INTERVAL_SECONDS = 10.0
 HTTP_TIMEOUT_SECONDS = 10
 READY_REPORT_TIMEOUT_SECONDS = 300
 MAX_WAITING_THREADS = 32
@@ -253,7 +255,9 @@ def _ask_until_answered(api: _ProApi) -> WorkspaceIdentity:
 
 
 def wait_for_identity(
-    port: int, on_unclaimed: Optional[Callable[[], None]] = None
+    port: int,
+    on_unclaimed: Optional[Callable[[], None]] = None,
+    ask_interval_seconds: float = WORKER_ASK_INTERVAL_SECONDS,
 ) -> None:
     """Put the identity of a claimed workspace into the environment.
 
@@ -263,6 +267,7 @@ def wait_for_identity(
     Args:
         port: The port that health checks arrive on.
         on_unclaimed: Work to do once, if the workspace is still unclaimed.
+        ask_interval_seconds: How long to wait between asks while unclaimed.
     """
     if os.environ.get(ORGANIZATION_ID_ENV):
         return
@@ -281,7 +286,7 @@ def wait_for_identity(
         # reach the API stays out of rotation.
         server.answer_ready = True
         while not identity.claimed:
-            time.sleep(ASK_INTERVAL_SECONDS)
+            time.sleep(ask_interval_seconds)
             identity = _ask_until_answered(api)
 
     os.environ[ORGANIZATION_ID_ENV] = str(identity.organization_id)
@@ -414,7 +419,11 @@ def main() -> None:
     arguments = sys.argv[1:]
     port = _port_of(arguments)
 
-    wait_for_identity(port, on_unclaimed=load_server_code)
+    wait_for_identity(
+        port,
+        on_unclaimed=load_server_code,
+        ask_interval_seconds=ASK_INTERVAL_SECONDS,
+    )
 
     threading.Thread(
         target=_report_when_serving, args=(port,), daemon=True
