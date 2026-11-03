@@ -3,6 +3,11 @@ description: >-
   How external workloads use ZenML Pro resource pools through service accounts,
   direct Resource Manager requests, and priority-lane policies.
 ---
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
 # External workloads
 
 External workloads are jobs that consume the same infrastructure as ZenML

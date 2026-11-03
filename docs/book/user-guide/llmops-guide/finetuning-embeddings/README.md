@@ -2,6 +2,11 @@
 description: Finetune embeddings on custom synthetic data to improve retrieval performance.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 We previously learned [how to use RAG with ZenML](../rag-with-zenml/README.md) to build a production-ready RAG pipeline. In this section, we will explore how to optimize and maintain your embedding models through synthetic data generation and human feedback. So far, we've been using off-the-shelf embeddings, which provide a good baseline and decent performance on standard tasks. However, you can often significantly improve performance by finetuning embeddings on your own domain-specific data.
 
 Our RAG pipeline uses a retrieval-based approach, where it first retrieves the most relevant documents from our vector database, and then uses a language model to generate a response based on those documents. By finetuning our embeddings on a dataset of technical documentation similar to our target domain, we can improve the retrieval step and overall performance of the RAG pipeline.

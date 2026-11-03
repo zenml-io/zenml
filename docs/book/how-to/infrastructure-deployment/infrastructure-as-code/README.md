@@ -3,6 +3,11 @@ description: Leverage Infrastructure as Code to manage your ZenML stacks and com
 icon: network-wired
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Infrastructure as code with Terraform
 
 [Infrastructure as Code (IaC)](https://aws.amazon.com/what-is/iac) is\

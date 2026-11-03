@@ -2,6 +2,11 @@
 description: Step and pipeline execution.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # How ZenML executes steps
 
 This page explains what happens under the hood when ZenML executes steps in static and dynamic pipelines. 

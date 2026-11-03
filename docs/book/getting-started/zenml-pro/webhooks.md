@@ -3,6 +3,11 @@ description: Receive authenticated events from external systems in ZenML.
 icon: webhook
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Webhooks
 
 Webhooks connect external systems to ZenML so that your ZenML deployment can

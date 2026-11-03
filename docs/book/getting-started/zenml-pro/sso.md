@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Single Sign-On (SSO)
 
 This guide covers Single Sign-On (SSO) configuration for ZenML Pro self-hosted deployments. SSO allows users to authenticate through an external identity provider instead of using local accounts with password authentication.

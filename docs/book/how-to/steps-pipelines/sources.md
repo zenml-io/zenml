@@ -2,6 +2,11 @@
 description: Understanding source roots and source paths
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Source Code and Imports
 
 When ZenML interacts with your pipeline code, it needs to understand how to locate and import your code. This page explains how ZenML determines the source root directory and how to construct source paths for referencing your Python objects.
