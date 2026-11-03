@@ -3,6 +3,13 @@
 # Exit on error
 set -e
 
+for dependency in aws jq zenml; do
+    if ! command -v "$dependency" >/dev/null 2>&1; then
+        echo "Error: '$dependency' is required but not installed or not on PATH." >&2
+        exit 1
+    fi
+done
+
 # Name used for the stack, service connector, and artifact store and as a prefix
 # for all created resources
 NAME="${NAME:-zenml-aws}"
@@ -17,7 +24,10 @@ fi
 PREFIX="${NAME}-${RANDOM_SUFFIX}"
 
 # Extract AWS account ID (we need this for IAM ARNs)
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+if ! ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text); then
+    echo "Error: Unable to determine the AWS account. Check your AWS credentials, configuration, and connectivity before retrying." >&2
+    exit 1
+fi
 
 BUCKET_NAME="${PREFIX}"
 USER_POLICY_NAME="assume-role"
@@ -48,10 +58,15 @@ trap print_cleanup_instructions EXIT
 
 # Create S3 bucket
 echo "Creating AWS bucket: $PREFIX"
+BUCKET_CONFIGURATION=()
+# S3's default region rejects an explicit location constraint.
+if [ "$REGION" != "us-east-1" ]; then
+    BUCKET_CONFIGURATION=(--create-bucket-configuration "LocationConstraint=$REGION")
+fi
 aws s3api create-bucket \
     --bucket "$PREFIX" \
     --region "$REGION" \
-    --create-bucket-configuration LocationConstraint="$REGION"
+    "${BUCKET_CONFIGURATION[@]}"
 
 # Create IAM user and access key
 echo "Creating IAM user: $PREFIX"
