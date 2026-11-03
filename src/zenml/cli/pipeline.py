@@ -41,6 +41,7 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunUpdate,
     PipelineSnapshotFilter,
+    PipelineSnapshotResponse,
     RunWaitConditionFilter,
     RunWaitConditionResponse,
     ScheduleFilter,
@@ -53,6 +54,52 @@ from zenml.utils.time_utils import utc_now
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
+
+
+def _confirm_snapshot_removal(
+    client: Client,
+    snapshot: PipelineSnapshotResponse,
+) -> bool:
+    """Confirm deletion of an existing snapshot.
+
+    Args:
+        client: The client used to look up attached triggers.
+        snapshot: The snapshot that will be removed.
+
+    Returns:
+        Whether the user confirmed the operation.
+    """
+    attached_triggers = client.list_snapshot_triggers(
+        snapshot_id=snapshot.id,
+        project=snapshot.project_id,
+        hydrate=False,
+    )
+    snapshot_display_name = snapshot.name or str(snapshot.id)
+
+    if not attached_triggers.total:
+        return cli_utils.confirmation(
+            "Are you sure you want to delete snapshot "
+            f"`{snapshot_display_name}`?"
+        )
+
+    trigger_lines = [
+        f"  - `{trigger.name}` ({trigger.type.value}, "
+        f"{'active' if trigger.active else 'inactive'})"
+        for trigger in attached_triggers
+    ]
+    remaining_trigger_count = attached_triggers.total - attached_triggers.size
+    if remaining_trigger_count:
+        trigger_lines.append(f"  - ... and {remaining_trigger_count} more")
+
+    confirmation_message = (
+        f"Snapshot `{snapshot_display_name}` is attached to the following "
+        "triggers:\n\n"
+        + "\n".join(trigger_lines)
+        + "\n\nThe snapshot will be removed when you delete it, which "
+        "will also remove these trigger attachments. Are you sure you want "
+        "to continue?"
+    )
+    return cli_utils.confirmation(confirmation_message)
 
 
 def _import_pipeline(source: str) -> Pipeline:
@@ -1892,16 +1939,28 @@ def delete_pipeline_snapshot(
         snapshot_name_or_id: The name or ID of the snapshot to delete.
         yes: If set, don't ask for confirmation.
     """
+    client = Client()
+    snapshot_to_delete: Union[str, UUID] = snapshot_name_or_id
     if not yes:
-        confirmation = cli_utils.confirmation(
-            f"Are you sure you want to delete snapshot `{snapshot_name_or_id}`?"
-        )
-        if not confirmation:
-            cli_utils.declare("Snapshot deletion canceled.")
+        try:
+            snapshot_model = client.get_snapshot(
+                snapshot_name_or_id,
+                hydrate=False,
+            )
+        except KeyError as e:
+            cli_utils.exception(e)
             return
 
+        if not _confirm_snapshot_removal(
+            client=client,
+            snapshot=snapshot_model,
+        ):
+            cli_utils.declare("Snapshot deletion canceled.")
+            return
+        snapshot_to_delete = snapshot_model.id
+
     try:
-        Client().delete_snapshot(name_id_or_prefix=snapshot_name_or_id)
+        client.delete_snapshot(name_id_or_prefix=snapshot_to_delete)
     except KeyError as e:
         cli_utils.exception(e)
     else:
