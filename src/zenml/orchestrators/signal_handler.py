@@ -162,10 +162,7 @@ class SignalHandler:
                 self._step_run.pipeline_run_id, hydrate=False
             )
 
-            if pipeline_run.status in (
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-            ):
+            if pipeline_run.stop_requested:
                 publish_utils.publish_step_run_status_update(
                     step_run_id=self._step_run.id,
                     status=ExecutionStatus.STOPPED,

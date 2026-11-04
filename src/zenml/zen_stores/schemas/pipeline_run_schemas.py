@@ -24,6 +24,7 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import (
     Session,
     joinedload,
+    load_only,
     object_session,
     selectinload,
 )
@@ -39,6 +40,7 @@ from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     PipelineRunTriggeredByType,
+    RunStopMode,
     RunWaitConditionStatus,
     TaggableResourceTypes,
     VisualizationResourceTypes,
@@ -148,6 +150,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     in_progress: bool = Field(nullable=False)
     status: str = Field(nullable=False)
     status_reason: Optional[str] = Field(nullable=True)
+    stop_mode: Optional[str] = Field(nullable=True)
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
@@ -720,6 +723,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=self.project_id,
             status=ExecutionStatus(self.status),
             status_reason=self.status_reason,
+            stop_mode=RunStopMode(self.stop_mode) if self.stop_mode else None,
             created=self.created,
             updated=self.updated,
             in_progress=self.in_progress,
@@ -804,9 +808,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     if self.snapshot.stack
                     else None
                 )
-                pipeline: Optional["PipelineResponse"] = (
-                    self.snapshot.pipeline.to_model()
-                )
+                pipeline: Optional[
+                    "PipelineResponse"
+                ] = self.snapshot.pipeline.to_model()
                 build = (
                     self.snapshot.build.to_model()
                     if self.snapshot.build
@@ -1045,6 +1049,63 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.updated = now
         return True
 
+    def request_stop(self, stop_mode: RunStopMode) -> None:
+        """Record a stop request for the pipeline run.
+
+        A graceful stop can be escalated to an immediate one. Immediate stops
+        can be requested again, for example if a previous one failed.
+
+        Args:
+            stop_mode: How the run should be stopped.
+
+        Raises:
+            IllegalOperationError: If the run is not in progress or a graceful
+                stop is requested for a run that is already being stopped.
+        """
+        if not self.in_progress:
+            raise IllegalOperationError(
+                "Cannot stop a run that is not in progress."
+            )
+
+        if stop_mode == RunStopMode.GRACEFUL and self.stop_requested:
+            raise IllegalOperationError("The run is already being stopped.")
+
+        self.stop_mode = stop_mode.value
+        self.updated = utc_now()
+
+    @property
+    def stop_requested(self) -> bool:
+        """Whether a stop of the pipeline run was requested.
+
+        Runs stopped by older ZenML versions don't record a stop mode, which
+        is why the status is checked as well.
+
+        Returns:
+            Whether a stop of the pipeline run was requested.
+        """
+        return self.stop_mode is not None or self.status in {
+            ExecutionStatus.STOPPING.value,
+            ExecutionStatus.STOPPED.value,
+        }
+
+    @property
+    def accepts_new_steps(self) -> bool:
+        """Whether new steps, including step retries, can start in the run.
+
+        Returns:
+            Whether new steps can start in the run.
+        """
+        if self.stop_requested:
+            return False
+
+        if self.status == ExecutionStatus.FAILED.value:
+            return (
+                self.get_pipeline_configuration().execution_mode
+                == ExecutionMode.CONTINUE_ON_FAILURE
+            )
+
+        return True
+
     def update_placeholder(
         self, request: "PipelineRunRequest"
     ) -> "PipelineRunSchema":
@@ -1140,6 +1201,51 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             latest_heartbeat=step_run.latest_heartbeat,
         )
 
+    def _has_running_steps(self, session: Session) -> bool:
+        """Checks whether any step of the run is running with a healthy heartbeat.
+
+        Args:
+            session: The DB session to use.
+
+        Returns:
+            Whether any step of the run is still running.
+        """
+        from zenml.steps.heartbeat import is_heartbeat_unhealthy
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+        unfinished_steps = session.scalars(
+            select(StepRunSchema)
+            .options(
+                load_only(
+                    jl_arg(StepRunSchema.status),
+                    jl_arg(StepRunSchema.heartbeat_threshold),
+                    jl_arg(StepRunSchema.start_time),
+                    jl_arg(StepRunSchema.latest_heartbeat),
+                )
+            )
+            .where(StepRunSchema.pipeline_run_id == self.id)
+            .where(
+                col(StepRunSchema.status).not_in(
+                    [
+                        status.value
+                        for status in ExecutionStatus
+                        if status.is_finished
+                    ]
+                )
+            )
+        ).all()
+
+        return any(
+            not is_heartbeat_unhealthy(
+                step_run_id=step.id,
+                status=ExecutionStatus(step.status),
+                heartbeat_threshold=step.heartbeat_threshold,
+                start_time=step.start_time,
+                latest_heartbeat=step.latest_heartbeat,
+            )
+            for step in unfinished_steps
+        )
+
     def _check_if_run_in_progress(self) -> bool:
         """Checks whether the run is in progress.
 
@@ -1157,16 +1263,25 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_status == ExecutionStatus.FAILED:
             execution_mode = self.get_pipeline_configuration().execution_mode
 
-            if execution_mode in [
-                ExecutionMode.FAIL_FAST,
-                ExecutionMode.STOP_ON_FAILURE,
-            ]:
+            if execution_mode == ExecutionMode.FAIL_FAST:
                 return False
 
-            elif execution_mode == ExecutionMode.CONTINUE_ON_FAILURE:
+            elif execution_mode in [
+                ExecutionMode.STOP_ON_FAILURE,
+                ExecutionMode.CONTINUE_ON_FAILURE,
+            ]:
                 from zenml.zen_stores.schemas import StepRunSchema
 
                 if session := object_session(self):
+                    if (
+                        execution_mode == ExecutionMode.STOP_ON_FAILURE
+                        or self.stop_requested
+                    ):
+                        # No new steps get started after a failure in this
+                        # mode or once a stop was requested, so only steps
+                        # that are still running keep the run in progress.
+                        return self._has_running_steps(session=session)
+
                     step_run_statuses = session.execute(
                         select(
                             StepRunSchema.id,

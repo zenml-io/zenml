@@ -18,7 +18,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import ExecutionStatus, MetadataResourceTypes, RunStopMode
+from zenml.logger import get_logger
 from zenml.models import (
     ExceptionInfo,
     PipelineRunResponse,
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
     from uuid import UUID
 
     from zenml.metadata.metadata_types import MetadataType
+
+logger = get_logger(__name__)
 
 step_exception_info: ContextVar[Optional[ExceptionInfo]] = ContextVar(
     "step_exception_info", default=None
@@ -227,6 +230,72 @@ def publish_pipeline_run_status_update(
             status_reason=status_reason,
         ),
     )
+
+
+def publish_pipeline_run_stop_request(
+    pipeline_run: "PipelineRunResponse",
+    stop_mode: RunStopMode,
+) -> "PipelineRunResponse":
+    """Publishes a stop request for a pipeline run.
+
+    Unfinished runs transition to `STOPPING`. Failed runs that are still in
+    progress keep their status and only record the stop request.
+
+    Args:
+        pipeline_run: The pipeline run to stop.
+        stop_mode: How the pipeline run should be stopped.
+
+    Returns:
+        The updated pipeline run.
+    """
+    run_update = PipelineRunUpdate(stop_mode=stop_mode)
+    if not pipeline_run.status.is_finished:
+        # Servers that know about stop modes set the status themselves, but
+        # older ones ignore the stop mode.
+        run_update.status = ExecutionStatus.STOPPING
+        run_update.status_reason = "Manual stop requested."
+
+    return Client().zen_store.update_run(
+        run_id=pipeline_run.id, run_update=run_update
+    )
+
+
+def publish_stopped_pipeline_run(
+    pipeline_run: "PipelineRunResponse",
+) -> None:
+    """Publishes a stopped status for a run and its unfinished steps.
+
+    This is meant for runs whose execution environment got torn down by an
+    immediate stop, as nothing is left to report the final statuses then.
+
+    Args:
+        pipeline_run: The pipeline run that was stopped.
+    """
+    for step_run in pipeline_run.steps.values():
+        if step_run.status.is_finished:
+            continue
+
+        try:
+            publish_stopped_step_run(step_run.id)
+        except Exception as e:
+            # The step might have reported its own final status already.
+            logger.warning(
+                "Failed to mark step `%s` as stopped: %s", step_run.name, e
+            )
+
+    if pipeline_run.snapshot and pipeline_run.snapshot.is_dynamic:
+        # The status of static runs follows from their step statuses, but
+        # dynamic runs need an explicit update.
+        try:
+            publish_pipeline_run_status_update(
+                pipeline_run_id=pipeline_run.id,
+                status=ExecutionStatus.STOPPED,
+            )
+        except Exception as e:
+            # The run might have reached a final status in the meantime.
+            logger.warning(
+                "Failed to mark run `%s` as stopped: %s", pipeline_run.name, e
+            )
 
 
 def publish_pipeline_run_metadata(

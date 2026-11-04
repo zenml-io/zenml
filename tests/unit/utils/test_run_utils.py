@@ -13,11 +13,16 @@
 #  permissions and limitations under the License.
 """Unit tests for run utils."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.utils.run_utils import (
     build_dag,
     find_all_downstream_steps,
+    stop_run,
 )
 
 
@@ -169,3 +174,36 @@ class TestFindAllDownstreamSteps:
 
         with pytest.raises(KeyError):
             find_all_downstream_steps("nonexistent_step", dag)
+
+
+@pytest.mark.parametrize(
+    "status,graceful,allowed",
+    [
+        (ExecutionStatus.RUNNING, True, True),
+        # The server decides whether failed runs are still in progress.
+        (ExecutionStatus.FAILED, True, True),
+        (ExecutionStatus.COMPLETED, False, False),
+        (ExecutionStatus.STOPPED, False, False),
+        (ExecutionStatus.STOPPING, True, False),
+        (ExecutionStatus.STOPPING, False, True),
+    ],
+)
+def test_stop_run_validation(
+    mocker, status: ExecutionStatus, graceful: bool, allowed: bool
+) -> None:
+    """Tests which runs the client tries to stop in which mode."""
+    orchestrator = mocker.patch(
+        "zenml.utils.run_utils.StackComponent.from_model"
+    ).return_value
+    run = MagicMock(status=status)
+    run.stack.components = {StackComponentType.ORCHESTRATOR: [MagicMock()]}
+
+    if allowed:
+        stop_run(run=run, graceful=graceful)
+        orchestrator.stop_run.assert_called_once_with(
+            run=run, graceful=graceful
+        )
+    else:
+        with pytest.raises(IllegalOperationError):
+            stop_run(run=run, graceful=graceful)
+        orchestrator.stop_run.assert_not_called()
