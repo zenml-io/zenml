@@ -77,7 +77,7 @@ def test_waiting_ends_with_the_customers_identity_in_the_environment(
         warm_start.ORGANIZATION_NAME_ENV,
         warm_start.WORKSPACE_NAME_ENV,
     ):
-        monkeypatch.delenv(variable, raising=False)
+        monkeypatch.setenv(variable, "")
     monkeypatch.setenv(warm_start.RESOURCE_POOL_SOURCE_ENV, "set.by.an.admin")
     loaded = MagicMock()
 
