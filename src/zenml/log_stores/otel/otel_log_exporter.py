@@ -190,7 +190,9 @@ class OTLPLogExporter(LogRecordExporter):
     @classmethod
     def _encode_value(cls, value: Any, allow_null: bool = False) -> Any:
         if allow_null is True and value is None:
-            return None
+            # An empty AnyValue preserves null array slots; JSON null is not
+            # valid as an element of the repeated AnyValue field.
+            return {}
         if isinstance(value, bool):
             return dict(bool_value=value)
         if isinstance(value, str):
@@ -359,6 +361,20 @@ class OTLPLogExporter(LogRecordExporter):
         except Exception as e:
             logger.error(f"Error exporting logs: {e}")
             return LogRecordExportResult.FAILURE
+
+    def force_flush(self, timeout_millis: int = 30000) -> bool:
+        """Confirm that no logs remain buffered in the exporter.
+
+        Exports are synchronous; buffering is handled by the log processor.
+
+        Args:
+            timeout_millis: Maximum time to wait in milliseconds. Unused because
+                this exporter does not buffer records.
+
+        Returns:
+            True because exports complete synchronously.
+        """
+        return True
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""

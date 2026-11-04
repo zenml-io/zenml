@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Tests for artifact log retrieval."""
 
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pytest
+from opentelemetry.instrumentation.logging.handler import LoggingHandler
+from opentelemetry.sdk._logs import LoggerProvider
+from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor
 
 from zenml.artifact_stores.local_artifact_store import LocalArtifactStore
 from zenml.enums import LoggingLevels
@@ -64,6 +68,87 @@ def log_store(artifact_store) -> ArtifactLogStore:
 def logs_uri(artifact_store) -> str:
     """The path of a log file inside the artifact store."""
     return os.path.join(artifact_store.path, "logs.log")
+
+
+@pytest.mark.parametrize("log_code_attributes", [True, False])
+def test_export_preserves_source_location(
+    artifact_store: LocalArtifactStore,
+    logs_uri: str,
+    log_code_attributes: bool,
+) -> None:
+    """Preserve source locations from current and legacy OTel attributes."""
+    from zenml.log_stores.artifact.artifact_log_exporter import (
+        ArtifactLogExporter,
+    )
+
+    provider = LoggerProvider()
+    provider.add_log_record_processor(
+        SimpleLogRecordProcessor(ArtifactLogExporter(artifact_store))
+    )
+    handler = LoggingHandler(
+        logger_provider=provider, log_code_attributes=log_code_attributes
+    )
+    record = logging.LogRecord(
+        name="pipeline",
+        level=logging.INFO,
+        pathname="/tmp/pipeline.py",
+        lineno=42,
+        msg="pipeline log",
+        args=(),
+        exc_info=None,
+        func="pipeline_step",
+    )
+    record.__dict__["zenml.log.uri"] = logs_uri
+    if not log_code_attributes:
+        record.__dict__.update(
+            {
+                "code.filepath": record.pathname,
+                "code.lineno": record.lineno,
+                "code.function": record.funcName,
+            }
+        )
+    try:
+        handler.handle(record)
+    finally:
+        handler.close()
+        provider.shutdown()
+
+    with open(logs_uri) as file:
+        entry = LogEntry.model_validate_json(file.readline())
+    assert entry.message == "pipeline log"
+    assert entry.filename == record.pathname
+    assert entry.lineno == record.lineno
+    assert entry.module == record.funcName
+
+
+def test_emit_flush_and_fetch_logs(
+    log_store: ArtifactLogStore,
+    logs_model_factory: Callable[..., LogsResponse],
+    logs_uri: str,
+    artifact_store: LocalArtifactStore,
+) -> None:
+    """Round-trip pipeline logs through the real SDK and artifact exporter."""
+    logs = logs_model_factory(
+        uri=logs_uri, artifact_store_id=artifact_store.id
+    )
+    origin = log_store.register_origin("pipeline", logs, {})
+    record = logging.LogRecord(
+        name="pipeline",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="pipeline log",
+        args=(),
+        exc_info=None,
+    )
+    try:
+        log_store.emit(origin, record)
+        log_store.deregister_origin(origin)
+        assert [entry.message for entry in log_store.fetch(logs).items] == [
+            "pipeline log"
+        ]
+    finally:
+        log_store.deactivate()
 
 
 @pytest.mark.parametrize("limit,expected_count", [(None, 3), (2, 2), (100, 3)])

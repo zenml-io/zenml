@@ -57,8 +57,8 @@ class AzureIntegration(Integration):
         # Keep these aligned with the core pins in pyproject.toml. Installing
         # Azure ML into an existing image can otherwise upgrade OpenTelemetry
         # through its Azure Monitor dependency.
-        "opentelemetry-instrumentation-logging==0.64b0",
-        "opentelemetry-sdk==1.43.0",
+        "opentelemetry-sdk==1.45.1",
+        "opentelemetry-instrumentation-logging==0.66b1",
         # Marshmallow>4.0 leads to the following error with the AzureML SDK:
         # ImportError: cannot import name 'FieldInstanceResolutionError' from 'marshmallow.utils'
         "marshmallow<4.0.0",
