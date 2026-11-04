@@ -28,8 +28,6 @@ import signal
 import sys
 import threading
 import time
-import urllib.error
-import urllib.request
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import FrameType
@@ -40,7 +38,6 @@ import requests
 from pydantic import (
     BaseModel,
     ValidationError,
-    field_validator,
     model_validator,
 )
 
@@ -48,9 +45,7 @@ API_MODULE = "zenml.zen_server.zen_server_api"
 ORGANIZATION_ID_ENV = "ZENML_SERVER_PRO_ORGANIZATION_ID"
 ORGANIZATION_NAME_ENV = "ZENML_SERVER_PRO_ORGANIZATION_NAME"
 WORKSPACE_NAME_ENV = "ZENML_SERVER_PRO_WORKSPACE_NAME"
-ALLOWED_ENVIRONMENT = frozenset(
-    {"ZENML_SERVER_RESOURCE_POOL_IMPLEMENTATION_SOURCE"}
-)
+RESOURCE_POOL_SOURCE_ENV = "ZENML_SERVER_RESOURCE_POOL_IMPLEMENTATION_SOURCE"
 ASK_INTERVAL_SECONDS = 1.0
 # Only the server decides when a workspace opens, so workers can ask less often.
 WORKER_ASK_INTERVAL_SECONDS = 10.0
@@ -66,23 +61,7 @@ class WorkspaceIdentity(BaseModel):
     organization_id: Optional[UUID] = None
     organization_name: Optional[str] = None
     workspace_name: Optional[str] = None
-    environment: Dict[str, str] = {}
-
-    @field_validator("environment")
-    @classmethod
-    def _only_allowed_variables(cls, value: Dict[str, str]) -> Dict[str, str]:
-        """Drop variables that this process doesn't expect to receive.
-
-        A newer API can send more than this version knows about, and that must
-        not stop it starting.
-
-        Args:
-            value: The environment variables in the response.
-
-        Returns:
-            The allowed variables.
-        """
-        return {k: v for k, v in value.items() if k in ALLOWED_ENVIRONMENT}
+    resource_pool_implementation_source: Optional[str] = None
 
     @model_validator(mode="after")
     def _claimed_has_organization(self) -> "WorkspaceIdentity":
@@ -294,7 +273,12 @@ def wait_for_identity(
         os.environ[ORGANIZATION_NAME_ENV] = identity.organization_name
     if identity.workspace_name:
         os.environ[WORKSPACE_NAME_ENV] = identity.workspace_name
-    os.environ.update(identity.environment)
+    # An admin's own value wins, as it does on a normal workspace.
+    if identity.resource_pool_implementation_source:
+        os.environ.setdefault(
+            RESOURCE_POOL_SOURCE_ENV,
+            identity.resource_pool_implementation_source,
+        )
 
     server.shutdown()
     server.server_close()
@@ -374,18 +358,6 @@ def load_server_code() -> None:
         service_connector_registry.register_builtin_service_connectors()
 
 
-def _port_of(arguments: List[str]) -> int:
-    """Find the port in the Uvicorn arguments.
-
-    Args:
-        arguments: The Uvicorn command line arguments.
-
-    Returns:
-        The port.
-    """
-    return int(arguments[arguments.index("--port") + 1])
-
-
 def _is_serving(port: int) -> bool:
     """Check whether this server is taking requests.
 
@@ -396,11 +368,10 @@ def _is_serving(port: int) -> bool:
         Whether the server answered its readiness check.
     """
     try:
-        with urllib.request.urlopen(  # nosec
+        return requests.get(
             f"http://127.0.0.1:{port}/ready", timeout=HTTP_TIMEOUT_SECONDS
-        ):
-            return True
-    except Exception:
+        ).ok
+    except requests.RequestException:
         return False
 
 
@@ -434,7 +405,7 @@ def _report_when_serving(port: int) -> None:
 def main() -> None:
     """Start a server in the same way as `uvicorn` would, once it has an identity."""
     arguments = sys.argv[1:]
-    port = _port_of(arguments)
+    port = int(arguments[arguments.index("--port") + 1])
 
     wait_for_identity(
         port,

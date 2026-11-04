@@ -156,7 +156,7 @@ spec:
             {{- $_ := set $envVars "ZENML_SERVER_OTEL_SERVICE_NAME" . }}
             {{- end }}
             {{- if $server.pro.identityFromControlPlane }}
-            {{- /* The settings require an organization, and a migration never uses it. */}}
+            {{- /* The settings require an organization. A migration stores nothing from it. */}}
             {{- $_ := set $envVars "ZENML_SERVER_PRO_ORGANIZATION_ID" "00000000-0000-0000-0000-000000000000" }}
             {{- end }}
             {{- range $k, $v := $envVars }}

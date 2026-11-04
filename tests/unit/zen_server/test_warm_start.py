@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Tests for the warm start of a ZenML Pro server."""
 
+import os
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -49,16 +50,46 @@ def test_identity_refuses_a_claim_without_an_organization() -> None:
         WorkspaceIdentity.model_validate({"claimed": True})
 
 
-def test_identity_ignores_variables_it_does_not_expect() -> None:
-    """Values from the API become environment variables, so only allow some."""
-    identity = WorkspaceIdentity.model_validate(
-        {
-            "claimed": True,
-            "organization_id": str(uuid4()),
-            "environment": {"LD_PRELOAD": "/tmp/library.so"},
-        }
+def test_waiting_ends_with_the_customers_identity_in_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A slot waits for its claim and starts with the customer's values."""
+    organization_id = uuid4()
+    answers = iter(
+        [
+            WorkspaceIdentity(claimed=False),
+            WorkspaceIdentity(
+                claimed=True,
+                organization_id=organization_id,
+                organization_name="customer",
+                workspace_name="workspace",
+                resource_pool_implementation_source="from.the.api",
+            ),
+        ]
     )
-    assert identity.environment == {}
+    monkeypatch.setattr(
+        warm_start,
+        "_ProApi",
+        lambda: SimpleNamespace(identity=lambda: next(answers)),
+    )
+    for variable in (
+        warm_start.ORGANIZATION_ID_ENV,
+        warm_start.ORGANIZATION_NAME_ENV,
+        warm_start.WORKSPACE_NAME_ENV,
+    ):
+        monkeypatch.delenv(variable, raising=False)
+    monkeypatch.setenv(warm_start.RESOURCE_POOL_SOURCE_ENV, "set.by.an.admin")
+    loaded = MagicMock()
+
+    warm_start.wait_for_identity(
+        0, on_unclaimed=loaded, ask_interval_seconds=0
+    )
+
+    loaded.assert_called_once()
+    assert os.environ[warm_start.ORGANIZATION_ID_ENV] == str(organization_id)
+    assert os.environ[warm_start.ORGANIZATION_NAME_ENV] == "customer"
+    assert os.environ[warm_start.WORKSPACE_NAME_ENV] == "workspace"
+    assert os.environ[warm_start.RESOURCE_POOL_SOURCE_ENV] == "set.by.an.admin"
 
 
 def test_ready_report_survives_a_long_api_outage(
@@ -86,7 +117,7 @@ def test_ready_report_survives_a_long_api_outage(
         "time",
         SimpleNamespace(time=lambda: now[0], sleep=sleep),
     )
-    monkeypatch.setattr("urllib.request.urlopen", MagicMock())
+    monkeypatch.setattr(warm_start, "_is_serving", lambda port: True)
     monkeypatch.setattr(
         warm_start,
         "_ProApi",
