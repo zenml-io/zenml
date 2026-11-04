@@ -13,9 +13,13 @@
 #  permissions and limitations under the License.
 """Tests for the PathMaterializer."""
 
+import shutil
 import tarfile
 import tempfile
+from io import BytesIO
 from pathlib import Path
+
+import pytest
 
 from tests.unit.test_general import _test_materializer
 from zenml.materializers.path_materializer import (
@@ -69,6 +73,43 @@ def test_path_materializer():
         assert (
             result / "subdir" / "test3.py"
         ).read_text() == "print('Hello, world!')"
+
+
+@pytest.mark.parametrize(
+    "is_directory", [False, True], ids=["file", "directory"]
+)
+def test_path_materializer_preserves_entry_named_like_archive(
+    tmp_path: Path, is_directory: bool
+) -> None:
+    """Preserve user entries that share the materializer's archive filename."""
+    source = tmp_path / "source"
+    source.mkdir()
+    entry = source / "data.tar.gz"
+    payload = b"nested archive content"
+    if is_directory:
+        entry.mkdir()
+        (entry / "nested.txt").write_bytes(payload)
+        expected_files = {"data.tar.gz/nested.txt": payload}
+    else:
+        with tarfile.open(entry, "w:gz") as archive:
+            member = tarfile.TarInfo("nested.txt")
+            member.size = len(payload)
+            archive.addfile(member, BytesIO(payload))
+        expected_files = {"data.tar.gz": entry.read_bytes()}
+    (source / "sibling.txt").write_bytes(b"sibling content")
+    expected_files["sibling.txt"] = b"sibling content"
+
+    result = _test_materializer(
+        step_output_type=Path,
+        materializer_class=PathMaterializer,
+        step_output=source,
+        expected_metadata_size=1,
+    )
+    try:
+        for relative_path, expected in expected_files.items():
+            assert (result / relative_path).read_bytes() == expected
+    finally:
+        shutil.rmtree(result)
 
 
 def test_path_materializer_with_file():
