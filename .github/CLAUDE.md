@@ -13,7 +13,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
 | **Maintenance** | stale-prs.yml, pr_labeler.yml, require-release-label.yml, snack-it.yml, notify-*.yml, dependabot.yml | Repo automation and project notifications |
-| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml | Template syncing, tutorial/example regression tests, and profiling |
+| **Special/Examples** | templates-test.yml, update-templates-to-examples.yml, vscode-tutorial-pipelines-test.yml, weekly-agent-pipelines-test.yml, performance-profiling.yml, installer.yml | Template syncing, tutorial/example regression tests, profiling, and the one-line installer smoke test |
 
 ### Entry Points vs Reusable Workflows
 
@@ -217,6 +217,10 @@ Documentation link safety net. Use these as the source of truth when changing do
 ### weekly-agent-pipelines-test.yml / vscode-tutorial-pipelines-test.yml
 
 Regression tests for example/tutorial/agent pipelines. If a code change affects pipeline authoring, dynamic pipelines, or example behavior, mention these workflows in the PR so maintainers know whether to rerun them.
+
+### installer.yml
+
+Smoke-tests the one-line installer (`install.sh` at the repo root, meant to be served at `https://zenml.io/install`) on Linux x64/arm, macOS arm/Intel, and Windows Git Bash. Runs only on PRs that touch `install.sh` or the workflow, and installs the PR's wheel through `UV_CONSTRAINT` (honored by both `uv tool install` and `uv add`) so PR runs never pull the package from PyPI. The wheel is built once in a separate job: keeping `setup-uv` out of the install jobs is what makes them exercise the installer's own uv bootstrap. The `workflow_call` input `source: url` is for the release workflow, to fetch the script exactly as users do once the URL is live. Kept parallel to `zenml-io/kitaru`'s installer workflow, so fixes to one usually apply to the other.
 
 ## Important Gotchas
 
