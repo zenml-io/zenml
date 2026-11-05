@@ -1,6 +1,9 @@
 ## Describe changes
 I implemented/fixed _ to achieve _.
 
+## Upgrade impact
+<!--- Required when this PR changes what existing clients or snapshots see: API models or endpoints, enum values in responses, stack component types, DB migrations, or dependency requirements. Say what happens to older clients (including snapshot images) talking to the upgraded server, and what users must change when they upgrade their own client. Write "None" if nothing changes. The release automation uses this section for https://docs.zenml.io/changelog/compatibility -->
+
 ## Pre-requisites
 Please ensure you have done the following:
 - [ ] I have read the **CONTRIBUTING.md** document.

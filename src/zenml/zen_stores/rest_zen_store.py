@@ -568,8 +568,10 @@ class RestZenStore(BaseZenStore):
             logger.warning(
                 "Your ZenML client version (%s) does not match the server "
                 "version (%s). This version mismatch might lead to errors or "
-                "unexpected behavior. \nTo disable this warning message, set "
-                "the environment variable `%s=True`",
+                "unexpected behavior. Check "
+                "https://docs.zenml.io/changelog/compatibility to see whether "
+                "these versions work together. \nTo disable this warning "
+                "message, set the environment variable `%s=True`",
                 client_version,
                 server_version,
                 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
