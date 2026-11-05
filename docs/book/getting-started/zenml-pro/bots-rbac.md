@@ -244,9 +244,19 @@ The same permissions apply as in the UI:
 
 ## The agent in the sandbox
 
-The agent in a sandbox does not act as a user. It can only work on its own
-chat, for example to add artifacts or notify the owner of the chat. It cannot
-read or change any other chat or Bots resource.
+The agent in a sandbox does not act as a user. It works on its own chat, for
+example to add artifacts or notify the owner of the chat, and has limited
+access to other resources of its bot:
+
+| Operation | Allowed for |
+| --- | --- |
+| List chats and read their messages | Chats of its bot |
+| List and open artifacts | Artifacts of chats of its bot |
+| View automations, their triggers, and their runs | Automations of its bot |
+| Create an automation | Its bot. The owner of the chat owns the automation. |
+| Change, run, or delete an automation | Automations of its bot that the owner of the chat owns |
+
+It cannot read or change any other Bots resource.
 
 Connectors follow the bot of the chat. A sandbox only receives the
 credentials of connectors attached to its bot, and the agent never sees the
@@ -258,10 +268,12 @@ stored credential itself, except for the API key of a custom MCP server. See
 | Situation | Response | Example message |
 | --- | --- | --- |
 | No credential, or a credential ZenML Pro rejects | `401 Unauthorized` | `Invalid control plane credential.` |
+| The organization is not entitled to Bots | `402 Payment Required` | |
 | An action you may not perform on one resource | `403 Forbidden` | `Not permitted to update bot <bot-id>` |
 | An action you may not perform on any resource of a type | `403 Forbidden` | `Not permitted to create environments` |
 | A chat operation that needs an action on the chat's bot | `403 Forbidden` | `Not permitted to use chat <chat-id>. Requires use on bot <bot-id>` |
 | A resource of another organization | `404 Not Found` | |
+| A Slack workspace or GitHub installation that another organization already connected | `409 Conflict` | `Channel type 'slack' with external id '<team-id>' is already installed in another organization` |
 | An invalid share, such as a share with yourself | `422 Unprocessable Entity` | `Sharing with the caller is not allowed` |
 | ZenML Pro cannot be reached for a permission check | `503 Service Unavailable` | `Control plane permission check failed.` |
 
