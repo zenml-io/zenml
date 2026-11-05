@@ -27,7 +27,7 @@ from zenml.integrations.openai.hooks.open_ai_failure_hook import (
 @pytest.mark.parametrize(
     "hook, expected_model",
     [
-        (openai_chatgpt_alerter_failure_hook, "gpt-5.6-terra"),
+        (openai_chatgpt_alerter_failure_hook, "gpt-6-luna"),
         (openai_gpt4_alerter_failure_hook, "gpt-4o"),
     ],
 )
