@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 """Tests for implicit dependencies on the last successful sync step."""
 
+import sys
 from typing import List
+
+import pytest
 
 from zenml import pipeline, step
 
@@ -107,6 +110,10 @@ def sync_then_map_pipeline() -> None:
     consume_int.map(value=values)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Mapped step names contain colons, which are invalid in Windows artifact paths.",
+)
 def test_mapped_steps_depend_on_previous_sync_step() -> None:
     run = sync_then_map_pipeline()
 

@@ -3731,7 +3731,9 @@ def test_logs_are_recorded_properly(clean_client):
         )
 
         # Step 1 has the word log! Defined in PipelineRunContext
-        assert any("log" in record.message for record in step1_logs_content)
+        assert any(
+            "log" in record.message for record in step1_logs_content.items
+        )
 
 
 def test_logs_dont_exist_when_disabled(clean_client):

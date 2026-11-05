@@ -13,18 +13,25 @@
 #  permissions and limitations under the License.
 """Initialization of Huggingface materializers."""
 
+from packaging.version import Version
+from transformers import __version__ as transformers_version
+
 from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
 )
 from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
     HFPTModelMaterializer,
 )
-from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
-    HFTFModelMaterializer,
+from zenml.integrations.huggingface.materializers.huggingface_t5_materializer import (
+    HFT5Materializer,
 )
 from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
-from zenml.integrations.huggingface.materializers.huggingface_t5_materializer import (
-    HFT5Materializer,
-)
+
+# Transformers v5 removed TensorFlow support, so this materializer is only
+# available with the v4 release line.
+if Version(transformers_version).major < 5:
+    from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
+        HFTFModelMaterializer,
+    )

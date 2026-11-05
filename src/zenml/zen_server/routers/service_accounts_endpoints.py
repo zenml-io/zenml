@@ -66,14 +66,23 @@ router = APIRouter(
 )
 
 
-def _ensure_workspace_service_account_mutation_allowed() -> None:
-    """Block deprecated workspace-level service account mutations in Pro.
+def _ensure_workspace_service_account_mutation_allowed(
+    *, active_status_update: bool = False
+) -> None:
+    """Block deprecated workspace-level mutations except status changes in Pro.
+
+    Args:
+        active_status_update: Whether the request only changes the active
+            status of an existing account or API key.
 
     Raises:
         IllegalOperationError: If workspace-level service account mutations
             are disabled for the current deployment.
     """
-    if server_config().auth_scheme == AuthScheme.EXTERNAL:
+    if (
+        server_config().auth_scheme == AuthScheme.EXTERNAL
+        and not active_status_update
+    ):
         raise IllegalOperationError(
             "Workspace-level service accounts and API keys are deprecated in "
             "ZenML Pro workspaces. Use ZenML Pro organization service "
@@ -205,7 +214,12 @@ def update_service_account(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
-    _ensure_workspace_service_account_mutation_allowed()
+    _ensure_workspace_service_account_mutation_allowed(
+        active_status_update=set(
+            service_account_update.model_dump(exclude_none=True)
+        )
+        == {"active"}
+    )
 
     service_account = zen_store().get_service_account(
         service_account_name_or_id, hydrate=True
@@ -413,17 +427,28 @@ def update_api_key(
         The updated API key.
 
     Raises:
-        IllegalOperationError: If the service account was created via external
-            authentication.
+        IllegalOperationError: If an externally managed service account's key
+            or a deprecated workspace key in Pro is updated beyond its active
+            status.
     """
-    _ensure_workspace_service_account_mutation_allowed()
+    active_status_update = set(
+        api_key_update.model_dump(exclude_none=True)
+    ) == {"active"}
+    _ensure_workspace_service_account_mutation_allowed(
+        active_status_update=active_status_update
+    )
 
     service_account = zen_store().get_service_account(service_account_id)
 
-    if service_account.external_user_id is not None:
+    # Adoption preserves legacy workspace keys. Status changes allow migration
+    # rollback without changing the organization-managed service account itself.
+    if (
+        service_account.external_user_id is not None
+        and not active_status_update
+    ):
         raise IllegalOperationError(
-            "Service accounts created via external authentication cannot "
-            "have associated API keys."
+            "API keys associated with externally managed service accounts "
+            "can only be activated, deactivated, or deleted."
         )
 
     verify_admin_status_if_no_rbac(

@@ -19,14 +19,14 @@
 </div>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=281158
+[pypi-shield]: https://img.shields.io/pypi/pyversions/zenml?color=BECAA6
 [pypi-url]: https://pypi.org/project/zenml/
-[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=361776
-[downloads-shield]: https://img.shields.io/pepy/dt/zenml?color=431D93
+[pypiversion-shield]: https://img.shields.io/pypi/v/zenml?color=9AAD82
+[downloads-shield]: https://img.shields.io/pepy/dt/zenml?color=7A9268
 [downloads-url]: https://pypi.org/project/zenml/
-[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=7A3EF4
+[contributors-shield]: https://img.shields.io/github/contributors/zenml-io/zenml?color=63775E
 [contributors-url]: https://github.com/zenml-io/zenml/graphs/contributors
-[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=9565F6
+[license-shield]: https://img.shields.io/github/license/zenml-io/zenml?color=3C4C38
 [license-url]: https://github.com/zenml-io/zenml/blob/main/LICENSE
 
 <div align="center">

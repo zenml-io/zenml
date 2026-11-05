@@ -245,6 +245,22 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
+#### Externally synchronized Linux identities
+
+If ZenML Pro has synchronized a numeric Linux UID and primary GID for the
+current user, the Kubernetes step operator applies that identity to its pod and
+every container. This also covers every pod in a multi-pod command step. The
+synchronized `runAsUser` and `runAsGroup` override conflicting pod settings
+while preserving unrelated security settings, including pod-level `fsGroup`.
+
+The UID and GID are applied independently. A synchronized UID sets
+`runAsUser`, while a synchronized GID sets `runAsGroup`. Missing values are
+omitted, while unexpected non-positive or non-integer values produce a warning
+and are ignored. ZenML does not derive `fsGroup` from the synchronized GID;
+administrators can configure it explicitly through the existing pod settings.
+Cluster admission policies, including OpenShift SCCs, must allow the requested
+IDs. ZenML does not broaden cluster permissions.
+
 #### Multi-pod command steps (distributed training)
 
 Command steps that own their own distributed launch (`torchrun`,

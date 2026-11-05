@@ -1,14 +1,15 @@
 # ZenML Migration Agent Guidelines
 
-This file applies when Codex starts in `src/zenml/zen_stores/migrations/` or
+This file applies to changes in `src/zenml/zen_stores/migrations/` and
 below. For detailed migration recipes and SQL inspection queries, use
-`.agents/skills/zenml-repo-workflows/SKILL.md`.
+the repo-root `.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Alembic Rules
 
 - Create migrations with descriptive names, for example
   `alembic revision -m "Add X to Y table"`.
-- Test upgrade paths with `alembic upgrade head`.
+- Test upgrades only against a disposable database with isolated ZenML
+  configuration. Never use the user's configured store as a test target.
 - Downgrade testing is optional because ZenML generally does not support
   downgrades.
 - Never modify existing migrations that are already on `main` or `develop`.
@@ -18,10 +19,11 @@ below. For detailed migration recipes and SQL inspection queries, use
 
 ## Testing Workflow
 
-1. Check out `develop` or the relevant old release.
-2. Populate the database from that version.
-3. Switch to the feature branch.
-4. Run `alembic upgrade head`.
+Follow the isolated migration testing workflow in the repo-root workflow skill.
+Use a separate checkout/environment of the old version to populate test data,
+then run the feature version against the same disposable database. Verify both
+schema changes and preservation of representative data. Do not switch the
+active checkout or run Alembic against an unspecified store.
 
 ## Coordination
 

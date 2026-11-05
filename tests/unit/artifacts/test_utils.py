@@ -100,6 +100,9 @@ def test_load_model_from_metadata(mocker, model_metadata_dir):
         return_value=mocked_model,
     )
 
+    # This test uses a mocked model and should not require a working Torch installation.
+    mocker.patch.dict("sys.modules", {"torch": None, "torch.nn": None})
+
     # Load the model from the metadata file
     model = load_model_from_metadata(model_metadata_dir)
 
