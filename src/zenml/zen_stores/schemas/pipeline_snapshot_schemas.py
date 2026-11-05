@@ -14,7 +14,16 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
@@ -45,6 +54,12 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
+)
+from zenml.zen_stores.schemas.execution_payload_schemas import (
+    ExecutionPayloadSchema,
+    PayloadColumn,
+    payload_relationship_kwargs,
+    resolve_payload,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -133,6 +148,25 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     code_path: Optional[str] = Field(nullable=True)
     execution_mode: Optional[str] = Field(nullable=True, default=None)
     enable_heartbeat: Optional[bool] = Field(nullable=True, default=None)
+    pipeline_configuration_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    client_environment_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    pipeline_spec_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    source_code_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="pipeline_configuration", nullable=False),
+        PayloadColumn(name="client_environment", nullable=False),
+        PayloadColumn(name="pipeline_spec", nullable=True),
+        PayloadColumn(name="source_code", nullable=True),
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -218,6 +252,30 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         }
     )
     code_reference: Optional["CodeReferenceSchema"] = Relationship()
+    pipeline_configuration_payload: Optional[ExecutionPayloadSchema] = (
+        Relationship(
+            sa_relationship_kwargs=payload_relationship_kwargs(
+                "PipelineSnapshotSchema", "pipeline_configuration"
+            )
+        )
+    )
+    client_environment_payload: Optional[ExecutionPayloadSchema] = (
+        Relationship(
+            sa_relationship_kwargs=payload_relationship_kwargs(
+                "PipelineSnapshotSchema", "client_environment"
+            )
+        )
+    )
+    pipeline_spec_payload: Optional[ExecutionPayloadSchema] = Relationship(
+        sa_relationship_kwargs=payload_relationship_kwargs(
+            "PipelineSnapshotSchema", "pipeline_spec"
+        )
+    )
+    source_code_payload: Optional[ExecutionPayloadSchema] = Relationship(
+        sa_relationship_kwargs=payload_relationship_kwargs(
+            "PipelineSnapshotSchema", "source_code"
+        )
+    )
 
     pipeline_runs: List["PipelineRunSchema"] = Relationship(
         sa_relationship_kwargs={"cascade": "delete"}
@@ -256,6 +314,70 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             order_by="CuratedVisualizationSchema.display_order",
         ),
     )
+
+    @property
+    def resolved_pipeline_configuration(self) -> str:
+        """The pipeline configuration JSON, inline or from its payload.
+
+        Returns:
+            The pipeline configuration JSON.
+        """
+        return resolve_payload(
+            self, "pipeline_configuration", self.pipeline_configuration
+        )
+
+    @property
+    def resolved_client_environment(self) -> str:
+        """The client environment JSON, inline or from its payload.
+
+        Returns:
+            The client environment JSON.
+        """
+        return resolve_payload(
+            self, "client_environment", self.client_environment
+        )
+
+    @property
+    def resolved_pipeline_spec(self) -> Optional[str]:
+        """The pipeline spec JSON, inline or from its payload.
+
+        Returns:
+            The pipeline spec JSON, if the snapshot has one.
+        """
+        return resolve_payload(self, "pipeline_spec", self.pipeline_spec)
+
+    @property
+    def resolved_source_code(self) -> Optional[str]:
+        """The pipeline source code, inline or from its payload.
+
+        Returns:
+            The source code, if the snapshot has one.
+        """
+        return resolve_payload(self, "source_code", self.source_code)
+
+    @classmethod
+    def load_run_payloads(cls) -> List[Any]:
+        """Load the payloads that hydrated run responses read.
+
+        Returns:
+            The loader options, to apply to a loader of snapshots.
+        """
+        return [
+            selectinload(jl_arg(cls.pipeline_configuration_payload)),
+            selectinload(jl_arg(cls.client_environment_payload)),
+        ]
+
+    @classmethod
+    def load_payloads(cls) -> List[Any]:
+        """Load every payload of snapshots.
+
+        Returns:
+            The loader options.
+        """
+        return cls.load_run_payloads() + [
+            selectinload(jl_arg(cls.pipeline_spec_payload)),
+            selectinload(jl_arg(cls.source_code_payload)),
+        ]
 
     @property
     def latest_run(self) -> Optional["PipelineRunSchema"]:
@@ -310,8 +432,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """Get step configurations for the snapshot.
 
         Args:
-            include: List of step names to include. If not given, all step
-                configurations will be included.
+            include: The names of the steps to include, or None for all of
+                them.
 
         Raises:
             RuntimeError: If no session for the schema exists.
@@ -319,14 +441,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             List of step configurations.
         """
+        if include == []:
+            return []
         if session := object_session(self):
             query = (
                 select(StepConfigurationSchema)
                 .where(StepConfigurationSchema.snapshot_id == self.id)
                 .order_by(asc(StepConfigurationSchema.index))
+                .options(*StepConfigurationSchema.load_payloads())
             )
 
-            if include:
+            if include is not None:
                 query = query.where(
                     col(StepConfigurationSchema.name).in_(include)
                 )
@@ -371,10 +496,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         # Snapshots created before the control columns existed have no
         # execution mode and only store the step graph in the pipeline spec.
         if self.execution_mode is None:
-            if not self.pipeline_spec:
+            pipeline_spec_json = self.resolved_pipeline_spec
+            if not pipeline_spec_json:
                 return None
             pipeline_spec = PipelineSpec.model_validate_json(
-                self.pipeline_spec
+                pipeline_spec_json
             )
             return {
                 step_spec.invocation_id: step_spec.upstream_steps
@@ -444,7 +570,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         """
         options: List[ExecutableOption] = []
 
-        if not include_metadata:
+        if include_metadata:
+            options.extend(cls.load_payloads())
+        else:
             options.extend(cls.defer_large_columns())
 
         if include_resources:
@@ -575,7 +703,9 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             return self.enable_heartbeat
 
         return self._resolve_enable_heartbeat(
-            json.loads(self.pipeline_configuration).get("enable_heartbeat")
+            json.loads(self.resolved_pipeline_configuration).get(
+                "enable_heartbeat"
+            )
         )
 
     def get_execution_mode(self) -> ExecutionMode:
@@ -587,9 +717,17 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         if self.execution_mode is not None:
             return ExecutionMode(self.execution_mode)
 
+        return self.get_pipeline_configuration().execution_mode
+
+    def get_pipeline_configuration(self) -> PipelineConfiguration:
+        """Get the pipeline configuration of this snapshot.
+
+        Returns:
+            The pipeline configuration.
+        """
         return PipelineConfiguration.model_validate_json(
-            self.pipeline_configuration
-        ).execution_mode
+            self.resolved_pipeline_configuration
+        )
 
     @property
     def is_runnable(self) -> bool:
@@ -644,9 +782,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         )
         metadata = None
         if include_metadata:
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                self.pipeline_configuration
-            )
+            pipeline_configuration = self.get_pipeline_configuration()
             step_configurations = {}
             for step_configuration in self.get_step_configurations(
                 include=step_configuration_filter
@@ -658,7 +794,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                     )
                 )
 
-            client_environment = json.loads(self.client_environment)
+            client_environment = json.loads(self.resolved_client_environment)
             if not include_python_packages:
                 client_environment.pop("python_packages", None)
 
@@ -668,7 +804,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             if include_config_schema and self.build and self.build.stack_id:
                 from zenml.zen_stores import template_utils
 
-                if step_configuration_filter:
+                if step_configuration_filter is not None:
                     # If only a subset of step configurations is requested,
                     # we still need to get all of them to generate the config
                     # template and schema
@@ -695,7 +831,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
 
             metadata = PipelineSnapshotResponseMetadata(
                 description=self.description,
-                source_code=self.source_code,
+                source_code=self.resolved_source_code,
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,
@@ -703,10 +839,8 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 client_version=self.client_version,
                 server_version=self.server_version,
                 pipeline_version_hash=self.pipeline_version_hash,
-                pipeline_spec=PipelineSpec.model_validate_json(
-                    self.pipeline_spec
-                )
-                if self.pipeline_spec
+                pipeline_spec=PipelineSpec.model_validate_json(pipeline_spec)
+                if (pipeline_spec := self.resolved_pipeline_spec)
                 else None,
                 code_path=self.code_path,
                 template_id=self.template_id,
@@ -806,6 +940,13 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ),
         default=None,
     )
+    config_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+
+    PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
+        PayloadColumn(name="config", nullable=False),
+    )
 
     snapshot_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -823,6 +964,29 @@ class StepConfigurationSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
+    config_payload: Optional[ExecutionPayloadSchema] = Relationship(
+        sa_relationship_kwargs=payload_relationship_kwargs(
+            "StepConfigurationSchema", "config"
+        )
+    )
+
+    @property
+    def resolved_config(self) -> str:
+        """The stored step configuration JSON, inline or from its payload.
+
+        Returns:
+            The step configuration JSON.
+        """
+        return resolve_payload(self, "config", self.config)
+
+    @classmethod
+    def load_payloads(cls) -> List[Any]:
+        """Load the payload of step configurations.
+
+        Returns:
+            The loader options.
+        """
+        return [selectinload(jl_arg(cls.config_payload))]
 
     def to_step(
         self,
@@ -844,7 +1008,7 @@ class StepConfigurationSchema(BaseSchema, table=True):
             The resolved step.
         """
         return Step.from_dict(
-            json.loads(self.config),
+            json.loads(self.resolved_config),
             pipeline_configuration=pipeline_configuration,
             exclude_hook_sources=exclude_hook_sources,
         )

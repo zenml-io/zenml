@@ -38,7 +38,7 @@ def fetch_runner_logs(
     """Fetch runner logs from the workload manager.
 
     Args:
-        run: The authorized, hydrated pipeline run.
+        run: The authorized pipeline run.
         logs: The runner log model, absent for runs created before 0.94.0.
         start: Only the oldest end is supported.
         limit: Maximum number of entries to return.
