@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DB="sqlite"
-DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
+DB_STARTUP_TIMEOUT=30
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -282,8 +282,16 @@ function start_db() {
         docker run --name mariadb --rm -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=password mariadb:10.6
     fi
 
-    # the database container takes a while to start up
-    sleep $DB_STARTUP_DELAY
+    local deadline=$((SECONDS + DB_STARTUP_TIMEOUT))
+    until docker exec "$DB" mysql --protocol=TCP --host=127.0.0.1 \
+        --user=root --password=password --connect-timeout=1 --execute="SELECT 1" >/dev/null 2>&1; do
+        if (( SECONDS >= deadline )) || [ "$(docker inspect --format '{{.State.Running}}' "$DB")" != true ]; then
+            echo "Error: $DB container stopped or did not become ready within ${DB_STARTUP_TIMEOUT}s." >&2
+            docker logs --tail 100 "$DB" >&2 || true
+            return 1
+        fi
+        sleep 1
+    done
     echo "===== Finished starting $DB database ====="
 
 }
