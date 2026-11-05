@@ -148,6 +148,18 @@ class StepRunner:
         """
         from zenml.deployers.server import runtime
 
+        # Deployment invocations share a single run context that the
+        # deployment service initializes once at startup, so the init and
+        # cleanup hooks must not run (and tear that context down) at step
+        # level, regardless of which orchestrator the stack uses.
+        # TODO: do we need to disable this for dynamic pipelines?
+        step_level_hooks_snapshot = None
+        if (
+            self._stack.orchestrator.run_init_cleanup_at_step_level
+            and not runtime.is_active()
+        ):
+            step_level_hooks_snapshot = pipeline_run.snapshot
+
         logs_context: ContextManager[Any] = nullcontext()
         if is_step_logging_enabled(
             step_configuration=step_run.config,
@@ -232,13 +244,9 @@ class StepRunner:
                             step_run.id,
                         )
                         heartbeat_worker.start()
-                    if (
-                        # TODO: do we need to disable this for dynamic pipelines?
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    if step_level_hooks_snapshot:
                         self._stack.orchestrator.run_init_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_level_hooks_snapshot
                         )
 
                     # Get all step environment variables. For most
@@ -379,12 +387,9 @@ class StepRunner:
 
                     # We run the cleanup hook at step level if we're not in an
                     # environment that supports a shared run context
-                    if (
-                        pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
-                    ):
+                    if step_level_hooks_snapshot:
                         self._stack.orchestrator.run_cleanup_hook(
-                            snapshot=pipeline_run.snapshot
+                            snapshot=step_level_hooks_snapshot
                         )
 
             # Update the status and output artifacts of the step run.

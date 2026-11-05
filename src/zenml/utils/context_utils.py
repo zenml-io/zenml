@@ -16,6 +16,7 @@
 import contextvars
 import threading
 from contextvars import ContextVar
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -23,6 +24,7 @@ from typing import (
     Generic,
     List,
     Optional,
+    Type,
     TypeVar,
 )
 
@@ -70,11 +72,18 @@ class BaseContext:
         self._token = self.__context_var__.set(self)
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         """Exit the context.
 
         Args:
-            *_: Unused keyword arguments.
+            exc_type: The class of the exception.
+            exc_value: The instance of the exception.
+            traceback: The traceback of the exception.
 
         Raises:
             RuntimeError: If the context has not been entered.

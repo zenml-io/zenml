@@ -15,11 +15,16 @@
 
 import os
 import ssl
+import time
 from typing import Any
 
 import pymysql
-from pymysql.constants import CLIENT
+from pymysql.constants import CLIENT, ER
 from sqlalchemy import Engine, event
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TLSRequiredMySQLConnection(pymysql.Connection):
@@ -153,17 +158,44 @@ def generate_rds_iam_token(
     return token
 
 
+def _is_iam_propagation_error(error: Exception) -> bool:
+    """Check whether an error can be explained by pending IAM propagation.
+
+    Args:
+        error: The error raised while generating a token or connecting.
+
+    Returns:
+        True for STS or database access-denied errors.
+    """
+    if isinstance(error, pymysql.err.OperationalError):
+        return bool(error.args[0] == ER.ACCESS_DENIED_ERROR)
+
+    # The AWS SDK is optional, so its errors are matched by shape.
+    response: dict[str, Any] = getattr(error, "response", {})
+    return response.get("Error", {}).get("Code") in (
+        "AccessDenied",
+        "InvalidIdentityToken",
+    )
+
+
 def configure_rds_iam_authentication(
     engine: Engine,
     region: str,
     role_arn: str | None = None,
+    max_wait_seconds: float = 30.0,
 ) -> None:
     """Generate a fresh IAM token for every physical engine connection.
+
+    IAM is eventually consistent, so a newly created role or `rds-db:connect`
+    policy may be rejected at first. Such connections are retried for a
+    bounded time, because a misconfigured role fails the same way.
 
     Args:
         engine: SQLAlchemy engine to configure.
         region: AWS region of the database.
         role_arn: Optional role assumed directly with the pod's web identity.
+        max_wait_seconds: Maximum total time a connection attempt waits for
+            IAM changes to propagate.
     """
     client = _create_rds_client(region, role_arn)
 
@@ -174,9 +206,25 @@ def configure_rds_iam_authentication(
         _cargs: list[Any],
         cparams: dict[str, Any],
     ) -> Any:
-        cparams["password"] = client.generate_db_auth_token(
-            DBHostname=cparams["host"],
-            Port=int(cparams.get("port") or 3306),
-            DBUsername=cparams["user"],
-        )
-        return TLSRequiredMySQLConnection(**cparams)
+        waited, delay = 0.0, 1.0
+        while True:
+            try:
+                cparams["password"] = client.generate_db_auth_token(
+                    DBHostname=cparams["host"],
+                    Port=int(cparams.get("port") or 3306),
+                    DBUsername=cparams["user"],
+                )
+                return TLSRequiredMySQLConnection(**cparams)
+            except Exception as error:
+                delay = min(delay, max_wait_seconds - waited)
+                if delay <= 0 or not _is_iam_propagation_error(error):
+                    raise
+                logger.warning(
+                    "AWS RDS IAM authentication is not available yet (%s); "
+                    "retrying in %.1f seconds.",
+                    error,
+                    delay,
+                )
+                time.sleep(delay)
+                waited += delay
+                delay *= 2

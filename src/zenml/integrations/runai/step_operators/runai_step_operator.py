@@ -52,9 +52,13 @@ from runai.models.toleration import Toleration
 from runai.models.training_creation_request import TrainingCreationRequest
 from runai.models.training_spec_spec import TrainingSpecSpec
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.kubernetes.constants import (
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
+)
 from zenml.integrations.runai.client.runai_client import (
     RunAIClient,
     RunAIClientError,
@@ -722,22 +726,20 @@ class RunAIStepOperator(BaseStepOperator):
 
     def _build_annotations(
         self, settings: RunAIStepOperatorSettings
-    ) -> Optional[List[Annotation]]:
+    ) -> List[Annotation]:
         """Build annotations for the workload pod.
 
         Args:
             settings: The step operator settings.
 
         Returns:
-            List of Annotation objects or None.
+            List of Annotation objects.
         """
-        if not settings.annotations:
-            return None
-
-        return [
-            Annotation(name=k, value=v)
-            for k, v in settings.annotations.items()
-        ]
+        annotations = {
+            **(settings.annotations or {}),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: str(Client().active_user.id),
+        }
+        return [Annotation(name=k, value=v) for k, v in annotations.items()]
 
     def _cleanup_workload(
         self, client: RunAIClient, workload_id: str, reason: str

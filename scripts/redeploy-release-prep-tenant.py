@@ -19,26 +19,24 @@ import time
 import requests
 
 
-def get_token(client_id: str, client_secret: str) -> str:
-    """Get an access token for the staging API.
+def get_token(api_key: str) -> str:
+    """Exchange a ZenML Pro API key for an access token.
 
     Args:
-        client_id: The client ID for authentication.
-        client_secret: The client secret for authentication.
+        api_key: The ZenML Pro service account API key.
 
     Returns:
-        The access token as a string.
+        The short-lived access token.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails or returns no access token.
     """
     url = "https://staging.cloudapi.zenml.io/auth/login"
-    data = {
-        "grant_type": "",
-        "client_id": client_id,
-        "client_secret": client_secret,
-    }
-    response = requests.post(url, data=data)
+    response = requests.post(
+        url,
+        data={"password": api_key},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError:
@@ -46,7 +44,10 @@ def get_token(client_id: str, client_secret: str) -> str:
             f"Request failed with response content: {response.text}"
         )
 
-    return response.json()["access_token"]
+    access_token = response.json().get("access_token")
+    if not isinstance(access_token, str) or not access_token:
+        raise RuntimeError("Login response did not contain an access token.")
+    return access_token
 
 
 def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
@@ -58,7 +59,7 @@ def update_tenant(token: str, tenant_id: str, new_version: str) -> None:
         new_version: New version of ZenML to be released.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails.
     """
     url = f"https://staging.cloudapi.zenml.io/tenants/{tenant_id}"
 
@@ -112,7 +113,7 @@ def get_tenant_status(token: str, tenant_id: str) -> str:
         The current status of the tenant as a string.
 
     Raises:
-        requests.HTTPError: If the API request fails.
+        RuntimeError: If the API request fails.
     """
     url = f"https://staging.cloudapi.zenml.io/tenants/{tenant_id}"
     headers = {
@@ -127,7 +128,10 @@ def get_tenant_status(token: str, tenant_id: str) -> str:
             f"Request failed with response content: {response.text}"
         )
 
-    return response.json()["status"]
+    workspace_status = response.json().get("status")
+    if not isinstance(workspace_status, str):
+        raise RuntimeError("Workspace response did not contain a status.")
+    return workspace_status
 
 
 def main() -> None:
@@ -135,32 +139,28 @@ def main() -> None:
 
     This function performs the following steps:
     1. Retrieves necessary environment variables.
-    2. Gets an access token.
-    3. Deactivates the specified tenant.
-    4. Waits for the tenant to be fully deactivated.
-    5. Redeploys the tenant.
-    6. Waits for the tenant to be fully deployed.
+    2. Exchanges a service account API key for an access token.
+    3. Redeploys the specified tenant.
+    4. Waits for the tenant to be fully deployed.
 
     Raises:
         EnvironmentError: If required environment variables are missing.
-        requests.HTTPError: If any API requests fail.
+        RuntimeError: If an API request fails or the redeployment times out.
     """
     # Constants
     timeout = 600
     sleep_period = 20
 
     # Get environment variables
-    client_id = os.environ.get("CLOUD_STAGING_CLIENT_ID")
-    client_secret = os.environ.get("CLOUD_STAGING_CLIENT_SECRET")
+    api_key = os.environ.get("ZENML_PRO_API_KEY")
     tenant_id = os.environ.get("RELEASE_TENANT_ID")
     new_version = os.environ.get("ZENML_NEW_VERSION")
 
-    if not all([client_id, client_secret, tenant_id, new_version]):
+    if not api_key or not tenant_id or not new_version:
         raise EnvironmentError("Missing required environment variables")
 
-    # Get the token
-    token = get_token(client_id, client_secret)
-    print("Fetched the token.")
+    token = get_token(api_key)
+    print("Fetched the access token.")
 
     # Update the tenant
     update_tenant(token, tenant_id, new_version)

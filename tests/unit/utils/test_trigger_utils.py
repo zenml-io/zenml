@@ -50,6 +50,7 @@ def test_get_webhook_upstream_event_returns_plain_dict() -> None:
             "github": WebhookTriggerExecutionInfo(
                 webhook_id=webhook_id,
                 delivery_id="delivery-001",
+                event_type="push",
                 event={"type": "push", "commit": None},
             )
         }
@@ -61,6 +62,7 @@ def test_get_webhook_upstream_event_returns_plain_dict() -> None:
         "github": {
             "webhook_id": str(webhook_id),
             "delivery_id": "delivery-001",
+            "event_type": "push",
             "event": {"type": "push", "commit": None},
         }
     }

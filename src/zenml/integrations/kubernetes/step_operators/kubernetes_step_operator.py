@@ -26,13 +26,16 @@ from typing import (
 
 from kubernetes import client as k8s_client
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import LINUX_GID_CLAIM_KEY, LINUX_UID_CLAIM_KEY
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
     STEP_OPERATOR_ANNOTATION_KEY,
+    WORKSPACE_USER_ID_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.flavors import (
     KubernetesStepOperatorConfig,
@@ -270,9 +273,11 @@ class KubernetesStepOperator(BaseStepOperator):
                 info.pipeline_step_name
             ),
         }
+        workspace_user_id = str(Client().active_user.id)
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
             STEP_OPERATOR_ANNOTATION_KEY: str(self.id),
+            WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id,
         }
 
         # We set some default minimum memory resource requests for the step pod
@@ -311,6 +316,8 @@ class KubernetesStepOperator(BaseStepOperator):
                 )
             )
 
+        oidc_claims = Client().active_user.oidc_claims
+
         pod_manifest = build_pod_manifest(
             pod_name=None,
             image_name=image_name,
@@ -321,6 +328,9 @@ class KubernetesStepOperator(BaseStepOperator):
             pod_settings=pod_settings,
             service_account_name=settings.service_account_name,
             labels=step_labels,
+            annotations={WORKSPACE_USER_ID_ANNOTATION_KEY: workspace_user_id},
+            run_as_user=oidc_claims.get(LINUX_UID_CLAIM_KEY),
+            run_as_group=oidc_claims.get(LINUX_GID_CLAIM_KEY),
         )
 
         job_manifest = build_job_manifest(

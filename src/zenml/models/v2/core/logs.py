@@ -16,7 +16,11 @@
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import (
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from zenml.constants import LOGS_RUNNER_SOURCE, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
@@ -179,10 +183,32 @@ class LogsResponseBody(ProjectScopedResponseBody):
         title="The source of the logs file",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    step_run_id: Optional[UUID] = Field(
+        title="Step ID to associate the logs with.",
+        default=None,
+        description="When this is set, pipeline_run_id should be set to None.",
+    )
+    pipeline_run_id: Optional[UUID] = Field(
+        title="Pipeline run ID to associate the logs with.",
+        default=None,
+        description="When this is set, step_run_id should be set to None.",
+    )
+    artifact_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The artifact store ID that collected these logs",
+    )
+    log_store_id: Optional[UUID] = Field(
+        default=None,
+        title="The log store ID that collected these logs",
+    )
+    hook_invocation_id: Optional[UUID] = Field(
+        default=None,
+        title="The hook invocation ID to associate the logs with.",
+    )
 
 
 class LogsResponseMetadata(ProjectScopedResponseMetadata):
-    """Response metadata for logs."""
+    """Log metadata, including association IDs for older clients."""
 
     step_run_id: Optional[UUID] = Field(
         title="Step ID to associate the logs with.",
@@ -255,7 +281,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().step_run_id
+        return self.get_body().step_run_id
 
     @property
     def pipeline_run_id(self) -> Optional[UUID]:
@@ -264,7 +290,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().pipeline_run_id
+        return self.get_body().pipeline_run_id
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:
@@ -273,7 +299,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().artifact_store_id
+        return self.get_body().artifact_store_id
 
     @property
     def log_store_id(self) -> Optional[UUID]:
@@ -282,7 +308,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().log_store_id
+        return self.get_body().log_store_id
 
     @property
     def hook_invocation_id(self) -> Optional[UUID]:
@@ -291,7 +317,7 @@ class LogsResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().hook_invocation_id
+        return self.get_body().hook_invocation_id
 
 
 # ------------------ Filter Model ------------------
