@@ -2,6 +2,7 @@
 description: >-
   Definitions for chats, bots, environments, sandboxes, steering, artifacts,
   automations, channels, notifications, and connectors in ZenML Pro Bots.
+icon: shapes
 ---
 
 # Core concepts
@@ -218,6 +219,22 @@ workspaces and resources the service account can read are the ones the agent
 can reach. To change what a bot can reach, assign custom roles to its service
 account. See [Roles and permissions](bots-rbac.md#the-service-account-of-a-bot).
 
+### What the agent can do in Bots
+
+The agent can work with the Bots resources of its own bot:
+
+* **Chats**: list the chats of its bot and read their messages, for example
+  to pick up where an earlier chat stopped.
+* **Artifacts**: list and open the artifacts of those chats. The file of a
+  `file` artifact is downloaded into the sandbox.
+* **Automations**: list the automations of its bot and view their triggers
+  and recent runs. When you ask for it, the agent also creates, changes,
+  runs, or deletes automations for you. Automations it creates are owned by
+  the owner of the chat, and it only changes or deletes automations of its
+  bot that the owner of the chat owns.
+* **Connectors**: list the supported connector providers, so it can tell you
+  which connector to set up for a task.
+
 ### Archiving bots
 
 Archiving a bot hides it and its chats from lists. Chats of an archived bot
@@ -334,6 +351,10 @@ Install the apps from the Bots UI. An install started anywhere else, such as
 from the app page on GitHub, creates no channel. To install the GitHub app,
 you must own the GitHub user account or be an owner of the GitHub
 organization.
+
+A Slack workspace or GitHub installation can only be connected to one
+organization. Installing the app into one that another organization already
+connected fails.
 
 Removing or suspending the app disables its channel, and reinstalling it from
 the Bots UI enables it again.
