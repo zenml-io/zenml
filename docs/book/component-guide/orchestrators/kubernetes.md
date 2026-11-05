@@ -637,6 +637,23 @@ Scheduled
 Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
 docs page.
 
+## Stopping runs
+
+You can stop a run from the dashboard or with `zenml pipeline runs stop <RUN_NAME_OR_ID>`. A graceful stop (`--graceful`) can later be escalated to an immediate stop, and an immediate stop can be retried if it failed.
+
+For a **graceful stop**, ZenML marks the pipeline run as `STOPPING`. The orchestrator pod notices the stop request and stops launching new steps. Steps that have the [step heartbeat](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#step-heartbeat) enabled get interrupted by it, while other steps are allowed to finish.
+
+For an **immediate stop**, ZenML deletes the Kubernetes jobs that are still running:
+
+1. For dynamic pipelines, ZenML deletes the orchestrator job first. Dynamic pipeline steps run inside the orchestrator pod unless they run in an isolated runtime, so this also stops them, and nothing can launch new step jobs afterwards. The orchestrator pod of a static pipeline doesn't run any steps and stops by itself.
+2. ZenML deletes the job of every step that is still running, including those of child pipeline runs.
+3. ZenML marks the run and all its unfinished steps as stopped, since the deleted pods can't report their final status anymore.
+4. ZenML deletes any step job that got created while it was cleaning up.
+
+Kubernetes gives the deleted pods `pod_stop_grace_period` seconds to shut down before it kills them. Child pipeline runs of a dynamic pipeline share the orchestrator pod of their parent, so stopping a child run immediately only deletes its isolated step jobs.
+
+Runs that failed in the `STOP_ON_FAILURE` or `CONTINUE_ON_FAILURE` execution mode can be stopped while some of their steps are still running. They keep their `FAILED` status.
+
 ## Best practices for highly parallel pipelines
 
 If you're trying to run pipelines with multiple parallel steps, there are some configuration options that you can tweak to ensure the best possible performance:

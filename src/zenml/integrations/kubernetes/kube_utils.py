@@ -65,6 +65,7 @@ from zenml.integrations.kubernetes.constants import (
     ENV_ZENML_KUBERNETES_MAIN_PORT,
     ENV_ZENML_KUBERNETES_POD_COUNT,
     MULTI_POD_MAIN_PORT,
+    ORCHESTRATOR_ANNOTATION_KEY,
     STEP_NAME_ANNOTATION_KEY,
 )
 from zenml.integrations.kubernetes.manifest_utils import (
@@ -1046,6 +1047,21 @@ def is_step_job(job: k8s_client.V1Job) -> bool:
         return False
 
     return STEP_NAME_ANNOTATION_KEY in job.metadata.annotations
+
+
+def is_orchestrator_job(job: k8s_client.V1Job) -> bool:
+    """Check if a job is an orchestrator job.
+
+    Args:
+        job: The job to check.
+
+    Returns:
+        Whether the job is an orchestrator job.
+    """
+    if not job.metadata or not job.metadata.annotations:
+        return False
+
+    return ORCHESTRATOR_ANNOTATION_KEY in job.metadata.annotations
 
 
 def get_container_status(

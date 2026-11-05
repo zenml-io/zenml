@@ -162,7 +162,6 @@ from zenml.enums import (
     AuthScheme,
     DatabaseBackupStrategy,
     DeploymentStatus,
-    ExecutionMode,
     ExecutionStatus,
     LoggingLevels,
     MetadataResourceTypes,
@@ -171,6 +170,7 @@ from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestRuntimeState,
     ResourceRequestStatus,
+    RunStopMode,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -1142,9 +1142,9 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         create_verified_ssl_context,
                     )
 
-                    sqlalchemy_connect_args["ssl"] = (
-                        create_verified_ssl_context()
-                    )
+                    sqlalchemy_connect_args[
+                        "ssl"
+                    ] = create_verified_ssl_context()
                 else:
                     sqlalchemy_ssl_args: Dict[str, Any] = {"ssl": True}
                     for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
@@ -1155,12 +1155,12 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                             logger.warning(
                                 f"Database SSL setting `{key}` is not a file. "
                             )
-                        sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
-                            ssl_setting.get_secret_value()
-                        )
-                    sqlalchemy_ssl_args["check_hostname"] = (
-                        self.ssl_verify_server_cert
-                    )
+                        sqlalchemy_ssl_args[
+                            key.removeprefix("ssl_")
+                        ] = ssl_setting.get_secret_value()
+                    sqlalchemy_ssl_args[
+                        "check_hostname"
+                    ] = self.ssl_verify_server_cert
                     sqlalchemy_connect_args["ssl"] = sqlalchemy_ssl_args
         else:
             raise NotImplementedError(
@@ -3911,14 +3911,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(StackComponentSchema)
-            paged_components: Page[ComponentResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=StackComponentSchema,
-                    filter_model=component_filter_model,
-                    hydrate=hydrate,
-                )
+            paged_components: Page[
+                ComponentResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=StackComponentSchema,
+                filter_model=component_filter_model,
+                hydrate=hydrate,
             )
             return paged_components
 
@@ -6514,9 +6514,9 @@ class SqlZenStore(BaseZenStore):
                 if condition.question:
                     node_metadata["question"] = condition.question
                 if condition.resolved_at:
-                    node_metadata["resolved_at"] = (
-                        condition.resolved_at.isoformat()
-                    )
+                    node_metadata[
+                        "resolved_at"
+                    ] = condition.resolved_at.isoformat()
 
                 helper.add_wait_condition_node(
                     node_id=helper.get_wait_condition_node_id(condition.name),
@@ -6609,9 +6609,9 @@ class SqlZenStore(BaseZenStore):
                     metadata["status"] = step_run.status
 
                     if step_run.start_time:
-                        metadata["start_time"] = (
-                            step_run.start_time.isoformat()
-                        )
+                        metadata[
+                            "start_time"
+                        ] = step_run.start_time.isoformat()
 
                         if step_run.end_time:
                             metadata["duration"] = (
@@ -6791,9 +6791,9 @@ class SqlZenStore(BaseZenStore):
                         }
 
                         if triggered_run.start_time:
-                            triggered_run_metadata["start_time"] = (
-                                triggered_run.start_time.isoformat()
-                            )
+                            triggered_run_metadata[
+                                "start_time"
+                            ] = triggered_run.start_time.isoformat()
 
                             if triggered_run.end_time:
                                 triggered_run_metadata["duration"] = (
@@ -6936,13 +6936,13 @@ class SqlZenStore(BaseZenStore):
                     "status": child_run.status,
                 }
                 if child_run.start_time:
-                    child_run_metadata["start_time"] = (
-                        child_run.start_time.isoformat()
-                    )
+                    child_run_metadata[
+                        "start_time"
+                    ] = child_run.start_time.isoformat()
                     if child_run.end_time:
-                        child_run_metadata["end_time"] = (
-                            child_run.end_time.isoformat()
-                        )
+                        child_run_metadata[
+                            "end_time"
+                        ] = child_run.end_time.isoformat()
                         child_run_metadata["duration"] = (
                             child_run.end_time - child_run.start_time
                         ).total_seconds()
@@ -7222,6 +7222,73 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             return ExecutionStatus(run.status)
+
+    def _request_run_stop(
+        self,
+        run: PipelineRunSchema,
+        stop_mode: RunStopMode,
+        session: Session,
+    ) -> None:
+        """Record a stop request for a run and its in-progress child runs.
+
+        Unfinished runs move to `STOPPING`, while failed runs that are still in
+        progress keep their status. Steps waiting for a retry are failed right
+        away, as no new step attempts get started for a run that is being
+        stopped.
+
+        Args:
+            run: The run to stop.
+            stop_mode: How the run should be stopped.
+            session: The database session to use.
+        """
+        run.request_stop(stop_mode)
+        session.add(run)
+
+        runs_to_stop = [run]
+        parent_run_ids = [run.id]
+        while parent_run_ids:
+            child_runs = session.exec(
+                select(PipelineRunSchema)
+                .where(
+                    col(PipelineRunSchema.parent_run_id).in_(parent_run_ids)
+                )
+                .where(col(PipelineRunSchema.in_progress).is_(True))
+            ).all()
+            parent_run_ids = [child_run.id for child_run in child_runs]
+            for child_run in child_runs:
+                try:
+                    child_run.request_stop(stop_mode)
+                except IllegalOperationError:
+                    # The child run is already being stopped in this mode.
+                    continue
+                session.add(child_run)
+                runs_to_stop.append(child_run)
+
+        session.execute(
+            update(StepRunSchema)
+            .where(
+                col(StepRunSchema.pipeline_run_id).in_(
+                    [run_to_stop.id for run_to_stop in runs_to_stop]
+                )
+            )
+            .where(col(StepRunSchema.status) == ExecutionStatus.RETRYING.value)
+            .values(status=ExecutionStatus.FAILED.value, end_time=utc_now())
+        )
+
+        for run_to_stop in runs_to_stop:
+            # Updating finished runs without a status still refreshes whether
+            # they are in progress, which the stop request changes.
+            is_finished = ExecutionStatus(run_to_stop.status).is_finished
+            self._update_pipeline_run_status(
+                pipeline_run_id=run_to_stop.id,
+                session=session,
+                requested_status=None
+                if is_finished
+                else ExecutionStatus.STOPPING,
+                status_reason=None
+                if is_finished
+                else "Manual stop requested.",
+            )
 
     def _check_if_run_in_progress(
         self, run_id: UUID
@@ -7567,7 +7634,16 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if run_update.status is not None:
+            if run_update.stop_mode is not None:
+                # Clients request the `STOPPING` status along with a stop for
+                # older servers, but failed runs keep their status, so the
+                # stop request decides on the status instead.
+                self._request_run_stop(
+                    run=existing_run,
+                    stop_mode=run_update.stop_mode,
+                    session=session,
+                )
+            elif run_update.status is not None:
                 self._update_pipeline_run_status(
                     pipeline_run_id=run_id,
                     session=session,
@@ -10520,19 +10596,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             query = select(UserSchema)
-            paged_service_accounts: Page[ServiceAccountResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=UserSchema,
-                    filter_model=filter_model,
-                    custom_schema_to_model_conversion=lambda user: (
-                        user.to_service_account_model(
-                            include_metadata=hydrate, include_resources=True
-                        )
-                    ),
-                    hydrate=hydrate,
-                )
+            paged_service_accounts: Page[
+                ServiceAccountResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=UserSchema,
+                filter_model=filter_model,
+                custom_schema_to_model_conversion=lambda user: (
+                    user.to_service_account_model(
+                        include_metadata=hydrate, include_resources=True
+                    )
+                ),
+                hydrate=hydrate,
             )
             return paged_service_accounts
 
@@ -10821,16 +10897,16 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             query = select(ServiceConnectorSchema)
-            paged_connectors: Page[ServiceConnectorResponse] = (
-                self.filter_and_paginate(
-                    session=session,
-                    query=query,
-                    table=ServiceConnectorSchema,
-                    filter_model=filter_model,
-                    custom_fetch=fetch_connectors,
-                    custom_schema_to_model_conversion=to_model_and_expand_secrets,
-                    hydrate=hydrate,
-                )
+            paged_connectors: Page[
+                ServiceConnectorResponse
+            ] = self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=ServiceConnectorSchema,
+                filter_model=filter_model,
+                custom_fetch=fetch_connectors,
+                custom_schema_to_model_conversion=to_model_and_expand_secrets,
+                hydrate=hydrate,
             )
 
             self._populate_connector_type(*paged_connectors.items)
@@ -11538,9 +11614,9 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[StackComponentType, List[UUID]] = (
-                    defaultdict(list)
-                )
+                components_mapping: Dict[
+                    StackComponentType, List[UUID]
+                ] = defaultdict(list)
                 for (
                     component_type,
                     components,
@@ -11859,9 +11935,9 @@ class SqlZenStore(BaseZenStore):
             existing_stack.update(stack_update=stack_update)
 
             if stack_update.components is not None:
-                component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
-                    defaultdict(list)
-                )
+                component_ids_by_type: Dict[
+                    StackComponentType, List[UUID]
+                ] = defaultdict(list)
 
                 for (
                     component_type,
@@ -12254,27 +12330,17 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Validate pipeline status before creating step
-            if run.status in [
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-            ]:
+            if not run.accepts_new_steps:
+                reason = (
+                    f"the run is being stopped ({run.status})"
+                    if run.stop_requested
+                    else "the run is in a FAILED state and the execution mode "
+                    f"is {run.get_pipeline_configuration().execution_mode}"
+                )
                 raise IllegalOperationError(
-                    f"Cannot create step '{step_run.name}' for pipeline in "
-                    f"{run.status} state. Pipeline run ID: {step_run.pipeline_run_id}"
+                    f"Cannot create step '{step_run.name}' for the run "
+                    f"'{run.name}' because {reason}."
                 )
-
-            if run.status == ExecutionStatus.FAILED:
-                execution_mode = (
-                    run.get_pipeline_configuration().execution_mode
-                )
-
-                if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
-                    raise IllegalOperationError(
-                        f"Cannot create step '{step_run.name}' for the run '{run.name}' "
-                        "because the run is in a FAILED state and the execution "
-                        f"mode is {execution_mode}."
-                    )
 
             self._get_reference_schema_by_id(
                 resource=step_run,
@@ -13130,23 +13196,22 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                can_retry = existing_step_run.is_retriable
+                # Failing a step that is waiting for its retry means the
+                # retry will not happen, so the failure is final.
+                can_retry = (
+                    existing_step_run.is_retriable
+                    and existing_step_run.status
+                    != ExecutionStatus.RETRYING.value
+                )
 
                 if can_retry:
-                    run_status = ExecutionStatus(
-                        session.exec(
-                            select(PipelineRunSchema.status).where(
-                                PipelineRunSchema.id
-                                == existing_step_run.pipeline_run_id
-                            )
-                        ).one()
-                    )
-                    if run_status in {
-                        ExecutionStatus.STOPPING,
-                        ExecutionStatus.STOPPED,
-                    }:
-                        # The run is stopping, which prevents any step retries.
-                        can_retry = False
+                    # Retries are new step runs, which only get created if
+                    # the run still starts new steps.
+                    can_retry = self._get_schema_by_id(
+                        resource_id=existing_step_run.pipeline_run_id,
+                        schema_class=PipelineRunSchema,
+                        session=session,
+                    ).accepts_new_steps
 
                 if can_retry:
                     # This step will be retried by the orchestrator, so we
@@ -13496,13 +13561,15 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        did_update, pipeline_run, previous_status = (
-            self._update_pipeline_run_status_no_commit(
-                pipeline_run_id=pipeline_run_id,
-                session=session,
-                requested_status=requested_status,
-                status_reason=status_reason,
-            )
+        (
+            did_update,
+            pipeline_run,
+            previous_status,
+        ) = self._update_pipeline_run_status_no_commit(
+            pipeline_run_id=pipeline_run_id,
+            session=session,
+            requested_status=requested_status,
+            status_reason=status_reason,
         )
 
         # Commit to release the lock on the pipeline run.
@@ -14635,7 +14702,8 @@ class SqlZenStore(BaseZenStore):
         reference_schema: Type[AnySchema],
         reference_id: UUID,
         reference_type: Optional[str] = None,
-    ) -> AnySchema: ...
+    ) -> AnySchema:
+        ...
 
     @overload
     def _get_reference_schema_by_id(
@@ -14645,7 +14713,8 @@ class SqlZenStore(BaseZenStore):
         reference_schema: Type[AnySchema],
         reference_id: None,
         reference_type: Optional[str] = None,
-    ) -> None: ...
+    ) -> None:
+        ...
 
     def _get_reference_schema_by_id(
         self,
@@ -16190,9 +16259,9 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: If a referenced resource does not exist.
         """
-        resource_ids_by_type: Dict[TaggableResourceTypes, Set[UUID]] = (
-            defaultdict(set)
-        )
+        resource_ids_by_type: Dict[
+            TaggableResourceTypes, Set[UUID]
+        ] = defaultdict(set)
         for tag_resource in tag_resources:
             resource_ids_by_type[tag_resource.resource_type].add(
                 tag_resource.resource_id

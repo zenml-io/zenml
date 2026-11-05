@@ -39,6 +39,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     PipelineRunTriggeredByType,
+    RunStopMode,
     TriggerType,
 )
 from zenml.logger import get_logger
@@ -259,6 +260,10 @@ class PipelineRunUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     orchestrator_run_id: Optional[str] = None
+    stop_mode: Optional[RunStopMode] = Field(
+        default=None,
+        title="Requests a stop of the pipeline run in the given mode.",
+    )
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the pipeline run.",
@@ -297,6 +302,10 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     status_reason: Optional[str] = Field(
         default=None,
         title="The reason for the status of the pipeline run.",
+    )
+    stop_mode: Optional[RunStopMode] = Field(
+        default=None,
+        title="How a stop of the pipeline run was requested, if at all.",
     )
     index: int = Field(
         title="The unique index of the run within the pipeline."
@@ -544,6 +553,30 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_body().status
+
+    @property
+    def stop_mode(self) -> Optional[RunStopMode]:
+        """The `stop_mode` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().stop_mode
+
+    @property
+    def stop_requested(self) -> bool:
+        """Whether a stop of the pipeline run was requested.
+
+        Runs stopped by older ZenML versions don't record a stop mode, which
+        is why the status is checked as well.
+
+        Returns:
+            Whether a stop of the pipeline run was requested.
+        """
+        return self.stop_mode is not None or self.status in {
+            ExecutionStatus.STOPPING,
+            ExecutionStatus.STOPPED,
+        }
 
     @property
     def index(self) -> int:
