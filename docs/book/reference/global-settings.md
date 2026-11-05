@@ -106,7 +106,7 @@ However, in order to improve **ZenML** and understand how it is being used, we n
 
 We use [Segment](https://segment.com) as the data aggregation library for all our analytics. However, before any events get sent to [Segment](https://segment.com), they first go through a central ZenML analytics server. This added layer allows us to put various countermeasures to incidents such as getting spammed with events and enables us to have a more optimized tracking process.
 
-The client code is entirely visible and can be seen in the [`analytics`](https://github.com/zenml-io/zenml/tree/main/src/zenml/analytics) module of our main repository.
+The client code is entirely visible and can be seen in the [`analytics`](https://github.com/zenml-io/zenml/blob/main/src/zenml/analytics/__init__.py) module of our main repository.
 
 #### If I share my email, will you spam me?
 
