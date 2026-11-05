@@ -78,18 +78,6 @@ MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE = (
 )
 
 
-def get_modal_app_name(modal_run_id: str) -> str:
-    """Build the deterministic Modal app name for a ZenML run.
-
-    Args:
-        modal_run_id: Stable ID of the Modal orchestration run.
-
-    Returns:
-        The length-limited Modal app name.
-    """
-    return f"zenml-{modal_run_id}"[:64]
-
-
 def _metadata_value(metadata: Dict[str, Any], key: str) -> Optional[str]:
     """Read a metadata value as a string.
 
@@ -432,7 +420,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         modal_run_id = (
             str(placeholder_run.id) if placeholder_run else str(uuid4())
         )
-        app_name = get_modal_app_name(modal_run_id)
+        app_name = self.config.app_name
 
         if placeholder_run:
             Client().zen_store.update_run(
@@ -480,6 +468,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             modal_client=modal_client,
             gpu_settings_field=MODAL_ORCHESTRATOR_GPU_SETTINGS_FIELD,
             gpu_settings_example=MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE,
+            tags={sandbox_utils.ORCHESTRATOR_RUN_ID_SANDBOX_TAG: modal_run_id},
         )
 
         metadata: Dict[str, MetadataType] = {
@@ -546,7 +535,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             ENV_ZENML_MODAL_RUN_ID, str(step_run_info.run_id)
         )
         app_name = os.environ.get(
-            ENV_ZENML_MODAL_APP_NAME, get_modal_app_name(modal_run_id)
+            ENV_ZENML_MODAL_APP_NAME, self.config.app_name
         )
         sandbox_environment = environment.copy()
         sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
@@ -559,6 +548,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             resource_settings=step_run_info.config.resource_settings,
             environment=sandbox_environment,
             entrypoint_command=command + args,
+            tags={
+                sandbox_utils.ORCHESTRATOR_RUN_ID_SANDBOX_TAG: modal_run_id,
+                sandbox_utils.STEP_NAME_SANDBOX_TAG: step_run_info.pipeline_step_name,
+            },
         )
 
         metadata = self.get_step_sandbox_metadata(settings, sandbox.object_id)
@@ -601,8 +594,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         image_name = self.get_image(snapshot=snapshot, step_name=step_name)
         return self._create_step_sandbox(
             app_name=os.environ.get(
-                ENV_ZENML_MODAL_APP_NAME,
-                get_modal_app_name(self.get_orchestrator_run_id()),
+                ENV_ZENML_MODAL_APP_NAME, self.config.app_name
             ),
             image_name=image_name,
             settings=settings,
@@ -611,6 +603,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             ].config.resource_settings,
             environment=environment,
             entrypoint_command=command + args,
+            tags={
+                sandbox_utils.ORCHESTRATOR_RUN_ID_SANDBOX_TAG: self.get_orchestrator_run_id(),
+                sandbox_utils.STEP_NAME_SANDBOX_TAG: step_name,
+            },
         )
 
     def _create_step_sandbox(
@@ -622,6 +618,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         resource_settings: ResourceSettings,
         environment: Dict[str, str],
         entrypoint_command: list[str],
+        tags: Dict[str, str],
     ) -> "modal.Sandbox":
         """Create a Modal sandbox for one ZenML step.
 
@@ -632,6 +629,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             resource_settings: ZenML resource constraints for the step.
             environment: Runtime environment for the sandbox.
             entrypoint_command: Command run by the sandbox.
+            tags: Modal tags identifying the run and step of the sandbox.
 
         Returns:
             The created Modal step sandbox.
@@ -668,6 +666,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             modal_client=modal_client,
             gpu_settings_field=MODAL_ORCHESTRATOR_GPU_SETTINGS_FIELD,
             gpu_settings_example=MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE,
+            tags=tags,
         )
 
     @staticmethod
