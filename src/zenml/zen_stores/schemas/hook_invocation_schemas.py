@@ -35,7 +35,10 @@ from zenml.models import (
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
@@ -253,6 +256,11 @@ class HookInvocationOutputArtifactSchema(SQLModel, table=True):
     """SQL Model that defines which artifacts are outputs of which hook."""
 
     __tablename__ = "hook_invocation_output_artifact"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__, column_names=["artifact_version_id"]
+        ),
+    )
 
     # Fields
     name: str = Field(nullable=False, primary_key=True)
