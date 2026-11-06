@@ -56,9 +56,6 @@ class GcpIntegration(Integration):
         "urllib3<2.6.0",
         "grpcio!=1.68.*,!=1.69.*,!=1.70.*",
         "gcsfs>=2022.11.0,<=2024.12.0",
-        # Keep this dependency range stable until newer releases have been
-        # validated with the GCP integration.
-        "google-api-core<2.36.0",
         "google-cloud-secret-manager",
         "google-cloud-container>=2.21.0",
         "google-cloud-artifact-registry>=1.11.3",
