@@ -24,6 +24,7 @@ import pytest
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunTriggeredByType,
     TaggableResourceTypes,
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
@@ -1328,3 +1329,100 @@ def test_tag_filter_does_not_inflate_metrics(sql_store: SqlZenStore) -> None:
     assert group.metrics["sum_dur"] == pytest.approx(30.0)
     assert group.metrics["avg_dur"] == pytest.approx(15.0)
     assert group.metrics["sum_steps"] == pytest.approx(2.0)
+
+
+def test_filter_triggered_by_deployment(sql_store: SqlZenStore) -> None:
+    """Test filtering pipeline runs by triggered_by_deployment in PipelineRunFilter (#5274)."""
+    project_id = _project_id(sql_store)
+    user_id = _default_user_id(sql_store)
+    now = datetime(2026, 1, 1, 0, 0, 0)
+
+    # Create 3 runs:
+    # 1. Standard batch run (triggered_by_type is None)
+    # 2. Deployment run (triggered_by_type is 'deployment')
+    # 3. Step run (triggered_by_type is 'step_run')
+    r_batch = PipelineRunSchema(
+        id=uuid4(),
+        project_id=project_id,
+        name="batch_run",
+        orchestrator_run_id=None,
+        start_time=now,
+        end_time=now + timedelta(seconds=10),
+        status=ExecutionStatus.COMPLETED.value,
+        index=1,
+        in_progress=False,
+        enable_heartbeat=False,
+        user_id=user_id,
+        triggered_by_type=None,
+    )
+    r_deploy = PipelineRunSchema(
+        id=uuid4(),
+        project_id=project_id,
+        name="deploy_run",
+        orchestrator_run_id=None,
+        start_time=now,
+        end_time=now + timedelta(seconds=20),
+        status=ExecutionStatus.COMPLETED.value,
+        index=2,
+        in_progress=False,
+        enable_heartbeat=False,
+        user_id=user_id,
+        triggered_by_type=PipelineRunTriggeredByType.DEPLOYMENT.value,
+    )
+    r_step = PipelineRunSchema(
+        id=uuid4(),
+        project_id=project_id,
+        name="step_run",
+        orchestrator_run_id=None,
+        start_time=now,
+        end_time=now + timedelta(seconds=30),
+        status=ExecutionStatus.COMPLETED.value,
+        index=3,
+        in_progress=False,
+        enable_heartbeat=False,
+        user_id=user_id,
+        triggered_by_type=PipelineRunTriggeredByType.STEP_RUN.value,
+    )
+
+    with Session(sql_store.engine, expire_on_commit=False) as session:
+        session.add(r_batch)
+        session.add(r_deploy)
+        session.add(r_step)
+        session.commit()
+
+    # Filter with triggered_by_deployment=None (all 3 runs)
+    all_runs = sql_store.list_runs(
+        PipelineRunFilter(project=project_id, triggered_by_deployment=None)
+    )
+    assert all_runs.total == 3
+
+    # Filter with triggered_by_deployment=False (excludes deployment runs -> 2 runs: batch + step)
+    non_deploy_runs = sql_store.list_runs(
+        PipelineRunFilter(project=project_id, triggered_by_deployment=False)
+    )
+    assert non_deploy_runs.total == 2
+    non_deploy_ids = {run.id for run in non_deploy_runs.items}
+    assert r_deploy.id not in non_deploy_ids
+    assert r_batch.id in non_deploy_ids
+    assert r_step.id in non_deploy_ids
+
+    # Filter with triggered_by_deployment=True (only deployment run -> 1 run)
+    deploy_runs = sql_store.list_runs(
+        PipelineRunFilter(project=project_id, triggered_by_deployment=True)
+    )
+    assert deploy_runs.total == 1
+    assert deploy_runs.items[0].id == r_deploy.id
+
+    # Verify RunStatistics with triggered_by_deployment=False excludes deployment invocations
+    stats_req = RunStatisticsRequest(
+        filter=PipelineRunFilter(project=project_id, triggered_by_deployment=False),
+        metrics=[
+            SimpleMetric(name="sum_dur", source="duration", aggregation="sum"),
+        ],
+    )
+    stats_res = sql_store.get_run_statistics(stats_req)
+    assert len(stats_res.groups) == 1
+    group = stats_res.groups[0]
+    assert group.run_count == 2
+    assert group.metrics["sum_dur"] == pytest.approx(40.0)  # 10s + 30s
+

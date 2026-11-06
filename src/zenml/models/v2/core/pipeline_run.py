@@ -922,6 +922,7 @@ class PipelineRunFilter(
         "linked_to_model_version_id",
         "trigger_id",
         "root_runs_only",
+        "triggered_by_deployment",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -935,6 +936,7 @@ class PipelineRunFilter(
         "in_progress",
         "templatable",
         "root_runs_only",
+        "triggered_by_deployment",
     ]
 
     name: StringFilterOption = Field(
@@ -1074,6 +1076,10 @@ class PipelineRunFilter(
     root_runs_only: Optional[bool] = Field(
         default=None,
         description="Whether to include only root runs. Ignored if False.",
+    )
+    triggered_by_deployment: Optional[bool] = Field(
+        default=None,
+        description="Whether the pipeline run was triggered by a deployment invocation.",
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -1470,6 +1476,21 @@ class PipelineRunFilter(
             custom_filters.append(
                 col(PipelineRunSchema.parent_run_id).is_(None)
             )
+
+        if self.triggered_by_deployment is not None:
+            if self.triggered_by_deployment:
+                custom_filters.append(
+                    PipelineRunSchema.triggered_by_type
+                    == PipelineRunTriggeredByType.DEPLOYMENT.value
+                )
+            else:
+                custom_filters.append(
+                    or_(
+                        col(PipelineRunSchema.triggered_by_type).is_(None),
+                        PipelineRunSchema.triggered_by_type
+                        != PipelineRunTriggeredByType.DEPLOYMENT.value,
+                    )
+                )
 
         return custom_filters
 
