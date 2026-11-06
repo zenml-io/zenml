@@ -116,22 +116,26 @@ class CodeArchive(Archivable):
                     "--cached",
                     "--recurse-submodules",
                     "--exclude-standard",
+                    "-z",
                     self._root,
                 )
                 untracked_and_modified = repo.git.ls_files(
                     "--others",
                     "--modified",
                     "--exclude-standard",
+                    "-z",
                     self._root,
                 )
-                result = tracked + "\n" + untracked_and_modified
+                result = tracked + "\0" + untracked_and_modified
             except Exception as e:
                 logger.warning(
                     "Failed to get non-ignored files from git: %s", str(e)
                 )
                 all_files = self._get_all_files(archive_root=self._root)
             else:
-                for file in result.split():
+                # NUL delimiters preserve whitespace and avoid Git's quoting
+                # of filenames containing non-ASCII or special characters.
+                for file in result.split("\0"):
                     if not file:
                         continue
                     file_path = os.path.join(repo.working_dir, file)
