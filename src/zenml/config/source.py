@@ -509,7 +509,7 @@ def _serialize_source_optionally_as_string(
     if context and context.get(SERIALIZE_AS_STRING_CONTEXT_KEY):
         return value.import_path
 
-    return handler(value, info)
+    return handler(value)
 
 
 StringSerializableSource = Annotated[
