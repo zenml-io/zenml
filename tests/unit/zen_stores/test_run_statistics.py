@@ -16,7 +16,7 @@
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 import pytest
@@ -24,6 +24,7 @@ import pytest
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
+    PipelineRunTriggeredByType,
     TaggableResourceTypes,
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
@@ -97,6 +98,8 @@ def _create_run(
     snapshot_id: Optional[UUID] = None,
     user_id: Optional[UUID] = None,
     index: int = 1,
+    triggered_by_type: Optional[PipelineRunTriggeredByType] = None,
+    pipeline_configuration: Optional[str] = None,
 ) -> UUID:
     run = PipelineRunSchema(
         id=uuid4(),
@@ -112,6 +115,11 @@ def _create_run(
         pipeline_id=pipeline_id,
         snapshot_id=snapshot_id,
         user_id=user_id,
+        pipeline_configuration=pipeline_configuration,
+        triggered_by=uuid4() if triggered_by_type else None,
+        triggered_by_type=triggered_by_type.value
+        if triggered_by_type
+        else None,
     )
     with Session(sql_store.engine, expire_on_commit=False) as session:
         session.add(run)
@@ -1328,3 +1336,101 @@ def test_tag_filter_does_not_inflate_metrics(sql_store: SqlZenStore) -> None:
     assert group.metrics["sum_dur"] == pytest.approx(30.0)
     assert group.metrics["avg_dur"] == pytest.approx(15.0)
     assert group.metrics["sum_steps"] == pytest.approx(2.0)
+
+
+def _create_mixed_trigger_runs(
+    sql_store: SqlZenStore, project_id: UUID
+) -> None:
+    """Creates 2 runs without a trigger type, 1 step-launched, 2 deployment."""
+    base = datetime(2026, 1, 1, 12, 0, 0)
+    runs = [
+        ("manual-1", None, 10),
+        ("manual-2", None, 20),
+        ("step-launched", PipelineRunTriggeredByType.STEP_RUN, 30),
+        ("deployment-1", PipelineRunTriggeredByType.DEPLOYMENT, 2),
+        ("deployment-2", PipelineRunTriggeredByType.DEPLOYMENT, 4),
+    ]
+    for name, triggered_by_type, seconds in runs:
+        _create_run(
+            sql_store,
+            project_id=project_id,
+            name=name,
+            start_time=base,
+            end_time=base + timedelta(seconds=seconds),
+            # Listing runs builds response models, which need a configuration.
+            pipeline_configuration='{"name": "test"}',
+            triggered_by_type=triggered_by_type,
+        )
+
+
+@pytest.mark.parametrize(
+    "triggered_by_deployment, expected_names",
+    [
+        (
+            None,
+            {
+                "manual-1",
+                "manual-2",
+                "step-launched",
+                "deployment-1",
+                "deployment-2",
+            },
+        ),
+        (True, {"deployment-1", "deployment-2"}),
+        (False, {"manual-1", "manual-2", "step-launched"}),
+    ],
+)
+def test_list_runs_triggered_by_deployment_filter(
+    sql_store: SqlZenStore,
+    triggered_by_deployment: Optional[bool],
+    expected_names: Set[str],
+) -> None:
+    """`False` excludes only deployment runs and keeps NULL trigger types."""
+    project_id = _project_id(sql_store)
+    _create_mixed_trigger_runs(sql_store, project_id)
+
+    runs = sql_store.list_runs(
+        PipelineRunFilter(
+            project=project_id,
+            triggered_by_deployment=triggered_by_deployment,
+        )
+    )
+
+    assert {run.name for run in runs.items} == expected_names
+
+
+def test_statistics_triggered_by_deployment_filter(
+    sql_store: SqlZenStore,
+) -> None:
+    """The filter separates batch and inference runs in the aggregates."""
+    project_id = _project_id(sql_store)
+    _create_mixed_trigger_runs(sql_store, project_id)
+
+    def stats(
+        triggered_by_deployment: Optional[bool],
+    ) -> Tuple[int, Optional[float]]:
+        response = sql_store.get_run_statistics(
+            RunStatisticsRequest(
+                filter=PipelineRunFilter(
+                    project=project_id,
+                    triggered_by_deployment=triggered_by_deployment,
+                ),
+                metrics=[
+                    SimpleMetric(
+                        name="avg_dur", source="duration", aggregation="avg"
+                    )
+                ],
+            )
+        )
+        assert len(response.groups) == 1
+        group = response.groups[0]
+        return group.run_count, group.metrics["avg_dur"]
+
+    for triggered_by_deployment, expected_count, expected_avg in [
+        (None, 5, 13.2),
+        (False, 3, 20.0),
+        (True, 2, 3.0),
+    ]:
+        run_count, avg_duration = stats(triggered_by_deployment)
+        assert run_count == expected_count
+        assert avg_duration == pytest.approx(expected_avg, abs=1e-3)
