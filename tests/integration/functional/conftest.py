@@ -11,6 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Fixtures for the functional integration tests.
+
+In CI several pytest processes ("lanes", see `scripts/test-coverage-xml.sh`) run
+these tests at the same time against one server, so a test must isolate itself:
+use `clean_project` or `clean_client` instead of the default project, and never
+assume the server holds only the objects the test created. Tests that cannot
+(they work on the server's own store, like the ones under `zen_stores`) are
+listed in `SHARED_STATE_PATHS` in that script and run in a lane of their own.
+"""
 
 import logging
 

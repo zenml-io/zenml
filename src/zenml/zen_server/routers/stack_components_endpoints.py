@@ -38,7 +38,10 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission_for_model,
+)
 from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -102,6 +105,10 @@ def create_stack_component(
         component.secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
+    if component.connector:
+        verify_permission_for_model(
+            model=service_connector, action=Action.ATTACH
+        )
 
     from zenml.stack.utils import validate_stack_component_config
 
@@ -246,6 +253,10 @@ def update_stack_component(
         component_update.add_secrets = [secret.id for secret in secrets]
 
     batch_verify_permissions_for_models(rbac_read_checks, action=Action.READ)
+    if component_update.connector:
+        verify_permission_for_model(
+            model=service_connector, action=Action.ATTACH
+        )
 
     return verify_permissions_and_update_entity(
         id=component_id,
