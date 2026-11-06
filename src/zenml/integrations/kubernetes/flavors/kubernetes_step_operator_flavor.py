@@ -54,6 +54,10 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=False,
         description="Whether to run step containers in privileged mode with extended permissions.",
     )
+    image_pull_policy: str = Field(
+        default="IfNotPresent",
+        description="Kubernetes image pull policy: Always, IfNotPresent, or Never.",
+    )
     job_name_prefix: Optional[str] = Field(
         default=None,
         description="Prefix for the job name.",

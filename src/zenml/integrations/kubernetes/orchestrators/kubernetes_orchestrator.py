@@ -609,6 +609,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             command=command,
             args=args,
             privileged=False,
+            image_pull_policy=settings.image_pull_policy,
             pod_settings=pod_settings,
             service_account_name=service_account_name,
             env=environment,
