@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # install.sh — one-line installer for ZenML and Kitaru.
 #
-#   curl -fsSL https://zenml.io/install | bash
-#   curl -fsSL https://zenml.io/install | bash -s -- --products=zenml,kitaru
+#   curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh | bash -s -- --products=zenml,kitaru
 #
 # Asks which products to install, then runs each product's own installer:
-# https://zenml.io/install-zenml (install-zenml.sh in this repository) and
-# https://zenml.io/install-kitaru (install.sh in zenml-io/kitaru). Those two
+# https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh (install-zenml.sh in this repository) and
+# https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh (install.sh in zenml-io/kitaru). Those two
 # stay the way to install one product without being asked anything, and they
 # take the product-specific options (--version, --server, --with, ...).
 #
@@ -15,9 +15,9 @@
 
 # Bash-only, but fail politely under sh/dash/zsh-as-sh. This line is POSIX so
 # it runs before the shell reaches any bash syntax below.
-if [ -z "${BASH_VERSION:-}" ]; then echo "This installer needs bash. Run: curl -fsSL https://zenml.io/install | bash" >&2; exit 1; fi
+if [ -z "${BASH_VERSION:-}" ]; then echo "This installer needs bash. Run: curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh | bash" >&2; exit 1; fi
 # macOS /bin/sh is bash in POSIX mode, which the installers it runs reject.
-case ":${SHELLOPTS:-}:" in *:posix:*) echo "This installer needs bash, not sh. Run: curl -fsSL https://zenml.io/install | bash" >&2; exit 1 ;; esac
+case ":${SHELLOPTS:-}:" in *:posix:*) echo "This installer needs bash, not sh. Run: curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh | bash" >&2; exit 1 ;; esac
 
 set -euo pipefail
 
@@ -27,9 +27,10 @@ set -euo pipefail
 ZENML_INSTALL_PRODUCTS="${ZENML_INSTALL_PRODUCTS:-}"       # zenml, kitaru or zenml,kitaru
 # Where each product's installer comes from. A local path is used as is, for
 # testing a checkout.
-ZENML_INSTALL_ZENML_URL="${ZENML_INSTALL_ZENML_URL:-https://zenml.io/install-zenml}"
-ZENML_INSTALL_KITARU_URL="${ZENML_INSTALL_KITARU_URL:-https://zenml.io/install-kitaru}"
+ZENML_INSTALL_ZENML_URL="${ZENML_INSTALL_ZENML_URL:-https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh}"
+ZENML_INSTALL_KITARU_URL="${ZENML_INSTALL_KITARU_URL:-https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh}"
 SHARED_ARGS=()                                              # passed on to each installer
+SCOPE_OVERRIDE=""
 QUIET=0
 
 usage() {
@@ -43,9 +44,13 @@ Usage: install.sh [options]
 Passed on to each installer:
   --project / --global, --pre, --no-skills, --no-modify-path, --quiet, --verbose
 
+In a shared project, Both resolves both packages together before installing.
+Kitaru requires Python >=3.11 across the project's supported Python range.
+Use --global for separate tool environments, including for server extras.
+
 For product-specific options, use that product's installer directly:
-  curl -fsSL https://zenml.io/install-zenml | bash -s -- --help
-  curl -fsSL https://zenml.io/install-kitaru | bash -s -- --help
+  curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh | bash -s -- --help
+  curl -fsSL https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh | bash -s -- --help
 
 Environment equivalents: ZENML_INSTALL_PRODUCTS, NO_COLOR.
 USAGE
@@ -59,7 +64,8 @@ while [ $# -gt 0 ]; do
     --products) shift; ZENML_INSTALL_PRODUCTS="${1:-}" ;;
     --zenml) add_products zenml ;;
     --kitaru) add_products kitaru ;;
-    --project|--global|--pre|--no-skills|--no-modify-path|--verbose) SHARED_ARGS+=("$1") ;;
+    --project|--global) SHARED_ARGS+=("$1"); SCOPE_OVERRIDE="${1#--}" ;;
+    --pre|--no-skills|--no-modify-path|--verbose) SHARED_ARGS+=("$1") ;;
     --quiet) SHARED_ARGS+=("$1"); QUIET=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
@@ -120,7 +126,7 @@ if [ -z "$ZENML_INSTALL_PRODUCTS" ]; then
   if can_ask; then
     ask_products
   else
-    die "No terminal to ask which product to install. Pass --products=zenml, --products=kitaru or --products=zenml,kitaru, or use https://zenml.io/install-zenml or https://zenml.io/install-kitaru."
+    die "No terminal to ask which product to install. Pass --products=zenml, --products=kitaru or --products=zenml,kitaru, or use https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh or https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh."
   fi
 fi
 
@@ -137,19 +143,49 @@ for product in "${requested[@]}"; do
   esac
 done
 
+uses_project_scope() {
+  local scope="${SCOPE_OVERRIDE:-$1}"
+  [ "$scope" = project ] || { [ "$scope" = auto ] && { [ -f pyproject.toml ] || [ -f uv.lock ]; }; }
+}
+
+JOINT_PROJECT=0
+ZENML_ARGS=()
+if [ "$WANT_ZENML" = 1 ] && [ "$WANT_KITARU" = 1 ] \
+  && uses_project_scope "${ZENML_INSTALL_SCOPE:-auto}" \
+  && uses_project_scope "${KITARU_SCOPE:-auto}"; then
+  JOINT_PROJECT=1
+  # Keep this spec aligned with Kitaru's installer default. One uv add checks
+  # both packages before changing the project; separate adds can leave only
+  # ZenML installed when the project's Python range excludes Kitaru.
+  KITARU_SPEC="kitaru[cli,mcp,worker]${KITARU_VERSION:+==$KITARU_VERSION}"
+  ZENML_ARGS+=("--with=$KITARU_SPEC")
+  [ "${KITARU_PRE:-0}" = 1 ] && ZENML_ARGS+=(--pre)
+fi
+
 SCRIPT="$(mktemp)"
 trap 'rm -f "$SCRIPT"' EXIT
 run_installer() {
   local name="$1" url="$2"
+  shift 2
   fetch_to_file "$url" "$SCRIPT" || die "Could not download the $name installer from $url"
   # stdin is /dev/null so the installer can never read the rest of this
   # script when it is being piped in from curl.
-  bash "$SCRIPT" "${SHARED_ARGS[@]:+${SHARED_ARGS[@]}}" </dev/null \
+  bash "$SCRIPT" "${SHARED_ARGS[@]:+${SHARED_ARGS[@]}}" "$@" </dev/null \
     || die "The $name installer failed (its message is above)."
 }
 
-[ "$WANT_ZENML" = "1" ] && run_installer ZenML "$ZENML_INSTALL_ZENML_URL"
-[ "$WANT_KITARU" = "1" ] && run_installer Kitaru "$ZENML_INSTALL_KITARU_URL"
+[ "$WANT_ZENML" = "1" ] && run_installer ZenML "$ZENML_INSTALL_ZENML_URL" "${ZENML_ARGS[@]:+${ZENML_ARGS[@]}}"
+if [ "$WANT_KITARU" = "1" ]; then
+  if [ "$JOINT_PROJECT" = 1 ]; then
+    # Kitaru still assumes a member-local .venv. Give it uv's actual absolute
+    # environment path, including when ZenML just bootstrapped uv for us.
+    PROJECT_ENV="$(PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH" uv run --no-sync --offline --no-python-downloads python -c 'from pathlib import Path; import sys; print(Path(sys.prefix).as_posix())')" \
+      || die "Could not locate the shared project environment."
+    UV_PROJECT_ENVIRONMENT="$PROJECT_ENV" run_installer Kitaru "$ZENML_INSTALL_KITARU_URL"
+  else
+    run_installer Kitaru "$ZENML_INSTALL_KITARU_URL"
+  fi
+fi
 if [ "$WANT_ZENML" = "1" ] && [ "$WANT_KITARU" = "1" ]; then
   say "${C_PURPLE}◆${C_RESET} ${C_BOLD}ZenML and Kitaru are installed.${C_RESET} Each one's next steps are above."
   say ""

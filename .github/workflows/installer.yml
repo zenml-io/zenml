@@ -5,8 +5,8 @@ name: Installer smoke
 # counts. Releases fetch the published package as a user would.
 # Kept parallel to zenml-io/kitaru's installer workflow.
 # Triggers: PRs that touch the script (path-filtered, so this does not run on
-# ordinary PRs), manual dispatch, and (once https://zenml.io/install is live)
-# the release workflow right after the package is published.
+# ordinary PRs), manual dispatch, and the release workflow after the scripts
+# reach main and the package is published.
 on:
   workflow_dispatch:
     inputs:
@@ -22,9 +22,8 @@ on:
         type: string
       source:
         description: >-
-          Where to get install.sh from: "file" runs the checked-out script
-          (PRs); "url" fetches https://zenml.io/install, the exact bytes users
-          run (release).
+          Where to get the installers from: "file" runs the checkout (PRs);
+          "url" fetches the scripts from GitHub main (release).
         required: false
         type: string
         default: file
@@ -33,7 +32,9 @@ on:
     paths:
       - install.sh
       - install-zenml.sh
-      - infra/install-worker/**
+      - scripts/test-install-zenml-environment.sh
+      - scripts/test-installer-menu.sh
+      - scripts/test-installer-skills.sh
       - .github/workflows/installer.yml
 permissions: {}
 concurrency:
@@ -116,7 +117,7 @@ jobs:
           SOURCE: ${{ inputs.source || 'file' }}
         run: |
           if [ "$SOURCE" = "url" ]; then
-            curl -fsSL https://zenml.io/install-zenml -o "$RUNNER_TEMP/install-zenml.sh"
+            curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh -o "$RUNNER_TEMP/install-zenml.sh"
           else
             cp "$GITHUB_WORKSPACE/install-zenml.sh" "$RUNNER_TEMP/install-zenml.sh"
           fi
@@ -242,7 +243,7 @@ jobs:
           fi
           echo "failed install correctly exited nonzero"
   menu:
-    # zenml.io/install asks which products to install and runs their own
+    # install.sh asks which products to install and runs their own
     # installers, which the install job above (and zenml-io/kitaru) test on
     # every OS. One runner is enough for the menu itself.
     needs: [wheel]
@@ -277,7 +278,7 @@ jobs:
           SOURCE: ${{ inputs.source || 'file' }}
         run: |
           if [ "$SOURCE" = "url" ]; then
-            curl -fsSL https://zenml.io/install -o "$RUNNER_TEMP/install.sh"
+            curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install.sh -o "$RUNNER_TEMP/install.sh"
           else
             cp "$GITHUB_WORKSPACE/install.sh" "$RUNNER_TEMP/install.sh"
           fi
@@ -298,6 +299,22 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           zenml --version
           kitaru --version
+      - name: Both installs into a shared workspace environment
+        env:
+          KITARU_SKIP_MCP: '1'
+        run: |
+          set -euxo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          cd "$(mktemp -d)"
+          printf '[tool.uv.workspace]\nmembers = ["member"]\n' > pyproject.toml
+          mkdir member
+          cd member
+          uv init --quiet -p 3.12 --name installer-member .
+          bash "$MENU_SH" --products=zenml,kitaru --project --no-skills </dev/null
+          test -x ../.venv/bin/zenml
+          test -x ../.venv/bin/kitaru
+          uv run --no-sync zenml --version
+          uv run --no-sync kitaru --version
       - name: In a terminal it asks, and installs only what was picked
         run: |
           set -euxo pipefail
@@ -309,11 +326,13 @@ jobs:
           if grep -q 'Installing ZenML' picked.log; then
             echo "installed ZenML although only Kitaru was picked" >&2; exit 1
           fi
-  worker:
-    # infra/install-worker is what serves the scripts at zenml.io/install*.
+  regressions:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      - run: node --test infra/install-worker/worker.test.mjs
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+      - run: bash scripts/test-install-zenml-environment.sh
+      - run: bash scripts/test-installer-menu.sh
+      - run: bash scripts/test-installer-skills.sh

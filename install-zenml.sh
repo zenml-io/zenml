@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # install-zenml.sh — one-line ZenML installer.
 #
-#   curl -fsSL https://zenml.io/install-zenml | bash
-#   curl -fsSL https://zenml.io/install-zenml | bash -s -- --server=https://zenml.example.com
+#   curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh | bash -s -- --server=https://zenml.example.com
 #
-# https://zenml.io/install asks whether to install ZenML, Kitaru or both, and
+# The install.sh menu asks whether to install ZenML, Kitaru or both, and
 # runs this script for ZenML.
 #
 # What it does, in order:
@@ -26,17 +26,18 @@
 #      `zenml login <url>` for a server passed with --server. Login is a
 #      decision, so the script does not make it for you.
 #
-# Nothing here needs sudo. Everything lands under $HOME. Re-running upgrades.
+# Nothing here needs sudo. Re-running upgrades ZenML and adds missing skills;
+# existing skill paths are preserved.
 #
 # Kept parallel to Kitaru's installer (zenml-io/kitaru, install.sh). Kitaru's
 # also registers an MCP server; this one does not yet.
 
 # Bash-only, but fail politely under sh/dash/zsh-as-sh. This line is POSIX so
 # it runs before the shell reaches any bash syntax below.
-if [ -z "${BASH_VERSION:-}" ]; then echo "ZenML's installer needs bash. Run: curl -fsSL https://zenml.io/install-zenml | bash" >&2; exit 1; fi
+if [ -z "${BASH_VERSION:-}" ]; then echo "ZenML's installer needs bash. Run: curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh | bash" >&2; exit 1; fi
 # macOS /bin/sh is bash in POSIX mode: BASH_VERSION is set, but POSIX mode
 # rejects the process substitutions below with a bare syntax error.
-case ":${SHELLOPTS:-}:" in *:posix:*) echo "ZenML's installer needs bash, not sh. Run: curl -fsSL https://zenml.io/install-zenml | bash" >&2; exit 1 ;; esac
+case ":${SHELLOPTS:-}:" in *:posix:*) echo "ZenML's installer needs bash, not sh. Run: curl -fsSL https://raw.githubusercontent.com/zenml-io/zenml/main/install-zenml.sh | bash" >&2; exit 1 ;; esac
 
 set -euo pipefail
 
@@ -60,7 +61,7 @@ ZENML_SUPPORTED_PYTHON=">=3.10,<3.15"
 ZENML_INSTALL_SCOPE="${ZENML_INSTALL_SCOPE:-auto}"          # auto | project | global
 ZENML_INSTALL_SKILLS_REPO="${ZENML_INSTALL_SKILLS_REPO:-zenml-io/skills}"
 ZENML_INSTALL_NO_MODIFY_PATH="${ZENML_INSTALL_NO_MODIFY_PATH:-0}"  # leave rc files alone
-ZENML_INSTALL_MIN_UV="0.5.0"                                # older uv lacks the tool flags we use
+ZENML_INSTALL_MIN_UV="0.13.4"                               # tested project Python-range resolution
 
 usage() {
   cat <<'USAGE'
@@ -83,7 +84,7 @@ Usage: install.sh [options]
   --python=X.Y        Python for the new environment (default: 3.12 for the
                       isolated one; in a project without a pinned Python, the
                       newest one ZenML supports)
-  --no-skills         Skip installing the coding-agent skills
+  --no-skills         Skip adding coding-agent skills (existing paths are kept)
   --no-modify-path    Do not edit shell rc files; you add ~/.local/bin yourself
   --quiet             Only print errors
   --verbose           Print every command
@@ -209,6 +210,9 @@ install_uv() {
   trap 'rm -f "$UV_INSTALLER"' EXIT
   fetch_to_stdout https://astral.sh/uv/install.sh >"$UV_INSTALLER" \
     || die "Could not download the uv installer from https://astral.sh/uv/install.sh"
+  if [ "$ZENML_INSTALL_NO_MODIFY_PATH" = "1" ]; then
+    export UV_NO_MODIFY_PATH=1
+  fi
   quiet sh "$UV_INSTALLER" --quiet \
     || die "uv install failed. Install it from https://docs.astral.sh/uv/ and re-run."
   rm -f "$UV_INSTALLER"; trap - EXIT
@@ -283,7 +287,6 @@ if [ "$ZENML_INSTALL_SCOPE" = "project" ]; then
   # (creating .venv if needed) and records it in pyproject.toml.
   [ -f "$PROJECT_DIR/pyproject.toml" ] || die "--project needs a pyproject.toml in $PROJECT_DIR (run \`uv init\` first, or use --global)."
   step "Installing $SPEC into this project ($PROJECT_DIR)"
-  VENV_DIR="${UV_PROJECT_ENVIRONMENT:-$PROJECT_DIR/.venv}"
   # A plain `uv add` keeps an already-locked zenml at its old version;
   # --upgrade-package is what makes re-running the installer an upgrade.
   UV_ADD=(add --quiet --upgrade-package zenml)
@@ -294,11 +297,22 @@ if [ "$ZENML_INSTALL_SCOPE" = "project" ]; then
   # wheels for yet (a source build that fails without a Rust toolchain).
   if [ -n "$ZENML_INSTALL_PYTHON" ]; then
     UV_ADD+=(--python "$ZENML_INSTALL_PYTHON")
-  elif [ ! -f "$PROJECT_DIR/.python-version" ] && [ ! -d "$VENV_DIR" ]; then
-    UV_ADD+=(--python "$ZENML_SUPPORTED_PYTHON")
+  else
+    # Let uv discover workspace environments and inherited version pins. Ignore
+    # an unrelated active virtualenv, just as `uv add` does by default.
+    PROJECT_PYTHON="$(VIRTUAL_ENV="" "$UV" python find --no-python-downloads 2>/dev/null || true)"
+    if [ -z "${UV_PYTHON:-}" ] && ! "$UV" python pin >/dev/null 2>&1 \
+      && { [ -z "$PROJECT_PYTHON" ] || [ ! -f "$(dirname "$PROJECT_PYTHON")/../pyvenv.cfg" ]; }; then
+      UV_ADD+=(--python "$ZENML_SUPPORTED_PYTHON")
+    fi
   fi
   quiet "$UV" "${UV_ADD[@]}" "$SPEC" "${EXTRA_PKGS[@]:+${EXTRA_PKGS[@]}}" \
     || die "uv add failed (uv's message is above; ZenML supports Python $ZENML_SUPPORTED_PYTHON). To install outside this project instead: --global"
+  # Ask uv for the environment it just installed into. No sync, package
+  # resolution, or Python downloads may happen during this verification.
+  VENV_DIR="$("$UV" run --no-sync --offline --no-python-downloads python -c 'import sys; print(sys.prefix)')" \
+    || die "Could not locate the project environment after uv add. Re-run with --verbose."
+  [ "$IS_WINDOWS" = "1" ] && VENV_DIR="$(cygpath -u "$VENV_DIR")"
   if [ "$IS_WINDOWS" = "1" ]; then TOOL_BIN="$VENV_DIR/Scripts"; else TOOL_BIN="$VENV_DIR/bin"; fi
   ZENML_BIN="$TOOL_BIN/zenml"
   [ -x "$ZENML_BIN" ] || [ -x "$ZENML_BIN.exe" ] || die "uv reported success but $ZENML_BIN is missing. Re-run with --verbose."
@@ -372,9 +386,10 @@ skill_name() {
 
 install_skills() {
   # Fetch the repository tarball (no git, no Node, no auth, nothing executed
-  # from the current directory) and copy every skill into each destination.
-  # Every mutation is checked; a partial copy is a failure.
-  local tmp url src skill_md name dest
+  # from the current directory). Re-runs add missing skills and preserve every
+  # existing path, including customized skills and symlinks.
+  local tmp url src skill_md name dest staging
+  SKILLS_ADDED=0; SKILLS_PRESERVED=0
   tmp="$(mktemp -d)" || return 1
   url="https://github.com/${ZENML_INSTALL_SKILLS_REPO}/archive/refs/heads/main.tar.gz"
   if ! fetch_to_stdout "$url" | tar -xzf - -C "$tmp" 2>/dev/null; then
@@ -384,8 +399,7 @@ install_skills() {
   # (skills/<plugin>/skills/<dir>/SKILL.md) whose <dir> names are generic
   # (scoping, quick-wins). Each skill is staged under its frontmatter name
   # instead (zenml-scoping, airflow-to-zenml-migration), and only when that
-  # is a plain skill name mentioning zenml: it is about to be `rm -rf`'d in
-  # each destination, so it must never match a user's own skill or a path.
+  # is a plain skill name mentioning zenml, never an arbitrary path.
   local valid_name='^[a-z0-9-]*zenml[a-z0-9-]*$'
   src="$tmp/by-name"
   mkdir "$src" || { rm -rf "$tmp"; return 1; }
@@ -402,34 +416,47 @@ install_skills() {
   for dest in "${SKILL_DESTS[@]}"; do
     mkdir -p "$dest" || { rm -rf "$tmp"; return 1; }
     for name in "${SKILL_NAMES[@]}"; do
-      rm -rf "${dest:?}/${name:?}" || { rm -rf "$tmp"; return 1; }
-      cp -R "$src/$name" "$dest/$name" || { rm -rf "$tmp"; return 1; }
+      if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+        SKILLS_PRESERVED=$((SKILLS_PRESERVED + 1))
+        continue
+      fi
+      # Copy on the destination filesystem so publishing the complete directory
+      # is a rename. A failed copy can only damage this temporary directory.
+      staging="$(mktemp -d "$dest/.zenml-skills.XXXXXX")" || { rm -rf "$tmp"; return 1; }
+      if ! cp -R "$src/$name" "$staging/$name"; then
+        rm -rf "$staging" "$tmp"; return 1
+      fi
+      if [ -e "$dest/$name" ] || [ -L "$dest/$name" ]; then
+        SKILLS_PRESERVED=$((SKILLS_PRESERVED + 1))
+        rm -rf "$staging"
+        continue
+      fi
+      # -n prevents replacement if a path appears before the rename.
+      if ! mv -n "$staging/$name" "$dest/"; then
+        rm -rf "$staging" "$tmp"; return 1
+      fi
+      if [ -e "$staging/$name" ]; then
+        SKILLS_PRESERVED=$((SKILLS_PRESERVED + 1))
+      else
+        SKILLS_ADDED=$((SKILLS_ADDED + 1))
+      fi
+      rm -rf "$staging"
     done
   done
   rm -rf "$tmp"
-  skills_complete
-}
-
-# Postcondition: every skill from the tarball is present in every destination.
-skills_complete() {
-  local dest name
-  for dest in "${SKILL_DESTS[@]}"; do
-    for name in "${SKILL_NAMES[@]}"; do
-      [ -f "$dest/$name/SKILL.md" ] || return 1
-    done
-  done
   return 0
 }
 
 SKILL_NAMES=(); SKILL_DESTS=()
+SKILLS_ADDED=0; SKILLS_PRESERVED=0
 SKILLS_INSTALLED=0
 if [ "$ZENML_INSTALL_SKIP_SKILLS" = "1" ]; then
   note "Skipping skills (--no-skills)"
 else
   step "Installing ZenML agent skills ($ZENML_INSTALL_SKILLS_REPO)"
   if install_skills; then
-    ok "${#SKILL_NAMES[@]} skills installed into ${SKILL_DESTS[*]}"
-    SKILLS_INSTALLED=1
+    ok "$SKILLS_ADDED skill copies added; $SKILLS_PRESERVED existing paths preserved in ${SKILL_DESTS[*]}"
+    if [ "$SKILLS_ADDED" -gt 0 ]; then SKILLS_INSTALLED=1; fi
   else
     warn "Could not install skills. Later: npx skills add $ZENML_INSTALL_SKILLS_REPO"
   fi
