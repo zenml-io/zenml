@@ -120,6 +120,11 @@ Former root headings covered here:
     changes users should know about.
   - `no-release-notes` for internal work, CI fixes, refactors, minor docs-only
     changes, or maintenance work.
+- Fill in the `## Upgrade impact` section from the PR template
+  (`.github/pull_request_template.md`) when a change affects people who
+  upgrade; the release automation uses it for the Compatibility page. Add the
+  `breaking-change` label when older clients or existing user code stop
+  working as before.
 
 ### Continuous Integration
 

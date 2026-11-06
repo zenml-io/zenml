@@ -77,6 +77,8 @@ ZenML Pro users can call the [Workspace API](https://cloudapi.zenml.io/) from CI
 
 After upgrading staging, assume things might break — this is normal and expected.
 
+Check the [Compatibility](https://docs.zenml.io/changelog/compatibility) page to see which client versions work with the server version you are upgrading to. Make sure your staging tests cover the exceptions it lists for your versions.
+
 At this point, the platform and data science / ML engineering teams should have mutually:
 
 * Agree on a smoke test suite of pipelines or steps
