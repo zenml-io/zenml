@@ -31,6 +31,32 @@ To create a new project using the CLI, run the following command:
 zenml project register <NAME>
 ```
 
+### Updating a project
+
+You can change a project's unique name (shown as **Project ID** in the dashboard), display name, and description:
+
+```bash
+zenml project update <CURRENT_NAME_OR_UUID> --name new-project-name --display-name "New Project Name"
+zenml project update new-project-name --description "Updated project description"
+```
+
+Only the fields you specify are changed. Pass `--description ""` to clear the description. The unique name must contain only lowercase letters, numbers, underscores, and hyphens and be at most 50 characters long.
+
+The Python SDK supports the same updates:
+
+```python
+from zenml.client import Client
+
+project = Client().update_project(
+    name_id_or_prefix="current-project-name",
+    new_name="new-project-name",
+    new_display_name="New Project Name",
+    new_description="Updated project description",
+)
+```
+
+Renaming preserves the project's UUID, resources, and run history. Use the new unique name in subsequent CLI and SDK commands. URLs and bookmarks containing the old name may stop working. The built-in `default` project's unique name cannot be changed. Workspace names cannot be changed through the CLI or SDK.
+
 ### Setting an active project
 
 After initializing your ZenML repository (`zenml init`), you should set an active project. This is similar to how you set an active stack:

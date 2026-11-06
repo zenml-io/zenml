@@ -89,3 +89,12 @@ rules:
       - weekly-agent-pipelines-test.yml
       - nightly_build.yml
       - release.yml
+
+  # dangerous-triggers: zizmor 1.31+ flags every `issue_comment` trigger.
+  # Ignored: claude.yml needs it so team members can mention @claude in PR and
+  # issue conversations. Untrusted commenters are rejected twice (the
+  # teams.yml check, then claude-code-action's own write-access check, since
+  # `allowed_non_write_users` is unset), the job token is read-only, and the
+  # checkout is the default branch rather than PR code.
+  dangerous-triggers:
+    ignore: [claude.yml]

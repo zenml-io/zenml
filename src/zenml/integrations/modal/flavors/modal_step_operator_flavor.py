@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field
+
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.integrations.modal.flavors.modal_base_flavor import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -42,6 +44,17 @@ class ModalStepOperatorConfig(
     BaseStepOperatorConfig, ModalCredentialsMixin, ModalStepOperatorSettings
 ):
     """Configuration for the Modal step operator."""
+
+    app_name: str = Field(
+        "zenml-step-operator",
+        min_length=1,
+        max_length=64,
+        description="Name of the Modal App that owns all Sandboxes created by "
+        "this step operator. Looked up (or created) in the configured Modal "
+        "environment. All step runs share this one App; each Sandbox is "
+        "tagged with its ZenML run and step so runs stay distinguishable. "
+        "Examples: 'zenml-step-operator', 'team-a-ml'",
+    )
 
     @property
     def is_remote(self) -> bool:
