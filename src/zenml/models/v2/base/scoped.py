@@ -29,7 +29,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from zenml.enums import GenericFilterOps
+from zenml.enums import GenericFilterOps, LogicalOperators
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -50,7 +50,13 @@ if TYPE_CHECKING:
 
     from zenml.models.v2.core.project import ProjectResponse
     from zenml.models.v2.core.user import UserResponse
-    from zenml.zen_stores.schemas import BaseSchema
+    from zenml.zen_stores.schemas import (
+        BaseSchema,
+        RunMetadataResourceSchema,
+        RunMetadataSchema,
+        TagResourceSchema,
+        TagSchema,
+    )
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
@@ -454,6 +460,136 @@ class ProjectScopedFilter(UserScopedFilter):
         return query
 
 
+# MySQL flattens every EXISTS subquery of an AND filter into a semi-join, and
+# the time it spends ordering the joined tables grows factorially with their
+# number: with around ten tag or run metadata predicates, planning alone can
+# outlast any request timeout. MariaDB plans such queries quickly, but its
+# execution plans degrade in a similar way. Separate subqueries are still the
+# fastest way to check a few predicates, as the database can start from the
+# most selective one, so only some predicates get one. All others are checked
+# by a single aggregated subquery, which is never flattened and therefore adds
+# nothing to the planning.
+#
+# An exact tag name is resolved through the unique tag name index before the
+# join order is planned, so any number of them stays cheap to plan and each one
+# gets its own subquery. Other tag predicates only get one while fewer than this
+# many tag predicates have one, as their tables multiply the possible join
+# orders. Run metadata predicates are always aggregated: their values are not
+# indexed and their keys are usually shared by many runs, so a separate
+# subquery rarely narrows down the runs, while next to several exact tag names
+# a single one can already add hundreds of milliseconds of planning.
+_MAX_SEPARATE_TAG_SUBQUERIES = 2
+
+
+def _get_tag_resource_type(table: Type["AnySchema"]) -> str:
+    """Get the resource type that tag links use for rows of a table.
+
+    Args:
+        table: The taggable table.
+
+    Returns:
+        The tag resource type.
+    """
+    from zenml.enums import TaggableResourceTypes
+    from zenml.zen_stores.schemas import (
+        ArtifactSchema,
+        ArtifactVersionSchema,
+        DeploymentSchema,
+        ModelSchema,
+        ModelVersionSchema,
+        PipelineRunSchema,
+        PipelineSchema,
+        PipelineSnapshotSchema,
+        RunTemplateSchema,
+    )
+
+    resource_type_mapping = {
+        ArtifactSchema: TaggableResourceTypes.ARTIFACT,
+        ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
+        ModelSchema: TaggableResourceTypes.MODEL,
+        ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
+        PipelineSchema: TaggableResourceTypes.PIPELINE,
+        PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
+        RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+        PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
+        DeploymentSchema: TaggableResourceTypes.DEPLOYMENT,
+    }
+    return resource_type_mapping[table].value
+
+
+def _generate_link_conditions(
+    table: Type["AnySchema"],
+    link_table: Union[
+        Type["TagResourceSchema"], Type["RunMetadataResourceSchema"]
+    ],
+    target_table: Union[Type["TagSchema"], Type["RunMetadataSchema"]],
+    on_clause: "ColumnElement[bool]",
+    resource_type: str,
+    predicates: List["ColumnElement[bool]"],
+    logical_operator: LogicalOperators,
+    separate_count: int,
+) -> List["ColumnElement[bool]"]:
+    """Generate conditions on the rows linked to rows of a table.
+
+    A row of the queried table satisfies a predicate if at least one of the
+    rows linked to it matches the predicate.
+
+    Args:
+        table: The queried table.
+        link_table: The table linking rows of the queried table to rows of
+            the target table.
+        target_table: The table that the predicates apply to.
+        on_clause: The join condition of the link and target tables.
+        resource_type: The resource type of the queried table in the link
+            table.
+        predicates: The predicates on rows of the target table.
+        logical_operator: The operator combining the conditions.
+        separate_count: How many of the leading predicates get their own
+            subquery when combined with AND. All others are checked by a
+            single subquery, which is only equivalent under AND, so every
+            predicate gets its own subquery when combined with OR.
+
+    Returns:
+        The conditions.
+    """
+    from sqlalchemy import case, func
+    from sqlmodel import col, exists, select
+
+    if logical_operator == LogicalOperators.OR:
+        separate_count = len(predicates)
+
+    links_of_row = (
+        col(link_table.resource_id) == table.id,
+        col(link_table.resource_type) == resource_type,
+    )
+    conditions: List["ColumnElement[bool]"] = [
+        exists(
+            select(col(link_table.id))
+            .join(target_table, on_clause)
+            .where(*links_of_row, predicate)
+        )
+        for predicate in predicates[:separate_count]
+    ]
+
+    if aggregated_predicates := predicates[separate_count:]:
+        conditions.append(
+            exists(
+                select(col(link_table.resource_id))
+                .join(target_table, on_clause)
+                .where(*links_of_row)
+                .group_by(col(link_table.resource_id))
+                .having(
+                    *(
+                        func.max(case((predicate, 1), else_=0)) == 1
+                        for predicate in aggregated_predicates
+                    )
+                )
+            )
+        )
+
+    return conditions
+
+
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
@@ -489,43 +625,57 @@ class TaggableFilter(BaseFilter):
         tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
 
         if tag_values:
-            from sqlmodel import exists, select
+            from sqlmodel import col, exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
-            for tag in tag_values:
+            resource_type = _get_tag_resource_type(table)
+            exact_predicates: List["ColumnElement[bool]"] = []
+            other_predicates: List["ColumnElement[bool]"] = []
+            # Identical expressions are redundant under both AND and OR.
+            for tag in dict.fromkeys(tag_values):
                 _, operator = self._resolve_operator(tag)
-                if operator == GenericFilterOps.IS_NULL:
-                    custom_filters.append(
-                        ~exists(
-                            select(TagResourceSchema).where(
-                                TagResourceSchema.resource_id == table.id
-                            )
+                if operator in (
+                    GenericFilterOps.IS_NULL,
+                    GenericFilterOps.IS_NOT_NULL,
+                ):
+                    is_tagged = exists(
+                        select(col(TagResourceSchema.id)).where(
+                            col(TagResourceSchema.resource_id) == table.id,
+                            col(TagResourceSchema.resource_type)
+                            == resource_type,
                         )
+                    )
+                    custom_filters.append(
+                        ~is_tagged
+                        if operator == GenericFilterOps.IS_NULL
+                        else is_tagged
                     )
                     continue
 
-                if operator == GenericFilterOps.IS_NOT_NULL:
-                    custom_filters.append(
-                        exists(
-                            select(TagResourceSchema).where(
-                                TagResourceSchema.resource_id == table.id
-                            )
-                        )
-                    )
-                    continue
-
-                condition = self.generate_custom_query_conditions_for_column(
+                predicate = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
-                exists_subquery = exists(
-                    select(TagResourceSchema)
-                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
-                    .where(
-                        TagResourceSchema.resource_id == table.id, condition
-                    )
+                if operator == GenericFilterOps.EQUALS:
+                    exact_predicates.append(predicate)
+                else:
+                    other_predicates.append(predicate)
+
+            custom_filters.extend(
+                _generate_link_conditions(
+                    table=table,
+                    link_table=TagResourceSchema,
+                    target_table=TagSchema,
+                    on_clause=col(TagSchema.id)
+                    == col(TagResourceSchema.tag_id),
+                    resource_type=resource_type,
+                    predicates=exact_predicates + other_predicates,
+                    logical_operator=self.logical_operator,
+                    separate_count=max(
+                        _MAX_SEPARATE_TAG_SUBQUERIES, len(exact_predicates)
+                    ),
                 )
-                custom_filters.append(exists_subquery)
+            )
 
         return custom_filters
 
@@ -548,39 +698,15 @@ class TaggableFilter(BaseFilter):
         if sort_by == "tags":
             from sqlmodel import asc, desc, func, select
 
-            from zenml.enums import SorterOps, TaggableResourceTypes
-            from zenml.zen_stores.schemas import (
-                ArtifactSchema,
-                ArtifactVersionSchema,
-                DeploymentSchema,
-                ModelSchema,
-                ModelVersionSchema,
-                PipelineRunSchema,
-                PipelineSchema,
-                PipelineSnapshotSchema,
-                RunTemplateSchema,
-                TagResourceSchema,
-                TagSchema,
-            )
-
-            resource_type_mapping = {
-                ArtifactSchema: TaggableResourceTypes.ARTIFACT,
-                ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
-                ModelSchema: TaggableResourceTypes.MODEL,
-                ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
-                PipelineSchema: TaggableResourceTypes.PIPELINE,
-                PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
-                RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
-                PipelineSnapshotSchema: TaggableResourceTypes.PIPELINE_SNAPSHOT,
-                DeploymentSchema: TaggableResourceTypes.DEPLOYMENT,
-            }
+            from zenml.enums import SorterOps
+            from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
             sorted_tags = (
                 select(TagResourceSchema.resource_id, TagSchema.name)
                 .join(TagSchema, TagResourceSchema.tag_id == TagSchema.id)  # type: ignore[arg-type]
                 .filter(
                     TagResourceSchema.resource_type  # type: ignore[arg-type]
-                    == resource_type_mapping[table]
+                    == _get_tag_resource_type(table)
                 )
                 .order_by(
                     asc(TagResourceSchema.resource_id), asc(TagSchema.name)
@@ -690,7 +816,7 @@ class RunMetadataFilterMixin(BaseFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.run_metadata is not None:
-            from sqlmodel import exists, select
+            from sqlmodel import and_, col
 
             from zenml.enums import MetadataResourceTypes
             from zenml.zen_stores.schemas import (
@@ -713,28 +839,18 @@ class RunMetadataFilterMixin(BaseFilter):
                 ScheduleSchema: MetadataResourceTypes.SCHEDULE,
             }
 
-            # Create an EXISTS subquery for each run_metadata filter
             metadata_entries = (
                 [self.run_metadata]
                 if isinstance(self.run_metadata, str)
                 else self.run_metadata
             )
-            for entry in metadata_entries:
+            predicates = []
+            # Identical expressions are redundant under both AND and OR.
+            for entry in dict.fromkeys(metadata_entries):
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
-
-                # Create an exists subquery
-                exists_subquery = exists(
-                    select(RunMetadataResourceSchema.id)
-                    .join(
-                        RunMetadataSchema,
-                        RunMetadataSchema.id  # type: ignore[arg-type]
-                        == RunMetadataResourceSchema.run_metadata_id,
-                    )
-                    .where(
-                        RunMetadataResourceSchema.resource_id == table.id,
-                        RunMetadataResourceSchema.resource_type
-                        == resource_type_mapping[table].value,
+                predicates.append(
+                    and_(
                         self.generate_custom_query_conditions_for_column(
                             value=key,
                             table=RunMetadataSchema,
@@ -747,6 +863,19 @@ class RunMetadataFilterMixin(BaseFilter):
                         ),
                     )
                 )
-                custom_filters.append(exists_subquery)
+
+            custom_filters.extend(
+                _generate_link_conditions(
+                    table=table,
+                    link_table=RunMetadataResourceSchema,
+                    target_table=RunMetadataSchema,
+                    on_clause=col(RunMetadataSchema.id)
+                    == col(RunMetadataResourceSchema.run_metadata_id),
+                    resource_type=resource_type_mapping[table].value,
+                    predicates=predicates,
+                    logical_operator=self.logical_operator,
+                    separate_count=0,
+                )
+            )
 
         return custom_filters
