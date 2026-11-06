@@ -30,7 +30,11 @@ on:
         default: file
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: [install.sh, .github/workflows/installer.yml]
+    paths:
+      - install.sh
+      - install-zenml.sh
+      - infra/install-worker/**
+      - .github/workflows/installer.yml
 permissions: {}
 concurrency:
   group: installer-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
@@ -107,21 +111,21 @@ jobs:
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: printf 'ZENML_INSTALL_VERSION=%s\n' "$REQUESTED_VERSION" >> "$GITHUB_ENV"
-      - name: Get the installer every step below runs
+      - name: Get the ZenML installer every step below runs
         env:
           SOURCE: ${{ inputs.source || 'file' }}
         run: |
           if [ "$SOURCE" = "url" ]; then
-            curl -fsSL https://zenml.io/install -o "$RUNNER_TEMP/install.sh"
+            curl -fsSL https://zenml.io/install-zenml -o "$RUNNER_TEMP/install-zenml.sh"
           else
-            cp "$GITHUB_WORKSPACE/install.sh" "$RUNNER_TEMP/install.sh"
+            cp "$GITHUB_WORKSPACE/install-zenml.sh" "$RUNNER_TEMP/install-zenml.sh"
           fi
-          printf 'INSTALL_SH=%s\n' "$RUNNER_TEMP/install.sh" >> "$GITHUB_ENV"
+          printf 'INSTALL_SH=%s\n' "$RUNNER_TEMP/install-zenml.sh" >> "$GITHUB_ENV"
       - name: The installer supports the same Pythons as pyproject.toml
         run: |
           spec="$(sed -n 's/^requires-python = "\(.*\)"$/\1/p' pyproject.toml)"
           grep -qF "ZENML_SUPPORTED_PYTHON=\"$spec\"" "$INSTALL_SH" \
-            || { echo "install.sh ZENML_SUPPORTED_PYTHON differs from requires-python ($spec)"; exit 1; }
+            || { echo "install-zenml.sh ZENML_SUPPORTED_PYTHON differs from requires-python ($spec)"; exit 1; }
           printf 'ZENML_PYTHON_SPEC=%s\n' "$spec" >> "$GITHUB_ENV"
       - name: Run the installer as a user would
         # The default (non-verbose) path is the one users run, so that is the
@@ -169,27 +173,49 @@ jobs:
           echo "printed hint: ${hint:-<none>}"
           eval "$hint"
           zenml --version
-      - name: The default server extra runs the local dashboard
-        if: runner.os == 'Linux'
-        # The installer prints `zenml login --local` as the first next step, so
-        # that exact command has to work out of the box. Linux only: macOS
-        # needs OBJC_DISABLE_INITIALIZE_FORK_SAFETY and Windows needs
-        # --blocking, both of which the installer prints instead.
+      - name: The printed local server command works
+        # The installer prints `zenml login --local --docker` as the first next
+        # step, so that exact command has to work with the default extras (no
+        # server dependencies). ubuntu-latest only: it has Docker, and the
+        # zenml-server image is amd64 only. macOS also needs
+        # OBJC_DISABLE_INITIALIZE_FORK_SAFETY, which the installer prints.
+        if: matrix.os == 'ubuntu-latest'
         run: |
           set -euxo pipefail
           export PATH="$HOME/.local/bin:$PATH"
+          grep -q 'zenml login --local --docker' "$RUNNER_TEMP/install.log"
+          zenml login --local --docker
+          zenml status
+          zenml logout --local
+      - name: With --extras=server the local server runs without Docker
+        if: runner.os == 'Linux'
+        run: |
+          set -euxo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          cd "$(mktemp -d)"
+          bash -s -- --extras=server --no-skills < "$INSTALL_SH" | tee server.log
+          grep -qE 'zenml login --local +local, on this machine' server.log
           zenml login --local
           zenml status
           zenml logout --local
+      - name: With --server the next step is to log in there
+        run: |
+          set -euxo pipefail
+          cd "$(mktemp -d)"
+          bash -s -- --server=https://zenml.example.com --no-skills < "$INSTALL_SH" | tee server.log
+          grep -q 'zenml login https://zenml.example.com' server.log
+          if grep -q 'login --local' server.log; then
+            echo "printed the local server option although a server was given" >&2; exit 1
+          fi
       - name: Re-run is an upgrade, not an error
         run: cd "$(mktemp -d)" && bash -s -- --no-skills --quiet < "$INSTALL_SH"
       - name: Inside a project, install into that project's environment
         # Retry like the first install step: right after a release publish,
         # some PyPI index mirrors can still miss the new version. Each attempt
         # starts from a fresh project so a failed attempt leaves nothing behind.
-        # --no-pin-python leaves the project without a chosen interpreter: true
-        # its own, uv would create .venv on the newest Python it can find or
-        # download, even one ZenML does not support yet.
+        # With --no-pin-python the project has not chosen an interpreter, and
+        # left alone uv would create .venv with the newest Python it can find
+        # or download, even one ZenML does not support yet.
         run: |
           set -euxo pipefail
           export PATH="$HOME/.local/bin:$PATH"
@@ -203,7 +229,7 @@ jobs:
             echo "project installer attempt $attempt failed; retrying in 30s" >&2
             sleep 30
           done
-          grep -q 'zenml\[server\]' pyproject.toml
+          grep -q 'zenml\[local\]' pyproject.toml
           uv run python -c 'import platform, sys; from packaging.specifiers import SpecifierSet; v = platform.python_version(); assert v in SpecifierSet(sys.argv[1]), v' "$ZENML_PYTHON_SPEC"
           uv run zenml --version
       - name: A failed install must exit nonzero (quiet path)
@@ -215,3 +241,79 @@ jobs:
             echo "installer exited 0 on a failed install" >&2; exit 1
           fi
           echo "failed install correctly exited nonzero"
+  menu:
+    # zenml.io/install asks which products to install and runs their own
+    # installers, which the install job above (and zenml-io/kitaru) test on
+    # every OS. One runner is enough for the menu itself.
+    needs: [wheel]
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        if: github.event_name == 'pull_request'
+        with:
+          name: zenml-wheel
+          path: ${{ runner.temp }}/zenml-wheel
+      - name: Point the menu at this checkout and the PR's wheel
+        if: github.event_name == 'pull_request'
+        run: |
+          wheel=$(find "$RUNNER_TEMP/zenml-wheel" -maxdepth 1 -name 'zenml-*.whl' -print -quit)
+          wheel_uri=$(python -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve().as_uri())' "$wheel")
+          printf 'zenml @ %s\n' "$wheel_uri" > "$RUNNER_TEMP/zenml-constraint.txt"
+          {
+            printf 'UV_CONSTRAINT=%s\n' "$RUNNER_TEMP/zenml-constraint.txt"
+            printf 'ZENML_INSTALL_ZENML_URL=%s\n' "$GITHUB_WORKSPACE/install-zenml.sh"
+            printf 'ZENML_INSTALL_KITARU_URL=%s\n' "https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh"
+          } >> "$GITHUB_ENV"
+      - name: Get the menu every step below runs
+        env:
+          SOURCE: ${{ inputs.source || 'file' }}
+        run: |
+          if [ "$SOURCE" = "url" ]; then
+            curl -fsSL https://zenml.io/install -o "$RUNNER_TEMP/install.sh"
+          else
+            cp "$GITHUB_WORKSPACE/install.sh" "$RUNNER_TEMP/install.sh"
+          fi
+          printf 'MENU_SH=%s\n' "$RUNNER_TEMP/install.sh" >> "$GITHUB_ENV"
+      - name: Without a terminal it asks for --products instead of guessing
+        run: |
+          if out="$(bash "$MENU_SH" </dev/null 2>&1)"; then
+            echo "the menu exited 0 without a terminal or --products" >&2; exit 1
+          fi
+          echo "$out"
+          grep -q -- '--products=' <<<"$out"
+      - name: --products=zenml,kitaru installs both
+        run: |
+          set -euxo pipefail
+          cd "$(mktemp -d)"
+          bash "$MENU_SH" --products=zenml,kitaru --no-skills </dev/null | tee both.log
+          grep -q 'ZenML and Kitaru are installed' both.log
+          export PATH="$HOME/.local/bin:$PATH"
+          zenml --version
+          kitaru --version
+      - name: In a terminal it asks, and installs only what was picked
+        run: |
+          set -euxo pipefail
+          cd "$(mktemp -d)"
+          # `script` gives the menu a terminal to ask on; "2" picks Kitaru.
+          printf '2\n' | script -qec "bash '$MENU_SH' --no-skills" /dev/null | tee picked.log
+          grep -q 'What would you like to install' picked.log
+          grep -q 'Kitaru is installed' picked.log
+          if grep -q 'Installing ZenML' picked.log; then
+            echo "installed ZenML although only Kitaru was picked" >&2; exit 1
+          fi
+  worker:
+    # infra/install-worker is what serves the scripts at zenml.io/install*.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - run: node --test infra/install-worker/worker.test.mjs
