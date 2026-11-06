@@ -13,11 +13,14 @@
 #  permissions and limitations under the License.
 """Base class for the mydumper/myloader database backup engine."""
 
+import datetime
+import json
 import os
 import shutil
 import ssl
 import subprocess
 import tempfile
+import uuid
 from typing import TYPE_CHECKING
 
 from zenml.enums import LoggingLevels, SQLDatabaseAuthMode
@@ -181,8 +184,42 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         current_level = get_logging_level()
         return LOGGING_LEVEL_TO_MYDUMPER_VERBOSITY.get(current_level, 2)
 
-    def _build_mydumper_command(self) -> list[str]:
+    def _get_completion_marker_path(self) -> str:
+        """Get the path to the backup completion marker file.
+
+        Returns:
+            The path to the completion marker file.
+        """
+        return os.path.join(self.backup_location, ".zenml_backup_complete")
+
+    def is_valid_backup(self) -> bool:
+        """Check if a valid, completed backup exists.
+
+        Returns:
+            Whether a valid completed backup exists.
+        """
+        if not os.path.isdir(self.backup_location):
+            return False
+
+        marker_path = self._get_completion_marker_path()
+        if not os.path.isfile(marker_path):
+            return False
+
+        try:
+            with open(marker_path, "r", encoding="utf-8") as f:
+                marker_data = json.load(f)
+            return marker_data.get("status") == "completed"
+        except Exception:
+            return False
+
+    def _build_mydumper_command(
+        self, output_dir: str | None = None
+    ) -> list[str]:
         """Build the mydumper command for database backup.
+
+        Args:
+            output_dir: The directory to write the backup files to. If not
+                provided, the configured backup location will be used.
 
         Returns:
             List of command-line arguments for mydumper.
@@ -191,7 +228,7 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         cmd = ["mydumper"]
         cmd.extend(self._get_mysql_connection_args())
         cmd.extend(["--database", self.url.database])
-        cmd.extend(["--outputdir", self.backup_location])
+        cmd.extend(["--outputdir", output_dir or self.backup_location])
         cmd.extend(["--verbose", str(self._get_mydumper_verbosity())])
 
         if self.config.auth_mode == SQLDatabaseAuthMode.AWS_RDS_IAM:
@@ -246,45 +283,78 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
         Raises:
             RuntimeError: If the backup process fails.
         """
-        if os.path.isdir(self.backup_location):
-            if not overwrite:
+        if os.path.exists(self.backup_location):
+            if not self.is_valid_backup():
+                logger.warning(
+                    f"An incomplete or invalid backup directory was found at "
+                    f"`{self.backup_location}`. Cleaning it up before "
+                    "creating a fresh backup."
+                )
+                self.cleanup_database_backup()
+            elif not overwrite:
                 logger.warning(
                     f"Backup directory `{self.backup_location}` already exists. "
                     "Reusing the existing backup."
                 )
                 return
+            else:
+                self.cleanup_database_backup()
 
-            self.cleanup_database_backup()
+        parent_dir = os.path.dirname(os.path.abspath(self.backup_location))
+        os.makedirs(parent_dir, exist_ok=True)
 
-        os.makedirs(self.backup_location, exist_ok=True)
+        unique_id = uuid.uuid4().hex
+        staging_dir = f"{self.backup_location}.tmp.{unique_id}"
+        os.makedirs(staging_dir, exist_ok=True)
 
-        cmd = self._build_mydumper_command()
+        try:
+            cmd = self._build_mydumper_command(output_dir=staging_dir)
 
-        logger.info(
-            f"Starting mydumper backup of database `{self.url.database}` "
-            f"to `{self.backup_location}`"
-        )
-        logger.debug(f"mydumper command: {cmd}")
-
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            env=self._get_mysql_env(),
-        )
-
-        assert process.stdout is not None
-        for line in process.stdout:
-            line = line.rstrip()
-            if line:
-                logger.info(f"[mydumper] {line}")
-
-        return_code = process.wait()
-        if return_code != 0:
-            raise RuntimeError(
-                f"mydumper backup failed with return code {return_code}"
+            logger.info(
+                f"Starting mydumper backup of database `{self.url.database}` "
+                f"to `{self.backup_location}`"
             )
+            logger.debug(f"mydumper command: {cmd}")
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=self._get_mysql_env(),
+            )
+
+            assert process.stdout is not None
+            for line in process.stdout:
+                line = line.rstrip()
+                if line:
+                    logger.info(f"[mydumper] {line}")
+
+            return_code = process.wait()
+            if return_code != 0:
+                raise RuntimeError(
+                    f"mydumper backup failed with return code {return_code}"
+                )
+
+            marker_path = os.path.join(staging_dir, ".zenml_backup_complete")
+            marker_data = {
+                "status": "completed",
+                "backup_location": self.backup_location,
+                "timestamp": datetime.datetime.now(
+                    datetime.timezone.utc
+                ).isoformat(),
+            }
+            with open(marker_path, "w", encoding="utf-8") as f:
+                json.dump(marker_data, f)
+
+            if os.path.isdir(self.backup_location):
+                shutil.rmtree(self.backup_location, ignore_errors=True)
+
+            shutil.move(staging_dir, self.backup_location)
+        except Exception:
+            if os.path.isdir(staging_dir):
+                shutil.rmtree(staging_dir, ignore_errors=True)
+            raise
 
         logger.info(
             f"Database `{self.url.database}` successfully backed up "
@@ -304,10 +374,10 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
             RuntimeError: If the backup directory does not exist or if the
                 restore process fails.
         """
-        if not os.path.isdir(self.backup_location):
+        if not self.is_valid_backup():
             raise RuntimeError(
-                f"Backup directory `{self.backup_location}` does not exist. "
-                "Please backup the database first."
+                f"Backup directory `{self.backup_location}` does not exist "
+                "or is incomplete. Please backup the database first."
             )
 
         # Drop and re-create the primary database
@@ -372,7 +442,20 @@ class MyDumperDatabaseBackupEngine(BaseDatabaseBackupEngine):
     ) -> None:
         """Delete the database backup."""
         if os.path.isdir(self.backup_location):
-            shutil.rmtree(self.backup_location)
+            shutil.rmtree(self.backup_location, ignore_errors=True)
             logger.info(
                 f"Successfully cleaned up database backup `{self.backup_location}`."
             )
+
+        # Cleanup any lingering temporary staging directories
+        parent_dir = os.path.dirname(os.path.abspath(self.backup_location))
+        if os.path.isdir(parent_dir):
+            base_name = os.path.basename(self.backup_location)
+            try:
+                for fname in os.listdir(parent_dir):
+                    if fname.startswith(f"{base_name}.tmp."):
+                        stg = os.path.join(parent_dir, fname)
+                        if os.path.isdir(stg):
+                            shutil.rmtree(stg, ignore_errors=True)
+            except OSError:
+                pass
