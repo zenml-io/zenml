@@ -473,6 +473,21 @@ class TaggableFilter(BaseFilter):
         "tags",
     ]
 
+    @model_validator(mode="after")
+    def validate_tag_operands(self) -> "TaggableFilter":
+        """Validate tag operands before query generation.
+
+        Returns:
+            The validated filter.
+
+        Raises:
+            ValueError: If a tag filter has an invalid or empty operand.
+        """  # noqa: DOC502
+        tags = [self.tags] if isinstance(self.tags, str) else self.tags
+        for tag in tags or []:
+            self._resolve_operator(tag)
+        return self
+
     def get_custom_filters(
         self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
@@ -655,9 +670,9 @@ class RunMetadataFilterMixin(BaseFilter):
             self
 
         Raises:
-            ValueError: If any entry in run_metadata does not contain a colon.
+            ValueError: If an entry has an invalid format or operand.
         """
-        if self.run_metadata:
+        if self.run_metadata is not None:
             entries = (
                 [self.run_metadata]
                 if isinstance(self.run_metadata, str)
@@ -674,6 +689,9 @@ class RunMetadataFilterMixin(BaseFilter):
                         f"oneof, notoneof, isnull, isnotnull, gte, gt, "
                         f"lte, lt, in."
                     )
+                key, value = entry.split(":", 1)
+                self._resolve_operator(key)
+                self._resolve_operator(value)
         return self
 
     def get_custom_filters(

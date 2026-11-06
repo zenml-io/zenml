@@ -467,3 +467,96 @@ def test_multiple_filters_for_same_numeric_field() -> None:
         GenericFilterOps.LT,
     ]
     assert [f.value for f in filters] == [1, 10]
+
+
+@pytest.mark.parametrize("logical_operator", list(LogicalOperators))
+@pytest.mark.parametrize("field", ["name", "tags", "run_metadata"])
+@pytest.mark.parametrize(
+    "operand",
+    [
+        "",
+        *[
+            f"{op}:"
+            for op in GenericFilterOps
+            if op
+            not in {GenericFilterOps.IS_NULL, GenericFilterOps.IS_NOT_NULL}
+        ],
+        "oneof:[]",
+        "notoneof:[]",
+    ],
+)
+@pytest.mark.parametrize("repeated", [False, True])
+def test_empty_filter_operands_fail_during_validation(
+    logical_operator: LogicalOperators,
+    field: str,
+    operand: str,
+    repeated: bool,
+) -> None:
+    """Reject empty operands before ordinary or custom SQL generation."""
+    from zenml.models import PipelineRunFilter
+
+    value = f"key:{operand}" if field == "run_metadata" else operand
+    valid = "key:valid" if field == "run_metadata" else "valid"
+    with pytest.raises(ValidationError):
+        PipelineRunFilter(
+            logical_operator=logical_operator,
+            **{field: [valid, value] if repeated else value},
+        )
+
+
+@pytest.mark.parametrize("logical_operator", list(LogicalOperators))
+@pytest.mark.parametrize("field", ["name", "tags", "run_metadata"])
+@pytest.mark.parametrize(
+    "operand",
+    [
+        "isnull:",
+        "isnotnull:",
+        "contains:value",
+        "startswith:value",
+        "endswith:value",
+        "equals:0",
+        "equals: ",
+        " ",
+        "contains: ",
+        'oneof:["value"]',
+        'notoneof:["value"]',
+        'oneof:[""]',
+        "https://example.com",
+    ],
+)
+def test_nonempty_and_valueless_filter_operands_remain_valid(
+    logical_operator: LogicalOperators, field: str, operand: str
+) -> None:
+    """Preserve operands and explicit null checks in combined filters."""
+    from zenml.models import PipelineRunFilter
+
+    value = f"key:{operand}" if field == "run_metadata" else operand
+    values = [value, "key:valid" if field == "run_metadata" else "valid"]
+    model = PipelineRunFilter(
+        logical_operator=logical_operator, **{field: values}
+    )
+    assert getattr(model, field) == values
+
+
+@pytest.mark.parametrize("value", [None, []])
+def test_omitted_filters_remain_valid(value: Any) -> None:
+    """Preserve absent filters and empty collections of filter clauses."""
+    from zenml.models import PipelineRunFilter
+
+    assert PipelineRunFilter().list_of_filters == []
+    model = PipelineRunFilter(name=value, tags=value, run_metadata=value)
+    assert model.list_of_filters == []
+
+
+@pytest.mark.parametrize("value", [0, "equals:0"])
+def test_zero_filter_operands_remain_valid(value: Any) -> None:
+    """Preserve meaningful numeric zero operands."""
+    model = SomeFilterModel(int_field=value, float_field=value)
+    assert len(model.list_of_filters) == 2
+    assert all(float(f.value) == 0 for f in model.list_of_filters)
+
+
+def test_false_filter_operand_remains_valid() -> None:
+    """Preserve meaningful boolean false operands."""
+    model = SomeFilterModel(bool_field=False)
+    assert model.list_of_filters[0].value is False
