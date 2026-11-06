@@ -25,6 +25,7 @@ from starlette.background import BackgroundTask
 from zenml.artifacts.utils import (
     load_artifact_store,
     load_artifact_visualization,
+    verify_artifact_data_is_not_shared,
 )
 from zenml.constants import (
     API,
@@ -36,6 +37,7 @@ from zenml.constants import (
     VISUALIZE,
 )
 from zenml.enums import DownloadType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -247,6 +249,7 @@ def delete_artifact_version(
         delete_from_artifact_store: Whether to also delete the artifact data.
 
     Raises:
+        IllegalOperationError: If the artifact data also holds other data.
         RuntimeError: If the artifact data cannot be deleted from the artifact
             store.
         ValueError: On metadata deletion of used versions, on data deletion of versions without artifact store.
@@ -301,8 +304,13 @@ def delete_artifact_version(
                 artifact_store_id=artifact_version.artifact_store_id,
                 zen_store=zen_store(),
             )
+            verify_artifact_data_is_not_shared(
+                artifact_version, artifact_store, zen_store()
+            )
             if artifact_store.exists(artifact_version.uri):
                 artifact_store.rmtree(artifact_version.uri)
+        except IllegalOperationError:
+            raise
         except Exception as e:
             raise RuntimeError(
                 f"Artifact data at '{artifact_version.uri}' could not be "

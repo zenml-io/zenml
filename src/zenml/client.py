@@ -5921,21 +5921,22 @@ class Client(metaclass=ClientMetaClass):
     ) -> None:
         """Delete all unused artifacts and artifact versions.
 
+        If the data of an unused artifact version also holds other data, an
+        `IllegalOperationError` is raised before anything is deleted.
+
         Args:
             only_versions: Only delete artifact versions, keeping artifacts
             delete_from_artifact_store: Delete data from artifact metadata
             project: The project name/ID to filter by.
         """
         if delete_from_artifact_store:
-            unused_artifact_versions = depaginate(
-                self.list_artifact_versions,
-                only_unused=True,
-                project=project,
-            )
-            for unused_artifact_version in unused_artifact_versions:
-                self._delete_artifact_from_artifact_store(
-                    unused_artifact_version
+            self._delete_artifacts_from_artifact_store(
+                depaginate(
+                    self.list_artifact_versions,
+                    only_unused=True,
+                    project=project,
                 )
+            )
 
         project = project or self.active_project.id
 
@@ -6153,6 +6154,10 @@ class Client(metaclass=ClientMetaClass):
         By default, this will delete only the metadata of the artifact from the
         database, not the actual object stored in the artifact store.
 
+        If the artifact data also holds other data, such as the artifact store
+        root or another version's data, an `IllegalOperationError` is raised
+        and both the data and the metadata are kept.
+
         Args:
             name_id_or_prefix: The ID of artifact version or name or prefix of the artifact to
                 delete.
@@ -6171,9 +6176,7 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
         if delete_from_artifact_store and not server_side:
-            self._delete_artifact_from_artifact_store(
-                artifact_version=artifact_version
-            )
+            self._delete_artifacts_from_artifact_store([artifact_version])
         if delete_metadata or (server_side and delete_from_artifact_store):
             self._delete_artifact_version(
                 artifact_version=artifact_version,
@@ -6233,49 +6236,70 @@ class Client(metaclass=ClientMetaClass):
                 f"'{artifact_version.artifact.name}'."
             )
 
-    def _delete_artifact_from_artifact_store(
-        self, artifact_version: ArtifactVersionResponse
+    def _delete_artifacts_from_artifact_store(
+        self, artifact_versions: Sequence[ArtifactVersionResponse]
     ) -> None:
-        """Delete an artifact object from the artifact store.
+        """Delete the data of artifact versions from their artifact stores.
+
+        All versions are checked before any data is deleted, so a version
+        whose data also holds other data stops the deletion without leaving
+        earlier versions with metadata but no data.
 
         Args:
-            artifact_version: The artifact version to delete.
+            artifact_versions: The artifact versions whose data to delete.
 
         Raises:
-            Exception: If the artifact store is inaccessible.
+            IllegalOperationError: If the data of a version also holds other
+                data.
+            Exception: If an artifact store is inaccessible.
         """
         from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+        from zenml.artifacts.utils import verify_artifact_data_is_not_shared
         from zenml.stack.stack_component import StackComponent
 
-        if not artifact_version.artifact_store_id:
-            logger.warning(
-                f"Artifact '{artifact_version.uri}' does not have an artifact "
-                "store associated with it. Skipping deletion from artifact "
-                "store."
-            )
-            return
+        artifact_stores: Dict[UUID, BaseArtifactStore] = {}
+        deletions: List[Tuple[BaseArtifactStore, str]] = []
         try:
-            artifact_store_model = self.get_stack_component(
-                component_type=StackComponentType.ARTIFACT_STORE,
-                name_id_or_prefix=artifact_version.artifact_store_id,
-            )
-            artifact_store = StackComponent.from_model(artifact_store_model)
-            assert isinstance(artifact_store, BaseArtifactStore)
-            artifact_store.rmtree(artifact_version.uri)
+            for artifact_version in artifact_versions:
+                store_id = artifact_version.artifact_store_id
+                if not store_id:
+                    logger.warning(
+                        f"Artifact '{artifact_version.uri}' does not have an "
+                        "artifact store associated with it. Skipping deletion "
+                        "from artifact store."
+                    )
+                    continue
+                if store_id not in artifact_stores:
+                    artifact_store = StackComponent.from_model(
+                        self.get_stack_component(
+                            component_type=StackComponentType.ARTIFACT_STORE,
+                            name_id_or_prefix=store_id,
+                        )
+                    )
+                    assert isinstance(artifact_store, BaseArtifactStore)
+                    artifact_stores[store_id] = artifact_store
+                verify_artifact_data_is_not_shared(
+                    artifact_version, artifact_stores[store_id], self.zen_store
+                )
+                deletions.append(
+                    (artifact_stores[store_id], artifact_version.uri)
+                )
+            for artifact_store, uri in deletions:
+                artifact_store.rmtree(uri)
+                logger.info(
+                    f"Deleted artifact '{uri}' from the artifact store."
+                )
+        except IllegalOperationError as e:
+            logger.error(str(e))
+            raise
         except Exception as e:
             logger.error(
-                f"Failed to delete artifact '{artifact_version.uri}' from the "
-                "artifact store. This might happen if your local client "
-                "does not have access to the artifact store or does not "
-                "have the required integrations installed. Full error: "
-                f"{e}"
+                "Failed to delete artifact data from the artifact store. This "
+                "might happen if your local client does not have access to "
+                "the artifact store or does not have the required "
+                f"integrations installed. Full error: {e}"
             )
             raise e
-        else:
-            logger.info(
-                f"Deleted artifact '{artifact_version.uri}' from the artifact "
-                "store."
-            )
 
     # ------------------------------ Run Metadata ------------------------------
 

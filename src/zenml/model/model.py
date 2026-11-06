@@ -423,15 +423,13 @@ class Model(BaseModel):
         mv = self._get_or_create_model_version()
 
         if not only_link and delete_from_artifact_store:
-            artifact_versions = pagination_utils.depaginate(
-                client.list_artifact_versions,
-                model_version_id=mv.id,
-                project=mv.project_id,
-            )
-            for artifact_version in artifact_versions:
-                client._delete_artifact_from_artifact_store(
-                    artifact_version=artifact_version
+            client._delete_artifacts_from_artifact_store(
+                pagination_utils.depaginate(
+                    client.list_artifact_versions,
+                    model_version_id=mv.id,
+                    project=mv.project_id,
                 )
+            )
 
         client.delete_all_model_version_artifact_links(mv.id, only_link)
 
