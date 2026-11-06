@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import random
+import string
 from typing import List
 
+import pytest
 from pydantic import BaseModel
 
 from zenml.utils import string_utils
@@ -46,6 +49,33 @@ def test_random_str_is_random() -> None:
         new_str = string_utils.random_str(16)
         assert new_str not in lst
         lst.append(new_str)
+
+
+@pytest.mark.parametrize("length", [0, 1, 16])
+def test_random_str_length_and_characters(length: int) -> None:
+    """Test that random strings have the requested length and alphabet.
+
+    Args:
+        length: Requested string length.
+    """
+    value = string_utils.random_str(length)
+
+    assert len(value) == length
+    assert set(value) <= set(string.ascii_letters)
+
+
+def test_random_str_preserves_global_random_state() -> None:
+    """Test that generating a name leaves seeded application randomness intact."""
+    original_state = random.getstate()
+    try:
+        random.seed(42)
+        seeded_state = random.getstate()
+
+        string_utils.random_str(16)
+
+        assert random.getstate() == seeded_state
+    finally:
+        random.setstate(original_state)
 
 
 def test_string_substitution() -> None:
