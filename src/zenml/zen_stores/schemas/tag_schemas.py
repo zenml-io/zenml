@@ -192,7 +192,9 @@ class TagSchema(NamedSchema, table=True):
         Returns:
             The updated `TagSchema`.
         """
-        for field, value in update.model_dump(exclude_unset=True).items():
+        for field, value in update.model_dump(
+            exclude_unset=True, exclude_none=True
+        ).items():
             if field == "color":
                 setattr(self, field, value.value)
             else:
