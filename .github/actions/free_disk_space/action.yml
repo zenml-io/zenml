@@ -1,0 +1,30 @@
+---
+name: Free disk space
+description: Deletes preinstalled toolchains on Ubuntu runners, but only when the
+  root disk is short of space
+runs:
+  using: composite
+  steps:
+    - name: Free disk space
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |-
+        # Current hosted Ubuntu images start with ~85 GB free, so the cleanup
+        # (about two minutes of deleting toolchains, in every job) is only
+        # needed if a smaller image comes back.
+        minimum_free_gb=40
+        free_gb=$(df --output=avail -BG / | tail -n 1 | tr -dc '0-9')
+        echo "Free space on /: ${free_gb}G (cleanup runs below ${minimum_free_gb}G)"
+        if [ "$free_gb" -ge "$minimum_free_gb" ]; then
+          exit 0
+        fi
+        df -h
+        # Deleting many small files is I/O latency bound, so run the removals
+        # side by side.
+        sudo rm -rf /usr/share/dotnet &
+        sudo rm -rf /usr/local/lib/android &
+        sudo rm -rf /opt/ghc &
+        sudo rm -rf /opt/hostedtoolcache/CodeQL &
+        sudo docker image prune --all --force || true
+        wait
+        df -h
