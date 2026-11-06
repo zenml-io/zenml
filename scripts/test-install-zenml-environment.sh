@@ -4,17 +4,18 @@ set -euo pipefail
 INSTALLER="${1:-$(cd "$(dirname "$0")/.." && pwd)/install-zenml.sh}"
 INSTALLER="$(cd "$(dirname "$INSTALLER")" && pwd)/$(basename "$INSTALLER")"
 command -v uv >/dev/null
-PYTHON="$(command -v python3)"
+PYTHON="$(uv python find --no-python-downloads ">=3.11,<3.14")"
 TMP="$(mktemp -d)"
 TMP="$(cd "$TMP" && pwd -P)"
 trap 'rm -rf "$TMP"' EXIT
-export UV_CACHE_DIR="$TMP/cache" UV_PYTHON_INSTALL_DIR="$TMP/python"
+UV_PYTHON_INSTALL_DIR="$(uv python dir)"
+export UV_CACHE_DIR="$TMP/cache" UV_PYTHON_INSTALL_DIR
 export UV_TOOL_DIR="$TMP/tools" UV_TOOL_BIN_DIR="$TMP/bin"
 export XDG_CONFIG_HOME="$TMP/config" XDG_DATA_HOME="$TMP/data"
 export XDG_CACHE_HOME="$TMP/xdg-cache" ZENML_CONFIG_PATH="$TMP/zenml"
 export UV_OFFLINE=1 UV_PYTHON_DOWNLOADS=never UV_NO_CONFIG=1
 export UV_NO_INDEX=1 UV_FIND_LINKS="$TMP/wheels"
-unset VIRTUAL_ENV UV_PROJECT_ENVIRONMENT UV_PYTHON
+unset VIRTUAL_ENV UV_PROJECT_ENVIRONMENT UV_PYTHON UV_PROJECT UV_WORKING_DIR UV_CONSTRAINT UV_FROZEN UV_NO_SYNC
 mkdir -p "$TMP/wheels"
 # This is an installer fixture, not a test of the real ZenML package.
 "$PYTHON" - "$TMP/wheels" <<'PY'
@@ -61,7 +62,7 @@ TOML
   (
     cd "$workspace/member"
     if [ -n "$environment" ]; then export UV_PROJECT_ENVIRONMENT="$environment"; fi
-    bash "$INSTALLER" --project --no-skills --no-modify-path --extras= --version=0.0.0 --verbose
+    "$BASH" "$INSTALLER" --project --no-skills --no-modify-path --extras= --version=0.0.0 --verbose
   ) > "$TMP/$label.log" 2>&1 || { cat "$TMP/$label.log"; return 1; }
   local expected="$workspace/.venv"
   if [ -n "$environment" ]; then
@@ -98,6 +99,7 @@ case "${2:-all}" in
         die() { exit 42; }
         export BOOTSTRAP_OBSERVED="$TMP/bootstrap-$flag"
         unset UV_NO_MODIFY_PATH
+        export ORIG_PATH="$PATH"
         export ZENML_INSTALL_NO_MODIFY_PATH="$flag"
         # shellcheck source=/dev/null
         source "$TMP/bootstrap-function.sh"

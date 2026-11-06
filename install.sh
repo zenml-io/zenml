@@ -53,15 +53,22 @@ For product-specific options, use that product's installer directly:
   curl -fsSL https://raw.githubusercontent.com/zenml-io/kitaru/main/install.sh | bash -s -- --help
 
 Environment equivalents: ZENML_INSTALL_PRODUCTS, NO_COLOR.
+Set KITARU_SKIP_MCP=1 to skip Kitaru's MCP registration.
 USAGE
 }
 
 add_products() { ZENML_INSTALL_PRODUCTS="${ZENML_INSTALL_PRODUCTS:+$ZENML_INSTALL_PRODUCTS,}$1"; }
+require_value() {
+  if [ "$#" -lt 2 ] || [ -z "$2" ] || [[ "$2" == --* ]]; then
+    printf 'Option %s requires a value.\n' "$1" >&2
+    exit 2
+  fi
+}
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --products=*) ZENML_INSTALL_PRODUCTS="${1#*=}" ;;
-    --products) shift; ZENML_INSTALL_PRODUCTS="${1:-}" ;;
+    --products=*) require_value --products "${1#*=}"; ZENML_INSTALL_PRODUCTS="${1#*=}" ;;
+    --products) require_value "$@"; shift; ZENML_INSTALL_PRODUCTS="$1" ;;
     --zenml) add_products zenml ;;
     --kitaru) add_products kitaru ;;
     --project|--global) SHARED_ARGS+=("$1"); SCOPE_OVERRIDE="${1#--}" ;;
@@ -89,8 +96,9 @@ have() { command -v "$1" >/dev/null 2>&1; }
 fetch_to_file() {
   case "$1" in
     https://*)
-      if have curl; then curl -fsSL --proto '=https' --tlsv1.2 -o "$2" "$1"
-      else wget -q --https-only -O "$2" "$1"; fi ;;
+      have curl || die "Downloading installers requires curl. Install curl and re-run."
+      curl -fsSL --proto '=https' --tlsv1.2 -o "$2" "$1" ;;
+    *://*) die "Installer URLs must use HTTPS: $1" ;;
     *) cp "$1" "$2" ;;
   esac
 }
@@ -109,7 +117,7 @@ ask_products() {
   } >/dev/tty
   for _ in 1 2 3; do
     printf '  Choose 1, 2 or 3 %s[1]%s: ' "$C_DIM" "$C_RESET" >/dev/tty
-    IFS= read -r answer </dev/tty || answer=""
+    IFS= read -r answer </dev/tty || die "Installation cancelled: no product choice received."
     case "$answer" in
       ""|1) ZENML_INSTALL_PRODUCTS=zenml; return 0 ;;
       2) ZENML_INSTALL_PRODUCTS=kitaru; return 0 ;;
@@ -120,8 +128,6 @@ ask_products() {
 }
 
 main() {
-if ! have curl && ! have wget; then die "Need curl or wget."; fi
-
 if [ -z "$ZENML_INSTALL_PRODUCTS" ]; then
   if can_ask; then
     ask_products
@@ -170,8 +176,12 @@ run_installer() {
   fetch_to_file "$url" "$SCRIPT" || die "Could not download the $name installer from $url"
   # stdin is /dev/null so the installer can never read the rest of this
   # script when it is being piped in from curl.
-  bash "$SCRIPT" "${SHARED_ARGS[@]:+${SHARED_ARGS[@]}}" "$@" </dev/null \
-    || die "The $name installer failed (its message is above)."
+  if ! bash "$SCRIPT" "${SHARED_ARGS[@]:+${SHARED_ARGS[@]}}" "$@" </dev/null; then
+    if [ "$name" = ZenML ] && [ "$JOINT_PROJECT" = 1 ]; then
+      die "The shared ZenML/Kitaru installation failed (see above). Kitaru requires Python >=3.11 throughout the project's declared range."
+    fi
+    die "The $name installer failed (its message is above)."
+  fi
 }
 
 [ "$WANT_ZENML" = "1" ] && run_installer ZenML "$ZENML_INSTALL_ZENML_URL" "${ZENML_ARGS[@]:+${ZENML_ARGS[@]}}"
@@ -179,7 +189,10 @@ if [ "$WANT_KITARU" = "1" ]; then
   if [ "$JOINT_PROJECT" = 1 ]; then
     # Kitaru still assumes a member-local .venv. Give it uv's actual absolute
     # environment path, including when ZenML just bootstrapped uv for us.
-    PROJECT_ENV="$(PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH" uv run --no-sync --offline --no-python-downloads python -c 'from pathlib import Path; import sys; print(Path(sys.prefix).as_posix())')" \
+    PROJECT_UV_DIR="${UV_INSTALL_DIR:-${CARGO_DIST_FORCE_INSTALL_DIR:-${UV_UNMANAGED_INSTALL:-${XDG_BIN_HOME:-${XDG_DATA_HOME:+$XDG_DATA_HOME/../bin}}}}}"
+    if [ "$PROJECT_UV_DIR" = "${CARGO_HOME:-$HOME/.cargo}" ]; then PROJECT_UV_DIR="$PROJECT_UV_DIR/bin"; fi
+    PROJECT_UV_PATH="${PROJECT_UV_DIR:-$HOME/.local/bin}:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+    PROJECT_ENV="$(env PATH="$PROJECT_UV_PATH" uv run --no-sync --offline --no-python-downloads python -c 'from pathlib import Path; import sys; print(Path(sys.prefix).as_posix())')" \
       || die "Could not locate the shared project environment."
     UV_PROJECT_ENVIRONMENT="$PROJECT_ENV" run_installer Kitaru "$ZENML_INSTALL_KITARU_URL"
   else

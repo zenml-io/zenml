@@ -2,14 +2,20 @@
 name: Installer smoke
 # Runs install.sh on real GitHub-hosted runners, then checks the CLI, skills,
 # and PATH. PRs install the local wheel so CI does not inflate PyPI download
-# counts. Releases fetch the published package as a user would.
+# counts. Manual URL runs fetch the published package as a user would.
 # Kept parallel to zenml-io/kitaru's installer workflow.
 # Triggers: PRs that touch the script (path-filtered, so this does not run on
-# ordinary PRs), manual dispatch, and the release workflow after the scripts
-# reach main and the package is published.
+# ordinary PRs), manual dispatch, and callers of this reusable workflow.
+# Release publishing does not currently call this workflow.
 on:
   workflow_dispatch:
     inputs:
+      source:
+        description: Run the checkout or fetch the published scripts from main
+        required: false
+        type: choice
+        options: [file, url]
+        default: file
       version:
         description: ZenML version the installer must produce (empty = latest)
         required: false
@@ -35,6 +41,8 @@ on:
       - scripts/test-install-zenml-environment.sh
       - scripts/test-installer-menu.sh
       - scripts/test-installer-skills.sh
+      - scripts/test-installer-regressions.sh
+      - pyproject.toml
       - .github/workflows/installer.yml
 permissions: {}
 concurrency:
@@ -160,10 +168,22 @@ jobs:
           test -f "$HOME/.agents/skills/zenml-quick-wins/SKILL.md"
           test -f "$HOME/.agents/skills/airflow-to-zenml-migration/SKILL.md"
           zenml status
-          # `set -o pipefail` above would fail the pipe on a missing rc file, so
-          # swallow cat's status and let grep decide.
-          { cat "$HOME/.bashrc" "$HOME/.zshenv" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" 2>/dev/null || true; } \
-            | grep -q ".local/bin" || { echo "PATH not persisted"; exit 1; }
+      - name: A fresh interactive shell discovers the installed CLI
+        run: |
+          set -euo pipefail
+          # Remove inherited installer directories so startup files must restore them.
+          IFS=: read -r -a path_entries <<< "$PATH"
+          clean_path=""
+          for path_entry in "${path_entries[@]}"; do
+            case "$path_entry" in
+              "$HOME/.local/bin"|"$HOME/.cargo/bin") ;;
+              *) clean_path="${clean_path:+$clean_path:}$path_entry" ;;
+            esac
+          done
+          case "${SHELL:-bash}" in
+            *zsh) env PATH="$clean_path" zsh -lic 'command -v zenml && zenml --version' ;;
+            *) env PATH="$clean_path" bash -lic 'command -v zenml && zenml --version' ;;
+          esac
       - name: The printed next step works in a shell that has not been restarted
         # Each step is a fresh shell with the PATH the user started with, so
         # this is the "copy the first command the installer printed" case:
@@ -327,12 +347,27 @@ jobs:
             echo "installed ZenML although only Kitaru was picked" >&2; exit 1
           fi
   regressions:
-    runs-on: ubuntu-latest
+    name: Regressions (${{ matrix.os }}, uv ${{ matrix.uv }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        uv: [0.13.4, latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
-      - run: bash scripts/test-install-zenml-environment.sh
-      - run: bash scripts/test-installer-menu.sh
-      - run: bash scripts/test-installer-skills.sh
+        with:
+          version: ${{ matrix.uv }}
+      - name: Make supported and incompatible interpreters available offline
+        run: uv python install 3.9 3.11 3.12 3.14 3.15
+      - name: Exercise real uv resolution and shell regressions
+        # /bin/bash also tests Apple's Bash 3.2 instead of a Homebrew Bash.
+        run: |-
+          /bin/bash scripts/test-install-zenml-environment.sh
+          /bin/bash scripts/test-installer-menu.sh
+          /bin/bash scripts/test-installer-skills.sh
+          /bin/bash scripts/test-installer-regressions.sh

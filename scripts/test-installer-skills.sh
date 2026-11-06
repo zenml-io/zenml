@@ -6,8 +6,11 @@ INSTALLER="${1:-$ROOT/install-zenml.sh}"
 TEST_TMP="$(mktemp -d)"
 trap 'rm -rf "$TEST_TMP"' EXIT
 # The installer runs the functions inside main; extract only their definitions.
+# shellcheck disable=SC2016  # Rewrite the disposable definitions, never HOME itself.
+sed -n '/^skill_destinations() {/,/^SKILL_NAMES=(); SKILL_DESTS=()/p' "$INSTALLER" | sed 's/\$HOME/\$TEST_HOME/g' > "$TEST_TMP/functions.sh"
+# Bash 3.2 cannot reliably source these definitions from process substitution.
 # shellcheck source=/dev/null
-source <(sed -n '/^skill_destinations() {/,/^SKILL_NAMES=(); SKILL_DESTS=()/p' "$INSTALLER")
+source "$TEST_TMP/functions.sh"
 export ZENML_INSTALL_SKILLS_REPO=fixture/skills
 mkdir -p "$TEST_TMP/archive/skills-main/skills/plugin/skills/example"
 cat > "$TEST_TMP/archive/skills-main/skills/plugin/skills/example/SKILL.md" <<'MD'
@@ -114,3 +117,40 @@ for COPY_RACE in 1 2; do
   assert_no_staging 1
 done
 echo 'PASS: preserves paths created during copying without nesting a skill'
+
+# Codex also reads ~/.agents/skills; it must not receive another copy.
+if [ "${2:-all}" != interruption ]; then
+  (
+    # shellcheck source=/dev/null
+    source "$TEST_TMP/functions.sh"
+    TEST_HOME="$TEST_TMP/home"
+    mkdir -p "$TEST_HOME/.codex"
+    # shellcheck disable=SC2329  # Called by the extracted destination function.
+    have() { return 1; }
+    [ "$(skill_destinations)" = "$TEST_HOME/.agents/skills" ]
+    echo 'PASS: Codex uses the shared skill destination without a duplicate copy'
+  )
+fi
+
+# Interrupt during the destination copy, after extraction and staging exist.
+mkdir "$TEST_TMP/interrupted-tmp"
+cat > "$TEST_TMP/interrupted.sh" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+# shellcheck source=/dev/null
+source "$TEST_TMP/functions.sh"
+fetch_to_stdout() { cat "$TEST_TMP/skills.tar.gz"; }
+skill_destinations() { printf '%s\n' "$TEST_TMP/interrupted-destination"; }
+cp() { kill -"$TEST_INTERRUPT_SIGNAL" "$$"; }
+install_skills
+SH
+export TEST_TMP ZENML_INSTALL_SKILLS_REPO
+for TEST_INTERRUPT_SIGNAL in INT TERM; do
+  export TEST_INTERRUPT_SIGNAL
+  if TMPDIR="$TEST_TMP/interrupted-tmp" "$BASH" "$TEST_TMP/interrupted.sh" > "$TEST_TMP/interrupted.log" 2>&1; then
+    echo 'FAIL: interrupted copy reported success'; exit 1
+  fi
+  [ -z "$(find "$TEST_TMP/interrupted-tmp" -mindepth 1 -print)" ]
+  [ -z "$(find "$TEST_TMP/interrupted-destination" -mindepth 1 -print)" ]
+  echo "PASS: $TEST_INTERRUPT_SIGNAL removes extraction and destination staging directories"
+done
