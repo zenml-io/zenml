@@ -189,7 +189,9 @@ deployment_type: cloud
 pro_api_url: "{{ .ZenML.pro.apiURL }}"
 pro_dashboard_url: "{{ .ZenML.pro.dashboardURL }}"
 pro_oauth2_audience: "{{ .ZenML.pro.apiURL }}"
+{{- if not .ZenML.pro.identityFromControlPlane }}
 pro_organization_id: "{{ .ZenML.pro.organizationID }}"
+{{- end }}
 pro_workspace_id: "{{ .ZenML.pro.workspaceID }}"
 {{- if .ZenML.pro.workspaceName }}
 pro_workspace_name: "{{ .ZenML.pro.workspaceName }}"
