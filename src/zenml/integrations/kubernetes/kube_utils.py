@@ -718,13 +718,16 @@ def create_and_wait_for_pod_to_start(
                         message = exception_body.get("message", "")
                 except Exception:
                     pass
-                logger.error(
+                # The conditional binds looser than `+`, so writing
+                # `text + reason if message else ""` logs "" whenever
+                # `message` is empty (timeouts and connection errors).
+                retry_message = (
                     f"Failed to create {pod_display_name}. "
                     f"Retrying in {startup_failure_delay} seconds..."
-                    "\nReason: " + message
-                    if message
-                    else ""
                 )
+                if message:
+                    retry_message += f"\nReason: {message}"
+                logger.error(retry_message)
                 time.sleep(startup_failure_delay)
                 startup_failure_delay *= startup_failure_backoff
             else:

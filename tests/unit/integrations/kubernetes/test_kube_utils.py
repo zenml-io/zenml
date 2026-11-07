@@ -279,3 +279,68 @@ def test_retry_on_api_exception_returns_after_transient_failures(
 
     assert result == "ok"
     assert len(calls) == 3
+
+
+def _create_pod_after_one_failure(
+    monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    """Retry pod creation once, then skip the startup wait."""
+    attempts = {"n": 0}
+
+    class CoreApi:
+        def create_namespaced_pod(self, **_: Any) -> None:
+            attempts["n"] += 1
+            if attempts["n"] == 1:
+                raise error
+
+    monkeypatch.setattr(kube_utils.time, "sleep", lambda _: None)
+    monkeypatch.setattr(kube_utils, "get_pod", lambda **_: None)
+
+    kube_utils.create_and_wait_for_pod_to_start(
+        core_api=CoreApi(),  # type: ignore[arg-type]
+        pod_display_name="step pod",
+        pod_name="step-pod",
+        pod_manifest=k8s_client.V1Pod(),
+        namespace="default",
+        startup_max_retries=3,
+        startup_failure_delay=1,
+        startup_failure_backoff=1,
+        startup_timeout=1,
+    )
+
+
+def test_pod_creation_retry_log_keeps_failure_text_without_api_message(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A timeout has no API body; the retry log must still name the pod."""
+    with caplog.at_level("ERROR", logger=kube_utils.logger.name):
+        _create_pod_after_one_failure(monkeypatch, TimeoutError("timed out"))
+
+    messages = [record.message for record in caplog.records]
+    assert any(
+        message.startswith("Failed to create step pod.")
+        and "Retrying in 1 seconds..." in message
+        and "Reason:" not in message
+        for message in messages
+    ), messages
+
+
+def test_pod_creation_retry_log_appends_api_reason_when_present(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """An API error body is appended and the failure text stays in the log."""
+    error = k8s_client.rest.ApiException(status=403, reason="Forbidden")
+    error.body = '{"message": "pods is forbidden"}'
+
+    with caplog.at_level("ERROR", logger=kube_utils.logger.name):
+        _create_pod_after_one_failure(monkeypatch, error)
+
+    messages = [record.message for record in caplog.records]
+    assert any(
+        message.startswith("Failed to create step pod.")
+        and "Retrying in 1 seconds..." in message
+        and message.endswith("\nReason: pods is forbidden")
+        for message in messages
+    ), messages
