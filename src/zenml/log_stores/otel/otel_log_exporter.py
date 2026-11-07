@@ -243,8 +243,10 @@ class OTLPLogExporter(LogRecordExporter):
             A dictionary representing the log data.
         """
         lr = readable.log_record
-        span_id = None if lr.span_id == 0 else lr.span_id
-        trace_id = None if lr.trace_id == 0 else lr.trace_id
+        # OTLP JSON requires fixed-width hexadecimal strings for trace IDs.
+        # https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding
+        span_id = None if lr.span_id == 0 else f"{lr.span_id:016x}"
+        trace_id = None if lr.trace_id == 0 else f"{lr.trace_id:032x}"
         body = lr.body
         log_record = dict(
             time_unix_nano=lr.timestamp,
