@@ -253,6 +253,36 @@ def shell_setup(destination: str, no_modify: bool, broken: bool = True, profile_
     assert "ZenML is installed" in output, output
 
 
+def bash_login_path(startup):
+    directory, env, _ = fixture(f"bash-login-{startup}")
+    home = Path(env["TEST_HOME"])
+    binaries = home / ".local/bin"
+    binaries.mkdir(parents=True)
+    binary = binaries / "zenml"
+    binary.write_text("#!/bin/sh\necho zenml-fixture\n")
+    binary.chmod(0o755)
+    fallback = home / ".profile"
+    fallback.write_text(f'export PATH="{binaries}:$PATH"\n')
+    fallback_before = fallback.read_bytes()
+    selected = home / startup
+    selected.write_text("RUNNER_PROFILE_LOADED=1\n")
+    if startup == ".bash_profile":
+        (home / ".bash_login").write_text("echo this-lower-priority-file-must-not-run\n")
+    definition = "persist_path() {" + source.read_text().split("persist_path() {", 1)[1].split("\n}", 1)[0] + "\n}\n"
+    definition = definition.replace("$HOME", "$TEST_HOME")
+    env.update(PATH="/usr/bin:/bin", SHELL="/bin/bash", STARTUP=startup)
+    command = definition + '\nwarn() { echo "$*" >&2; }; persist_path "$TEST_HOME/.local/bin"'
+    subprocess.run([sys.argv[3], "-eu", "-c", command], env=env, check=True, capture_output=True, text=True)
+    probe = subprocess.run([sys.argv[3], "--noprofile", "--norc", "-ec",
+                            '. "$TEST_HOME/$STARTUP"; test "$RUNNER_PROFILE_LOADED" = 1; zenml --version'],
+                           env=env, capture_output=True, text=True)
+    assert probe.returncode == 0 and "zenml-fixture" in probe.stdout, probe.stderr
+    first = selected.read_bytes()
+    subprocess.run([sys.argv[3], "-eu", "-c", command], env=env, check=True, capture_output=True, text=True)
+    assert selected.read_bytes() == first, "Rerun duplicated shell configuration"
+    assert fallback.read_bytes() == fallback_before, "Changed the inactive .profile"
+
+
 def windows_python_paths():
     directory, env, _ = fixture("windows-python-paths")
     project(directory)
@@ -280,6 +310,8 @@ def windows_python_paths():
 cases = [("capped project chooses intersection", capped_project), ("historical release floor and explicit override", historical_floor),
          ("project version transition and exact user pin", project_upgrade), ("global upgrade preserves extras, add-ons and Python", global_upgrade)]
 cases.append(("Git Bash normalizes uv Python paths", windows_python_paths))
+for startup in (".bash_profile", ".bash_login"):
+    cases.append((f"Bash login PATH with {startup}", lambda s=startup: bash_login_path(s)))
 for request in ("3.9", "3.15"):
     for mode in ("pin", "environment", "explicit", "existing-venv"):
         cases.append((f"reject Python {request} {mode}", lambda r=request, m=mode: incompatible_python(r, m)))

@@ -262,14 +262,23 @@ fi
 persist_path() {
   # `uv tool update-shell` handles bash/zsh/fish when it recognizes the login
   # shell. Cover the rest (Alpine sh, containers, CI images) by appending to
-  # ~/.profile when no rc file mentions the directory yet.
-  local dir="$1" f
-  for f in "$HOME/.bashrc" "$HOME/.zshenv" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.config/fish/config.fish"; do
-    [ -f "$f" ] && grep -Fqs "$dir" "$f" && return 0
-  done
+  # the active login profile when uv does not edit the shell configuration.
+  local dir="$1" f profile="$HOME/.profile"
+  case "${SHELL:-bash}" in
+    */bash|bash)
+      # Bash skips .profile when a readable .bash_profile or .bash_login exists.
+      for f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+        if [ -f "$f" ] && [ -r "$f" ]; then profile="$f"; break; fi
+      done
+      [ -f "$profile" ] && grep -Fqs "$dir" "$profile" && return 0 ;;
+    *)
+      for f in "$HOME/.bashrc" "$HOME/.zshenv" "$HOME/.zshrc" "$HOME/.profile" "$HOME/.bash_profile" "$HOME/.config/fish/config.fish"; do
+        [ -f "$f" ] && grep -Fqs "$dir" "$f" && return 0
+      done ;;
+  esac
   # shellcheck disable=SC2016  # $PATH must stay literal: it expands at shell startup.
-  if ! printf '\n# Added by the ZenML installer\nexport PATH="%s:$PATH"\n' "$dir" >> "$HOME/.profile"; then
-    warn "Could not update $HOME/.profile. Add this to your shell profile: export PATH=\"$dir:\$PATH\""
+  if ! printf '\n# Added by the ZenML installer\nexport PATH="%s:$PATH"\n' "$dir" >> "$profile"; then
+    warn "Could not update $profile. Add this to your shell profile: export PATH=\"$dir:\$PATH\""
   fi
   return 0
 }
