@@ -30,6 +30,46 @@ from zenml.log_stores.otel.otel_log_exporter import OTLPLogExporter
 
 
 @pytest.mark.parametrize(
+    "trace_id,span_id",
+    [
+        (0, 0),
+        (1, 2),
+        (0x0AF7651916CD43DD8448EB211C80319C, 0xB7AD6B7169203331),
+    ],
+)
+def test_otlp_exports_hex_trace_identifiers(
+    trace_id: int, span_id: int, mocker: MockerFixture
+) -> None:
+    """Encode fixed-width hex IDs, omitting IDs when no trace is present."""
+    response = requests.Response()
+    response.status_code = 200
+    post = mocker.patch("requests.Session.post", return_value=response)
+    provider = LoggerProvider()
+    provider.add_log_record_processor(
+        SimpleLogRecordProcessor(
+            OTLPLogExporter(endpoint="http://collector.invalid/v1/logs")
+        )
+    )
+    try:
+        provider.get_logger("pipeline").emit(
+            LogRecord(
+                body="correlated log", trace_id=trace_id, span_id=span_id
+            )
+        )
+        post.assert_called_once()
+        payload = json.loads(post.call_args.kwargs["data"])
+        record = payload["resource_logs"][0]["scope_logs"][0]["log_records"][0]
+        if trace_id:
+            assert record["trace_id"] == trace_id.to_bytes(16, "big").hex()
+            assert record["span_id"] == span_id.to_bytes(8, "big").hex()
+        else:
+            assert "trace_id" not in record
+            assert "span_id" not in record
+    finally:
+        provider.shutdown()
+
+
+@pytest.mark.parametrize(
     "event_attributes",
     [
         {},

@@ -91,7 +91,7 @@ def test_export_preserves_source_location(
     record = logging.LogRecord(
         name="pipeline",
         level=logging.INFO,
-        pathname="/tmp/pipeline.py",
+        pathname=__file__,
         lineno=42,
         msg="pipeline log",
         args=(),
