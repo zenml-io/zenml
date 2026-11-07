@@ -122,7 +122,7 @@ class S3ArtifactStoreConfig(
             scheme = re.search("^([a-z0-9]+://)", url)
             if scheme is None or scheme.group() not in ("https://", "http://"):
                 raise ValueError(
-                    "Invalid URL for endpoint url: {url}. Should be in the form "
+                    f"Invalid URL for endpoint url: {url}. Should be in the form "
                     "https://hostname[:port] or http://hostname[:port]."
                 )
 
