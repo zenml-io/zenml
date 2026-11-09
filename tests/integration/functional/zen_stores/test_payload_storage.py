@@ -807,6 +807,44 @@ def test_backfill_stops_before_the_payloads_a_failed_row_reads(
     assert _count_payload_columns(store)["inline"] == 0
 
 
+def test_step_list_reads_parents_the_backfill_moved_under_it(
+    store: SqlZenStore,
+) -> None:
+    """A step list is whole if the backfill runs between its queries.
+
+    It reads a step run without control columns, then the snapshot that the
+    backfill has moved since.
+    """
+    run = _start_run(store)
+    step_run = _start_step(store, run.id)
+    _make_rows_predate_payloads(store)
+    completed: List[bool] = []
+    started: List[bool] = []
+
+    def backfill_before_parents(
+        conn: Any, cursor: Any, statement: str, *args: Any
+    ) -> None:
+        # Once: the backfill selects snapshots too.
+        if not started and statement.startswith("SELECT pipeline_snapshot."):
+            started.append(True)
+            completed.append(_backfill(store).completed)
+
+    event.listen(
+        store.engine, "before_cursor_execute", backfill_before_parents
+    )
+    try:
+        steps = store.list_run_steps(
+            StepRunFilter(project=Client().active_project.id), hydrate=False
+        )
+    finally:
+        event.remove(
+            store.engine, "before_cursor_execute", backfill_before_parents
+        )
+
+    assert completed == [True]
+    assert [step.id for step in steps.items] == [step_run.id]
+
+
 def test_backfill_reads_parents_whether_inline_or_referenced(
     store: SqlZenStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:

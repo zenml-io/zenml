@@ -30,7 +30,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import defer, joinedload, selectinload
+from sqlalchemy.orm import defer, joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -516,6 +516,27 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "substitutions": json.dumps(step.config.substitutions),
         }
 
+    def _load_step_configuration_payloads(self) -> None:
+        """Load the payloads that resolving the step configuration reads.
+
+        A read without metadata loads the parents of a row without their
+        payloads (see `get_step_configuration_query_options`). Unless the
+        database gives the read a single snapshot of the data, it can load
+        this row before the backfill updates it and a parent after the
+        backfill moved the parent's payloads.
+        """
+        session = object_session(self)
+        if session is None:
+            return
+        if self.snapshot and self.snapshot.pipeline_configuration_payload_id:
+            session.refresh(
+                self.snapshot,
+                attribute_names=["pipeline_configuration_payload"],
+            )
+        config = self.dynamic_config or self.static_config
+        if config and config.config_payload_id:
+            session.refresh(config, attribute_names=["config_payload"])
+
     def get_step_configuration(
         self, pipeline_configuration: Optional[PipelineConfiguration] = None
     ) -> Step:
@@ -610,6 +631,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         step: Optional[Step] = None
         if include_metadata or self.substitutions is None:
+            if not include_metadata:
+                self._load_step_configuration_payloads()
             step = self.get_step_configuration(pipeline_configuration)
             step_type = step.config.step_type
             substitutions: Dict[str, str] = step.config.substitutions
