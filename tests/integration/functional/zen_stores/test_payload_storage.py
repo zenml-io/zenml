@@ -680,14 +680,19 @@ def _patch_store_method(
     monkeypatch.setattr(SqlZenStore, name, wrap(getattr(SqlZenStore, name)))
 
 
+@pytest.mark.parametrize("flush_each_row", [False, True])
 def test_backfill_stores_existing_rows_as_new_writes_would(
-    store: SqlZenStore,
+    store: SqlZenStore, monkeypatch: pytest.MonkeyPatch, flush_each_row: bool
 ) -> None:
     """The backfill moves inline payloads, fills control columns, flips the gate.
 
     The table, the control columns and every response end up as the writes
-    of this release made them. Small batches cover the scan across batches.
+    of this release made them. Small batches cover the scan across batches,
+    and a flush after each row the updates within a batch.
     """
+    if flush_each_row:
+        monkeypatch.setattr(sql_zen_store, "BACKFILL_READ_SIZE", 1)
+        monkeypatch.setattr(sql_zen_store, "BACKFILL_FLUSH_BYTES", 1)
     static_pipeline()
     dynamic_pipeline()
     control_values = _read_control_columns(store)

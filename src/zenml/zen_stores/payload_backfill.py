@@ -81,6 +81,11 @@ BACKFILL_ORDER: Tuple[Type[PayloadRowSchema], ...] = (
 )
 # Rows each batch reads, whether they need an update or not.
 BACKFILL_BATCH_SIZE = 200
+# Rows of a batch that are read with their payloads at a time, and the bytes
+# of inline payloads after which the rows read so far are updated. Together
+# they bound the memory a batch takes, whatever the size of its rows.
+BACKFILL_READ_SIZE = 25
+BACKFILL_FLUSH_BYTES = 64 * 1024 * 1024
 # Seconds to wait after each batch that updated rows, to spare the database.
 BACKFILL_PAUSE_SECONDS = 0.2
 # Seconds between turning payload references on and the first pass, so that

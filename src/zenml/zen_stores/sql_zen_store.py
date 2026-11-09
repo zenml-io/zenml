@@ -435,10 +435,12 @@ from zenml.zen_stores.migrations.alembic import (
 )
 from zenml.zen_stores.payload_backfill import (
     BACKFILL_BATCH_SIZE,
+    BACKFILL_FLUSH_BYTES,
     BACKFILL_GATE_SETTLE_SECONDS,
     BACKFILL_MAX_PASSES,
     BACKFILL_ORDER,
     BACKFILL_PAUSE_SECONDS,
+    BACKFILL_READ_SIZE,
     BACKFILL_SLOW_BATCH_SECONDS,
     OPTIMIZE_LOCK_WAIT_SECONDS,
     BackfillResult,
@@ -5720,7 +5722,9 @@ class SqlZenStore(BaseZenStore):
 
         Reads the rows, ends the read, stores their payloads, which needs no
         open transaction (see `_store_payloads`), and only then updates the
-        rows that still hold what was read.
+        rows that still hold what was read. Rows are read a few at a time and
+        updated once their inline payloads reach `BACKFILL_FLUSH_BYTES`, so
+        that large rows do not add up in memory.
 
         Args:
             schema: The table of the rows.
@@ -5732,15 +5736,33 @@ class SqlZenStore(BaseZenStore):
             The rows that still lack control columns because their update was
             skipped.
         """
-        updates = self._read_backfill_updates(schema, pending, result)
-        self._store_payloads(
-            [
-                value
-                for row_update in updates
+        lacking = 0
+        updates: List[BackfillRowUpdate] = []
+        inline_bytes = 0
+        for start in range(0, len(pending), BACKFILL_READ_SIZE):
+            read = self._read_backfill_updates(
+                schema, pending[start : start + BACKFILL_READ_SIZE], result
+            )
+            updates.extend(read)
+            inline_bytes += sum(
+                value.size
+                for row_update in read
                 for value in row_update.inline_values.values()
-            ]
-        )
-        return self._apply_backfill_updates(schema, updates, result)
+            )
+            last = start + BACKFILL_READ_SIZE >= len(pending)
+            if updates and (last or inline_bytes >= BACKFILL_FLUSH_BYTES):
+                self._store_payloads(
+                    [
+                        value
+                        for row_update in updates
+                        for value in row_update.inline_values.values()
+                    ]
+                )
+                lacking += self._apply_backfill_updates(
+                    schema, updates, result
+                )
+                updates, inline_bytes = [], 0
+        return lacking
 
     def _read_backfill_updates(
         self,
