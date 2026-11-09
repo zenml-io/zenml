@@ -228,8 +228,15 @@ def _ask_until_answered(api: _ProApi) -> WorkspaceIdentity:
     while True:
         try:
             return api.identity()
-        except (requests.RequestException, ValidationError, ValueError) as e:
-            print(f"Could not get the workspace identity: {e}", flush=True)
+        # A login reply without a usable token raises KeyError or TypeError.
+        except (
+            requests.RequestException,
+            ValidationError,
+            ValueError,
+            KeyError,
+            TypeError,
+        ) as e:
+            print(f"Could not get the workspace identity: {e!r}", flush=True)
             time.sleep(ASK_INTERVAL_SECONDS)
 
 
