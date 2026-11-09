@@ -23,7 +23,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    NonNegativeInt,
     PositiveFloat,
     PositiveInt,
     field_validator,
@@ -285,8 +284,8 @@ class ServerConfiguration(BaseModel):
             existing rows and turns on references for new rows. Every server
             and every other process that opens the database must run a
             release that reads references by then: releases before execution
-            payloads cannot. 0 never starts it; the backfill command can then
-            run it instead.
+            payloads cannot. 0 starts it as soon as a server does. -1 never
+            starts it; the backfill command can then run it instead.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -428,8 +427,8 @@ class ServerConfiguration(BaseModel):
         default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
         le=MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     )
-    payload_backfill_delay: NonNegativeInt = (
-        DEFAULT_ZENML_SERVER_PAYLOAD_BACKFILL_DELAY
+    payload_backfill_delay: int = Field(
+        default=DEFAULT_ZENML_SERVER_PAYLOAD_BACKFILL_DELAY, ge=-1
     )
 
     max_request_body_size_in_bytes: int = (

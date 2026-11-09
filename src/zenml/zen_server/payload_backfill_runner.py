@@ -72,7 +72,8 @@ class PayloadBackfillTask:
         Args:
             store: The store to backfill.
             delay_seconds: The seconds after the database got execution
-                payloads until the backfill is due. 0 never runs it.
+                payloads until the backfill is due. A negative value never
+                runs it.
         """
         self._store = store
         self._delay_seconds = delay_seconds
@@ -82,8 +83,8 @@ class PayloadBackfillTask:
         self._stop = threading.Event()
 
     def start(self) -> None:
-        """Start the task, unless its delay is 0."""
-        if self._delay_seconds:
+        """Start the task, unless its delay is negative."""
+        if self._delay_seconds >= 0:
             self._task = asyncio.create_task(self._run())
 
     async def shutdown(self) -> None:
