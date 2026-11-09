@@ -75,6 +75,11 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
   `feat:`.
 - Every PR must have exactly one release-notes label:
   `release-notes` or `no-release-notes`.
+- Fill in the `## Upgrade impact` section from the PR template
+  (`.github/pull_request_template.md`) when a change affects people who
+  upgrade; the release automation uses it for the Compatibility page. Add
+  the `breaking-change` label when older clients or existing user code stop
+  working as before.
 - When pushing new commits to an open PR, check whether the PR description needs
   updating.
 
