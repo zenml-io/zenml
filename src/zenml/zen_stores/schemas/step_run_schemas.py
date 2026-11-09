@@ -63,8 +63,8 @@ from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.execution_payload_schemas import (
     ExecutionPayloadSchema,
     PayloadColumn,
-    get_payload_text,
     payload_relationship_kwargs,
+    resolve_payload,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
@@ -133,8 +133,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     cache_key: Optional[str] = Field(nullable=True)
     cache_expires_at: Optional[datetime] = Field(nullable=True)
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
-    source_code_payload_id: Optional[UUID] = None
-    docstring_payload_id: Optional[UUID] = None
+    source_code_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
+    docstring_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
     code_hash: Optional[str] = Field(nullable=True)
     version: int = Field(nullable=False)
     is_retriable: bool = Field(nullable=False)
@@ -305,9 +309,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The source code, if the step run has one.
         """
-        if self.source_code_payload_id is None:
-            return self.source_code
-        return get_payload_text(self.source_code_payload, self, "source_code")
+        return resolve_payload(self, "source_code", self.source_code)
 
     @property
     def resolved_docstring(self) -> Optional[str]:
@@ -316,9 +318,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The docstring, if the step run has one.
         """
-        if self.docstring_payload_id is None:
-            return self.docstring
-        return get_payload_text(self.docstring_payload, self, "docstring")
+        return resolve_payload(self, "docstring", self.docstring)
 
     @classmethod
     def get_step_configuration_query_options(

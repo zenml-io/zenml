@@ -67,3 +67,26 @@ def test_pretty_print_deployment_does_not_truncate_endpoint_url(
         if "Endpoint URL" in line
     )
     assert url in endpoint_line
+
+
+def test_get_parsed_labels_keeps_equals_signs_in_values() -> None:
+    """Tests that label values may contain `=` characters."""
+    labels = ["url=https://example.com/?a=b", "token=YWJj=="]
+
+    assert cli_utils.get_parsed_labels(labels) == {
+        "url": "https://example.com/?a=b",
+        "token": "YWJj==",
+    }
+    assert cli_utils.get_parsed_labels(labels, allow_label_only=True) == {
+        "url": "https://example.com/?a=b",
+        "token": "YWJj==",
+    }
+
+
+def test_get_parsed_labels_allows_label_only() -> None:
+    """Tests that labels without a value are only accepted if allowed."""
+    assert cli_utils.get_parsed_labels(["key"], allow_label_only=True) == {
+        "key": None
+    }
+    with pytest.raises(ValueError):
+        cli_utils.get_parsed_labels(["key"])

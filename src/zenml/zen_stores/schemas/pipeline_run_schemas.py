@@ -76,8 +76,8 @@ from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.execution_payload_schemas import (
     ExecutionPayloadSchema,
     PayloadColumn,
-    get_payload_text,
     payload_relationship_kwargs,
+    resolve_payload,
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -167,7 +167,9 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     orchestrator_environment: Optional[str] = Field(
         sa_column=Column(TEXT, nullable=True)
     )
-    orchestrator_environment_payload_id: Optional[UUID] = None
+    orchestrator_environment_payload_id: Optional[str] = Field(
+        default=None, sa_column=Column(String(64), nullable=True)
+    )
 
     PAYLOAD_COLUMNS: ClassVar[Tuple[PayloadColumn, ...]] = (
         PayloadColumn(name="orchestrator_environment", nullable=True),
@@ -417,12 +419,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The orchestrator environment JSON, if the run has one.
         """
-        if self.orchestrator_environment_payload_id is None:
-            return self.orchestrator_environment
-        return get_payload_text(
-            self.orchestrator_environment_payload,
-            self,
-            "orchestrator_environment",
+        return resolve_payload(
+            self, "orchestrator_environment", self.orchestrator_environment
         )
 
     @classmethod

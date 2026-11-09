@@ -67,10 +67,8 @@ def upgrade() -> None:
     dialect = op.get_bind().dialect
     op.create_table(
         "execution_payload",
-        sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("created", sa.DateTime(), nullable=False),
-        sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("sha256", sa.String(length=64), nullable=False),
+        sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("size", sa.BigInteger(), nullable=False),
         sa.Column(
             "value",
@@ -79,15 +77,14 @@ def upgrade() -> None:
             ),
             nullable=False,
         ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("sha256", name="unique_execution_payload_sha256"),
+        sa.PrimaryKeyConstraint("sha256"),
     )
     for table, columns in PAYLOAD_REFERENCE_COLUMNS.items():
         _add_columns(
             dialect,
             table,
             [
-                sa.Column(column, sa.Uuid(), nullable=True)
+                sa.Column(column, sa.String(length=64), nullable=True)
                 for column in columns
             ],
         )

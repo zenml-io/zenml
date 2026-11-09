@@ -24,7 +24,16 @@ import asyncio
 import os
 import threading
 from datetime import timedelta
-from typing import Any, Callable, Dict, Iterator, List, Tuple, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 from uuid import UUID, uuid4
 
 import pytest
@@ -32,6 +41,22 @@ from sqlalchemy import event, update
 from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, col, select
 
+from tests.harness.deployment.base import (
+    MARIADB_ROOT_PASSWORD,
+    MYSQL_DEFAULT_PASSWORD,
+    MYSQL_DEFAULT_PORT,
+)
+from tests.harness.deployment.client_mariadb import (
+    ClientMariaDBTestDeployment,
+)
+from tests.harness.deployment.client_mysql import ClientMySQLTestDeployment
+from tests.harness.deployment.server_docker_mariadb import (
+    ServerDockerComposeMariaDBTestDeployment,
+)
+from tests.harness.deployment.server_docker_mysql import (
+    ServerDockerComposeMySQLTestDeployment,
+)
+from tests.harness.harness import TestHarness
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config.pipeline_spec import PipelineSpec
@@ -43,6 +68,7 @@ from zenml.constants import (
     TEXT_FIELD_MAX_LENGTH,
 )
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import EntityExistsError
 from zenml.models import (
     PipelineBuildRequest,
     PipelineRequest,
@@ -120,17 +146,46 @@ def dynamic_pipeline() -> None:
     child_pipeline(value.load())
 
 
+def _deployment_database_url() -> Optional[str]:
+    """The MySQL or MariaDB server of the test deployment, if it has one."""
+    deployment = TestHarness().active_deployment
+    if isinstance(deployment, ClientMySQLTestDeployment):
+        container, password = deployment.container, MYSQL_DEFAULT_PASSWORD
+    elif isinstance(deployment, ServerDockerComposeMySQLTestDeployment):
+        container, password = (
+            deployment.mysql_container,
+            MYSQL_DEFAULT_PASSWORD,
+        )
+    elif isinstance(deployment, ClientMariaDBTestDeployment):
+        container, password = deployment.container, MARIADB_ROOT_PASSWORD
+    elif isinstance(deployment, ServerDockerComposeMariaDBTestDeployment):
+        container, password = (
+            deployment.mariadb_container,
+            MARIADB_ROOT_PASSWORD,
+        )
+    else:
+        return None
+    assert container is not None
+    port = container.ports[f"{MYSQL_DEFAULT_PORT}/tcp"][0]["HostPort"]
+    return f"mysql://root:{password}@127.0.0.1:{port}"
+
+
 @pytest.fixture
 def store(
     monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> SqlZenStore:
     """The store of a clean client.
 
-    With `ZENML_TEST_PAYLOAD_MYSQL_URL` set to a MySQL or MariaDB server
-    (`mysql://user:password@host:port`), each test gets a new database there
-    instead of the clean client's SQLite one.
+    If the test deployment runs a MySQL or MariaDB server, each test gets a
+    new database there instead of the clean client's SQLite one, so that the
+    database environments of CI cover these tests. Setting
+    `ZENML_TEST_PAYLOAD_MYSQL_URL` (`mysql://user:password@host:port`) picks
+    another server.
     """
-    mysql_url = os.environ.get("ZENML_TEST_PAYLOAD_MYSQL_URL")
+    mysql_url = (
+        os.environ.get("ZENML_TEST_PAYLOAD_MYSQL_URL")
+        or _deployment_database_url()
+    )
     if mysql_url:
         monkeypatch.setenv(
             f"{ENV_ZENML_STORE_PREFIX}URL",
@@ -255,7 +310,9 @@ def _move_payloads_inline(store: SqlZenStore, every_other: bool) -> None:
     with Session(store.engine) as session:
         values = dict(
             session.exec(
-                select(ExecutionPayloadSchema.id, ExecutionPayloadSchema.value)
+                select(
+                    ExecutionPayloadSchema.sha256, ExecutionPayloadSchema.value
+                )
             ).all()
         )
         for schema in PAYLOAD_SCHEMAS:
@@ -393,6 +450,46 @@ def test_replaced_placeholder_run_references_its_new_environment(
     assert created and run.id == placeholder.id
     assert run.orchestrator_environment == stored
     assert store.get_run(run.id).orchestrator_environment == stored
+
+
+def test_rejected_requests_store_no_payloads(
+    store: SqlZenStore,
+) -> None:
+    """Snapshot and run requests that fail validation store no payloads."""
+    _set_payload_references(store, True)
+    client = Client()
+    pipeline_id = store.create_pipeline(
+        PipelineRequest(name="pipeline", project=client.active_project.id)
+    ).id
+
+    def request(**kwargs: Any) -> PipelineSnapshotRequest:
+        fields: Dict[str, Any] = dict(
+            project=client.active_project.id,
+            stack=client.active_stack_model.id,
+            pipeline=pipeline_id,
+            run_name_template="",
+            pipeline_configuration={"name": "pipeline"},
+            client_version="test",
+            server_version="test",
+            source_code=uuid4().hex,
+        )
+        return PipelineSnapshotRequest(**{**fields, **kwargs})
+
+    def payload_count() -> int:
+        with Session(store.engine) as session:
+            return len(session.exec(select(ExecutionPayloadSchema)).all())
+
+    store.create_snapshot(request(name="taken"))
+    stored = payload_count()
+
+    with pytest.raises(KeyError):
+        store.create_snapshot(request(stack=uuid4()))
+    with pytest.raises(EntityExistsError):
+        store.create_snapshot(request(name="taken"))
+    with pytest.raises(KeyError):
+        store.get_or_create_run(_run_request(uuid4()))
+
+    assert payload_count() == stored
 
 
 @pytest.fixture

@@ -772,6 +772,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         self._sanitize_config()
         return project
 
+    def refresh_active_project(self, project: "ProjectResponse") -> None:
+        """Refresh the cached active project without changing its selection.
+
+        Args:
+            project: Updated project to cache if it matches the active project.
+        """
+        if self._active_project and self._active_project.id == project.id:
+            self._active_project = project
+
     def set_active_stack(self, stack: "StackResponse") -> None:
         """Set the active stack for the local client.
 

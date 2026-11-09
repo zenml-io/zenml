@@ -5212,87 +5212,78 @@ class SqlZenStore(BaseZenStore):
             ).first()
         return bool(enabled)
 
-    def _store_payloads(
-        self, values: Collection[PayloadValue]
-    ) -> Dict[str, UUID]:
+    def _store_payloads(self, values: Collection[PayloadValue]) -> None:
         """Store each distinct payload value once.
 
         Each missing value is inserted and committed in a short transaction of
         its own, before the transaction that writes the rows referencing it.
-        Inside that transaction, a concurrent writer of the same value could
-        not be resolved: under REPEATABLE READ, the re-read after the
-        duplicate-key error does not see the row the other writer committed.
         So this must run while the caller's session holds no transaction,
         which also keeps a request to one pooled connection at a time.
+        Inserting into the transaction of the referencing rows instead failed
+        with error 1020 on MariaDB 12.3 in concurrency tests, since that
+        transaction always reads first. It would also hold the lock on a new
+        value until that transaction commits, so that every concurrent writer
+        of the value waits for the whole transaction. After the existence
+        check, ON DUPLICATE KEY UPDATE would do no more than a plain INSERT
+        whose duplicate-key error is caught.
 
         Args:
             values: The payload values.
-
-        Returns:
-            The ID of the payload row of each value, by its SHA-256.
         """
         values_by_sha256 = {value.sha256: value for value in values}
         if not values_by_sha256:
-            return {}
+            return
         with Session(self.engine) as session:
-            payload_ids = self._get_payload_ids(session, values_by_sha256)
+            # Most values are stored already, and the probe only sends their
+            # hashes.
+            stored = session.exec(
+                select(ExecutionPayloadSchema.sha256).where(
+                    col(ExecutionPayloadSchema.sha256).in_(
+                        list(values_by_sha256)
+                    )
+                )
+            ).all()
+            # MariaDB 12.3 enables `innodb_snapshot_isolation` by default.
+            # With it, an insert that meets a row committed after an earlier
+            # read of its transaction fails with error 1020 instead of a
+            # duplicate-key error. So no insert shares a transaction with
+            # the probe.
+            session.commit()
             # Sorted, as in the measured write shape: concurrent writers of
             # several shared values then reach them in the same order.
-            for sha256 in sorted(values_by_sha256.keys() - payload_ids.keys()):
-                payload_ids[sha256] = self._insert_payload(
-                    session, values_by_sha256[sha256]
-                )
-        return payload_ids
+            for sha256 in sorted(values_by_sha256.keys() - set(stored)):
+                self._insert_payload(session, values_by_sha256[sha256])
 
-    @staticmethod
-    def _get_payload_ids(
-        session: Session, sha256s: Collection[str]
-    ) -> Dict[str, UUID]:
-        """Get the IDs of the stored payloads with the given hashes.
+    def _insert_payload(self, session: Session, value: PayloadValue) -> None:
+        """Insert a payload value, unless a concurrent writer stores it first.
+
+        This is a plain INSERT because INSERT IGNORE would store a truncated
+        value without an error.
 
         Args:
-            session: The session to use.
-            sha256s: The SHA-256 hashes of the values.
-
-        Returns:
-            The ID of each stored payload, by its SHA-256.
-        """
-        rows = session.exec(
-            select(
-                ExecutionPayloadSchema.sha256, ExecutionPayloadSchema.id
-            ).where(col(ExecutionPayloadSchema.sha256).in_(sha256s))
-        ).all()
-        return {sha256: payload_id for sha256, payload_id in rows}
-
-    def _insert_payload(self, session: Session, value: PayloadValue) -> UUID:
-        """Insert a payload value, or find the row a concurrent writer added.
-
-        Args:
-            session: The session of the payload rows. Its transaction may
-                only hold reads of payload rows, never entity writes.
+            session: The session of the payload rows. It must hold no
+                transaction, see `_store_payloads`.
             value: The payload value.
-
-        Returns:
-            The ID of the payload row holding the value.
 
         Raises:
             OperationalError: If the database fails for another reason than a
                 deadlock.
-            EntityCreationError: If the value could neither be inserted nor
-                found.
+            EntityCreationError: If every attempt ended in a deadlock.
         """
         for attempt in range(MAX_RETRIES_FOR_PAYLOAD_CREATION):
-            payload = ExecutionPayloadSchema(
-                sha256=value.sha256, size=value.size, value=value.text
+            session.add(
+                ExecutionPayloadSchema(
+                    sha256=value.sha256, size=value.size, value=value.text
+                )
             )
-            payload_id = payload.id
-            session.add(payload)
             try:
                 session.commit()
-                return payload_id
+                return
             except IntegrityError:
-                # Another writer committed the same value first.
+                # The duplicate key is only reported once the other writer of
+                # the value committed. If it rolls back, this insert succeeds.
                 session.rollback()
+                return
             except OperationalError as error:
                 session.rollback()
                 # Waiters on a value whose first writer rolled back can
@@ -5307,18 +5298,6 @@ class SqlZenStore(BaseZenStore):
                     MAX_RETRIES_FOR_PAYLOAD_CREATION,
                 )
                 time.sleep(exponential_backoff_with_jitter(attempt))
-            # The rollback ended the read view, so this sees the row that a
-            # concurrent writer committed. It finds nothing only if that
-            # writer rolled back, and then the next attempt inserts again.
-            if existing := self._get_payload_ids(session, [value.sha256]):
-                return existing[value.sha256]
-            logger.warning(
-                "Retrying the insert of `execution_payload` %s (attempt %d "
-                "of %d): the row is still missing.",
-                value.sha256[:12],
-                attempt + 1,
-                MAX_RETRIES_FOR_PAYLOAD_CREATION,
-            )
         raise EntityCreationError(
             f"Failed to store the execution payload {value.sha256[:12]} of "
             f"{value.size} bytes after {MAX_RETRIES_FOR_PAYLOAD_CREATION} "
@@ -5327,7 +5306,7 @@ class SqlZenStore(BaseZenStore):
 
     def _store_new_payloads(
         self, values: Collection[PayloadValue]
-    ) -> Optional[Dict[str, UUID]]:
+    ) -> Optional[Set[str]]:
         """Store the payloads of new rows, if payload references are enabled.
 
         Must run while the caller's session holds no transaction (see
@@ -5337,13 +5316,14 @@ class SqlZenStore(BaseZenStore):
             values: The payload values of the new rows.
 
         Returns:
-            The ID of the payload row of each value, by its SHA-256, or None
-            while payload references are disabled and new rows keep their
-            payloads inline.
+            The IDs of the stored payloads, which are the SHA-256 of their
+            values, or None while payload references are disabled and new
+            rows keep their payloads inline.
         """
         if not values or not self._payload_references_enabled():
             return None
-        return self._store_payloads(values)
+        self._store_payloads(values)
+        return {value.sha256 for value in values}
 
     def get_payload_backfill_report(self) -> List[BackfillTableReport]:
         """Report what the payload backfill still has to update, without writing.
@@ -5747,16 +5727,14 @@ class SqlZenStore(BaseZenStore):
             skipped.
         """
         updates = self._read_backfill_updates(schema, pending, result)
-        payload_ids = self._store_payloads(
+        self._store_payloads(
             [
                 value
                 for row_update in updates
                 for value in row_update.inline_values.values()
             ]
         )
-        return self._apply_backfill_updates(
-            schema, updates, payload_ids, result
-        )
+        return self._apply_backfill_updates(schema, updates, result)
 
     def _read_backfill_updates(
         self,
@@ -5819,15 +5797,14 @@ class SqlZenStore(BaseZenStore):
         self,
         schema: Type[PayloadRowSchema],
         updates: List[BackfillRowUpdate],
-        payload_ids: Dict[str, UUID],
         result: BackfillTableResult,
     ) -> int:
         """Update the rows that still hold what was read, in one transaction.
 
         Args:
             schema: The table of the rows.
-            updates: The updates of the rows.
-            payload_ids: The payload rows of the stored values, by SHA-256.
+            updates: The updates of the rows, whose inline values are stored
+                already.
             result: The result of the table, updated in place.
 
         Returns:
@@ -5844,9 +5821,7 @@ class SqlZenStore(BaseZenStore):
         try:
             with Session(self.engine) as session:
                 for row_update in updates:
-                    statement = build_backfill_update(
-                        schema, row_update, payload_ids
-                    )
+                    statement = build_backfill_update(schema, row_update)
                     if session.execute(statement).rowcount:  # type: ignore[attr-defined]
                         updated += 1
                         moved += sum(
@@ -6106,6 +6081,25 @@ class SqlZenStore(BaseZenStore):
 
             deleted_count += len(snapshot_ids)
 
+    def _snapshot_name_taken(
+        self, snapshot: PipelineSnapshotRequest, name: Optional[str]
+    ) -> bool:
+        """Check if a snapshot request names a snapshot that it doesn't replace.
+
+        Args:
+            snapshot: The snapshot request.
+            name: The name of the new snapshot, if it has one.
+
+        Returns:
+            If another snapshot of the pipeline has the name and the request
+            doesn't replace it.
+        """
+        return bool(
+            name
+            and not snapshot.replace
+            and self._snapshot_exists(pipeline_id=snapshot.pipeline, name=name)
+        )
+
     def _release_snapshot_name(
         self,
         session: Session,
@@ -6201,10 +6195,6 @@ class SqlZenStore(BaseZenStore):
                 upstream_steps,
             ) in enumerate(serialized_step_configurations)
         ]
-        payload_ids = self._store_new_payloads(
-            get_inline_payload_values(new_snapshot, *step_configurations)
-        )
-        reference_payloads(payload_ids, new_snapshot, *step_configurations)
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=snapshot, session=session)
@@ -6263,12 +6253,29 @@ class SqlZenStore(BaseZenStore):
             if isinstance(snapshot.name, str):
                 validate_name(snapshot)
 
-                if snapshot.replace:
-                    self._release_snapshot_name(
-                        session=session,
-                        pipeline_id=snapshot.pipeline,
-                        name=snapshot.name,
-                    )
+            # Ends the read transaction first, see `_store_payloads`.
+            session.commit()
+            # Checked before storing payloads, so that a request that fails
+            # these checks stores none. A snapshot that takes the name
+            # concurrently is only detected by the commit below.
+            name_taken_message = (
+                f"Snapshot with name `{new_snapshot.name}` already exists "
+                f"for pipeline `{snapshot.pipeline}`. If you want to replace "
+                "the existing snapshot, set the `replace` flag to `True`."
+            )
+            if self._snapshot_name_taken(snapshot, name=new_snapshot.name):
+                raise EntityExistsError(name_taken_message)
+            payload_ids = self._store_new_payloads(
+                get_inline_payload_values(new_snapshot, *step_configurations)
+            )
+            reference_payloads(payload_ids, new_snapshot, *step_configurations)
+
+            if isinstance(snapshot.name, str) and snapshot.replace:
+                self._release_snapshot_name(
+                    session=session,
+                    pipeline_id=snapshot.pipeline,
+                    name=snapshot.name,
+                )
 
             new_snapshot.code_reference_id = (
                 self._create_or_reuse_code_reference(
@@ -6285,20 +6292,8 @@ class SqlZenStore(BaseZenStore):
                 session.commit()
             except IntegrityError as e:
                 session.rollback()
-                if (
-                    new_snapshot.name
-                    and not snapshot.replace
-                    and self._snapshot_exists(
-                        pipeline_id=snapshot.pipeline,
-                        name=new_snapshot.name,
-                    )
-                ):
-                    raise EntityExistsError(
-                        f"Snapshot with name `{new_snapshot.name}` already "
-                        f"exists for pipeline `{snapshot.pipeline}`. If you "
-                        "want to replace the existing snapshot, set the "
-                        "`replace` flag to `True`."
-                    )
+                if self._snapshot_name_taken(snapshot, name=new_snapshot.name):
+                    raise EntityExistsError(name_taken_message)
                 raise RuntimeError("Snapshot creation failed.") from e
 
             self._attach_tags_to_resources(
@@ -7798,35 +7793,19 @@ class SqlZenStore(BaseZenStore):
         session.commit()
         return index
 
-    def _create_run(
-        self,
-        pipeline_run: PipelineRunRequest,
-        orchestrator_environment: str,
-        session: Session,
-        payload_ids: Optional[Dict[str, UUID]],
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    def _get_run_references(
+        self, pipeline_run: PipelineRunRequest, session: Session
+    ) -> Tuple[PipelineSnapshotSchema, Optional[UUID]]:
+        """Fetch the snapshot of a run request and check its other references.
 
         Args:
-            pipeline_run: The pipeline run to create.
-            orchestrator_environment: The serialized orchestrator environment
-                of the run.
+            pipeline_run: The pipeline run request.
             session: SQLAlchemy session.
-            payload_ids: The stored payloads of the run, or None while payload
-                references are disabled.
 
         Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If a run with the same name already exists or
-                a log entry with the same source already exists within the
-                scope of the same pipeline run.
-            KeyError: If the run requires a model version that doesn't exist and
-                can not be created.
+            The snapshot of the run, and the root run ID if the run has a
+            parent run.
         """
-        self._set_request_user_id(request_model=pipeline_run, session=session)
-
         snapshot = self._get_reference_schema_by_id(
             resource=pipeline_run,
             reference_schema=PipelineSnapshotSchema,
@@ -7853,6 +7832,41 @@ class SqlZenStore(BaseZenStore):
                 reference_type="parent run",
             )
             root_run_id = parent_run.root_run_id or parent_run.id
+
+        return snapshot, root_run_id
+
+    def _create_run(
+        self,
+        pipeline_run: PipelineRunRequest,
+        snapshot: PipelineSnapshotSchema,
+        root_run_id: Optional[UUID],
+        orchestrator_environment: str,
+        session: Session,
+        payload_ids: Optional[Set[str]],
+    ) -> PipelineRunResponse:
+        """Creates a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to create.
+            snapshot: The snapshot of the run.
+            root_run_id: The root run ID, if the run has a parent run.
+            orchestrator_environment: The serialized orchestrator environment
+                of the run.
+            session: SQLAlchemy session.
+            payload_ids: The stored payloads of the run, or None while payload
+                references are disabled.
+
+        Returns:
+            The created pipeline run.
+
+        Raises:
+            EntityExistsError: If a run with the same name already exists or
+                a log entry with the same source already exists within the
+                scope of the same pipeline run.
+            KeyError: If the run requires a model version that doesn't exist and
+                can not be created.
+        """
+        self._set_request_user_id(request_model=pipeline_run, session=session)
 
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
@@ -8047,7 +8061,7 @@ class SqlZenStore(BaseZenStore):
         pipeline_run: PipelineRunRequest,
         orchestrator_environment: str,
         session: Session,
-        payload_ids: Optional[Dict[str, UUID]],
+        payload_ids: Optional[Set[str]],
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
@@ -8158,6 +8172,14 @@ class SqlZenStore(BaseZenStore):
                     != ExecutionStatus.PROVISIONING.value,
                 )
             )
+            # Every step launch of a run ends here, so the lookup loads what
+            # the hydrated response reads instead of reading the run twice.
+            # Refreshes rows the session already holds, as
+            # `_reload_for_response` does.
+            .options(
+                *PipelineRunSchema.get_query_options(include_metadata=True)
+            )
+            .execution_options(populate_existing=True)
         ).first()
 
         if not run_schema:
@@ -8166,8 +8188,6 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
-        # Payloads are loaded only once the lookup finds a run.
-        run_schema = self._reload_for_response(session, run_schema)
         return run_schema.to_model(
             include_metadata=True, include_resources=True
         )
@@ -8189,6 +8209,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a run with the same name already exists.
+            KeyError: If the snapshot of the run was deleted during the
+                request.
 
         Returns:
             The pipeline run, and a boolean indicating whether the run was
@@ -8215,6 +8237,11 @@ class SqlZenStore(BaseZenStore):
             if pre_creation_hook:
                 pre_creation_hook()
 
+            # Checked before storing payloads, so that a request with a
+            # missing reference stores none.
+            snapshot, root_run_id = self._get_run_references(
+                pipeline_run, session=session
+            )
             # Ends the read transaction first, see `_store_payloads`.
             session.commit()
             orchestrator_environment = (
@@ -8228,11 +8255,18 @@ class SqlZenStore(BaseZenStore):
 
             # Acquire exclusive lock on the snapshot to prevent deadlocks
             # during insertion
-            session.exec(
+            locked_snapshot_id = session.exec(
                 select(PipelineSnapshotSchema.id)
                 .with_for_update()
                 .where(PipelineSnapshotSchema.id == pipeline_run.snapshot)
-            )
+            ).first()
+            # The snapshot was looked up before the lock, so it may have been
+            # deleted since.
+            if locked_snapshot_id is None:
+                raise KeyError(
+                    f"Unable to create pipeline run: snapshot "
+                    f"{pipeline_run.snapshot} no longer exists."
+                )
 
             if not pipeline_run.is_placeholder_request:
                 # Only run this if the request is not a placeholder run itself,
@@ -8280,6 +8314,8 @@ class SqlZenStore(BaseZenStore):
                 return (
                     self._create_run(
                         pipeline_run,
+                        snapshot=snapshot,
+                        root_run_id=root_run_id,
                         orchestrator_environment=orchestrator_environment,
                         session=session,
                         payload_ids=payload_ids,
@@ -13587,8 +13623,6 @@ class SqlZenStore(BaseZenStore):
                             step_schema.status = ExecutionStatus.QUEUED.value
                         session.add(step_schema)
                         session.commit()
-
-                session.refresh(step_schema)
 
             step_schema = self._reload_for_response(session, step_schema)
             step_run_response = step_schema.to_model(

@@ -564,16 +564,14 @@ def get_missing_control_values(row: BaseSchema) -> Dict[str, Any]:
 
 
 def build_backfill_update(
-    schema: Type[PayloadRowSchema],
-    row_update: BackfillRowUpdate,
-    payload_ids: Dict[str, UUID],
+    schema: Type[PayloadRowSchema], row_update: BackfillRowUpdate
 ) -> Any:
     """Build the update of a row, applied only if the row did not change.
 
     Args:
         schema: The table of the row.
-        row_update: What the backfill updates in the row.
-        payload_ids: The payload rows of the stored values, by SHA-256.
+        row_update: What the backfill updates in the row, whose inline
+            values are stored already.
 
     Returns:
         The update statement.
@@ -584,7 +582,7 @@ def build_backfill_update(
         getattr(schema, name).is_(None) for name in row_update.control_values
     )
     for column, value in row_update.inline_values.items():
-        values[column.payload_id_column_name] = payload_ids[value.sha256]
+        values[column.payload_id_column_name] = value.sha256
         values[column.name] = column.cleared_inline_value
         conditions.append(
             getattr(schema, column.payload_id_column_name).is_(None)
