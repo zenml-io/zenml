@@ -7619,6 +7619,14 @@ class SqlZenStore(BaseZenStore):
                     != ExecutionStatus.PROVISIONING.value,
                 )
             )
+            # Every step launch of a run ends here, so the lookup loads what
+            # the hydrated response reads instead of reading the run twice.
+            # Refreshes rows the session already holds, as
+            # `_reload_for_response` does.
+            .options(
+                *PipelineRunSchema.get_query_options(include_metadata=True)
+            )
+            .execution_options(populate_existing=True)
         ).first()
 
         if not run_schema:
@@ -7627,8 +7635,6 @@ class SqlZenStore(BaseZenStore):
                 f"{orchestrator_run_id} and snapshot ID {snapshot_id}."
             )
 
-        # Payloads are loaded only once the lookup finds a run.
-        run_schema = self._reload_for_response(session, run_schema)
         return run_schema.to_model(
             include_metadata=True, include_resources=True
         )
