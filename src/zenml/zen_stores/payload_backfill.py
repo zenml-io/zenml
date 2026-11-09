@@ -90,8 +90,9 @@ BACKFILL_FLUSH_BYTES = 64 * 1024 * 1024
 BACKFILL_PAUSE_SECONDS = 0.2
 # Seconds between turning payload references on and the first pass, so that
 # most requests that read the setting as off just before have committed and
-# the passes need no repeat for them. Nothing bounds a request to this, so
-# completion rests on the repeated passes, not on this wait.
+# the passes need no repeat for them. Nothing bounds a request to this wait
+# or to the passes: one that commits after the last pass leaves its row
+# inline, which reads as before, until the backfill is forced to run again.
 BACKFILL_GATE_SETTLE_SECONDS = 60.0
 # Passes over every table, until one finds nothing to update. Bounded, in
 # case a process that does not reference payloads keeps writing them inline.
