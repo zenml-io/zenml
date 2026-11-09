@@ -139,17 +139,23 @@ class BaseDatabaseBackupEngine(ABC):
         """
         database = database or self.url.database
 
-        with self.master_engine.connect() as conn:
-            return (
-                conn.execute(
-                    text(
-                        "SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA "
-                        "WHERE SCHEMA_NAME = :database"
-                    ),
-                    {"database": database},
-                ).scalar()
-                is not None
+        try:
+            with self.master_engine.connect() as conn:
+                return (
+                    conn.execute(
+                        text(
+                            "SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA "
+                            "WHERE SCHEMA_NAME = :database"
+                        ),
+                        {"database": database},
+                    ).scalar()
+                    is not None
+                )
+        except OperationalError:
+            logger.exception(
+                f"Failed to check whether MySQL database `{database}` exists."
             )
+            raise
 
     def drop_database(
         self,
