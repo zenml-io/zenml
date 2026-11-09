@@ -50,20 +50,23 @@ class ServerSettingsSchema(SQLModel, table=True):
     updated: datetime = Field(default_factory=utc_now)
     # Whether new rows reference their execution payloads instead of holding
     # them inline. Releases before execution payloads only read inline values,
-    # so a database they used keeps this off (the column default) while they
-    # may still open it. A later release moves the payloads of existing rows
-    # and then turns it on. A database created with execution payloads starts
-    # with it on.
+    # so a database they used keeps this off (the column default) until the
+    # payload backfill turns it on, a delay after the migration that gives a
+    # rolling upgrade time to replace them. A database created by a newer
+    # release starts with it on.
     payload_references_enabled: bool = Field(
         default=True,
         sa_column=Column(Boolean, nullable=False, server_default=false()),
     )
     # When the migration that added execution payloads ran, or when the
-    # database was created with them. The release that turns references on
-    # waits a delay after this, to give a rolling upgrade time to replace the
-    # processes that cannot read them.
+    # database was created with them. Servers start the payload backfill a
+    # delay after this.
     execution_payloads_added: Optional[datetime] = Field(
         nullable=True, default_factory=utc_now
+    )
+    # When the payload backfill last found nothing left to move.
+    payload_backfill_completed: Optional[datetime] = Field(
+        nullable=True, default=None
     )
 
     def update(
