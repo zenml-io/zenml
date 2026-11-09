@@ -5496,10 +5496,16 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
     def _enable_payload_references(self) -> None:
-        """Turn on payload references for new rows."""
+        """Turn on payload references for new rows.
+
+        Also clears the completion of an earlier run: a run that starts has
+        not completed, so that one that fails or stops is continued, and the
+        tables are not rebuilt in the meantime.
+        """
         with Session(self.engine) as session:
             settings = self._get_server_settings(session)
             settings.payload_references_enabled = True
+            settings.payload_backfill_completed = None
             session.add(settings)
             session.commit()
         logger.info("Payload references are turned on for new rows.")

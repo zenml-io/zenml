@@ -591,7 +591,7 @@ def _read_control_columns(store: SqlZenStore) -> Dict[Tuple[UUID, str], Any]:
 
 
 def _read_payload_table(store: SqlZenStore) -> set[Tuple[str, int, str]]:
-    """Read every stored payload, without the IDs that differ per database."""
+    """Read every stored payload."""
     with Session(store.engine) as session:
         return {
             (payload.sha256, payload.size, payload.value)
@@ -778,10 +778,11 @@ def test_backfill_stops_before_the_payloads_a_failed_row_reads(
     """A step run whose configuration cannot be read stops the backfill.
 
     Its step configuration and snapshot stay inline until the step run is
-    fixed or deleted.
+    fixed or deleted. The completion of an earlier run does not hide that.
     """
     run = _start_run(store)
     step_run = _start_step(store, run.id)
+    assert _backfill(store).completed
     _make_rows_predate_payloads(store)
     with Session(store.engine) as session:
         session.execute(
