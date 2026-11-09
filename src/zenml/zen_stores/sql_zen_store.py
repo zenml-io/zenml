@@ -13071,8 +13071,6 @@ class SqlZenStore(BaseZenStore):
                         session.add(step_schema)
                         session.commit()
 
-                session.refresh(step_schema)
-
             step_schema = self._reload_for_response(session, step_schema)
             step_run_response = step_schema.to_model(
                 include_metadata=True,
